@@ -632,7 +632,7 @@ private:
 
     // Copy the string from the target into the provided buffer, converting to unicode if necessary
     bool DacGetUnicode(COUNT_T                                  bufChars,
-                       __out_z __inout_ecount(bufChars) WCHAR * buffer,
+                       _Inout_updates_z_(bufChars) WCHAR * buffer,
                        COUNT_T *                                needChars) const;
 
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) const

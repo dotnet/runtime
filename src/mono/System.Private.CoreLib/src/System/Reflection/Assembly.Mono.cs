@@ -10,7 +10,6 @@ using System.Diagnostics.Tracing;
 
 namespace System.Reflection
 {
-    [StructLayout(LayoutKind.Sequential)]
     public partial class Assembly
     {
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
@@ -96,8 +95,5 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern Type InternalGetType(Module? module, string name, bool throwOnError, bool ignoreCase);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void InternalGetAssemblyName(string assemblyFile, out Mono.MonoAssemblyName aname, out string codebase);
     }
 }

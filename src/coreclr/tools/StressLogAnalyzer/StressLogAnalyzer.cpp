@@ -8,7 +8,7 @@
 
 #include "assert.h"
 
-#define ARRAY_SIZE(a)   (sizeof (a) / sizeof ((a)[0]))
+#include <minipal/utils.h>
 
 #define MEMORY_MAPPED_STRESSLOG
 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
     WCHAR filename[MAX_PATH];
     if (MultiByteToWideChar(CP_ACP, 0, argv[1], -1, filename, MAX_PATH) == 0)
         return 1;
-    
+
     HANDLE file = CreateFile(filename, GENERIC_READ, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (file == INVALID_HANDLE_VALUE)
     {

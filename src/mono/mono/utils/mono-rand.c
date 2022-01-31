@@ -131,7 +131,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, gssize buffer_size, Mono
 	gint ret;
 	guint offset = 0;
 	int err = 0;
-	
+
 	socket_fd = socket (PF_UNIX, SOCK_STREAM, 0);
 	if (socket_fd < 0) {
 		ret = -1;
@@ -325,7 +325,7 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gssize buffer_size, M
 	error_init (error);
 
 	g_static_assert (RAND_MAX >= 0xFF);
-	
+
 	while (buffer_size > 0) {
 		int const i = rand ();
 		int j;

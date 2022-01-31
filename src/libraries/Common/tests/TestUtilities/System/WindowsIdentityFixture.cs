@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 namespace System
 {
@@ -37,6 +38,8 @@ namespace System
 
         public WindowsTestAccount(string userName)
         {
+            Assert.True(PlatformDetection.IsWindowsAndElevated);
+
             _userName = userName;
             CreateUser();
         }
@@ -76,6 +79,10 @@ namespace System
                     {
                         throw new Win32Exception((int)result);
                     }
+                }
+                else if (result != 0)
+                {
+                    throw new Win32Exception((int)result);
                 }
 
                 const int LOGON32_PROVIDER_DEFAULT = 0;

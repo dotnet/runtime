@@ -1481,6 +1481,15 @@ Interval* LinearScan::getUpperVectorInterval(unsigned varIndex)
 //
 void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet)
 {
+    if ((tree != nullptr) && tree->IsCall())
+    {
+        if (tree->AsCall()->IsNoReturn())
+        {
+            // No point in having vector save/restore if the call will not return.
+            return;
+        }
+    }
+
     if (enregisterLocalVars && !VarSetOps::IsEmpty(compiler, largeVectorVars))
     {
         // We assume that the kill set includes at least some callee-trash registers, but
@@ -3069,6 +3078,15 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         return 1;
     }
 
+#ifdef TARGET_ARM64
+    // Must happen before OperIsHWIntrinsic case,
+    // but this occurs when a vector zero node is marked as contained.
+    if (node->IsVectorZero())
+    {
+        return 0;
+    }
+#endif
+
 #if !defined(TARGET_64BIT)
     if (node->OperIs(GT_LONG))
     {
@@ -3155,6 +3173,14 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     {
         use = BuildUse(node, candidates);
     }
+#ifdef TARGET_ARM64
+    // Must happen before OperIsHWIntrinsic case,
+    // but this occurs when a vector zero node is marked as contained.
+    else if (node->IsVectorZero())
+    {
+        return 0;
+    }
+#endif
 #ifdef FEATURE_HW_INTRINSICS
     else if (node->OperIsHWIntrinsic())
     {
@@ -3456,8 +3482,12 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
             {
                 // Need an additional register to create a SIMD8 from EAX/EDX without SSE4.1.
                 buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
-                // This internal register must be different from the target register.
-                setInternalRegsDelayFree = true;
+
+                if (isCandidateVar(varDsc))
+                {
+                    // This internal register must be different from the target register.
+                    setInternalRegsDelayFree = true;
+                }
             }
         }
 #endif // FEATURE_SIMD && TARGET_X86
@@ -3554,7 +3584,7 @@ int LinearScan::BuildSimple(GenTree* tree)
 {
     unsigned kind     = tree->OperKind();
     int      srcCount = 0;
-    if ((kind & (GTK_CONST | GTK_LEAF)) == 0)
+    if ((kind & GTK_LEAF) == 0)
     {
         assert((kind & GTK_SMPOP) != 0);
         srcCount = BuildBinaryUses(tree->AsOp());

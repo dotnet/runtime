@@ -244,8 +244,8 @@
     <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs"
              Link="Common\Extensions\ValueStopwatch\ValueStopwatch.cs" />
   <!-- Header support -->
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpHeadersHandler.cs">
-      <Link>Common\System\Net\Http\aspnetcore\IHttpHeadersHandler.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs">
+      <Link>Common\System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs">
       <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs</Link>

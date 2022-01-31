@@ -704,9 +704,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR:
                     id = ReadyToRunHelper.NewMultiDimArr;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_NONVARARG:
-                    id = ReadyToRunHelper.NewMultiDimArr_NonVarArg;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWFAST:
                     id = ReadyToRunHelper.NewObject;
                     break;
@@ -970,8 +967,8 @@ namespace Internal.JitInterface
 
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out object context, ref TypeDesc constrainedType)
         {
-            if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc) 
-                || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod) 
+            if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc)
+                || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
                 || methodDesc.IsPInvoke))
             {
                 if ((CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u) == CorTokenType.mdtMethodDef &&
@@ -1129,7 +1126,7 @@ namespace Internal.JitInterface
             {
                 _debugVarInfos[i] = vars[i];
             }
-            
+
             // JIT gave the ownership of this to us, so need to free this.
             freeArray(vars);
         }
@@ -1146,7 +1143,7 @@ namespace Internal.JitInterface
             {
                 _debugLocInfos[i] = pMap[i];
             }
-            
+
             // JIT gave the ownership of this to us, so need to free this.
             freeArray(pMap);
         }
@@ -1645,7 +1642,7 @@ namespace Internal.JitInterface
                     //  3) JIT intrinsics - since they have pre-defined behavior
                     devirt = targetMethod.OwningType.IsValueType ||
                         (targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke") ||
-                        (targetMethod.IsIntrinsic && getIntrinsicID(targetMethod, null) != CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal);
+                        (targetMethod.OwningType.IsObject && targetMethod.Name == "GetType");
 
                     callVirtCrossingVersionBubble = true;
                 }
@@ -1814,7 +1811,7 @@ namespace Internal.JitInterface
 
             pResult->wrapperDelegateInvoke = false;
 
-            Get_CORINFO_SIG_INFO(methodToCall, &pResult->sig, useInstantiatingStub);
+            Get_CORINFO_SIG_INFO(methodToCall, &pResult->sig, scope: null, useInstantiatingStub);
         }
 
         private uint getMethodAttribs(CORINFO_METHOD_STRUCT_* ftn)
@@ -2338,17 +2335,6 @@ namespace Internal.JitInterface
             return !_compilation.IsLayoutFixedInCurrentVersionBubble(type) || (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !((MetadataType)type).IsNonVersionable());
         }
 
-        private bool HasLayoutMetadata(TypeDesc type)
-        {
-            if (type.IsValueType && (MarshalUtils.IsBlittableType(type) || ReadyToRunMetadataFieldLayoutAlgorithm.IsManagedSequentialType(type)))
-            {
-                // Sequential layout
-                return true;
-            }
-
-            return false;
-        }
-
         /// <summary>
         /// Throws if the JIT inlines a method outside the current version bubble and that inlinee accesses
         /// fields also outside the version bubble. ReadyToRun currently cannot encode such references.
@@ -2409,17 +2395,6 @@ namespace Internal.JitInterface
                     _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                 }
                 // ENCODE_NONE
-            }
-            else if (HasLayoutMetadata(pMT))
-            {
-                PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
-
-                // We won't try to be smart for classes with layout.
-                // They are complex to get right, and very rare anyway.
-                // ENCODE_FIELD_OFFSET
-                pResult->offset = 0;
-                pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
-                pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldOffset(field));
             }
             else
             {
@@ -2604,7 +2579,7 @@ namespace Internal.JitInterface
             else
             {
                 var sig = HandleToObject(callSiteSig->methodSignature);
-                return Marshaller.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>());
+                return Marshaller.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>(), ((MetadataType)HandleToObject(callSiteSig->scope).OwningMethod.OwningType).Module);
             }
         }
 

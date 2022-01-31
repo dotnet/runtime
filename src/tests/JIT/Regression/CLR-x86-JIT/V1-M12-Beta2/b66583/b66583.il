@@ -9,11 +9,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly qsort
+.assembly 'b66583'
 {
 }
 .assembly extern xunit.core {}
-.module qsort.exe
 // MVID: {BEFEC472-D5C8-4747-807D-713417E95FBD}
 
 .file alignment 512

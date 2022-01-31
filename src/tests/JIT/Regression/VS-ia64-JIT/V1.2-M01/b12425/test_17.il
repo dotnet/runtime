@@ -4,7 +4,6 @@
 .assembly extern mscorlib{}
 .assembly test_17{}
 .assembly extern xunit.core {}
-.module test_17.exe
 
 .class interface public abstract auto ansi ITrees
 {

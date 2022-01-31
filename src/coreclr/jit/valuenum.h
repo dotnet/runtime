@@ -494,6 +494,8 @@ public:
     // Both arguments must be either VNForEmptyExcSet() or applications of VNF_ExcSetCons.
     bool VNExcIsSubset(ValueNum vnFullSet, ValueNum vnCandidateSet);
 
+    bool VNPExcIsSubset(ValueNumPair vnpFullSet, ValueNumPair vnpCandidateSet);
+
     // Returns "true" iff "vn" is an application of "VNF_ValWithExc".
     bool VNHasExc(ValueNum vn)
     {
@@ -527,6 +529,12 @@ public:
     // Sets the liberal & conservative
     // Keeps any Exception set values
     ValueNumPair VNPMakeNormalUniquePair(ValueNumPair vnp);
+
+    // A new unique value with the given exception set.
+    ValueNum VNUniqueWithExc(var_types type, ValueNum vnExcSet);
+
+    // A new unique VN pair with the given exception set pair.
+    ValueNumPair VNPUniqueWithExc(var_types type, ValueNumPair vnpExcSet);
 
     // If "vn" is a "VNF_ValWithExc(norm, excSet)" value, returns the "norm" argument; otherwise,
     // just returns "vn".
@@ -712,11 +720,11 @@ public:
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
 
     // Returns true if the VN is known or likely to appear as the conservative value number
-    // of the length argument to a GT_ARR_BOUNDS_CHECK node.
+    // of the length argument to a GT_BOUNDS_CHECK node.
     bool IsVNCheckedBound(ValueNum vn);
 
     // Record that a VN is known to appear as the conservative value number of the length
-    // argument to a GT_ARR_BOUNDS_CHECK node.
+    // argument to a GT_BOUNDS_CHECK node.
     void SetVNIsCheckedBound(ValueNum vn);
 
     // Information about the individual components of a value number representing an unsigned

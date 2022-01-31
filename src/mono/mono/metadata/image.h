@@ -2,7 +2,7 @@
  * \file
  */
 
-#ifndef _MONONET_METADATA_IMAGE_H_ 
+#ifndef _MONONET_METADATA_IMAGE_H_
 #define _MONONET_METADATA_IMAGE_H_
 
 #include <stdio.h>
@@ -88,7 +88,7 @@ MONO_API void*      mono_image_lookup_resource (MonoImage *image, uint32_t res_i
 MONO_API const char*   mono_image_get_public_key  (MonoImage *image, uint32_t *size);
 MONO_API const char*   mono_image_get_strong_name (MonoImage *image, uint32_t *size);
 MONO_API uint32_t       mono_image_strong_name_position (MonoImage *image, uint32_t *size);
-MONO_API void          mono_image_add_to_name_cache (MonoImage *image, 
+MONO_API void          mono_image_add_to_name_cache (MonoImage *image,
 			const char *nspace, const char *name, uint32_t idx);
 MONO_API mono_bool     mono_image_has_authenticode_entry (MonoImage *image);
 

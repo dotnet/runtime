@@ -14,7 +14,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         
   .ver 4:0:0:0
 }
-.assembly small_repro
+.assembly 'dependentLifetimes'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
 }

@@ -13,11 +13,7 @@ namespace System.IO
     {
         public static DirectoryInfo? GetParent(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             string fullPath = Path.GetFullPath(path);
 
@@ -29,10 +25,7 @@ namespace System.IO
 
         public static DirectoryInfo CreateDirectory(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             string fullPath = Path.GetFullPath(path);
 
@@ -228,25 +221,15 @@ namespace System.IO
 
         public static void SetCurrentDirectory(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             Environment.CurrentDirectory = Path.GetFullPath(path);
         }
 
         public static void Move(string sourceDirName, string destDirName)
         {
-            if (sourceDirName == null)
-                throw new ArgumentNullException(nameof(sourceDirName));
-            if (sourceDirName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(sourceDirName));
-
-            if (destDirName == null)
-                throw new ArgumentNullException(nameof(destDirName));
-            if (destDirName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
+            ArgumentException.ThrowIfNullOrEmpty(sourceDirName);
+            ArgumentException.ThrowIfNullOrEmpty(destDirName);
 
             string fullsourceDirName = Path.GetFullPath(sourceDirName);
             string sourcePath = PathInternal.EnsureTrailingSeparator(fullsourceDirName);

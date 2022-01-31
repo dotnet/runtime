@@ -133,7 +133,7 @@ internal static partial class Interop
         // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         [DllImport(Libraries.Wldap32, EntryPoint = "ldap_compare_extW", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        public static extern int ldap_compare(ConnectionHandle ldapHandle, string dn, string attributeName, string strValue, berval binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        public static extern int ldap_compare(ConnectionHandle ldapHandle, string dn, string attributeName, string strValue, BerVal binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
         [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_add_extW", CharSet = CharSet.Unicode)]
@@ -148,7 +148,7 @@ internal static partial class Interop
         // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         [DllImport(Libraries.Wldap32, EntryPoint = "ldap_extended_operationW", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        public static extern int ldap_extended_operation(ConnectionHandle ldapHandle, string oid, berval data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        public static extern int ldap_extended_operation(ConnectionHandle ldapHandle, string oid, BerVal data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
         [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_parse_extended_resultW", CharSet = CharSet.Unicode)]

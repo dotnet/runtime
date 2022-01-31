@@ -9,7 +9,6 @@
 // file:../../doc/BookOfTheRuntime/ClassLoader/MethodDescDesign.doc
 //
 
-
 #include "common.h"
 #include "excep.h"
 #include "dbginterface.h"
@@ -1657,6 +1656,13 @@ UINT MethodDesc::CbStackPop()
     SUPPORTS_DAC;
     MetaSig msig(this);
     ArgIterator argit(&msig);
+
+    bool fCtorOfVariableSizedObject = msig.HasThis() && (GetMethodTable() == g_pStringClass) && IsCtor();
+    if (fCtorOfVariableSizedObject)
+    {
+        msig.ClearHasThis();
+    }
+    
     return argit.CbStackPop();
 }
 #endif // TARGET_X86
@@ -2161,22 +2167,6 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
     // We should never get here
     _ASSERTE(!"Entry2MethodDesc failed");
     RETURN (NULL);
-}
-
-//*******************************************************************************
-BOOL MethodDesc::IsFCallOrIntrinsic()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (IsFCall() || IsArray())
-        return TRUE;
-
-    // Intrinsic methods on ByReference<T>, Span<T>, or ReadOnlySpan<T>
-    MethodTable * pMT = GetMethodTable();
-    if (pMT->IsByRefLike() && pMT->GetModule()->IsSystem())
-        return TRUE;
-
-    return FALSE;
 }
 
 //*******************************************************************************

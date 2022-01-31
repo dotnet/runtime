@@ -124,7 +124,7 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
-        onConfigLoaded: () => {
+        onConfigLoaded: (config) => {
             if (!Module.config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");
                 set_exit_code(1,);
@@ -132,9 +132,11 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
             for (let variable in processedArguments.setenv) {
-                Module.config.environment_variables[variable] = processedArguments.setenv[variable];
+                config.environment_variables[variable] = processedArguments.setenv[variable];
             }
-
+            config.diagnostic_tracing = !!processedArguments.diagnostic_tracing;
+        },
+        preRun: () => {
             if (!processedArguments.enable_gc) {
                 INTERNAL.mono_wasm_enable_on_demand_gc(0);
             }
@@ -160,8 +162,7 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
     }))
 }).catch(function (err) {
     console.error(err);
-    set_exit_code(1, "failed to load the dotnet.js file");
-    throw err;
+    set_exit_code(1, "failed to load the dotnet.js file.\n" + err);
 });
 
 const App = {
@@ -208,13 +209,9 @@ const App = {
                 return;
             }
             try {
-
                 const main_assembly_name = processedArguments.applicationArgs[1];
                 const app_args = processedArguments.applicationArgs.slice(2);
-                INTERNAL.mono_wasm_set_main_args(main_assembly_name, app_args);
-
-                // Automatic signature isn't working correctly
-                const result = await BINDING.call_assembly_entry_point(main_assembly_name, [app_args], "m");
+                const result = await MONO.mono_run_main(main_assembly_name, app_args);
                 set_exit_code(result);
             } catch (error) {
                 set_exit_code(1, error);
@@ -286,6 +283,7 @@ function processArguments(incomingArguments) {
     let setenv = {};
     let runtime_args = [];
     let enable_gc = true;
+    let diagnostic_tracing = false;
     let working_dir = '/';
     while (incomingArguments && incomingArguments.length > 0) {
         const currentArg = incomingArguments[0];
@@ -303,6 +301,8 @@ function processArguments(incomingArguments) {
             runtime_args.push(arg);
         } else if (currentArg == "--disable-on-demand-gc") {
             enable_gc = false;
+        } else if (currentArg == "--diagnostic_tracing") {
+            diagnostic_tracing = true;
         } else if (currentArg.startsWith("--working-dir=")) {
             const arg = currentArg.substring("--working-dir=".length);
             working_dir = arg;
@@ -323,6 +323,7 @@ function processArguments(incomingArguments) {
         setenv,
         runtime_args,
         enable_gc,
+        diagnostic_tracing,
         working_dir,
     }
 }
@@ -353,6 +354,27 @@ try {
     console.error(e);
 }
 
+if (is_node) {
+    const modulesToLoad = processedArguments.setenv["NPM_MODULES"];
+    if (modulesToLoad) {
+        modulesToLoad.split(',').forEach(module => {
+            const parts = module.split(':');
+
+            let message = `Loading npm '${parts[0]}'`;
+            const moduleExport = require(parts[0]);
+            if (parts.length == 2) {
+                message += ` and attaching to global as '${parts[1]}'.`;
+                globalThis[parts[1]] = moduleExport;
+            }
+
+            console.log(message);
+        });
+    }
+}
+
+// Must be after loading npm modules.
+processedArguments.setenv["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
+
 async function loadDotnet(file) {
     let loadScript = undefined;
     if (typeof WScript !== "undefined") { // Chakra
@@ -365,10 +387,20 @@ async function loadDotnet(file) {
             return require(file);
         };
     } else if (is_browser) { // vanila JS in browser
-        loadScript = async function (file) {
-            globalThis.exports = {}; // if we are loading cjs file
-            const createDotnetRuntime = await import(file);
-            return typeof createDotnetRuntime === "function" ? createDotnetRuntime : globalThis.exports.createDotnetRuntime;
+        loadScript = function (file) {
+            var loaded = new Promise((resolve, reject) => {
+                globalThis.__onDotnetRuntimeLoaded = (createDotnetRuntime) => {
+                    // this is callback we have in CJS version of the runtime
+                    resolve(createDotnetRuntime);
+                };
+                import(file).then(({ default: createDotnetRuntime }) => {
+                    // this would work with ES6 default export
+                    if (createDotnetRuntime) {
+                        resolve(createDotnetRuntime);
+                    }
+                }, reject);
+            });
+            return loaded;
         }
     }
     else if (typeof globalThis.load !== 'undefined') {

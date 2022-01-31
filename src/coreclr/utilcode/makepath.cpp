@@ -39,11 +39,11 @@
 *******************************************************************************/
 
 void MakePath (
-        __out CQuickWSTR &szPath,
-        __in LPCWSTR drive,
-        __in LPCWSTR dir,
-        __in LPCWSTR fname,
-        __in LPCWSTR ext
+        _Out_ CQuickWSTR &szPath,
+        _In_ LPCWSTR drive,
+        _In_ LPCWSTR dir,
+        _In_ LPCWSTR fname,
+        _In_ LPCWSTR ext
         )
 {
         CONTRACTL

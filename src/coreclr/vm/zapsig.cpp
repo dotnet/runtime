@@ -620,7 +620,7 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
         }
     }
 
-    return pAssembly->GetManifestModule();
+    return pAssembly->GetModule();
 }
 
 Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
@@ -686,7 +686,7 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     if (pAssembly == NULL)
         return NULL;
 
-    return pAssembly->GetManifestModule();
+    return pAssembly->GetModule();
 }
 
 

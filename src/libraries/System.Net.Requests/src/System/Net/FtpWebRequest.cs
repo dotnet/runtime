@@ -812,7 +812,7 @@ namespace System.Net
 
         public override Stream EndGetRequestStream(IAsyncResult asyncResult)
         {
-            Stream? requestStream = null;
+            Stream? requestStream;
             try
             {
                 if (asyncResult == null)

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
@@ -109,9 +110,13 @@ namespace System.Text.RegularExpressions.Tests
                     .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
                     .AddProject("Test", "test.dll", "C#")
                     .WithMetadataReferences(s_refs)
-                    .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                    .WithNullableContextOptions(NullableContextOptions.Enable))
-                    .WithParseOptions(new CSharpParseOptions(LanguageVersion.Preview))
+                    .WithCompilationOptions(
+                        new CSharpCompilationOptions(
+                            OutputKind.DynamicallyLinkedLibrary,
+                            warningLevel: 9999, // docs recommend using "9999" to catch all warnings now and in the future
+                            specificDiagnosticOptions: ImmutableDictionary<string, ReportDiagnostic>.Empty.Add("SYSLIB1045", ReportDiagnostic.Hidden)) // regex with limited support
+                            .WithNullableContextOptions(NullableContextOptions.Enable))
+                            .WithParseOptions(new CSharpParseOptions(LanguageVersion.Preview, DocumentationMode.Diagnose))
                     .AddDocument("RegexGenerator.g.cs", SourceText.From("// Empty", Encoding.UTF8)).Project;
                 Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
 
@@ -123,7 +128,7 @@ namespace System.Text.RegularExpressions.Tests
 
             // Run the generator
             GeneratorDriverRunResult generatorResults = s_generatorDriver.RunGenerators(comp!, cancellationToken).GetRunResult();
-            ImmutableArray<Diagnostic> generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Info);
+            ImmutableArray<Diagnostic> generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
             if (generatorDiagnostics.Length != 0)
             {
                 throw new ArgumentException(

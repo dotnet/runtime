@@ -72,7 +72,7 @@ namespace System.Drawing
 
         internal void unitConversion(GraphicsUnit fromUnit, GraphicsUnit toUnit, float nSrc, out float nTrg)
         {
-            float inchs = 0;
+            float inchs;
             nTrg = 0;
 
             switch (fromUnit)

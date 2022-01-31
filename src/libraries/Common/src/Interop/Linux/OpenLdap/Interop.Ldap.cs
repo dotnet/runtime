@@ -164,7 +164,7 @@ internal static partial class Interop
 #pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_bind_s", CharSet = CharSet.Ansi)]
-        internal static extern int ldap_sasl_bind(ConnectionHandle ld, string dn, string mechanism, berval cred, IntPtr serverctrls, IntPtr clientctrls, IntPtr servercredp);
+        internal static extern int ldap_sasl_bind(ConnectionHandle ld, string dn, string mechanism, BerVal cred, IntPtr serverctrls, IntPtr clientctrls, IntPtr servercredp);
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
         [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_interactive_bind_s", CharSet = CharSet.Ansi)]
@@ -176,7 +176,7 @@ internal static partial class Interop
 #pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_extended_operation", CharSet = CharSet.Ansi)]
-        public static extern int ldap_extended_operation(ConnectionHandle ldapHandle, string oid, berval data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        public static extern int ldap_extended_operation(ConnectionHandle ldapHandle, string oid, BerVal data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
         [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_first_attribute", CharSet = CharSet.Ansi)]
@@ -236,7 +236,7 @@ internal static partial class Interop
 #pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_compare_ext", CharSet = CharSet.Ansi)]
-        public static extern int ldap_compare(ConnectionHandle ldapHandle, string dn, string attributeName, berval binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        public static extern int ldap_compare(ConnectionHandle ldapHandle, string dn, string attributeName, BerVal binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
     }
 }

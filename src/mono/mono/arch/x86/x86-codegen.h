@@ -7,7 +7,7 @@
  *   Sergey Chaban (serge@wildwestsoftware.com)
  *   Dietmar Maurer (dietmar@ximian.com)
  *   Patrik Torstensson
- * 
+ *
  * Copyright (C)  2000 Intel Corporation.  All rights reserved.
  * Copyright (C)  2001, 2002 Ximian, Inc.
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
@@ -151,7 +151,7 @@ enum {
 typedef enum {
 	X86_LOCK_PREFIX = 0xF0,
 	X86_REPNZ_PREFIX = 0xF2,
-	X86_REPZ_PREFIX = 0xF3, 
+	X86_REPZ_PREFIX = 0xF3,
 	X86_REP_PREFIX = 0xF3,
 	X86_CS_PREFIX = 0x2E,
 	X86_SS_PREFIX = 0x36,
@@ -165,7 +165,7 @@ typedef enum {
 	X86_ADDRESS_PREFIX = 0x67
 } X86_Prefix;
 
-static const unsigned char 
+static const unsigned char
 x86_cc_unsigned_map [X86_NCC] = {
 	0x74, /* eq  */
 	0x75, /* ne  */
@@ -181,7 +181,7 @@ x86_cc_unsigned_map [X86_NCC] = {
 	0x71, /* no  */
 };
 
-static const unsigned char 
+static const unsigned char
 x86_cc_signed_map [X86_NCC] = {
 	0x74, /* eq  */
 	0x75, /* ne  */
@@ -239,10 +239,10 @@ typedef union {
 //      |	    var[n_arg]	             |
 //      |	    var[n_arg+1]             |  local variables area
 //      |          . . .                 |
-//      |	    var[n_var-1]             | 
+//      |	    var[n_var-1]             |
 //      +--------------------------------+
 //      |			                     |
-//      |			                     |  
+//      |			                     |
 //      |		spill area               | area for spilling mimic stack
 //      |			                     |
 //      +--------------------------------|
@@ -453,7 +453,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 		x86_byte (inst, 0xb1);	\
 		x86_reg_emit ((inst), (reg), (dreg));	\
 	} while (0)
-	
+
 #define x86_cmpxchg_mem_reg(inst,mem,reg)	\
 	do {	\
 		x86_codegen_pre(&(inst), 7); \
@@ -461,7 +461,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 		x86_byte (inst, 0xb1);	\
 		x86_mem_emit ((inst), (reg), (mem));	\
 	} while (0)
-	
+
 #define x86_cmpxchg_membase_reg(inst,basereg,disp,reg)	\
 	do {	\
 		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
@@ -659,7 +659,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 			x86_imm_emit32 ((inst), (imm));	\
 		}	\
 	} while (0)
-	
+
 #define x86_alu_membase8_imm(inst,opc,basereg,disp,imm) 	\
 	do {	\
 		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
@@ -1597,7 +1597,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 	} while (0)
 
 #define x86_push_imm_template(inst) x86_push_imm (inst, 0xf0f0f0f0)
-	
+
 #define x86_push_imm(inst,imm)	\
 	do {	\
 		int _imm = (int) (imm);	\
@@ -1952,7 +1952,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 		x86_imm_emit16 ((inst), (framesize));	\
 		x86_byte(inst, 0);	\
 	} while (0)
-	
+
 #define x86_leave(inst) do { x86_byte (inst, 0xc9); } while (0)
 #define x86_sahf(inst)  do { x86_byte (inst, 0x9e); } while (0)
 
@@ -2040,16 +2040,16 @@ typedef enum {
 	X86_SSE_MOVSHDUP = 0x16,
 	X86_SSE_MOVSLDUP = 0x12,
 	X86_SSE_MOVDDUP = 0x12,
-	
+
 	X86_SSE_PAND = 0xDB,
 	X86_SSE_POR = 0xEB,
 	X86_SSE_PXOR = 0xEF,
-	
+
 	X86_SSE_PADDB = 0xFC,
 	X86_SSE_PADDW = 0xFD,
 	X86_SSE_PADDD = 0xFE,
 	X86_SSE_PADDQ = 0xD4,
-	
+
 	X86_SSE_PSUBB = 0xF8,
 	X86_SSE_PSUBW = 0xF9,
 	X86_SSE_PSUBD = 0xFA,
@@ -2064,7 +2064,7 @@ typedef enum {
 	X86_SSE_PMAXUD = 0x3F, /*sse41*/
 
 	X86_SSE_PMINSB = 0x38, /*sse41*/
-	X86_SSE_PMINSW = 0xEA, 
+	X86_SSE_PMINSW = 0xEA,
 	X86_SSE_PMINSD = 0x39,/*sse41*/
 
 	X86_SSE_PMINUB = 0xDA,
@@ -2085,9 +2085,9 @@ typedef enum {
 	X86_SSE_PCMPGTQ = 0x37, /*sse42*/
 
 	X86_SSE_PSADBW = 0xf6,
-	
+
 	X86_SSE_PSHUFD = 0x70,
-	
+
 	X86_SSE_PUNPCKLBW = 0x60,
 	X86_SSE_PUNPCKLWD = 0x61,
 	X86_SSE_PUNPCKLDQ = 0x62,
@@ -2121,14 +2121,14 @@ typedef enum {
 	X86_SSE_PMULUDQ = 0xF4,
 
 	X86_SSE_PMOVMSKB = 0xD7,
-	
+
 	X86_SSE_PSHIFTW = 0x71,
 	X86_SSE_PSHIFTD = 0x72,
 	X86_SSE_PSHIFTQ = 0x73,
 	X86_SSE_SHR = 2,
 	X86_SSE_SAR = 4,
 	X86_SSE_SHL = 6,
-	
+
 	X86_SSE_PSRLW_REG = 0xD1,
 	X86_SSE_PSRAW_REG = 0xE1,
 	X86_SSE_PSLLW_REG = 0xF1,
@@ -2136,7 +2136,7 @@ typedef enum {
 	X86_SSE_PSRLD_REG = 0xD2,
 	X86_SSE_PSRAD_REG = 0xE2,
 	X86_SSE_PSLLD_REG = 0xF2,
-	
+
 	X86_SSE_PSRLQ_REG = 0xD3,
 	X86_SSE_PSLLQ_REG = 0xF3,
 
@@ -2156,7 +2156,7 @@ typedef enum {
 	X86_SSE_PEXTRW = 0xC5,
 	X86_SSE_PEXTRD = 0x16,/*sse41*/
 
-	X86_SSE_SHUFP = 0xC6,	
+	X86_SSE_SHUFP = 0xC6,
 
 	X86_SSE_CVTDQ2PD = 0xE6,
 	X86_SSE_CVTDQ2PS = 0x5B,

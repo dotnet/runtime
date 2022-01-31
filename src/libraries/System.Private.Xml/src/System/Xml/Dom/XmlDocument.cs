@@ -614,8 +614,8 @@ namespace System.Xml
         // Creates an XmlAttribute with the specified name.
         public XmlAttribute CreateAttribute(string name)
         {
-            string prefix = string.Empty;
-            string localName = string.Empty;
+            string prefix;
+            string localName;
             string namespaceURI = string.Empty;
 
             SplitName(name, out prefix, out localName);
@@ -665,8 +665,8 @@ namespace System.Xml
         // Creates an element with the specified name.
         public XmlElement CreateElement(string name)
         {
-            string prefix = string.Empty;
-            string localName = string.Empty;
+            string prefix;
+            string localName;
             SplitName(name, out prefix, out localName);
             return CreateElement(prefix, localName, string.Empty);
         }
@@ -923,8 +923,8 @@ namespace System.Xml
         // and NamespaceURI.
         public XmlAttribute CreateAttribute(string qualifiedName, string? namespaceURI)
         {
-            string prefix = string.Empty;
-            string localName = string.Empty;
+            string prefix;
+            string localName;
 
             SplitName(qualifiedName, out prefix, out localName);
             return CreateAttribute(prefix, localName, namespaceURI);
@@ -934,8 +934,8 @@ namespace System.Xml
         // NamespaceURI.
         public XmlElement CreateElement(string qualifiedName, string? namespaceURI)
         {
-            string prefix = string.Empty;
-            string localName = string.Empty;
+            string prefix;
+            string localName;
             SplitName(qualifiedName, out prefix, out localName);
             return CreateElement(prefix, localName, namespaceURI);
         }

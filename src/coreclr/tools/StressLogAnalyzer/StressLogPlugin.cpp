@@ -373,7 +373,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
     {
     case    IS_UNINTERESTING:
     case    IS_UNKNOWN:
-        break;    
+        break;
     case    IS_THREAD_WAIT:
     case    IS_THREAD_WAIT_DONE:
         RememberThreadForHeap(tsl->threadId, (int64_t)args[0], GC_THREAD_FG);
@@ -869,7 +869,7 @@ bool ParseOptions(int argc, char* argv[])
                         printf("-f:<format string> expected\n");
                         return false;
                     }
-                    
+
                     // remove double quotes around the string, if given
                     if (actualSize >= 2 && buf[0] == '"' && buf[actualSize - 1] == '"')
                     {
@@ -1234,7 +1234,13 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     StressLog::writing_base_address = (size_t)hdr->memoryBase;
     StressLog::reading_base_address = (size_t)baseAddress;
     s_hdr = hdr;
-    s_threadMsgBuf = new StressThreadAndMsg[MAX_MESSAGE_COUNT];
+
+    // Workaround for clang SIGKILL (exit code 137) crash.  Apparently, clang does not
+    // like large array instantiation on R.H.S of static variable. It was reproduced on
+    // linux-x64 clang v6, v10 and v13.
+    auto temp = new StressThreadAndMsg[MAX_MESSAGE_COUNT];
+    s_threadMsgBuf = temp;
+
     int threadStressLogIndex = 0;
     double latestTime = FindLatestTime(hdr);
     if (s_timeFilterStart < 0)
@@ -1278,7 +1284,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     // the interlocked increment may have increased s_msgCount beyond MAX_MESSAGE_COUNT -
     // make sure we don't go beyond the end of the buffer
     s_msgCount = min(s_msgCount, MAX_MESSAGE_COUNT);
-    
+
     if (s_gcFilterStart != 0)
     {
         // find the time interval that includes the GCs in question
@@ -1363,7 +1369,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
         s_msgCount = remMsgCount;
     }
 
-    // if the sort becomes a bottleneck, we can do a bucket sort by time 
+    // if the sort becomes a bottleneck, we can do a bucket sort by time
     // (say fractions of a second), then sort the individual buckets,
     // perhaps on multiple threads
     qsort(s_threadMsgBuf, s_msgCount, sizeof(s_threadMsgBuf[0]), CmpMsg);
@@ -1454,7 +1460,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
 
     ptrdiff_t usedSize = hdr->memoryCur - hdr->memoryBase;
     ptrdiff_t availSize = hdr->memoryLimit - hdr->memoryCur;
-    printf("Used file size: %6.3f GB, still available: %6.3f GB, %d threads total, %d overwrote earlier messages\n", 
+    printf("Used file size: %6.3f GB, still available: %6.3f GB, %d threads total, %d overwrote earlier messages\n",
         (double)usedSize / (1024 * 1024 * 1024), (double)availSize/ (1024 * 1024 * 1024),
         s_threadStressLogCount, (int)s_wrappedWriteThreadCount);
     if (hdr->threadsWithNoLog != 0)

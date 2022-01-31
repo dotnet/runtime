@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers.Binary;
 using System.CodeDom.Compiler;
 using System.Collections;
@@ -11,10 +10,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -36,13 +32,12 @@ namespace System.Text.RegularExpressions.Generator
             "#nullable enable",
             "#pragma warning disable CS0162 // Unreachable code",
             "#pragma warning disable CS0164 // Unreferenced label",
-            "#pragma warning disable CS0168 // Variable declared but never used",
             "#pragma warning disable CS0219 // Variable assigned but never used",
             "",
         };
 
         /// <summary>Generates the code for one regular expression class.</summary>
-        private static (string, ImmutableArray<Diagnostic>) EmitRegexType(RegexType regexClass)
+        private static (string, ImmutableArray<Diagnostic>) EmitRegexType(RegexType regexClass, Compilation compilation)
         {
             var sb = new StringBuilder(1024);
             var writer = new IndentedTextWriter(new StringWriter(sb));
@@ -60,7 +55,7 @@ namespace System.Text.RegularExpressions.Generator
             var parentClasses = new Stack<string>();
             while (parent is not null)
             {
-                parentClasses.Push($"partial {parent.Keyword} {parent.Name} {parent.Constraints}");
+                parentClasses.Push($"partial {parent.Keyword} {parent.Name}");
                 parent = parent.ParentClass;
             }
             while (parentClasses.Count != 0)
@@ -71,7 +66,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emit the direct parent type
-            writer.WriteLine($"partial {regexClass.Keyword} {regexClass.Name} {regexClass.Constraints}");
+            writer.WriteLine($"partial {regexClass.Keyword} {regexClass.Name}");
             writer.WriteLine("{");
             writer.Indent++;
 
@@ -83,7 +78,7 @@ namespace System.Text.RegularExpressions.Generator
             generatedName += ComputeStringHash(generatedName).ToString("X");
 
             // Generate the regex type
-            ImmutableArray<Diagnostic> diagnostics = EmitRegexMethod(writer, regexClass.Method, generatedName);
+            ImmutableArray<Diagnostic> diagnostics = EmitRegexMethod(writer, regexClass.Method, generatedName, compilation);
 
             while (writer.Indent != 0)
             {
@@ -150,7 +145,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Generates the code for a regular expression method.</summary>
-        private static ImmutableArray<Diagnostic> EmitRegexMethod(IndentedTextWriter writer, RegexMethod rm, string id)
+        private static ImmutableArray<Diagnostic> EmitRegexMethod(IndentedTextWriter writer, RegexMethod rm, string id, Compilation compilation)
         {
             string patternExpression = Literal(rm.Pattern);
             string optionsExpression = Literal(rm.Options);
@@ -174,6 +169,8 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine("}");
                 return ImmutableArray.Create(Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, rm.MethodSyntax.GetLocation()));
             }
+
+            bool allowUnsafe = compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
 
             writer.WriteLine($"new {id}();");
             writer.WriteLine();
@@ -208,7 +205,6 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine(" };");
             }
             writer.WriteLine($"        base.capsize = {rm.Code.CapSize};");
-            writer.WriteLine($"        base.InitializeReferences();");
             writer.WriteLine($"    }}");
             writer.WriteLine("    ");
             writer.WriteLine($"    private sealed class RunnerFactory : global::System.Text.RegularExpressions.RegexRunnerFactory");
@@ -223,22 +219,58 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine();
 
             writer.WriteLine("            // Description:");
-            DescribeExpression(writer, rm.Code.Tree.Root.Child(0), "            // "); // skip implicit root capture
+            DescribeExpression(writer, rm.Code.Tree.Root.Child(0), "            // ", rm.Code); // skip implicit root capture
             writer.WriteLine();
 
             writer.WriteLine($"            protected override bool FindFirstChar()");
             writer.WriteLine($"            {{");
             writer.Indent += 4;
-            EmitFindFirstChar(writer, rm, id);
+            RequiredHelperFunctions requiredHelpers = EmitFindFirstChar(writer, rm, id);
             writer.Indent -= 4;
             writer.WriteLine($"            }}");
             writer.WriteLine();
+            if (allowUnsafe)
+            {
+                writer.WriteLine($"            [global::System.Runtime.CompilerServices.SkipLocalsInit]");
+            }
             writer.WriteLine($"            protected override void Go()");
             writer.WriteLine($"            {{");
             writer.Indent += 4;
-            EmitGo(writer, rm, id);
+            requiredHelpers |= EmitGo(writer, rm, id);
             writer.Indent -= 4;
             writer.WriteLine($"            }}");
+
+            if ((requiredHelpers & RequiredHelperFunctions.IsWordChar) != 0)
+            {
+                writer.WriteLine();
+                writer.WriteLine($"            /// <summary>Determines whether the character is part of the [\\w] set.</summary>");
+                writer.WriteLine($"            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]");
+                writer.WriteLine($"            private static bool IsWordChar(char ch)");
+                writer.WriteLine($"            {{");
+                writer.WriteLine($"                global::System.ReadOnlySpan<byte> ascii = new byte[]");
+                writer.WriteLine($"                {{");
+                writer.WriteLine($"                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,");
+                writer.WriteLine($"                    0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07");
+                writer.WriteLine($"                }};");
+                writer.WriteLine();
+                writer.WriteLine($"                int chDiv8 = ch >> 3;");
+                writer.WriteLine($"                return (uint)chDiv8 < (uint)ascii.Length ?");
+                writer.WriteLine($"                    (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :");
+                writer.WriteLine($"                    global::System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch) switch");
+                writer.WriteLine($"                    {{");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.UppercaseLetter or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.LowercaseLetter or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.TitlecaseLetter or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.ModifierLetter or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.OtherLetter or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.NonSpacingMark or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.DecimalDigitNumber or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.ConnectorPunctuation => true,");
+                writer.WriteLine($"                        _ => false,");
+                writer.WriteLine($"                    }};");
+                writer.WriteLine($"            }}");
+            }
+
             writer.WriteLine($"        }}");
             writer.WriteLine($"    }}");
             writer.WriteLine("}");
@@ -268,22 +300,20 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Emits the body of the FindFirstChar override.</summary>
-        private static void EmitFindFirstChar(IndentedTextWriter writer, RegexMethod rm, string id)
+        private static RequiredHelperFunctions EmitFindFirstChar(IndentedTextWriter writer, RegexMethod rm, string id)
         {
             RegexOptions options = (RegexOptions)rm.Options;
             RegexCode code = rm.Code;
             bool hasTextInfo = false;
+            RequiredHelperFunctions requiredHelpers = RequiredHelperFunctions.None;
 
             // In some cases, we need to emit declarations at the beginning of the method, but we only discover we need them later.
-            // To handle that, we emit a placeholder value that's not valid C#, and then at the end of the code generation we either
-            // delete it if no additional declarations are required, or we replace it with the list of additional declarations
-            // built up while generating code.
+            // To handle that, we build up a collection of all the declarations to include, track where they should be inserted,
+            // and then insert them at that position once everything else has been output.
             var additionalDeclarations = new HashSet<string>();
 
             // Emit locals initialization
-            writer.WriteLine("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
-            writer.WriteLine("int pos = base.runtextpos;");
-            writer.Write($"int end = base.runtextend;");
+            writer.WriteLine("int pos = base.runtextpos, end = base.runtextend;");
             writer.Flush();
             int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
             int additionalDeclarationsIndent = writer.Indent;
@@ -317,7 +347,8 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         case FindNextStartingPositionMode.LeadingPrefix_LeftToRight_CaseSensitive:
                             Debug.Assert(!string.IsNullOrEmpty(code.FindOptimizations.LeadingCaseSensitivePrefix));
-                            EmitIndexOf_LeftToRight(code.FindOptimizations.LeadingCaseSensitivePrefix);
+                            additionalDeclarations.Add("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
+                            EmitIndexOf(code.FindOptimizations.LeadingCaseSensitivePrefix);
                             break;
 
                         case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseSensitive:
@@ -325,7 +356,14 @@ namespace System.Text.RegularExpressions.Generator
                         case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive:
                         case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive:
                             Debug.Assert(code.FindOptimizations.FixedDistanceSets is { Count: > 0 });
-                            EmitFixedSet_LeftToRight();
+                            additionalDeclarations.Add("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
+                            EmitFixedSet();
+                            break;
+
+                        case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
+                            Debug.Assert(code.FindOptimizations.LiteralAfterLoop is not null);
+                            additionalDeclarations.Add("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
+                            EmitLiteralAfterAtomicLoop();
                             break;
 
                         default:
@@ -340,88 +378,132 @@ namespace System.Text.RegularExpressions.Generator
             }
             writer.WriteLine();
 
-            writer.WriteLine("// No match");
-            writer.WriteLine("ReturnFalse:");
+            const string NoStartingPositionFound = "NoStartingPositionFound";
+            writer.WriteLine("// No starting position found");
+            writer.WriteLine($"{NoStartingPositionFound}:");
             writer.WriteLine("base.runtextpos = end;");
             writer.WriteLine("return false;");
 
             // We're done.  Patch up any additional declarations.
             ReplaceAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
-            return;
+            return requiredHelpers;
 
             // Emits any anchors.  Returns true if the anchor roots any match to a specific location and thus no further
             // searching is required; otherwise, false.
             bool EmitAnchors()
             {
-                // Generate anchor checks.
-                if ((code.FindOptimizations.LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End | RegexPrefixAnalyzer.Bol)) != 0)
+                // Anchors that fully implement FindFirstChar, with a check that leads to immediate success or failure determination.
+                switch (code.FindOptimizations.FindMode)
                 {
-                    switch (code.FindOptimizations.LeadingAnchor)
-                    {
-                        case RegexPrefixAnalyzer.Beginning:
-                            writer.WriteLine("// Beginning \\A anchor");
-                            additionalDeclarations.Add("int beginning = base.runtextbeg;");
-                            using (EmitBlock(writer, "if (pos > beginning)"))
-                            {
-                                writer.WriteLine("goto ReturnFalse;");
-                            }
-                            writer.WriteLine("return true;");
-                            return true;
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
+                        writer.WriteLine("// Beginning \\A anchor");
+                        additionalDeclarations.Add("int beginning = base.runtextbeg;");
+                        using (EmitBlock(writer, "if (pos > beginning)"))
+                        {
+                            writer.WriteLine($"goto {NoStartingPositionFound};");
+                        }
+                        writer.WriteLine("return true;");
+                        return true;
 
-                        case RegexPrefixAnalyzer.Start:
-                            writer.WriteLine("// Start \\G anchor");
-                            additionalDeclarations.Add("int start = base.runtextstart;");
-                            using (EmitBlock(writer, "if (pos > start)"))
-                            {
-                                writer.WriteLine("goto ReturnFalse;");
-                            }
-                            writer.WriteLine("return true;");
-                            return true;
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
+                        writer.WriteLine("// Start \\G anchor");
+                        using (EmitBlock(writer, "if (pos > base.runtextstart)"))
+                        {
+                            writer.WriteLine($"goto {NoStartingPositionFound};");
+                        }
+                        writer.WriteLine("return true;");
+                        return true;
 
-                        case RegexPrefixAnalyzer.EndZ:
-                            writer.WriteLine("// End \\Z anchor");
-                            using (EmitBlock(writer, "if (pos < end - 1)"))
-                            {
-                                writer.WriteLine("base.runtextpos = end - 1;");
-                            }
-                            writer.WriteLine("return true;");
-                            return true;
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
+                        writer.WriteLine("// Leading end \\Z anchor");
+                        using (EmitBlock(writer, "if (pos < end - 1)"))
+                        {
+                            writer.WriteLine("base.runtextpos = end - 1;");
+                        }
+                        writer.WriteLine("return true;");
+                        return true;
 
-                        case RegexPrefixAnalyzer.End:
-                            writer.WriteLine("// End \\z anchor");
-                            using (EmitBlock(writer, "if (pos < end)"))
-                            {
-                                writer.WriteLine("base.runtextpos = end;");
-                            }
-                            writer.WriteLine("return true;");
-                            return true;
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
+                        writer.WriteLine("// Leading end \\z anchor");
+                        using (EmitBlock(writer, "if (pos < end)"))
+                        {
+                            writer.WriteLine("base.runtextpos = end;");
+                        }
+                        writer.WriteLine("return true;");
+                        return true;
 
-                        case RegexPrefixAnalyzer.Bol:
-                            // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
-                            // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
-                            // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
-                            // to boost our position to the next line, and then continue normally with any searches.
-                            writer.WriteLine("// Beginning-of-line anchor");
-                            additionalDeclarations.Add("int beginning = base.runtextbeg;");
-                            using (EmitBlock(writer, "if (pos > beginning && inputSpan[pos - 1] != '\\n')"))
+                    case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
+                        // Jump to the end, minus the min required length, which in this case is actually the fixed length, minus 1 (for a possible ending \n).
+                        writer.WriteLine("// Trailing end \\Z anchor with fixed-length match");
+                        using (EmitBlock(writer, $"if (pos < end - {code.Tree.MinRequiredLength + 1})"))
+                        {
+                            writer.WriteLine($"base.runtextpos = end - {code.Tree.MinRequiredLength + 1};");
+                        }
+                        writer.WriteLine("return true;");
+                        return true;
+
+                    case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
+                        // Jump to the end, minus the min required length, which in this case is actually the fixed length.
+                        writer.WriteLine("// Trailing end \\z anchor with fixed-length match");
+                        using (EmitBlock(writer, $"if (pos < end - {code.Tree.MinRequiredLength})"))
+                        {
+                            writer.WriteLine($"base.runtextpos = end - {code.Tree.MinRequiredLength};");
+                        }
+                        writer.WriteLine("return true;");
+                        return true;
+                }
+
+                // Now handle anchors that boost the position but may not determine immediate success or failure.
+
+                switch (code.FindOptimizations.LeadingAnchor)
+                {
+                    case RegexNodeKind.Bol:
+                        // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
+                        // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
+                        // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
+                        // to boost our position to the next line, and then continue normally with any searches.
+                        writer.WriteLine("// Beginning-of-line anchor");
+                        additionalDeclarations.Add("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
+                        additionalDeclarations.Add("int beginning = base.runtextbeg;");
+                        using (EmitBlock(writer, "if (pos > beginning && inputSpan[pos - 1] != '\\n')"))
+                        {
+                            writer.WriteLine("int newlinePos = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos), '\\n');");
+                            using (EmitBlock(writer, "if (newlinePos < 0 || newlinePos + pos + 1 > end)"))
                             {
-                                writer.WriteLine("int newlinePos = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos), '\\n');");
-                                using (EmitBlock(writer, "if (newlinePos < 0 || newlinePos + pos + 1 > end)"))
-                                {
-                                    writer.WriteLine("goto ReturnFalse;");
-                                }
-                                writer.WriteLine("pos = newlinePos + pos + 1;");
+                                writer.WriteLine($"goto {NoStartingPositionFound};");
                             }
-                            writer.WriteLine();
-                            break;
-                    }
+                            writer.WriteLine("pos = newlinePos + pos + 1;");
+                        }
+                        writer.WriteLine();
+                        break;
+                }
+
+                switch (code.FindOptimizations.TrailingAnchor)
+                {
+                    case RegexNodeKind.End when code.FindOptimizations.MaxPossibleLength is int maxLength:
+                        writer.WriteLine("// End \\z anchor with maximum-length match");
+                        using (EmitBlock(writer, $"if (pos < end - {maxLength})"))
+                        {
+                            writer.WriteLine($"pos = end - {maxLength};");
+                        }
+                        writer.WriteLine();
+                        break;
+
+                    case RegexNodeKind.EndZ when code.FindOptimizations.MaxPossibleLength is int maxLength:
+                        writer.WriteLine("// End \\Z anchor with maximum-length match");
+                        using (EmitBlock(writer, $"if (pos < end - {maxLength + 1})"))
+                        {
+                            writer.WriteLine($"pos = end - {maxLength + 1};");
+                        }
+                        writer.WriteLine();
+                        break;
                 }
 
                 return false;
             }
 
-            // Emits a case-sensitive left-to-right prefix search for a string at the beginning of the pattern.
-            void EmitIndexOf_LeftToRight(string prefix)
+            // Emits a case-sensitive prefix search for a string at the beginning of the pattern.
+            void EmitIndexOf(string prefix)
             {
                 writer.WriteLine($"int i = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos, end - pos), {Literal(prefix)});");
                 writer.WriteLine("if (i >= 0)");
@@ -431,9 +513,9 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine("}");
             }
 
-            // Emits a left-to-right search for a set at a fixed position from the start of the pattern,
+            // Emits a search for a set at a fixed position from the start of the pattern,
             // and potentially other sets at other fixed positions in the pattern.
-            void EmitFixedSet_LeftToRight()
+            void EmitFixedSet()
             {
                 List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? sets = code.FindOptimizations.FixedDistanceSets;
                 (char[]? Chars, string Set, int Distance, bool CaseInsensitive) primarySet = sets![0];
@@ -481,7 +563,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"int indexOfPos = {indexOf};");
                         using (EmitBlock(writer, "if (indexOfPos < 0)"))
                         {
-                            writer.WriteLine("goto ReturnFalse;");
+                            writer.WriteLine($"goto {NoStartingPositionFound};");
                         }
                         writer.WriteLine("i += indexOfPos;");
                         writer.WriteLine();
@@ -490,7 +572,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             using (EmitBlock(writer, $"if (i >= span.Length - {minRequiredLength - 1})"))
                             {
-                                writer.WriteLine("goto ReturnFalse;");
+                                writer.WriteLine($"goto {NoStartingPositionFound};");
                             }
                             writer.WriteLine();
                         }
@@ -521,7 +603,7 @@ namespace System.Text.RegularExpressions.Generator
                         for (; setIndex < setsToUse; setIndex++)
                         {
                             string spanIndex = $"span[i{(sets[setIndex].Distance > 0 ? $" + {sets[setIndex].Distance}" : "")}]";
-                            string charInClassExpr = MatchCharacterClass(hasTextInfo, options, spanIndex, sets[setIndex].Set, sets[setIndex].CaseInsensitive, additionalDeclarations);
+                            string charInClassExpr = MatchCharacterClass(hasTextInfo, options, spanIndex, sets[setIndex].Set, sets[setIndex].CaseInsensitive, negate: false, additionalDeclarations, ref requiredHelpers);
 
                             if (setIndex == start)
                             {
@@ -545,6 +627,61 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 loopBlock.Dispose();
+            }
+
+            // Emits a search for a literal following a leading atomic single-character loop.
+            void EmitLiteralAfterAtomicLoop()
+            {
+                Debug.Assert(code.FindOptimizations.LiteralAfterLoop is not null);
+                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = code.FindOptimizations.LiteralAfterLoop.Value;
+
+                Debug.Assert(target.LoopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
+                Debug.Assert(target.LoopNode.N == int.MaxValue);
+
+                using (EmitBlock(writer, "while (true)"))
+                {
+                    writer.WriteLine($"global::System.ReadOnlySpan<char> slice = inputSpan.Slice(pos, end - pos);");
+                    writer.WriteLine();
+
+                    // Find the literal.  If we can't find it, we're done searching.
+                    writer.Write("int i = global::System.MemoryExtensions.");
+                    writer.WriteLine(
+                        target.Literal.String is string literalString ? $"IndexOf(slice, {Literal(literalString)});" :
+                        target.Literal.Chars is not char[] literalChars ? $"IndexOf(slice, {Literal(target.Literal.Char)});" :
+                        literalChars.Length switch
+                        {
+                            2 => $"IndexOfAny(slice, {Literal(literalChars[0])}, {Literal(literalChars[1])});",
+                            3 => $"IndexOfAny(slice, {Literal(literalChars[0])}, {Literal(literalChars[1])}, {Literal(literalChars[2])});",
+                            _ => $"IndexOfAny(slice, {Literal(new string(literalChars))});",
+                        });
+                    using (EmitBlock(writer, $"if (i < 0)"))
+                    {
+                        writer.WriteLine("break;");
+                    }
+                    writer.WriteLine();
+
+                    // We found the literal.  Walk backwards from it finding as many matches as we can against the loop.
+                    writer.WriteLine("int prev = i;");
+                    writer.WriteLine($"while ((uint)--prev < (uint)slice.Length && {MatchCharacterClass(hasTextInfo, options, "slice[prev]", target.LoopNode.Str!, caseInsensitive: false, negate: false, additionalDeclarations, ref requiredHelpers)});");
+
+                    if (target.LoopNode.M > 0)
+                    {
+                        // If we found fewer than needed, loop around to try again.  The loop doesn't overlap with the literal,
+                        // so we can start from after the last place the literal matched.
+                        writer.WriteLine($"if ((i - prev - 1) < {target.LoopNode.M})");
+                        writer.WriteLine("{");
+                        writer.WriteLine("    pos += i + 1;");
+                        writer.WriteLine("    continue;");
+                        writer.WriteLine("}");
+                    }
+                    writer.WriteLine();
+
+                    // We have a winner.  The starting position is just after the last position that failed to match the loop.
+                    // TODO: It'd be nice to be able to communicate i as a place the matching engine can start matching
+                    // after the loop, so that it doesn't need to re-match the loop.
+                    writer.WriteLine("base.runtextpos = pos + prev + 1;");
+                    writer.WriteLine("return true;");
+                }
             }
 
             // If a TextInfo is needed to perform ToLower operations, emits a local initialized to the TextInfo to use.
@@ -574,7 +711,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Emits the body of the Go override.</summary>
-        private static void EmitGo(IndentedTextWriter writer, RegexMethod rm, string id)
+        private static RequiredHelperFunctions EmitGo(IndentedTextWriter writer, RegexMethod rm, string id)
         {
             // In .NET Framework and up through .NET Core 3.1, the code generated for RegexOptions.Compiled was effectively an unrolled
             // version of what RegexInterpreter would process.  The RegexNode tree would be turned into a series of opcodes via
@@ -602,7 +739,7 @@ namespace System.Text.RegularExpressions.Generator
 
             RegexOptions options = (RegexOptions)rm.Options;
             RegexCode code = rm.Code;
-            bool hasTimeout = false;
+            RequiredHelperFunctions requiredHelpers = RequiredHelperFunctions.None;
 
             // Helper to define names.  Names start unadorned, but as soon as there's repetition,
             // they begin to have a numbered suffix.
@@ -610,53 +747,48 @@ namespace System.Text.RegularExpressions.Generator
 
             // Every RegexTree is rooted in the implicit Capture for the whole expression.
             // Skip the Capture node. We handle the implicit root capture specially.
-            RegexNode node = rm.Code.Tree.Root;
-            Debug.Assert(node.Type == RegexNode.Capture, "Every generated tree should begin with a capture node");
+            RegexNode node = code.Tree.Root;
+            Debug.Assert(node.Kind == RegexNodeKind.Capture, "Every generated tree should begin with a capture node");
             Debug.Assert(node.ChildCount() == 1, "Capture nodes should have one child");
             node = node.Child(0);
 
             // In some limited cases, FindFirstChar will only return true if it successfully matched the whole expression.
             // We can special case these to do essentially nothing in Go other than emit the capture.
-            switch (node.Type)
+            switch (node.Kind)
             {
-                case RegexNode.Multi or RegexNode.Notone or RegexNode.One or RegexNode.Set when !IsCaseInsensitive(node):
+                case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set when !IsCaseInsensitive(node):
                     // This is the case for single and multiple characters, though the whole thing is only guaranteed
                     // to have been validated in FindFirstChar when doing case-sensitive comparison.
                     writer.WriteLine($"int start = base.runtextpos;");
-                    writer.WriteLine($"int end = start + {(node.Type == RegexNode.Multi ? node.Str!.Length : 1)};");
+                    writer.WriteLine($"int end = start + {(node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1)};");
                     writer.WriteLine("base.Capture(0, start, end);");
                     writer.WriteLine("base.runtextpos = end;");
-                    return;
+                    return requiredHelpers;
 
-                case RegexNode.Empty:
+                case RegexNodeKind.Empty:
                     // This case isn't common in production, but it's very common when first getting started with the
                     // source generator and seeing what happens as you add more to expressions.  When approaching
                     // it from a learning perspective, this is very common, as it's the empty string you start with.
                     writer.WriteLine("base.Capture(0, base.runtextpos, base.runtextpos);");
-                    return;
+                    return requiredHelpers;
             }
 
             // In some cases, we need to emit declarations at the beginning of the method, but we only discover we need them later.
-            // To handle that, we emit a placeholder value that's not valid C#, and then at the end of the code generation we either
-            // delete it if no additional declarations are required, or we replace it with the list of additional declarations
-            // built up while generating code.
+            // To handle that, we build up a collection of all the declarations to include, track where they should be inserted,
+            // and then insert them at that position once everything else has been output.
             var additionalDeclarations = new HashSet<string>();
             var additionalLocalFunctions = new Dictionary<string, string[]>();
 
             // Declare some locals.
             string sliceSpan = "slice";
             writer.WriteLine("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
-            writer.WriteLine("int pos = base.runtextpos;");
-            writer.WriteLine("int end = base.runtextend;");
+            writer.WriteLine("int pos = base.runtextpos, end = base.runtextend;");
             writer.WriteLine($"int original_pos = pos;");
-            hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
+            bool hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
+            bool hasTextInfo = EmitInitializeCultureForGoIfNecessary(writer, rm);
             writer.Flush();
             int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
             int additionalDeclarationsIndent = writer.Indent;
-            writer.WriteLine();
-
-            // TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo; // only if the whole expression or any subportion is ignoring case, and we're not using invariant
-            bool hasTextInfo = EmitInitializeCultureForGoIfNecessary(writer, rm);
 
             // The implementation tries to use const indexes into the span wherever possible, which we can do
             // for all fixed-length constructs.  In such cases (e.g. single chars, repeaters, strings, etc.)
@@ -686,6 +818,7 @@ namespace System.Text.RegularExpressions.Generator
             EmitNode(node);
 
             // If we fall through to this place in the code, we've successfully matched the expression.
+            writer.WriteLine();
             writer.WriteLine("// The input matched.");
             if (sliceStaticPos > 0)
             {
@@ -725,7 +858,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            return;
+            return requiredHelpers;
 
             // Helper to create a name guaranteed to be unique within the function.
             string ReserveName(string prefix)
@@ -791,7 +924,8 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code for an alternation.
             void EmitAlternation(RegexNode node)
             {
-                Debug.Assert(node.Type is RegexNode.Alternate, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Alternate, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.ChildCount() >= 2, $"Expected at least 2 children, found {node.ChildCount()}");
 
                 int childCount = node.ChildCount();
                 Debug.Assert(childCount >= 2);
@@ -801,7 +935,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Both atomic and non-atomic are supported.  While a parent RegexNode.Atomic node will itself
                 // successfully prevent backtracking into this child node, we can emit better / cheaper code
                 // for an Alternate when it is atomic, so we still take it into account here.
-                Debug.Assert(node.Next is not null);
+                Debug.Assert(node.Parent is not null);
                 bool isAtomic = node.IsAtomicByParent();
 
                 // If no child branch overlaps with another child branch, we can emit more streamlined code
@@ -825,16 +959,58 @@ namespace System.Text.RegularExpressions.Generator
                     }
                 }
 
+                // Detect whether every branch begins with one or more unique characters.
+                const int SetCharsSize = 5; // arbitrary limit (for IgnoreCase, we want this to be at least 3 to handle the vast majority of values)
+                Span<char> setChars = stackalloc char[SetCharsSize];
                 if (useSwitchedBranches)
                 {
+                    // Iterate through every branch, seeing if we can easily find a starting One, Multi, or small Set.
+                    // If we can, extract its starting char (or multiple in the case of a set), validate that all such
+                    // starting characters are unique relative to all the branches.
                     var seenChars = new HashSet<char>();
-                    for (int i = 0; i < childCount; i++)
+                    for (int i = 0; i < childCount && useSwitchedBranches; i++)
                     {
-                        if (node.Child(i).FindBranchOneOrMultiStart() is not RegexNode oneOrMulti ||
-                            !seenChars.Add(oneOrMulti.FirstCharOfOneOrMulti()))
+                        // If it's not a One, Multi, or Set, we can't apply this optimization.
+                        // If it's IgnoreCase (and wasn't reduced to a non-IgnoreCase set), also ignore it to keep the logic simple.
+                        if (node.Child(i).FindBranchOneMultiOrSetStart() is not RegexNode oneMultiOrSet ||
+                            (oneMultiOrSet.Options & RegexOptions.IgnoreCase) != 0) // TODO: https://github.com/dotnet/runtime/issues/61048
                         {
                             useSwitchedBranches = false;
                             break;
+                        }
+
+                        // If it's a One or a Multi, get the first character and add it to the set.
+                        // If it was already in the set, we can't apply this optimization.
+                        if (oneMultiOrSet.Kind is RegexNodeKind.One or RegexNodeKind.Multi)
+                        {
+                            if (!seenChars.Add(oneMultiOrSet.FirstCharOfOneOrMulti()))
+                            {
+                                useSwitchedBranches = false;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            // The branch begins with a set.  Make sure it's a set of only a few characters
+                            // and get them.  If we can't, we can't apply this optimization.
+                            Debug.Assert(oneMultiOrSet.Kind is RegexNodeKind.Set);
+                            int numChars;
+                            if (RegexCharClass.IsNegated(oneMultiOrSet.Str!) ||
+                                (numChars = RegexCharClass.GetSetChars(oneMultiOrSet.Str!, setChars)) == 0)
+                            {
+                                useSwitchedBranches = false;
+                                break;
+                            }
+
+                            // Check to make sure each of the chars is unique relative to all other branches examined.
+                            foreach (char c in setChars.Slice(0, numChars))
+                            {
+                                if (!seenChars.Add(c))
+                                {
+                                    useSwitchedBranches = false;
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
@@ -842,7 +1018,10 @@ namespace System.Text.RegularExpressions.Generator
                 if (useSwitchedBranches)
                 {
                     // Note: This optimization does not exist with RegexOptions.Compiled.  Here we rely on the
-                    // C# compiler to lower the C# switch statement with appropriate optimizations.
+                    // C# compiler to lower the C# switch statement with appropriate optimizations. In some
+                    // cases there are enough branches that the compiler will emit a jump table.  In others
+                    // it'll optimize the order of checks in order to minimize the total number in the worst
+                    // case.  In any case, we get easier to read and reason about C#.
                     EmitSwitchedBranches();
                 }
                 else
@@ -859,8 +1038,9 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
 
                     // Emit a switch statement on the first char of each branch.
-                    using (EmitBlock(writer, $"switch ({ToLowerIfNeeded(hasTextInfo, options, $"{sliceSpan}[{sliceStaticPos++}]", IsCaseInsensitive(node))})"))
+                    using (EmitBlock(writer, $"switch ({sliceSpan}[{sliceStaticPos++}])"))
                     {
+                        Span<char> setChars = stackalloc char[SetCharsSize]; // needs to be same size as detection check in caller
                         int startingSliceStaticPos = sliceStaticPos;
 
                         // Emit a case for each branch.
@@ -869,25 +1049,36 @@ namespace System.Text.RegularExpressions.Generator
                             sliceStaticPos = startingSliceStaticPos;
 
                             RegexNode child = node.Child(i);
-                            Debug.Assert(child.Type is RegexNode.One or RegexNode.Multi or RegexNode.Concatenate, DescribeNode(child));
-                            Debug.Assert(child.Type is not RegexNode.Concatenate || (child.ChildCount() >= 2 && child.Child(0).Type is RegexNode.One or RegexNode.Multi));
+                            Debug.Assert(child.Kind is RegexNodeKind.One or RegexNodeKind.Multi or RegexNodeKind.Set or RegexNodeKind.Concatenate, DescribeNode(child, rm.Code));
+                            Debug.Assert(child.Kind is not RegexNodeKind.Concatenate || (child.ChildCount() >= 2 && child.Child(0).Kind is RegexNodeKind.One or RegexNodeKind.Multi or RegexNodeKind.Set));
 
-                            RegexNode? childStart = child.FindBranchOneOrMultiStart();
-                            Debug.Assert(childStart is not null, DescribeNode(child));
+                            RegexNode? childStart = child.FindBranchOneMultiOrSetStart();
+                            Debug.Assert(childStart is not null, "Unexpectedly couldn't find the branch starting node.");
+                            Debug.Assert((childStart.Options & RegexOptions.IgnoreCase) == 0, "Expected only to find non-IgnoreCase branch starts");
 
-                            writer.WriteLine($"case {Literal(childStart.FirstCharOfOneOrMulti())}:");
+                            if (childStart.Kind is RegexNodeKind.Set)
+                            {
+                                int numChars = RegexCharClass.GetSetChars(childStart.Str!, setChars);
+                                Debug.Assert(numChars != 0);
+                                writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(c => Literal(c)))}:");
+                            }
+                            else
+                            {
+                                writer.WriteLine($"case {Literal(childStart.FirstCharOfOneOrMulti())}:");
+                            }
                             writer.Indent++;
 
                             // Emit the code for the branch, without the first character that was already matched in the switch.
-                            switch (child.Type)
+                            switch (child.Kind)
                             {
-                                case RegexNode.Multi:
+                                case RegexNodeKind.Multi:
                                     EmitNode(CloneMultiWithoutFirstChar(child));
+                                    writer.WriteLine();
                                     break;
 
-                                case RegexNode.Concatenate:
-                                    var newConcat = new RegexNode(RegexNode.Concatenate, child.Options);
-                                    if (childStart.Type == RegexNode.Multi)
+                                case RegexNodeKind.Concatenate:
+                                    var newConcat = new RegexNode(RegexNodeKind.Concatenate, child.Options);
+                                    if (childStart.Kind == RegexNodeKind.Multi)
                                     {
                                         newConcat.AddChild(CloneMultiWithoutFirstChar(childStart));
                                     }
@@ -897,16 +1088,17 @@ namespace System.Text.RegularExpressions.Generator
                                         newConcat.AddChild(child.Child(j));
                                     }
                                     EmitNode(newConcat.Reduce());
+                                    writer.WriteLine();
                                     break;
 
-                                static RegexNode CloneMultiWithoutFirstChar(RegexNode node)
-                                {
-                                    Debug.Assert(node.Type is RegexNode.Multi);
-                                    Debug.Assert(node.Str!.Length >= 2);
-                                    return node.Str!.Length == 2 ?
-                                        new RegexNode(RegexNode.One, node.Options, node.Str![1]) :
-                                        new RegexNode(RegexNode.Multi, node.Options, node.Str!.Substring(1));
-                                }
+                                    static RegexNode CloneMultiWithoutFirstChar(RegexNode node)
+                                    {
+                                        Debug.Assert(node.Kind is RegexNodeKind.Multi);
+                                        Debug.Assert(node.Str!.Length >= 2);
+                                        return node.Str!.Length == 2 ?
+                                            new RegexNode(RegexNodeKind.One, node.Options, node.Str![1]) :
+                                            new RegexNode(RegexNodeKind.Multi, node.Options, node.Str!.Substring(1));
+                                    }
                             }
 
                             // This is only ever used for atomic alternations, so we can simply reset the doneLabel
@@ -937,8 +1129,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // Save off pos.  We'll need to reset this each time a branch fails.
                     string startingPos = ReserveName("alternation_starting_pos");
-                    additionalDeclarations.Add($"int {startingPos} = 0;");
-                    writer.WriteLine($"{startingPos} = pos;");
+                    writer.WriteLine($"int {startingPos} = pos;");
                     int startingSliceStaticPos = sliceStaticPos;
 
                     // We need to be able to undo captures in two situations:
@@ -965,8 +1156,7 @@ namespace System.Text.RegularExpressions.Generator
                     if (expressionHasCaptures && ((node.Options & RegexNode.HasCapturesFlag) != 0 || !isAtomic))
                     {
                         startingCapturePos = ReserveName("alternation_starting_capturepos");
-                        additionalDeclarations.Add($"int {startingCapturePos} = 0;");
-                        writer.WriteLine($"{startingCapturePos} = base.Crawlpos();");
+                        writer.WriteLine($"int {startingCapturePos} = base.Crawlpos();");
                     }
                     writer.WriteLine();
 
@@ -982,72 +1172,77 @@ namespace System.Text.RegularExpressions.Generator
 
                     for (int i = 0; i < childCount; i++)
                     {
-                        using var __ = EmitScope(writer, $"Branch {i}", faux: !isAtomic);
-                        bool isLastBranch = i == childCount - 1;
-
-                        string? nextBranch = null;
-                        if (!isLastBranch)
+                        using (EmitScope(writer, $"Branch {i}", faux: !isAtomic))
                         {
-                            // Failure to match any branch other than the last one should result
-                            // in jumping to process the next branch.
-                            nextBranch = ReserveName("AlternationBranch");
-                            doneLabel = nextBranch;
-                        }
-                        else
-                        {
-                            // Failure to match the last branch is equivalent to failing to match
-                            // the whole alternation, which means those failures should jump to
-                            // what "doneLabel" was defined as when starting the alternation.
-                            doneLabel = originalDoneLabel;
-                        }
+                            bool isLastBranch = i == childCount - 1;
 
-                        // Emit the code for each branch.
-                        EmitNode(node.Child(i));
-
-                        // Add this branch to the backtracking table.  At this point, either the child
-                        // had backtracking constructs, in which case doneLabel points to the last one
-                        // and that's where we'll want to jump to, or it doesn't, in which case doneLabel
-                        // still points to the nextBranch, which similarly is where we'll want to jump to.
-                        if (!isAtomic)
-                        {
-                            EmitStackPush(startingCapturePos is not null ?
-                                new[] { i.ToString(), startingPos, startingCapturePos } :
-                                new[] { i.ToString(), startingPos });
-                        }
-                        labelMap[i] = doneLabel;
-
-                        // If we get here in the generated code, the branch completed successfully.
-                        // Before jumping to the end, we need to zero out sliceStaticPos, so that no
-                        // matter what the value is after the branch, whatever follows the alternate
-                        // will see the same sliceStaticPos.
-                        TransferSliceStaticPosToPos();
-                        if (!isLastBranch || !isAtomic)
-                        {
-                            // If this isn't the last branch, we're about to output a reset section,
-                            // and if this isn't atomic, there will be a backtracking section before
-                            // the end of the method.  In both of those cases, we've successfully
-                            // matched and need to skip over that code.  If, however, this is the
-                            // last branch and this is an atomic alternation, we can just fall
-                            // through to the successfully matched location.
-                            writer.WriteLine($"goto {matchLabel};");
-                            writer.WriteLine();
-                        }
-
-                        // Reset state for next branch and loop around to generate it.  This includes
-                        // setting pos back to what it was at the beginning of the alternation,
-                        // updating slice to be the full length it was, and if there's a capture that
-                        // needs to be reset, uncapturing it.
-                        if (!isLastBranch)
-                        {
-                            MarkLabel(nextBranch!, emitSemicolon: false);
-                            writer.WriteLine($"pos = {startingPos};");
-                            SliceInputSpan(writer);
-                            sliceStaticPos = startingSliceStaticPos;
-                            if (startingCapturePos is not null)
+                            string? nextBranch = null;
+                            if (!isLastBranch)
                             {
-                                EmitUncaptureUntil(startingCapturePos);
+                                // Failure to match any branch other than the last one should result
+                                // in jumping to process the next branch.
+                                nextBranch = ReserveName("AlternationBranch");
+                                doneLabel = nextBranch;
+                            }
+                            else
+                            {
+                                // Failure to match the last branch is equivalent to failing to match
+                                // the whole alternation, which means those failures should jump to
+                                // what "doneLabel" was defined as when starting the alternation.
+                                doneLabel = originalDoneLabel;
+                            }
+
+                            // Emit the code for each branch.
+                            EmitNode(node.Child(i));
+                            writer.WriteLine();
+
+                            // Add this branch to the backtracking table.  At this point, either the child
+                            // had backtracking constructs, in which case doneLabel points to the last one
+                            // and that's where we'll want to jump to, or it doesn't, in which case doneLabel
+                            // still points to the nextBranch, which similarly is where we'll want to jump to.
+                            if (!isAtomic)
+                            {
+                                EmitStackPush(startingCapturePos is not null ?
+                                    new[] { i.ToString(), startingPos, startingCapturePos } :
+                                    new[] { i.ToString(), startingPos });
+                            }
+                            labelMap[i] = doneLabel;
+
+                            // If we get here in the generated code, the branch completed successfully.
+                            // Before jumping to the end, we need to zero out sliceStaticPos, so that no
+                            // matter what the value is after the branch, whatever follows the alternate
+                            // will see the same sliceStaticPos.
+                            TransferSliceStaticPosToPos();
+                            if (!isLastBranch || !isAtomic)
+                            {
+                                // If this isn't the last branch, we're about to output a reset section,
+                                // and if this isn't atomic, there will be a backtracking section before
+                                // the end of the method.  In both of those cases, we've successfully
+                                // matched and need to skip over that code.  If, however, this is the
+                                // last branch and this is an atomic alternation, we can just fall
+                                // through to the successfully matched location.
+                                writer.WriteLine($"goto {matchLabel};");
+                            }
+
+                            // Reset state for next branch and loop around to generate it.  This includes
+                            // setting pos back to what it was at the beginning of the alternation,
+                            // updating slice to be the full length it was, and if there's a capture that
+                            // needs to be reset, uncapturing it.
+                            if (!isLastBranch)
+                            {
+                                writer.WriteLine();
+                                MarkLabel(nextBranch!, emitSemicolon: false);
+                                writer.WriteLine($"pos = {startingPos};");
+                                SliceInputSpan(writer);
+                                sliceStaticPos = startingSliceStaticPos;
+                                if (startingCapturePos is not null)
+                                {
+                                    EmitUncaptureUntil(startingCapturePos);
+                                }
                             }
                         }
+
+                        writer.WriteLine();
                     }
 
                     // We should never fall through to this location in the generated code.  Either
@@ -1075,7 +1270,6 @@ namespace System.Text.RegularExpressions.Generator
                             {
                                 writer.WriteLine($"case {i}: goto {labelMap[i]};");
                             }
-                            writer.WriteLine("default: global::System.Diagnostics.Debug.Fail(\"Unknown backtracking location\"); break;");
                         }
                         writer.WriteLine();
                     }
@@ -1089,17 +1283,21 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code to handle a backreference.
             void EmitBackreference(RegexNode node)
             {
-                Debug.Assert(node.Type is RegexNode.Ref, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Backreference, $"Unexpected type: {node.Kind}");
 
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
 
-                TransferSliceStaticPosToPos();
+                if (sliceStaticPos > 0)
+                {
+                    TransferSliceStaticPosToPos();
+                    writer.WriteLine();
+                }
 
                 // If the specified capture hasn't yet captured anything, fail to match... except when using RegexOptions.ECMAScript,
                 // in which case per ECMA 262 section 21.2.2.9 the backreference should succeed.
                 if ((node.Options & RegexOptions.ECMAScript) != 0)
                 {
-                    writer.WriteLine($"// If the {DescribeNonNegative(node.M)} capture hasn't matched, the backreference matches with RegexOptions.ECMAScript rules.");
+                    writer.WriteLine($"// If the {DescribeCapture(node.M, rm.Code)} hasn't matched, the backreference matches with RegexOptions.ECMAScript rules.");
                     using (EmitBlock(writer, $"if (base.IsMatched({capnum}))"))
                     {
                         EmitWhenHasCapture();
@@ -1107,7 +1305,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    writer.WriteLine($"// If the {DescribeNonNegative(node.M)} capture hasn't matched, the backreference doesn't match.");
+                    writer.WriteLine($"// If the {DescribeCapture(node.M, rm.Code)} hasn't matched, the backreference doesn't match.");
                     using (EmitBlock(writer, $"if (!base.IsMatched({capnum}))"))
                     {
                         writer.WriteLine($"goto {doneLabel};");
@@ -1120,15 +1318,15 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     writer.WriteLine("// Get the captured text.  If it doesn't match at the current position, the backreference doesn't match.");
 
-                    string matchLength = ReserveName("backreference_matchLength");
-                    writer.WriteLine($"int {matchLength} = base.MatchLength({capnum});");
+                    additionalDeclarations.Add("int matchLength = 0;");
+                    writer.WriteLine($"matchLength = base.MatchLength({capnum});");
 
                     if (!IsCaseInsensitive(node))
                     {
                         // If we're case-sensitive, we can simply validate that the remaining length of the slice is sufficient
                         // to possibly match, and then do a SequenceEqual against the matched text.
-                        writer.WriteLine($"if ({sliceSpan}.Length < {matchLength} || ");
-                        using (EmitBlock(writer, $"    !global::System.MemoryExtensions.SequenceEqual(inputSpan.Slice(base.MatchIndex({capnum}), {matchLength}), {sliceSpan}.Slice(0, {matchLength})))"))
+                        writer.WriteLine($"if ({sliceSpan}.Length < matchLength || ");
+                        using (EmitBlock(writer, $"    !global::System.MemoryExtensions.SequenceEqual(inputSpan.Slice(base.MatchIndex({capnum}), matchLength), {sliceSpan}.Slice(0, matchLength)))"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
@@ -1136,18 +1334,17 @@ namespace System.Text.RegularExpressions.Generator
                     else
                     {
                         // For case-insensitive, we have to walk each character individually.
-                        string matchIndex = ReserveName("backreference_matchIndex");
-                        string i = ReserveName("backreference_iteration");
-
-                        using (EmitBlock(writer, $"if ({sliceSpan}.Length < {matchLength})"))
+                        using (EmitBlock(writer, $"if ({sliceSpan}.Length < matchLength)"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
                         writer.WriteLine();
-                        writer.WriteLine($"int {matchIndex} = base.MatchIndex({capnum});");
-                        using (EmitBlock(writer, $"for (int {i} = 0; {i} < {matchLength}; {i}++)"))
+
+                        additionalDeclarations.Add("int matchIndex = 0;");
+                        writer.WriteLine($"matchIndex = base.MatchIndex({capnum});");
+                        using (EmitBlock(writer, $"for (int i = 0; i < matchLength; i++)"))
                         {
-                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"inputSpan[{matchIndex} + {i}]")} != {ToLower(hasTextInfo, options, $"{sliceSpan}[{i}]")})"))
+                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"inputSpan[matchIndex + i]")} != {ToLower(hasTextInfo, options, $"{sliceSpan}[i]")})"))
                             {
                                 writer.WriteLine($"goto {doneLabel};");
                             }
@@ -1155,7 +1352,7 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     writer.WriteLine();
 
-                    writer.WriteLine($"pos += {matchLength};");
+                    writer.WriteLine($"pos += matchLength;");
                     SliceInputSpan(writer);
                 }
             }
@@ -1163,7 +1360,8 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code for an if(backreference)-then-else conditional.
             void EmitBackreferenceConditional(RegexNode node)
             {
-                Debug.Assert(node.Type is RegexNode.Testref, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.BackreferenceConditional, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.ChildCount() == 2, $"Expected 2 children, found {node.ChildCount()}");
 
                 // We're branching in a complicated fashion.  Make sure sliceStaticPos is 0.
                 TransferSliceStaticPosToPos();
@@ -1171,9 +1369,10 @@ namespace System.Text.RegularExpressions.Generator
                 // Get the capture number to test.
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
 
-                // Get the "yes" branch and the optional "no" branch, if it exists.
+                // Get the "yes" branch and the "no" branch.  The "no" branch is optional in syntax and is thus
+                // somewhat likely to be Empty.
                 RegexNode yesBranch = node.Child(0);
-                RegexNode? noBranch = node.ChildCount() > 1 && node.Child(1) is { Type: not RegexNode.Empty } childNo ? childNo : null;
+                RegexNode? noBranch = node.Child(1) is { Kind: not RegexNodeKind.Empty } childNo ? childNo : null;
                 string originalDoneLabel = doneLabel;
 
                 // If the child branches might backtrack, we can't emit the branches inside constructs that
@@ -1183,8 +1382,9 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, $"if (base.IsMatched({capnum}))"))
                     {
-                        writer.WriteLine($"// The {DescribeNonNegative(node.M)} capture group captured a value.  Match the first branch.");
+                        writer.WriteLine($"// The {DescribeCapture(node.M, rm.Code)} captured a value.  Match the first branch.");
                         EmitNode(yesBranch);
+                        writer.WriteLine();
                         TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     }
 
@@ -1194,27 +1394,30 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             writer.WriteLine($"// Otherwise, match the second branch.");
                             EmitNode(noBranch);
+                            writer.WriteLine();
                             TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                         }
                     }
 
-                    doneLabel = originalDoneLabel;
+                    doneLabel = originalDoneLabel; // atomicity
                     return;
                 }
+
+                string refNotMatched = ReserveName("ConditionalBackreferenceNotMatched");
+                string endConditional = ReserveName("ConditionalBackreferenceEnd");
 
                 // As with alternations, we have potentially multiple branches, each of which may contain
                 // backtracking constructs, but the expression after the conditional needs a single target
                 // to backtrack to.  So, we expose a single Backtrack label and track which branch was
                 // followed in this resumeAt local.
                 string resumeAt = ReserveName("conditionalbackreference_branch");
-                additionalDeclarations.Add($"int {resumeAt} = 0;");
+                writer.WriteLine($"int {resumeAt} = 0;");
 
                 // While it would be nicely readable to use an if/else block, if the branches contain
                 // anything that triggers backtracking, labels will end up being defined, and if they're
                 // inside the scope block for the if or else, that will prevent jumping to them from
                 // elsewhere.  So we implement the if/else with labels and gotos manually.
                 // Check to see if the specified capture number was captured.
-                string refNotMatched = ReserveName("ConditionalBackreferenceNotMatched");
                 using (EmitBlock(writer, $"if (!base.IsMatched({capnum}))"))
                 {
                     writer.WriteLine($"goto {refNotMatched};");
@@ -1224,16 +1427,18 @@ namespace System.Text.RegularExpressions.Generator
                 // The specified capture was captured.  Run the "yes" branch.
                 // If it successfully matches, jump to the end.
                 EmitNode(yesBranch);
+                writer.WriteLine();
                 TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 string postYesDoneLabel = doneLabel;
                 if (postYesDoneLabel != originalDoneLabel)
                 {
                     writer.WriteLine($"{resumeAt} = 0;");
                 }
-                string endRef = ReserveName("ConditionalBackreferenceEnd");
-                if (postYesDoneLabel != originalDoneLabel || noBranch is not null)
+
+                bool needsEndConditional = postYesDoneLabel != originalDoneLabel || noBranch is not null;
+                if (needsEndConditional)
                 {
-                    writer.WriteLine($"goto {endRef};");
+                    writer.WriteLine($"goto {endConditional};");
                     writer.WriteLine();
                 }
 
@@ -1241,10 +1446,10 @@ namespace System.Text.RegularExpressions.Generator
                 string postNoDoneLabel = originalDoneLabel;
                 if (noBranch is not null)
                 {
-                    // The earlier base.IsMatched returning false will jump to here.
                     // Output the no branch.
                     doneLabel = originalDoneLabel;
                     EmitNode(noBranch);
+                    writer.WriteLine();
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
                     if (postNoDoneLabel != originalDoneLabel)
@@ -1265,16 +1470,19 @@ namespace System.Text.RegularExpressions.Generator
 
                 // If either the yes branch or the no branch contained backtracking, subsequent expressions
                 // might try to backtrack to here, so output a backtracking map based on resumeAt.
-                if (postYesDoneLabel != originalDoneLabel || postNoDoneLabel != originalDoneLabel)
+                bool hasBacktracking = postYesDoneLabel != originalDoneLabel || postNoDoneLabel != originalDoneLabel;
+                if (hasBacktracking)
                 {
                     // Skip the backtracking section.
-                    writer.WriteLine($"goto {endRef};");
+                    writer.WriteLine($"goto {endConditional};");
                     writer.WriteLine();
 
+                    // Backtrack section
                     string backtrack = ReserveName("ConditionalBackreferenceBacktrack");
                     doneLabel = backtrack;
                     MarkLabel(backtrack);
 
+                    // Pop from the stack the branch that was used and jump back to its backtracking location.
                     EmitStackPop(resumeAt);
                     using (EmitBlock(writer, $"switch ({resumeAt})"))
                     {
@@ -1292,104 +1500,123 @@ namespace System.Text.RegularExpressions.Generator
                     }
                 }
 
-                if (postYesDoneLabel != originalDoneLabel || noBranch is not null)
+                if (needsEndConditional)
                 {
-                    MarkLabel(endRef);
-                    if (postYesDoneLabel != originalDoneLabel || postNoDoneLabel != originalDoneLabel)
-                    {
-                        EmitStackPush(resumeAt);
-                    }
+                    MarkLabel(endConditional);
+                }
+
+                if (hasBacktracking)
+                {
+                    // We're not atomic and at least one of the yes or no branches contained backtracking constructs,
+                    // so finish outputting our backtracking logic, which involves pushing onto the stack which
+                    // branch to backtrack into.
+                    EmitStackPush(resumeAt);
                 }
             }
 
             // Emits the code for an if(expression)-then-else conditional.
             void EmitExpressionConditional(RegexNode node)
             {
-                Debug.Assert(node.Type is RegexNode.Testgroup, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.ExpressionConditional, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.ChildCount() == 3, $"Expected 3 children, found {node.ChildCount()}");
 
                 bool isAtomic = node.IsAtomicByParent();
 
                 // We're branching in a complicated fashion.  Make sure sliceStaticPos is 0.
                 TransferSliceStaticPosToPos();
 
-                // The first child node is the conditional expression.  If this matches, then we branch to the "yes" branch.
+                // The first child node is the condition expression.  If this matches, then we branch to the "yes" branch.
                 // If it doesn't match, then we branch to the optional "no" branch if it exists, or simply skip the "yes"
-                // branch, otherwise. The conditional is treated as a positive lookahead if it isn't already one.
-                RegexNode conditional = node.Child(0);
-                if (conditional is { Type: RegexNode.Require })
+                // branch, otherwise. The condition is treated as a positive lookahead.
+                RegexNode condition = node.Child(0);
+
+                // Get the "yes" branch and the "no" branch.  The "no" branch is optional in syntax and is thus
+                // somewhat likely to be Empty.
+                RegexNode yesBranch = node.Child(1);
+                RegexNode? noBranch = node.Child(2) is { Kind: not RegexNodeKind.Empty } childNo ? childNo : null;
+                string originalDoneLabel = doneLabel;
+
+                string expressionNotMatched = ReserveName("ConditionalExpressionNotMatched");
+                string endConditional = ReserveName("ConditionalExpressionEnd");
+
+                // As with alternations, we have potentially multiple branches, each of which may contain
+                // backtracking constructs, but the expression after the condition needs a single target
+                // to backtrack to.  So, we expose a single Backtrack label and track which branch was
+                // followed in this resumeAt local.
+                string resumeAt = ReserveName("conditionalexpression_branch");
+                if (!isAtomic)
                 {
-                    conditional = conditional.Child(0);
+                    writer.WriteLine($"int {resumeAt} = 0;");
                 }
 
-                // Get the "yes" branch and the optional "no" branch, if it exists.
-                RegexNode yesBranch = node.Child(1);
-                RegexNode? noBranch = node.ChildCount() > 2 && node.Child(2) is { Type: not RegexNode.Empty } childNo ? childNo : null;
-
-                string end = ReserveName("end");
-                string? no = noBranch is not null ? ReserveName("ConditionalExpressionNoBranch") : null;
-
-                // If the conditional expression has captures, we'll need to uncapture them in the case of no match.
+                // If the condition expression has captures, we'll need to uncapture them in the case of no match.
                 string? startingCapturePos = null;
-                if ((conditional.Options & RegexNode.HasCapturesFlag) != 0)
+                if ((condition.Options & RegexNode.HasCapturesFlag) != 0)
                 {
                     startingCapturePos = ReserveName("conditionalexpression_starting_capturepos");
                     writer.WriteLine($"int {startingCapturePos} = base.Crawlpos();");
-                    writer.WriteLine();
                 }
 
-                // Emit the conditional expression.  We need to reroute any match failures to either the "no" branch
-                // if it exists, or to the end of the node (skipping the "yes" branch) if it doesn't.
-                string originalDoneLabel = doneLabel;
-                string tmpDoneLabel = no ?? end;
-                doneLabel = tmpDoneLabel;
-                EmitPositiveLookaheadAssertionChild(conditional);
-                if (doneLabel == tmpDoneLabel)
-                {
-                    doneLabel = originalDoneLabel;
-                }
+                // Emit the condition expression.  Route any failures to after the yes branch.  This code is almost
+                // the same as for a positive lookahead; however, a positive lookahead only needs to reset the position
+                // on a successful match, as a failed match fails the whole expression; here, we need to reset the
+                // position on completion, regardless of whether the match is successful or not.
+                doneLabel = expressionNotMatched;
 
-                string postConditionalDoneLabel = doneLabel;
-                string resumeAt = ReserveName("conditionalexpression_resumeAt");
-                if (!isAtomic)
-                {
-                    additionalDeclarations.Add($"int {resumeAt} = 0;");
-                }
-
-                // If we get to this point of the code, the conditional successfully matched, so run the "yes" branch.
-                // Since the "yes" branch may have a different execution path than the "no" branch or the lack of
-                // any branch, we need to store the current sliceStaticPos and reset it prior to emitting the code
-                // for what comes after the "yes" branch, so that everyone is on equal footing.
+                // Save off pos.  We'll need to reset this upon successful completion of the lookahead.
+                string startingPos = ReserveName("conditionalexpression_starting_pos");
+                writer.WriteLine($"int {startingPos} = pos;");
+                writer.WriteLine();
                 int startingSliceStaticPos = sliceStaticPos;
+
+                // Emit the child. The condition expression is a zero-width assertion, which is atomic,
+                // so prevent backtracking into it.
+                writer.WriteLine("// Condition:");
+                EmitNode(condition);
+                writer.WriteLine();
+                doneLabel = originalDoneLabel;
+
+                // After the condition completes successfully, reset the text positions.
+                // Do not reset captures, which persist beyond the lookahead.
+                writer.WriteLine("// Condition matched:");
+                writer.WriteLine($"pos = {startingPos};");
+                SliceInputSpan(writer);
+                sliceStaticPos = startingSliceStaticPos;
+                writer.WriteLine();
+
+                // The expression matched.  Run the "yes" branch. If it successfully matches, jump to the end.
                 EmitNode(yesBranch);
-                TransferSliceStaticPosToPos(); // ensure all subsequent code sees the same sliceStaticPos value by setting it to 0
+                writer.WriteLine();
+                TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 string postYesDoneLabel = doneLabel;
                 if (!isAtomic && postYesDoneLabel != originalDoneLabel)
                 {
                     writer.WriteLine($"{resumeAt} = 0;");
                 }
-                if (postYesDoneLabel != originalDoneLabel || noBranch is not null)
-                {
-                    writer.WriteLine($"goto {end};");
-                }
+                writer.WriteLine($"goto {endConditional};");
+                writer.WriteLine();
 
-                // If there's a no branch, we need to emit it, but skipping it from a successful "yes" branch match.
+                // After the condition completes unsuccessfully, reset the text positions
+                // _and_ reset captures, which should not persist when the whole expression failed.
+                writer.WriteLine("// Condition did not match:");
+                MarkLabel(expressionNotMatched, emitSemicolon: false);
+                writer.WriteLine($"pos = {startingPos};");
+                SliceInputSpan(writer);
+                sliceStaticPos = startingSliceStaticPos;
+                if (startingCapturePos is not null)
+                {
+                    EmitUncaptureUntil(startingCapturePos);
+                }
+                writer.WriteLine();
+
                 string postNoDoneLabel = originalDoneLabel;
                 if (noBranch is not null)
                 {
-                    writer.WriteLine();
-
-                    // Emit the no branch, first uncapturing any captures from the expression condition that failed
-                    // to match and emit the branch.
-                    MarkLabel(no, emitSemicolon: startingCapturePos is null);
-                    if (startingCapturePos is not null)
-                    {
-                        EmitUncaptureUntil(startingCapturePos);
-                    }
-
-                    doneLabel = postConditionalDoneLabel;
-                    sliceStaticPos = startingSliceStaticPos;
+                    // Output the no branch.
+                    doneLabel = originalDoneLabel;
                     EmitNode(noBranch);
-                    TransferSliceStaticPosToPos(); // ensure all subsequent code sees the same sliceStaticPos value by setting it to 0
+                    writer.WriteLine();
+                    TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
                     if (!isAtomic && postNoDoneLabel != originalDoneLabel)
                     {
@@ -1407,51 +1634,49 @@ namespace System.Text.RegularExpressions.Generator
                     }
                 }
 
-                if (isAtomic)
+                // If either the yes branch or the no branch contained backtracking, subsequent expressions
+                // might try to backtrack to here, so output a backtracking map based on resumeAt.
+                if (isAtomic || (postYesDoneLabel == originalDoneLabel && postNoDoneLabel == originalDoneLabel))
                 {
                     doneLabel = originalDoneLabel;
+                    MarkLabel(endConditional);
                 }
                 else
                 {
-                    if (postYesDoneLabel != postConditionalDoneLabel || postNoDoneLabel != postConditionalDoneLabel)
+                    // Skip the backtracking section.
+                    writer.WriteLine($"goto {endConditional};");
+                    writer.WriteLine();
+
+                    string backtrack = ReserveName("ConditionalExpressionBacktrack");
+                    doneLabel = backtrack;
+                    MarkLabel(backtrack, emitSemicolon: false);
+
+                    EmitStackPop(resumeAt);
+                    using (EmitBlock(writer, $"switch ({resumeAt})"))
                     {
-                        // Skip the backtracking section.
-                        writer.WriteLine($"goto {end};");
-                        writer.WriteLine();
-
-                        string backtrack = ReserveName("ConditionalExpressionBacktrack");
-                        doneLabel = backtrack;
-                        MarkLabel(backtrack);
-
-                        using (EmitBlock(writer, $"switch ({StackPop()})"))
+                        if (postYesDoneLabel != originalDoneLabel)
                         {
-                            if (postYesDoneLabel != postConditionalDoneLabel)
-                            {
-                                writer.WriteLine($"case 0: goto {postYesDoneLabel};");
-                            }
-
-                            if (postNoDoneLabel != postConditionalDoneLabel && postNoDoneLabel != originalDoneLabel)
-                            {
-                                writer.WriteLine($"case 1: goto {postNoDoneLabel};");
-                            }
-
-                            writer.WriteLine($"default: goto {postConditionalDoneLabel};");
+                            writer.WriteLine($"case 0: goto {postYesDoneLabel};");
                         }
+
+                        if (postNoDoneLabel != originalDoneLabel)
+                        {
+                            writer.WriteLine($"case 1: goto {postNoDoneLabel};");
+                        }
+
+                        writer.WriteLine($"default: goto {originalDoneLabel};");
                     }
 
-                    if (postYesDoneLabel != originalDoneLabel || postNoDoneLabel != originalDoneLabel)
-                    {
-                        EmitStackPush(resumeAt);
-                    }
+                    MarkLabel(endConditional, emitSemicolon: false);
+                    EmitStackPush(resumeAt);
                 }
-
-                MarkLabel(end);
             }
 
             // Emits the code for a Capture node.
             void EmitCapture(RegexNode node, RegexNode? subsequent = null)
             {
-                Debug.Assert(node.Type is RegexNode.Capture, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Capture, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
                 int uncapnum = RegexParser.MapCaptureNumber(node.N, rm.Code.Caps);
@@ -1459,8 +1684,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 TransferSliceStaticPosToPos();
                 string startingPos = ReserveName("capture_starting_pos");
-                additionalDeclarations.Add($"int {startingPos} = 0;");
-                writer.WriteLine($"{startingPos} = pos;");
+                writer.WriteLine($"int {startingPos} = pos;");
                 writer.WriteLine();
 
                 RegexNode child = node.Child(0);
@@ -1479,6 +1703,7 @@ namespace System.Text.RegularExpressions.Generator
                 EmitNode(child, subsequent);
                 bool childBacktracks = doneLabel != originalDoneLabel;
 
+                writer.WriteLine();
                 TransferSliceStaticPosToPos();
                 if (uncapnum == -1)
                 {
@@ -1502,7 +1727,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
                     string backtrack = ReserveName($"CaptureBacktrack");
-                    MarkLabel(backtrack);
+                    MarkLabel(backtrack, emitSemicolon: false);
                     EmitStackPop(startingPos);
                     if (!childBacktracks)
                     {
@@ -1524,13 +1749,9 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code to handle a positive lookahead assertion.
             void EmitPositiveLookaheadAssertion(RegexNode node)
             {
-                Debug.Assert(node.Type is RegexNode.Require, $"Unexpected type: {node.Type}");
-                EmitPositiveLookaheadAssertionChild(node.Child(0));
-            }
+                Debug.Assert(node.Kind is RegexNodeKind.PositiveLookaround, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-            // Emits the code to handle a node as if it's wrapped in a positive lookahead assertion.
-            void EmitPositiveLookaheadAssertionChild(RegexNode child)
-            {
                 // Lookarounds are implicitly atomic.  Store the original done label to reset at the end.
                 string originalDoneLabel = doneLabel;
 
@@ -1541,10 +1762,11 @@ namespace System.Text.RegularExpressions.Generator
                 int startingSliceStaticPos = sliceStaticPos;
 
                 // Emit the child.
-                EmitNode(child);
+                EmitNode(node.Child(0));
 
                 // After the child completes successfully, reset the text positions.
                 // Do not reset captures, which persist beyond the lookahead.
+                writer.WriteLine();
                 writer.WriteLine($"pos = {startingPos};");
                 SliceInputSpan(writer);
                 sliceStaticPos = startingSliceStaticPos;
@@ -1555,7 +1777,8 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code to handle a negative lookahead assertion.
             void EmitNegativeLookaheadAssertion(RegexNode node)
             {
-                Debug.Assert(node.Type is RegexNode.Prevent, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.NegativeLookaround, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
                 // Lookarounds are implicitly atomic.  Store the original done label to reset at the end.
                 string originalDoneLabel = doneLabel;
@@ -1573,6 +1796,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // If the generated code ends up here, it matched the lookahead, which actually
                 // means failure for a _negative_ lookahead, so we need to jump to the original done.
+                writer.WriteLine();
                 writer.WriteLine($"goto {originalDoneLabel};");
                 writer.WriteLine();
 
@@ -1589,14 +1813,15 @@ namespace System.Text.RegularExpressions.Generator
 
             static bool PossiblyBacktracks(RegexNode node) => !(
                 // Certain nodes will never backtrack out of them
-                node.Type is RegexNode.Atomic or // atomic nodes by definition don't give up anything
-                             RegexNode.Oneloopatomic or RegexNode.Notoneloopatomic or RegexNode.Setloopatomic or // same for atomic loops
-                             RegexNode.One or RegexNode.Notone or RegexNode.Set or // individual characters don't backtrack
-                             RegexNode.Multi or // multiple characters don't backtrack
-                             RegexNode.Beginning or RegexNode.Start or RegexNode.End or RegexNode.EndZ or RegexNode.Boundary or RegexNode.NonBoundary or RegexNode.ECMABoundary or RegexNode.NonECMABoundary or // anchors don't backtrack
-                             RegexNode.Nothing or RegexNode.Empty or RegexNode.UpdateBumpalong // empty/nothing don't do anything
+                node.Kind is RegexNodeKind.Atomic or // atomic nodes by definition don't give up anything
+                             RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloopatomic or // same for atomic loops
+                             RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set or // individual characters don't backtrack
+                             RegexNodeKind.Multi or // multiple characters don't backtrack
+                             RegexNodeKind.Backreference or // backreferences don't backtrack
+                             RegexNodeKind.Beginning or RegexNodeKind.Bol or RegexNodeKind.Start or RegexNodeKind.End or RegexNodeKind.EndZ or RegexNodeKind.Eol or RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary or // anchors don't backtrack
+                             RegexNodeKind.Nothing or RegexNodeKind.Empty or RegexNodeKind.UpdateBumpalong // empty/nothing don't do anything
                 // Fixed-size repeaters of single characters or atomic don't backtrack
-                || node.Type is RegexNode.Oneloop or RegexNode.Notoneloop or RegexNode.Setloop or RegexNode.Onelazy or RegexNode.Notonelazy or RegexNode.Setlazy && node.M == node.N
+                || node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop or RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy && node.M == node.N
                 );
 
             // Emits the code for the node.
@@ -1609,129 +1834,131 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // Separate out several node types that, for conciseness, don't need a header and scope written into the source.
-                switch (node.Type)
+                switch (node.Kind)
                 {
                     // Nothing is written for an empty
-                    case RegexNode.Empty:
+                    case RegexNodeKind.Empty:
                         return;
 
                     // A match failure doesn't need a scope.
-                    case RegexNode.Nothing:
+                    case RegexNodeKind.Nothing:
                         writer.WriteLine($"goto {doneLabel};");
                         return;
 
                     // Atomic is invisible in the generated source, other than its impact on the targets of jumps
-                    case RegexNode.Atomic:
+                    case RegexNodeKind.Atomic:
                         EmitAtomic(node, subsequent);
                         return;
 
                     // Concatenate is a simplification in the node tree so that a series of children can be represented as one.
                     // We don't need its presence visible in the source.
-                    case RegexNode.Concatenate:
+                    case RegexNodeKind.Concatenate:
                         EmitConcatenation(node, subsequent, emitLengthChecksIfRequired);
                         return;
                 }
 
                 // Put the node's code into its own scope. If the node contains labels that may need to
                 // be visible outside of its scope, the scope is still emitted for clarity but is commented out.
-                using var _ = EmitScope(writer, DescribeNode(node), faux: PossiblyBacktracks(node) && !node.IsAtomicByParent());
-
-                switch (node.Type)
+                using (EmitScope(writer, DescribeNode(node, rm.Code), faux: PossiblyBacktracks(node) && !node.IsAtomicByParent()))
                 {
-                    case RegexNode.Beginning:
-                    case RegexNode.Start:
-                    case RegexNode.Bol:
-                    case RegexNode.Eol:
-                    case RegexNode.End:
-                    case RegexNode.EndZ:
-                        EmitAnchors(node);
-                        break;
+                    switch (node.Kind)
+                    {
+                        case RegexNodeKind.Beginning:
+                        case RegexNodeKind.Start:
+                        case RegexNodeKind.Bol:
+                        case RegexNodeKind.Eol:
+                        case RegexNodeKind.End:
+                        case RegexNodeKind.EndZ:
+                            EmitAnchors(node);
+                            break;
 
-                    case RegexNode.Boundary:
-                    case RegexNode.NonBoundary:
-                    case RegexNode.ECMABoundary:
-                    case RegexNode.NonECMABoundary:
-                        EmitBoundary(node);
-                        break;
+                        case RegexNodeKind.Boundary:
+                        case RegexNodeKind.NonBoundary:
+                        case RegexNodeKind.ECMABoundary:
+                        case RegexNodeKind.NonECMABoundary:
+                            EmitBoundary(node);
+                            break;
 
-                    case RegexNode.Multi:
-                        EmitMultiChar(node, emitLengthChecksIfRequired);
-                        break;
+                        case RegexNodeKind.Multi:
+                            EmitMultiChar(node, emitLengthChecksIfRequired);
+                            break;
 
-                    case RegexNode.One:
-                    case RegexNode.Notone:
-                    case RegexNode.Set:
-                        EmitSingleChar(node, emitLengthChecksIfRequired);
-                        break;
+                        case RegexNodeKind.One:
+                        case RegexNodeKind.Notone:
+                        case RegexNodeKind.Set:
+                            EmitSingleChar(node, emitLengthChecksIfRequired);
+                            break;
 
-                    case RegexNode.Oneloop:
-                    case RegexNode.Notoneloop:
-                    case RegexNode.Setloop:
-                        EmitSingleCharLoop(node, subsequent, emitLengthChecksIfRequired);
-                        break;
+                        case RegexNodeKind.Oneloop:
+                        case RegexNodeKind.Notoneloop:
+                        case RegexNodeKind.Setloop:
+                            EmitSingleCharLoop(node, subsequent, emitLengthChecksIfRequired);
+                            break;
 
-                    case RegexNode.Onelazy:
-                    case RegexNode.Notonelazy:
-                    case RegexNode.Setlazy:
-                        EmitSingleCharLazy(node, emitLengthChecksIfRequired);
-                        break;
+                        case RegexNodeKind.Onelazy:
+                        case RegexNodeKind.Notonelazy:
+                        case RegexNodeKind.Setlazy:
+                            EmitSingleCharLazy(node, subsequent, emitLengthChecksIfRequired);
+                            break;
 
-                    case RegexNode.Oneloopatomic:
-                    case RegexNode.Notoneloopatomic:
-                    case RegexNode.Setloopatomic:
-                        EmitSingleCharAtomicLoop(node, emitLengthChecksIfRequired);
-                        break;
+                        case RegexNodeKind.Oneloopatomic:
+                        case RegexNodeKind.Notoneloopatomic:
+                        case RegexNodeKind.Setloopatomic:
+                            EmitSingleCharAtomicLoop(node, emitLengthChecksIfRequired);
+                            break;
 
-                    case RegexNode.Loop:
-                        EmitLoop(node);
-                        break;
+                        case RegexNodeKind.Loop:
+                            EmitLoop(node);
+                            break;
 
-                    case RegexNode.Lazyloop:
-                        EmitLazy(node);
-                        break;
+                        case RegexNodeKind.Lazyloop:
+                            EmitLazy(node);
+                            break;
 
-                    case RegexNode.Alternate:
-                        EmitAlternation(node);
-                        break;
+                        case RegexNodeKind.Alternate:
+                            EmitAlternation(node);
+                            break;
 
-                    case RegexNode.Ref:
-                        EmitBackreference(node);
-                        break;
+                        case RegexNodeKind.Backreference:
+                            EmitBackreference(node);
+                            break;
 
-                    case RegexNode.Testref:
-                        EmitBackreferenceConditional(node);
-                        break;
+                        case RegexNodeKind.BackreferenceConditional:
+                            EmitBackreferenceConditional(node);
+                            break;
 
-                    case RegexNode.Testgroup:
-                        EmitExpressionConditional(node);
-                        break;
+                        case RegexNodeKind.ExpressionConditional:
+                            EmitExpressionConditional(node);
+                            break;
 
-                    case RegexNode.Capture:
-                        EmitCapture(node, subsequent);
-                        break;
+                        case RegexNodeKind.Capture:
+                            EmitCapture(node, subsequent);
+                            break;
 
-                    case RegexNode.Require:
-                        EmitPositiveLookaheadAssertion(node);
-                        break;
+                        case RegexNodeKind.PositiveLookaround:
+                            EmitPositiveLookaheadAssertion(node);
+                            break;
 
-                    case RegexNode.Prevent:
-                        EmitNegativeLookaheadAssertion(node);
-                        break;
+                        case RegexNodeKind.NegativeLookaround:
+                            EmitNegativeLookaheadAssertion(node);
+                            break;
 
-                    case RegexNode.UpdateBumpalong:
-                        EmitUpdateBumpalong(node);
-                        break;
+                        case RegexNodeKind.UpdateBumpalong:
+                            EmitUpdateBumpalong(node);
+                            break;
 
-                    default:
-                        Debug.Fail($"Unexpected node type: {node.Type}");
-                        break;
+                        default:
+                            Debug.Fail($"Unexpected node type: {node.Kind}");
+                            break;
+                    }
                 }
             }
 
             // Emits the node for an atomic.
             void EmitAtomic(RegexNode node, RegexNode? subsequent)
             {
-                Debug.Assert(node.Type is RegexNode.Atomic, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Atomic, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
                 // Atomic simply outputs the code for the child, but it ensures that any done label left
                 // set by the child is reset to what it was prior to the node's processing.  That way,
@@ -1746,18 +1973,23 @@ namespace System.Text.RegularExpressions.Generator
             // it should bump from this location rather than from the original location.
             void EmitUpdateBumpalong(RegexNode node)
             {
-                Debug.Assert(node.Type is RegexNode.UpdateBumpalong, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.UpdateBumpalong, $"Unexpected type: {node.Kind}");
 
                 TransferSliceStaticPosToPos();
-                writer.WriteLine("base.runtextpos = pos;");
+                using (EmitBlock(writer, "if (base.runtextpos < pos)"))
+                {
+                    writer.WriteLine("base.runtextpos = pos;");
+                }
             }
 
             // Emits code for a concatenation
             void EmitConcatenation(RegexNode node, RegexNode? subsequent, bool emitLengthChecksIfRequired)
             {
-                Debug.Assert(node.Type is RegexNode.Concatenate, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Concatenate, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.ChildCount() >= 2, $"Expected at least 2 children, found {node.ChildCount()}");
 
                 // Emit the code for each child one after the other.
+                string? prevDescription = null;
                 int childCount = node.ChildCount();
                 for (int i = 0; i < childCount; i++)
                 {
@@ -1773,11 +2005,11 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             for (; i < exclusiveEnd; i++)
                             {
-                                void WriteSingleCharChild(RegexNode child)
+                                void WriteSingleCharChild(RegexNode child, bool includeDescription = true)
                                 {
                                     if (wroteClauses)
                                     {
-                                        writer.WriteLine(" ||");
+                                        writer.WriteLine(prevDescription is not null ? $" || // {prevDescription}" : " ||");
                                         writer.Write("    ");
                                     }
                                     else
@@ -1785,23 +2017,24 @@ namespace System.Text.RegularExpressions.Generator
                                         writer.Write("if (");
                                     }
                                     EmitSingleChar(child, emitLengthCheck: false, clauseOnly: true);
+                                    prevDescription = includeDescription ? DescribeNode(child, rm.Code) : null;
                                     wroteClauses = true;
                                 }
 
                                 RegexNode child = node.Child(i);
-                                if (child.Type is RegexNode.One or RegexNode.Notone or RegexNode.Set)
+                                if (child.Kind is RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set)
                                 {
                                     WriteSingleCharChild(child);
                                 }
-                                else if (child.Type is RegexNode.Oneloop or RegexNode.Onelazy or RegexNode.Oneloopatomic or
-                                                       RegexNode.Setloop or RegexNode.Setlazy or RegexNode.Setloopatomic or
-                                                       RegexNode.Notoneloop or RegexNode.Notonelazy or RegexNode.Notoneloopatomic &&
+                                else if (child.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Onelazy or RegexNodeKind.Oneloopatomic or
+                                                       RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic or
+                                                       RegexNodeKind.Notoneloop or RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloopatomic &&
                                          child.M == child.N &&
                                          child.M <= MaxUnrollSize)
                                 {
                                     for (int c = 0; c < child.M; c++)
                                     {
-                                        WriteSingleCharChild(child);
+                                        WriteSingleCharChild(child, includeDescription: c == 0);
                                     }
                                 }
                                 else
@@ -1812,18 +2045,28 @@ namespace System.Text.RegularExpressions.Generator
 
                             if (wroteClauses)
                             {
-                                writer.WriteLine(")");
+                                writer.WriteLine(prevDescription is not null ? $") // {prevDescription}" : ")");
                                 using (EmitBlock(writer, null))
                                 {
                                     writer.WriteLine($"goto {doneLabel};");
                                 }
+                                if (i < childCount)
+                                {
+                                    writer.WriteLine();
+                                }
+
                                 wroteClauses = false;
+                                prevDescription = null;
                             }
 
                             if (i < exclusiveEnd)
                             {
-                                writer.WriteLine();
-                                EmitNode(node.Child(i), i + 1 < childCount ? node.Child(i + 1) : subsequent, emitLengthChecksIfRequired: false);
+                                EmitNode(node.Child(i), GetSubsequentOrDefault(i, node, subsequent), emitLengthChecksIfRequired: false);
+                                if (i < childCount - 1)
+                                {
+                                    writer.WriteLine();
+                                }
+
                                 i++;
                             }
                         }
@@ -1832,14 +2075,34 @@ namespace System.Text.RegularExpressions.Generator
                         continue;
                     }
 
-                    EmitNode(node.Child(i), i + 1 < childCount ? node.Child(i + 1) : subsequent, emitLengthChecksIfRequired: emitLengthChecksIfRequired);
+                    EmitNode(node.Child(i), GetSubsequentOrDefault(i, node, subsequent), emitLengthChecksIfRequired: emitLengthChecksIfRequired);
+                    if (i < childCount - 1)
+                    {
+                        writer.WriteLine();
+                    }
+                }
+
+                // Gets the node to treat as the subsequent one to node.Child(index)
+                static RegexNode? GetSubsequentOrDefault(int index, RegexNode node, RegexNode? defaultNode)
+                {
+                    int childCount = node.ChildCount();
+                    for (int i = index + 1; i < childCount; i++)
+                    {
+                        RegexNode next = node.Child(i);
+                        if (next.Kind is not RegexNodeKind.UpdateBumpalong) // skip node types that don't have a semantic impact
+                        {
+                            return next;
+                        }
+                    }
+
+                    return defaultNode;
                 }
             }
 
             // Emits the code to handle a single-character match.
             void EmitSingleChar(RegexNode node, bool emitLengthCheck = true, string? offset = null, bool clauseOnly = false)
             {
-                Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
                 // This only emits a single check, but it's called from the looping constructs in a loop
                 // to generate the code for a single check, so we map those looping constructs to the
@@ -1849,7 +2112,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (node.IsSetFamily)
                 {
-                    expr = $"!{MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), additionalDeclarations)}";
+                    expr = $"{MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), negate: true, additionalDeclarations, ref requiredHelpers)}";
                 }
                 else
                 {
@@ -1875,13 +2138,13 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code to handle a boundary check on a character.
             void EmitBoundary(RegexNode node)
             {
-                Debug.Assert(node.Type is RegexNode.Boundary or RegexNode.NonBoundary or RegexNode.ECMABoundary or RegexNode.NonECMABoundary, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary, $"Unexpected type: {node.Kind}");
 
-                string call = node.Type switch
+                string call = node.Kind switch
                 {
-                    RegexNode.Boundary => "!base.IsBoundary",
-                    RegexNode.NonBoundary => "base.IsBoundary",
-                    RegexNode.ECMABoundary => "!base.IsECMABoundary",
+                    RegexNodeKind.Boundary => "!base.IsBoundary",
+                    RegexNodeKind.NonBoundary => "base.IsBoundary",
+                    RegexNodeKind.ECMABoundary => "!base.IsECMABoundary",
                     _ => "base.IsECMABoundary",
                 };
 
@@ -1894,13 +2157,13 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code to handle various anchors.
             void EmitAnchors(RegexNode node)
             {
-                Debug.Assert(node.Type is RegexNode.Beginning or RegexNode.Start or RegexNode.Bol or RegexNode.End or RegexNode.EndZ or RegexNode.Eol, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.Bol or RegexNodeKind.End or RegexNodeKind.EndZ or RegexNodeKind.Eol, $"Unexpected type: {node.Kind}");
 
                 Debug.Assert(sliceStaticPos >= 0);
-                switch (node.Type)
+                switch (node.Kind)
                 {
-                    case RegexNode.Beginning:
-                    case RegexNode.Start:
+                    case RegexNodeKind.Beginning:
+                    case RegexNodeKind.Start:
                         if (sliceStaticPos > 0)
                         {
                             // If we statically know we've already matched part of the regex, there's no way we're at the
@@ -1909,15 +2172,15 @@ namespace System.Text.RegularExpressions.Generator
                         }
                         else
                         {
-                            additionalDeclarations.Add(node.Type == RegexNode.Beginning ? "int beginning = base.runtextbeg;" : "int start = base.runtextstart;");
-                            using (EmitBlock(writer, node.Type == RegexNode.Beginning ? "if (pos != beginning)" : "if (pos != start)"))
+                            additionalDeclarations.Add(node.Kind == RegexNodeKind.Beginning ? "int beginning = base.runtextbeg;" : "int start = base.runtextstart;");
+                            using (EmitBlock(writer, node.Kind == RegexNodeKind.Beginning ? "if (pos != beginning)" : "if (pos != start)"))
                             {
                                 writer.WriteLine($"goto {doneLabel};");
                             }
                         }
                         break;
 
-                    case RegexNode.Bol:
+                    case RegexNodeKind.Bol:
                         if (sliceStaticPos > 0)
                         {
                             using (EmitBlock(writer, $"if ({sliceSpan}[{sliceStaticPos - 1}] != '\\n')"))
@@ -1936,34 +2199,38 @@ namespace System.Text.RegularExpressions.Generator
                         }
                         break;
 
-                    case RegexNode.End:
-                        using (EmitBlock(writer, $"if ({sliceSpan}.Length > {sliceStaticPos})"))
+                    case RegexNodeKind.End:
+                        using (EmitBlock(writer, $"if ({IsSliceLengthGreaterThanSliceStaticPos()})"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
                         break;
 
-                    case RegexNode.EndZ:
-                        writer.WriteLine($"if ({sliceSpan}.Length - 1 > {sliceStaticPos} || ({sliceSpan}.Length > {sliceStaticPos} && {sliceSpan}[{sliceStaticPos}] != '\\n'))");
+                    case RegexNodeKind.EndZ:
+                        writer.WriteLine($"if ({sliceSpan}.Length > {sliceStaticPos + 1} || ({IsSliceLengthGreaterThanSliceStaticPos()} && {sliceSpan}[{sliceStaticPos}] != '\\n'))");
                         using (EmitBlock(writer, null))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
                         break;
 
-                    case RegexNode.Eol:
-                        using (EmitBlock(writer, $"if ({sliceSpan}.Length > {sliceStaticPos} && {sliceSpan}[{sliceStaticPos}] != '\\n')"))
+                    case RegexNodeKind.Eol:
+                        using (EmitBlock(writer, $"if ({IsSliceLengthGreaterThanSliceStaticPos()} && {sliceSpan}[{sliceStaticPos}] != '\\n')"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
                         break;
+
+                        string IsSliceLengthGreaterThanSliceStaticPos() =>
+                            sliceStaticPos == 0 ? $"!{sliceSpan}.IsEmpty" :
+                            $"{sliceSpan}.Length > {sliceStaticPos}";
                 }
             }
 
             // Emits the code to handle a multiple-character match.
             void EmitMultiChar(RegexNode node, bool emitLengthCheck = true)
             {
-                Debug.Assert(node.Type is RegexNode.Multi, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Multi, $"Unexpected type: {node.Kind}");
 
                 bool caseInsensitive = IsCaseInsensitive(node);
 
@@ -2073,7 +2340,7 @@ namespace System.Text.RegularExpressions.Generator
 
             void EmitSingleCharLoop(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
-                Debug.Assert(node.Type is RegexNode.Oneloop or RegexNode.Notoneloop or RegexNode.Setloop, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop, $"Unexpected type: {node.Kind}");
 
                 // If this is actually a repeater, emit that instead; no backtracking necessary.
                 if (node.M == node.N)
@@ -2109,20 +2376,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 TransferSliceStaticPosToPos();
                 writer.WriteLine($"{endingPos} = pos;");
-
-                string? capturePos = null;
-                if (expressionHasCaptures)
-                {
-                    capturePos = ReserveName("charloop_capturepos");
-                    additionalDeclarations.Add($"int {capturePos} = 0;");
-                    writer.WriteLine($"{capturePos} = base.Crawlpos();");
-                }
-
-                if (node.M > 0)
-                {
-                    writer.WriteLine($"{startingPos} += {node.M};");
-                }
-
+                EmitAdd(writer, startingPos, node.M);
                 writer.WriteLine($"goto {endLoop};");
                 writer.WriteLine();
 
@@ -2130,51 +2384,54 @@ namespace System.Text.RegularExpressions.Generator
                 // point we decrement the matched count as long as it's above the minimum
                 // required, and try again by flowing to everything that comes after this.
                 MarkLabel(backtrackingLabel, emitSemicolon: false);
-                if (capturePos is not null)
+                if (expressionHasCaptures)
                 {
-                    EmitStackPop(capturePos, endingPos, startingPos);
-                    EmitUncaptureUntil(capturePos);
+                    EmitUncaptureUntil(StackPop());
                 }
-                else
-                {
-                    EmitStackPop(endingPos, startingPos);
-                }
+                EmitStackPop(endingPos, startingPos);
+                writer.WriteLine();
 
-                string originalDoneLabel = doneLabel;
-                using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
+                if (subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal)
                 {
-                    writer.WriteLine($"goto {originalDoneLabel};");
-                }
-                doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
-
-                if (subsequent?.FindStartingCharacter() is char subsequentCharacter)
-                {
-                    writer.WriteLine();
-                    writer.WriteLine($"{endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(subsequentCharacter)});");
-                    using (EmitBlock(writer, $"if ({endingPos} < 0)"))
+                    writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
+                    using (EmitBlock(writer,
+                        literal.Item2 is not null ? $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, global::System.Math.Min(inputSpan.Length, {endingPos} + {literal.Item2.Length - 1}) - {startingPos}), {Literal(literal.Item2)})) < 0)" :
+                        literal.Item3 is null ? $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Item1)})) < 0)" :
+                        literal.Item3.Length switch
+                        {
+                            2 => $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOfAny(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Item3[0])}, {Literal(literal.Item3[1])})) < 0)",
+                            3 => $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOfAny(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Item3[0])}, {Literal(literal.Item3[1])}, {Literal(literal.Item3[2])})) < 0)",
+                            _ => $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOfAny(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Item3)})) < 0)",
+                        }))
                     {
-                        writer.WriteLine($"goto {originalDoneLabel};");
+                        writer.WriteLine($"goto {doneLabel};");
                     }
                     writer.WriteLine($"{endingPos} += {startingPos};");
                     writer.WriteLine($"pos = {endingPos};");
                 }
                 else
                 {
+                    using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
+                    }
                     writer.WriteLine($"pos = --{endingPos};");
                 }
 
                 SliceInputSpan(writer);
                 writer.WriteLine();
 
-                MarkLabel(endLoop);
-                EmitStackPush(capturePos is not null ?
-                    new[] { startingPos, endingPos, capturePos } :
+                MarkLabel(endLoop, emitSemicolon: false);
+                EmitStackPush(expressionHasCaptures ?
+                    new[] { startingPos, endingPos, "base.Crawlpos()" } :
                     new[] { startingPos, endingPos });
+
+                doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
             }
 
-            void EmitSingleCharLazy(RegexNode node, bool emitLengthChecksIfRequired = true)
+            void EmitSingleCharLazy(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
-                Debug.Assert(node.Type is RegexNode.Onelazy or RegexNode.Notonelazy or RegexNode.Setlazy, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy, $"Unexpected type: {node.Kind}");
 
                 // Emit the min iterations as a repeater.  Any failures here don't necessitate backtracking,
                 // as the lazy itself failed to match, and there's no backtracking possible by the individual
@@ -2207,8 +2464,7 @@ namespace System.Text.RegularExpressions.Generator
                     maxIterations = $"{node.N - node.M}";
 
                     iterationCount = ReserveName("lazyloop_iteration");
-                    additionalDeclarations.Add($"int {iterationCount} = 0;");
-                    writer.WriteLine($"{iterationCount} = 0;");
+                    writer.WriteLine($"int {iterationCount} = 0;");
                 }
 
                 // Track the current crawl position.  Upon backtracking, we'll unwind any captures beyond this point.
@@ -2260,6 +2516,60 @@ namespace System.Text.RegularExpressions.Generator
                 SliceInputSpan(writer);
                 EmitSingleChar(node);
                 TransferSliceStaticPosToPos();
+
+                // Now that we've appropriately advanced by one character and are set for what comes after the loop,
+                // see if we can skip ahead more iterations by doing a search for a following literal.
+                if (iterationCount is null &&
+                    node.Kind is RegexNodeKind.Notonelazy &&
+                    !IsCaseInsensitive(node) &&
+                    subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?> literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
+                    (literal.Item3 is not null ? !literal.Item3.Contains(node.Ch) : (literal.Item2?[0] ?? literal.Item1) != node.Ch)) // no overlap between node.Ch and the start of the literal
+                {
+                    // e.g. "<[^>]*?>"
+                    // This lazy loop will consume all characters other than node.Ch until the subsequent literal.
+                    // We can implement it to search for either that char or the literal, whichever comes first.
+                    // If it ends up being that node.Ch, the loop fails (we're only here if we're backtracking).
+                    writer.WriteLine(
+                        literal.Item2 is not null ? $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(node.Ch)}, {Literal(literal.Item2[0])});" :
+                        literal.Item3 is null ? $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(node.Ch)}, {Literal(literal.Item1)});" :
+                        literal.Item3.Length switch
+                        {
+                            2 => $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(node.Ch)}, {Literal(literal.Item3[0])}, {Literal(literal.Item3[1])});",
+                            _ => $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(node.Ch + literal.Item3)});",
+                        });
+                    using (EmitBlock(writer, $"if ((uint){startingPos} >= (uint){sliceSpan}.Length || {sliceSpan}[{startingPos}] == {Literal(node.Ch)})"))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
+                    }
+                    writer.WriteLine($"pos += {startingPos};");
+                    SliceInputSpan(writer);
+                }
+                else if (iterationCount is null &&
+                    node.Kind is RegexNodeKind.Setlazy &&
+                    node.Str == RegexCharClass.AnyClass &&
+                    subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal2)
+                {
+                    // e.g. ".*?string" with RegexOptions.Singleline
+                    // This lazy loop will consume all characters until the subsequent literal. If the subsequent literal
+                    // isn't found, the loop fails. We can implement it to just search for that literal.
+                    writer.WriteLine(
+                        literal2.Item2 is not null ? $"{startingPos} = global::System.MemoryExtensions.IndexOf({sliceSpan}, {Literal(literal2.Item2)});" :
+                        literal2.Item3 is null ? $"{startingPos} = global::System.MemoryExtensions.IndexOf({sliceSpan}, {Literal(literal2.Item1)});" :
+                        literal2.Item3.Length switch
+                        {
+                            2 => $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(literal2.Item3[0])}, {Literal(literal2.Item3[1])});",
+                            3 => $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(literal2.Item3[0])}, {Literal(literal2.Item3[1])}, {Literal(literal2.Item3[2])});",
+                            _ => $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(literal2.Item3)});",
+                        });
+                    using (EmitBlock(writer, $"if ({startingPos} < 0)"))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
+                    }
+                    writer.WriteLine($"pos += {startingPos};");
+                    SliceInputSpan(writer);
+                }
+
+                // Store the position we've left off at in case we need to iterate again.
                 writer.WriteLine($"{startingPos} = pos;");
 
                 // Update the done label for everything that comes after this node.  This is done after we emit the single char
@@ -2298,7 +2608,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
                     string backtrack = ReserveName("CharLazyBacktrack");
-                    MarkLabel(backtrack);
+                    MarkLabel(backtrack, emitSemicolon: false);
 
                     Array.Reverse(toPushPopArray);
                     EmitStackPop(toPushPopArray);
@@ -2313,9 +2623,11 @@ namespace System.Text.RegularExpressions.Generator
 
             void EmitLazy(RegexNode node)
             {
-                Debug.Assert(node.Type is RegexNode.Lazyloop, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Lazyloop, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.M < int.MaxValue, $"Unexpected M={node.M}");
                 Debug.Assert(node.N >= node.M, $"Unexpected M={node.M}, N={node.N}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
+
                 int minIterations = node.M;
                 int maxIterations = node.N;
                 string originalDoneLabel = doneLabel;
@@ -2336,6 +2648,8 @@ namespace System.Text.RegularExpressions.Generator
                             EmitNode(node.Child(0));
                             return;
                     }
+
+                    writer.WriteLine();
                 }
 
                 // We might loop any number of times.  In order to ensure this loop and subsequent code sees sliceStaticPos
@@ -2349,11 +2663,7 @@ namespace System.Text.RegularExpressions.Generator
                 string body = ReserveName("LazyLoopBody");
                 string endLoop = ReserveName("LazyLoopEnd");
 
-                additionalDeclarations.Add($"int {iterationCount} = 0, {startingPos} = 0, {sawEmpty} = 0;");
-                writer.WriteLine($"{iterationCount} = 0;");
-                writer.WriteLine($"{startingPos} = pos;");
-                writer.WriteLine($"{sawEmpty} = 0;");
-                writer.WriteLine();
+                writer.WriteLine($"int {iterationCount} = 0, {startingPos} = pos, {sawEmpty} = 0;");
 
                 // If the min count is 0, start out by jumping right to what's after the loop.  Backtracking
                 // will then bring us back in to do further iterations.
@@ -2361,6 +2671,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     writer.WriteLine($"goto {endLoop};");
                 }
+                writer.WriteLine();
 
                 // Iteration body
                 MarkLabel(body, emitSemicolon: false);
@@ -2397,6 +2708,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Finally, emit the child.
                 Debug.Assert(sliceStaticPos == 0);
                 EmitNode(node.Child(0));
+                writer.WriteLine();
                 TransferSliceStaticPosToPos(); // ensure sliceStaticPos remains 0
                 if (doneLabel == iterationFailedLabel)
                 {
@@ -2435,9 +2747,7 @@ namespace System.Text.RegularExpressions.Generator
                 EmitStackPop(sawEmpty, "pos", startingPos);
                 if (expressionHasCaptures)
                 {
-                    string poppedCapturePos = ReserveName("lazyloop_capturepos");
-                    writer.WriteLine($"int {poppedCapturePos} = {StackPop()};");
-                    EmitUncaptureUntil(poppedCapturePos);
+                    EmitUncaptureUntil(StackPop());
                 }
                 SliceInputSpan(writer);
                 if (doneLabel == originalDoneLabel)
@@ -2467,7 +2777,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
                     string backtrack = ReserveName($"LazyLoopBacktrack");
-                    MarkLabel(backtrack);
+                    MarkLabel(backtrack, emitSemicolon: false);
 
                     EmitStackPop(sawEmpty, iterationCount, startingPos);
 
@@ -2498,7 +2808,7 @@ namespace System.Text.RegularExpressions.Generator
             // RegexNode.M is used for the number of iterations; RegexNode.N is ignored.
             void EmitSingleCharFixedRepeater(RegexNode node, bool emitLengthCheck = true)
             {
-                Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
                 int iterations = node.M;
                 if (iterations == 0)
@@ -2545,8 +2855,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     string repeaterSpan = "repeaterSlice"; // As this repeater doesn't wrap arbitrary node emits, this shouldn't conflict with anything
                     writer.WriteLine($"global::System.ReadOnlySpan<char> {repeaterSpan} = {sliceSpan}.Slice({sliceStaticPos}, {iterations});");
-                    string i = ReserveName("charrepeater_iteration");
-                    using (EmitBlock(writer, $"for (int {i} = 0; {i} < {repeaterSpan}.Length; {i}++)"))
+                    using (EmitBlock(writer, $"for (int i = 0; i < {repeaterSpan}.Length; i++)"))
                     {
                         EmitTimeoutCheck(writer, hasTimeout);
 
@@ -2554,7 +2863,7 @@ namespace System.Text.RegularExpressions.Generator
                         int tmpSliceStaticPos = sliceStaticPos;
                         sliceSpan = repeaterSpan;
                         sliceStaticPos = 0;
-                        EmitSingleChar(node, emitLengthCheck: false, offset: i);
+                        EmitSingleChar(node, emitLengthCheck: false, offset: "i");
                         sliceSpan = tmpTextSpanLocal;
                         sliceStaticPos = tmpSliceStaticPos;
                     }
@@ -2565,7 +2874,7 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code to handle a non-backtracking, variable-length loop around a single character comparison.
             void EmitSingleCharAtomicLoop(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
-                Debug.Assert(node.Type is RegexNode.Oneloop or RegexNode.Oneloopatomic or RegexNode.Notoneloop or RegexNode.Notoneloopatomic or RegexNode.Setloop or RegexNode.Setloopatomic, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic, $"Unexpected type: {node.Kind}");
 
                 // If this is actually a repeater, emit that instead.
                 if (node.M == node.N)
@@ -2660,7 +2969,7 @@ namespace System.Text.RegularExpressions.Generator
                     string expr = $"{sliceSpan}[{iterationLocal}]";
                     if (node.IsSetFamily)
                     {
-                        expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), additionalDeclarations);
+                        expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), negate: false, additionalDeclarations, ref requiredHelpers);
                     }
                     else
                     {
@@ -2708,13 +3017,13 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code to handle a non-backtracking optional zero-or-one loop.
             void EmitAtomicSingleCharZeroOrOne(RegexNode node)
             {
-                Debug.Assert(node.Type is RegexNode.Oneloop or RegexNode.Oneloopatomic or RegexNode.Notoneloop or RegexNode.Notoneloopatomic or RegexNode.Setloop or RegexNode.Setloopatomic, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.M == 0 && node.N == 1);
 
                 string expr = $"{sliceSpan}[{sliceStaticPos}]";
                 if (node.IsSetFamily)
                 {
-                    expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), additionalDeclarations);
+                    expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), negate: false, additionalDeclarations, ref requiredHelpers);
                 }
                 else
                 {
@@ -2732,9 +3041,11 @@ namespace System.Text.RegularExpressions.Generator
 
             void EmitLoop(RegexNode node)
             {
-                Debug.Assert(node.Type is RegexNode.Loop or RegexNode.Lazyloop, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.M < int.MaxValue, $"Unexpected M={node.M}");
                 Debug.Assert(node.N >= node.M, $"Unexpected M={node.M}, N={node.N}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
+
                 int minIterations = node.M;
                 int maxIterations = node.N;
                 bool isAtomic = node.IsAtomicByParent();
@@ -2791,6 +3102,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Finally, emit the child.
                 Debug.Assert(sliceStaticPos == 0);
                 EmitNode(node.Child(0));
+                writer.WriteLine();
                 TransferSliceStaticPosToPos(); // ensure sliceStaticPos remains 0
                 bool childBacktracks = doneLabel != iterationFailedLabel;
 
@@ -2823,9 +3135,7 @@ namespace System.Text.RegularExpressions.Generator
                 EmitStackPop("pos", startingPos);
                 if (expressionHasCaptures)
                 {
-                    string poppedCapturePos = ReserveName("loop_capturepos");
-                    writer.WriteLine($"int {poppedCapturePos} = {StackPop()};");
-                    EmitUncaptureUntil(poppedCapturePos);
+                    EmitUncaptureUntil(StackPop());
                 }
                 SliceInputSpan(writer);
 
@@ -2855,7 +3165,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine();
 
                         string backtrack = ReserveName("LoopBacktrack");
-                        MarkLabel(backtrack);
+                        MarkLabel(backtrack, emitSemicolon: false);
                         using (EmitBlock(writer, $"if ({iterationCount} == 0)"))
                         {
                             writer.WriteLine($"goto {originalDoneLabel};");
@@ -2880,7 +3190,7 @@ namespace System.Text.RegularExpressions.Generator
 
                         // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
                         string backtrack = ReserveName("LoopBacktrack");
-                        MarkLabel(backtrack);
+                        MarkLabel(backtrack, emitSemicolon: false);
                         EmitStackPop(iterationCount, startingPos);
 
                         writer.WriteLine($"goto {doneLabel};");
@@ -3043,9 +3353,9 @@ namespace System.Text.RegularExpressions.Generator
                 if (!needsCulture)
                 {
                     int[] codes = rm.Code.Codes;
-                    for (int codepos = 0; codepos < codes.Length; codepos += RegexCode.OpcodeSize(codes[codepos]))
+                    for (int codepos = 0; codepos < codes.Length; codepos += RegexCode.OpcodeSize((RegexOpcode)codes[codepos]))
                     {
-                        if ((codes[codepos] & RegexCode.Ci) == RegexCode.Ci)
+                        if (((RegexOpcode)codes[codepos] & RegexOpcode.CaseInsensitive) == RegexOpcode.CaseInsensitive)
                         {
                             needsCulture = true;
                             break;
@@ -3069,7 +3379,7 @@ namespace System.Text.RegularExpressions.Generator
 
         private static string ToLowerIfNeeded(bool hasTextInfo, RegexOptions options, string expression, bool toLower) => toLower ? ToLower(hasTextInfo, options, expression) : expression;
 
-        private static string MatchCharacterClass(bool hasTextInfo, RegexOptions options, string chExpr, string charClass, bool caseInsensitive, HashSet<string>? additionalDeclarations)
+        private static string MatchCharacterClass(bool hasTextInfo, RegexOptions options, string chExpr, string charClass, bool caseInsensitive, bool negate, HashSet<string> additionalDeclarations, ref RequiredHelperFunctions requiredHelpers)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize
@@ -3083,19 +3393,23 @@ namespace System.Text.RegularExpressions.Generator
             {
                 case RegexCharClass.AnyClass:
                     // ideally this could just be "return true;", but we need to evaluate the expression for its side effects
-                    return $"({chExpr} >= 0)"; // a char is unsigned and thus won't ever be negative, so this is equivalent to true
+                    return $"({chExpr} {(negate ? "<" : ">=")} 0)"; // a char is unsigned and thus won't ever be negative
 
                 case RegexCharClass.DigitClass:
-                    return $"char.IsDigit({chExpr})";
-
                 case RegexCharClass.NotDigitClass:
-                    return $"!char.IsDigit({chExpr})";
+                    negate ^= charClass == RegexCharClass.NotDigitClass;
+                    return $"{(negate ? "!" : "")}char.IsDigit({chExpr})";
 
                 case RegexCharClass.SpaceClass:
-                    return $"char.IsWhiteSpace({chExpr})";
-
                 case RegexCharClass.NotSpaceClass:
-                    return $"!char.IsWhiteSpace({chExpr})";
+                    negate ^= charClass == RegexCharClass.NotSpaceClass;
+                    return $"{(negate ? "!" : "")}char.IsWhiteSpace({chExpr})";
+
+                case RegexCharClass.WordClass:
+                case RegexCharClass.NotWordClass:
+                    requiredHelpers |= RequiredHelperFunctions.IsWordChar;
+                    negate ^= charClass == RegexCharClass.NotWordClass;
+                    return $"{(negate ? "!" : "")}IsWordChar({chExpr})";
             }
 
             // If we're meant to be doing a case-insensitive lookup, and if we're not using the invariant culture,
@@ -3117,10 +3431,10 @@ namespace System.Text.RegularExpressions.Generator
             // Next, handle simple sets of one range, e.g. [A-Z], [0-9], etc.  This includes some built-in classes, like ECMADigitClass.
             if (!invariant && RegexCharClass.TryGetSingleRange(charClass, out char lowInclusive, out char highInclusive))
             {
-                bool invert = RegexCharClass.IsNegated(charClass);
+                negate ^= RegexCharClass.IsNegated(charClass);
                 return lowInclusive == highInclusive ?
-                    $"({chExpr} {(invert ? "!=" : "==")} {Literal(lowInclusive)})" :
-                    $"(((uint){chExpr}) - {Literal(lowInclusive)} {(invert ? ">" : "<=")} (uint)({Literal(highInclusive)} - {Literal(lowInclusive)}))";
+                    $"({chExpr} {(negate ? "!=" : "==")} {Literal(lowInclusive)})" :
+                    $"(((uint){chExpr}) - {Literal(lowInclusive)} {(negate ? ">" : "<=")} (uint)({Literal(highInclusive)} - {Literal(lowInclusive)}))";
             }
 
             // Next if the character class contains nothing but a single Unicode category, we can calle char.GetUnicodeCategory and
@@ -3128,45 +3442,44 @@ namespace System.Text.RegularExpressions.Generator
             // we get smaller code), and it's what we'd do for the fallback (which we get to avoid generating) as part of CharInClass.
             if (!invariant && RegexCharClass.TryGetSingleUnicodeCategory(charClass, out UnicodeCategory category, out bool negated))
             {
-                return $"(char.GetUnicodeCategory({chExpr}) {(negated ? "!=" : "==")} global::System.Globalization.UnicodeCategory.{category})";
+                negate ^= negated;
+                return $"(char.GetUnicodeCategory({chExpr}) {(negate ? "!=" : "==")} global::System.Globalization.UnicodeCategory.{category})";
             }
 
-            // Next, if there's only 2, 3, or 4 chars in the set (fairly common due to the sets we create for prefixes),
+            // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixes),
             // it may be cheaper and smaller to compare against each than it is to use a lookup table.  We can also special-case
             // the very common case with case insensitivity of two characters next to each other being the upper and lowercase
             // ASCII variants of each other, in which case we can use bit manipulation to avoid a comparison.
             if (!invariant && !RegexCharClass.IsNegated(charClass))
             {
-                Span<char> setChars = stackalloc char[4];
+                Span<char> setChars = stackalloc char[3];
+                int mask;
                 switch (RegexCharClass.GetSetChars(charClass, setChars))
                 {
                     case 2:
-                        if ((setChars[0] | 0x20) == setChars[1])
+                        if (RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out mask))
                         {
-                            return $"(({chExpr} | 0x20) == {Literal(setChars[1])})";
+                            return $"(({chExpr} | 0x{mask:X}) {(negate ? "!=" : "==")} {Literal((char)(setChars[1] | mask))})";
                         }
-                        additionalDeclarations?.Add("char ch;");
-                        return $"(((ch = {chExpr}) == {Literal(setChars[0])}) | (ch == {Literal(setChars[1])}))";
+                        additionalDeclarations.Add("char ch;");
+                        return negate ?
+                            $"(((ch = {chExpr}) != {Literal(setChars[0])}) & (ch != {Literal(setChars[1])}))" :
+                            $"(((ch = {chExpr}) == {Literal(setChars[0])}) | (ch == {Literal(setChars[1])}))";
 
                     case 3:
-                        additionalDeclarations?.Add("char ch;");
-                        return (setChars[0] | 0x20) == setChars[1] ?
-                            $"((((ch = {chExpr}) | 0x20) == {Literal(setChars[1])}) | (ch == {Literal(setChars[2])}))" :
-                            $"(((ch = {chExpr}) == {Literal(setChars[0])}) | (ch == {Literal(setChars[1])}) | (ch == {Literal(setChars[2])}))";
-
-                    case 4:
-                        if (((setChars[0] | 0x20) == setChars[1]) &&
-                            ((setChars[2] | 0x20) == setChars[3]))
+                        additionalDeclarations.Add("char ch;");
+                        return (negate, RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out mask)) switch
                         {
-                            additionalDeclarations?.Add("char ch;");
-                            return $"(((ch = ({chExpr} | 0x20)) == {Literal(setChars[1])}) | (ch == {Literal(setChars[3])}))";
-                        }
-                        break;
+                            (false, false) => $"(((ch = {chExpr}) == {Literal(setChars[0])}) | (ch == {Literal(setChars[1])}) | (ch == {Literal(setChars[2])}))",
+                            (true,  false) => $"(((ch = {chExpr}) != {Literal(setChars[0])}) & (ch != {Literal(setChars[1])}) & (ch != {Literal(setChars[2])}))",
+                            (false, true)  => $"((((ch = {chExpr}) | 0x{mask:X}) == {Literal((char)(setChars[1] | mask))}) | (ch == {Literal(setChars[2])}))",
+                            (true,  true)  => $"((((ch = {chExpr}) | 0x{mask:X}) != {Literal((char)(setChars[1] | mask))}) & (ch != {Literal(setChars[2])}))",
+                        };
                 }
             }
 
             // All options after this point require a ch local.
-            additionalDeclarations?.Add("char ch;");
+            additionalDeclarations.Add("char ch;");
 
             // Analyze the character set more to determine what code to generate.
             RegexCharClass.CharClassAnalysisResults analysis = RegexCharClass.Analyze(charClass);
@@ -3180,8 +3493,8 @@ namespace System.Text.RegularExpressions.Generator
                     // the same as [\u0370-\u03FF\u1F00-1FFF]. (In the future, we could possibly
                     // extend the analysis to produce a known lower-bound and compare against
                     // that rather than always using 128 as the pivot point.)
-                    return invariant ?
-                        $"((ch = {chExpr}) >= 128 && global::System.Text.RegularExpressions.RegexRunner.CharInClass(char.ToLowerInvariant((char)ch), {Literal(charClass)}))" :
+                    return negate ?
+                        $"((ch = {chExpr}) < 128 || !global::System.Text.RegularExpressions.RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
                         $"((ch = {chExpr}) >= 128 && global::System.Text.RegularExpressions.RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
                 }
 
@@ -3190,8 +3503,8 @@ namespace System.Text.RegularExpressions.Generator
                     // We determined that every ASCII character is in the class, for example
                     // if the class were the negated example from case 1 above:
                     // [^\p{IsGreek}\p{IsGreekExtended}].
-                    return invariant ?
-                        $"((ch = {chExpr}) < 128 || global::System.Text.RegularExpressions.RegexRunner.CharInClass(char.ToLowerInvariant((char)ch), {Literal(charClass)}))" :
+                    return negate ?
+                        $"((ch = {chExpr}) >= 128 && !global::System.Text.RegularExpressions.RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
                         $"((ch = {chExpr}) < 128 || global::System.Text.RegularExpressions.RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
                 }
             }
@@ -3234,7 +3547,9 @@ namespace System.Text.RegularExpressions.Generator
                 // We know that all inputs that could match are ASCII, for example if the
                 // character class were [A-Za-z0-9], so since the ch is now known to be >= 128, we
                 // can just fail the comparison.
-                return $"((ch = {chExpr}) < 128 && ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0)";
+                return negate ?
+                    $"((ch = {chExpr}) >= 128 || ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0)" :
+                    $"((ch = {chExpr}) < 128 && ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0)";
             }
 
             if (analysis.AllNonAsciiContained)
@@ -3242,15 +3557,21 @@ namespace System.Text.RegularExpressions.Generator
                 // We know that all non-ASCII inputs match, for example if the character
                 // class were [^\r\n], so since we just determined the ch to be >= 128, we can just
                 // give back success.
-                return $"((ch = {chExpr}) >= 128 || ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0)";
+                return negate ?
+                    $"((ch = {chExpr}) < 128 && ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0)" :
+                    $"((ch = {chExpr}) >= 128 || ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0)";
             }
 
             // We know that the whole class wasn't ASCII, and we don't know anything about the non-ASCII
             // characters other than that some might be included, for example if the character class
             // were [\w\d], so since ch >= 128, we need to fall back to calling CharInClass.
-            return invariant ?
-                $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : global::System.Text.RegularExpressions.RegexRunner.CharInClass(char.ToLowerInvariant((char)ch), {Literal(charClass)}))" :
-                $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : global::System.Text.RegularExpressions.RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+            return (negate, invariant) switch
+            {
+                (false, false) => $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : global::System.Text.RegularExpressions.RegexRunner.CharInClass((char)ch, {Literal(charClass)}))",
+                (true,  false) => $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0 : !global::System.Text.RegularExpressions.RegexRunner.CharInClass((char)ch, {Literal(charClass)}))",
+                (false, true)  => $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : global::System.Text.RegularExpressions.RegexRunner.CharInClass(char.ToLowerInvariant((char)ch), {Literal(charClass)}))",
+                (true,  true)  => $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0 : !global::System.Text.RegularExpressions.RegexRunner.CharInClass(char.ToLowerInvariant((char)ch), {Literal(charClass)}))",
+            };
         }
 
         /// <summary>
@@ -3265,7 +3586,7 @@ namespace System.Text.RegularExpressions.Generator
         {
             if (declarations.Count != 0)
             {
-                StringBuilder tmp = new StringBuilder().AppendLine();
+                var tmp = new StringBuilder();
                 foreach (string decl in declarations.OrderBy(s => s))
                 {
                     for (int i = 0; i < indent; i++)
@@ -3307,110 +3628,172 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Gets a textual description of the node fit for rendering in a comment in source.</summary>
-        private static string DescribeNode(RegexNode node) =>
-            node.Type switch
+        private static string DescribeNode(RegexNode node, RegexCode regexCode) =>
+            node.Kind switch
             {
-                RegexNode.Alternate => $"Match with {node.ChildCount()} alternative expressions.",
-                RegexNode.Atomic => $"Atomic group.",
-                RegexNode.Beginning => "Beginning of string anchor.",
-                RegexNode.Bol => "Beginning of line anchor.",
-                RegexNode.Boundary => $"Match a word boundary.",
-                RegexNode.Capture when node.N != -1 => $"{DescribeNonNegative(node.M)} capturing group. Uncaptures the {DescribeNonNegative(node.N)} capturing group.",
-                RegexNode.Capture when node.N == -1 => $"{DescribeNonNegative(node.M)} capturing group.",
-                RegexNode.Concatenate => $"Match a sequence of expressions.",
-                RegexNode.ECMABoundary => $"Match a word boundary (according to ECMAScript rules).",
-                RegexNode.Empty => $"Match empty.",
-                RegexNode.End => "End of string anchor.",
-                RegexNode.EndZ => "End of string or before ending newline anchor.",
-                RegexNode.Eol => "End of line anchor.",
-                RegexNode.Loop or RegexNode.Lazyloop => $"Loop {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
-                RegexNode.Multi => $"Match the string {Literal(node.Str!)}.",
-                RegexNode.NonBoundary => $"Match anything other than a word boundary.",
-                RegexNode.NonECMABoundary => $"Match anything other than a word boundary (according to ECMAScript rules).",
-                RegexNode.Nothing => $"Fail to match.",
-                RegexNode.Notone => $"Match any character other than {Literal(node.Ch)}.",
-                RegexNode.Notoneloop or RegexNode.Notoneloopatomic or RegexNode.Notonelazy => $"Match a character other than {Literal(node.Ch)} {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
-                RegexNode.One => $"Match {Literal(node.Ch)}.",
-                RegexNode.Oneloop or RegexNode.Oneloopatomic or RegexNode.Onelazy => $"Match {Literal(node.Ch)} {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
-                RegexNode.Prevent => $"Zero-width negative lookahead assertion.",
-                RegexNode.Ref => $"Match the same text as matched by the {DescribeNonNegative(node.M)} capture group.",
-                RegexNode.Require => $"Zero-width positive lookahead assertion.",
-                RegexNode.Set => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)}.",
-                RegexNode.Setloop or RegexNode.Setloopatomic or RegexNode.Setlazy => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)} {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
-                RegexNode.Start => "Start position anchor",
-                RegexNode.Testgroup => $"Conditionally match {(node.ChildCount() == 2 ? "an expression" : "one of two expressions")} depending on whether an initial expression matches.",
-                RegexNode.Testref => $"Conditionally match {(node.ChildCount() == 1 ? "an expression" : "one of two expressions")} depending on whether the {DescribeNonNegative(node.M)} capture group matched.",
-                RegexNode.UpdateBumpalong => $"Advance the next matching position.",
-                _ => $"Unknown node type {node.Type}",
+                RegexNodeKind.Alternate => $"Match with {node.ChildCount()} alternative expressions{(node.IsAtomicByParent() ? ", atomically" : "")}.",
+                RegexNodeKind.Atomic => $"Atomic group.",
+                RegexNodeKind.Beginning => "Match if at the beginning of the string.",
+                RegexNodeKind.Bol => "Match if at the beginning of a line.",
+                RegexNodeKind.Boundary => $"Match if at a word boundary.",
+                RegexNodeKind.Capture when node.M == -1 && node.N != -1 => $"Non-capturing balancing group. Uncaptures the {DescribeCapture(node.N, regexCode)}.",
+                RegexNodeKind.Capture when node.N != -1 => $"Balancing group. Captures the {DescribeCapture(node.M, regexCode)} and uncaptures the {DescribeCapture(node.N, regexCode)}.",
+                RegexNodeKind.Capture when node.N == -1 => $"{DescribeCapture(node.M, regexCode)}.",
+                RegexNodeKind.Concatenate => "Match a sequence of expressions.",
+                RegexNodeKind.ECMABoundary => $"Match if at a word boundary (according to ECMAScript rules).",
+                RegexNodeKind.Empty => $"Match an empty string.",
+                RegexNodeKind.End => "Match if at the end of the string.",
+                RegexNodeKind.EndZ => "Match if at the end of the string or if before an ending newline.",
+                RegexNodeKind.Eol => "Match if at the end of a line.",
+                RegexNodeKind.Loop or RegexNodeKind.Lazyloop => node.M == 0 && node.N == 1 ? $"Optional ({(node.Kind is RegexNodeKind.Loop ? "greedy" : "lazy")})." : $"Loop {DescribeLoop(node)}.",
+                RegexNodeKind.Multi => $"Match the string {Literal(node.Str!)}.",
+                RegexNodeKind.NonBoundary => $"Match if at anything other than a word boundary.",
+                RegexNodeKind.NonECMABoundary => $"Match if at anything other than a word boundary (according to ECMAScript rules).",
+                RegexNodeKind.Nothing => $"Fail to match.",
+                RegexNodeKind.Notone => $"Match any character other than {Literal(node.Ch)}.",
+                RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy => $"Match a character other than {Literal(node.Ch)} {DescribeLoop(node)}.",
+                RegexNodeKind.One => $"Match {Literal(node.Ch)}.",
+                RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy => $"Match {Literal(node.Ch)} {DescribeLoop(node)}.",
+                RegexNodeKind.NegativeLookaround => $"Zero-width negative lookahead assertion.",
+                RegexNodeKind.Backreference => $"Match the same text as matched by the {DescribeCapture(node.M, regexCode)}.",
+                RegexNodeKind.PositiveLookaround => $"Zero-width positive lookahead assertion.",
+                RegexNodeKind.Set => $"Match {DescribeSet(node.Str!)}.",
+                RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy => $"Match {DescribeSet(node.Str!)} {DescribeLoop(node)}.",
+                RegexNodeKind.Start => "Match if at the start position.",
+                RegexNodeKind.ExpressionConditional => $"Conditionally match one of two expressions depending on whether an initial expression matches.",
+                RegexNodeKind.BackreferenceConditional => $"Conditionally match one of two expressions depending on whether the {DescribeCapture(node.M, regexCode)} matched.",
+                RegexNodeKind.UpdateBumpalong => $"Advance the next matching position.",
+                _ => $"Unknown node type {node.Kind}",
+            };
+
+        /// <summary>Gets an identifer to describe a capture group.</summary>
+        private static string DescribeCapture(int capNum, RegexCode regexCode)
+        {
+            // If we can get a capture name from the captures collection and it's not just a numerical representation of the group, use it.
+            string name = RegexParser.GroupNameFromNumber(regexCode.Caps, regexCode.Tree.CapsList, regexCode.CapSize, capNum);
+            if (!string.IsNullOrEmpty(name) &&
+                (!int.TryParse(name, out int id) || id != capNum))
+            {
+                name = Literal(name);
+            }
+            else
+            {
+                // Otherwise, create a numerical description of the capture group.
+                int tens = capNum % 10;
+                name = tens is >= 1 and <= 3 && capNum % 100 is < 10 or > 20 ? // Ends in 1, 2, 3 but not 11, 12, or 13
+                    tens switch
+                    {
+                        1 => $"{capNum}st",
+                        2 => $"{capNum}nd",
+                        _ => $"{capNum}rd",
+                    } :
+                    $"{capNum}th";
+            }
+
+            return $"{name} capture group";
+        }
+
+        /// <summary>Gets a textual description of what characters match a set.</summary>
+        private static string DescribeSet(string charClass) =>
+            charClass switch
+            {
+                RegexCharClass.AnyClass => "any character",
+                RegexCharClass.DigitClass => "a Unicode digit",
+                RegexCharClass.ECMADigitClass => "'0' through '9'",
+                RegexCharClass.ECMASpaceClass => "a whitespace character (ECMA)",
+                RegexCharClass.ECMAWordClass => "a word character (ECMA)",
+                RegexCharClass.NotDigitClass => "any character other than a Unicode digit",
+                RegexCharClass.NotECMADigitClass => "any character other than '0' through '9'",
+                RegexCharClass.NotECMASpaceClass => "any character other than a space character (ECMA)",
+                RegexCharClass.NotECMAWordClass => "any character other than a word character (ECMA)",
+                RegexCharClass.NotSpaceClass => "any character other than a space character",
+                RegexCharClass.NotWordClass => "any character other than a word character",
+                RegexCharClass.SpaceClass => "a whitespace character",
+                RegexCharClass.WordClass => "a word character",
+                _ => $"a character in the set {RegexCharClass.DescribeSet(charClass)}",
             };
 
         /// <summary>Writes a textual description of the node tree fit for rending in source.</summary>
         /// <param name="writer">The writer to which the description should be written.</param>
         /// <param name="node">The node being written.</param>
         /// <param name="prefix">The prefix to write at the beginning of every line, including a "//" for a comment.</param>
+        /// <param name="regexTree">regex tree</param>
         /// <param name="depth">The depth of the current node.</param>
-        private static void DescribeExpression(TextWriter writer, RegexNode node, string prefix, int depth = 0)
+        private static void DescribeExpression(TextWriter writer, RegexNode node, string prefix, RegexCode regexCode, int depth = 0)
         {
-            // Write out the line for the node.
-            const char BulletPoint = '\u25CB';
-            writer.WriteLine($"{prefix}{new string(' ', depth * 4)}{BulletPoint} {DescribeNode(node)}");
+            bool skip = node.Kind switch
+            {
+                // For concatenations, flatten the contents into the parent, but only if the parent isn't a form of alternation,
+                // where each branch is considered to be independent rather than a concatenation.
+                RegexNodeKind.Concatenate when node.Parent is not { Kind: RegexNodeKind.Alternate or RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional } => true,
+
+                // For atomic, skip the node if we'll instead render the atomic label as part of rendering the child.
+                RegexNodeKind.Atomic when node.Child(0).Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop or RegexNodeKind.Alternate => true,
+
+                // Don't skip anything else.
+                _ => false,
+            };
+
+            if (!skip)
+            {
+                string tag = node.Parent?.Kind switch
+                {
+                    RegexNodeKind.ExpressionConditional when node.Parent.Child(0) == node => "Condition: ",
+                    RegexNodeKind.ExpressionConditional when node.Parent.Child(1) == node => "Matched: ",
+                    RegexNodeKind.ExpressionConditional when node.Parent.Child(2) == node => "Not Matched: ",
+
+                    RegexNodeKind.BackreferenceConditional when node.Parent.Child(0) == node => "Matched: ",
+                    RegexNodeKind.BackreferenceConditional when node.Parent.Child(1) == node => "Not Matched: ",
+
+                    _ => "",
+                };
+
+                // Write out the line for the node.
+                const char BulletPoint = '\u25CB';
+                writer.WriteLine($"{prefix}{new string(' ', depth * 4)}{BulletPoint} {tag}{DescribeNode(node, regexCode)}");
+            }
 
             // Recur into each of its children.
             int childCount = node.ChildCount();
-            if (childCount > 0)
+            for (int i = 0; i < childCount; i++)
             {
-                for (int i = 0; i < childCount; i++)
-                {
-                    DescribeExpression(writer, node.Child(i), prefix, depth + 1);
-                }
+                int childDepth = skip ? depth : depth + 1;
+                DescribeExpression(writer, node.Child(i), prefix, regexCode, childDepth);
             }
         }
 
-        /// <summary>Gets a textual description of a number, e.g. 3 => "3rd".</summary>
-        private static string DescribeNonNegative(int n)
+        /// <summary>Gets a textual description of a loop's style and bounds.</summary>
+        private static string DescribeLoop(RegexNode node)
         {
-            if (n < 0)
+            string style = node.Kind switch
             {
-                return n.ToString(CultureInfo.InvariantCulture);
-            }
-
-            int tens = n % 10;
-            return tens is >= 1 and <= 3 && n % 100 is < 10 or > 20 ? // Ends in 1, 2, 3 but not 11, 12, or 13
-                tens switch
-                {
-                    1 => $"{n}st",
-                    2 => $"{n}nd",
-                    _ => $"{n}rd",
-                } :
-                $"{n}th";
-        }
-
-        /// <summary>Gets a textual description of loop node's consumption, e.g. "greedily".</summary>
-        private static string DescribeLoopConsumption(RegexNode node) =>
-            node.Type switch
-            {
-                RegexNode.Oneloopatomic or RegexNode.Notoneloopatomic or RegexNode.Setloopatomic => "atomically",
-                RegexNode.Oneloop or RegexNode.Notoneloop or RegexNode.Setloop => "greedily",
-                RegexNode.Onelazy or RegexNode.Notonelazy or RegexNode.Setlazy => "lazily",
-                RegexNode.Loop => node.IsAtomicByParent() ? "greedily and atomically" : "greedily",
+                _ when node.M == node.N => "exactly",
+                RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloopatomic => "atomically",
+                RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop => "greedily",
+                RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy => "lazily",
+                RegexNodeKind.Loop => node.IsAtomicByParent() ? "greedily and atomically" : "greedily",
                 _ /* RegexNode.Lazy */ => node.IsAtomicByParent() ? "lazily and atomically" : "lazily",
             };
 
-        /// <summary>Gets a textual description of a loop node's bounds, e.g. "at least once".</summary>
-        private static string DescribeLoopBounds(RegexNode node) =>
-            node.M == node.N ? $"{node.M} times" :
-            (node.M, node.N) switch
-            {
-                (0, int.MaxValue) => "any number of times",
-                (1, int.MaxValue) => "at least once",
-                (0, 1) => "optionally",
-                (_, int.MaxValue) => $"at least {node.M} times",
-                _ => $"at least {node.M} and at most {node.N} times"
-            };
+            string bounds =
+                node.M == node.N ? $" {node.M} times" :
+                (node.M, node.N) switch
+                {
+                    (0, int.MaxValue) => " any number of times",
+                    (1, int.MaxValue) => " at least once",
+                    (2, int.MaxValue) => " at least twice",
+                    (_, int.MaxValue) => $" at least {node.M} times",
+                    (0, 1) => ", optionally",
+                    (0, _) => $" at most {node.N} times",
+                    _ => $" at least {node.M} and at most {node.N} times"
+                };
 
-        private static FinishEmitScope EmitScope(IndentedTextWriter writer, string title, bool faux = false) => EmitBlock(writer, $"// {title}", appendBlankLine: true, faux);
+            return style + bounds;
+        }
 
-        private static FinishEmitScope EmitBlock(IndentedTextWriter writer, string? clause, bool appendBlankLine = false, bool faux = false)
+        private static FinishEmitScope EmitScope(IndentedTextWriter writer, string title, bool faux = false) => EmitBlock(writer, $"// {title}", faux: faux);
+
+        private static FinishEmitScope EmitBlock(IndentedTextWriter writer, string? clause, bool faux = false)
         {
             if (clause is not null)
             {
@@ -3418,7 +3801,7 @@ namespace System.Text.RegularExpressions.Generator
             }
             writer.WriteLine(faux ? "//{" : "{");
             writer.Indent++;
-            return new FinishEmitScope(writer, appendBlankLine, faux);
+            return new FinishEmitScope(writer, faux);
         }
 
         private static void EmitAdd(IndentedTextWriter writer, string variable, int value)
@@ -3439,13 +3822,11 @@ namespace System.Text.RegularExpressions.Generator
         private readonly struct FinishEmitScope : IDisposable
         {
             private readonly IndentedTextWriter _writer;
-            private readonly bool _appendBlankLine;
             private readonly bool _faux;
 
-            public FinishEmitScope(IndentedTextWriter writer, bool appendBlankLine, bool faux)
+            public FinishEmitScope(IndentedTextWriter writer, bool faux)
             {
                 _writer = writer;
-                _appendBlankLine = appendBlankLine;
                 _faux = faux;
             }
 
@@ -3455,12 +3836,18 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     _writer.Indent--;
                     _writer.WriteLine(_faux ? "//}" : "}");
-                    if (_appendBlankLine)
-                    {
-                        _writer.WriteLine();
-                    }
                 }
             }
+        }
+
+        /// <summary>Bit flags indicating which additional helpers should be emitted into the regex class.</summary>
+        [Flags]
+        private enum RequiredHelperFunctions
+        {
+            /// <summary>No additional functions are required.</summary>
+            None,
+            /// <summary>The IsWordChar helper is required.</summary>
+            IsWordChar
         }
     }
 }

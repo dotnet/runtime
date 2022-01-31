@@ -11,8 +11,7 @@
 #include "util.h"
 #include <stdio.h>
 #include <ctype.h>
-
-#define ARRAY_SIZE(a)   (sizeof (a) / sizeof ((a)[0]))
+#include <minipal/utils.h>
 
 #ifndef STRESS_LOG
 #define STRESS_LOG
@@ -40,7 +39,7 @@ void GcHistAddLog(LPCSTR msg, StressMsg* stressMsg);
 
 
 /*********************************************************************************/
-static const WCHAR* getTime(const FILETIME* time, __out_ecount (buffLen) WCHAR* buff, int buffLen)
+static const WCHAR* getTime(const FILETIME* time, _Out_writes_ (buffLen) WCHAR* buff, int buffLen)
 {
     SYSTEMTIME systemTime;
     static const WCHAR badTime[] = W("BAD TIME");
@@ -177,7 +176,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                         // Print the string up to that point
                     c = *ptr;
                     *ptr = 0;       // Terminate the string temporarily
-                    fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]); 
+                    fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]);
                     *ptr = c;       // Put it back
 
                         // move the argument pointers past the part the was printed
@@ -315,7 +314,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
     }
 
     // Print anything after the last special format instruction.
-    fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]); 
+    fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]);
     fprintf(file, "\n");
 }
 

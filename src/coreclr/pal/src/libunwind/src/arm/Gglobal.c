@@ -29,7 +29,12 @@ HIDDEN define_lock (arm_lock);
 HIDDEN atomic_bool tdep_init_done = 0;
 
 /* Unwinding methods to use. See UNW_METHOD_ enums */
+#if defined(__ANDROID__)
+/* Android only supports three types of unwinding methods. */
+HIDDEN int unwi_unwind_method = UNW_ARM_METHOD_DWARF | UNW_ARM_METHOD_EXIDX | UNW_ARM_METHOD_LR;
+#else
 HIDDEN int unwi_unwind_method = UNW_ARM_METHOD_ALL;
+#endif
 
 HIDDEN void
 tdep_init (void)

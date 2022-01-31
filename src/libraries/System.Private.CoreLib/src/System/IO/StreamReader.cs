@@ -212,12 +212,9 @@ namespace System.IO
 
         private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
         {
-            ValidateArgs(path, encoding);
-
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
+            ArgumentNullException.ThrowIfNull(options);
             if ((options.Access & FileAccess.Read) == 0)
             {
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(options));
@@ -228,21 +225,14 @@ namespace System.IO
 
         private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize)
         {
-            ValidateArgs(path, encoding);
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
             if (bufferSize <= 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            }
 
             return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize);
-        }
-
-        private static void ValidateArgs(string path, Encoding encoding)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath);
         }
 
         public override void Close()
@@ -843,7 +833,37 @@ namespace System.IO
             return sb.ToString();
         }
 
-        public override Task<string?> ReadLineAsync()
+        public override Task<string?> ReadLineAsync() =>
+            ReadLineAsync(default).AsTask();
+
+        /// <summary>
+        /// Reads a line of characters asynchronously from the current stream and returns the data as a string.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A value task that represents the asynchronous read operation. The value of the <c>TResult</c>
+        /// parameter contains the next line from the stream, or is <see langword="null" /> if all of the characters have been read.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The stream reader has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        /// <example>
+        /// The following example shows how to read and print all lines from the file until the end of the file is reached or the operation timed out.
+        /// <code lang="C#">
+        /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
+        /// using StreamReader reader = File.OpenText("existingfile.txt");
+        ///
+        /// string line;
+        /// while ((line = await reader.ReadLineAsync(tokenSource.Token)) is not null)
+        /// {
+        ///     Console.WriteLine(line);
+        /// }
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// If this method is canceled via <paramref name="cancellationToken"/>, some data
+        /// that has been read from the current <see cref="Stream"/> but not stored (by the
+        /// <see cref="StreamReader"/>) or returned (to the caller) may be lost.
+        /// </remarks>
+        public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Read() which a subclass might have overridden.
@@ -851,19 +871,19 @@ namespace System.IO
             // and delegate to our base class (which will call into Read) when we are not sure.
             if (GetType() != typeof(StreamReader))
             {
-                return base.ReadLineAsync();
+                return base.ReadLineAsync(cancellationToken);
             }
 
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task<string?> task = ReadLineAsyncInternal();
+            Task<string?> task = ReadLineAsyncInternal(cancellationToken);
             _asyncReadTask = task;
 
-            return task;
+            return new ValueTask<string?>(task);
         }
 
-        private async Task<string?> ReadLineAsyncInternal()
+        private async Task<string?> ReadLineAsyncInternal(CancellationToken cancellationToken)
         {
             static char[] ResizeOrPoolNewArray(char[]? array, int atLeastSpace)
             {
@@ -893,7 +913,7 @@ namespace System.IO
                 Array.Copy(@from, offset, to, destinationOffset, length);
             }
 
-            if (_charPos == _charLen && (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) == 0)
+            if (_charPos == _charLen && (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) == 0)
             {
                 return null;
             }
@@ -922,7 +942,7 @@ namespace System.IO
                         }
                         char ch = _charBuffer[_charPos + i];
                         _charPos += i + 1;
-                        if (ch == '\r' && (_charPos < _charLen || (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) > 0))
+                        if (ch == '\r' && (_charPos < _charLen || (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) > 0))
                         {
                             if (_charBuffer[_charPos] == '\n')
                             {
@@ -938,7 +958,7 @@ namespace System.IO
 
                     Append(ref rentedArray, lastWrittenIndex, _charBuffer, _charPos, i);
                     lastWrittenIndex += i;
-                } while (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) > 0);
+                } while (await ReadBufferAsync(cancellationToken).ConfigureAwait(false) > 0);
                 return new string(rentedArray!, 0, lastWrittenIndex);
             }
             finally
@@ -950,7 +970,32 @@ namespace System.IO
             }
         }
 
-        public override Task<string> ReadToEndAsync()
+        public override Task<string> ReadToEndAsync() => ReadToEndAsync(default);
+
+        /// <summary>
+        /// Reads all characters from the current position to the end of the stream asynchronously and returns them as one string.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous read operation. The value of the <c>TResult</c> parameter contains
+        /// a string with the characters from the current position to the end of the stream.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters is larger than <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The stream reader has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        /// <example>
+        /// The following example shows how to read the contents of a file by using the <see cref="ReadToEndAsync(CancellationToken)"/> method.
+        /// <code lang="C#">
+        /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
+        /// using StreamReader reader = File.OpenText("existingfile.txt");
+        ///
+        /// Console.WriteLine(await reader.ReadToEndAsync(tokenSource.Token));
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// If this method is canceled via <paramref name="cancellationToken"/>, some data
+        /// that has been read from the current <see cref="Stream"/> but not stored (by the
+        /// <see cref="StreamReader"/>) or returned (to the caller) may be lost.
+        /// </remarks>
+        public override Task<string> ReadToEndAsync(CancellationToken cancellationToken)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Read() which a subclass might have overridden.
@@ -958,19 +1003,19 @@ namespace System.IO
             // and delegate to our base class (which will call into Read) when we are not sure.
             if (GetType() != typeof(StreamReader))
             {
-                return base.ReadToEndAsync();
+                return base.ReadToEndAsync(cancellationToken);
             }
 
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task<string> task = ReadToEndAsyncInternal();
+            Task<string> task = ReadToEndAsyncInternal(cancellationToken);
             _asyncReadTask = task;
 
             return task;
         }
 
-        private async Task<string> ReadToEndAsyncInternal()
+        private async Task<string> ReadToEndAsyncInternal(CancellationToken cancellationToken)
         {
             static char[] Resize(char[] array, int atLeastSpace)
             {
@@ -1007,7 +1052,7 @@ namespace System.IO
                     Append(ref rentedArray, lastWrittenIndex, _charBuffer, _charPos, _charLen - _charPos);
                     lastWrittenIndex += _charLen - _charPos;
                     _charPos = _charLen; // We consumed these characters
-                    await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false);
+                    await ReadBufferAsync(cancellationToken).ConfigureAwait(false);
                 } while (_charLen > 0);
 
                 return new string(rentedArray, 0, lastWrittenIndex);
@@ -1388,7 +1433,7 @@ namespace System.IO
 
         // No data, class doesn't need to be serializable.
         // Note this class is threadsafe.
-        private sealed class NullStreamReader : StreamReader
+        internal sealed class NullStreamReader : StreamReader
         {
             public override Encoding CurrentEncoding => Encoding.Unicode;
 
@@ -1397,35 +1442,46 @@ namespace System.IO
                 // Do nothing - this is essentially unclosable.
             }
 
-            public override int Peek()
-            {
-                return -1;
-            }
+            public override int Peek() => -1;
 
-            public override int Read()
-            {
-                return -1;
-            }
+            public override int Read() => -1;
 
-            public override int Read(char[] buffer, int index, int count)
-            {
-                return 0;
-            }
+            public override int Read(char[] buffer, int index, int count) => 0;
 
-            public override string? ReadLine()
-            {
-                return null;
-            }
+            public override int Read(Span<char> buffer) => 0;
 
-            public override string ReadToEnd()
-            {
-                return string.Empty;
-            }
+            public override Task<int> ReadAsync(char[] buffer, int index, int count) => Task.FromResult(0);
 
-            internal override int ReadBuffer()
-            {
-                return 0;
-            }
+            public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) : default;
+
+            public override int ReadBlock(char[] buffer, int index, int count) => 0;
+
+            public override int ReadBlock(Span<char> buffer) => 0;
+
+            public override Task<int> ReadBlockAsync(char[] buffer, int index, int count) => Task.FromResult(0);
+
+            public override ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) : default;
+
+            public override string? ReadLine() => null;
+
+            public override Task<string?> ReadLineAsync() => Task.FromResult<string?>(null);
+
+            public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<string?>(cancellationToken) : default;
+
+            public override string ReadToEnd() => "";
+
+            public override Task<string> ReadToEndAsync() => Task.FromResult("");
+
+            public override Task<string> ReadToEndAsync(CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? Task.FromCanceled<string>(cancellationToken) : Task.FromResult("");
+
+            internal override ValueTask<int> ReadAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) : default;
+
+            internal override int ReadBuffer() => 0;
         }
     }
 }

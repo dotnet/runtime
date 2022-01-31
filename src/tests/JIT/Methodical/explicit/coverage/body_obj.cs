@@ -349,7 +349,7 @@ internal class TestApp
         return __refvalue(tr_init, AA).q.val;
     }
 
-    private static unsafe int Main()
+    internal static unsafe int RunAllTests()
     {
         AA.reset();
         if (test_0_0(100, new AA(100), new AA(0)) != 100)
