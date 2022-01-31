@@ -178,7 +178,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void DisposeAsyncCallsCompleteAsync()
+        public async Task DisposeAsyncCallsCompleteAsync()
         {
             var pipeWriter = new TestPipeWriter();
             Stream stream = pipeWriter.AsStream();
