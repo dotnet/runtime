@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -213,6 +214,26 @@ namespace Internal.IL
             FindEnclosingExceptionRegions();
             InitialPass();
             ImportBasicBlocks();
+            CheckExceptionRegions();
+        }
+
+        private void CheckExceptionRegions()
+        {
+            var tryOffsets = new HashSet<int>();
+            for (int i = 0; i < _exceptionRegions.Length; i++)
+            {
+                var region1 = _exceptionRegions[i];
+                for (int j = 0; j < _exceptionRegions.Length; j++)
+                {
+                    var region2 = _exceptionRegions[j];
+                    if (region1 != region2 &&
+                        region1.ILRegion.TryOffset == region2.ILRegion.TryOffset &&
+                        tryOffsets.Add(region1.ILRegion.TryOffset))
+                    {
+                        VerificationError(VerifierError.MoreThanOneHandler);
+                    }
+                }
+            }
         }
 
         private void FindEnclosingExceptionRegions()

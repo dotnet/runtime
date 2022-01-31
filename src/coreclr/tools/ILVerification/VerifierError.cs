@@ -45,6 +45,7 @@ namespace ILVerify
         //E_FIL_CONT_HND                "Filter contains handler."
         //E_FIL_CONT_FIL                "Nested filters."
         //E_FIL_GTEQ_CS                 "filter >= code size."
+        MoreThanOneHandler,             // Try block has more than one handler.
         FallthroughException,           // Fallthrough the end of an exception block.
         FallthroughIntoHandler,         // Fallthrough into an exception handler.
         FallthroughIntoFilter,          // Fallthrough into an exception filter.
