@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -16,58 +17,47 @@ namespace Generators
 {
     public partial class EventSourceGenerator
     {
-        private sealed class Parser
+        private static class Parser
         {
-            private readonly CancellationToken _cancellationToken;
-            private readonly Compilation _compilation;
-            private readonly Action<Diagnostic> _reportDiagnostic;
-
-            public Parser(Compilation compilation, Action<Diagnostic> reportDiagnostic, CancellationToken cancellationToken)
+            public static ImmutableArray<EventSourceClass> GetEventSourceClasses(ImmutableArray<ClassDeclarationSyntax> classDeclarations, Compilation compilation, CancellationToken ct)
             {
-                _compilation = compilation;
-                _cancellationToken = cancellationToken;
-                _reportDiagnostic = reportDiagnostic;
-            }
-
-            public EventSourceClass[] GetEventSourceClasses(List<ClassDeclarationSyntax> classDeclarations)
-            {
-                INamedTypeSymbol? autogenerateAttribute = _compilation.GetBestTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAutoGenerateAttribute");
+                INamedTypeSymbol? autogenerateAttribute = compilation.GetBestTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAutoGenerateAttribute");
                 if (autogenerateAttribute is null)
                 {
                     // No EventSourceAutoGenerateAttribute
-                    return Array.Empty<EventSourceClass>();
+                    return ImmutableArray<EventSourceClass>.Empty;
                 }
 
-                INamedTypeSymbol? eventSourceAttribute = _compilation.GetBestTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAttribute");
+                INamedTypeSymbol? eventSourceAttribute = compilation.GetBestTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAttribute");
                 if (eventSourceAttribute is null)
                 {
                     // No EventSourceAttribute
-                    return Array.Empty<EventSourceClass>();
+                    return ImmutableArray<EventSourceClass>.Empty;
                 }
 
-                List<EventSourceClass>? results = null;
+                ImmutableArray<EventSourceClass>.Builder? results = null;
                 // we enumerate by syntax tree, to minimize the need to instantiate semantic models (since they're expensive)
-                foreach (IGrouping<SyntaxTree, ClassDeclarationSyntax>? group in classDeclarations.GroupBy(x => x.SyntaxTree))
+                foreach (IGrouping<SyntaxTree, ClassDeclarationSyntax> group in classDeclarations.GroupBy(static x => x.SyntaxTree))
                 {
                     SemanticModel? sm = null;
                     EventSourceClass? eventSourceClass = null;
-                    foreach (ClassDeclarationSyntax? classDef in group)
+                    foreach (ClassDeclarationSyntax classDef in group)
                     {
-                        if (_cancellationToken.IsCancellationRequested)
+                        if (ct.IsCancellationRequested)
                         {
                             // be nice and stop if we're asked to
-                            return results?.ToArray() ?? Array.Empty<EventSourceClass>();
+                            return results?.ToImmutable() ?? ImmutableArray<EventSourceClass>.Empty;
                         }
 
                         bool autoGenerate = false;
-                        foreach (AttributeListSyntax? cal in classDef.AttributeLists)
+                        foreach (AttributeListSyntax cal in classDef.AttributeLists)
                         {
-                            foreach (AttributeSyntax? ca in cal.Attributes)
+                            foreach (AttributeSyntax ca in cal.Attributes)
                             {
                                 // need a semantic model for this tree
-                                sm ??= _compilation.GetSemanticModel(classDef.SyntaxTree);
+                                sm ??= compilation.GetSemanticModel(classDef.SyntaxTree);
 
-                                if (sm.GetSymbolInfo(ca, _cancellationToken).Symbol is not IMethodSymbol caSymbol)
+                                if (sm.GetSymbolInfo(ca, ct).Symbol is not IMethodSymbol caSymbol)
                                 {
                                     // badly formed attribute definition, or not the right attribute
                                     continue;
@@ -112,10 +102,10 @@ namespace Generators
                                     SeparatedSyntaxList<AttributeArgumentSyntax>? args = ca.ArgumentList?.Arguments;
                                     if (args is not null)
                                     {
-                                        foreach (AttributeArgumentSyntax? arg in args)
+                                        foreach (AttributeArgumentSyntax arg in args)
                                         {
-                                            string? argName = arg.NameEquals!.Name.Identifier.ToString();
-                                            string? value = sm.GetConstantValue(arg.Expression, _cancellationToken).ToString();
+                                            string argName = arg.NameEquals!.Name.Identifier.ToString();
+                                            string value = sm.GetConstantValue(arg.Expression, ct).ToString();
 
                                             switch (argName)
                                             {
@@ -156,12 +146,12 @@ namespace Generators
                             continue;
                         }
 
-                        results ??= new List<EventSourceClass>();
+                        results ??= ImmutableArray.CreateBuilder<EventSourceClass>();
                         results.Add(eventSourceClass);
                     }
                 }
 
-                return results?.ToArray() ?? Array.Empty<EventSourceClass>();
+                return results?.ToImmutable() ?? ImmutableArray<EventSourceClass>.Empty;
             }
 
             // From System.Private.CoreLib

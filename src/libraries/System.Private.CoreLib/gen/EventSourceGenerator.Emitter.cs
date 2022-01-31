@@ -20,76 +20,64 @@ namespace Generators
 
         private sealed class Emitter
         {
-            private readonly StringBuilder _builder = new StringBuilder(1024);
-            private readonly GeneratorExecutionContext _context;
-
-            public Emitter(GeneratorExecutionContext context) => _context = context;
-
-            public void Emit(EventSourceClass[] eventSources, CancellationToken cancellationToken)
+            public static void Emit(SourceProductionContext spc, EventSourceClass ec)
             {
-                foreach (EventSourceClass? ec in eventSources)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        // stop any additional work
-                        break;
-                    }
+                StringBuilder sb = new StringBuilder(1024);
 
-                    _builder.AppendLine(s_header);
-                    _builder.AppendLine("using System;");
-                    GenType(ec);
+                sb.AppendLine(s_header);
+                sb.AppendLine("using System;");
+                GenType(ec, sb);
 
-                    _context.AddSource($"{ec.ClassName}.g.cs", SourceText.From(_builder.ToString(), Encoding.UTF8));
+                spc.AddSource($"{ec.ClassName}.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
 
-                    _builder.Clear();
-                }
+                sb.Clear();
             }
 
-            private void GenType(EventSourceClass ec)
+            private static void GenType(EventSourceClass ec, StringBuilder sb)
             {
                 if (!string.IsNullOrWhiteSpace(ec.Namespace))
                 {
-                    _builder.AppendLine($@"
+                    sb.AppendLine($@"
 namespace {ec.Namespace}
 {{");
                 }
 
-                _builder.AppendLine($@"
+                sb.AppendLine($@"
     {s_generatedCodeAttribute}
     partial class {ec.ClassName}
     {{");
-                GenerateConstructor(ec);
+                GenerateConstructor(ec, sb);
 
-                GenerateProviderMetadata(ec.SourceName);
+                GenerateProviderMetadata(ec.SourceName, sb);
 
-                _builder.AppendLine($@"
+                sb.AppendLine($@"
     }}");
 
                 if (!string.IsNullOrWhiteSpace(ec.Namespace))
                 {
-                    _builder.AppendLine($@"
+                    sb.AppendLine($@"
 }}");
                 }
             }
 
-            private void GenerateConstructor(EventSourceClass ec)
+            private static void GenerateConstructor(EventSourceClass ec, StringBuilder sb)
             {
-                _builder.AppendLine($@"
+                sb.AppendLine($@"
         private {ec.ClassName}() : base(new Guid({ec.Guid.ToString("x").Replace("{", "").Replace("}", "")}), ""{ec.SourceName}"") {{ }}");
             }
 
-            private void GenerateProviderMetadata(string sourceName)
+            private static void GenerateProviderMetadata(string sourceName, StringBuilder sb)
             {
-                _builder.Append(@"
+                sb.Append(@"
         private protected override ReadOnlySpan<byte> ProviderMetadata => new byte[] { ");
 
                 byte[] metadataBytes = MetadataForString(sourceName);
                 foreach (byte b in metadataBytes)
                 {
-                    _builder.Append($"0x{b:x}, ");
+                    sb.Append($"0x{b:x}, ");
                 }
 
-                _builder.AppendLine(@"};");
+                sb.AppendLine(@"};");
             }
 
             // From System.Private.CoreLib

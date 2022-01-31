@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Generators
 {
     [Generator]
-    public partial class EventSourceGenerator : ISourceGenerator
+    public partial class EventSourceGenerator : IIncrementalGenerator
     {
         // Example input:
         //
@@ -32,69 +32,53 @@ namespace Generators
         //         }
         //     }
 
-        public void Initialize(GeneratorInitializationContext context)
-            => context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
-
-        public void Execute(GeneratorExecutionContext context)
+        public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            SyntaxReceiver? receiver = context.SyntaxReceiver as SyntaxReceiver;
-            if ((receiver?.CandidateClasses?.Count ?? 0) == 0)
-            {
-                // nothing to do yet
-                return;
-            }
+            IncrementalValuesProvider<EventSourceClass> eventSourceClasses =
+                context.SyntaxProvider
+                .CreateSyntaxProvider(static (x, _) => IsSyntaxTargetForGeneration(x), (x, _) => GetSemanticTargetForGeneration(x))
+                .Where(x => x is not null)
+                .Collect()
+                .Combine(context.CompilationProvider)
+                .SelectMany((x, ct) => Parser.GetEventSourceClasses(x.Left, x.Right, ct));
 
-            Parser? p = new Parser(context.Compilation, context.ReportDiagnostic, context.CancellationToken);
-            EventSourceClass[]? eventSources = p.GetEventSourceClasses(receiver.CandidateClasses);
-
-            if (eventSources?.Length > 0)
-            {
-                Emitter? e = new Emitter(context);
-                e.Emit(eventSources, context.CancellationToken);
-            }
+            context.RegisterSourceOutput(eventSourceClasses, static (spc, x) => Emitter.Emit(spc, x));
         }
 
-        private sealed class SyntaxReceiver : ISyntaxReceiver
+        private static bool IsSyntaxTargetForGeneration(SyntaxNode node) =>
+            node is ClassDeclarationSyntax x && x.AttributeLists.Count > 0;
+
+        private static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
         {
-            private List<ClassDeclarationSyntax>? _candidateClasses;
+            // Only add classes annotated [EventSourceAutoGenerate] to reduce busy work.
+            const string EventSourceAttribute = "EventSourceAutoGenerateAttribute";
+            const string EventSourceAttributeShort = "EventSourceAutoGenerate";
 
-            public List<ClassDeclarationSyntax>? CandidateClasses => _candidateClasses;
+            var classDeclaration = (ClassDeclarationSyntax)context.Node;
 
-            public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
+            // Check if has EventSource attribute before adding to candidates
+            // as we don't want to add every class in the project
+            foreach (AttributeListSyntax? cal in classDeclaration.AttributeLists)
             {
-                // Only add classes annotated [EventSourceAutoGenerate] to reduce busy work.
-                const string EventSourceAttribute = "EventSourceAutoGenerateAttribute";
-                const string EventSourceAttributeShort = "EventSourceAutoGenerate";
-
-                // Only classes
-                if (syntaxNode is ClassDeclarationSyntax classDeclaration)
+                foreach (AttributeSyntax? ca in cal.Attributes)
                 {
-                    // Check if has EventSource attribute before adding to candidates
-                    // as we don't want to add every class in the project
-                    foreach (AttributeListSyntax? cal in classDeclaration.AttributeLists)
+                    // Check if Span length matches before allocating the string to check more
+                    int length = ca.Name.Span.Length;
+                    if (length != EventSourceAttribute.Length && length != EventSourceAttributeShort.Length)
                     {
-                        foreach (AttributeSyntax? ca in cal.Attributes)
-                        {
-                            // Check if Span length matches before allocating the string to check more
-                            int length = ca.Name.Span.Length;
-                            if (length != EventSourceAttribute.Length && length != EventSourceAttributeShort.Length)
-                            {
-                                continue;
-                            }
+                        continue;
+                    }
 
-                            // Possible match, now check the string value
-                            string attrName = ca.Name.ToString();
-                            if (attrName == EventSourceAttribute || attrName == EventSourceAttributeShort)
-                            {
-                                // Match add to candidates
-                                _candidateClasses ??= new List<ClassDeclarationSyntax>();
-                                _candidateClasses.Add(classDeclaration);
-                                return;
-                            }
-                        }
+                    // Possible match, now check the string value
+                    string attrName = ca.Name.ToString();
+                    if (attrName == EventSourceAttribute || attrName == EventSourceAttributeShort)
+                    {
+                        return classDeclaration;
                     }
                 }
             }
+
+            return null;
         }
 
         private sealed class EventSourceClass
