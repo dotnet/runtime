@@ -1544,9 +1544,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             store.AddPossibleBreakpointsInMethodToList(sourceLocation, sourceLocation, res, scope.Method.Info);
             if (res.Count == 0)
                 return false;
+            var bp = res.First();
 
-            var ilOffset = res.First().IlLocation;
-
+            //search if it's a nested function and it's return false because we cannot move to another function
+            if (bp.Line != location.Line)
+            {
+                foreach (var method in scope.Method.Info.Assembly.Methods)
+                {
+                    if (method.Value == scope.Method.Info)
+                        continue;
+                    res = new List<SourceLocation>();
+                    store.AddPossibleBreakpointsInMethodToList(sourceLocation, sourceLocation, res, method.Value);
+                    if (res.Count >= 0)
+                        return false;
+                }
+            }
+            var ilOffset = bp.IlLocation;
             var ret = await context.SdbAgent.SetNextIP(scope.Method, context.ThreadId, ilOffset, token);
 
             if (!ret)
