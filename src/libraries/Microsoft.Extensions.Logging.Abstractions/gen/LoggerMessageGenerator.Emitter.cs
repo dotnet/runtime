@@ -138,14 +138,14 @@ namespace {lc.Namespace}
         {nestedIndentation}/// {s_generatedTypeSummary}
         {nestedIndentation}[{s_generatedCodeAttribute}]
         {nestedIndentation}[{s_editorBrowsableAttribute}]
-        {nestedIndentation}private readonly struct __{lm.Name}Struct : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
+        {nestedIndentation}private readonly struct __{lm.UniqueName}Struct : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
         {nestedIndentation}{{");
                 GenFields(lm, nestedIndentation);
 
                 if (lm.TemplateParameters.Count > 0)
                 {
                     _builder.Append($@"
-            {nestedIndentation}public __{lm.Name}Struct(");
+            {nestedIndentation}public __{lm.UniqueName}Struct(");
                     GenArguments(lm);
                     _builder.Append($@")
             {nestedIndentation}{{");
@@ -166,7 +166,7 @@ namespace {lc.Namespace}
             {nestedIndentation}}}
 ");
                 _builder.Append($@"
-            {nestedIndentation}public static readonly global::System.Func<__{lm.Name}Struct, global::System.Exception?, string> Format = (state, ex) => state.ToString();
+            {nestedIndentation}public static readonly global::System.Func<__{lm.UniqueName}Struct, global::System.Exception?, string> Format = (state, ex) => state.ToString();
 
             {nestedIndentation}public int Count => {lm.TemplateParameters.Count + 1};
 
@@ -343,7 +343,7 @@ namespace {lc.Namespace}
 
             private void GenHolder(LoggerMethod lm)
             {
-                string typeName = $"__{lm.Name}Struct";
+                string typeName = $"__{lm.UniqueName}Struct";
 
                 _builder.Append($"new {typeName}(");
                 foreach (LoggerParameter p in lm.TemplateParameters)
@@ -375,7 +375,7 @@ namespace {lc.Namespace}
 
                     GenDefineTypes(lm, brackets: false);
 
-                    _builder.Append($@"global::System.Exception?> __{lm.Name}Callback =
+                    _builder.Append($@"global::System.Exception?> __{lm.UniqueName}Callback =
             {nestedIndentation}global::Microsoft.Extensions.Logging.LoggerMessage.Define");
 
                     GenDefineTypes(lm, brackets: true);
@@ -404,7 +404,7 @@ namespace {lc.Namespace}
                 if (UseLoggerMessageDefine(lm))
                 {
                     _builder.Append($@"
-            {nestedIndentation}{enabledCheckIndentation}__{lm.Name}Callback({logger}, ");
+            {nestedIndentation}{enabledCheckIndentation}__{lm.UniqueName}Callback({logger}, ");
 
                     GenCallbackArguments(lm);
 
@@ -420,7 +420,7 @@ namespace {lc.Namespace}
                 GenHolder(lm);
                 _builder.Append($@",
                 {nestedIndentation}{enabledCheckIndentation}{exceptionArg},
-                {nestedIndentation}{enabledCheckIndentation}__{lm.Name}Struct.Format);");
+                {nestedIndentation}{enabledCheckIndentation}__{lm.UniqueName}Struct.Format);");
                 }
 
                 if (!lm.SkipEnabledCheck)
