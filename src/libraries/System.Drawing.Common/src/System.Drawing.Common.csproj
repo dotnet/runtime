@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WarningsNotAsErrors>CS0618</WarningsNotAsErrors>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-Unix;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <AddXamarinPlaceholderFilesToPackage>true</AddXamarinPlaceholderFilesToPackage>
@@ -18,7 +18,7 @@ System.Drawing.Font
 System.Drawing.Graphics
 System.Drawing.Icon
 
-Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows for more information.</PackageDescription>
+Since .NET 7, non-Windows platforms are not supported. See https://aka.ms/systemdrawingnonwindows for more information.</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -233,9 +233,7 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
     <Compile Include="System\Drawing\Printing\PageSettings.Windows.cs" />
     <Compile Include="System\Drawing\Printing\PreviewPrintController.Windows.cs" />
     <Compile Include="System\Drawing\Printing\PrintController.Windows.cs" />
-    <Compile Include="System\Drawing\Printing\PrintDocument.Windows.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="System\Drawing\Printing\PrintDocument.Windows.cs" />
     <Compile Include="System\Drawing\Printing\PrinterSettings.Windows.cs" />
     <Compile Include="System\Drawing\Printing\PrintEventArgs.Windows.cs" />
     <Compile Include="System\Drawing\Printing\PrintPageEventArgs.Windows.cs" />
@@ -338,59 +336,19 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
     <Compile Include="System\Drawing\Icon.Windows.COMWrappers.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.COMWrappers.cs" />
   </ItemGroup>
-  <!-- Unix specific -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
-    <Compile Include="System\Drawing\Graphics.Unix.cs" />
-    <Compile Include="System\Drawing\Icon.Unix.cs" />
-    <Compile Include="System\Drawing\SystemFonts.Unix.cs" />
-    <Compile Include="System\Drawing\Imaging\BitmapData.Unix.cs" />
-    <Compile Include="System\Drawing\Imaging\Metafile.Unix.cs" />
-    <Compile Include="System\Drawing\Imaging\MetafileHeader.Unix.cs" />
-    <Compile Include="System\Drawing\Imaging\MetaHeader.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\LibcupsNative.cs" />
-    <Compile Include="System\Drawing\Printing\PrintingServices.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PageSettings.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PreviewPrintController.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PrintController.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PrintDocument.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PrinterSettings.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PrintEventArgs.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PrintPageEventArgs.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\StandardPrintController.Unix.cs" />
-    <Compile Include="System\Drawing\Bitmap.Unix.cs" />
-    <Compile Include="System\Drawing\BufferedGraphics.Unix.cs" />
-    <Compile Include="System\Drawing\BufferedGraphicsManager.Unix.cs" />
-    <Compile Include="System\Drawing\BufferedGraphicsContext.Unix.cs" />
-    <Compile Include="System\Drawing\macFunctions.cs" />
-    <Compile Include="System\Drawing\Font.Unix.cs" />
-    <Compile Include="System\Drawing\FontFamily.Unix.cs" />
-    <Compile Include="System\Drawing\GdiplusNative.Unix.cs" />
-    <Compile Include="System\Drawing\GdiPlusStreamHelper.Unix.cs" />
-    <Compile Include="System\Drawing\LibX11Functions.cs" />
-    <Compile Include="System\Drawing\LocalAppContextSwitches.Unix.cs" />
-    <Compile Include="System\Drawing\MarshallingHelpers.cs" />
-    <Compile Include="System\Drawing\Image.Unix.cs" />
-    <Compile Include="System\Drawing\Pen.Unix.cs" />
-    <Compile Include="System\Drawing\Region.Unix.cs" />
-    <Compile Include="System\Drawing\SRDescriptionAttribute.cs" />
-    <Compile Include="System\Drawing\SystemIcons.Unix.cs" />
-    <Compile Include="System\Drawing\ToolboxBitmapAttribute.Unix.cs" />
-    <Compile Include="System\Drawing\Drawing2D\AdjustableArrowCap.Unix.cs" />
-    <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Unix.cs" />
-    <Compile Include="System\Drawing\Drawing2D\GraphicsPath.Unix.cs" />
-    <Compile Include="System\Drawing\Text\PrivateFontCollection.Unix.cs" />
-    <Compile Include="System\Drawing\LibraryResolver.cs" />
-    <Compile Include="Interop\Unix\Interop.Libraries.cs" />
-    <EmbeddedResource Include="Resources\System\Drawing\Error.ico">
-      <LogicalName>placeholder.ico</LogicalName>
-    </EmbeddedResource>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.NoCOMWrappers.cs"
+             Link="Common\Interop\Windows\Ole32\Interop.IStream.NoCOMWrappers.cs" />
+    <Compile Include="System\Drawing\DrawingCom.NoCOMWrappers.cs" />
+    <Compile Include="System\Drawing\Icon.Windows.NoCOMWrappers.cs" />
+    <Compile Include="System\Drawing\Internal\GPStream.NoCOMWrappers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and '$(TargetPlatformIdentifier)' != ''">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and '$(TargetsAnyOS)' != 'true'">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\HandleRefMarshaller.cs"
              Link="Common\System\Runtime\InteropServices\HandleRefMarshaller.cs" />
   </ItemGroup>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\HandleRefMarshaller.cs"
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\src\Microsoft.Win32.SystemEvents.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
