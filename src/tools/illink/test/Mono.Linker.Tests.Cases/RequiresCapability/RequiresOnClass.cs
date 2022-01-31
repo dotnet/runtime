@@ -816,7 +816,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[AttributeWithRequires (PropertyOnAttribute = 42)]
-		[ExpectedWarning ("IL2026", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2026", "AttributeWithRequires.AttributeWithRequires()")]
 		static void KeepFieldOnAttribute () { }
 	}
 }

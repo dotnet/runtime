@@ -36,6 +36,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// These are missing warnings (potential failure at runtime)
 			TestBackwardsEdgeGoto ();
 			TestBackwardsEdgeLoop ();
+
+			TestNoWarningsInRUCMethod ();
+			TestNoWarningsInRUCType ();
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) },
@@ -343,6 +346,53 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		ForwardTarget:
 			str = GetWithPublicFields ();
 			goto BackwardTarget;
+		}
+
+		[ExpectedWarning ("IL2026", nameof (RUCMethod), "message")]
+		public static void TestNoWarningsInRUCMethod ()
+		{
+			RUCMethod ();
+		}
+
+		[RequiresUnreferencedCode ("message")]
+		public static void RUCMethod ()
+		{
+			RequireAll (GetWithPublicMethods ());
+		}
+
+		[ExpectedWarning ("IL2026", nameof (RUCType) + "." + nameof (RUCType), "message")]
+		[ExpectedWarning ("IL2026", nameof (RUCType.StaticMethod), "message")]
+		public static void TestNoWarningsInRUCType ()
+		{
+			RUCType.StaticMethod ();
+			var rucType = new RUCType ();
+			rucType.InstanceMethod ();
+			rucType.VirtualMethod ();
+		}
+
+		[RequiresUnreferencedCode ("message")]
+		public class RUCType
+		{
+			public static void StaticMethod ()
+			{
+				RequireAll (GetWithPublicMethods ());
+			}
+
+			public void InstanceMethod ()
+			{
+				RequireAll (GetWithPublicMethods ());
+			}
+
+			public virtual void VirtualMethod ()
+			{
+				RequireAll (GetWithPublicMethods ());
+			}
+		}
+
+		public static void RequireAll (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+			string type)
+		{
 		}
 
 		public static void RequirePublicFields (
