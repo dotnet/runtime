@@ -12,7 +12,6 @@ using System.Threading;
 
 namespace DebuggerTests;
 
-
 public class SetNextIpTests : DebuggerTestBase
 {
     [Fact]
@@ -111,8 +110,8 @@ public class SetNextIpTests : DebuggerTestBase
     }
 
     [Fact]
-        public async Task SetNextIP_Lambda()
-        {
+    public async Task SetNextIP_Lambda()
+    {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
 
         await SetBreakpoint(debugger_test_loc, 77, 12);

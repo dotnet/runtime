@@ -486,10 +486,12 @@ namespace DebuggerTests
                 });
 
             if (!expected_error)
+            {
                 return await SendCommandAndCheck(
                     JObject.FromObject(new { location = setNextIPArgs }), "DotnetDebugger.setNextIP", script_loc, line, column, function_name,
                     wait_for_event_fn: wait_for_event_fn,
                     locals_fn: locals_fn);
+            }
 
             var res = await cli.SendCommand("DotnetDebugger.setNextIP", JObject.FromObject(new { location = setNextIPArgs }), token);
             Assert.False(res.IsOk);
