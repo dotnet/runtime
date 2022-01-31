@@ -53,7 +53,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #include "mini-arch.h"
 #include "regalloc.h"
 #include "mini-unwind.h"
-#include "jit.h"
+#include <mono/mini/jit.h>
 #include "cfgdump.h"
 #include "tiered.h"
 

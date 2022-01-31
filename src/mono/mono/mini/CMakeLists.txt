@@ -293,11 +293,6 @@ else()
 set(llvm_runtime_sources)
 endif()
 
-set(mini_public_headers_base
-  jit.h
-  mono-private-unstable.h)
-addprefix(mini_public_headers ../mini "${mini_public_headers_base}")
-
 set(mini_sources "${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h;main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
 
 if(LLVM_INCLUDEDIR)
