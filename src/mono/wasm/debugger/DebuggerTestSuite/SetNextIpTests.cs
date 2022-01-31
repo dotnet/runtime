@@ -110,35 +110,6 @@ public class SetNextIpTests : DebuggerTestBase
     }
 
     [Fact]
-    public async Task SetNextIP_AsyncMethod_SkipAwait()
-    {
-        var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
-
-        await SetBreakpoint(debugger_test_loc, 76, 12);
-        var pause_location = await EvaluateAndCheck(
-        "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
-        debugger_test_loc, 76, 12, "MoveNext",
-        locals_fn: async (locals) =>
-            {
-                Assert.Equal(4, locals.Count());
-                await Task.CompletedTask;
-            });
-        var top_frame = pause_location["callFrames"][0]["functionLocation"];
-        await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-async-test.cs", 91, 12, "MoveNext",
-        locals_fn: async (locals) =>
-            {
-                Assert.Equal(4, locals.Count());
-                await Task.CompletedTask;
-            });
-        await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-test.cs", 92, 8, "MoveNext",
-        locals_fn: async (locals) =>
-            {
-                Assert.Equal(4, locals.Count());
-                await Task.CompletedTask;
-            });
-    }
-
-    [Fact]
     public async Task SetNextIP_Lambda()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -168,5 +139,48 @@ public class SetNextIpTests : DebuggerTestBase
                 await CheckValueType(locals, "code", "System.Threading.Tasks.TaskStatus", description: "Created");
                 await CheckDateTime(locals, "dt0", new DateTime(3412, 4, 6, 8, 0, 2));
             });
+        await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-async-test.cs", 90, 16, "MoveNext",
+        locals_fn: async (locals) =>
+            {
+                await CheckString(locals, "str", "foobar");
+                await CheckValueType(locals, "code", "System.Threading.Tasks.TaskStatus", description: "Created");
+                await CheckDateTime(locals, "dt0", new DateTime(3412, 4, 6, 8, 0, 2));
+            });
+        await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-test.cs", 91, 12, "MoveNext",
+        locals_fn: async (locals) =>
+            {
+                await CheckString(locals, "str", "foobar");
+                await CheckValueType(locals, "code", "System.Threading.Tasks.TaskStatus", description: "Created");
+                await CheckDateTime(locals, "dt0", new DateTime(3412, 4, 6, 8, 0, 2));
+            });
+        }
+
+            [Fact]
+    public async Task SetNextIP_Lambda_InvalidLocation()
+    {
+        var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
+
+        await SetBreakpoint(debugger_test_loc, 77, 12);
+        var pause_location = await EvaluateAndCheck(
+        "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
+        debugger_test_loc, 77, 12, "MoveNext",
+        locals_fn: async (locals) =>
+        {
+            await CheckString(locals, "str", "foobar");
+            await CheckValueType(locals, "code", "System.Threading.Tasks.TaskStatus", description: "Created");
+            await CheckValueType(locals, "dt0", "System.DateTime", description: "1/1/0001 12:00:00 AM");
+        });
+        var top_frame = pause_location["callFrames"][0]["functionLocation"];
+        await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-async-test.cs", 92, 8, "MoveNext",
+        expected_error: true);
+
+        await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-test.cs", 79, 16, "MoveNext",
+        locals_fn: async (locals) =>
+            {
+                await CheckString(locals, "str", "foobar");
+                await CheckValueType(locals, "code", "System.Threading.Tasks.TaskStatus", description: "RanToCompletion");
+                await CheckValueType(locals, "dt0", "System.DateTime", description: "1/1/0001 12:00:00 AM");
+            },
+        times: 2);
         }
 }
