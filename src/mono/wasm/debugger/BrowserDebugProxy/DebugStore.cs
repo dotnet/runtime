@@ -890,11 +890,20 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.url = url;
             this.DebuggerFileName = url.Replace("\\", "/").Replace(":", "");
 
-            this.SourceUri = new Uri(url, UriKind.RelativeOrAbsolute);
-            if (SourceUri.IsFile && (File.Exists(SourceUri.LocalPath) || File.Exists(url)))
+            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + url, UriKind.RelativeOrAbsolute);
+            if (SourceUri.IsFile)
             {
-                this.Url = this.SourceUri.ToString();
-                return;
+                if (File.Exists(SourceUri.LocalPath))
+                {
+                    this.Url = this.SourceUri.ToString();
+                    return;
+                }
+                if (File.Exists(url))
+                {
+                    this.SourceUri = new Uri(url, UriKind.RelativeOrAbsolute);
+                    this.Url = this.SourceUri.ToString();
+                    return;
+                }
             }
             this.Url = DotNetUrl;
         }
