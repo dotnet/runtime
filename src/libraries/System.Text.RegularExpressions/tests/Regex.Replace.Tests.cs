@@ -335,12 +335,6 @@ namespace System.Text.RegularExpressions.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Replace("input", "replacement", 0, 6));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Replace("input", new MatchEvaluator(MatchEvaluator1), 0, 6));
-
-            if (PlatformDetection.IsNetCore)
-            {
-                // Substitutions not supported in NonBacktracking mode
-                Assert.Throws<NotSupportedException>(() => new Regex("pattern", RegexHelpers.RegexOptionNonBacktracking).Replace("input", "$1", -1));
-            }
         }
 
         public static string MatchEvaluator1(Match match) => match.Value.ToLower() == "big" ? "Huge": "Tiny";
@@ -398,18 +392,10 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(TestReplaceWithSubstitution_TestData))]
         private void TestReplaceWithSubstitution(string pattern, string input, string replacement, string expectedoutput, RegexOptions opt)
         {
-            if (opt == RegexHelpers.RegexOptionNonBacktracking)
-            {
-                Assert.Throws<NotSupportedException>(() => Regex.Replace(input, pattern, replacement, opt));
-                Assert.Throws<NotSupportedException>(() => new Regex(pattern, opt).Replace(input, replacement, -1));
-            }
-            else
-            {
-                var output = new Regex(pattern, opt).Replace(input, replacement, -1);
-                Assert.Equal(expectedoutput, output);
-                var output2 = Regex.Replace(input, pattern, replacement, opt);
-                Assert.Equal(expectedoutput, output2);
-            }
+            var output = new Regex(pattern, opt).Replace(input, replacement, -1);
+            Assert.Equal(expectedoutput, output);
+            var output2 = Regex.Replace(input, pattern, replacement, opt);
+            Assert.Equal(expectedoutput, output2);
         }
 
         public static IEnumerable<object[]> TestReplaceWithToUpperMatchEvaluator_TestData()

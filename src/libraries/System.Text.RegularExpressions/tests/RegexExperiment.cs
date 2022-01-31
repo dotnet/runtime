@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.if #DEBUG
+// Licensed to the .NET Foundation under one or more agreements.if #DEBUG
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -110,7 +110,7 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         private static string And(params string[] regexes)
         {
-            string conj = $"({regexes[regexes.Length - 1]})";
+            string conj = $"(?:{regexes[regexes.Length - 1]})";
             for (int i = regexes.Length - 2; i >= 0; i--)
             {
                 conj = $"(?({regexes[i]}){conj}|[0-[0]])";
@@ -230,7 +230,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 // contains lower, upper, and a digit, and is between 4 and 8 characters long, does not contain 2 consequtive digits
                 var re = new Regex(And(".*[a-z].*", ".*[A-Z].*", ".*[0-9].*", ".{4,8}",
-                    Not(".*(01|12|23|34|45|56|67|78|89).*")), RegexHelpers.RegexOptionNonBacktracking | RegexOptions.Singleline);
+                    Not(".*(?:01|12|23|34|45|56|67|78|89).*")), RegexHelpers.RegexOptionNonBacktracking | RegexOptions.Singleline);
                 var match = re.Match("xxaac12Bxaas3455");
                 Assert.True(match.Success);
                 Assert.Equal(6, match.Index);
@@ -252,8 +252,8 @@ namespace System.Text.RegularExpressions.Tests
                 string twoUpper = ".*[A-Z].*[A-Z].*";
                 string threeDigits = ".*[0-9].*[0-9].*[0-9].*";
                 string oneSpecial = @".*[\x21-\x2F\x3A-\x40\x5B-x60\x7B-\x7E].*";
-                string Not_countUp = Not(".*(012|123|234|345|456|567|678|789).*");
-                string Not_countDown = Not(".*(987|876|765|654|543|432|321|210).*");
+                string Not_countUp = Not(".*(?:012|123|234|345|456|567|678|789).*");
+                string Not_countDown = Not(".*(?:987|876|765|654|543|432|321|210).*");
                 // Observe that the space character (immediately before '!' in ASCII) is excluded
                 string length = "[!-~]{8,12}";
 
@@ -336,8 +336,8 @@ namespace System.Text.RegularExpressions.Tests
                 string Not_twoUpper = Not(".*[A-Z].*[A-Z].*");
                 string Not_threeDigits = Not(".*[0-9].*[0-9].*[0-9].*");
                 string Not_oneSpecial = Not(@".*[\x21-\x2F\x3A-\x40\x5B-x60\x7B-\x7E].*");
-                string countUp = ".*(012|123|234|345|456|567|678|789).*";
-                string countDown = ".*(987|876|765|654|543|432|321|210).*";
+                string countUp = ".*(?:012|123|234|345|456|567|678|789).*";
+                string countDown = ".*(?:987|876|765|654|543|432|321|210).*";
                 // Observe that the space character (immediately before '!' in ASCII) is excluded
                 string Not_length = Not("[!-~]{8,12}");
 

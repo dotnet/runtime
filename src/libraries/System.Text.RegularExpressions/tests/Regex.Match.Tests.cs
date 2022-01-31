@@ -233,9 +233,9 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@"(?>\w+?)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty);
                 }
 
-                yield return (@"(\d{2,3})+", "1234", RegexOptions.None, 0, 4, true, !RegexHelpers.IsNonBacktracking(engine) ? "123" : "1234"); // NonBacktracking engine allows the alternate longer eager match of \d{2}\d{2}
-                yield return (@"(\d{2,3})*", "123456", RegexOptions.None, 0, 4, true, !RegexHelpers.IsNonBacktracking(engine) ? "123" : "1234");
-                yield return (@"(\d{2,3})+?", "1234", RegexOptions.None, 0, 4, true, !RegexHelpers.IsNonBacktracking(engine) ? "123" : "1234");
+                yield return (@"(\d{2,3})+", "1234", RegexOptions.None, 0, 4, true, "123");
+                yield return (@"(\d{2,3})*", "123456", RegexOptions.None, 0, 4, true, "123");
+                yield return (@"(\d{2,3})+?", "1234", RegexOptions.None, 0, 4, true, "123");
                 yield return (@"(\d{2,3})*?", "123456", RegexOptions.None, 0, 4, true, "");
                 yield return (@"(\d{2,3}?)+", "1234", RegexOptions.None, 0, 4, true, "1234");
                 yield return (@"(\d{2,3}?)*", "123456", RegexOptions.None, 0, 4, true, "1234");
@@ -300,11 +300,8 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
                 // Nested loops
-                if (!RegexHelpers.IsNonBacktracking(engine))
-                {
-                    yield return ("a*(?:a[ab]*)*", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
-                    yield return ("a*(?:a[ab]*?)*?", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
-                }
+                yield return ("a*(?:a[ab]*)*", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
+                yield return ("a*(?:a[ab]*?)*?", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
 
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
                 yield return (@"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz");
@@ -555,7 +552,6 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@"(?(\w+)\w+)dog", "catdog", RegexOptions.None, 0, 6, true, "catdog");
                     yield return (@"(?(abc)\w+|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
                     yield return (@"(?(abc)cat|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
-                    yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
                     yield return ("(a|ab|abc|abcd)d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.None, 0, 4, false, string.Empty);
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
@@ -875,11 +871,8 @@ namespace System.Text.RegularExpressions.Tests
 
                 // Groups can never be empty
                 Assert.True(match.Groups.Count >= 1);
-                if (!RegexHelpers.IsNonBacktracking(engine))
-                {
-                    Assert.Equal(expectedSuccess, match.Groups[0].Success);
-                    RegexAssert.Equal(expectedValue, match.Groups[0]);
-                }
+                Assert.Equal(expectedSuccess, match.Groups[0].Success);
+                RegexAssert.Equal(expectedValue, match.Groups[0]);
             }
         }
 
@@ -1440,11 +1433,6 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Equal(expected[0].Index, match.Index);
                 Assert.Equal(expected[0].Length, match.Length);
 
-                if (RegexHelpers.IsNonBacktracking(engine))
-                {
-                    return;
-                }
-
                 Assert.Equal(1, match.Captures.Count);
                 RegexAssert.Equal(expected[0].Value, match.Captures[0]);
                 Assert.Equal(expected[0].Index, match.Captures[0].Index);
@@ -1459,12 +1447,24 @@ namespace System.Text.RegularExpressions.Tests
                     Assert.Equal(expected[i].Index, match.Groups[i].Index);
                     Assert.Equal(expected[i].Length, match.Groups[i].Length);
 
-                    Assert.Equal(expected[i].Captures.Length, match.Groups[i].Captures.Count);
-                    for (int j = 0; j < match.Groups[i].Captures.Count; j++)
+                    if (!RegexHelpers.IsNonBacktracking(engine))
                     {
-                        RegexAssert.Equal(expected[i].Captures[j].Value, match.Groups[i].Captures[j]);
-                        Assert.Equal(expected[i].Captures[j].Index, match.Groups[i].Captures[j].Index);
-                        Assert.Equal(expected[i].Captures[j].Length, match.Groups[i].Captures[j].Length);
+                        Assert.Equal(expected[i].Captures.Length, match.Groups[i].Captures.Count);
+                        for (int j = 0; j < match.Groups[i].Captures.Count; j++)
+                        {
+                            RegexAssert.Equal(expected[i].Captures[j].Value, match.Groups[i].Captures[j]);
+                            Assert.Equal(expected[i].Captures[j].Index, match.Groups[i].Captures[j].Index);
+                            Assert.Equal(expected[i].Captures[j].Length, match.Groups[i].Captures[j].Length);
+                        }
+                    }
+                    else
+                    {
+                        // NonBacktracking does not support multiple captures
+                        Assert.Equal(1, match.Groups[i].Captures.Count);
+                        int lastExpected = expected[i].Captures.Length - 1;
+                        RegexAssert.Equal(expected[i].Captures[lastExpected].Value, match.Groups[i].Captures[0]);
+                        Assert.Equal(expected[i].Captures[lastExpected].Index, match.Groups[i].Captures[0].Index);
+                        Assert.Equal(expected[i].Captures[lastExpected].Length, match.Groups[i].Captures[0].Length);
                     }
                 }
             }
@@ -2030,25 +2030,12 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> MatchAmbiguousRegexes_TestData()
         {
-            // Different results in NonBacktracking vs backtracking engines
-            yield return new object[] { RegexEngine.NonBacktracking, "(a|ab|c|bcd){0,}d*", "ababcd", (0, 6) };
-            yield return new object[] { RegexEngine.NonBacktracking, "(a|ab|c|bcd){0,10}d*", "ababcd", (0, 6) };
-            yield return new object[] { RegexEngine.NonBacktracking, "(a|ab|c|bcd)*d*", "ababcd", (0, 6) };
-            yield return new object[] { RegexEngine.NonBacktracking, @"(the)\s*([12][0-9]|3[01]|0?[1-9])", "it is the 10:00 time", (6, 5) };
-
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                if (engine == RegexEngine.NonBacktracking) continue;
-
                 yield return new object[] { engine, "(a|ab|c|bcd){0,}d*", "ababcd", (0, 1) };
                 yield return new object[] { engine, "(a|ab|c|bcd){0,10}d*", "ababcd", (0, 1) };
                 yield return new object[] { engine, "(a|ab|c|bcd)*d*", "ababcd", (0, 1) };
                 yield return new object[] { engine, @"(the)\s*([12][0-9]|3[01]|0?[1-9])", "it is the 10:00 time", (6, 6) };
-            }
-
-            // Same results in all engines after reordering of the alternatives above
-            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
-            {
                 yield return new object[] { engine, "(ab|a|bcd|c){0,}d*", "ababcd", (0, 6) };
                 yield return new object[] { engine, "(ab|a|bcd|c){0,10}d*", "ababcd", (0, 6) };
                 yield return new object[] { engine, "(ab|a|bcd|c)*d*", "ababcd", (0, 6) };
@@ -2056,11 +2043,6 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        /// <summary>
-        /// NonBacktracking engine ignores the order of alternatives in a union,
-        /// while a backtracking engine takes the order into account.
-        /// This may lead to different matches in ambiguous regexes.
-        /// </summary>
         [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [MemberData(nameof(MatchAmbiguousRegexes_TestData))]
