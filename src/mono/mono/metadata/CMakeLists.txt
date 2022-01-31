@@ -74,15 +74,12 @@ set(metadata_common_sources
     coree.h
     coree-internals.h
     debug-helpers.c
-    debug-mono-symfile.h
     debug-mono-symfile.c
     debug-mono-ppdb.h
     debug-mono-ppdb.c
     domain-internals.h
     environment.c
-    environment.h
     exception.c
-    exception.h
     exception-internals.h
     w32file.h
     gc-internals.h
@@ -115,7 +112,6 @@ set(metadata_common_sources
     mono-basic-block.c
     mono-basic-block.h
     mono-config.c
-    mono-debug.h
     mono-debug.c
     debug-internals.h
     mono-endian.c
@@ -130,7 +126,6 @@ set(metadata_common_sources
     mono-ptr-array.h
     monitor.h
     object.c
-    object-forward.h
     object-internals.h
     opcodes.c
     property-bag.h
@@ -197,7 +192,6 @@ set(metadata_gc_dependent_sources
 
 set(metadata_sgen_sources
     sgen-bridge.c
-    sgen-bridge.h
     sgen-bridge-internals.h
     sgen-old-bridge.c
     sgen-new-bridge.c
@@ -227,32 +221,3 @@ set_source_files_properties(../metadata/mono-config-dirs.c PROPERTIES COMPILE_DE
 
 addprefix(metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_sgen_sources};${ilgen_sources}")
 
-set(metadata_public_headers_base
-	appdomain.h
-	assembly.h
-	attrdefs.h
-	blob.h
-	class.h
-	debug-helpers.h
-	debug-mono-symfile.h
-	environment.h
-	exception.h
-	image.h
-	loader.h
-	metadata.h
-	mono-config.h
-	mono-debug.h
-	mono-gc.h
-	mono-private-unstable.h
-	object.h
-	object-forward.h
-	opcodes.h
-	profiler.h
-	profiler-events.h
-	reflection.h
-	row-indexes.h
-	sgen-bridge.h
-	threads.h
-	tokentype.h
-	verify.h)
-addprefix(metadata_public_headers ../metadata/ "${metadata_public_headers_base}")

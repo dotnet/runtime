@@ -19,10 +19,45 @@ target_include_directories(monoapi_utils INTERFACE .)
 
 set_target_properties(monoapi_utils PROPERTIES PUBLIC_HEADER "${utils_public_headers}")
 
+add_library(monoapi_metadata INTERFACE)
+
+set(metadata_public_headers_base
+	appdomain.h
+	assembly.h
+	attrdefs.h
+	blob.h
+	class.h
+	debug-helpers.h
+	debug-mono-symfile.h
+	environment.h
+	exception.h
+	image.h
+	loader.h
+	metadata.h
+	mono-config.h
+	mono-debug.h
+	mono-gc.h
+	mono-private-unstable.h
+	object.h
+	object-forward.h
+	opcodes.h
+	profiler.h
+	profiler-events.h
+	reflection.h
+	row-indexes.h
+	sgen-bridge.h
+	threads.h
+	tokentype.h
+	verify.h)
+addprefix(metadata_public_headers ./mono/metadata/ "${metadata_public_headers_base}")
+
+set_target_properties(monoapi_metadata PROPERTIES PUBLIC_HEADER "${metadata_public_headers}")
+
 
 add_library(monoapi INTERFACE)
-target_link_libraries(monoapi INTERFACE monoapi_utils)
+target_link_libraries(monoapi INTERFACE monoapi_utils monoapi_metadata)
 
 if(NOT DISABLE_LIBS)
   install(TARGETS monoapi_utils PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/utils)
+  install(TARGETS monoapi_metadata PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/metadata)
 endif()

@@ -325,8 +325,6 @@ endif()
 
 if(NOT DISABLE_LIBS)
   install(TARGETS monosgen-static LIBRARY)
-  install(FILES ${metadata_public_headers}
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/metadata)
   install(FILES ${mini_public_headers}
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
 endif()

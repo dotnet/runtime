@@ -21,8 +21,8 @@
 #include "mono-error-internals.h"
 #include "mono-rand.h"
 #include "mono-threads.h"
-#include "metadata/exception.h"
-#include "metadata/object.h"
+#include <mono/metadata/exception.h>
+#include <mono/metadata/object.h>
 
 #ifdef HOST_WIN32
 // Windows specific implementation in mono-rand-windows.c
