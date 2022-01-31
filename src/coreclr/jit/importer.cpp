@@ -15116,7 +15116,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         assert(aflags & CORINFO_ACCESS_GET);
 
                         // Import String.Empty as "" (GT_CNS_STR with a fake SconCPX = 0)
-                        op1 = gtNewSconNode(0, nullptr);
+                        op1 = gtNewSconNode(0, info.compCompHnd->getClassModule(impGetObjectClass()));
                         goto FIELD_DONE;
                     }
                     break;
