@@ -443,7 +443,7 @@ namespace System.Security.Cryptography
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
             HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
-            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, buffer);
+            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, new ReadOnlySpan<byte>(buffer, offset, count));
             return SignHash(hashVal, calgHash);
         }
 
