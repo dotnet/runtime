@@ -27,18 +27,16 @@ namespace System.IO.Pipelines
             base.Dispose(disposing);
         }
 
-        public override ValueTask DisposeAsync()
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
+        public async override ValueTask DisposeAsync()
         {
-            return DisposeAsyncCore();
-            async ValueTask DisposeAsyncCore()
+            if (!LeaveOpen)
             {
-                if (!LeaveOpen)
-                {
-                    await _pipeWriter.CompleteAsync().ConfigureAwait(false);
-                }
-                await base.DisposeAsync().ConfigureAwait(false);
+                await _pipeWriter.CompleteAsync().ConfigureAwait(false);
             }
+            await base.DisposeAsync().ConfigureAwait(false);
         }
+#endif
 
         internal bool LeaveOpen { get; set; }
 
