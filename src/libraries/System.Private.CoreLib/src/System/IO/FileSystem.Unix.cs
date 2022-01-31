@@ -22,9 +22,21 @@ namespace System.IO
             Interop.Sys.Permissions filePermissions;
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
-                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, openPermissions: filePermissions);
+                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, openPermissions: filePermissions,
+                                            (Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path) => CreateOpenException(error, flags, path));
 
             Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
+
+            static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
+            {
+                // If the destination path points to a directory, we throw to match Windows behaviour.
+                if (error.Error == Interop.Error.EEXIST && DirectoryExists(path))
+                {
+                    return new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
+                }
+
+                return null; // Let SafeFileHandle create the exception for this error.
+            }
         }
 
 #pragma warning disable IDE0060
