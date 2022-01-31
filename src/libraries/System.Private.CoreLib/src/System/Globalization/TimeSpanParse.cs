@@ -1321,7 +1321,7 @@ namespace System.Globalization
 
                     case '\'':
                     case '\"':
-                        var enquotedString = new ValueStringBuilder(32);
+                        var enquotedString = new ValueStringBuilder(64);
                         if (!DateTimeParse.TryParseQuoteString(format, i, ref enquotedString, out tokenLen))
                         {
                             enquotedString.Dispose();
