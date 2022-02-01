@@ -607,6 +607,19 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public async Task SupportsRefKindIn()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {P1}"")]
+                    static partial void M(ILogger logger, in int p1);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
         public async Task Templates()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
