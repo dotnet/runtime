@@ -25,8 +25,8 @@ parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-source_directory", help="path to the directory of the dotnet/runtime source tree")
-parser.add_argument("-base_directory", help="path to the directory containing base binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Checked)")
-parser.add_argument("-diff_directory", help="path to the directory containing diff binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Release)")
+parser.add_argument("-checked_directory", help="path to the directory containing checked binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Checked)")
+parser.add_argument("-release_directory", help="path to the directory containing release binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Release)")
 
 is_windows = platform.system() == "Windows"
 
@@ -55,9 +55,9 @@ def setup_args(args):
                         "source_directory doesn't exist")
 
     coreclr_args.verify(args,
-                        "product_directory",
-                        lambda product_directory: os.path.isdir(product_directory),
-                        "product_directory doesn't exist")
+                        "checked_directory",
+                        lambda checked_directory: os.path.isdir(checked_directory),
+                        "checked_directory doesn't exist")
 
     coreclr_args.verify(args,
                         "release_directory",
@@ -123,7 +123,7 @@ def main(main_args):
 
     arch = coreclr_args.arch
     source_directory = coreclr_args.source_directory
-    product_directory = coreclr_args.product_directory
+    checked_directory = coreclr_args.checked_directory
     release_directory = coreclr_args.release_directory
 
     python_path = sys.executable
@@ -144,9 +144,9 @@ def main(main_args):
 
     ######## Copy baseline Checked JIT
 
-    # Copy clrjit*_arch.dll binaries from Checked product_directory to base_jit_directory
-    print('Copying base Checked binaries {} -> {}'.format(product_directory, base_jit_directory))
-    copy_directory(product_directory, base_jit_directory, verbose_copy=True, match_func=match_jit_files)
+    # Copy clrjit*_arch.dll binaries from Checked checked_directory to base_jit_directory
+    print('Copying base Checked binaries {} -> {}'.format(checked_directory, base_jit_directory))
+    copy_directory(checked_directory, base_jit_directory, verbose_copy=True, match_func=match_jit_files)
 
     ######## Copy diff Release JIT
 
@@ -157,8 +157,8 @@ def main(main_args):
     ######## Get SuperPMI tools
 
     # Put the SuperPMI tools directly in the root of the correlation payload directory.
-    print('Copying SuperPMI tools {} -> {}'.format(product_directory, correlation_payload_directory))
-    copy_directory(product_directory, correlation_payload_directory, verbose_copy=True, match_func=match_superpmi_tool_files)
+    print('Copying SuperPMI tools {} -> {}'.format(checked_directory, correlation_payload_directory))
+    copy_directory(checked_directory, correlation_payload_directory, verbose_copy=True, match_func=match_superpmi_tool_files)
 
 
     # Set variables
