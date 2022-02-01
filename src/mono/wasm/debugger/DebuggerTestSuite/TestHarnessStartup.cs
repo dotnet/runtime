@@ -178,7 +178,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var client = new HttpClient();
                         var psi = new ProcessStartInfo();
 
-                        psi.Arguments = $"--headless --disable-gpu --lang=en-US --incognito --remote-debugging-port={devToolsUrl.Port} http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}";
+                        psi.Arguments = $"--headless --disable-gpu --lang=en-US --incognito --no-sandbox --remote-debugging-port={devToolsUrl.Port} http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}";
                         psi.UseShellExecute = false;
                         psi.FileName = options.ChromePath;
                         psi.RedirectStandardError = true;
