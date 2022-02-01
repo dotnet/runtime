@@ -324,15 +324,74 @@ namespace System.Text.RegularExpressions
 
         private void Backwardnext() => runtextpos += _rightToLeft ? 1 : -1;
 
-        protected override bool FindFirstChar() =>
-            _code.FindOptimizations.TryFindNextStartingPosition(runtext!, ref runtextpos, runtextbeg, runtextstart, runtextend);
+        protected internal override void Scan(Regex regex, ReadOnlySpan<char> text, int textstart, int prevlen, bool quick, TimeSpan timeout)
+        {
+            // Configure the additional value to "bump" the position along each time we loop around
+            // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
+            // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
+            // by -1 and stop at textbeg.
+            int bump = 1, stoppos = text.Length;
+            if (regex.RightToLeft)
+            {
+                bump = -1;
+                stoppos = 0;
+            }
 
-        protected override void Go()
+            // If previous match was empty or failed, advance by one before matching.
+            if (prevlen == 0)
+            {
+                if (textstart == stoppos)
+                {
+                    runmatch = Match.Empty;
+                    return;
+                }
+
+                runtextpos++;
+            }
+
+            while (true)
+            {
+                if (FindFirstChar(text))
+                {
+                    CheckTimeout();
+
+                    Go(text);
+
+                    // If we got a match, we're done.
+                    if (runmatch!._matchcount[0] > 0)
+                    {
+                        if (quick)
+                        {
+                            runmatch = null;
+                        }
+
+                        return;
+                    }
+
+                    // Reset state for another iteration.
+                    runtrackpos = runtrack!.Length;
+                    runstackpos = runstack!.Length;
+                    runcrawlpos = runcrawl!.Length;
+                }
+
+                if (runtextpos == stoppos)
+                {
+                    runmatch = Match.Empty;
+                    return;
+                }
+
+                runtextpos += bump;
+            }
+        }
+
+        private bool FindFirstChar(ReadOnlySpan<char> inputSpan) =>
+            _code.FindOptimizations.TryFindNextStartingPosition(inputSpan, ref runtextpos, runtextbeg, runtextstart, runtextend);
+
+        private void Go(ReadOnlySpan<char> inputSpan)
         {
             SetOperator((RegexOpcode)_code.Codes[0]);
             _codepos = 0;
             int advance = -1;
-            ReadOnlySpan<char> inputSpan = runtext;
 
             while (true)
             {

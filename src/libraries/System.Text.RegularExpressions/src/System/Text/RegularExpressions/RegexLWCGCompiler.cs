@@ -24,7 +24,7 @@ namespace System.Text.RegularExpressions
         private static readonly bool s_includePatternInName = Environment.GetEnvironmentVariable(IncludePatternInNamesEnvVar) == "1";
 
         /// <summary>Parameter types for the generated Go and FindFirstChar methods.</summary>
-        private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner) };
+        private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner), typeof(ReadOnlySpan<char>) };
 
         /// <summary>Id number to use for the next compiled regex.</summary>
         private static int s_regexCount;
@@ -52,17 +52,20 @@ namespace System.Text.RegularExpressions
                 description = string.Concat("_", pattern.Length > DescriptionLimit ? pattern.AsSpan(0, DescriptionLimit) : pattern);
             }
 
-            DynamicMethod findFirstCharMethod = DefineDynamicMethod($"Regex{regexNum}_FindFirstChar{description}", typeof(bool), typeof(CompiledRegexRunner));
+            DynamicMethod findFirstCharMethod = DefineDynamicMethod($"Regex{regexNum}_FindFirstChar{description}", typeof(bool), typeof(CompiledRegexRunner), s_paramTypes);
             EmitFindFirstChar();
 
-            DynamicMethod goMethod = DefineDynamicMethod($"Regex{regexNum}_Go{description}", null, typeof(CompiledRegexRunner));
+            DynamicMethod goMethod = DefineDynamicMethod($"Regex{regexNum}_Go{description}", null, typeof(CompiledRegexRunner), s_paramTypes);
             EmitGo();
 
-            return new CompiledRegexRunnerFactory(goMethod, findFirstCharMethod, code.TrackCount);
+            DynamicMethod scanMethod = DefineDynamicMethod($"Regex{regexNum}_Scan{description}", null, typeof(CompiledRegexRunner), new[] { typeof(RegexRunner), typeof(Regex), typeof(ReadOnlySpan<char>), typeof(int), typeof(int), typeof(bool), typeof(TimeSpan) });
+            EmitScan(findFirstCharMethod, goMethod);
+
+            return new CompiledRegexRunnerFactory(scanMethod, code.TrackCount);
         }
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>
-        private DynamicMethod DefineDynamicMethod(string methname, Type? returntype, Type hostType)
+        private DynamicMethod DefineDynamicMethod(string methname, Type? returntype, Type hostType, Type[] paramTypes)
         {
             // We're claiming that these are static methods, but really they are instance methods.
             // By giving them a parameter which represents "this", we're tricking them into
@@ -71,7 +74,7 @@ namespace System.Text.RegularExpressions
             const MethodAttributes Attribs = MethodAttributes.Public | MethodAttributes.Static;
             const CallingConventions Conventions = CallingConventions.Standard;
 
-            var dm = new DynamicMethod(methname, Attribs, Conventions, returntype, s_paramTypes, hostType, skipVisibility: false);
+            var dm = new DynamicMethod(methname, Attribs, Conventions, returntype, paramTypes, hostType, skipVisibility: false);
             _ilg = dm.GetILGenerator();
             return dm;
         }

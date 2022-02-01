@@ -104,21 +104,6 @@ namespace System.Text.RegularExpressions
         {
             this.quick = quick;
 
-            // Handle timeout argument
-            _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
-            bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
-            if (!ignoreTimeout)
-            {
-                // We are using Environment.TickCount and not Stopwatch for performance reasons.
-                // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
-                // overflow it will still stay ahead of Environment.TickCount for comparisons made
-                // in DoCheckTimeout().
-                Regex.ValidateMatchTimeout(timeout); // validate timeout as this could be called from user code due to being protected
-                _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
-                _timeoutOccursAt = Environment.TickCount + _timeout;
-                _timeoutChecksToSkip = TimeoutCheckFrequency;
-            }
-
             // Configure the additional value to "bump" the position along each time we loop around
             // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
             // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
@@ -129,10 +114,6 @@ namespace System.Text.RegularExpressions
                 bump = -1;
                 stoppos = textbeg;
             }
-
-            // Store runtextpos into field, as we may bump it in next check.  The remaining arguments
-            // are stored below once we're past the potential return in the next check.
-            runtextpos = textstart;
 
             // If previous match was empty or failed, advance by one before matching.
             if (prevlen == 0)
@@ -145,16 +126,6 @@ namespace System.Text.RegularExpressions
                 runtextpos += bump;
             }
 
-            // Store remaining arguments into fields now that we're going to start the scan.
-            // These are referenced by the derived runner.
-            runregex = regex;
-            runtext = text;
-            runtextstart = textstart;
-            runtextbeg = textbeg;
-            runtextend = textend;
-
-            // Main loop: FindFirstChar/Go + bump until the ending position.
-            bool initialized = false;
             while (true)
             {
                 // Find the next potential location for a match in the input.
@@ -163,18 +134,7 @@ namespace System.Text.RegularExpressions
 #endif
                 if (FindFirstChar())
                 {
-                    if (!ignoreTimeout)
-                    {
-                        DoCheckTimeout();
-                    }
-
-                    // Ensure that the runner is initialized.  This includes initializing all of the state in the runner
-                    // that Go might use, such as the backtracking stack, as well as a Match object for it to populate.
-                    if (!initialized)
-                    {
-                        InitializeForGo();
-                        initialized = true;
-                    }
+                    CheckTimeout();
 
                     // See if there's a match at this position.
 #if DEBUG
@@ -216,6 +176,37 @@ namespace System.Text.RegularExpressions
 
                 // Bump by one (in whichever direction is appropriate) and loop to go again.
                 runtextpos += bump;
+            }
+        }
+
+        internal void InitializeForScan(Regex regex, ReadOnlySpan<char> text, int textbeg, int textend, int textstart, bool quick)
+        {
+            this.quick = quick;
+            // Store remaining arguments into fields now that we're going to start the scan.
+            // These are referenced by the derived runner.
+            runregex = regex;
+            //runtext = text;
+            runtextstart = textstart;
+            runtextbeg = textbeg;
+            runtextend = textend;
+            runtextpos = textstart;
+        }
+
+        internal void InitializeTimeout(TimeSpan timeout)
+        {
+            // Handle timeout argument
+            _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
+            bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
+            if (!ignoreTimeout)
+            {
+                // We are using Environment.TickCount and not Stopwatch for performance reasons.
+                // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
+                // overflow it will still stay ahead of Environment.TickCount for comparisons made
+                // in DoCheckTimeout().
+                Regex.ValidateMatchTimeout(timeout); // validate timeout as this could be called from user code due to being protected
+                _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
+                _timeoutOccursAt = Environment.TickCount + _timeout;
+                _timeoutChecksToSkip = TimeoutCheckFrequency;
             }
         }
 
@@ -262,7 +253,6 @@ namespace System.Text.RegularExpressions
             runtextbeg = 0;
 
             // Main loop: FindFirstChar/Go + bump until the ending position.
-            bool initialized = false;
             while (true)
             {
                 // Find the next potential location for a match in the input.
@@ -274,14 +264,6 @@ namespace System.Text.RegularExpressions
                     if (!ignoreTimeout)
                     {
                         DoCheckTimeout();
-                    }
-
-                    // Ensure that the runner is initialized.  This includes initializing all of the state in the runner
-                    // that Go might use, such as the backtracking stack, as well as a Match object for it to populate.
-                    if (!initialized)
-                    {
-                        InitializeForGo();
-                        initialized = true;
                     }
 
 #if DEBUG
@@ -303,7 +285,6 @@ namespace System.Text.RegularExpressions
                             runmatch = null;
                         }
                         match.Tidy(runtextpos);
-                        initialized = false;
                         if (!callback(ref state, match))
                         {
                             // If the callback returns false, we're done.
@@ -371,7 +352,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        protected void CheckTimeout()
+        protected internal void CheckTimeout()
         {
             if (_ignoreTimeout)
                 return;
@@ -425,7 +406,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Initializes all the data members that are used by Go()
         /// </summary>
-        private void InitializeForGo()
+        internal void InitializeForGo()
         {
             if (runmatch is null)
             {

@@ -83,14 +83,13 @@ namespace System.Text.RegularExpressions.Symbolic
 
             internal Runner(SymbolicRegexMatcher<TSetType> matcher) => _matcher = matcher;
 
-            protected override void InitTrackCount() { } // nop, no backtracking
-
-            protected override bool FindFirstChar() => true; // The logic is all in Go.
-
-            protected override void Go()
+            protected internal override void Scan(Regex regex, ReadOnlySpan<char> text, int textstart, int prevlen, bool quick, TimeSpan timeout)
             {
-                ReadOnlySpan<char> inputSpan = runtext;
+                Go(text);
+            }
 
+            private void Go(ReadOnlySpan<char> inputSpan)
+            {
                 // Perform the match.
                 SymbolicMatch pos = _matcher.FindMatch(quick, inputSpan, runtextpos, runtextend);
                 if (pos.Success)
