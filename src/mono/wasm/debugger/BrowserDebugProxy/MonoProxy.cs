@@ -1547,15 +1547,20 @@ namespace Microsoft.WebAssembly.Diagnostics
             var bp = res.First();
 
             //search if it's a nested function and it's return false because we cannot move to another function
-            if (bp.Line != location.Line)
+            if (bp.Line != location.Line || (bp.Line == location.Line && bp.Column != location.Column))
             {
-                foreach (var method in scope.Method.Info.Assembly.Methods)
+                res = new List<SourceLocation>();
+                SourceFile doc = store.GetFileById(scope.Method.Info.SourceId);
+                foreach (var method in doc.Methods)
                 {
-                    if (method.Value == scope.Method.Info)
+                    if (method.Token == scope.Method.Info.Token)
                         continue;
-                    res = new List<SourceLocation>();
-                    store.AddPossibleBreakpointsInMethodToList(sourceLocation, sourceLocation, res, method.Value);
-                    if (res.Count >= 0)
+                    store.AddPossibleBreakpointsInMethodToList(sourceLocation, sourceLocation, res, method);
+                    if (res.Count > 0 &&
+                        (method.StartLocation.Line > scope.Method.Info.StartLocation.Line ||
+                            (method.StartLocation.Line == scope.Method.Info.StartLocation.Line && method.StartLocation.Column > scope.Method.Info.StartLocation.Column)) &&
+                        (method.EndLocation.Line < scope.Method.Info.EndLocation.Line ||
+                            (method.EndLocation.Line == scope.Method.Info.EndLocation.Line && method.EndLocation.Column < scope.Method.Info.EndLocation.Column)))
                         return false;
                 }
             }

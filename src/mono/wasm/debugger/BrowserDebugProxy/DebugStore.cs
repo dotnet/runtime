@@ -357,11 +357,15 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 foreach (SequencePoint sp in sps)
                 {
+                    if (sp.IsHidden)
+                        continue;
                     if (sp.StartLine < start.StartLine)
                         start = sp;
                     else if (sp.StartLine == start.StartLine && sp.StartColumn < start.StartColumn)
                         start = sp;
 
+                    if (end.EndLine == SequencePoint.HiddenLine)
+                        end = sp;
                     if (sp.EndLine > end.EndLine)
                         end = sp;
                     else if (sp.EndLine == end.EndLine && sp.EndColumn > end.EndColumn)
