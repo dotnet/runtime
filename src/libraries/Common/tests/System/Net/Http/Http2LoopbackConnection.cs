@@ -984,10 +984,5 @@ namespace System.Net.Test.Common
             RstStreamFrame rstStreamFrame = Assert.IsType<RstStreamFrame>(frame);
             Assert.Equal((int)ProtocolErrors.CANCEL, rstStreamFrame.ErrorCode);
         }
-
-        public override Task WaitForCloseAsync(CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

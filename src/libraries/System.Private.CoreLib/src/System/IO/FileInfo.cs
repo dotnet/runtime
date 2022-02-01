@@ -89,7 +89,10 @@ namespace System.IO
 
         public FileInfo CopyTo(string destFileName, bool overwrite)
         {
-            ArgumentException.ThrowIfNullOrEmpty(destFileName);
+            if (destFileName == null)
+                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
+            if (destFileName.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
 
             string destinationPath = Path.GetFullPath(destFileName);
             FileSystem.CopyFile(FullPath, destinationPath, overwrite);
@@ -136,7 +139,10 @@ namespace System.IO
         // This method does work across volumes.
         public void MoveTo(string destFileName, bool overwrite)
         {
-            ArgumentException.ThrowIfNullOrEmpty(destFileName);
+            if (destFileName == null)
+                throw new ArgumentNullException(nameof(destFileName));
+            if (destFileName.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
 
             string fullDestFileName = Path.GetFullPath(destFileName);
 

@@ -105,28 +105,18 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.CryptoNative)]
-        private static partial int CryptoNative_GetPkcs8PrivateKeySize(IntPtr pkey, out int p8size);
+        private static partial int CryptoNative_GetPkcs8PrivateKeySize(IntPtr pkey);
 
         private static int GetPkcs8PrivateKeySize(IntPtr pkey)
         {
-            const int Success = 1;
-            const int Error = -1;
-            const int MissingPrivateKey = -2;
+            int ret = CryptoNative_GetPkcs8PrivateKeySize(pkey);
 
-            int ret = CryptoNative_GetPkcs8PrivateKeySize(pkey, out int p8size);
-
-            switch (ret)
+            if (ret < 0)
             {
-                case Success:
-                    return p8size;
-                case Error:
-                    throw CreateOpenSslCryptographicException();
-                case MissingPrivateKey:
-                    throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
-                default:
-                    Debug.Fail($"Unexpected return '{ret}' value from {nameof(CryptoNative_GetPkcs8PrivateKeySize)}.");
-                    throw new CryptographicException();
+                throw CreateOpenSslCryptographicException();
             }
+
+            return ret;
         }
 
         [GeneratedDllImport(Libraries.CryptoNative)]

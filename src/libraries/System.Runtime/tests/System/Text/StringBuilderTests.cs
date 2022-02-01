@@ -2268,6 +2268,8 @@ namespace System.Text.Tests
                     string s = new string('x', 500_000_000);
                     sb.Append(s); // This should throw, not AV
                 });
+
+                return RemoteExecutor.SuccessExitCode; // workaround https://github.com/dotnet/arcade/issues/5865
             }).Dispose();
         }
     }

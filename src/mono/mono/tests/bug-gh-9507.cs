@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using type_with_special_array_cast = System.UInt64; // MonoClass<ulong[]>::cast_class = long
 using other_type = System.Double;
 
@@ -10,7 +9,7 @@ public class TestIsInst<T>
 		array = new T[16];
 
 		if (array is other_type[]) // should not crash or throw NullReferenceException
-			throw new System.UnreachableException();
+			throw new System.Exception("Unreachable");
 	}
 }
 

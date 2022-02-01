@@ -13,8 +13,8 @@ internal static partial class Interop
             SafeProvHandle hProv,
             byte* pbData,
             int dwDataLen,
-            SafeCapiKeyHandle hPubKey,
+            SafeKeyHandle hPubKey,
             int dwFlags,
-            out SafeCapiKeyHandle phKey);
+            out SafeKeyHandle phKey);
     }
 }

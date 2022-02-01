@@ -26,7 +26,7 @@ namespace Internal.TypeSystem.Ecma
             try
             {
                 // Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
-                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
+                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
                 mappedFile = MemoryMappedFile.CreateFromFile(
                     fileStream, null, fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
 
@@ -56,9 +56,12 @@ namespace Internal.TypeSystem.Ecma
             }
             finally
             {
-                accessor?.Dispose();
-                mappedFile?.Dispose();
-                fileStream?.Dispose();
+                if (accessor != null)
+                    accessor.Dispose();
+                if (mappedFile != null)
+                    mappedFile.Dispose();
+                if (fileStream != null)
+                    fileStream.Dispose();
             }
         }
 

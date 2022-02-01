@@ -56,8 +56,18 @@ namespace System.IO.Pipes
             PipeOptions options, TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability)
             : base(direction, 0)
         {
-            ArgumentException.ThrowIfNullOrEmpty(pipeName);
-            ArgumentNullException.ThrowIfNull(serverName);
+            if (pipeName == null)
+            {
+                throw new ArgumentNullException(nameof(pipeName));
+            }
+            if (serverName == null)
+            {
+                throw new ArgumentNullException(nameof(serverName), SR.ArgumentNull_ServerName);
+            }
+            if (pipeName.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_NeedNonemptyPipeName);
+            }
             if (serverName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyServerName);

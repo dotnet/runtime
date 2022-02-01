@@ -337,21 +337,13 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
             foreach (DSASignatureFormat format in Enum.GetValues(typeof(DSASignatureFormat)))
             {
-                AssertExtensions.Throws<ArgumentNullException>(
+                AssertExtensions.Throws<ArgumentException>(
                     "hashAlgorithm",
                     () => SignData(key, empty, default, format));
 
-                AssertExtensions.Throws<ArgumentNullException>(
+                AssertExtensions.Throws<ArgumentException>(
                     "hashAlgorithm",
                     () => VerifyData(key, empty, empty, default, format));
-
-                AssertExtensions.Throws<ArgumentException>(
-                    "hashAlgorithm",
-                    () => SignData(key, empty, new HashAlgorithmName(""), format));
-
-                AssertExtensions.Throws<ArgumentException>(
-                    "hashAlgorithm",
-                    () => VerifyData(key, empty, empty, new HashAlgorithmName(""), format));
             }
         }
 

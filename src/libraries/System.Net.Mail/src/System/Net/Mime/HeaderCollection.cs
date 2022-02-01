@@ -22,7 +22,15 @@ namespace System.Net.Mime
         public override void Remove(string name)
 #pragma warning restore CS8765
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
+            }
 
             base.Remove(name);
         }
@@ -32,7 +40,15 @@ namespace System.Net.Mime
         public override string? Get(string name)
 #pragma warning restore CS8765
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
+            }
 
             return base.Get(name);
         }
@@ -41,7 +57,15 @@ namespace System.Net.Mime
         public override string[]? GetValues(string name)
 #pragma warning restore CS8765
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
+            }
 
             return base.GetValues(name);
         }
@@ -69,8 +93,25 @@ namespace System.Net.Mime
         public override void Set(string name, string value)
 #pragma warning restore CS8765
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-            ArgumentException.ThrowIfNullOrEmpty(value);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
+            }
+
+            if (value.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(value)), nameof(value));
+            }
 
             if (!MimeBasePart.IsAscii(name, false))
             {
@@ -90,8 +131,22 @@ namespace System.Net.Mime
         public override void Add(string name, string value)
 #pragma warning restore CS8765
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-            ArgumentException.ThrowIfNullOrEmpty(value);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(name)), nameof(name));
+            }
+            if (value.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(value)), nameof(value));
+            }
 
             MailBnfHelper.ValidateHeaderName(name);
 

@@ -717,7 +717,7 @@ namespace System.Net
                     && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase)
                     && string.Equals(Value, other.Value, StringComparison.Ordinal)
                     && string.Equals(Path, other.Path, StringComparison.Ordinal)
-                    && CookieComparer.EqualDomains(Domain, other.Domain)
+                    && string.Equals(Domain, other.Domain, StringComparison.OrdinalIgnoreCase)
                     && (Version == other.Version);
         }
 

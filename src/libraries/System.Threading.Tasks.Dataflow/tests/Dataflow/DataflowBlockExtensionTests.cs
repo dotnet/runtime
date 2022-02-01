@@ -1762,7 +1762,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             source.Complete();
 
             await encapsulated.Completion;
-            Assert.Equal(messagesSent, messagesReceived);
+            Assert.Equal(messagesReceived, messagesSent);
         }
 
         [Fact]

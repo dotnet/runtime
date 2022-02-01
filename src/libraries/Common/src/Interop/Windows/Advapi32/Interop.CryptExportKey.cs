@@ -10,8 +10,8 @@ internal static partial class Interop
     {
         [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static partial bool CryptExportKey(
-            SafeCapiKeyHandle hKey,
-            SafeCapiKeyHandle hExpKey,
+            SafeKeyHandle hKey,
+            SafeKeyHandle hExpKey,
             int dwBlobType,
             int dwFlags,
             byte[]? pbData,

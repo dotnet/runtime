@@ -110,8 +110,6 @@ public:
         , m_CallsiteIsInLoop(false)
         , m_IsNoReturn(false)
         , m_IsNoReturnKnown(false)
-        , m_ConstArgFeedsIsKnownConst(false)
-        , m_ArgFeedsIsKnownConst(false)
     {
         // empty
     }
@@ -180,8 +178,6 @@ protected:
     bool                    m_CallsiteIsInLoop : 1;
     bool                    m_IsNoReturn : 1;
     bool                    m_IsNoReturnKnown : 1;
-    bool                    m_ConstArgFeedsIsKnownConst : 1;
-    bool                    m_ArgFeedsIsKnownConst : 1;
 };
 
 // ExtendedDefaultPolicy is a slightly more aggressive variant of

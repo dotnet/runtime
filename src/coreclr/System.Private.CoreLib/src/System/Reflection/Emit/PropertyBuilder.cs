@@ -34,7 +34,10 @@ namespace System.Reflection.Emit
             int prToken, // the metadata token for this property
             TypeBuilder containingType) // the containing type
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+            if (name.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             if (name[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
 

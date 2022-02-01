@@ -77,7 +77,12 @@ namespace System
             get => CurrentDirectoryCore;
             set
             {
-                ArgumentException.ThrowIfNullOrEmpty(value);
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                if (value.Length == 0)
+                    throw new ArgumentException(SR.Argument_PathEmpty, nameof(value));
+
                 CurrentDirectoryCore = value;
             }
         }
@@ -234,7 +239,11 @@ namespace System
 
         private static void ValidateVariableAndValue(string variable, ref string? value)
         {
-            ArgumentException.ThrowIfNullOrEmpty(variable);
+            if (variable == null)
+                throw new ArgumentNullException(nameof(variable));
+
+            if (variable.Length == 0)
+                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(variable));
 
             if (variable[0] == '\0')
                 throw new ArgumentException(SR.Argument_StringFirstCharIsZero, nameof(variable));

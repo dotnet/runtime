@@ -3,7 +3,9 @@
 
 using Microsoft.DotNet.XUnitExtensions;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Security;
+using System.ServiceProcess;
 using Xunit;
 using Xunit.Abstractions;
 

@@ -7,7 +7,6 @@ using Xunit;
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/64389", TestPlatforms.Windows)]
     public class ECDhKeyFileTests : ECKeyFileTests<ECDiffieHellman>
     {
         protected override ECDiffieHellman CreateKey() => ECDiffieHellmanFactory.Create();

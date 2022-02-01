@@ -85,30 +85,11 @@ def set_pipeline_variable(name, value):
     print(define_variable_format.format(name, value))  # set variable
 
 
-
 ################################################################################
 ##
 ## Helper functions
 ##
 ################################################################################
-
-def decode_string(str_to_decode):
-    """Decode a UTF-8 encoded bytes to string.
-
-    Args:
-        str_to_decode (byte stream): Byte stream to decode
-
-    Returns:
-        String output. If there any encoding/decoding errors, it will replace it with
-        UnicodeEncodeError.
-    """
-    try:
-        output = str_to_decode.decode("utf-8", errors='replace')
-    except UnicodeEncodeError:
-        output = "UnicodeEncodeError"
-    except UnicodeDecodeError:
-        output = "UnicodeDecodeError"
-    return output
 
 def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None):
     """ Runs the command.
@@ -138,15 +119,15 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
                     if proc.poll() is not None:
                         break
                     if output:
-                        output_str = decode_string(output.strip())
+                        output_str = output.strip().decode("utf-8")
                         print(output_str)
                         of.write(output_str + "\n")
         else:
             command_stdout, command_stderr = proc.communicate()
             if len(command_stdout) > 0:
-                print(decode_string(command_stdout))
+                print(command_stdout.decode("utf-8"))
             if len(command_stderr) > 0:
-                print(decode_string(command_stderr))
+                print(command_stderr.decode("utf-8"))
 
         return_code = proc.returncode
         if _exit_on_fail and return_code != 0:

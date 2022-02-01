@@ -323,7 +323,7 @@ namespace System.Reflection.Metadata.Tests
                 {
                     Assert.Equal(0, reader.Offset);
                     Assert.Throws<BadImageFormatException>(() => reader.ReadCompressedInteger());
-                    Assert.Equal(BlobReader.InvalidCompressedInteger, value);
+                    Assert.Equal(value, BlobReader.InvalidCompressedInteger);
                     Assert.Equal(0, reader.Offset);
                 }
 

@@ -375,7 +375,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Public Function PeekChars(ByVal numberOfChars As Integer) As String
 
             If numberOfChars <= 0 Then
-                Throw GetArgumentExceptionWithArgName("numberOfChars", SR.TextFieldParser_NumberOfCharsMustBePositive)
+                Throw GetArgumentExceptionWithArgName("numberOfChars", SR.TextFieldParser_NumberOfCharsMustBePositive, "numberOfChars")
             End If
 
             If m_Reader Is Nothing Or m_Buffer Is Nothing Then
@@ -1151,7 +1151,7 @@ Namespace Microsoft.VisualBasic.FileIO
             Dim Bound As Integer = Widths.Length - 1
             For i As Integer = 0 To Bound - 1
                 If Widths(i) < 1 Then
-                    Throw GetArgumentExceptionWithArgName("FieldWidths", SR.TextFieldParser_FieldWidthsMustPositive)
+                    Throw GetArgumentExceptionWithArgName("FieldWidths", SR.TextFieldParser_FieldWidthsMustPositive, "FieldWidths")
                 End If
             Next
         End Sub
@@ -1163,11 +1163,11 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <remarks></remarks>
         Private Sub ValidateAndEscapeDelimiters()
             If m_Delimiters Is Nothing Then
-                Throw GetArgumentExceptionWithArgName("Delimiters", SR.TextFieldParser_DelimitersNothing)
+                Throw GetArgumentExceptionWithArgName("Delimiters", SR.TextFieldParser_DelimitersNothing, "Delimiters")
             End If
 
             If m_Delimiters.Length = 0 Then
-                Throw GetArgumentExceptionWithArgName("Delimiters", SR.TextFieldParser_DelimitersNothing)
+                Throw GetArgumentExceptionWithArgName("Delimiters", SR.TextFieldParser_DelimitersNothing, "Delimiters")
             End If
 
             Dim Length As Integer = m_Delimiters.Length

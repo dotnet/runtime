@@ -54,16 +54,9 @@ namespace System.Reflection.Emit.Tests
             return DynamicAssembly(assemblyName).DefineDynamicModule(moduleName);
         }
 
-        public static TypeBuilder DynamicType(TypeAttributes attributes, string assemblyName = "TestAssembly", string moduleName = "TestModule", string typeName = "TestType", Type? baseType = null)
+        public static TypeBuilder DynamicType(TypeAttributes attributes, string assemblyName = "TestAssembly", string moduleName = "TestModule", string typeName = "TestType")
         {
-            if (baseType is null)
-            {
-                return DynamicModule(assemblyName, moduleName).DefineType(typeName, attributes);
-            }
-            else
-            {
-                return DynamicModule(assemblyName, moduleName).DefineType(typeName, attributes, baseType);
-            }
+            return DynamicModule(assemblyName, moduleName).DefineType(typeName, attributes);
         }
 
         public static EnumBuilder DynamicEnum(TypeAttributes visibility, Type underlyingType, string enumName = "TestEnum", string assemblyName = "TestAssembly", string moduleName = "TestModule")

@@ -11,6 +11,10 @@ using AsymmetricPaddingMode = Interop.NCrypt.AsymmetricPaddingMode;
 
 namespace System.Security.Cryptography
 {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    internal static partial class ECDsaImplementation
+    {
+#endif
     public sealed partial class ECDsaCng : ECDsa
     {
         /// <summary>
@@ -41,6 +45,7 @@ namespace System.Security.Cryptography
             }
         }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
         public override bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             return TrySignHashCore(
@@ -56,6 +61,11 @@ namespace System.Security.Cryptography
             DSASignatureFormat signatureFormat,
             out int bytesWritten)
         {
+#else
+        public override unsafe bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            ReadOnlySpan<byte> hash = source;
+#endif
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
                 if (!keyHandle.TrySignHash(hash, destination, AsymmetricPaddingMode.None, null, out bytesWritten))
@@ -65,6 +75,7 @@ namespace System.Security.Cryptography
                 }
             }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
             {
                 return true;
@@ -82,6 +93,9 @@ namespace System.Security.Cryptography
                 destination.Slice(0, bytesWritten),
                 destination,
                 out bytesWritten);
+#else
+            return true;
+#endif
         }
 
         /// <summary>
@@ -94,9 +108,14 @@ namespace System.Security.Cryptography
             if (signature == null)
                 throw new ArgumentNullException(nameof(signature));
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             return VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+#else
+            return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
+#endif
         }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
         public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
             VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
 
@@ -104,12 +123,16 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> signature,
             DSASignatureFormat signatureFormat)
+#else
+        public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+#endif
         {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             if (signatureFormat != DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
             {
                 signature = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
             }
-
+#endif
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
                 unsafe
@@ -119,4 +142,7 @@ namespace System.Security.Cryptography
             }
         }
     }
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    }
+#endif
 }

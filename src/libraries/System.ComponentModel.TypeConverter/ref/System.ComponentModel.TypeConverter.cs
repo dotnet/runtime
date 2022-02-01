@@ -2164,7 +2164,7 @@ namespace System.ComponentModel.Design.Serialization
         public object? Invoke() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public readonly partial struct MemberRelationship : System.IEquatable<System.ComponentModel.Design.Serialization.MemberRelationship>
+    public readonly partial struct MemberRelationship
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -2173,7 +2173,6 @@ namespace System.ComponentModel.Design.Serialization
         public bool IsEmpty { get { throw null; } }
         public System.ComponentModel.MemberDescriptor Member { get { throw null; } }
         public object? Owner { get { throw null; } }
-        public bool Equals(System.ComponentModel.Design.Serialization.MemberRelationship other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.ComponentModel.Design.Serialization.MemberRelationship left, System.ComponentModel.Design.Serialization.MemberRelationship right) { throw null; }

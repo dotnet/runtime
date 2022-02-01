@@ -16,15 +16,7 @@ internal static partial class Interop
         internal static partial SafeHmacHandle HmacCreate(PAL_HashAlgorithm algorithm, ref int cbDigest);
 
         [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacInit")]
-        private static unsafe partial int HmacInit(SafeHmacHandle ctx, byte* pbKey, int cbKey);
-
-        internal static unsafe int HmacInit(SafeHmacHandle ctx, ReadOnlySpan<byte> key)
-        {
-            fixed (byte* pKey = &MemoryMarshal.GetReference(key))
-            {
-                return HmacInit(ctx, pKey, key.Length);
-            }
-        }
+        internal static partial int HmacInit(SafeHmacHandle ctx, byte[] pbKey, int cbKey);
 
         internal static int HmacUpdate(SafeHmacHandle ctx, ReadOnlySpan<byte> data) =>
             HmacUpdate(ctx, ref MemoryMarshal.GetReference(data), data.Length);

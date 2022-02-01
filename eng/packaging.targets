@@ -162,18 +162,19 @@
   </Target>
 
   <Target Name="GenerateMultiTargetRoslynComponentTargetsFile"
-          Inputs="$(MSBuildProjectFullPath);$(_MultiTargetRoslynComponentTargetsTemplate)"
+          Inputs="$(MSBuildProjectFullPath);_MultiTargetRoslynComponentTargetsTemplate"
           Outputs="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)">
     <PropertyGroup>
       <_MultiTargetRoslynComponentTargetPrefix>$(PackageId.Replace('.', '_'))</_MultiTargetRoslynComponentTargetPrefix>
-      <DisableSourceGeneratorPropertyName Condition="'$(DisableSourceGeneratorPropertyName)' == ''">Disable$(PackageId.Replace('.', ''))SourceGenerator</DisableSourceGeneratorPropertyName>
+      <_MultiTargetRoslynComponentDisableSourceGeneratorPropertyName>Disable$(PackageId.Replace('.', ''))SourceGenerator</_MultiTargetRoslynComponentDisableSourceGeneratorPropertyName>
+      <_MultiTargetRoslynComponentDisableSourceGeneratorPropertyName>$(_MultiTargetRoslynComponentDisableSourceGeneratorPropertyName.Replace('Abstractions', ''))</_MultiTargetRoslynComponentDisableSourceGeneratorPropertyName>
     </PropertyGroup>
 
     <WriteLinesToFile File="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)"
                       Lines="$([System.IO.File]::ReadAllText('$(_MultiTargetRoslynComponentTargetsTemplate)')
                                                  .Replace('{TargetPrefix}', '$(_MultiTargetRoslynComponentTargetPrefix)')
                                                  .Replace('{NuGetPackageId}', '$(PackageId)')
-                                                 .Replace('{DisableSourceGeneratorPropertyName}', '$(DisableSourceGeneratorPropertyName)'))"
+                                                 .Replace('{DisableSourceGeneratorPropertyName}', '$(_MultiTargetRoslynComponentDisableSourceGeneratorPropertyName)'))"
                       Overwrite="true" />
   </Target>
 

@@ -1273,7 +1273,11 @@ namespace System.Reflection.Emit
             // Specifying the namespace to be used in evaluating locals and watches
             // for the current active lexical scope.
 
-            ArgumentException.ThrowIfNullOrEmpty(usingNamespace);
+            if (usingNamespace == null)
+                throw new ArgumentNullException(nameof(usingNamespace));
+
+            if (usingNamespace.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(usingNamespace));
 
             MethodBuilder? methodBuilder = m_methodBuilder as MethodBuilder;
             if (methodBuilder == null)

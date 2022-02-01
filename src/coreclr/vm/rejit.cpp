@@ -811,31 +811,35 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
         _ASSERTE(pDomainAssembly != NULL);
         _ASSERTE(pDomainAssembly->GetAssembly() != NULL);
 
-        Module * pModule = pDomainAssembly->GetModule();
-        if (pModule->HasReadyToRunInlineTrackingMap())
+        DomainModuleIterator domainModuleIterator = pDomainAssembly->IterateModules(kModIterIncludeLoaded);
+        while (domainModuleIterator.Next())
         {
-            inlinerIter.Reset(pModule, pInlinee);
-
-            MethodDesc *pInliner = NULL;
-            while (inlinerIter.Next())
+            Module * pCurModule = domainModuleIterator.GetModule();
+            if (pCurModule->HasReadyToRunInlineTrackingMap())
             {
-                pInliner = inlinerIter.GetMethodDesc();
-                {
-                    CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
-                    CodeVersionManager::LockHolder codeVersioningLockHolder;
-                    ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pInliner);
-                    if (!ilVersion.HasDefaultIL())
-                    {
-                        // This method has already been ReJITted, no need to request another ReJIT at this point.
-                        // The ReJITted method will be in the JIT inliner check below.
-                        continue;
-                    }
-                }
+                inlinerIter.Reset(pCurModule, pInlinee);
 
-                hr = UpdateActiveILVersion(pMgrToCodeActivationBatch, pInliner->GetModule(), pInliner->GetMemberDef(), fIsRevert, flags);
-                if (FAILED(hr))
+                MethodDesc *pInliner = NULL;
+                while (inlinerIter.Next())
                 {
-                    ReportReJITError(pInliner->GetModule(), pInliner->GetMemberDef(), NULL, hr);
+                    pInliner = inlinerIter.GetMethodDesc();
+                    {
+                        CodeVersionManager *pCodeVersionManager = pCurModule->GetCodeVersionManager();
+                        CodeVersionManager::LockHolder codeVersioningLockHolder;
+                        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pInliner);
+                        if (!ilVersion.HasDefaultIL())
+                        {
+                            // This method has already been ReJITted, no need to request another ReJIT at this point.
+                            // The ReJITted method will be in the JIT inliner check below.
+                            continue;
+                        }
+                    }
+
+                    hr = UpdateActiveILVersion(pMgrToCodeActivationBatch, pInliner->GetModule(), pInliner->GetMemberDef(), fIsRevert, flags);
+                    if (FAILED(hr))
+                    {
+                        ReportReJITError(pInliner->GetModule(), pInliner->GetMemberDef(), NULL, hr);
+                    }
                 }
             }
         }

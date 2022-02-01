@@ -21,13 +21,11 @@ namespace Internal.IL.Stubs
         private MethodSignature _signature;
 
         public CalliMarshallingMethodThunk(MethodSignature targetSignature, TypeDesc owningType,
-                InteropStateManager interopStateManager,
-                bool runtimeMarshallingEnabled)
+                InteropStateManager interopStateManager)
         {
             _targetSignature = targetSignature;
             _owningType = owningType;
             _interopStateManager = interopStateManager;
-            RuntimeMarshallingEnabled = runtimeMarshallingEnabled;
         }
 
         public MethodSignature TargetSignature
@@ -88,8 +86,6 @@ namespace Internal.IL.Stubs
                 return "CalliMarshallingMethodThunk";
             }
         }
-
-        public bool RuntimeMarshallingEnabled { get; }
 
         public override PInvokeMetadata GetPInvokeMethodMetadata()
         {

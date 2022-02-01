@@ -38,7 +38,7 @@ internal static partial class Interop
             SafeHashHandle hHash,
             byte[] pbSignature,
             int dwSigLen,
-            SafeCapiKeyHandle hPubKey,
+            SafeKeyHandle hPubKey,
             string? szDescription,
             CryptSignAndVerifyHashFlags dwFlags);
     }

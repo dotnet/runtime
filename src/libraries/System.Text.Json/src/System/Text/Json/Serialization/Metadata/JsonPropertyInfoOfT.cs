@@ -287,7 +287,7 @@ namespace System.Text.Json.Serialization.Metadata
                         Debug.Assert(RuntimeTypeInfo.Type == DeclaredPropertyType);
 
                         // Use a late-bound call to EqualityComparer<DeclaredPropertyType>.
-                        if (RuntimeTypeInfo.DefaultValueHolder.IsDefaultValue(value))
+                        if (RuntimeTypeInfo.GenericMethods.IsDefaultValue(value))
                         {
                             return true;
                         }

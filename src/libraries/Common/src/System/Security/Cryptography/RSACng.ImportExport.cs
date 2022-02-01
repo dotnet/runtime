@@ -11,6 +11,10 @@ using BCRYPT_RSAKEY_BLOB = Interop.BCrypt.BCRYPT_RSAKEY_BLOB;
 
 namespace System.Security.Cryptography
 {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    internal static partial class RSAImplementation
+    {
+#endif
     public sealed partial class RSACng : RSA
     {
         /// <summary>
@@ -368,4 +372,7 @@ namespace System.Security.Cryptography
             }
         }
     }
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    }
+#endif
 }

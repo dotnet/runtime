@@ -100,7 +100,7 @@
   .class explicit ansi sealed nested private '__StaticArrayInitTypeSize=16'
          extends [System.Runtime]System.ValueType
   {
-    .pack 4
+    .pack 1
     .size 16
   } // end of class '__StaticArrayInitTypeSize=16'
 

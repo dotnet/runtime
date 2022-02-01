@@ -66,9 +66,9 @@ namespace System.Data.Tests.SqlTypes
         {
             byte[] b = null;
             SqlBytes bytes = new SqlBytes();
-            Assert.Equal(-1, bytes.MaxLength);
+            Assert.Equal(bytes.MaxLength, -1);
             bytes = new SqlBytes(b);
-            Assert.Equal(-1, bytes.MaxLength);
+            Assert.Equal(bytes.MaxLength, -1);
             b = new byte[10];
             bytes = new SqlBytes(b);
             Assert.Equal(10, bytes.MaxLength);

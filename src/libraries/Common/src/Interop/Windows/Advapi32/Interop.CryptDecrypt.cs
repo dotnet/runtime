@@ -16,7 +16,7 @@ internal static partial class Interop
 
         [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
         public static partial bool CryptDecrypt(
-            SafeCapiKeyHandle hKey,
+            SafeKeyHandle hKey,
             SafeHashHandle hHash,
             bool Final,
             int dwFlags,

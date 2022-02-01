@@ -58,12 +58,12 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_CharAsRoot()
     {
-        Assert.StrictEqual(char.MinValue, SerializeAndDeserialize<char>(char.MinValue,
+        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MinValue,
 @"<?xml version=""1.0""?>
-<char>0</char>"));
-        Assert.StrictEqual(char.MaxValue, SerializeAndDeserialize<char>(char.MaxValue,
+<char>0</char>"), char.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MaxValue,
 @"<?xml version=""1.0""?>
-<char>65535</char>"));
+<char>65535</char>"), char.MaxValue);
         Assert.StrictEqual('a', SerializeAndDeserialize<char>('a',
 @"<?xml version=""1.0""?>
 <char>97</char>"));
@@ -81,12 +81,12 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(10, SerializeAndDeserialize<byte>(10,
 @"<?xml version=""1.0""?>
 <unsignedByte>10</unsignedByte>"));
-        Assert.StrictEqual(byte.MinValue, SerializeAndDeserialize<byte>(byte.MinValue,
+        Assert.StrictEqual(SerializeAndDeserialize<byte>(byte.MinValue,
 @"<?xml version=""1.0""?>
-<unsignedByte>0</unsignedByte>"));
-        Assert.StrictEqual(byte.MaxValue, SerializeAndDeserialize<byte>(byte.MaxValue,
+<unsignedByte>0</unsignedByte>"), byte.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<byte>(byte.MaxValue,
 @"<?xml version=""1.0""?>
-<unsignedByte>255</unsignedByte>"));
+<unsignedByte>255</unsignedByte>"), byte.MaxValue);
     }
 
     [Fact]
@@ -128,46 +128,46 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DoubleAsRoot()
     {
-        Assert.StrictEqual(-1.2, SerializeAndDeserialize<double>(-1.2,
+        Assert.StrictEqual(SerializeAndDeserialize<double>(-1.2,
 @"<?xml version=""1.0""?>
-<double>-1.2</double>"));
+<double>-1.2</double>"), -1.2);
         Assert.StrictEqual(0, SerializeAndDeserialize<double>(0,
 @"<?xml version=""1.0""?>
 <double>0</double>"));
         Assert.StrictEqual(2.3, SerializeAndDeserialize<double>(2.3,
 @"<?xml version=""1.0""?>
 <double>2.3</double>"));
-        Assert.StrictEqual(double.MinValue, SerializeAndDeserialize<double>(double.MinValue,
+        Assert.StrictEqual(SerializeAndDeserialize<double>(double.MinValue,
 @"<?xml version=""1.0""?>
-<double>-1.7976931348623157E+308</double>"));
-        Assert.StrictEqual(double.MaxValue, SerializeAndDeserialize<double>(double.MaxValue,
+<double>-1.7976931348623157E+308</double>"), double.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<double>(double.MaxValue,
 @"<?xml version=""1.0""?>
-<double>1.7976931348623157E+308</double>"));
+<double>1.7976931348623157E+308</double>"), double.MaxValue);
     }
 
     [Fact]
     public static void Xml_FloatAsRoot()
     {
-        Assert.StrictEqual((float)-1.2, SerializeAndDeserialize<float>((float)-1.2,
+        Assert.StrictEqual(SerializeAndDeserialize<float>((float)-1.2,
 @"<?xml version=""1.0""?>
-<float>-1.2</float>"));
-        Assert.StrictEqual((float)0, SerializeAndDeserialize<float>((float)0,
+<float>-1.2</float>"), (float)-1.2);
+        Assert.StrictEqual(SerializeAndDeserialize<float>((float)0,
 @"<?xml version=""1.0""?>
-<float>0</float>"));
-        Assert.StrictEqual((float)2.3, SerializeAndDeserialize<float>((float)2.3,
+<float>0</float>"), (float)0);
+        Assert.StrictEqual(SerializeAndDeserialize<float>((float)2.3,
 @"<?xml version=""1.0""?>
-<float>2.3</float>"));
+<float>2.3</float>"), (float)2.3);
     }
 
     [Fact]
     public static void Xml_FloatAsRoot_NotNetFramework()
     {
-        Assert.StrictEqual(float.MinValue, SerializeAndDeserialize<float>(float.MinValue,
+        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MinValue,
 @"<?xml version=""1.0""?>
-<float>-3.4028235E+38</float>"));
-        Assert.StrictEqual(float.MaxValue, SerializeAndDeserialize<float>(float.MaxValue,
+<float>-3.4028235E+38</float>"), float.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MaxValue,
 @"<?xml version=""1.0""?>
-<float>3.4028235E+38</float>"));
+<float>3.4028235E+38</float>"), float.MaxValue);
     }
 
     [Fact]
@@ -229,8 +229,8 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(SerializeAndDeserialize<XmlQualifiedName>(new XmlQualifiedName("abc", "def"),
 @"<?xml version=""1.0""?>
 <QName xmlns:q1=""def"">q1:abc</QName>"), new XmlQualifiedName("abc", "def"));
-        Assert.StrictEqual(XmlQualifiedName.Empty, SerializeAndDeserialize<XmlQualifiedName>(XmlQualifiedName.Empty,
-@"<?xml version=""1.0""?><QName xmlns="""" />"));
+        Assert.StrictEqual(SerializeAndDeserialize<XmlQualifiedName>(XmlQualifiedName.Empty,
+@"<?xml version=""1.0""?><QName xmlns="""" />"), XmlQualifiedName.Empty);
     }
 
     [Fact]

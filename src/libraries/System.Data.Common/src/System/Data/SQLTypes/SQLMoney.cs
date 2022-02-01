@@ -21,7 +21,7 @@ namespace System.Data.SqlTypes
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [XmlSchemaProvider("GetXsdType")]
-    public struct SqlMoney : INullable, IComparable, IXmlSerializable, IEquatable<SqlMoney>
+    public struct SqlMoney : INullable, IComparable, IXmlSerializable
     {
         // NOTE: If any instance fields change, update SqlTypeWorkarounds type in System.Data.SqlClient.
         private bool _fNotNull; // false if null
@@ -539,20 +539,27 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals([NotNullWhen(true)] object? value) =>
-            value is SqlMoney other && Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? value)
+        {
+            if (!(value is SqlMoney))
+            {
+                return false;
+            }
 
-        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
-        /// <param name="other">An instance to compare with this instance.</param>
-        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
-        public bool Equals(SqlMoney other) =>
-            other.IsNull || IsNull ? other.IsNull && IsNull :
-            (this == other).Value;
+            SqlMoney i = (SqlMoney)value;
+
+            if (i.IsNull || IsNull)
+                return (i.IsNull && IsNull);
+            else
+                return (this == i).Value;
+        }
 
         // For hashing purpose
-        public override int GetHashCode() =>
+        public override int GetHashCode()
+        {
             // Don't use Value property, because Value will convert to Decimal, which is not necessary.
-            IsNull ? 0 : _value.GetHashCode();
+            return IsNull ? 0 : _value.GetHashCode();
+        }
 
         XmlSchema? IXmlSerializable.GetSchema() { return null; }
 

@@ -1235,10 +1235,12 @@ public:
     bool OperIsBlkOp();
     bool OperIsCopyBlkOp();
     bool OperIsInitBlkOp();
+    bool OperIsDynBlkOp();
 
     static bool OperIsBlk(genTreeOps gtOper)
     {
-        return (gtOper == GT_BLK) || (gtOper == GT_OBJ) || OperIsStoreBlk(gtOper);
+        return ((gtOper == GT_BLK) || (gtOper == GT_OBJ) || (gtOper == GT_DYN_BLK) || (gtOper == GT_STORE_BLK) ||
+                (gtOper == GT_STORE_OBJ) || (gtOper == GT_STORE_DYN_BLK));
     }
 
     bool OperIsBlk() const
@@ -1246,9 +1248,19 @@ public:
         return OperIsBlk(OperGet());
     }
 
+    static bool OperIsDynBlk(genTreeOps gtOper)
+    {
+        return ((gtOper == GT_DYN_BLK) || (gtOper == GT_STORE_DYN_BLK));
+    }
+
+    bool OperIsDynBlk() const
+    {
+        return OperIsDynBlk(OperGet());
+    }
+
     static bool OperIsStoreBlk(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYN_BLK);
+        return ((gtOper == GT_STORE_BLK) || (gtOper == GT_STORE_OBJ) || (gtOper == GT_STORE_DYN_BLK));
     }
 
     bool OperIsStoreBlk() const
@@ -1692,8 +1704,6 @@ public:
     inline bool IsIntegralConst(ssize_t constVal) const;
     inline bool IsIntegralConstVector(ssize_t constVal) const;
     inline bool IsSIMDZero() const;
-    inline bool IsFloatPositiveZero() const;
-    inline bool IsVectorZero() const;
 
     inline bool IsBoxedValue();
 
@@ -1907,7 +1917,7 @@ public:
     // where Y is an arbitrary tree, and X is a lclVar.
     unsigned IsLclVarUpdateTree(GenTree** otherTree, genTreeOps* updateOper);
 
-    bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq);
+    bool IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, FieldSeqNode** pFldSeq);
 
     // Requires "this" to be the address of an array (the child of a GT_IND labeled with GTF_IND_ARR_INDEX).
     // Sets "pArr" to the node representing the array (either an array object pointer, or perhaps a byref to the some
@@ -2066,14 +2076,9 @@ public:
         SetAllEffectsFlags(source->gtFlags & GTF_ALL_EFFECT);
     }
 
-    void SetAllEffectsFlags(GenTree* firstSource, GenTree* secondSource)
+    void SetAllEffectsFlags(GenTree* source, GenTree* otherSource)
     {
-        SetAllEffectsFlags((firstSource->gtFlags | secondSource->gtFlags) & GTF_ALL_EFFECT);
-    }
-
-    void SetAllEffectsFlags(GenTree* firstSource, GenTree* secondSource, GenTree* thirdSouce)
-    {
-        SetAllEffectsFlags((firstSource->gtFlags | secondSource->gtFlags | thirdSouce->gtFlags) & GTF_ALL_EFFECT);
+        SetAllEffectsFlags((source->gtFlags | otherSource->gtFlags) & GTF_ALL_EFFECT);
     }
 
     void SetAllEffectsFlags(GenTreeFlags sourceFlags)
@@ -2092,7 +2097,7 @@ public:
 
     inline bool IsCnsFltOrDbl() const;
 
-    inline bool IsCnsNonZeroFltOrDbl() const;
+    inline bool IsCnsNonZeroFltOrDbl();
 
     bool IsIconHandle() const
     {
@@ -2738,6 +2743,7 @@ class GenTreeUseEdgeIterator final
     void AdvanceCmpXchg();
     void AdvanceArrElem();
     void AdvanceArrOffset();
+    void AdvanceDynBlk();
     void AdvanceStoreDynBlk();
     void AdvanceFieldList();
     void AdvancePhi();
@@ -5977,6 +5983,8 @@ protected:
 struct GenTreeIndir : public GenTreeOp
 {
     // The address for the indirection.
+    // Since GenTreeDynBlk derives from this, but is an "EXOP" (i.e. it has extra fields),
+    // we can't access Op1 and Op2 in the normal manner if we may have a DynBlk.
     GenTree*& Addr()
     {
         return gtOp1;
@@ -6043,7 +6051,7 @@ public:
 
     void SetLayout(ClassLayout* layout)
     {
-        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
+        assert((layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
         m_layout = layout;
     }
 
@@ -6060,7 +6068,7 @@ public:
     // The size of the buffer to be copied.
     unsigned Size() const
     {
-        assert((m_layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
+        assert((m_layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
         return (m_layout != nullptr) ? m_layout->GetSize() : 0;
     }
 
@@ -6098,7 +6106,7 @@ public:
 #endif
     {
         assert(OperIsBlk(oper));
-        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
+        assert((layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
         gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
     }
 
@@ -6111,7 +6119,7 @@ public:
 #endif
     {
         assert(OperIsBlk(oper));
-        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
+        assert((layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
         gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
         gtFlags |= (data->gtFlags & GTF_ALL_EFFECT);
     }
@@ -6160,33 +6168,28 @@ struct GenTreeObj : public GenTreeBlk
 #endif
 };
 
-// GenTreeStoreDynBlk  -- 'dynamic block store' (GT_STORE_DYN_BLK).
+// gtDynBlk  -- 'dynamic block' (GT_DYN_BLK).
 //
-// This node is used to represent stores that have a dynamic size - the "cpblk" and "initblk"
-// IL instructions are implemented with it. Note that such stores assume the input has no GC
-// pointers in it, and as such do not ever use write barriers.
-//
-// The "Data()" member of this node will either be a "dummy" IND(struct) node, for "cpblk", or
-// the zero constant/INIT_VAL for "initblk".
-//
-struct GenTreeStoreDynBlk : public GenTreeBlk
+// This node is used for block values that have a dynamic size.
+// Note that such a value can never have GC pointers.
+
+struct GenTreeDynBlk : public GenTreeBlk
 {
 public:
     GenTree* gtDynamicSize;
 
-    GenTreeStoreDynBlk(GenTree* dstAddr, GenTree* data, GenTree* dynamicSize)
-        : GenTreeBlk(GT_STORE_DYN_BLK, TYP_VOID, dstAddr, data, nullptr), gtDynamicSize(dynamicSize)
+    GenTreeDynBlk(GenTree* addr, GenTree* dynamicSize)
+        : GenTreeBlk(GT_DYN_BLK, TYP_STRUCT, addr, nullptr), gtDynamicSize(dynamicSize)
     {
-        // Conservatively the 'dstAddr' could be null or point into the global heap.
-        // Likewise, this is a store and so must be marked with the GTF_ASG flag.
-        gtFlags |= (GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+        // Conservatively the 'addr' could be null or point into the global heap.
+        gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
         gtFlags |= (dynamicSize->gtFlags & GTF_ALL_EFFECT);
     }
 
 #if DEBUGGABLE_GENTREE
 protected:
     friend GenTree;
-    GenTreeStoreDynBlk() : GenTreeBlk()
+    GenTreeDynBlk() : GenTreeBlk()
     {
     }
 #endif // DEBUGGABLE_GENTREE
@@ -7485,7 +7488,20 @@ struct GenTreeCC final : public GenTree
 
 inline bool GenTree::OperIsBlkOp()
 {
-    return ((gtOper == GT_ASG) && varTypeIsStruct(AsOp()->gtOp1)) || OperIsStoreBlk();
+    return ((gtOper == GT_ASG) && varTypeIsStruct(AsOp()->gtOp1)) || (OperIsBlk() && (AsBlk()->Data() != nullptr));
+}
+
+inline bool GenTree::OperIsDynBlkOp()
+{
+    if (gtOper == GT_ASG)
+    {
+        return gtGetOp1()->OperGet() == GT_DYN_BLK;
+    }
+    else if (gtOper == GT_STORE_DYN_BLK)
+    {
+        return true;
+    }
+    return false;
 }
 
 inline bool GenTree::OperIsInitBlkOp()
@@ -7630,79 +7646,6 @@ inline bool GenTree::IsSIMDZero() const
         return (AsSIMD()->Op(1)->IsIntegralConst(0) || AsSIMD()->Op(1)->IsFPZero());
     }
 #endif
-
-    return false;
-}
-
-//-------------------------------------------------------------------
-// IsFloatPositiveZero: returns true if this is exactly a const float value of postive zero (+0.0)
-//
-// Returns:
-//     True if this represents a const floating-point value of exactly positive zero (+0.0).
-//     Will return false if the value is negative zero (-0.0).
-//
-inline bool GenTree::IsFloatPositiveZero() const
-{
-    return IsCnsFltOrDbl() && !IsCnsNonZeroFltOrDbl();
-}
-
-//-------------------------------------------------------------------
-// IsVectorZero: returns true if this is an integral or floating-point (SIMD or HW intrinsic) vector
-// with all its elements equal to zero.
-//
-// Returns:
-//     True if this represents an integral or floating-point const (SIMD or HW intrinsic) vector with all its elements
-//     equal to zero.
-//
-// TODO: We already have IsSIMDZero() and IsIntegralConstVector(0),
-//       however, IsSIMDZero() does not cover hardware intrinsics, and IsIntegralConstVector(0) does not cover floating
-//       point. In order to not risk adverse behaviour by modifying those, this function 'IsVectorZero' was introduced.
-//       At some point, it makes sense to normalize this logic to be a single function call rather than have several
-//       separate ones; preferably this one.
-inline bool GenTree::IsVectorZero() const
-{
-#ifdef FEATURE_SIMD
-    if (gtOper == GT_SIMD)
-    {
-        const GenTreeSIMD* node = AsSIMD();
-
-        if (node->GetSIMDIntrinsicId() == SIMDIntrinsicInit)
-        {
-            return (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero());
-        }
-    }
-#endif
-
-#ifdef FEATURE_HW_INTRINSICS
-    if (gtOper == GT_HWINTRINSIC)
-    {
-        const GenTreeHWIntrinsic* node         = AsHWIntrinsic();
-        const var_types           simdBaseType = node->GetSimdBaseType();
-
-        if (varTypeIsIntegral(simdBaseType) || varTypeIsFloating(simdBaseType))
-        {
-            const NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-
-            if (node->GetOperandCount() == 0)
-            {
-#if defined(TARGET_XARCH)
-                return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
-#elif defined(TARGET_ARM64)
-                return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
-#endif // !TARGET_XARCH && !TARGET_ARM64
-            }
-            else if ((node->GetOperandCount() == 1) &&
-                     (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero()))
-            {
-#if defined(TARGET_XARCH)
-                return (intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create);
-#elif defined(TARGET_ARM64)
-                return (intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create);
-#endif // !TARGET_XARCH && !TARGET_ARM64
-            }
-        }
-    }
-#endif // FEATURE_HW_INTRINSICS
 
     return false;
 }
@@ -8385,7 +8328,7 @@ inline bool GenTree::IsCnsFltOrDbl() const
     return OperGet() == GT_CNS_DBL;
 }
 
-inline bool GenTree::IsCnsNonZeroFltOrDbl() const
+inline bool GenTree::IsCnsNonZeroFltOrDbl()
 {
     if (OperGet() == GT_CNS_DBL)
     {

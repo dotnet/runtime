@@ -2036,15 +2036,18 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
     // these are the default flags which won't actually be used in shared mode other than
     // asserting they were specified with their default values
     AssemblyIterationFlags assemFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution);
+    ModuleIterationOption moduleFlags = (ModuleIterationOption)kModIterIncludeLoaded;
     if (pAppDomainToSearch != NULL)
     {
         assemFlags = (AssemblyIterationFlags)(kIncludeAvailableToProfilers | kIncludeExecution);
+        moduleFlags = (ModuleIterationOption)kModIterIncludeAvailableToProfilers;
     }
     LoadedMethodDescIterator it(
         pAppDomainToSearch,
         pModuleContainingMethodDef,
         methodDef,
-        assemFlags);
+        assemFlags,
+        moduleFlags);
     CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
     while (it.Next(pDomainAssembly.This()))
     {

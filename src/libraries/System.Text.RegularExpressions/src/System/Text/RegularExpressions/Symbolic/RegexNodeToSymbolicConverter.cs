@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
@@ -211,9 +212,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 return StackHelper.CallOnEmptyStack(Convert, node, topLevel);
             }
 
-            switch (node.Kind)
+            switch (node.Type)
             {
-                case RegexNodeKind.Alternate:
+                case RegexNode.Alternate:
                     {
                         var nested = new SymbolicRegexNode<BDD>[node.ChildCount()];
                         for (int i = 0; i < nested.Length; i++)
@@ -223,17 +224,17 @@ namespace System.Text.RegularExpressions.Symbolic
                         return _builder.MkOr(nested);
                     }
 
-                case RegexNodeKind.Beginning:
+                case RegexNode.Beginning:
                     return _builder._startAnchor;
 
-                case RegexNodeKind.Bol:
+                case RegexNode.Bol:
                     EnsureNewlinePredicateInitialized();
                     return _builder._bolAnchor;
 
-                case RegexNodeKind.Capture when node.N == -1:
+                case RegexNode.Capture when node.N == -1:
                     return Convert(node.Child(0), topLevel); // treat as non-capturing group (...)
 
-                case RegexNodeKind.Concatenate:
+                case RegexNode.Concatenate:
                     {
                         List<RegexNode> nested = FlattenNestedConcatenations(node);
                         var converted = new SymbolicRegexNode<BDD>[nested.Count];
@@ -244,68 +245,68 @@ namespace System.Text.RegularExpressions.Symbolic
                         return _builder.MkConcat(converted, topLevel);
                     }
 
-                case RegexNodeKind.Empty:
-                case RegexNodeKind.UpdateBumpalong: // optional directive that behaves the same as Empty
+                case RegexNode.Empty:
+                case RegexNode.UpdateBumpalong: // optional directive that behaves the same as Empty
                     return _builder._epsilon;
 
-                case RegexNodeKind.End:  // \z anchor
+                case RegexNode.End:  // \z anchor
                     return _builder._endAnchor;
 
-                case RegexNodeKind.EndZ: // \Z anchor
+                case RegexNode.EndZ: // \Z anchor
                     EnsureNewlinePredicateInitialized();
                     return _builder._endAnchorZ;
 
-                case RegexNodeKind.Eol:
+                case RegexNode.Eol:
                     EnsureNewlinePredicateInitialized();
                     return _builder._eolAnchor;
 
-                case RegexNodeKind.Loop:
+                case RegexNode.Loop:
                     return _builder.MkLoop(Convert(node.Child(0), topLevel: false), isLazy: false, node.M, node.N);
 
-                case RegexNodeKind.Lazyloop:
+                case RegexNode.Lazyloop:
                     return _builder.MkLoop(Convert(node.Child(0), topLevel: false), isLazy: true, node.M, node.N);
 
-                case RegexNodeKind.Multi:
+                case RegexNode.Multi:
                     return ConvertMulti(node, topLevel);
 
-                case RegexNodeKind.Notone:
+                case RegexNode.Notone:
                     return _builder.MkSingleton(Solver.Not(Solver.CharConstraint(node.Ch, (node.Options & RegexOptions.IgnoreCase) != 0, _culture.Name)));
 
-                case RegexNodeKind.Notoneloop:
-                case RegexNodeKind.Notonelazy:
-                    return ConvertNotoneloop(node, node.Kind == RegexNodeKind.Notonelazy);
+                case RegexNode.Notoneloop:
+                case RegexNode.Notonelazy:
+                    return ConvertNotoneloop(node, node.Type == RegexNode.Notonelazy);
 
-                case RegexNodeKind.One:
+                case RegexNode.One:
                     return _builder.MkSingleton(Solver.CharConstraint(node.Ch, (node.Options & RegexOptions.IgnoreCase) != 0, _culture.Name));
 
-                case RegexNodeKind.Oneloop:
-                case RegexNodeKind.Onelazy:
-                    return ConvertOneloop(node, node.Kind == RegexNodeKind.Onelazy);
+                case RegexNode.Oneloop:
+                case RegexNode.Onelazy:
+                    return ConvertOneloop(node, node.Type == RegexNode.Onelazy);
 
-                case RegexNodeKind.Set:
+                case RegexNode.Set:
                     return ConvertSet(node);
 
-                case RegexNodeKind.Setloop:
-                case RegexNodeKind.Setlazy:
-                    return ConvertSetloop(node, node.Kind == RegexNodeKind.Setlazy);
+                case RegexNode.Setloop:
+                case RegexNode.Setlazy:
+                    return ConvertSetloop(node, node.Type == RegexNode.Setlazy);
 
                 // TBD: ECMA case intersect predicate with ascii range ?
-                case RegexNodeKind.Boundary:
-                case RegexNodeKind.ECMABoundary:
+                case RegexNode.Boundary:
+                case RegexNode.ECMABoundary:
                     EnsureWordLetterPredicateInitialized();
                     return _builder._wbAnchor;
 
                 // TBD: ECMA case intersect predicate with ascii range ?
-                case RegexNodeKind.NonBoundary:
-                case RegexNodeKind.NonECMABoundary:
+                case RegexNode.NonBoundary:
+                case RegexNode.NonECMABoundary:
                     EnsureWordLetterPredicateInitialized();
                     return _builder._nwbAnchor;
 
-                case RegexNodeKind.Nothing:
+                case RegexNode.Nothing:
                     return _builder._nothing;
 
 #if DEBUG
-                case RegexNodeKind.ExpressionConditional:
+                case RegexNode.Testgroup:
                     // Try to extract the special case representing complement or intersection
                     if (IsComplementedNode(node))
                     {
@@ -326,19 +327,19 @@ namespace System.Text.RegularExpressions.Symbolic
 #endif
 
                 default:
-                    throw new NotSupportedException(SR.Format(SR.NotSupported_NonBacktrackingConflictingExpression, node.Kind switch
+                    throw new NotSupportedException(SR.Format(SR.NotSupported_NonBacktrackingConflictingExpression, node.Type switch
                     {
-                        RegexNodeKind.Capture => SR.ExpressionDescription_BalancingGroup,
-                        RegexNodeKind.ExpressionConditional => SR.ExpressionDescription_IfThenElse,
-                        RegexNodeKind.Backreference => SR.ExpressionDescription_Backreference,
-                        RegexNodeKind.BackreferenceConditional => SR.ExpressionDescription_Conditional,
-                        RegexNodeKind.PositiveLookaround => SR.ExpressionDescription_PositiveLookaround,
-                        RegexNodeKind.NegativeLookaround => SR.ExpressionDescription_NegativeLookaround,
-                        RegexNodeKind.Start => SR.ExpressionDescription_ContiguousMatches,
-                        RegexNodeKind.Atomic or
-                        RegexNodeKind.Setloopatomic or
-                        RegexNodeKind.Oneloopatomic or
-                        RegexNodeKind.Notoneloopatomic => SR.ExpressionDescription_AtomicSubexpressions,
+                        RegexNode.Capture => SR.ExpressionDescription_BalancingGroup,
+                        RegexNode.Testgroup => SR.ExpressionDescription_IfThenElse,
+                        RegexNode.Ref => SR.ExpressionDescription_Backreference,
+                        RegexNode.Testref => SR.ExpressionDescription_Conditional,
+                        RegexNode.Require => SR.ExpressionDescription_PositiveLookaround,
+                        RegexNode.Prevent => SR.ExpressionDescription_NegativeLookaround,
+                        RegexNode.Start => SR.ExpressionDescription_ContiguousMatches,
+                        RegexNode.Atomic or
+                        RegexNode.Setloopatomic or
+                        RegexNode.Oneloopatomic or
+                        RegexNode.Notoneloopatomic => SR.ExpressionDescription_AtomicSubexpressions,
                         _ => UnexpectedNodeType(node)
                     }));
 
@@ -346,7 +347,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         // The default should never arise, since other node types are either supported
                         // or have been removed (e.g. Group) from the final parse tree.
-                        string description = $"Unexpected node type ({nameof(RegexNode)}:{node.Kind})";
+                        string description = $"Unexpected node type ({nameof(RegexNode)}:{node.Type})";
                         Debug.Fail(description);
                         return description;
                     }
@@ -380,7 +381,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 while (todo.TryPop(out RegexNode? node))
                 {
-                    if (node.Kind == RegexNodeKind.Concatenate)
+                    if (node.Type == RegexNode.Concatenate)
                     {
                         // Flatten nested concatenations
                         for (int i = node.ChildCount() - 1; i >= 0; i--)
@@ -388,7 +389,7 @@ namespace System.Text.RegularExpressions.Symbolic
                             todo.Push(node.Child(i));
                         }
                     }
-                    else if (node.Kind == RegexNodeKind.Capture)
+                    else if (node.Type == RegexNode.Capture)
                     {
                         if (node.N == -1)
                         {
@@ -412,7 +413,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             SymbolicRegexNode<BDD> ConvertMulti(RegexNode node, bool topLevel)
             {
-                Debug.Assert(node.Kind == RegexNodeKind.Multi);
+                Debug.Assert(node.Type == RegexNode.Multi);
 
                 string? sequence = node.Str;
                 Debug.Assert(sequence is not null);
@@ -430,7 +431,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             SymbolicRegexNode<BDD> ConvertOneloop(RegexNode node, bool isLazy)
             {
-                Debug.Assert(node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Onelazy);
+                Debug.Assert(node.Type is RegexNode.Oneloop or RegexNode.Onelazy);
 
                 bool ignoreCase = (node.Options & RegexOptions.IgnoreCase) != 0;
                 BDD cond = Solver.CharConstraint(node.Ch, ignoreCase, _culture.Name);
@@ -442,7 +443,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             SymbolicRegexNode<BDD> ConvertNotoneloop(RegexNode node, bool isLazy)
             {
-                Debug.Assert(node.Kind is RegexNodeKind.Notoneloop or RegexNodeKind.Notonelazy);
+                Debug.Assert(node.Type is RegexNode.Notoneloop or RegexNode.Notonelazy);
 
                 bool ignoreCase = (node.Options & RegexOptions.IgnoreCase) != 0;
                 BDD cond = Solver.Not(Solver.CharConstraint(node.Ch, ignoreCase, _culture.Name));
@@ -454,7 +455,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             SymbolicRegexNode<BDD> ConvertSet(RegexNode node)
             {
-                Debug.Assert(node.Kind == RegexNodeKind.Set);
+                Debug.Assert(node.Type == RegexNode.Set);
 
                 string? set = node.Str;
                 Debug.Assert(set is not null);
@@ -466,7 +467,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             SymbolicRegexNode<BDD> ConvertSetloop(RegexNode node, bool isLazy)
             {
-                Debug.Assert(node.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy);
+                Debug.Assert(node.Type is RegexNode.Setloop or RegexNode.Setlazy);
 
                 string? set = node.Str;
                 Debug.Assert(set is not null);
@@ -479,11 +480,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
 #if DEBUG
             // TODO-NONBACKTRACKING: recognizing strictly only [] (RegexNode.Nothing), for example [0-[0]] would not be recognized
-            bool IsNothing(RegexNode node) => node.Kind == RegexNodeKind.Nothing || (node.Kind == RegexNodeKind.Set && ConvertSet(node).IsNothing);
+            bool IsNothing(RegexNode node) => node.Type == RegexNode.Nothing || (node.Type == RegexNode.Set && ConvertSet(node).IsNothing);
 
-            bool IsDotStar(RegexNode node) => node.Kind == RegexNodeKind.Setloop && Convert(node, topLevel: false).IsAnyStar;
+            bool IsDotStar(RegexNode node) => node.Type == RegexNode.Setloop && Convert(node, topLevel: false).IsAnyStar;
 
-            bool IsIntersect(RegexNode node) => node.Kind == RegexNodeKind.ExpressionConditional && IsNothing(node.Child(2));
+            bool IsIntersect(RegexNode node) => node.Type == RegexNode.Testgroup && IsNothing(node.Child(2));
 
             bool TryGetIntersection(RegexNode node, [Diagnostics.CodeAnalysis.NotNullWhen(true)] out List<RegexNode>? conjuncts)
             {

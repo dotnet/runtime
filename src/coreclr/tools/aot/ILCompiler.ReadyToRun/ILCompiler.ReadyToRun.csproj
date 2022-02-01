@@ -283,5 +283,4 @@
     </Compile>
   </ItemGroup>
 
-  <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 </Project>

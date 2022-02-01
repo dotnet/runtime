@@ -89,16 +89,8 @@ namespace System.Security.Cryptography.Pkcs
 
                 foreach (CertificateChoiceAsn choice in certChoices)
                 {
-                    if (choice.Certificate.HasValue)
-                    {
-                        coll.Add(new X509Certificate2(choice.Certificate.Value
-#if NET5_0_OR_GREATER
-                            .Span
-#else
-                            .ToArray()
-#endif
-                            ));
-                    }
+                    Debug.Assert(choice.Certificate.HasValue);
+                    coll.Add(new X509Certificate2(choice.Certificate.Value.ToArray()));
                 }
 
                 return coll;

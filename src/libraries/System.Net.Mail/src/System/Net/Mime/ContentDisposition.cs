@@ -79,7 +79,14 @@ namespace System.Net.Mime
             get { return _dispositionType; }
             set
             {
-                ArgumentException.ThrowIfNullOrEmpty(value);
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+                if (value.Length == 0)
+                {
+                    throw new ArgumentException(SR.net_emptystringset, nameof(value));
+                }
 
                 _isChanged = true;
                 _dispositionType = value;

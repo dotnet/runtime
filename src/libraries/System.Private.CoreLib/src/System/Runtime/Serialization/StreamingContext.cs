@@ -3,8 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
-
 namespace System.Runtime.Serialization
 {
     public readonly struct StreamingContext

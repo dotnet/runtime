@@ -332,12 +332,6 @@ int32_t SystemNative_Unlink(const char* path)
 
 intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode)
 {
-#if defined(SHM_NAME_MAX) // macOS
-    assert(strlen(name) <= SHM_NAME_MAX);
-#elif defined(PATH_MAX) // other Unixes
-    assert(strlen(name) <= PATH_MAX);
-#endif
-
 #if HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
     flags = ConvertOpenFlags(flags);
     if (flags == -1)
@@ -1559,16 +1553,7 @@ int32_t SystemNative_LChflags(const char* path, uint32_t flags)
 
 int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 {
-#if defined(HAVE_LCHFLAGS)
-    return SystemNative_CanGetHiddenFlag();
-#else
-    return false;
-#endif
-}
-
-int32_t SystemNative_CanGetHiddenFlag(void)
-{
-#if defined(UF_HIDDEN) && defined(HAVE_STAT_FLAGS)
+#if defined(UF_HIDDEN) && defined(HAVE_STAT_FLAGS) && defined(HAVE_LCHFLAGS)
     return true;
 #else
     return false;

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Security.Cryptography
 {
-    internal static partial class HashAlgorithmNames
+    internal static class HashAlgorithmNames
     {
         // These are accepted by CNG
         public const string MD5 = "MD5";

@@ -56,9 +56,9 @@ namespace System.Data.Tests.SqlTypes
             x = new SqlInt32(a);
             y = new SqlInt32(b);
             z = x + y;
-            Assert.Equal(a + b, z.Value);
+            Assert.Equal(z.Value, a + b);
             z = SqlInt32.Add(x, y);
-            Assert.Equal(a + b, z.Value);
+            Assert.Equal(z.Value, a + b);
         }
 
         [Fact]
@@ -70,9 +70,9 @@ namespace System.Data.Tests.SqlTypes
             SqlInt32 x = new SqlInt32(a);
             SqlInt32 y = new SqlInt32(b);
             SqlInt32 z = x & y;
-            Assert.Equal(a & b, z.Value);
+            Assert.Equal(z.Value, a & b);
             z = SqlInt32.BitwiseAnd(x, y);
-            Assert.Equal(a & b, z.Value);
+            Assert.Equal(z.Value, a & b);
         }
 
         [Fact]
@@ -84,9 +84,9 @@ namespace System.Data.Tests.SqlTypes
             SqlInt32 x = new SqlInt32(a);
             SqlInt32 y = new SqlInt32(b);
             SqlInt32 z = x | y;
-            Assert.Equal(a | b, z.Value);
+            Assert.Equal(z.Value, a | b);
             z = SqlInt32.BitwiseOr(x, y);
-            Assert.Equal(a | b, z.Value);
+            Assert.Equal(z.Value, a | b);
         }
 
         [Fact]
@@ -98,9 +98,9 @@ namespace System.Data.Tests.SqlTypes
             SqlInt32 x = new SqlInt32(a);
             SqlInt32 y = new SqlInt32(b);
             SqlInt32 z = x / y;
-            Assert.Equal(a / b, z.Value);
+            Assert.Equal(z.Value, a / b);
             z = SqlInt32.Divide(x, y);
-            Assert.Equal(a / b, z.Value);
+            Assert.Equal(z.Value, a / b);
         }
 
         [Fact]
@@ -112,25 +112,25 @@ namespace System.Data.Tests.SqlTypes
             // Case 1: either is SqlInt32.Null
             x = SqlInt32.Null;
             y = new SqlInt32(5);
-            Assert.Equal(SqlBoolean.Null, x == y);
-            Assert.Equal(SqlBoolean.Null, SqlInt32.Equals(x, y));
+            Assert.Equal(x == y, SqlBoolean.Null);
+            Assert.Equal(SqlInt32.Equals(x, y), SqlBoolean.Null);
 
             // Case 2: both are SqlInt32.Null
             y = SqlInt32.Null;
-            Assert.Equal(SqlBoolean.Null, x == y);
-            Assert.Equal(SqlBoolean.Null, SqlInt32.Equals(x, y));
+            Assert.Equal(x == y, SqlBoolean.Null);
+            Assert.Equal(SqlInt32.Equals(x, y), SqlBoolean.Null);
 
             // Case 3: both are equal
             x = new SqlInt32(5);
             y = new SqlInt32(5);
-            Assert.Equal(SqlBoolean.True, x == y);
-            Assert.Equal(SqlBoolean.True, SqlInt32.Equals(x, y));
+            Assert.Equal(x == y, SqlBoolean.True);
+            Assert.Equal(SqlInt32.Equals(x, y), SqlBoolean.True);
 
             // Case 4: inequality
             x = new SqlInt32(5);
             y = new SqlInt32(6);
-            Assert.Equal(SqlBoolean.False, x == y);
-            Assert.Equal(SqlBoolean.False, SqlInt32.Equals(x, y));
+            Assert.Equal(x == y, SqlBoolean.False);
+            Assert.Equal(SqlInt32.Equals(x, y), SqlBoolean.False);
         }
 
         [Fact]
@@ -142,25 +142,25 @@ namespace System.Data.Tests.SqlTypes
             // Case 1: either is SqlInt32.Null
             x = SqlInt32.Null;
             y = new SqlInt32(5);
-            Assert.Equal(SqlBoolean.Null, x > y);
-            Assert.Equal(SqlBoolean.Null, SqlInt32.GreaterThan(x, y));
+            Assert.Equal(x > y, SqlBoolean.Null);
+            Assert.Equal(SqlInt32.GreaterThan(x, y), SqlBoolean.Null);
 
             // Case 2: both are SqlInt32.Null
             y = SqlInt32.Null;
-            Assert.Equal(SqlBoolean.Null, x > y);
-            Assert.Equal(SqlBoolean.Null, SqlInt32.GreaterThan(x, y));
+            Assert.Equal(x > y, SqlBoolean.Null);
+            Assert.Equal(SqlInt32.GreaterThan(x, y), SqlBoolean.Null);
 
             // Case 3: x > y
             x = new SqlInt32(5);
             y = new SqlInt32(4);
-            Assert.Equal(SqlBoolean.True, x > y);
-            Assert.Equal(SqlBoolean.True, SqlInt32.GreaterThan(x, y));
+            Assert.Equal(x > y, SqlBoolean.True);
+            Assert.Equal(SqlInt32.GreaterThan(x, y), SqlBoolean.True);
 
             // Case 4: x < y
             x = new SqlInt32(5);
             y = new SqlInt32(6);
-            Assert.Equal(SqlBoolean.False, x > y);
-            Assert.Equal(SqlBoolean.False, SqlInt32.GreaterThan(x, y));
+            Assert.Equal(x > y, SqlBoolean.False);
+            Assert.Equal(SqlInt32.GreaterThan(x, y), SqlBoolean.False);
         }
 
         [Fact]
@@ -172,31 +172,31 @@ namespace System.Data.Tests.SqlTypes
             // Case 1: either is SqlInt32.Null
             x = SqlInt32.Null;
             y = new SqlInt32(5);
-            Assert.Equal(SqlBoolean.Null, x >= y);
-            Assert.Equal(SqlBoolean.Null, SqlInt32.GreaterThanOrEqual(x, y));
+            Assert.Equal(x >= y, SqlBoolean.Null);
+            Assert.Equal(SqlInt32.GreaterThanOrEqual(x, y), SqlBoolean.Null);
 
             // Case 2: both are SqlInt32.Null
             y = SqlInt32.Null;
-            Assert.Equal(SqlBoolean.Null, x >= y);
-            Assert.Equal(SqlBoolean.Null, SqlInt32.GreaterThanOrEqual(x, y));
+            Assert.Equal(x >= y, SqlBoolean.Null);
+            Assert.Equal(SqlInt32.GreaterThanOrEqual(x, y), SqlBoolean.Null);
 
             // Case 3: x > y
             x = new SqlInt32(5);
             y = new SqlInt32(4);
-            Assert.Equal(SqlBoolean.True, x >= y);
-            Assert.Equal(SqlBoolean.True, SqlInt32.GreaterThanOrEqual(x, y));
+            Assert.Equal(x >= y, SqlBoolean.True);
+            Assert.Equal(SqlInt32.GreaterThanOrEqual(x, y), SqlBoolean.True);
 
             // Case 4: x < y
             x = new SqlInt32(5);
             y = new SqlInt32(6);
-            Assert.Equal(SqlBoolean.False, x >= y);
-            Assert.Equal(SqlBoolean.False, SqlInt32.GreaterThanOrEqual(x, y));
+            Assert.Equal(x >= y, SqlBoolean.False);
+            Assert.Equal(SqlInt32.GreaterThanOrEqual(x, y), SqlBoolean.False);
 
             // Case 5: x == y
             x = new SqlInt32(5);
             y = new SqlInt32(5);
-            Assert.Equal(SqlBoolean.True, x >= y);
-            Assert.Equal(SqlBoolean.True, SqlInt32.GreaterThanOrEqual(x, y));
+            Assert.Equal(x >= y, SqlBoolean.True);
+            Assert.Equal(SqlInt32.GreaterThanOrEqual(x, y), SqlBoolean.True);
         }
 
         [Fact]
@@ -208,25 +208,25 @@ namespace System.Data.Tests.SqlTypes
             // Case 1: either is SqlInt32.Null
             x = SqlInt32.Null;
             y = new SqlInt32(5);
-            Assert.Equal(SqlBoolean.Null, x < y);
-            Assert.Equal(SqlBoolean.Null, SqlInt32.LessThan(x, y));
+            Assert.Equal(x < y, SqlBoolean.Null);
+            Assert.Equal(SqlInt32.LessThan(x, y), SqlBoolean.Null);
 
             // Case 2: both are SqlInt32.Null
             y = SqlInt32.Null;
-            Assert.Equal(SqlBoolean.Null, x < y);
-            Assert.Equal(SqlBoolean.Null, SqlInt32.LessThan(x, y));
+            Assert.Equal(x < y, SqlBoolean.Null);
+            Assert.Equal(SqlInt32.LessThan(x, y), SqlBoolean.Null);
 
             // Case 3: x > y
             x = new SqlInt32(5);
             y = new SqlInt32(4);
-            Assert.Equal(SqlBoolean.False, x < y);
-            Assert.Equal(SqlBoolean.False, SqlInt32.LessThan(x, y));
+            Assert.Equal(x < y, SqlBoolean.False);
+            Assert.Equal(SqlInt32.LessThan(x, y), SqlBoolean.False);
 
             // Case 4: x < y
             x = new SqlInt32(5);
             y = new SqlInt32(6);
-            Assert.Equal(SqlBoolean.True, x < y);
-            Assert.Equal(SqlBoolean.True, SqlInt32.LessThan(x, y));
+            Assert.Equal(x < y, SqlBoolean.True);
+            Assert.Equal(SqlInt32.LessThan(x, y), SqlBoolean.True);
         }
 
         [Fact]
@@ -238,31 +238,31 @@ namespace System.Data.Tests.SqlTypes
             // Case 1: either is SqlInt32.Null
             x = SqlInt32.Null;
             y = new SqlInt32(5);
-            Assert.Equal(SqlBoolean.Null, x <= y);
-            Assert.Equal(SqlBoolean.Null, SqlInt32.LessThanOrEqual(x, y));
+            Assert.Equal(x <= y, SqlBoolean.Null);
+            Assert.Equal(SqlInt32.LessThanOrEqual(x, y), SqlBoolean.Null);
 
             // Case 2: both are SqlInt32.Null
             y = SqlInt32.Null;
-            Assert.Equal(SqlBoolean.Null, x <= y);
-            Assert.Equal(SqlBoolean.Null, SqlInt32.LessThanOrEqual(x, y));
+            Assert.Equal(x <= y, SqlBoolean.Null);
+            Assert.Equal(SqlInt32.LessThanOrEqual(x, y), SqlBoolean.Null);
 
             // Case 3: x > y
             x = new SqlInt32(5);
             y = new SqlInt32(4);
-            Assert.Equal(SqlBoolean.False, x <= y);
-            Assert.Equal(SqlBoolean.False, SqlInt32.LessThanOrEqual(x, y));
+            Assert.Equal(x <= y, SqlBoolean.False);
+            Assert.Equal(SqlInt32.LessThanOrEqual(x, y), SqlBoolean.False);
 
             // Case 4: x < y
             x = new SqlInt32(5);
             y = new SqlInt32(6);
-            Assert.Equal(SqlBoolean.True, x <= y);
-            Assert.Equal(SqlBoolean.True, SqlInt32.LessThanOrEqual(x, y));
+            Assert.Equal(x <= y, SqlBoolean.True);
+            Assert.Equal(SqlInt32.LessThanOrEqual(x, y), SqlBoolean.True);
 
             // Case 5: x == y
             x = new SqlInt32(5);
             y = new SqlInt32(5);
-            Assert.Equal(SqlBoolean.True, x <= y);
-            Assert.Equal(SqlBoolean.True, SqlInt32.LessThanOrEqual(x, y));
+            Assert.Equal(x <= y, SqlBoolean.True);
+            Assert.Equal(SqlInt32.LessThanOrEqual(x, y), SqlBoolean.True);
         }
 
         [Fact]
@@ -274,9 +274,9 @@ namespace System.Data.Tests.SqlTypes
             SqlInt32 x = new SqlInt32(a);
             SqlInt32 y = new SqlInt32(b);
             SqlInt32 z = x % y;
-            Assert.Equal(a % b, z.Value);
+            Assert.Equal(z.Value, a % b);
             z = SqlInt32.Mod(x, y);
-            Assert.Equal(a % b, z.Value);
+            Assert.Equal(z.Value, a % b);
         }
 
         [Fact]
@@ -287,9 +287,9 @@ namespace System.Data.Tests.SqlTypes
             SqlInt32 x = new SqlInt32(a);
             SqlInt32 y = new SqlInt32(b);
             SqlInt32 z = x % y;
-            Assert.Equal(a % b, z.Value);
+            Assert.Equal(z.Value, a % b);
             z = SqlInt32.Modulus(x, y);
-            Assert.Equal(a % b, z.Value);
+            Assert.Equal(z.Value, a % b);
         }
 
         [Fact]
@@ -301,9 +301,9 @@ namespace System.Data.Tests.SqlTypes
             SqlInt32 x = new SqlInt32(a);
             SqlInt32 y = new SqlInt32(b);
             SqlInt32 z = x * y;
-            Assert.Equal(a * b, z.Value);
+            Assert.Equal(z.Value, a * b);
             z = SqlInt32.Multiply(x, y);
-            Assert.Equal(a * b, z.Value);
+            Assert.Equal(z.Value, a * b);
         }
 
         [Fact]
@@ -315,16 +315,16 @@ namespace System.Data.Tests.SqlTypes
             x = new SqlInt32(5);
             y = SqlInt32.Null;
 
-            Assert.Equal(SqlBoolean.Null, x != y);
-            Assert.Equal(SqlBoolean.Null, SqlInt32.NotEquals(x, y));
+            Assert.Equal(x != y, SqlBoolean.Null);
+            Assert.Equal(SqlInt32.NotEquals(x, y), SqlBoolean.Null);
 
             y = new SqlInt32(5);
-            Assert.Equal(SqlBoolean.False, x != y);
-            Assert.Equal(SqlBoolean.False, SqlInt32.NotEquals(x, y));
+            Assert.Equal(x != y, SqlBoolean.False);
+            Assert.Equal(SqlInt32.NotEquals(x, y), SqlBoolean.False);
 
             y = new SqlInt32(6);
-            Assert.Equal(SqlBoolean.True, x != y);
-            Assert.Equal(SqlBoolean.True, SqlInt32.NotEquals(x, y));
+            Assert.Equal(x != y, SqlBoolean.True);
+            Assert.Equal(SqlInt32.NotEquals(x, y), SqlBoolean.True);
         }
 
         [Fact]
@@ -334,9 +334,9 @@ namespace System.Data.Tests.SqlTypes
 
             SqlInt32 x = new SqlInt32(a);
             SqlInt32 z = ~x;
-            Assert.Equal(~a, z.Value);
+            Assert.Equal(z.Value, ~a);
             z = SqlInt32.OnesComplement(x);
-            Assert.Equal(~a, z.Value);
+            Assert.Equal(z.Value, ~a);
         }
 
         [Fact]
@@ -355,9 +355,9 @@ namespace System.Data.Tests.SqlTypes
             SqlInt32 x = new SqlInt32(a);
             SqlInt32 y = new SqlInt32(b);
             SqlInt32 z = x - y;
-            Assert.Equal(a - b, z.Value);
+            Assert.Equal(z.Value, a - b);
             z = SqlInt32.Subtract(x, y);
-            Assert.Equal(a - b, z.Value);
+            Assert.Equal(z.Value, a - b);
         }
 
         [Fact]
@@ -367,27 +367,27 @@ namespace System.Data.Tests.SqlTypes
 
             // Case 1: SqlInt32.Null -> SqlBoolean == SqlBoolean.Null
             x = SqlInt32.Null;
-            Assert.Equal(SqlBoolean.Null, x.ToSqlBoolean());
+            Assert.Equal(x.ToSqlBoolean(), SqlBoolean.Null);
 
             // Case 2: SqlInt32.Zero -> SqlBoolean == False
             x = SqlInt32.Zero;
-            Assert.Equal(SqlBoolean.False, x.ToSqlBoolean());
+            Assert.Equal(x.ToSqlBoolean(), SqlBoolean.False);
 
             // Case 3: SqlInt32(nonzero) -> SqlBoolean == True
             x = new SqlInt32(27);
-            Assert.Equal(SqlBoolean.True, x.ToSqlBoolean());
+            Assert.Equal(x.ToSqlBoolean(), SqlBoolean.True);
 
             // Case 4: SqlInt32.Null -> SqlByte == SqlByte.Null
             x = SqlInt32.Null;
-            Assert.Equal(SqlByte.Null, x.ToSqlByte());
+            Assert.Equal(x.ToSqlByte(), SqlByte.Null);
 
             // Case 5: Test non-null conversion to SqlByte
             x = new SqlInt32(27);
-            Assert.Equal((byte)27, x.ToSqlByte().Value);
+            Assert.Equal(x.ToSqlByte().Value, (byte)27);
 
             // Case 6: SqlInt32.Null -> SqlDecimal == SqlDecimal.Null
             x = SqlInt32.Null;
-            Assert.Equal(SqlDecimal.Null, x.ToSqlDecimal());
+            Assert.Equal(x.ToSqlDecimal(), SqlDecimal.Null);
 
             // Case 7: Test non-null conversion to SqlDecimal
             x = new SqlInt32(27);
@@ -395,7 +395,7 @@ namespace System.Data.Tests.SqlTypes
 
             // Case 8: SqlInt32.Null -> SqlDouble == SqlDouble.Null
             x = SqlInt32.Null;
-            Assert.Equal(SqlDouble.Null, x.ToSqlDouble());
+            Assert.Equal(x.ToSqlDouble(), SqlDouble.Null);
 
             // Case 9: Test non-null conversion to SqlDouble
             x = new SqlInt32(27);
@@ -403,15 +403,15 @@ namespace System.Data.Tests.SqlTypes
 
             // Case 10: SqlInt32.Null -> SqlInt16 == SqlInt16.Null
             x = SqlInt32.Null;
-            Assert.Equal(SqlInt16.Null, x.ToSqlInt16());
+            Assert.Equal(x.ToSqlInt16(), SqlInt16.Null);
 
             // Case 11: Test non-null conversion to SqlInt16
             x = new SqlInt32(27);
-            Assert.Equal((short)27, x.ToSqlInt16().Value);
+            Assert.Equal(x.ToSqlInt16().Value, (short)27);
 
             // Case 12: SqlInt32.Null -> SqlInt64 == SqlInt64.Null
             x = SqlInt32.Null;
-            Assert.Equal(SqlInt64.Null, x.ToSqlInt64());
+            Assert.Equal(x.ToSqlInt64(), SqlInt64.Null);
 
             // Case 13: Test non-null conversion to SqlInt64
             x = new SqlInt32(27);
@@ -419,7 +419,7 @@ namespace System.Data.Tests.SqlTypes
 
             // Case 14: SqlInt32.Null -> SqlMoney == SqlMoney.Null
             x = SqlInt32.Null;
-            Assert.Equal(SqlMoney.Null, x.ToSqlMoney());
+            Assert.Equal(x.ToSqlMoney(), SqlMoney.Null);
 
             // Case 15: Test non-null conversion to SqlMoney
             x = new SqlInt32(27);
@@ -427,7 +427,7 @@ namespace System.Data.Tests.SqlTypes
 
             // Case 16: SqlInt32.Null -> SqlSingle == SqlSingle.Null
             x = SqlInt32.Null;
-            Assert.Equal(SqlSingle.Null, x.ToSqlSingle());
+            Assert.Equal(x.ToSqlSingle(), SqlSingle.Null);
 
             // Case 17: Test non-null conversion to SqlSingle
             x = new SqlInt32(27);
@@ -443,9 +443,9 @@ namespace System.Data.Tests.SqlTypes
             SqlInt32 x = new SqlInt32(a);
             SqlInt32 y = new SqlInt32(b);
             SqlInt32 z = x ^ y;
-            Assert.Equal(a ^ b, z.Value);
+            Assert.Equal(z.Value, a ^ b);
             z = SqlInt32.Xor(x, y);
-            Assert.Equal(a ^ b, z.Value);
+            Assert.Equal(z.Value, a ^ b);
         }
 
         [Fact]

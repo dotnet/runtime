@@ -15,9 +15,7 @@ namespace System.Net
             IntPtr socket = invalid;
             try
             {
-                Interop.Error result = Interop.Sys.Socket(af, SocketType.Dgram, 0, &socket);
-                // we get EAFNOSUPPORT when family is not supported by Kernel, EPROTONOSUPPORT may come from policy enforcement like FreeBSD jail()
-                return result != Interop.Error.EAFNOSUPPORT && result != Interop.Error.EPROTONOSUPPORT;
+                return Interop.Sys.Socket(af, SocketType.Dgram, 0, &socket) != Interop.Error.EAFNOSUPPORT;
             }
             finally
             {

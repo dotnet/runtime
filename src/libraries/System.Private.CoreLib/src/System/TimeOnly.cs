@@ -892,13 +892,15 @@ namespace System
                         return DateTimeFormat.TryFormat(ToDateTime(), destination, out charsWritten, format, provider);
 
                     default:
-                        throw new FormatException(SR.Argument_BadFormatSpecifier);
+                        charsWritten = 0;
+                        return false;
                 }
             }
 
             if (!DateTimeFormat.IsValidCustomTimeFormat(format, throwOnError: false))
             {
-                throw new FormatException(SR.Format(SR.Format_DateTimeOnlyContainsNoneDateParts, format.ToString(), nameof(TimeOnly)));
+                charsWritten = 0;
+                return false;
             }
 
             return DateTimeFormat.TryFormat(ToDateTime(), destination, out charsWritten, format, provider);

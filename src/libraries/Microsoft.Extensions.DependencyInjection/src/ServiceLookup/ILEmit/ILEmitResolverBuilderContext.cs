@@ -9,9 +9,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal sealed class ILEmitResolverBuilderContext
     {
-        public ILEmitResolverBuilderContext(ILGenerator generator) => Generator = generator;
-        public ILGenerator Generator { get; }
-        public List<object?>? Constants { get; set; }
-        public List<Func<IServiceProvider, object>>? Factories { get; set; }
+        public ILGenerator Generator { get; set; }
+        public List<object> Constants { get; set; }
+        public List<Func<IServiceProvider, object>> Factories { get; set; }
     }
 }

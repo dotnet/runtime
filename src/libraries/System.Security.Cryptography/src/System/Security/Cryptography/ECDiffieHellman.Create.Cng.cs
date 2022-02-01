@@ -7,22 +7,22 @@ namespace System.Security.Cryptography
     {
         public static new partial ECDiffieHellman Create()
         {
-            return new ECDiffieHellmanWrapper(new ECDiffieHellmanCng());
+            return new ECDiffieHellmanImplementation.ECDiffieHellmanCng();
         }
 
         public static partial ECDiffieHellman Create(ECCurve curve)
         {
-            return new ECDiffieHellmanWrapper(new ECDiffieHellmanCng(curve));
+            return new ECDiffieHellmanImplementation.ECDiffieHellmanCng(curve);
         }
 
         public static partial ECDiffieHellman Create(ECParameters parameters)
         {
-            ECDiffieHellman ecdh = new ECDiffieHellmanCng();
+            ECDiffieHellman ecdh = new ECDiffieHellmanImplementation.ECDiffieHellmanCng();
 
             try
             {
                 ecdh.ImportParameters(parameters);
-                return new ECDiffieHellmanWrapper(ecdh);
+                return ecdh;
             }
             catch
             {

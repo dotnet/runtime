@@ -56,8 +56,16 @@ struct CreateDynamicAssemblyArgs : CreateDynamicAssemblyArgsGC
     StackCrawlMark* stackMark;
 };
 
-// An assembly is the unit of deployment for managed code.
-// Assemblies are one to one with files since coreclr does not support multimodule assemblies.
+// An assembly is the unit of deployment for managed code.  Typically Assemblies are one to one with files
+// (Modules), however this is not necessary, as an assembly can contain serveral files (typically you only
+// do this so that you can resource-only modules that are national language specific)
+//
+// Conceptually Assemblies are loaded into code:AppDomain
+//
+// So in general an assemly is a list of code:Module, where a code:Module is 1-1 with a DLL or EXE file.
+//
+// One of the modules the code:Assembly.m_pManifest is special in that it knows about all the other
+// modules in an assembly (often it is the only one).
 //
 class Assembly
 {
@@ -80,7 +88,7 @@ public:
     static Assembly *Create(BaseDomain *pDomain, PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
     static void Initialize();
 
-    BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->IsSystem(); }
+    BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pManifestFile->IsSystem(); }
 
     static Assembly *CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, CreateDynamicAssemblyArgs *args);
 
@@ -100,7 +108,15 @@ public:
     void SetIsTenured()
     {
         WRAPPER_NO_CONTRACT;
-        m_pModule->SetIsTenured();
+        m_pManifest->SetIsTenured();
+    }
+
+    // CAUTION: This should only be used as backout code if an assembly is unsuccessfully
+    //          added to the shared domain assembly map.
+    void UnsetIsTenured()
+    {
+        WRAPPER_NO_CONTRACT;
+        m_pManifest->UnsetIsTenured();
     }
 #endif // DACCESS_COMPILE
 
@@ -113,6 +129,72 @@ public:
         SUPPORTS_DAC;
         return m_pClassLoader;
     }
+
+    // ------------------------------------------------------------
+    // Modules
+    // ------------------------------------------------------------
+
+    class ModuleIterator
+    {
+        Module* m_pManifest;
+        DWORD m_i;
+
+      public:
+        // The preferred constructor.  If you use this, you don't have to
+        // call Start() yourself
+        ModuleIterator(Assembly *pAssembly)
+        {
+            WRAPPER_NO_CONTRACT;
+            Start(pAssembly);
+        }
+
+        // When you don't have the Assembly at contruction time, use this
+        // constructor, and explicitly call Start() to begin the iteration.
+        ModuleIterator()
+        {
+            LIMITED_METHOD_CONTRACT;
+            SUPPORTS_DAC;
+
+            m_pManifest = NULL;
+            m_i = (DWORD) -1;
+        }
+
+        void Start(Assembly * pAssembly)
+        {
+            LIMITED_METHOD_CONTRACT;
+            SUPPORTS_DAC;
+
+            m_pManifest = pAssembly->GetManifestModule();
+            m_i = (DWORD) -1;
+        }
+
+        BOOL Next()
+        {
+            LIMITED_METHOD_CONTRACT;
+            SUPPORTS_DAC;
+            while (++m_i <= m_pManifest->GetFileMax())
+            {
+                if (GetModule() != NULL)
+                    return TRUE;
+            }
+            return FALSE;
+        }
+
+        Module *GetModule()
+        {
+            LIMITED_METHOD_CONTRACT;
+            SUPPORTS_DAC;
+            return m_pManifest->LookupFile(TokenFromRid(m_i, mdtFile));
+        }
+    };
+
+    ModuleIterator IterateModules()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+        return ModuleIterator(this);
+    }
+
 
     //****************************************************************************************
     //
@@ -149,75 +231,75 @@ public:
     LPCWSTR GetDebugName()
     {
         WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->GetDebugName();
+        return GetManifestFile()->GetDebugName();
     }
 #endif
 
     LPCUTF8 GetSimpleName()
     {
         WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->GetSimpleName();
+        return GetManifestFile()->GetSimpleName();
     }
 
     BOOL IsStrongNamed()
     {
         WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->IsStrongNamed();
+        return GetManifestFile()->IsStrongNamed();
     }
 
     const void *GetPublicKey(DWORD *pcbPK)
     {
         WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->GetPublicKey(pcbPK);
+        return GetManifestFile()->GetPublicKey(pcbPK);
     }
 
     ULONG GetHashAlgId()
     {
         WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->GetHashAlgId();
+        return GetManifestFile()->GetHashAlgId();
     }
 
     HRESULT GetVersion(USHORT *pMajor, USHORT *pMinor, USHORT *pBuild, USHORT *pRevision)
     {
         WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->GetVersion(pMajor, pMinor, pBuild, pRevision);
+        return GetManifestFile()->GetVersion(pMajor, pMinor, pBuild, pRevision);
     }
 
     LPCUTF8 GetLocale()
     {
         WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->GetLocale();
+        return GetManifestFile()->GetLocale();
     }
 
     DWORD GetFlags()
     {
         WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->GetFlags();
+        return GetManifestFile()->GetFlags();
     }
 
     PTR_LoaderHeap GetLowFrequencyHeap();
     PTR_LoaderHeap GetHighFrequencyHeap();
     PTR_LoaderHeap GetStubHeap();
 
-    PTR_Module GetModule()
+    PTR_Module GetManifestModule()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return m_pModule;
+        return m_pManifest;
     }
 
-    PTR_PEAssembly GetPEAssembly()
+    PTR_PEAssembly GetManifestFile()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return m_pPEAssembly;
+        return m_pManifestFile;
     }
 
-    IMDInternalImport* GetMDImport()
+    IMDInternalImport* GetManifestImport()
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        return m_pPEAssembly->GetMDImport();
+        return m_pManifestFile->GetMDImport();
     }
 
     HRESULT GetCustomAttribute(mdToken parentToken,
@@ -227,7 +309,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        return GetModule()->GetCustomAttribute(parentToken, attribute, ppData, pcbData);
+        return GetManifestModule()->GetCustomAttribute(parentToken, attribute, ppData, pcbData);
     }
 
     mdAssembly GetManifestToken()
@@ -242,7 +324,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return m_pPEAssembly->GetDisplayName(result, flags);
+        return m_pManifestFile->GetDisplayName(result, flags);
     }
 #endif // DACCESS_COMPILE
 
@@ -250,7 +332,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return m_pPEAssembly->GetCodeBase(result);
+        return m_pManifestFile->GetCodeBase(result);
     }
 
     OBJECTREF GetExposedObject();
@@ -278,7 +360,7 @@ public:
 
     ULONG HashIdentity()
     {
-        return GetPEAssembly()->HashIdentity();
+        return GetManifestFile()->HashIdentity();
     }
 
     //****************************************************************************************
@@ -325,6 +407,8 @@ public:
 
     FORCEINLINE BOOL IsDynamic() { LIMITED_METHOD_CONTRACT; return m_isDynamic; }
     FORCEINLINE BOOL IsCollectible() { LIMITED_METHOD_DAC_CONTRACT; return m_isCollectible; }
+
+    DWORD GetNextModuleIndex() { LIMITED_METHOD_CONTRACT; return m_nextAvailableModuleIndex++; }
 
     void AddType(Module* pModule,
                  mdTypeDef cl);
@@ -436,9 +520,9 @@ protected:
 
         int mask = INTEROP_ATTRIBUTE_UNSET;
 
-        if (GetModule()->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::ImportedFromTypeLib, NULL, 0) == S_OK)
+        if (GetManifestModule()->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::ImportedFromTypeLib, NULL, 0) == S_OK)
             mask |= INTEROP_ATTRIBUTE_IMPORTED_FROM_TYPELIB;
-        if (GetModule()->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::PrimaryInteropAssembly, NULL, 0) == S_OK)
+        if (GetManifestModule()->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::PrimaryInteropAssembly, NULL, 0) == S_OK)
             mask |= INTEROP_ATTRIBUTE_PRIMARY_INTEROP_ASSEMBLY;
 
         if (!IsDynamic())
@@ -456,6 +540,7 @@ private:
     //****************************************************************************************
 
     void CacheManifestExportedTypes(AllocMemTracker *pamTracker);
+    void CacheManifestFiles();
 
     void CacheFriendAssemblyInfo();
 #ifndef DACCESS_COMPILE
@@ -469,9 +554,11 @@ private:
     PTR_BaseDomain        m_pDomain;        // Parent Domain
     PTR_ClassLoader       m_pClassLoader;   // Single Loader
 
+
+
     PTR_MethodDesc        m_pEntryPoint;    // Method containing the entry point
-    PTR_Module            m_pModule;
-    PTR_PEAssembly        m_pPEAssembly;
+    PTR_Module            m_pManifest;
+    PTR_PEAssembly        m_pManifestFile;
 
     FriendAssemblyDescriptor *m_pFriendAssemblyDescriptor;
 
@@ -479,6 +566,7 @@ private:
 #ifdef FEATURE_COLLECTIBLE_TYPES
     BOOL                  m_isCollectible;
 #endif // FEATURE_COLLECTIBLE_TYPES
+    DWORD                 m_nextAvailableModuleIndex;
     PTR_LoaderAllocator   m_pLoaderAllocator;
 
 #ifdef FEATURE_COMINTEROP
@@ -501,6 +589,8 @@ private:
 #endif // FEATURE_READYTORUN
 
 };
+
+typedef Assembly::ModuleIterator ModuleIterator;
 
 #ifndef DACCESS_COMPILE
 
@@ -583,7 +673,7 @@ private:
     static
     bool IsAssemblyOnList(Assembly *pAssembly, const ArrayList &alAssemblyNames)
     {
-        return IsAssemblyOnList(pAssembly->GetPEAssembly(), alAssemblyNames);
+        return IsAssemblyOnList(pAssembly->GetManifestFile(), alAssemblyNames);
     }
 
     static

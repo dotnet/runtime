@@ -160,11 +160,11 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void DefineEnum_ByRefUnderlyingType_ThrowsTypeLoadExceptionOnCreation()
+        public void DefineEnum_ByRefUnderlyingType_ThrowsCOMExceptionOnCreation()
         {
             ModuleBuilder module = Helpers.DynamicModule();
             EnumBuilder enumBuilder = module.DefineEnum("Name", TypeAttributes.Public, typeof(int).MakeByRefType());
-            Assert.Throws<TypeLoadException>(() => enumBuilder.CreateTypeInfo());
+            Assert.Throws<COMException>(() => enumBuilder.CreateTypeInfo());
         }
 
         [Theory]

@@ -77,7 +77,11 @@ ADVANCE_ASSEMBLY:
     dbg_m_pDomainAssembly = *pDomainAssemblyHolder;
 #endif //_DEBUG
 
-    m_currentModule = (*pDomainAssemblyHolder)->GetModule();
+    m_moduleIterator = (*pDomainAssemblyHolder)->IterateModules(m_moduleIterationFlags);
+
+ADVANCE_MODULE:
+    if  (!m_moduleIterator.Next())
+        goto ADVANCE_ASSEMBLY;
 
     if (m_mainMD->HasClassInstantiation())
     {
@@ -92,7 +96,7 @@ ADVANCE_TYPE:
     if (m_mainMD->HasClassInstantiation())
     {
         if (!GetCurrentModule()->GetAvailableParamTypes()->FindNext(&m_typeIterator, &m_typeIteratorEntry))
-            goto ADVANCE_ASSEMBLY;
+            goto ADVANCE_MODULE;
         if (CORCOMPILE_IS_POINTER_TAGGED(m_typeIteratorEntry->GetTypeHandle().AsTAddr()))
             goto ADVANCE_TYPE;
 
@@ -126,7 +130,7 @@ ADVANCE_TYPE:
     }
     else if (m_startedNonGenericType)
     {
-        goto ADVANCE_ASSEMBLY;
+        goto ADVANCE_MODULE;
     }
     else
     {
@@ -184,7 +188,7 @@ Module * LoadedMethodDescIterator::GetCurrentModule()
     }
     CONTRACTL_END
 
-    return m_currentModule;
+    return m_moduleIterator.GetLoadedModule();
 }
 
 MethodDesc *LoadedMethodDescIterator::Current()
@@ -224,7 +228,8 @@ LoadedMethodDescIterator::Start(
     AppDomain * pAppDomain,
     Module *pModule,
     mdMethodDef md,
-    AssemblyIterationFlags assemblyIterationFlags)
+    AssemblyIterationFlags assemblyIterationFlags,
+    ModuleIterationOption moduleIterationFlags)
 {
     CONTRACTL
     {
@@ -236,6 +241,7 @@ LoadedMethodDescIterator::Start(
     CONTRACTL_END;
 
     m_assemIterationFlags = assemblyIterationFlags;
+    m_moduleIterationFlags = moduleIterationFlags;
     m_mainMD = NULL;
     m_module = pModule;
     m_md = md;

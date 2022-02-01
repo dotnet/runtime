@@ -3935,27 +3935,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 break;
             }
 
-        case ELEMENT_TYPE_BYREF:
-            {
-                dwLog2FieldSize = LOG2_PTRSIZE;
-                if (fIsStatic)
-                {
-                    // Byref-like types cannot be used for static fields
-                    BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_STATICFIELD);
-                }
-                if (!bmtFP->fIsByRefLikeType)
-                {
-                    // Non-byref-like types cannot contain byref-like instance fields
-                    BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_INSTANCEFIELD);
-                }
-                break;
-            }
-
-        case ELEMENT_TYPE_TYPEDBYREF:
-            {
-                goto IS_VALUETYPE;
-            }
-
         // Class type variable (method type variables aren't allowed in fields)
         // These only occur in open types used for verification/reflection.
         case ELEMENT_TYPE_VAR:
@@ -3991,6 +3970,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             {
                 Module * pTokenModule;
                 dwByValueClassToken = fsig.GetArgProps().PeekValueTypeTokenClosed(GetModule(), &bmtGenerics->typeContext, &pTokenModule);
+                fIsByValue = TRUE;
 
                 // By-value class
                 BAD_FORMAT_NOTHROW_ASSERT(dwByValueClassToken != 0);
@@ -4062,11 +4042,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                         pByValueClass = (MethodTable *)-1;
                     }
                 } // If 'this' is a value class
-            }
-            // TypedReference shares the rest of the code here
-IS_VALUETYPE:
-            {
-                fIsByValue = TRUE;
 
                 // It's not self-referential so try to load it
                 if (pByValueClass == NULL)
@@ -8672,14 +8647,6 @@ MethodTableBuilder::HandleExplicitLayout(
                 // addition overflow or cast truncation
                 BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
             }
-        }
-
-        if (!numInstanceFieldBytes.IsOverflow() && numInstanceFieldBytes.Value() == 0)
-        {
-            // If we calculate a 0-byte size here, we should have also calculated a 0-byte size
-            // in the initial layout algorithm.
-            _ASSERTE(GetLayoutInfo()->IsZeroSized());
-            numInstanceFieldBytes = S_UINT32(1);
         }
     }
 

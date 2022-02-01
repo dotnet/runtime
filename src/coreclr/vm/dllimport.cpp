@@ -107,7 +107,6 @@ StubSigDesc::StubSigDesc(MethodDesc *pMD)
 
     m_tkMethodDef = pMD->GetMemberDef();
     SigTypeContext::InitTypeContext(pMD, &m_typeContext);
-    m_pMetadataModule = pMD->GetModule();
     m_pLoaderModule = pMD->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
 
     INDEBUG(InitDebugNames());
@@ -134,13 +133,11 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule)
     {
         m_tkMethodDef = pMD->GetMemberDef();
         SigTypeContext::InitTypeContext(pMD, &m_typeContext);
-        m_pMetadataModule = pMD->GetModule();
         m_pLoaderModule = pMD->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
     }
     else
     {
         m_tkMethodDef = mdMethodDefNil;
-        m_pMetadataModule = m_pModule;
         m_pLoaderModule = m_pModule;
     }
 
@@ -169,8 +166,7 @@ StubSigDesc::StubSigDesc(MethodTable* pMT, const Signature& sig, Module* pModule
     if (pMT != NULL)
     {
         SigTypeContext::InitTypeContext(pMT, &m_typeContext);
-        m_pMetadataModule = pMT->GetModule();
-        m_pLoaderModule = pMT->GetLoaderModule();
+        m_pLoaderModule = pMT->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
     }
     else
     {
@@ -197,7 +193,6 @@ StubSigDesc::StubSigDesc(const Signature& sig, Module* pModule)
     m_sig = sig;
     m_pModule = pModule;
     m_tkMethodDef = mdMethodDefNil;
-    m_pMetadataModule = m_pModule;
     m_pLoaderModule = m_pModule;
 
     INDEBUG(InitDebugNames());
@@ -964,7 +959,7 @@ public:
         if (pTargetMD)
         {
             pTargetMD->GetMethodInfoWithNewSig(strNamespaceOrClassName, strMethodName, strMethodSignature);
-            uModuleId = (UINT64)(TADDR)pTargetMD->GetModule_NoLogging();
+            uModuleId = (UINT64)pTargetMD->GetModule()->GetAddrModuleID();
         }
 
         //
@@ -3292,15 +3287,6 @@ BOOL NDirect::MarshalingRequired(
     }
     CollateParamTokens(pMDImport, methodToken, numArgs - 1, pParamTokenArray);
 
-    // We enable the runtime marshalling system whenever it is enabled on the module as a whole
-    // or when the call is a COM interop call. COM interop calls are already using a significant portion of the runtime
-    // marshalling system just to function at all, so we aren't going to disable the parameter marshalling;
-    // we'd rather have developers use the feature flag to diable the whole COM interop subsystem at once.
-    bool runtimeMarshallingEnabled = pModule->IsRuntimeMarshallingEnabled();
-#ifdef FEATURE_COMINTEROP
-    runtimeMarshallingEnabled |= pMD && pMD->IsComPlusCall();
-#endif
-
     for (ULONG i = 0; i < numArgs; i++)
     {
         SigPointer arg = ptr;
@@ -3314,7 +3300,7 @@ BOOL NDirect::MarshalingRequired(
                 IfFailThrow(arg.GetElemType(NULL)); // skip ELEMENT_TYPE_PTR
                 IfFailThrow(arg.PeekElemType(&type));
 
-                if (runtimeMarshallingEnabled && type == ELEMENT_TYPE_VALUETYPE)
+                if (type == ELEMENT_TYPE_VALUETYPE)
                 {
                     if ((arg.HasCustomModifier(pModule,
                                               "Microsoft.VisualC.NeedsCopyConstructorModifier",
@@ -3345,19 +3331,9 @@ BOOL NDirect::MarshalingRequired(
             {
                 TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
 
-                // When the runtime runtime marshalling system is disabled, we don't support
-                // any types that contain gc pointers, but all "unmanaged" types are treated as blittable
-                // as long as they aren't auto-layout and don't have any auto-layout fields.
-                if (!runtimeMarshallingEnabled &&
-                    (hndArgType.GetMethodTable()->ContainsPointers()
-                        || hndArgType.GetMethodTable()->IsAutoLayoutOrHasAutoLayoutField()))
+                // JIT can handle internal blittable value types
+                if (!hndArgType.IsBlittable() && !hndArgType.IsEnum())
                 {
-                    return TRUE;
-                }
-                else if (runtimeMarshallingEnabled && !hndArgType.IsBlittable() && !hndArgType.IsEnum())
-                {
-                    // When the runtime runtime marshalling system is enabled, we do special handling
-                    // for any types that aren't blittable or enums.
                     return TRUE;
                 }
 
@@ -3372,15 +3348,10 @@ BOOL NDirect::MarshalingRequired(
             case ELEMENT_TYPE_BOOLEAN:
             case ELEMENT_TYPE_CHAR:
             {
-                // When runtime marshalling is enabled:
                 // Bool requires marshaling
                 // Char may require marshaling (MARSHAL_TYPE_ANSICHAR)
-                if (runtimeMarshallingEnabled)
-                {
-                    return TRUE;
-                }
+                return TRUE;
             }
-            FALLTHROUGH;
 
             default:
             {
@@ -3405,10 +3376,7 @@ BOOL NDirect::MarshalingRequired(
         // check for explicit MarshalAs
         NativeTypeParamInfo paramInfo;
 
-        // We only check the MarshalAs info when the runtime marshalling system is enabled.
-        // We ignore MarshalAs when the system is disabled, so no reason to disqualify from inlining
-        // when it is present.
-        if (runtimeMarshallingEnabled && pParamTokenArray[i] != mdParamDefNil)
+        if (pParamTokenArray[i] != mdParamDefNil)
         {
             if (!ParseNativeTypeInfo(pParamTokenArray[i], pMDImport, &paramInfo) ||
                 paramInfo.m_NativeType != NATIVE_TYPE_DEFAULT)
@@ -3626,7 +3594,6 @@ static void CreateNDirectStubWorker(StubState*               pss,
         CONSISTENCY_CHECK_MSGF(false, ("BreakOnInteropStubSetup: '%s' ", pSigDesc->m_pDebugName));
 #endif // _DEBUG
 
-    bool runtimeMarshallingEnabled = SF_IsCOMStub(dwStubFlags) || pSigDesc->m_pMetadataModule->IsRuntimeMarshallingEnabled();
     if (SF_IsCOMStub(dwStubFlags))
     {
         _ASSERTE(0 == nlType);
@@ -3648,46 +3615,24 @@ static void CreateNDirectStubWorker(StubState*               pss,
                  &pSigDesc->m_typeContext);
 
     if (SF_IsVarArgStub(dwStubFlags))
-    {
-        if (!runtimeMarshallingEnabled)
-        {
-            COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_VARARGS);
-        }
         msig.SetTreatAsVarArg();
-    }
 
     bool fThisCall = (unmgdCallConv == CorInfoCallConvExtension::Thiscall);
 
-    if (nlFlags & nlfLastError)
-    {
-        if (!runtimeMarshallingEnabled)
-        {
-            COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_SETLASTERROR);
-        }
-        pss->SetLastError(TRUE);
-    }
+    pss->SetLastError(nlFlags & nlfLastError);
 
     // This has been in the product since forward P/Invoke via delegates was
     // introduced. It's wrong, but please keep it for backward compatibility.
-    if (runtimeMarshallingEnabled && SF_IsDelegateStub(dwStubFlags))
+    if (SF_IsDelegateStub(dwStubFlags))
         pss->SetLastError(TRUE);
 
     pss->BeginEmit(dwStubFlags);
 
     if (-1 != iLCIDArg)
     {
-        if (!runtimeMarshallingEnabled)
-        {
-            COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_LCID);
-        }
-        // The code to handle the LCID will call MarshalLCID before calling MarshalArgument
+        // The code to handle the LCID  will call MarshalLCID before calling MarshalArgument
         // on the argument the LCID should go after. So we just bump up the index here.
         iLCIDArg++;
-    }
-
-    if (!runtimeMarshallingEnabled && SF_IsHRESULTSwapping(dwStubFlags))
-    {
-        COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_PRESERVESIG);
     }
 
     int numArgs = msig.NumFixedArgs();

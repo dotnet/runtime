@@ -21,7 +21,7 @@
 #include "arraylist.h"
 #include "comreflectioncache.hpp"
 #include "comutilnative.h"
-#include "domainassembly.h"
+#include "domainfile.h"
 #include "fptrstubs.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
@@ -201,18 +201,18 @@ struct DomainLocalModule
     static SIZE_T GetOffsetOfDataBlob() { return offsetof(DomainLocalModule, m_pDataBlob); }
     static SIZE_T GetOffsetOfGCStaticPointer() { return offsetof(DomainLocalModule, m_pGCStatics); }
 
-    inline DomainAssembly* GetDomainAssembly()
+    inline DomainFile* GetDomainFile()
     {
         LIMITED_METHOD_CONTRACT
         SUPPORTS_DAC;
-        return m_pDomainAssembly;
+        return m_pDomainFile;
     }
 
 #ifndef DACCESS_COMPILE
-    inline void        SetDomainAssembly(DomainAssembly* pDomainAssembly)
+    inline void        SetDomainFile(DomainFile* pDomainFile)
     {
         LIMITED_METHOD_CONTRACT
-        m_pDomainAssembly = pDomainAssembly;
+        m_pDomainFile = pDomainFile;
     }
 #endif
 
@@ -236,7 +236,7 @@ struct DomainLocalModule
 
         if (pMT->IsDynamicStatics())
         {
-            _ASSERTE(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
+            _ASSERTE(GetDomainFile()->GetModule() == pMT->GetModuleForStatics());
             return GetDynamicEntryGCStaticsBasePointer(pMT->GetModuleDynamicEntryID(), pMT->GetLoaderAllocator());
         }
         else
@@ -252,7 +252,7 @@ struct DomainLocalModule
 
         if (pMT->IsDynamicStatics())
         {
-            _ASSERTE(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
+            _ASSERTE(GetDomainFile()->GetModule() == pMT->GetModuleForStatics());
             return GetDynamicEntryNonGCStaticsBasePointer(pMT->GetModuleDynamicEntryID(), pMT->GetLoaderAllocator());
         }
         else
@@ -403,7 +403,7 @@ struct DomainLocalModule
     FORCEINLINE MethodTable * GetMethodTableFromClassDomainID(DWORD dwClassDomainID)
     {
         DWORD rid = (DWORD)(dwClassDomainID) + 1;
-        TypeHandle th = GetDomainAssembly()->GetModule()->LookupTypeDef(TokenFromRid(rid, mdtTypeDef));
+        TypeHandle th = GetDomainFile()->GetModule()->LookupTypeDef(TokenFromRid(rid, mdtTypeDef));
         _ASSERTE(!th.IsNull());
         MethodTable * pMT = th.AsMethodTable();
         PREFIX_ASSUME(pMT != NULL);
@@ -416,7 +416,7 @@ private:
     void SetClassFlags(MethodTable* pMT, DWORD dwFlags);
     DWORD GetClassFlags(MethodTable* pMT, DWORD iClassIndex);
 
-    PTR_DomainAssembly           m_pDomainAssembly;
+    PTR_DomainFile           m_pDomainFile;
     VolatilePtr<DynamicClassInfo, PTR_DynamicClassInfo> m_pDynamicClassTable;   // used for generics and reflection.emit in memory
     Volatile<SIZE_T>         m_aDynamicEntries;      // number of entries in dynamic table
     VolatilePtr<UMEntryThunk> m_pADThunkTable;
@@ -747,7 +747,7 @@ typedef PEFileListLock::Holder PEFileListLockHolder;
 
 // Loading infrastructure:
 //
-// a DomainAssembly is a file being loaded.  Files are loaded in layers to enable loading in the
+// a DomainFile is a file being loaded.  Files are loaded in layers to enable loading in the
 // presence of dependency loops.
 //
 // FileLoadLevel describes the various levels available.  These are implemented slightly
@@ -773,14 +773,14 @@ class FileLoadLock : public ListLockEntry
 {
 private:
     FileLoadLevel           m_level;
-    DomainAssembly          *m_pDomainAssembly;
+    DomainFile              *m_pDomainFile;
     HRESULT                 m_cachedHR;
 
 public:
-    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainAssembly *pDomainAssembly);
+    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainFile *pDomainFile);
 
     ~FileLoadLock();
-    DomainAssembly *GetDomainAssembly();
+    DomainFile *GetDomainFile();
     FileLoadLevel GetLoadLevel();
 
     // CanAcquire will return FALSE if Acquire will definitely not take the lock due
@@ -807,7 +807,7 @@ public:
 
 private:
 
-    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainAssembly *pDomainAssembly);
+    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainFile *pDomainFile);
 
     static void HolderLeave(FileLoadLock *pThis);
 
@@ -1307,7 +1307,7 @@ enum AssemblyIterationFlags
                                         // (all m_level values)
     kIncludeAvailableToProfilers
                           = 0x00000020, // include assemblies available to profilers
-                                        // See comment at code:DomainAssembly::IsAvailableToProfilers
+                                        // See comment at code:DomainFile::IsAvailableToProfilers
 
     // Execution / introspection flags
     kIncludeExecution     = 0x00000004, // include assemblies that are loaded for execution only
@@ -1797,12 +1797,13 @@ public:
 
     CHECK CheckCanLoadTypes(Assembly *pAssembly);
     CHECK CheckCanExecuteManagedCode(MethodDesc* pMD);
-    CHECK CheckLoading(DomainAssembly *pFile, FileLoadLevel level);
+    CHECK CheckLoading(DomainFile *pFile, FileLoadLevel level);
 
-    BOOL IsLoading(DomainAssembly *pFile, FileLoadLevel level);
+    FileLoadLevel GetDomainFileLoadLevel(DomainFile *pFile);
+    BOOL IsLoading(DomainFile *pFile, FileLoadLevel level);
     static FileLoadLevel GetThreadFileLoadLevel();
 
-    void LoadDomainAssembly(DomainAssembly *pFile,
+    void LoadDomainFile(DomainFile *pFile,
                         FileLoadLevel targetLevel);
 
     enum FindAssemblyOptions
@@ -1838,10 +1839,10 @@ public:
     // private:
     void LoadSystemAssemblies();
 
-    DomainAssembly *LoadDomainAssembly(FileLoadLock *pLock,
+    DomainFile *LoadDomainFile(FileLoadLock *pLock,
                                FileLoadLevel targetLevel);
 
-    void TryIncrementalLoad(DomainAssembly *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
+    void TryIncrementalLoad(DomainFile *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
 
 #ifndef DACCESS_COMPILE // needs AssemblySpec
 
@@ -2452,7 +2453,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return SystemAssembly()->GetModule();
+        return SystemAssembly()->GetManifestModule();
     }
 
     static BOOL IsSystemLoaded()
@@ -2579,7 +2580,7 @@ public:
 
         // Or, it might be the location of CoreLib
         if (System()->SystemAssembly() != NULL
-            && path.EqualsCaseInsensitive(System()->SystemAssembly()->GetPEAssembly()->GetPath()))
+            && path.EqualsCaseInsensitive(System()->SystemAssembly()->GetManifestFile()->GetPath()))
             return TRUE;
 
         return FALSE;

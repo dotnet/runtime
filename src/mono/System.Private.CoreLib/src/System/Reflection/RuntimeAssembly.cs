@@ -228,8 +228,10 @@ namespace System.Reflection
 
         public override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
         {
-            ArgumentException.ThrowIfNullOrEmpty(resourceName);
-
+            if (resourceName == null)
+                throw new ArgumentNullException(nameof(resourceName));
+            if (resourceName.Length == 0)
+                throw new ArgumentException("String cannot have zero length.");
             ManifestResourceInfo result = new ManifestResourceInfo(null, null, 0);
             var this_assembly = this;
             bool found = GetManifestResourceInfoInternal(new QCallAssembly(ref this_assembly), resourceName, result);
@@ -241,7 +243,12 @@ namespace System.Reflection
 
         public override Stream? GetManifestResourceStream(string name)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            if (name.Length == 0)
+                throw new ArgumentException("String cannot have zero length.",
+                    nameof(name));
 
             unsafe
             {
@@ -285,7 +292,11 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            if (name.Length == 0)
+                throw new ArgumentException("Name cannot be empty");
 
             return InternalGetType(null, name, throwOnError, ignoreCase);
         }
@@ -312,7 +323,10 @@ namespace System.Reflection
 
         public override Module? GetModule(string name)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+            if (name.Length == 0)
+                throw new ArgumentException("Name can't be empty");
 
             Module[] modules = GetModules(true);
             foreach (Module module in modules)
@@ -436,7 +450,10 @@ namespace System.Reflection
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream? GetFile(string name)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+                throw new ArgumentNullException(nameof(name), SR.ArgumentNull_FileName);
+            if (name.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyFileName);
             if (Location.Length == 0)
             {
                 // Throw if the assembly was loaded from memory, indicated by Location returning an empty string

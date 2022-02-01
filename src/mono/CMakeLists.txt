@@ -9,7 +9,6 @@ project(mono)
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 
-set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
 set(CMAKE_C_FLAGS_CHECKED "")
 set(CMAKE_CXX_FLAGS_CHECKED "")
 set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
@@ -247,15 +246,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   set(INTERNAL_ZLIB 1)
   set(DISABLE_EXECUTABLES 1)
   set(DISABLE_COMPONENTS 1)
-
-  set(WASI_DRIVER_SOURCES
-    wasi/mono-wasi-driver/driver.c
-    wasi/mono-wasi-driver/stubs.c
-    wasi/mono-wasi-driver/synthetic-pthread.c
-  )
-  add_library(mono-wasi-driver STATIC ${WASI_DRIVER_SOURCES})
-  target_compile_options(mono-wasi-driver PRIVATE -Wno-missing-prototypes -Wno-strict-prototypes)
-  install(TARGETS mono-wasi-driver LIBRARY)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
   set(EXE_SUFFIX ".exe")
@@ -421,13 +411,8 @@ elseif(TARGET_ARCH STREQUAL "arm64")
 elseif(TARGET_ARCH MATCHES "arm")
   set(TARGET_ARM 1)
   set(MONO_ARCHITECTURE "\"arm\"")
-  if(MONO_ARM_FPU STREQUAL "none")
-    add_definitions("-DARM_FPU_NONE=1")
-  elseif(MONO_ARM_FPU STREQUAL "vfp-hard")
-    add_definitions("-DARM_FPU_VFP_HARD=1")
-  else()
-    add_definitions("-DARM_FPU_VFP=1")
-  endif()
+  # FIXME:
+  add_definitions("-DARM_FPU_VFP=1")
   set(TARGET_SIZEOF_VOID_P 4)
   set(SIZEOF_REGISTER 4)
   # fixme: use separate defines for host/target
@@ -478,13 +463,8 @@ include(configure)
 ######################################
 
 if(GCC)
-  if(HOST_WASI)
-    # WASI SDK only includes some required definitions if the C version is at least this new
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-  else()
-    # We require C99 with some GNU extensions, e.g. `linux` macro
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-  endif()
+  # We require C99 with some GNU extensions, e.g. `linux` macro
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
   # The runtime code does not respect ANSI C strict aliasing rules
   append("-fno-strict-aliasing" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   # We rely on signed overflow to behave
@@ -650,9 +630,6 @@ elseif(HOST_ANDROID)
   set(HAVE_SYS_ICU 1)
 elseif(HOST_LINUX)
   include(FindPkgConfig)
-  if(CROSS_ROOTFS)
-    set(ENV{PKG_CONFIG_ICU_UC_INCLUDEDIR} "${CROSS_ROOTFS}/usr/include")
-  endif(CROSS_ROOTFS)
   pkg_check_modules(ICU icu-uc)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)

@@ -45,7 +45,10 @@ namespace System.Threading
         private static OpenExistingResult OpenExistingWorker(string name, out Semaphore? result)
         {
 #if TARGET_WINDOWS
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+            if (name.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
 
             // Pass false to OpenSemaphore to prevent inheritedHandles
             SafeWaitHandle myHandle = Interop.Kernel32.OpenSemaphore(AccessRights, false, name);

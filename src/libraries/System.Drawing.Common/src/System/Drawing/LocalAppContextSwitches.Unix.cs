@@ -7,10 +7,14 @@ namespace System
 {
     internal static partial class LocalAppContextSwitches
     {
+        private static int s_enableUnixSupport;
         public static bool EnableUnixSupport
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => false;
+            get
+            {
+                return GetCachedSwitchValue(@"System.Drawing.EnableUnixSupport", ref s_enableUnixSupport);
+            }
         }
     }
 }

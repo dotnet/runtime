@@ -295,24 +295,62 @@ namespace System.Net.Security
             return issuers;
         }
 
-        internal X509Certificate2? SelectClientCertificate(out bool sessionRestartAttempt)
-        {
-            sessionRestartAttempt = false;
+        /*++
+            AcquireCredentials - Attempts to find Client Credential
+            Information, that can be sent to the server.  In our case,
+            this is only Client Certificates, that we have Credential Info.
 
-            X509Certificate? clientCertificate = null;        // candidate certificate that can come from the user callback or be guessed when targeting a session restart.
-            X509Certificate2? selectedCert = null;     // final selected cert (ensured that it does have private key with it).
+            How it works:
+                case 0: Cert Selection delegate is present
+                        Always use its result as the client cert answer.
+                        Try to use cached credential handle whenever feasible.
+                        Do not use cached anonymous creds if the delegate has returned null
+                        and the collection is not empty (allow responding with the cert later).
+
+                case 1: Certs collection is empty
+                        Always use the same statically acquired anonymous SSL Credential
+
+                case 2: Before our Connection with the Server
+                        If we have a cached credential handle keyed by first X509Certificate
+                        **content** in the passed collection, then we use that cached
+                        credential and hoping to restart a session.
+
+                        Otherwise create a new anonymous (allow responding with the cert later).
+
+                case 3: After our Connection with the Server (i.e. during handshake or re-handshake)
+                        The server has requested that we send it a Certificate then
+                        we Enumerate a list of server sent Issuers trying to match against
+                        our list of Certificates, the first match is sent to the server.
+
+                        Once we got a cert we again try to match cached credential handle if possible.
+                        This will not restart a session but helps minimizing the number of handles we create.
+
+                In the case of an error getting a Certificate or checking its private Key we fall back
+                to the behavior of having no certs, case 1.
+
+            Returns: True if cached creds were used, false otherwise.
+
+        --*/
+
+        private bool AcquireClientCredentials(ref byte[]? thumbPrint)
+        {
+            // Acquire possible Client Certificate information and set it on the handle.
+            X509Certificate? clientCertificate = null;        // This is a candidate that can come from the user callback or be guessed when targeting a session restart.
             List<X509Certificate>? filteredCerts = null;      // This is an intermediate client certs collection that try to use if no selectedCert is available yet.
-            string[] issuers;                                // This is a list of issuers sent by the server, only valid if we do know what the server cert is.
+            string[] issuers;                                // This is a list of issuers sent by the server, only valid is we do know what the server cert is.
+
+            bool sessionRestartAttempt = false; // If true and no cached creds we will use anonymous creds.
 
             if (_sslAuthenticationOptions.CertSelectionDelegate != null)
             {
+                issuers = GetRequestCertificateAuthorities();
+
                 if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Info(this, "Calling CertificateSelectionCallback");
 
                 X509Certificate2? remoteCert = null;
                 try
                 {
-                    issuers = GetRequestCertificateAuthorities();
                     remoteCert = CertificateValidationPal.GetRemoteCertificate(_securityContext!);
                     if (_sslAuthenticationOptions.ClientCertificates == null)
                     {
@@ -324,6 +362,7 @@ namespace System.Net.Security
                 {
                     remoteCert?.Dispose();
                 }
+
 
                 if (clientCertificate != null)
                 {
@@ -466,6 +505,9 @@ namespace System.Net.Security
                 }
             }
 
+            bool cachedCred = false;                   // This is a return result from this method.
+            X509Certificate2? selectedCert = null;     // This is a final selected cert (ensured that it does have private key with it).
+
             clientCertificate = null;
 
             if (NetEventSource.Log.IsEnabled())
@@ -508,56 +550,6 @@ namespace System.Net.Security
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Selected cert = {selectedCert}");
 
-            _selectedClientCertificate = clientCertificate;
-            return selectedCert;
-        }
-
-        /*++
-            AcquireCredentials - Attempts to find Client Credential
-            Information, that can be sent to the server.  In our case,
-            this is only Client Certificates, that we have Credential Info.
-
-            How it works:
-                case 0: Cert Selection delegate is present
-                        Always use its result as the client cert answer.
-                        Try to use cached credential handle whenever feasible.
-                        Do not use cached anonymous creds if the delegate has returned null
-                        and the collection is not empty (allow responding with the cert later).
-
-                case 1: Certs collection is empty
-                        Always use the same statically acquired anonymous SSL Credential
-
-                case 2: Before our Connection with the Server
-                        If we have a cached credential handle keyed by first X509Certificate
-                        **content** in the passed collection, then we use that cached
-                        credential and hoping to restart a session.
-
-                        Otherwise create a new anonymous (allow responding with the cert later).
-
-                case 3: After our Connection with the Server (i.e. during handshake or re-handshake)
-                        The server has requested that we send it a Certificate then
-                        we Enumerate a list of server sent Issuers trying to match against
-                        our list of Certificates, the first match is sent to the server.
-
-                        Once we got a cert we again try to match cached credential handle if possible.
-                        This will not restart a session but helps minimizing the number of handles we create.
-
-                In the case of an error getting a Certificate or checking its private Key we fall back
-                to the behavior of having no certs, case 1.
-
-            Returns: True if cached creds were used, false otherwise.
-
-        --*/
-
-        private bool AcquireClientCredentials(ref byte[]? thumbPrint)
-        {
-            // Acquire possible Client Certificate information and set it on the handle.
-
-            bool sessionRestartAttempt; // If true and no cached creds we will use anonymous creds.
-            bool cachedCred = false;                   // this is a return result from this method.
-
-            X509Certificate2? selectedCert = SelectClientCertificate(out sessionRestartAttempt);
-
             try
             {
                 // Try to locate cached creds first.
@@ -582,14 +574,14 @@ namespace System.Net.Security
                     // So we don't want to reuse **anonymous** cached credential for a new SSL connection if the client has passed some certificate.
                     // The following block happens if client did specify a certificate but no cached creds were found in the cache.
                     // Since we don't restart a session the server side can still challenge for a client cert.
-                    if ((object?)_selectedClientCertificate != (object?)selectedCert)
+                    if ((object?)clientCertificate != (object?)selectedCert)
                     {
                         selectedCert.Dispose();
                     }
 
                     guessedThumbPrint = null;
                     selectedCert = null;
-                    _selectedClientCertificate = null;
+                    clientCertificate = null;
                 }
 
                 if (cachedCredentialHandle != null)
@@ -597,6 +589,7 @@ namespace System.Net.Security
                     if (NetEventSource.Log.IsEnabled())
                         NetEventSource.Log.UsingCachedCredential(this);
                     _credentialsHandle = cachedCredentialHandle;
+                    _selectedClientCertificate = clientCertificate;
                     cachedCred = true;
                     if (selectedCert != null)
                     {
@@ -614,6 +607,7 @@ namespace System.Net.Security
                             _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer);
 
                     thumbPrint = guessedThumbPrint; // Delay until here in case something above threw.
+                    _selectedClientCertificate = clientCertificate;
                 }
             }
             finally
@@ -798,7 +792,6 @@ namespace System.Net.Security
                     if (_sslAuthenticationOptions.IsServer)
                     {
                         status = SslStreamPal.AcceptSecurityContext(
-                                      this,
                                       ref _credentialsHandle!,
                                       ref _securityContext,
                                       inputBuffer,
@@ -808,7 +801,6 @@ namespace System.Net.Security
                     else
                     {
                         status = SslStreamPal.InitializeSecurityContext(
-                                       this,
                                        ref _credentialsHandle!,
                                        ref _securityContext,
                                        _sslAuthenticationOptions.TargetHost,
@@ -849,7 +841,6 @@ namespace System.Net.Security
         internal SecurityStatusPal Renegotiate(out byte[]? output)
         {
             return SslStreamPal.Renegotiate(
-                                      this,
                                       ref _credentialsHandle!,
                                       ref _securityContext,
                                       _sslAuthenticationOptions,

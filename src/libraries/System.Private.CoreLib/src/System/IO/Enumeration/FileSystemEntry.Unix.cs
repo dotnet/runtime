@@ -11,7 +11,6 @@ namespace System.IO.Enumeration
     public unsafe ref partial struct FileSystemEntry
    {
         private Interop.Sys.DirectoryEntry _directoryEntry;
-        private bool _isDirectory;
         private FileStatus _status;
         private Span<char> _pathBuffer;
         private ReadOnlySpan<char> _fullPath;
@@ -33,8 +32,8 @@ namespace System.IO.Enumeration
             entry._pathBuffer = pathBuffer;
             entry._fullPath = ReadOnlySpan<char>.Empty;
             entry._fileName = ReadOnlySpan<char>.Empty;
-            entry._isDirectory = false;
             entry._status.InvalidateCaches();
+            entry._status.InitiallyDirectory = false;
 
             bool isDirectory = directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR;
             bool isSymlink   = directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK;
@@ -42,15 +41,15 @@ namespace System.IO.Enumeration
 
             if (isDirectory)
             {
-                entry._isDirectory = true;
+                entry._status.InitiallyDirectory = true;
             }
             else if (isSymlink)
             {
-                entry._isDirectory = entry._status.IsDirectory(entry.FullPath, continueOnError: true);
+                entry._status.InitiallyDirectory = entry._status.IsDirectory(entry.FullPath, continueOnError: true);
             }
             else if (isUnknown)
             {
-                entry._isDirectory = entry._status.IsDirectory(entry.FullPath, continueOnError: true);
+                entry._status.InitiallyDirectory = entry._status.IsDirectory(entry.FullPath, continueOnError: true);
                 if (entry._status.IsSymbolicLink(entry.FullPath, continueOnError: true))
                 {
                     entry._directoryEntry.InodeType = Interop.Sys.NodeType.DT_LNK;
@@ -146,17 +145,16 @@ namespace System.IO.Enumeration
         public DateTimeOffset CreationTimeUtc => _status.GetCreationTime(FullPath, continueOnError: true);
         public DateTimeOffset LastAccessTimeUtc => _status.GetLastAccessTime(FullPath, continueOnError: true);
         public DateTimeOffset LastWriteTimeUtc => _status.GetLastWriteTime(FullPath, continueOnError: true);
-
-        public bool IsHidden => _status.IsFileSystemEntryHidden(FullPath, FileName);
+        public bool IsHidden => _status.IsHidden(FullPath, FileName, continueOnError: true);
         internal bool IsReadOnly => _status.IsReadOnly(FullPath, continueOnError: true);
 
-        public bool IsDirectory => _isDirectory;
+        public bool IsDirectory => _status.InitiallyDirectory;
         internal bool IsSymbolicLink => _directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK;
 
         public FileSystemInfo ToFileSystemInfo()
         {
             string fullPath = ToFullPath();
-            return FileSystemInfo.Create(fullPath, new string(FileName), _isDirectory, ref _status);
+            return FileSystemInfo.Create(fullPath, new string(FileName), ref _status);
         }
 
         /// <summary>

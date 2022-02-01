@@ -72,9 +72,9 @@ namespace System.Data.Tests.SqlTypes
         {
             char[] b = null;
             SqlChars chars = new SqlChars();
-            Assert.Equal(-1, chars.MaxLength);
+            Assert.Equal(chars.MaxLength, -1);
             chars = new SqlChars(b);
-            Assert.Equal(-1, chars.MaxLength);
+            Assert.Equal(chars.MaxLength, -1);
             b = new char[10];
             chars = new SqlChars(b);
             Assert.Equal(10, chars.MaxLength);

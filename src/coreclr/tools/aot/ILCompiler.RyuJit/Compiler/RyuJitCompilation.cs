@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-using ILLink.Shared;
 
 using Internal.IL;
 using Internal.IL.Stubs;
@@ -93,9 +92,6 @@ namespace ILCompiler
             NodeFactory.SetMarkingComplete();
 
             ObjectWritingOptions options = default;
-            if ((_compilationOptions & RyuJitCompilationOptions.UseDwarf5) != 0)
-                options |= ObjectWritingOptions.UseDwarf5;
-            
             if (_debugInformationProvider is not NullDebugInformationProvider)
                 options |= ObjectWritingOptions.GenerateDebugInfo;
 
@@ -199,6 +195,8 @@ namespace ILCompiler
 
             if (exception != null)
             {
+                // TODO: fail compilation if a switch was passed
+
                 // Try to compile the method again, but with a throwing method body this time.
                 MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
                 corInfo.CompileMethod(methodCodeNodeNeedingCode, throwingIL);
@@ -207,12 +205,12 @@ namespace ILCompiler
                     && method.OwningType is MetadataType mdOwningType
                     && mdOwningType.HasCustomAttribute("System.Runtime.InteropServices", "ClassInterfaceAttribute"))
                 {
-                    Logger.LogWarning(method, DiagnosticId.COMInteropNotSupportedInFullAOT);
+                    Logger.LogWarning("COM interop is not supported with full ahead of time compilation", 3052, method, MessageSubCategory.AotAnalysis);
                 }
-                if ((_compilationOptions & RyuJitCompilationOptions.UseResilience) != 0)
-                    Logger.LogMessage($"Ignoring unresolved method {method}, because: {exception.Message}");
                 else
-                    Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
+                {
+                    Logger.LogWarning($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
+                }
             }
         }
 
@@ -244,7 +242,5 @@ namespace ILCompiler
     {
         MethodBodyFolding = 0x1,
         ControlFlowGuardAnnotations = 0x2,
-        UseDwarf5 = 0x4,
-        UseResilience = 0x8,
     }
 }

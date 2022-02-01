@@ -89,7 +89,7 @@ namespace ILCompiler.Diagnostics
         Dictionary<SymDocument,int> _documentToChecksumOffsetMapping;
 
         UIntPtr _pdbMod;
-        SymNgenWriterWrapper _ngenWriter;
+        ISymNGenWriter2 _ngenWriter;
 
         static PdbWriter()
         {
@@ -116,7 +116,7 @@ namespace ILCompiler.Diagnostics
         private extern static void CreateNGenPdbWriter(
             [MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath,
             [MarshalAs(UnmanagedType.LPWStr)] string pdbPath,
-            out IntPtr ngenPdbWriterPtr);
+            [MarshalAs(UnmanagedType.Interface)] out ISymNGenWriter2 ngenPdbWriter);
 
         public PdbWriter(string pdbPath, PDBExtraData pdbExtraData, TargetDetails target)
         {
@@ -138,14 +138,23 @@ namespace ILCompiler.Diagnostics
             {
                 try
                 {
-                    WritePDBDataHelper(dllPath, methods);
+                    try
+                    {
+                        WritePDBDataHelper(dllPath, methods);
+                    }
+                    finally
+                    {
+                        if ((_ngenWriter != null) && (_pdbMod != UIntPtr.Zero))
+                        {
+                            _ngenWriter.CloseMod(_pdbMod);
+                        }
+                    }
                 }
                 finally
                 {
-                    if ((_ngenWriter != null) && (_pdbMod != UIntPtr.Zero))
+                    if (_ngenWriter != null)
                     {
-                        _ngenWriter.CloseMod(_pdbMod);
-                        _ngenWriter?.Dispose();
+                        Marshal.FinalReleaseComObject(_ngenWriter);
                     }
                 }
 
@@ -208,16 +217,14 @@ namespace ILCompiler.Diagnostics
             // Delete any preexisting PDB file upfront, otherwise CreateNGenPdbWriter silently opens it
             File.Delete(_pdbFilePath);
 
-            var comWrapper = new ILCompilerComWrappers();
-            CreateNGenPdbWriter(dllPath, _pdbFilePath, out var pdbWriterInst);
-            _ngenWriter = (SymNgenWriterWrapper)comWrapper.GetOrCreateObjectForComInstance(pdbWriterInst, CreateObjectFlags.UniqueInstance);
+            CreateNGenPdbWriter(dllPath, _pdbFilePath, out _ngenWriter);
 
             {
                 // PDB file is now created. Get its path and update _pdbFilePath so the PDB file
                 // can be deleted if we don't make it successfully to the end.
-                const int capacity = 1024;
-                var pdbFilePathBuilder = new char[capacity];
-                _ngenWriter.QueryPDBNameExW(pdbFilePathBuilder, new IntPtr(capacity - 1) /* remove 1 byte for null */);
+                StringBuilder pdbFilePathBuilder = new StringBuilder();
+                pdbFilePathBuilder.Capacity = 1024;
+                _ngenWriter.QueryPDBNameExW(pdbFilePathBuilder, new IntPtr(pdbFilePathBuilder.Capacity));
                 _pdbFilePath = pdbFilePathBuilder.ToString();
             }
 
@@ -421,9 +428,9 @@ namespace ILCompiler.Diagnostics
                 byte iLanguage = (byte)CV_CFL_LANG.CV_CFL_MSIL;
                 writer.Write(iLanguage);
                 // Write rest of flags
-                writer.Write((byte)0);
-                writer.Write((byte)0);
-                writer.Write((byte)0);
+                writer.Write((byte)0); 
+                writer.Write((byte)0); 
+                writer.Write((byte)0); 
 
                 switch (_target.Architecture)
                 {

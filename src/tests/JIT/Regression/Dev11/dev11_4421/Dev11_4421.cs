@@ -10,11 +10,8 @@ internal static class Module
         int Var1, Temp;
         try
         {
-            checked
-            {
-                for (Temp = int.MaxValue - 3; Temp <= int.MaxValue - 1; Temp++)
-                    Var1 = (int)(2 + Temp);
-            }
+            for (Temp = int.MaxValue - 3; Temp <= int.MaxValue - 1; Temp++)
+                Var1 = (int)(2 + Temp);
         }
         catch (Exception ex)
         {

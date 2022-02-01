@@ -84,7 +84,6 @@ namespace System.Drawing.Tests
             Assert.Equal(expected, range.Equals(obj));
             if (obj is CharacterRange otherRange)
             {
-                Assert.Equal(expected, range.Equals(otherRange));
                 Assert.Equal(expected, range == otherRange);
                 Assert.Equal(!expected, range != otherRange);
                 Assert.Equal(expected, range.GetHashCode().Equals(otherRange.GetHashCode()));

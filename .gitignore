@@ -7,7 +7,6 @@ syntax: glob
 #       instead of directories), git will still ignore them.
 .dotnet
 .dotnet-mono
-.dotnet-tools-global
 .packages
 .tools
 

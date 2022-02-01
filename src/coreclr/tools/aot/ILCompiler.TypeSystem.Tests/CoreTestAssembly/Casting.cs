@@ -3,8 +3,6 @@
 
 namespace Casting
 {
-    class Base { }
-
     interface IFoo { }
 
     interface IContravariant<in T> { }
@@ -22,8 +20,6 @@ namespace Casting
     class ClassWithNoConstraint<T> { }
 
     class ClassWithValueTypeConstraint<T> where T : struct { }
-
-    class ClassWithBaseClassConstraint<T> where T : Base { }
 
     class ClassWithInterfaceConstraint<T> where T : IFoo { }
 

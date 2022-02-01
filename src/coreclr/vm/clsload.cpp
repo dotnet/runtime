@@ -563,7 +563,7 @@ BOOL ClassLoader::IsNested(Module *pModule, mdToken token, mdToken *mdEncloser)
                     (*mdEncloser != mdTypeRefNil));
 
         case mdtExportedType:
-            IfFailThrow(pModule->GetAssembly()->GetMDImport()->GetExportedTypeProps(
+            IfFailThrow(pModule->GetAssembly()->GetManifestImport()->GetExportedTypeProps(
                 token,
                 NULL,   // namespace
                 NULL,   // name
@@ -643,11 +643,17 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
 #endif
 
     PTR_Assembly assembly = GetAssembly();
-    Module * pCurrentClsModule = assembly->GetModule();
-    _ASSERTE(pCurrentClsModule != NULL);
+    PREFIX_ASSUME(assembly != NULL);
+    ModuleIterator i = assembly->IterateModules();
 
-    if (!pLookInThisModuleOnly || (pCurrentClsModule == pLookInThisModuleOnly))
+    while (i.Next())
     {
+        Module * pCurrentClsModule = i.GetModule();
+        PREFIX_ASSUME(pCurrentClsModule != NULL);
+
+        if (pLookInThisModuleOnly && (pCurrentClsModule != pLookInThisModuleOnly))
+            continue;
+
 #ifdef FEATURE_READYTORUN
         if (nhTable == nhCaseSensitive && pCurrentClsModule->IsReadyToRun() && pCurrentClsModule->GetReadyToRunInfo()->HasHashtableOfTypes() &&
             pCurrentClsModule->GetAvailableClassHash() == NULL)
@@ -738,7 +744,7 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
                                                                (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
                         break;
                     case mdtExportedType:
-                        while ((!CompareNestedEntryWithExportedType(pNameModule->GetAssembly()->GetMDImport(),
+                        while ((!CompareNestedEntryWithExportedType(pNameModule->GetAssembly()->GetManifestImport(),
                                                                     mdEncloser,
                                                                     pCurrentClsModule->GetAvailableClassHash(),
                                                                     pBucket->GetEncloser())) &&
@@ -832,11 +838,16 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
     _ASSERT(m_cUnhashedModules > 0);
 
     AllocMemTracker amTracker;
+    ModuleIterator i = GetAssembly()->IterateModules();
 
-    // Create a case-sensitive hashtable for the module, and fill it with the module's typedef entries
-    Module *pModule = GetAssembly()->GetModule();
-    if (pModule->GetAvailableClassHash() == NULL)
+    // Create a case-sensitive hashtable for each module, and fill it with the module's typedef entries
+    while (i.Next())
     {
+        Module *pModule = i.GetModule();
+        PREFIX_ASSUME(pModule != NULL);
+        if (pModule->GetAvailableClassHash() != NULL)
+            continue;
+
         // Lazy construction of the case-sensitive hashtable of types is *only* a scenario for ReadyToRun images
         // (either images compiled with an old version of crossgen, or for case-insensitive type lookups in R2R modules)
         _ASSERT(pModule->IsReadyToRun());
@@ -847,14 +858,14 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
         PopulateAvailableClassHashTable(pModule, &amTracker);
     }
 
-    // Add exported types to the hashtable
-    IMDInternalImport * pManifestImport = GetAssembly()->GetMDImport();
+    // Add exported types of the manifest module to the hashtable
+    IMDInternalImport * pManifestImport = GetAssembly()->GetManifestImport();
     HENUMInternalHolder phEnum(pManifestImport);
     phEnum.EnumInit(mdtExportedType, mdTokenNil);
 
     mdToken mdExportedType;
     while (pManifestImport->EnumNext(&phEnum, &mdExportedType))
-        AddExportedTypeHaveLock(GetAssembly()->GetModule(), mdExportedType, &amTracker);
+        AddExportedTypeHaveLock(GetAssembly()->GetManifestModule(), mdExportedType, &amTracker);
 
     amTracker.SuppressRelease();
 }
@@ -871,7 +882,7 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
     }
     CONTRACTL_END;
 
-    if (GetAssembly()->GetModule()->GetAvailableClassHash() == NULL)
+    if (GetAssembly()->GetManifestModule()->GetAvailableClassHash() == NULL)
     {
         // This is a R2R assembly, and a case insensitive type lookup was triggered.
         // Construct the case-sensitive table first, since the case-insensitive table
@@ -882,23 +893,28 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
     // Add any unhashed modules into our hash tables, and try again.
 
     AllocMemTracker amTracker;
-    Module *pModule = GetAssembly()->GetModule();
-    if (pModule->GetAvailableClassCaseInsHash() == NULL)
+    ModuleIterator i = GetAssembly()->IterateModules();
+
+    while (i.Next())
     {
-        EEClassHashTable *pNewClassCaseInsHash = pModule->GetAvailableClassHash()->MakeCaseInsensitiveTable(pModule, &amTracker);
-
-        LOG((LF_CLASSLOADER, LL_INFO10, "%s's classes being added to case insensitive hash table\n",
-                pModule->GetSimpleName()));
-
+        Module *pModule = i.GetModule();
+        if (pModule->GetAvailableClassCaseInsHash() == NULL)
         {
-            CANNOTTHROWCOMPLUSEXCEPTION();
-            FAULT_FORBID();
+            EEClassHashTable *pNewClassCaseInsHash = pModule->GetAvailableClassHash()->MakeCaseInsensitiveTable(pModule, &amTracker);
 
-            amTracker.SuppressRelease();
-            pModule->SetAvailableClassCaseInsHash(pNewClassCaseInsHash);
-            FastInterlockDecrement((LONG*)&m_cUnhashedModules);
+            LOG((LF_CLASSLOADER, LL_INFO10, "%s's classes being added to case insensitive hash table\n",
+                 pModule->GetSimpleName()));
 
-            _ASSERT(m_cUnhashedModules >= 0);
+            {
+                CANNOTTHROWCOMPLUSEXCEPTION();
+                FAULT_FORBID();
+
+                amTracker.SuppressRelease();
+                pModule->SetAvailableClassCaseInsHash(pNewClassCaseInsHash);
+                FastInterlockDecrement((LONG*)&m_cUnhashedModules);
+
+                _ASSERT(m_cUnhashedModules >= 0);
+            }
         }
     }
 }
@@ -1482,7 +1498,7 @@ ClassLoader::LoadTypeHandleThrowing(
                 if (typeHnd.IsNull() || !CompareNameHandleWithTypeHandleNoThrow(pName, typeHnd))
                 {
                     if (SUCCEEDED(pClsLdr->FindTypeDefByExportedType(
-                            pClsLdr->GetAssembly()->GetMDImport(),
+                            pClsLdr->GetAssembly()->GetManifestImport(),
                             FoundExportedType,
                             pFoundModule->GetMDImport(),
                             &FoundCl)))
@@ -1844,8 +1860,16 @@ void ClassLoader::FreeModules()
     CONTRACTL_END;
 
     Module *pManifest = NULL;
-    if (GetAssembly() && (NULL != (pManifest = GetAssembly()->GetModule())))
-    {
+    if (GetAssembly() && (NULL != (pManifest = GetAssembly()->GetManifestModule()))) {
+        // Unload the manifest last, since it contains the module list in its rid map
+        ModuleIterator i = GetAssembly()->IterateModules();
+        while (i.Next()) {
+            // Have the module free its various tables and some of the EEClass links
+            if (i.GetModule() != pManifest)
+                i.GetModule()->Destruct();
+        }
+
+        // Now do the manifest module.
         pManifest->Destruct();
     }
 
@@ -3242,6 +3266,15 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
 #if defined(FEATURE_EVENT_TRACE)
     UINT32 typeLoad = ETW::TypeSystemLog::TypeLoadBegin();
 #endif
+
+    // When using domain neutral assemblies (and not eagerly propagating dependency loads),
+    // it's possible to get here without having injected the module into the current app domain.
+    // GetDomainFile will accomplish that.
+
+    if (!pTypeKey->IsConstructed())
+    {
+        pTypeKey->GetModule()->GetDomainFile();
+    }
 
     ClassLoadLevel currentLevel = typeHnd.IsNull() ? CLASS_LOAD_BEGIN : typeHnd.GetLoadLevel();
     ClassLoadLevel targetLevelUnderLock = targetLevel < CLASS_DEPENDENCIES_LOADED ? targetLevel : (ClassLoadLevel) (CLASS_DEPENDENCIES_LOADED-1);
@@ -5126,7 +5159,12 @@ ClassLoader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     if (m_pAssembly.IsValid())
     {
-        m_pAssembly->GetModule()->EnumMemoryRegions(flags, true);
+        ModuleIterator modIter = GetAssembly()->IterateModules();
+
+        while (modIter.Next())
+        {
+            modIter.GetModule()->EnumMemoryRegions(flags, true);
+        }
     }
 }
 

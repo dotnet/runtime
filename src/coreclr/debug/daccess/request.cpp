@@ -2607,7 +2607,10 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
     assemblyData->ModuleCount = 0;
     assemblyData->isDomainNeutral = FALSE;
 
-    if (pAssembly->GetModule())
+    pAssembly->GetManifestFile();
+
+    ModuleIterator mi = pAssembly->IterateModules();
+    while (mi.Next())
     {
         assemblyData->ModuleCount++;
     }
@@ -2625,17 +2628,17 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _In
     if (name)
         name[0] = 0;
 
-    if (!pAssembly->GetPEAssembly()->GetPath().IsEmpty())
+    if (!pAssembly->GetManifestFile()->GetPath().IsEmpty())
     {
-        if (!pAssembly->GetPEAssembly()->GetPath().DacGetUnicode(count, name, pNeeded))
+        if (!pAssembly->GetManifestFile()->GetPath().DacGetUnicode(count, name, pNeeded))
             hr = E_FAIL;
         else if (name)
             name[count-1] = 0;
     }
-    else if (!pAssembly->GetPEAssembly()->IsDynamic())
+    else if (!pAssembly->GetManifestFile()->IsDynamic())
     {
         StackSString displayName;
-        pAssembly->GetPEAssembly()->GetDisplayName(displayName, 0);
+        pAssembly->GetManifestFile()->GetDisplayName(displayName, 0);
 
         const WCHAR *val = displayName.GetUnicode();
 
@@ -2670,9 +2673,9 @@ ClrDataAccess::GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, _Inout_u
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
 
     // Turn from bytes to wide characters
-    if (!pAssembly->GetPEAssembly()->GetPath().IsEmpty())
+    if (!pAssembly->GetManifestFile()->GetPath().IsEmpty())
     {
-        if (!pAssembly->GetPEAssembly()->GetPath().
+        if (!pAssembly->GetManifestFile()->GetPath().
             DacGetUnicode(count, location, pNeeded))
         {
             hr = E_FAIL;
@@ -2700,14 +2703,21 @@ ClrDataAccess::GetAssemblyModuleList(CLRDATA_ADDRESS assembly, unsigned int coun
     SOSDacEnter();
 
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
+    ModuleIterator mi = pAssembly->IterateModules();
+    unsigned int n = 0;
     if (modules)
     {
-        if (pAssembly->GetModule() && count > 0)
-            modules[0] = HOST_CDADDR(pAssembly->GetModule());
+        while (mi.Next() && n < count)
+            modules[n++] = HOST_CDADDR(mi.GetModule());
+    }
+    else
+    {
+        while (mi.Next())
+            n++;
     }
 
     if (pNeeded)
-        *pNeeded = 1;
+        *pNeeded = n;
 
     SOSDacLeave();
     return hr;

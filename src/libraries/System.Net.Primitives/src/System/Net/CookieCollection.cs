@@ -203,7 +203,7 @@ namespace System.Net
                 for (int i = 0; i < listCount; i++)
                 {
                     Cookie c = (Cookie)m_list[i]!;
-                    if (CookieComparer.Equals(cookie, c))
+                    if (CookieComparer.Compare(cookie, c) == 0)
                     {
                         ret = 0; // Will replace or reject
 
@@ -237,7 +237,7 @@ namespace System.Net
             int idx = 0;
             foreach (Cookie? c in m_list)
             {
-                if (CookieComparer.Equals(cookie, c!))
+                if (CookieComparer.Compare(cookie, c!) == 0)
                 {
                     return idx;
                 }

@@ -28,9 +28,12 @@ namespace BINDER_SPACE
         TextualIdentityParser(AssemblyIdentity *pAssemblyIdentity);
         ~TextualIdentityParser();
 
-        static HRESULT Parse(/* in */  SString           &textualIdentity,
-                             /* out */ AssemblyIdentity *pAssemblyIdentity);
+        virtual BOOL IsSeparatorChar(WCHAR wcChar);
+        virtual StringLexer::LEXEME_TYPE GetLexemeType(WCHAR wcChar);
 
+        static HRESULT Parse(/* in */  SString           &textualIdentity,
+                             /* out */ AssemblyIdentity *pAssemblyIdentity,
+                             /* in */  BOOL              fPermitUnescapedQuotes = FALSE);
         static HRESULT ToString(/* in */  AssemblyIdentity *pAssemblyIdentity,
                                 /* in */  DWORD             dwIdentityFlags,
                                 /* out */ SString          &textualIdentity);
@@ -42,7 +45,6 @@ namespace BINDER_SPACE
                               /* in */  BOOL     fValidateHex,
                               /* in */  BOOL     fIsToken,
                               /* out */ SBuffer &publicKeyOrTokenBLOB);
-
         static void BlobToHex(/* in */  SBuffer &publicKeyOrTokenBLOB,
                               /* out */ SString &publicKeyOrToken);
 
@@ -50,7 +52,8 @@ namespace BINDER_SPACE
                          /* out */ SString &contentString);
 
     protected:
-        BOOL Parse(/* in */  SString &textualIdentity);
+        BOOL Parse(/* in */  SString &textualIdentity,
+                   /* in */  BOOL     fPermitUnescapedQuotes = FALSE);
 
         BOOL PopulateAssemblyIdentity(/* in */ SString &attributeString,
                                       /* in */ SString &valueString);

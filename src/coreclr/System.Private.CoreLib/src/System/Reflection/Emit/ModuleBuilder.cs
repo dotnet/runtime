@@ -233,7 +233,7 @@ namespace System.Reflection.Emit
                 typeName = UnmangleTypeName(typeName);
             }
 
-            Debug.Assert(!type.IsByRef, "Must not be ByRef. Get token from TypeSpec.");
+            Debug.Assert(!type.IsByRef, "Must not be ByRef.");
             Debug.Assert(!type.IsGenericType || type.IsGenericTypeDefinition, "Must not have generic arguments.");
 
             ModuleBuilder thisModule = this;
@@ -948,7 +948,14 @@ namespace System.Reflection.Emit
             {
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             }
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            }
             if ((attributes & MethodAttributes.Static) == 0)
             {
                 throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
@@ -1074,16 +1081,19 @@ namespace System.Reflection.Emit
             // instructions.  Tokens are always relative to the Module.  For example,
             // the token value for System.String is likely to be different from
             // Module to Module.  Calling GetTypeToken will cause a reference to be
-            // added to the Module.  This reference becomes a permanent part of the Module,
-            // multiple calls to this method with the same class have no additional side-effects.
-            // This function is optimized to use the TypeDef token if the Type is within the
-            // same module. We should also be aware of multiple dynamic modules and multiple
-            // implementations of a Type.
-            if ((type.IsGenericType && (!type.IsGenericTypeDefinition || !getGenericDefinition))
-                || type.IsGenericParameter
-                || type.IsArray
-                || type.IsPointer
-                || type.IsByRef)
+            // added to the Module.  This reference becomes a perminate part of the Module,
+            // multiple calles to this method with the same class have no additional side affects.
+            // This function is optimized to use the TypeDef token if Type is within the same module.
+            // We should also be aware of multiple dynamic modules and multiple implementation of Type!!!
+            if (type.IsByRef)
+            {
+                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
+            }
+
+            if ((type.IsGenericType && (!type.IsGenericTypeDefinition || !getGenericDefinition)) ||
+                type.IsGenericParameter ||
+                type.IsArray ||
+                type.IsPointer)
             {
                 byte[] sig = SignatureHelper.GetTypeSigToken(this, type).InternalGetSignature(out int length);
                 return GetTokenFromTypeSpec(sig, length);
@@ -1345,8 +1355,18 @@ namespace System.Reflection.Emit
         private int GetArrayMethodTokenNoLock(Type arrayClass, string methodName, CallingConventions callingConvention,
             Type? returnType, Type[]? parameterTypes)
         {
-            ArgumentNullException.ThrowIfNull(arrayClass);
-            ArgumentException.ThrowIfNullOrEmpty(methodName);
+            if (arrayClass == null)
+            {
+                throw new ArgumentNullException(nameof(arrayClass));
+            }
+            if (methodName == null)
+            {
+                throw new ArgumentNullException(nameof(methodName));
+            }
+            if (methodName.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(methodName));
+            }
             if (!arrayClass.IsArray)
             {
                 throw new ArgumentException(SR.Argument_HasToBeArrayClass);

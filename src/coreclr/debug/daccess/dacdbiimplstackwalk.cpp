@@ -514,7 +514,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 #endif // FEATURE_COMINTEROP
 
             Module *     pModule = (pMD ? pMD->GetModule() : NULL);
-            DomainAssembly * pDomainAssembly = (pModule ? pModule->GetDomainAssembly() : NULL);
+            DomainFile * pDomainFile = (pModule ? pModule->GetDomainFile() : NULL);
 
             if (frameData.stubFrame.frameType == STUBFRAME_FUNC_EVAL)
             {
@@ -522,14 +522,14 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
                 DebuggerEval *  pDE  = pFEF->GetDebuggerEval();
 
                 frameData.stubFrame.funcMetadataToken = pDE->m_methodToken;
-                frameData.stubFrame.vmDomainAssembly.SetHostPtr(
-                    pDE->m_debuggerModule ? pDE->m_debuggerModule->GetDomainAssembly() : NULL);
+                frameData.stubFrame.vmDomainFile.SetHostPtr(
+                    pDE->m_debuggerModule ? pDE->m_debuggerModule->GetDomainFile() : NULL);
                 frameData.stubFrame.vmMethodDesc = VMPTR_MethodDesc::NullPtr();
             }
             else
             {
                 frameData.stubFrame.funcMetadataToken = (pMD == NULL ? NULL : pMD->GetMemberDef());
-                frameData.stubFrame.vmDomainAssembly.SetHostPtr(pDomainAssembly);
+                frameData.stubFrame.vmDomainFile.SetHostPtr(pDomainFile);
                 frameData.stubFrame.vmMethodDesc.SetHostPtr(pMD);
             }
 
@@ -702,11 +702,11 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         // Although MiniDumpNormal tries to dump all AppDomains, it's possible
         // target corruption will keep one from being present.  This should mean
         // we'll just fail later, but struggle on for now.
-        DomainAssembly *pDomainAssembly = NULL;
+        DomainFile *pDomainFile = NULL;
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
         {
-            pDomainAssembly = (pModule ? pModule->GetDomainAssembly() : NULL);
-            _ASSERTE(pDomainAssembly != NULL);
+            pDomainFile = (pModule ? pModule->GetDomainFile() : NULL);
+            _ASSERTE(pDomainFile != NULL);
         }
         EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY
 
@@ -783,7 +783,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         //
 
         pFuncData->funcMetadataToken = pMD->GetMemberDef();
-        pFuncData->vmDomainAssembly.SetHostPtr(pDomainAssembly);
+        pFuncData->vmDomainFile.SetHostPtr(pDomainFile);
 
         // PERF: this is expensive to get so I stopped fetching it eagerly
         // It is only needed if we haven't already got a cached copy

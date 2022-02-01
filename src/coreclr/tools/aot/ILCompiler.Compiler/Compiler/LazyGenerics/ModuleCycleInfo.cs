@@ -8,8 +8,6 @@ using System.Collections.Concurrent;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-using ILLink.Shared;
-
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
@@ -234,9 +232,14 @@ namespace ILCompiler
                     if (!reportedProblems.Add(new EntityPair(ownerDefinition, referentDefinition)))
                         continue;
 
+                    string message = $"Generic expansion to '{actualProblem.Key.Referent.GetDisplayName()}' was aborted " +
+                        "due to generic recursion. An exception will be thrown at runtime if this codepath is ever reached. " +
+                        "Generic recursion also negatively affects compilation speed and the size of the compilation output. " +
+                        "It is advisable to remove the source of the generic recursion by restructuring the program around " +
+                        "the source of recursion. The source of generic recursion might include: ";
+
                     ModuleCycleInfo cycleInfo = actualProblem.Value;
                     bool first = true;
-                    string message = "";
                     foreach (TypeSystemEntity cycleEntity in cycleInfo.EntitiesInCycles)
                     {
                         if (!first)
@@ -247,7 +250,7 @@ namespace ILCompiler
                         message += $"'{cycleEntity.GetDisplayName()}'";
                     }
 
-                    logger.LogWarning(actualProblem.Key.Owner, DiagnosticId.GenericRecursionCycle, actualProblem.Key.Referent.GetDisplayName(), message);
+                    logger.LogWarning(message, 3054, actualProblem.Key.Owner, MessageSubCategory.AotAnalysis);
                 }
             }
         }

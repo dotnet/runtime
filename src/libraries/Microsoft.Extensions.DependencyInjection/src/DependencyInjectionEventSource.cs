@@ -158,7 +158,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     // remove the provider, along with any stale references
                     WeakReference<ServiceProvider> reference = _providers[i];
-                    if (!reference.TryGetTarget(out ServiceProvider? target) || target == provider)
+                    if (!reference.TryGetTarget(out ServiceProvider target) || target == provider)
                     {
                         _providers.RemoveAt(i);
                     }
@@ -279,7 +279,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     foreach (WeakReference<ServiceProvider> reference in _providers)
                     {
-                        if (reference.TryGetTarget(out ServiceProvider? provider))
+                        if (reference.TryGetTarget(out ServiceProvider provider))
                         {
                             WriteServiceProviderBuilt(provider);
                         }
@@ -308,8 +308,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             public int NodeCount { get; private set; }
 
-            [return: NotNullIfNotNull("e")]
-            public override Expression? Visit(Expression? e)
+            public override Expression Visit(Expression e)
             {
                 base.Visit(e);
                 NodeCount++;

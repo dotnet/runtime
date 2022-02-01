@@ -55,28 +55,32 @@ namespace BINDER_SPACE
         inline StringLexer();
         inline ~StringLexer();
 
-        inline void Init(SString &inputString);
+        inline void Init(SString &inputString, BOOL fSupportEscaping);
 
         static inline BOOL IsWhitespace(WCHAR wcChar);
         static inline BOOL IsEOS(WCHAR wcChar);
         static inline BOOL IsQuoteCharacter(WCHAR wcChar);
 
-        BOOL IsSeparatorChar(WCHAR wcChar);
-        LEXEME_TYPE GetLexemeType(WCHAR wcChar);
+        virtual BOOL IsSeparatorChar(WCHAR wcChar) = NULL;
+        virtual LEXEME_TYPE GetLexemeType(WCHAR wcChar) = NULL;
 
     protected:
         static const WCHAR INVALID_CHARACTER = -1;
 
-        LEXEME_TYPE GetNextLexeme(SString &currentString);
+        LEXEME_TYPE GetNextLexeme(SString &currentString, BOOL fPermitUnescapedQuotes = FALSE);
 
         inline WCHAR PopCharacter(BOOL *pfIsEscaped);
         inline void PushCharacter(WCHAR wcCurrentChar,
                                   BOOL fIsEscaped);
 
         inline WCHAR GetRawCharacter();
+        inline void PushRawCharacter();
+        inline WCHAR DecodeUTF16Character();
         inline WCHAR GetNextCharacter(BOOL *pfIsEscaped);
 
-        LEXEME_TYPE ParseString(SString &currentString);
+        inline WCHAR ParseUnicode();
+        LEXEME_TYPE ParseString(SString &currentString,
+                                BOOL     fPermitUnescapeQuotes);
 
         void TrimTrailingWhiteSpaces(SString &currentString);
 
@@ -85,6 +89,8 @@ namespace BINDER_SPACE
 
         WCHAR m_wcCurrentChar;
         BOOL m_fCurrentCharIsEscaped;
+        BOOL m_fSupportEscaping;
+        BOOL m_fReadRawCharacter;
     };
 
 #include "stringlexer.inl"

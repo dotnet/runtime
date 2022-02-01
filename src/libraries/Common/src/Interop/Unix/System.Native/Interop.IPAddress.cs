@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 internal static partial class Interop
 {
@@ -31,19 +32,6 @@ internal static partial class Interop
             internal fixed byte Address[MAX_IP_ADDRESS_BYTES]; // Buffer to fit an IPv4 or IPv6 address
             private  uint _isIPv6;                             // Non-zero if this is an IPv6 address; zero for IPv4.
             internal uint ScopeId;                             // Scope ID (IPv6 only)
-
-            public override unsafe int GetHashCode()
-            {
-                HashCode h = default;
-                fixed (byte* ptr = Address)
-                {
-                    h.AddBytes(new ReadOnlySpan<byte>(ptr, IsIPv6 ? IPv6AddressBytes : IPv4AddressBytes));
-                }
-                return h.ToHashCode();
-            }
-
-            public override bool Equals([NotNullWhen(true)] object? obj) =>
-                obj is IPAddress other && Equals(other);
 
             public bool Equals(IPAddress other)
             {

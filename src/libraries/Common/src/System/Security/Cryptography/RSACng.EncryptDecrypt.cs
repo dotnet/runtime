@@ -11,6 +11,10 @@ using BCRYPT_OAEP_PADDING_INFO = Interop.BCrypt.BCRYPT_OAEP_PADDING_INFO;
 
 namespace System.Security.Cryptography
 {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    internal static partial class RSAImplementation
+    {
+#endif
     public sealed partial class RSACng : RSA
     {
         private const int Pkcs1PaddingOverhead = 11;
@@ -315,4 +319,7 @@ namespace System.Security.Cryptography
             return errorCode;
         }
     }
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    }
+#endif
 }

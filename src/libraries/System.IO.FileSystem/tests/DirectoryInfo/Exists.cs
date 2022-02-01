@@ -67,14 +67,16 @@ namespace System.IO.Tests
             Assert.False(info.Exists);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseInsensitiveOS))]
+        [Fact]
+        [PlatformSpecific(CaseInsensitivePlatforms)]
         public void CaseInsensitivity()
         {
             Assert.True(new DirectoryInfo(TestDirectory.ToUpperInvariant()).Exists);
             Assert.True(new DirectoryInfo(TestDirectory.ToLowerInvariant()).Exists);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
+        [Fact]
+        [PlatformSpecific(CaseSensitivePlatforms)]
         public void CaseSensitivity()
         {
             Assert.False(new DirectoryInfo(TestDirectory.ToUpperInvariant()).Exists);

@@ -1027,7 +1027,7 @@ namespace Internal.JitInterface
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
 
             Debug.Assert(!type.IsString && !type.IsArray && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
-
+            
             pHasSideEffects = type.HasFinalizer;
 
             if (type.RequiresAlign8())
@@ -1520,7 +1520,7 @@ namespace Internal.JitInterface
 
             targetIsFatFunctionPointer |= (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && !(pResult->kind == CORINFO_CALL_KIND.CORINFO_CALL);
 
-            Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig, scope: null, targetIsFatFunctionPointer);
+            Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig, targetIsFatFunctionPointer);
             if (useFatCallTransform)
             {
                 pResult->sig.flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
@@ -1531,7 +1531,7 @@ namespace Internal.JitInterface
                 if (pResult->hMethod != pResolvedToken.hMethod)
                 {
                     pResult->verMethodFlags = getMethodAttribsInternal(targetMethod);
-                    Get_CORINFO_SIG_INFO(targetMethod, &pResult->verSig, scope: null);
+                    Get_CORINFO_SIG_INFO(targetMethod, &pResult->verSig);
                 }
                 else
                 {
@@ -1791,9 +1791,7 @@ namespace Internal.JitInterface
 #if DEBUG
                 MethodSignature methodSignature = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
 
-                MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(
-                    methodSignature,
-                    ((MetadataType)HandleToObject(callSiteSig->scope).OwningMethod.OwningType).Module);
+                MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(methodSignature);
                 Debug.Assert(!IsPInvokeStubRequired(stub));
 #endif
 
@@ -1827,9 +1825,7 @@ namespace Internal.JitInterface
             if ((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == 0)
                 return false;
 
-            MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(
-                signature,
-                ((MetadataType)methodIL.OwningMethod.OwningType).Module);
+            MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(signature);
             if (!mustConvert && !IsPInvokeStubRequired(stub))
                 return false;
 

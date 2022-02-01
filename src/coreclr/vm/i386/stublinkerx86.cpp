@@ -2445,21 +2445,44 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
 #endif // TARGET_UNIX
 }
 
-#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
+#if defined(TARGET_X86)
 
-#if defined(PROFILING_SUPPORTED)
+#if defined(PROFILING_SUPPORTED) && !defined(FEATURE_STUBS_AS_IL)
 VOID StubLinkerCPU::EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame)
 {
     STANDARD_VM_CONTRACT;
 
-    // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
-    X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
-    X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
+    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
+    {
+        // Load the methoddesc into ECX (UMThkCallFrame->m_pvDatum->m_pMD)
+        X86EmitIndexRegLoad(kECX, regFrame, UMThkCallFrame::GetOffsetOfDatum());
+        X86EmitIndexRegLoad(kECX, kECX, UMEntryThunk::GetOffsetOfMethodDesc());
 
-    // Push arguments and notify profiler
-    X86EmitPushImm32(COR_PRF_TRANSITION_CALL);      // Reason
-    X86EmitPushReg(kECX);                           // MethodDesc*
-    X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerUnmanagedToManagedTransitionMD), 2*sizeof(void*));
+        // Push arguments and notify profiler
+        X86EmitPushImm32(COR_PRF_TRANSITION_CALL);      // Reason
+        X86EmitPushReg(kECX);                           // MethodDesc*
+        X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerUnmanagedToManagedTransitionMD), 2*sizeof(void*));
+    }
+
+#ifdef FEATURE_COMINTEROP
+    else if (pFrameVptr == ComMethodFrame::GetMethodFrameVPtr())
+    {
+        // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
+        X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
+        X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
+
+        // Push arguments and notify profiler
+        X86EmitPushImm32(COR_PRF_TRANSITION_CALL);      // Reason
+        X86EmitPushReg(kECX);                           // MethodDesc*
+        X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerUnmanagedToManagedTransitionMD), 2*sizeof(void*));
+    }
+#endif // FEATURE_COMINTEROP
+
+    // Unrecognized frame vtbl
+    else
+    {
+        _ASSERTE(!"Unrecognized vtble passed to EmitComMethodStubProlog with profiling turned on.");
+    }
 }
 
 
@@ -2468,21 +2491,50 @@ VOID StubLinkerCPU::EmitProfilerComCallEpilog(TADDR pFrameVptr, X86Reg regFrame)
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(pFrameVptr == ComMethodFrame::GetMethodFrameVPtr());
+#ifdef FEATURE_COMINTEROP
+        PRECONDITION(pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr() || pFrameVptr == ComMethodFrame::GetMethodFrameVPtr());
+#else
+        PRECONDITION(pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr());
+#endif // FEATURE_COMINTEROP
     }
     CONTRACTL_END;
 
-    // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
-    X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
-    X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
+    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
+    {
+        // Load the methoddesc into ECX (UMThkCallFrame->m_pvDatum->m_pMD)
+        X86EmitIndexRegLoad(kECX, regFrame, UMThkCallFrame::GetOffsetOfDatum());
+        X86EmitIndexRegLoad(kECX, kECX, UMEntryThunk::GetOffsetOfMethodDesc());
 
-    // Push arguments and notify profiler
-    X86EmitPushImm32(COR_PRF_TRANSITION_RETURN);    // Reason
-    X86EmitPushReg(kECX);                           // MethodDesc*
-    X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerManagedToUnmanagedTransitionMD), 2*sizeof(void*));
+        // Push arguments and notify profiler
+        X86EmitPushImm32(COR_PRF_TRANSITION_RETURN);    // Reason
+        X86EmitPushReg(kECX);                           // MethodDesc*
+        X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerManagedToUnmanagedTransitionMD), 2*sizeof(void*));
+    }
+
+#ifdef FEATURE_COMINTEROP
+    else if (pFrameVptr == ComMethodFrame::GetMethodFrameVPtr())
+    {
+        // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
+        X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
+        X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
+
+        // Push arguments and notify profiler
+        X86EmitPushImm32(COR_PRF_TRANSITION_RETURN);    // Reason
+        X86EmitPushReg(kECX);                           // MethodDesc*
+        X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerManagedToUnmanagedTransitionMD), 2*sizeof(void*));
+    }
+#endif // FEATURE_COMINTEROP
+
+    // Unrecognized frame vtbl
+    else
+    {
+        _ASSERTE(!"Unrecognized vtble passed to EmitComMethodStubEpilog with profiling turned on.");
+    }
 }
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED && !FEATURE_STUBS_AS_IL
 
+
+#ifndef FEATURE_STUBS_AS_IL
 //========================================================================
 //  Prolog for entering managed code from COM
 //  pushes the appropriate frame ptr
@@ -2532,6 +2584,13 @@ void StubLinkerCPU::EmitComMethodStubProlog(TADDR pFrameVptr,
     // lea esi, [esp+4] ;; set ESI -> new frame
     X86EmitEspOffset(0x8d, kESI, 4);    // lea ESI, [ESP+4]
 
+    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
+    {
+        // Preserve argument registers for thiscall/fastcall
+        X86EmitPushReg(kECX);
+        X86EmitPushReg(kEDX);
+    }
+
     // Emit Setup thread
     EmitSetup(rgRareLabels[0]);  // rareLabel for rare setup
     EmitLabel(rgRejoinLabels[0]); // rejoin label for rare setup
@@ -2580,6 +2639,23 @@ void StubLinkerCPU::EmitComMethodStubProlog(TADDR pFrameVptr,
     // mov [ebx + Thread.GetFrame()], esi
     X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kESI);
 
+    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
+    {
+        // push UnmanagedToManagedExceptHandler
+        X86EmitPushImmPtr((LPVOID)UMThunkPrestubHandler);
+
+        // mov eax, fs:[0]
+        static const BYTE codeSEH1[] = { 0x64, 0xA1, 0x0, 0x0, 0x0, 0x0};
+        EmitBytes(codeSEH1, sizeof(codeSEH1));
+
+        // push eax
+        X86EmitPushReg(kEAX);
+
+        // mov dword ptr fs:[0], esp
+        static const BYTE codeSEH2[] = { 0x64, 0x89, 0x25, 0x0, 0x0, 0x0, 0x0};
+        EmitBytes(codeSEH2, sizeof(codeSEH2));
+    }
+
 #if _DEBUG
     if (Frame::ShouldLogTransitions())
     {
@@ -2616,6 +2692,19 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
 
     EmitCheckGSCookie(kESI, UnmanagedToManagedFrame::GetOffsetOfGSCookie());
 
+    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
+    {
+        // if we are using exceptions, unlink the SEH
+        // mov ecx,[esp]  ;;pointer to the next exception record
+        X86EmitEspOffset(0x8b, kECX, 0);
+
+        // mov dword ptr fs:[0], ecx
+        static const BYTE codeSEH[] = { 0x64, 0x89, 0x0D, 0x0, 0x0, 0x0, 0x0 };
+        EmitBytes(codeSEH, sizeof(codeSEH));
+
+        X86EmitAddEsp(sizeof(EXCEPTION_REGISTRATION_RECORD));
+    }
+
     // mov [ebx + Thread.GetFrame()], edi  ;; restore previous frame
     X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kEDI);
 
@@ -2624,6 +2713,13 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
     //-----------------------------------------------------------------------
     EmitEnable(rgRareLabels[2]); // rare gc
     EmitLabel(rgRejoinLabels[2]);        // rejoin for rare gc
+
+    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
+    {
+        // Restore argument registers for thiscall/fastcall
+        X86EmitPopReg(kEDX);
+        X86EmitPopReg(kECX);
+    }
 
     // add esp, popstack
     X86EmitAddEsp(sizeof(GSCookie) + UnmanagedToManagedFrame::GetOffsetOfCalleeSavedRegisters());
@@ -2665,6 +2761,7 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
     EmitLabel(rgRareLabels[0]);  // label for rare setup thread
     EmitRareSetup(rgRejoinLabels[0], /*fThrow*/ TRUE); // emit rare setup thread
 }
+#endif // !FEATURE_STUBS_AS_IL
 
 //---------------------------------------------------------------
 // Emit code to store the setup current Thread structure in eax.
@@ -2695,12 +2792,16 @@ VOID StubLinkerCPU::EmitRareSetup(CodeLabel *pRejoinPoint, BOOL fThrow)
 {
     STANDARD_VM_CONTRACT;
 
+#ifndef FEATURE_COMINTEROP
+    _ASSERTE(fThrow);
+#else // !FEATURE_COMINTEROP
     if (!fThrow)
     {
         X86EmitPushReg(kESI);
         X86EmitCall(NewExternalCodeLabel((LPVOID) CreateThreadBlockReturnHr), sizeof(void*));
     }
     else
+#endif // !FEATURE_COMINTEROP
     {
         X86EmitCall(NewExternalCodeLabel((LPVOID) CreateThreadBlockThrow), 0);
     }
@@ -2710,6 +2811,10 @@ VOID StubLinkerCPU::EmitRareSetup(CodeLabel *pRejoinPoint, BOOL fThrow)
     X86EmitNearJump(pRejoinPoint);
 }
 
+//========================================================================
+#endif // TARGET_X86
+//========================================================================
+#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 //========================================================================
 //  Epilog for stubs that enter managed code from COM
 //
@@ -2815,8 +2920,8 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
     EmitRareSetup(rgRejoinLabels[0],/*fThrow*/ FALSE); // emit rare setup thread
 }
 
+//========================================================================
 #endif // defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-
 
 #if !defined(FEATURE_STUBS_AS_IL) && defined(TARGET_X86)
 /*==============================================================================
@@ -3332,7 +3437,7 @@ VOID StubLinkerCPU::EmitUnwindInfoCheckSubfunction()
 #endif // defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
 
 
-#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
+#ifdef TARGET_X86
 
 //-----------------------------------------------------------------------
 // Generates the inline portion of the code to enable preemptive GC. Hopefully,
@@ -3474,6 +3579,7 @@ VOID StubLinkerCPU::EmitRareDisable(CodeLabel *pRejoinPoint)
     X86EmitNearJump(pRejoinPoint);
 }
 
+#ifdef FEATURE_COMINTEROP
 //-----------------------------------------------------------------------
 // Generates the out-of-line portion of the code to disable preemptive GC.
 // After the work is done, the code normally jumps back to the "pRejoinPoint"
@@ -3505,8 +3611,10 @@ VOID StubLinkerCPU::EmitRareDisableHRESULT(CodeLabel *pRejoinPoint, CodeLabel *p
 
     X86EmitNearJump(pExitPoint);
 }
+#endif // FEATURE_COMINTEROP
 
-#endif // defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
+#endif // TARGET_X86
+
 
 
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)

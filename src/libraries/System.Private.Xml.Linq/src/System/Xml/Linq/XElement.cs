@@ -478,7 +478,8 @@ namespace System.Xml.Linq
         /// <returns>An <see cref="XNamespace"/> for the namespace bound to the prefix</returns>
         public XNamespace? GetNamespaceOfPrefix(string prefix)
         {
-            ArgumentException.ThrowIfNullOrEmpty(prefix);
+            if (prefix == null) throw new ArgumentNullException(nameof(prefix));
+            if (prefix.Length == 0) throw new ArgumentException(SR.Format(SR.Argument_InvalidPrefix, prefix));
             if (prefix == "xmlns") return XNamespace.Xmlns;
             string? namespaceName = GetNamespaceOfPrefixInScope(prefix, null);
             if (namespaceName != null) return XNamespace.Get(namespaceName);

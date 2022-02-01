@@ -207,7 +207,10 @@ namespace System.Reflection
         public override
         Type GetType(string className, bool throwOnError, bool ignoreCase)
         {
-            ArgumentException.ThrowIfNullOrEmpty(className);
+            if (className == null)
+                throw new ArgumentNullException(nameof(className));
+            if (className.Length == 0)
+                throw new ArgumentException("Type name can't be empty");
             return assembly.InternalGetType(this, className, throwOnError, ignoreCase);
         }
 

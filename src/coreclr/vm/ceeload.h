@@ -832,12 +832,8 @@ private:
         //If m_MethodDefToPropertyInfoMap has been generated
         COMPUTED_METHODDEF_TO_PROPERTYINFO_MAP = 0x00002000,
 
-        // unused                   = 0x00004000,
-
-        //If setting has been cached
-        RUNTIME_MARSHALLING_ENABLED_IS_CACHED = 0x00008000,
-        //If runtime marshalling is enabled for this assembly
-        RUNTIME_MARSHALLING_ENABLED = 0x00010000,
+        // Low level system assembly. Used by preferred zap module computation.
+        LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME = 0x00004000,
     };
 
     Volatile<DWORD>          m_dwTransientFlags;
@@ -1131,9 +1127,13 @@ protected:
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();
 
+    // This works for manifest modules too
+    DomainFile *GetDomainFile();
+
+    // Operates on assembly of module
     DomainAssembly *GetDomainAssembly();
 
-    void SetDomainAssembly(DomainAssembly *pDomainAssembly);
+    void SetDomainFile(DomainFile *pDomainFile);
 
     OBJECTREF GetExposedObject();
 
@@ -1190,6 +1190,14 @@ protected:
         LIMITED_METHOD_CONTRACT;
         FastInterlockOr(&m_dwTransientFlags, MODULE_IS_TENURED);
     }
+
+    // CAUTION: This should only be used as backout code if an assembly is unsuccessfully
+    //          added to the shared domain assembly map.
+    VOID UnsetIsTenured()
+    {
+        LIMITED_METHOD_CONTRACT;
+        FastInterlockAnd(&m_dwTransientFlags, ~MODULE_IS_TENURED);
+    }
 #endif // !DACCESS_COMPILE
 
 
@@ -1209,6 +1217,13 @@ protected:
         FastInterlockOr(&m_dwTransientFlags, MODULE_READY_FOR_TYPELOAD);
     }
 #endif
+
+    BOOL IsLowLevelSystemAssemblyByName()
+    {
+        LIMITED_METHOD_CONTRACT;
+        // The flag is set during initialization, so we can skip the memory barrier
+        return m_dwPersistedFlags.LoadWithoutBarrier() & LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME;
+    }
 
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
@@ -1416,7 +1431,7 @@ public:
 
     DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
     Module *GetModuleIfLoaded(mdFile kFile);
-    DomainAssembly *LoadModule(AppDomain *pDomain, mdFile kFile);
+    DomainFile *LoadModule(AppDomain *pDomain, mdFile kFile);
     PTR_Module LookupModule(mdToken kFile); //wrapper over GetModuleIfLoaded, takes modulerefs as well
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 
@@ -1699,7 +1714,7 @@ public:
 public:
 
     // Debugger stuff
-    BOOL NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAssembly, int level, BOOL attaching);
+    BOOL NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainFile, int level, BOOL attaching);
     void NotifyDebuggerUnload(AppDomain *pDomain);
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);
@@ -1970,6 +1985,18 @@ public:
         return dac_cast<TADDR>(m_ModuleID);
     }
 
+    SIZE_T *             GetAddrModuleID()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (SIZE_T*) &m_ModuleID;
+    }
+
+    static SIZE_T       GetOffsetOfModuleID()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return offsetof(Module, m_ModuleID);
+    }
+
     PTR_DomainLocalModule   GetDomainLocalModule();
 
     // LoaderHeap for storing IJW thunks
@@ -2043,18 +2070,6 @@ public:
     // words, they become compliant
     //-----------------------------------------------------------------------------------------
     BOOL                    IsRuntimeWrapExceptions();
-
-    //-----------------------------------------------------------------------------------------
-    // If true, the built-in runtime-generated marshalling subsystem will be used for
-    // P/Invokes, function pointer invocations, and delegates defined in this module
-    //-----------------------------------------------------------------------------------------
-    BOOL                    IsRuntimeMarshallingEnabled();
-
-    BOOL                    IsRuntimeMarshallingEnabledCached()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED);
-    }
 
     BOOL                    HasDefaultDllImportSearchPathsAttribute();
 

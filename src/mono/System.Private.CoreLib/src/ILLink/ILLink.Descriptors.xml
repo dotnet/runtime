@@ -424,6 +424,7 @@
 			* ves_icall_System_Reflection_Assembly_GetReferencedAssemblies
 			* fill_reflection_assembly_name
 				* ves_icall_System_Reflection_Assembly_FillName
+				* ves_icall_System_Reflection_Assembly_InternalGetAssemblyName
 				* ves_icall_System_Reflection_AssemblyName_ParseName
 			-->
 		<type fullname="System.Version">
@@ -646,8 +647,5 @@
 			<!-- https://github.com/dotnet/runtime/issues/47909 -->
 			<method signature="System.Void .ctor()" />
 		</type>
-
-		<!-- FIXME: only if  feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="true" -->
-		<type fullname="Mono.HotReload.FieldStore" preserve="fields" />
 	</assembly>
 </linker>

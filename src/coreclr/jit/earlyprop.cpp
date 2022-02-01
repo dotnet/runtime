@@ -110,7 +110,7 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
     if ((basicBlock->bbFlags & bbFlag) == 0)
     {
         printf("%s is not set on " FMT_BB " but is required because of the following tree \n", bbFlagStr,
-               basicBlock->bbNum);
+               compCurBB->bbNum);
         gtDispTree(tree);
         assert(false);
     }

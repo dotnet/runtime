@@ -104,7 +104,7 @@ namespace System.Reflection.Tests
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "Foo1", 0);
             object raw = p.RawDefaultValue;
             Assert.Equal(typeof(int), raw.GetType());
-            Assert.Equal<int>((int)BindingFlags.DeclaredOnly, (int)raw);
+            Assert.Equal<int>((int)raw, (int)BindingFlags.DeclaredOnly);
         }
 
         [Fact]
@@ -114,7 +114,7 @@ namespace System.Reflection.Tests
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "Foo2", 0);
             object raw = p.RawDefaultValue;
             Assert.Equal(typeof(int), raw.GetType());
-            Assert.Equal<int>((int)BindingFlags.IgnoreCase, (int)raw);
+            Assert.Equal<int>((int)raw, (int)BindingFlags.IgnoreCase);
         }
 
         [Fact]
@@ -123,7 +123,7 @@ namespace System.Reflection.Tests
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "Foo3", 0);
             object raw = p.RawDefaultValue;
             Assert.Equal(typeof(int), raw.GetType());
-            Assert.Equal<int>((int)BindingFlags.FlattenHierarchy, (int)raw);
+            Assert.Equal<int>((int)raw, (int)BindingFlags.FlattenHierarchy);
         }
 
         [Theory]

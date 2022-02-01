@@ -277,7 +277,7 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
     {
     case mdtModuleRef:
         {
-            DomainAssembly *pTargetModule = pModule->LoadModule(GetAppDomain(), parent);
+            DomainFile *pTargetModule = pModule->LoadModule(GetAppDomain(), parent);
             if (pTargetModule == NULL)
                 COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
             typeHnd = TypeHandle(pTargetModule->GetModule()->GetGlobalMethodTable());

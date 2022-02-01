@@ -83,6 +83,11 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 
 class PEAssembly final
 {
+    // ------------------------------------------------------------
+    // SOS support
+    // ------------------------------------------------------------
+    VPTR_BASE_CONCRETE_VTABLE_CLASS(PEAssembly)
+
 public:
 
     // ------------------------------------------------------------
@@ -93,7 +98,7 @@ public:
     STDMETHOD_(ULONG, Release)();
 
 #ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
 #if CHECK_INVARIANTS
@@ -376,7 +381,7 @@ private:
 
 #ifdef DACCESS_COMPILE
     // just to make the DAC and GCC happy.
-    ~PEAssembly() {};
+    virtual ~PEAssembly() {};
     PEAssembly() = default;
 #else
     PEAssembly(
@@ -388,7 +393,7 @@ private:
         BINDER_SPACE::Assembly* pHostAssembly = NULL
     );
 
-    ~PEAssembly();
+    virtual ~PEAssembly();
 #endif
 
     void OpenMDImport();

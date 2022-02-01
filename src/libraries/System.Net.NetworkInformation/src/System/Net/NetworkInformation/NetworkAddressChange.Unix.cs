@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Threading;
 
 namespace System.Net.NetworkInformation
@@ -11,7 +12,7 @@ namespace System.Net.NetworkInformation
     // Linux implementation of NetworkChange
     public partial class NetworkChange
     {
-        private static volatile SocketWrapper? s_socket;
+        private static volatile int s_socket;
         // Lock controlling access to delegate subscriptions, socket initialization, availability-changed state and timer.
         private static readonly object s_gate = new object();
 
@@ -33,7 +34,7 @@ namespace System.Net.NetworkInformation
                 {
                     lock (s_gate)
                     {
-                        if (s_socket == null)
+                        if (s_socket == 0)
                         {
                             CreateSocket();
                         }
@@ -50,8 +51,8 @@ namespace System.Net.NetworkInformation
                     {
                         if (s_addressChangedSubscribers.Count == 0 && s_availabilityChangedSubscribers.Count == 0)
                         {
-                            Debug.Assert(s_socket == null,
-                                "s_socket is not null, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
+                            Debug.Assert(s_socket == 0,
+                                "s_socket != 0, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
                             return;
                         }
 
@@ -73,7 +74,7 @@ namespace System.Net.NetworkInformation
                 {
                     lock (s_gate)
                     {
-                        if (s_socket == null)
+                        if (s_socket == 0)
                         {
                             CreateSocket();
                         }
@@ -112,8 +113,8 @@ namespace System.Net.NetworkInformation
                     {
                         if (s_addressChangedSubscribers.Count == 0 && s_availabilityChangedSubscribers.Count == 0)
                         {
-                            Debug.Assert(s_socket == null,
-                                "s_socket is not null, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
+                            Debug.Assert(s_socket == 0,
+                                "s_socket != 0, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
                             return;
                         }
 
@@ -139,7 +140,7 @@ namespace System.Net.NetworkInformation
 
         private static unsafe void CreateSocket()
         {
-            Debug.Assert(s_socket == null, "s_socket is not null, must close existing socket before opening another.");
+            Debug.Assert(s_socket == 0, "s_socket != 0, must close existing socket before opening another.");
             int newSocket;
             Interop.Error result = Interop.Sys.CreateNetworkChangeListenerSocket(&newSocket);
             if (result != Interop.Error.SUCCESS)
@@ -148,34 +149,32 @@ namespace System.Net.NetworkInformation
                 throw new NetworkInformationException(message);
             }
 
-            s_socket = new SocketWrapper(newSocket);
-
-            new Thread(args => LoopReadSocket((SocketWrapper)args!))
+            s_socket = newSocket;
+            new Thread(s => LoopReadSocket((int)s!))
             {
                 IsBackground = true,
                 Name = ".NET Network Address Change"
-            }.UnsafeStart(s_socket);
+            }.UnsafeStart(newSocket);
         }
 
         private static void CloseSocket()
         {
-            Debug.Assert(s_socket != null, "s_socket was null when CloseSocket was called.");
-            Interop.Error result = Interop.Sys.CloseNetworkChangeListenerSocket(s_socket != null ? s_socket.Socket : -1);
+            Debug.Assert(s_socket != 0, "s_socket was 0 when CloseSocket was called.");
+            Interop.Error result = Interop.Sys.CloseNetworkChangeListenerSocket(s_socket);
             if (result != Interop.Error.SUCCESS)
             {
                 string message = Interop.Sys.GetLastErrorInfo().GetErrorMessage();
                 throw new NetworkInformationException(message);
             }
 
-            s_socket = null;
+            s_socket = 0;
         }
 
-        private static unsafe void LoopReadSocket(SocketWrapper initiallyCreatedSocket)
+        private static unsafe void LoopReadSocket(int socket)
         {
-            while (s_socket == initiallyCreatedSocket) //if both references are equal then s_socket was not changed
+            while (socket == s_socket)
             {
-                //we can continue processing events
-                Interop.Sys.ReadEvents(initiallyCreatedSocket.Socket, &ProcessEvent);
+                Interop.Sys.ReadEvents(socket, &ProcessEvent);
             }
         }
 
@@ -186,7 +185,7 @@ namespace System.Net.NetworkInformation
             {
                 lock (s_gate)
                 {
-                    if (s_socket != null && socket == s_socket.Socket)
+                    if (socket == s_socket)
                     {
                         OnSocketEvent(kind);
                     }
@@ -290,20 +289,6 @@ namespace System.Net.NetworkInformation
                     }
                 }
             }
-        }
-
-        // SocketWrapper class was introduced to prevent event thread leaks on Linux
-        // as described on GitHub: https://github.com/dotnet/runtime/issues/63788
-        // For each CreateSocket() new s_socket instance is created and we pass it to ".NET Network Address Change" thread.
-        // We then continue loop in LoopReadSocket method as long as both references are equal.
-        private class SocketWrapper
-        {
-            public SocketWrapper(int socket)
-            {
-                Socket = socket;
-            }
-
-            public int Socket { get; }
         }
     }
 }

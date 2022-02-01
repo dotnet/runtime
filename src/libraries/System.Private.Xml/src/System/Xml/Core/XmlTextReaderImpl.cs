@@ -567,7 +567,15 @@ namespace System.Xml
 
         public XmlTextReaderImpl(string url, XmlNameTable nt) : this(nt)
         {
-            ArgumentException.ThrowIfNullOrEmpty(url);
+            if (url == null)
+            {
+                throw new ArgumentNullException(nameof(url));
+            }
+
+            if (url.Length == 0)
+            {
+                throw new ArgumentException(SR.Xml_EmptyUrl, nameof(url));
+            }
 
             _namespaceManager = new XmlNamespaceManager(nt);
 

@@ -51,7 +51,8 @@ namespace System.IO.Tests
             Assert.False(info.Exists);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseInsensitiveOS))]
+        [Fact]
+        [PlatformSpecific(CaseInsensitivePlatforms)]
         public void CaseInsensitivity()
         {
             string path = GetTestFilePath();
@@ -60,7 +61,8 @@ namespace System.IO.Tests
             Assert.True(new FileInfo(path.ToLowerInvariant()).Exists);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
+        [Fact]
+        [PlatformSpecific(CaseSensitivePlatforms)]
         public void CaseSensitivity()
         {
             string path = GetTestFilePath();

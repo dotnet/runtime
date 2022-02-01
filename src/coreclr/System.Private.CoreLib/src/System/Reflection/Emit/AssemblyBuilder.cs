@@ -314,7 +314,14 @@ namespace System.Reflection.Emit
 
         private ModuleBuilder DefineDynamicModuleInternalNoLock(string name)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            }
             if (name[0] == '\0')
             {
                 throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
@@ -460,7 +467,14 @@ namespace System.Reflection.Emit
         /// <param name="name">The name of module for the look up.</param>
         private ModuleBuilder? GetDynamicModuleNoLock(string name)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            }
 
             for (int i = 0; i < _assemblyData._moduleBuilderList.Count; i++)
             {

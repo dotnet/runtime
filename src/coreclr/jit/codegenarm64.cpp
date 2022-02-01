@@ -120,7 +120,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
         // generate two or more instructions
 
         // first we load the immediate into tmpReg
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, imm);
+        instGen_Set_Reg_To_Imm(size, tmpReg, imm);
         regSet.verifyRegUsed(tmpReg);
 
         // when we are in an unwind code region
@@ -6922,11 +6922,8 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     //
-    // R_R   cmeq/fmov/fcmp/fcvt
+    // R_R   fmov/fcmp/fcvt
     //
-
-    // cmeq scalar
-    theEmitter->emitIns_R_R(INS_cmeq, EA_8BYTE, REG_V0, REG_V1);
 
     // fmov to vector to vector
     theEmitter->emitIns_Mov(INS_fmov, EA_8BYTE, REG_V0, REG_V2, /* canSkip */ false);

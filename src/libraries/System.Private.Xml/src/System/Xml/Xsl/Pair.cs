@@ -7,34 +7,49 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl
 {
-    internal readonly struct Int32Pair : IEquatable<Int32Pair>
+    internal struct Int32Pair
     {
+        private readonly int _left;
+        private readonly int _right;
+
         public Int32Pair(int left, int right)
         {
-            Left = left;
-            Right = right;
+            _left = left;
+            _right = right;
         }
 
-        public int Left { get; }
-        public int Right { get; }
+        public int Left { get { return _left; } }
+        public int Right { get { return _right; } }
 
-        public override bool Equals([NotNullWhen(true)] object? other) =>
-            other is Int32Pair o && Equals(o);
+        public override bool Equals([NotNullWhen(true)] object? other)
+        {
+            if (other is Int32Pair)
+            {
+                Int32Pair o = (Int32Pair)other;
+                return _left == o._left && _right == o._right;
+            }
 
-        public bool Equals(Int32Pair other) => Left == other.Left && Right == other.Right;
+            return false;
+        }
 
-        public override int GetHashCode() => Left.GetHashCode() ^ Right.GetHashCode();
+        public override int GetHashCode()
+        {
+            return _left.GetHashCode() ^ _right.GetHashCode();
+        }
     }
 
-    internal readonly struct StringPair
+    internal struct StringPair
     {
+        private readonly string _left;
+        private readonly string _right;
+
         public StringPair(string left, string right)
         {
-            Left = left;
-            Right = right;
+            _left = left;
+            _right = right;
         }
 
-        public string Left { get; }
-        public string Right { get; }
+        public string Left { get { return _left; } }
+        public string Right { get { return _right; } }
     }
 }

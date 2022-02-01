@@ -94,7 +94,14 @@ namespace System.IO.Pipes
             int outBufferSize,
             HandleInheritability inheritability)
         {
-            ArgumentException.ThrowIfNullOrEmpty(pipeName);
+            if (pipeName == null)
+            {
+                throw new ArgumentNullException(nameof(pipeName));
+            }
+            if (pipeName.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_NeedNonemptyPipeName);
+            }
             if (direction < PipeDirection.In || direction > PipeDirection.InOut)
             {
                 throw new ArgumentOutOfRangeException(nameof(direction), SR.ArgumentOutOfRange_DirectionModeInOutOrInOut);

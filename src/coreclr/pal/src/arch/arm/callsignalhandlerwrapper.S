@@ -5,9 +5,7 @@
 #include "asmconstants.h"
 
 .syntax unified
-#ifndef __armv6__
 .thumb
-#endif
 
 .macro CALL_SIGNAL_HANDLER_WRAPPER Alignment
 

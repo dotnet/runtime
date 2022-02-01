@@ -9,6 +9,7 @@
 
 class COMSingle {
 public:
+    FCDECL1_V(static float, Abs, float x);
     FCDECL1_V(static float, Acos, float x);
     FCDECL1_V(static float, Acosh, float x);
     FCDECL1_V(static float, Asin, float x);

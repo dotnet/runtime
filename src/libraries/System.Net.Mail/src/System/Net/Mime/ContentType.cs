@@ -45,7 +45,14 @@ namespace System.Net.Mime
         /// <param name="contentType">Unparsed value of the Content-Type header.</param>
         public ContentType(string contentType)
         {
-            ArgumentException.ThrowIfNullOrEmpty(contentType);
+            if (contentType == null)
+            {
+                throw new ArgumentNullException(nameof(contentType));
+            }
+            if (contentType.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(contentType)), nameof(contentType));
+            }
 
             _isChanged = true;
             _type = contentType;
@@ -92,7 +99,15 @@ namespace System.Net.Mime
             get { return _mediaType + "/" + _subType; }
             set
             {
-                ArgumentException.ThrowIfNullOrEmpty(value);
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
+                if (value.Length == 0)
+                {
+                    throw new ArgumentException(SR.net_emptystringset, nameof(value));
+                }
 
                 int offset = 0;
                 _mediaType = MailBnfHelper.ReadToken(value, ref offset, null);

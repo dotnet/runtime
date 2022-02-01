@@ -90,8 +90,7 @@ namespace System.Net.NetworkInformation
             // OSX: ping requires -W flag which accepts timeout in MILLISECONDS; ping6 doesn't support timeout
             if (OperatingSystem.IsFreeBSD())
             {
-                // Syntax changed in FreeBSD 13.0 and options are not common for both address families
-                if (ipv4 || Environment.OSVersion.Version.Major > 12)
+                if (ipv4)
                 {
                     sb.Append(" -W ");
                 }
@@ -136,8 +135,7 @@ namespace System.Net.NetworkInformation
                 if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsMacOS())
                 {
                     // OSX and FreeBSD use -h to set hop limit for IPv6 and -m ttl for IPv4
-                    // Syntax changed in FreeBSD 13.0 and options are not common for both address families
-                    if (ipv4 || (OperatingSystem.IsFreeBSD() && Environment.OSVersion.Version.Major > 12))
+                    if (ipv4)
                     {
                         sb.Append(" -m ");
                     }

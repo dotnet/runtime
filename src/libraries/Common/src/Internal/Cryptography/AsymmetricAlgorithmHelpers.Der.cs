@@ -143,6 +143,7 @@ namespace Internal.Cryptography
             }
         }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
         /// <summary>
         /// Converts IeeeP1363 format to the specified signature format
         /// </summary>
@@ -181,6 +182,7 @@ namespace Internal.Cryptography
                         currentFormat.ToString());
             }
         }
+#endif
 
         public static int BitsToBytes(int bitLength)
         {
@@ -212,6 +214,7 @@ namespace Internal.Cryptography
             signatureField.CopyTo(response.Slice(writeOffset));
         }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
         internal static byte[]? ConvertSignatureToIeeeP1363(
             this DSA dsa,
             DSASignatureFormat currentFormat,
@@ -260,5 +263,6 @@ namespace Internal.Cryptography
                 return null;
             }
         }
+#endif
     }
 }

@@ -19,7 +19,7 @@ internal static partial class Interop
 
         [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
         public static partial bool CryptGetKeyParam(
-            SafeCapiKeyHandle hKey,
+            SafeKeyHandle hKey,
             CryptGetKeyParamFlags dwParam,
             byte[]? pbData,
             ref int pdwDataLen,

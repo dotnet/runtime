@@ -1191,7 +1191,7 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, DebuggerIPCE_Basic
             DebuggerIPCE_ExpandedTypeData e;
             e.elementType = et;
             e.ClassTypeData.metadataToken = data->metadataToken;
-            e.ClassTypeData.vmDomainAssembly = data->vmDomainAssembly;
+            e.ClassTypeData.vmDomainFile = data->vmDomainFile;
             e.ClassTypeData.vmModule = data->vmModule;
             e.ClassTypeData.typeHandle = data->vmTypeHandle;
             return CordbType::TypeDataToType(pAppDomain, &e, pRes);
@@ -1254,7 +1254,7 @@ ETObject:
         CordbModule * pClassModule = NULL;
         EX_TRY
         {
-            pClassModule = pAppDomain->LookupOrCreateModule(data->ClassTypeData.vmModule, data->ClassTypeData.vmDomainAssembly);
+            pClassModule = pAppDomain->LookupOrCreateModule(data->ClassTypeData.vmModule, data->ClassTypeData.vmDomainFile);
         }
         EX_CATCH_HRESULT(hr);
         if( pClassModule == NULL )
@@ -1611,7 +1611,7 @@ HRESULT CordbType::InitStringOrObjectClass(BOOL fForceInit)
         //
         CordbProcess *pProcess = GetProcess();
         mdTypeDef metadataToken;
-        VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+        VMPTR_DomainFile vmDomainFile = VMPTR_DomainFile::NullPtr();
         VMPTR_Module vmModule = VMPTR_Module::NullPtr();
 
         {
@@ -1620,13 +1620,13 @@ HRESULT CordbType::InitStringOrObjectClass(BOOL fForceInit)
                                               m_elementType,
                                               &metadataToken,
                                               &vmModule,
-                                              &vmDomainAssembly);
+                                              &vmDomainFile);
         }
 
         //
         // Step 2) Lookup CordbClass based off token + Module.
         //
-        CordbModule * pTypeModule = m_appdomain->LookupOrCreateModule(vmModule, vmDomainAssembly);
+        CordbModule * pTypeModule = m_appdomain->LookupOrCreateModule(vmModule, vmDomainFile);
 
         _ASSERTE(pTypeModule != NULL);
         IfFailThrow(pTypeModule->LookupOrCreateClass(metadataToken, &m_pClass));
@@ -1704,7 +1704,7 @@ HRESULT CordbType::InitInstantiationFieldInfo(BOOL fForceInit)
             // this may be called multiple times. Each call will discard previous values in m_fieldList and reinitialize
             // the list with updated information
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            pProcess->GetDAC()->GetInstantiationFieldInfo(m_pClass->GetModule()->GetRuntimeDomainAssembly(),
+            pProcess->GetDAC()->GetInstantiationFieldInfo(m_pClass->GetModule()->GetRuntimeDomainFile(),
                                                           m_typeHandleExact,
                                                           typeHandleApprox,
                                                           &m_fieldList,
@@ -1876,23 +1876,23 @@ CordbType::GetUnboxedObjectSize(ULONG32 *pObjectSize)
     }
 }
 
-VMPTR_DomainAssembly CordbType::GetDomainAssembly()
+VMPTR_DomainFile CordbType::GetDomainFile()
 {
     if (m_pClass != NULL)
     {
         CordbModule * pModule = m_pClass->GetModule();
         if (pModule)
         {
-            return pModule->m_vmDomainAssembly;
+            return pModule->m_vmDomainFile;
         }
         else
         {
-            return VMPTR_DomainAssembly::NullPtr();
+            return VMPTR_DomainFile::NullPtr();
         }
     }
     else
     {
-        return VMPTR_DomainAssembly::NullPtr();
+        return VMPTR_DomainFile::NullPtr();
     }
 }
 
@@ -1937,7 +1937,7 @@ HRESULT CordbType::TypeToBasicTypeData(DebuggerIPCE_BasicTypeData *data)
     case ELEMENT_TYPE_PTR:
         data->elementType = m_elementType;
         data->metadataToken = mdTokenNil;
-        data->vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+        data->vmDomainFile = VMPTR_DomainFile::NullPtr();
         data->vmTypeHandle = m_typeHandleExact;
         if (data->vmTypeHandle.IsNull())
         {
@@ -1950,7 +1950,7 @@ HRESULT CordbType::TypeToBasicTypeData(DebuggerIPCE_BasicTypeData *data)
         _ASSERTE(m_pClass != NULL);
         data->elementType = m_pClass->IsValueClassNoInit() ? ELEMENT_TYPE_VALUETYPE : ELEMENT_TYPE_CLASS;
         data->metadataToken = m_pClass->MDToken();
-	    data->vmDomainAssembly = GetDomainAssembly();
+	    data->vmDomainFile = GetDomainFile();
         data->vmTypeHandle = m_typeHandleExact;
         if (m_pClass->HasTypeParams() && data->vmTypeHandle.IsNull())
         {
@@ -1961,7 +1961,7 @@ HRESULT CordbType::TypeToBasicTypeData(DebuggerIPCE_BasicTypeData *data)
         // This includes all the "primitive" types, in which CorElementType is a sufficient description.
         data->elementType = m_elementType;
         data->metadataToken = mdTokenNil;
-        data->vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+        data->vmDomainFile = VMPTR_DomainFile::NullPtr();
         data->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
         break;
     }
@@ -2001,7 +2001,7 @@ void CordbType::TypeToExpandedTypeData(DebuggerIPCE_ExpandedTypeData *data)
         {
             data->elementType = m_pClass->IsValueClassNoInit() ? ELEMENT_TYPE_VALUETYPE : ELEMENT_TYPE_CLASS;
             data->ClassTypeData.metadataToken = m_pClass->GetToken();
-            data->ClassTypeData.vmDomainAssembly = GetDomainAssembly();
+            data->ClassTypeData.vmDomainFile = GetDomainFile();
             data->ClassTypeData.vmModule = GetModule();
             data->ClassTypeData.typeHandle = VMPTR_TypeHandle::NullPtr();
 
@@ -2339,14 +2339,14 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
             {
                 mdTypeDef mdToken;
                 VMPTR_Module vmModule = VMPTR_Module::NullPtr();
-                VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+                VMPTR_DomainFile vmDomainFile = VMPTR_DomainFile::NullPtr();
 
                 // get module and token of the simple type
                 GetProcess()->GetDAC()->GetSimpleType(GetAppDomain()->GetADToken(),
                                                       et,
                                                       &mdToken,
                                                       &vmModule,
-                                                      &vmDomainAssembly);
+                                                      &vmDomainFile);
 
                 vmTypeHandle = GetProcess()->GetDAC()->GetTypeHandle(vmModule, mdToken);
             }

@@ -558,7 +558,8 @@ namespace System
 
         internal static RuntimeType GetTypeByNameUsingCARules(string name, RuntimeModule scope)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentException(null, nameof(name));
 
             RuntimeType? type = null;
             GetTypeByNameUsingCARules(name, new QCallModule(ref scope), ObjectHandleOnStack.Create(ref type));
@@ -1245,7 +1246,7 @@ namespace System
         }
     }
 
-    public unsafe partial struct ModuleHandle : IEquatable<ModuleHandle>
+    public unsafe partial struct ModuleHandle
     {
         #region Public Static Members
         public static readonly ModuleHandle EmptyHandle;

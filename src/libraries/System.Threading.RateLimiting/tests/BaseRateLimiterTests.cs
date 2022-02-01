@@ -24,22 +24,10 @@ namespace System.Threading.RateLimiting.Test
         public abstract Task CanAcquireResourceAsync_QueuesAndGrabsNewest();
 
         [Fact]
-        public abstract Task FailsWhenQueuingMoreThanLimit_OldestFirst();
-
-        [Fact]
-        public abstract Task DropsOldestWhenQueuingMoreThanLimit_NewestFirst();
-
-        [Fact]
-        public abstract Task DropsMultipleOldestWhenQueuingMoreThanLimit_NewestFirst();
-
-        [Fact]
-        public abstract Task DropsRequestedLeaseIfPermitCountGreaterThanQueueLimitAndNoAvailability_NewestFirst();
+        public abstract Task FailsWhenQueuingMoreThanLimit();
 
         [Fact]
         public abstract Task QueueAvailableAfterQueueLimitHitAndResources_BecomeAvailable();
-
-        [Fact]
-        public abstract Task LargeAcquiresAndQueuesDoNotIntegerOverflow();
 
         [Fact]
         public abstract void ThrowsWhenAcquiringMoreThanLimit();

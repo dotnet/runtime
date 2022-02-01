@@ -47,9 +47,7 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
             // This inline candidate has the same IL code buffer as an already
             // inlined method does.
             inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
-
-            // No need to note CALLSITE_DEPTH we're already rejecting this candidate
-            return depth;
+            break;
         }
 
         if (depth > InlineStrategy::IMPLEMENTATION_MAX_INLINE_DEPTH)

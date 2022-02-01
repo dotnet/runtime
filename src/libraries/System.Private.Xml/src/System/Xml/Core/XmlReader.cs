@@ -81,9 +81,7 @@ namespace System.Xml
         internal const int BiggerBufferSize = 8192;
         internal const int MaxStreamLengthForDefaultBufferSize = 64 * 1024; // 64kB
 
-        // Chosen to be small enough that the character buffer in XmlTextReader when using Async = true
-        // is not allocated on the Large Object Heap (LOH)
-        internal const int AsyncBufferSize = 32 * 1024;
+        internal const int AsyncBufferSize = 64 * 1024; //64KB
 
         // Settings
         public virtual XmlReaderSettings? Settings => null;
@@ -1635,7 +1633,12 @@ namespace System.Xml
         // Creates an XmlReader for parsing XML from the given Uri.
         public static XmlReader Create(string inputUri)
         {
-            ArgumentException.ThrowIfNullOrEmpty(inputUri);
+            ArgumentNullException.ThrowIfNull(inputUri);
+
+            if (inputUri.Length == 0)
+            {
+                throw new ArgumentException(SR.XmlConvert_BadUri, nameof(inputUri));
+            }
 
             // Avoid using XmlReader.Create(string, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.

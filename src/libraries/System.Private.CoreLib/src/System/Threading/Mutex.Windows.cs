@@ -41,7 +41,15 @@ namespace System.Threading
 
         private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            }
 
             result = null;
             // To allow users to view & edit the ACL's, call OpenMutex

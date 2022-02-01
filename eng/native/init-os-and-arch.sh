@@ -53,10 +53,6 @@ case "$CPUName" in
         fi
         ;;
 
-    armv6l)
-        arch=armv6
-        ;;
-
     i[3-6]86)
         echo "Unsupported CPU $CPUName detected, build might not succeed!"
         arch=x86

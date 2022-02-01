@@ -50,7 +50,7 @@
   } // end of method Test::.ctor
 
   .method private hidebysig static int32 
-          Main() cil managed
+          Main(string[] args) cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -59,8 +59,7 @@
     // Code size       23 (0x17)
     .maxstack  2
     .locals init (class Test_twoEndFinallys V_0)
-              ldc.i4.s   0
-    IL_0000:  newarr     [mscorlib]System.String
+    IL_0000:  ldarg.0
     IL_0001:  call       class Test_twoEndFinallys Test_twoEndFinallys::TwoEndFinallys(string[])
     IL_0006:  stloc.0
     IL_0007:  ldloc.0

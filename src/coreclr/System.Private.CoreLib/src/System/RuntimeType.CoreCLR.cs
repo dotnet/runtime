@@ -1941,7 +1941,7 @@ namespace System
             }
 
             Debug.Fail("Unreachable code");
-            throw new UnreachableException();
+            throw new SystemException();
         }
 
         internal static void ValidateGenericArguments(MemberInfo definition, RuntimeType[] genericArguments, Exception? e)

@@ -88,7 +88,7 @@ namespace System.Formats.Cbor
         {
             bool isUnsigned = value.Sign >= 0;
             BigInteger unsignedValue = isUnsigned ? value : -1 - value;
-            byte[] unsignedBigEndianEncoding = CborHelpers.CreateUnsignedBigEndianBytesFromBigInteger(unsignedValue);
+            byte[] unsignedBigEndianEncoding = unsignedValue.ToByteArray(isUnsigned: true, isBigEndian: true);
 
             WriteTag(isUnsigned ? CborTag.UnsignedBigNum : CborTag.NegativeBigNum);
             WriteByteString(unsignedBigEndianEncoding);
@@ -142,7 +142,7 @@ namespace System.Formats.Cbor
             public static void Deconstruct(decimal value, out decimal mantissa, out byte scale)
             {
                 Span<int> buf = stackalloc int[4];
-                CborHelpers.GetBitsFromDecimal(value, buf);
+                decimal.GetBits(value, buf);
 
                 int flags = buf[3];
                 bool isNegative = (flags & SignMask) == SignMask;
@@ -154,7 +154,7 @@ namespace System.Formats.Cbor
             private static decimal ReconstructFromNegativeScale(decimal mantissa, byte scale)
             {
                 Span<int> buf = stackalloc int[4];
-                CborHelpers.GetBitsFromDecimal(mantissa, buf);
+                decimal.GetBits(mantissa, buf);
 
                 int flags = buf[3];
                 bool isNegative = (flags & SignMask) == SignMask;

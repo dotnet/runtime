@@ -12,9 +12,5 @@
 int mono_mkstemp (char *templ);
 #endif
 
-#if HOST_WASI
-char *mktemp (char *);
-#endif
-
 #endif /* __MONO_FILE_H */
 

@@ -80,6 +80,27 @@ namespace System.Globalization
         {
         }
 
+        private static void VerifyDecimalSeparator(string decSep, string propertyName)
+        {
+            if (decSep == null)
+            {
+                throw new ArgumentNullException(propertyName);
+            }
+
+            if (decSep.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyDecString, propertyName);
+            }
+        }
+
+        private static void VerifyGroupSeparator(string groupSep, string propertyName)
+        {
+            if (groupSep == null)
+            {
+                throw new ArgumentNullException(propertyName);
+            }
+        }
+
         private static void VerifyNativeDigits(string[] nativeDig, string propertyName)
         {
             if (nativeDig == null)
@@ -243,7 +264,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                ArgumentException.ThrowIfNullOrEmpty(value);
+                VerifyDecimalSeparator(value, nameof(value));
                 _currencyDecimalSeparator = value;
             }
         }
@@ -334,7 +355,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                ArgumentNullException.ThrowIfNull(value);
+                VerifyGroupSeparator(value, nameof(value));
                 _currencyGroupSeparator = value;
             }
         }
@@ -521,7 +542,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                ArgumentException.ThrowIfNullOrEmpty(value);
+                VerifyDecimalSeparator(value, nameof(value));
                 _numberDecimalSeparator = value;
             }
         }
@@ -532,7 +553,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                ArgumentNullException.ThrowIfNull(value);
+                VerifyGroupSeparator(value, nameof(value));
                 _numberGroupSeparator = value;
             }
         }
@@ -610,7 +631,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                ArgumentException.ThrowIfNullOrEmpty(value);
+                VerifyDecimalSeparator(value, nameof(value));
                 _percentDecimalSeparator = value;
             }
         }
@@ -621,7 +642,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                ArgumentNullException.ThrowIfNull(value);
+                VerifyGroupSeparator(value, nameof(value));
                 _percentGroupSeparator = value;
             }
         }
@@ -631,7 +652,11 @@ namespace System.Globalization
             get => _percentSymbol;
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
                 VerifyWritable();
                 _percentSymbol = value;
             }

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
 
@@ -15,16 +14,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         internal IList<object> Disposables => _disposables ?? (IList<object>)Array.Empty<object>();
 
         private bool _disposed;
-        private List<object>? _disposables;
+        private List<object> _disposables;
 
         public ServiceProviderEngineScope(ServiceProvider provider, bool isRootScope)
         {
-            ResolvedServices = new Dictionary<ServiceCacheKey, object?>();
+            ResolvedServices = new Dictionary<ServiceCacheKey, object>();
             RootProvider = provider;
             IsRootScope = isRootScope;
         }
 
-        internal Dictionary<ServiceCacheKey, object?> ResolvedServices { get; }
+        internal Dictionary<ServiceCacheKey, object> ResolvedServices { get; }
 
         // This lock protects state on the scope, in particular, for the root scope, it protects
         // the list of disposable entries only, since ResolvedServices are cached on CallSites
@@ -35,7 +34,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         internal ServiceProvider RootProvider { get; }
 
-        public object? GetService(Type serviceType)
+        public object GetService(Type serviceType)
         {
             if (_disposed)
             {
@@ -49,8 +48,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public IServiceScope CreateScope() => RootProvider.CreateScope();
 
-        [return: NotNullIfNotNull("service")]
-        internal object? CaptureDisposable(object? service)
+        internal object CaptureDisposable(object service)
         {
             if (ReferenceEquals(this, service) || !(service is IDisposable || service is IAsyncDisposable))
             {
@@ -93,7 +91,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public void Dispose()
         {
-            List<object>? toDispose = BeginDispose();
+            List<object> toDispose = BeginDispose();
 
             if (toDispose != null)
             {
@@ -113,7 +111,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public ValueTask DisposeAsync()
         {
-            List<object>? toDispose = BeginDispose();
+            List<object> toDispose = BeginDispose();
 
             if (toDispose != null)
             {
@@ -170,7 +168,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
-        private List<object>? BeginDispose()
+        private List<object> BeginDispose()
         {
             lock (Sync)
             {

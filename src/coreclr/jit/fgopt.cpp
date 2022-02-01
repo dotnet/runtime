@@ -145,16 +145,16 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
 
     if (b1->bbNum > fgDomBBcount)
     {
-        noway_assert(b1->KindIs(BBJ_NONE, BBJ_ALWAYS, BBJ_COND));
+        noway_assert(b1->bbJumpKind == BBJ_NONE || b1->bbJumpKind == BBJ_ALWAYS || b1->bbJumpKind == BBJ_COND);
 
-        if (b1->KindIs(BBJ_NONE, BBJ_COND) && fgReachable(b1->bbNext, b2))
+        if (b1->bbFallsThrough() && fgReachable(b1->bbNext, b2))
         {
             return true;
         }
 
-        if (b1->KindIs(BBJ_ALWAYS, BBJ_COND) && fgReachable(b1->bbJumpDest, b2))
+        if (b1->bbJumpKind == BBJ_ALWAYS || b1->bbJumpKind == BBJ_COND)
         {
-            return true;
+            return fgReachable(b1->bbJumpDest, b2);
         }
 
         return false;
@@ -445,7 +445,8 @@ bool Compiler::fgRemoveUnreachableBlocks()
         else if (block == genReturnBB)
         {
             // Don't remove statements for the genReturnBB block, as we might have special hookups there.
-            // For example, the profiler hookup needs to have the "void GT_RETURN" statement
+            // For example, <BUGNUM> in VSW 364383, </BUGNUM>
+            // the profiler hookup needs to have the "void GT_RETURN" statement
             // to properly set the info.compProfilerCallback flag.
             continue;
         }
@@ -477,9 +478,10 @@ bool Compiler::fgRemoveUnreachableBlocks()
 
         if (block->bbFlags & BBF_DONT_REMOVE)
         {
-            const bool bIsBBCallAlwaysPair = block->isBBCallAlwaysPair();
+            bool bIsBBCallAlwaysPair = block->isBBCallAlwaysPair();
 
-            // Unmark the block as removed, clear BBF_INTERNAL, and set BBJ_IMPORTED
+            /* Unmark the block as removed, */
+            /* clear BBF_INTERNAL as well and set BBJ_IMPORTED */
 
             // The successors may be unreachable after this change.
             changed |= block->NumSucc() > 0;
@@ -516,7 +518,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
 
             if (block->bbFlags & BBF_REMOVED)
             {
-                fgRemoveBlock(block, /* unreachable */ true);
+                fgRemoveBlock(block, true);
 
                 // TODO: couldn't we have fgRemoveBlock() return the block after the (last)one removed
                 // so we don't need the code below?
@@ -2283,7 +2285,8 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 {
     // genReturnBB should never be removed, as we might have special hookups there.
     // Therefore, we should never come here to remove the statements in the genReturnBB block.
-    // For example, the profiler hookup needs to have the "void GT_RETURN" statement
+    // For example, <BUGNUM> in VSW 364383, </BUGNUM>
+    // the profiler hookup needs to have the "void GT_RETURN" statement
     // to properly set the info.compProfilerCallback flag.
     noway_assert(block != genReturnBB);
 
@@ -2305,7 +2308,10 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
     assert(!block->isBBCallAlwaysPairTail()); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
 #endif
 
-    // First, delete all the code in the block.
+    /* First walk the statement trees in this basic block and delete each stmt */
+
+    /* Make the block publicly available */
+    compCurBB = block;
 
     if (block->IsLIR())
     {
@@ -2337,13 +2343,13 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
         noway_assert(block->bbStmtList == nullptr);
     }
 
-    // Next update the loop table and bbWeights
+    /* Next update the loop table and bbWeights */
     optUpdateLoopsBeforeRemoveBlock(block);
 
-    // Mark the block as removed
+    /* Mark the block as removed */
     block->bbFlags |= BBF_REMOVED;
 
-    // Update bbRefs and bbPreds for the blocks reached by this block
+    /* update bbRefs and bbPreds for the blocks reached by this block */
     fgRemoveBlockAsPred(block);
 }
 
@@ -2819,7 +2825,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
 
             /* Remove the block */
             compCurBB = block;
-            fgRemoveBlock(block, /* unreachable */ false);
+            fgRemoveBlock(block, false);
             return true;
 
         default:
@@ -3543,7 +3549,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 //
 bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, BasicBlock* bPrev)
 {
-    assert(block->KindIs(BBJ_COND, BBJ_ALWAYS));
+    assert(block->bbJumpKind == BBJ_COND || block->bbJumpKind == BBJ_ALWAYS);
     assert(block->bbJumpDest == bNext);
     assert(block->bbNext == bNext);
     assert(block->bbPrev == bPrev);
@@ -4598,7 +4604,7 @@ bool Compiler::fgReorderBlocks()
         bool        backwardBranch = false;
 
         // Setup bDest
-        if (bPrev->KindIs(BBJ_COND, BBJ_ALWAYS))
+        if ((bPrev->bbJumpKind == BBJ_COND) || (bPrev->bbJumpKind == BBJ_ALWAYS))
         {
             bDest          = bPrev->bbJumpDest;
             forwardBranch  = fgIsForwardBranch(bPrev);
@@ -4848,7 +4854,8 @@ bool Compiler::fgReorderBlocks()
                         // to bTmp (which is a higher weighted block) then it is better to keep out current
                         // candidateBlock and have it fall into bTmp
                         //
-                        if ((candidateBlock == nullptr) || !candidateBlock->KindIs(BBJ_COND, BBJ_ALWAYS) ||
+                        if ((candidateBlock == nullptr) ||
+                            ((candidateBlock->bbJumpKind != BBJ_COND) && (candidateBlock->bbJumpKind != BBJ_ALWAYS)) ||
                             (candidateBlock->bbJumpDest != bTmp))
                         {
                             // otherwise we have a new candidateBlock
@@ -5789,7 +5796,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
             // Remove JUMPS to the following block
             // and optimize any JUMPS to JUMPS
 
-            if (block->KindIs(BBJ_COND, BBJ_ALWAYS))
+            if (block->bbJumpKind == BBJ_COND || block->bbJumpKind == BBJ_ALWAYS)
             {
                 bDest = block->bbJumpDest;
                 if (bDest == bNext)
@@ -5928,7 +5935,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
 
                             // Add fall through fixup block, if needed.
                             //
-                            if (bDest->KindIs(BBJ_NONE, BBJ_COND))
+                            if ((bDest->bbJumpKind == BBJ_NONE) || (bDest->bbJumpKind == BBJ_COND))
                             {
                                 BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true);
                                 bFixup->inheritWeight(bDestNext);
@@ -6102,7 +6109,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                 /* no references -> unreachable - remove it */
                 /* For now do not update the bbNum, do it at the end */
 
-                fgRemoveBlock(block, /* unreachable */ true);
+                fgRemoveBlock(block, true);
 
                 change   = true;
                 modified = true;
@@ -6120,7 +6127,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                     case BBJ_ALWAYS:
                         if (block->bbJumpDest == block)
                         {
-                            fgRemoveBlock(block, /* unreachable */ true);
+                            fgRemoveBlock(block, true);
 
                             change   = true;
                             modified = true;

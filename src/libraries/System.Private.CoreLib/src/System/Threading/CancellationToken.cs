@@ -27,7 +27,7 @@ namespace System.Threading
     /// </para>
     /// </remarks>
     [DebuggerDisplay("IsCancellationRequested = {IsCancellationRequested}")]
-    public readonly struct CancellationToken : IEquatable<CancellationToken>
+    public readonly struct CancellationToken
     {
         // The backing TokenSource.
         // if null, it implicitly represents the same thing as new CancellationToken(false).

@@ -16,13 +16,13 @@ namespace System.Security.Cryptography
     ///     of the key handle and provider handle. This also applies to hash handles, which point to a
     ///     CRYPT_HASH_CTX. Those structures are defined in COMCryptography.h
     /// </summary>
-    internal sealed class SafeCapiKeyHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class SafeKeyHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private int _keySpec;
         private bool _fPublicOnly;
         private SafeProvHandle? _parent;
 
-        public SafeCapiKeyHandle() : base(true)
+        public SafeKeyHandle() : base(true)
         {
             SetHandle(IntPtr.Zero);
             _keySpec = 0;
@@ -70,14 +70,14 @@ namespace System.Security.Cryptography
             _parent.DangerousAddRef(ref ignored);
         }
 
-        internal static SafeCapiKeyHandle InvalidHandle
+        internal static SafeKeyHandle InvalidHandle
         {
-            get { return SafeHandleCache<SafeCapiKeyHandle>.GetInvalidHandle(() => new SafeCapiKeyHandle()); }
+            get { return SafeHandleCache<SafeKeyHandle>.GetInvalidHandle(() => new SafeKeyHandle()); }
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (!SafeHandleCache<SafeCapiKeyHandle>.IsCachedInvalidHandle(this))
+            if (!SafeHandleCache<SafeKeyHandle>.IsCachedInvalidHandle(this))
             {
                 base.Dispose(disposing);
             }

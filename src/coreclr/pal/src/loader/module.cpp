@@ -30,6 +30,7 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include "pal/file.h"
 #include "pal/utils.h"
 #include "pal/init.h"
+#include "pal/modulename.h"
 #include "pal/environ.h"
 #include "pal/virtual.h"
 #include "pal/map.hpp"
@@ -341,10 +342,9 @@ GetProcAddress(
         /* if we don't know the module's full name yet, this is our chance to obtain it */
         if (!module->lib_name && module->dl_handle)
         {
-            Dl_info dl_info;
-            if (dladdr((LPVOID)ProcAddress, &dl_info) != 0)
+            const char* libName = PAL_dladdr((LPVOID)ProcAddress);
+            if (libName)
             {
-                const char* libName = dl_info.dli_fname;
                 module->lib_name = UTIL_MBToWC_Alloc(libName, -1);
                 if (nullptr == module->lib_name)
                 {
@@ -355,10 +355,6 @@ GetProcAddress(
                     TRACE("Saving full path of module %p as %s\n",
                           module, libName);
                 }
-            }
-            else
-            {
-                TRACE("GetProcAddress: dladdr() call failed!\n");
             }
         }
     }
@@ -929,7 +925,7 @@ struct CopyModuleDataParam
     int result;
 };
 
-void handle_image_range(uint8_t* source_start, size_t size, struct CopyModuleDataParam* param)
+void handle_image_range(uint8_t* source_start, size_t size, struct CopyModuleDataParam* param) 
 {
     uint8_t* source_end = source_start + size;
     if (param->destination_buffer_start != NULL)

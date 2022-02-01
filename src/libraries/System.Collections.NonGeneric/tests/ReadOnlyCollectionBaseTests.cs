@@ -139,7 +139,7 @@ namespace System.Collections.Tests
         public static void VirtualMethods()
         {
             VirtualTestReadOnlyCollection collectionBase = new VirtualTestReadOnlyCollection();
-            Assert.Equal(int.MinValue, collectionBase.Count);
+            Assert.Equal(collectionBase.Count, int.MinValue);
             Assert.Null(collectionBase.GetEnumerator());
         }
 

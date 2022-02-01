@@ -23,6 +23,7 @@ VPTR_CLASS(ReflectionModule)
 VPTR_CLASS(AppDomain)
 VPTR_CLASS(SystemDomain)
 
+VPTR_CLASS(DomainAssembly)
 VPTR_CLASS(PrecodeStubManager)
 VPTR_CLASS(StubLinkStubManager)
 VPTR_CLASS(ThePreStubManager)
@@ -38,6 +39,7 @@ VPTR_CLASS(DelegateInvokeStubManager)
 VPTR_CLASS(TailCallStubManager)
 #endif
 VPTR_CLASS(CallCountingStubManager)
+VPTR_CLASS(PEAssembly)
 
 VPTR_CLASS(PEImageLayout)
 VPTR_CLASS(ConvertedImageLayout)
@@ -82,6 +84,9 @@ VPTR_CLASS(CallCountingHelperFrame)
 VPTR_CLASS(ExternalMethodFrame)
 #ifdef FEATURE_READYTORUN
 VPTR_CLASS(DynamicHelperFrame)
+#endif
+#if defined(TARGET_X86)
+VPTR_CLASS(UMThkCallFrame)
 #endif
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 VPTR_CLASS(TailCallFrame)

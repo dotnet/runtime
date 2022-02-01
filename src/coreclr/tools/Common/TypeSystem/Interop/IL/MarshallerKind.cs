@@ -45,7 +45,6 @@ namespace Internal.TypeSystem.Interop
         LayoutClassPtr,
         AsAnyA,
         AsAnyW,
-        FailedTypeLoad,
         ComInterface,
         BlittableValueClassWithCopyCtor,
         Invalid

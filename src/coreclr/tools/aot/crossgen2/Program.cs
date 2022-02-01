@@ -730,6 +730,7 @@ namespace ILCompiler
 
                     builder
                         .UseIbcTuning(_commandLineOptions.Tuning)
+                        .UseResilience(_commandLineOptions.Resilient)
                         .UseMapFile(_commandLineOptions.Map)
                         .UseMapCsvFile(_commandLineOptions.MapCsv)
                         .UsePdbFile(_commandLineOptions.Pdb, _commandLineOptions.PdbPath)
@@ -747,7 +748,6 @@ namespace ILCompiler
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)
                         .UseParallelism(_commandLineOptions.Parallelism)
-                        .UseResilience(_commandLineOptions.Resilient)
                         .UseDependencyTracking(trackingLevel)
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);

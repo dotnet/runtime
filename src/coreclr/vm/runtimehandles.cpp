@@ -186,9 +186,9 @@ NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pM
     if (pModule == NULL)
         return NULL;
 
-    DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
+    DomainFile * pDomainFile = pModule->GetDomainFile();
 
-    OBJECTREF refModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
+    OBJECTREF refModule = (pDomainFile != NULL) ? pDomainFile->GetExposedModuleObjectIfExists() : NULL;
 
     if(refModule != NULL)
         return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
@@ -354,7 +354,7 @@ FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssembly, ReflectClassBaseObj
     if (refType == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    Module *pModule = refType->GetType().GetAssembly()->GetModule();
+    Module *pModule = refType->GetType().GetAssembly()->GetManifestModule();
     DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
 
     FC_RETURN_ASSEMBLY_OBJECT(pDomainAssembly, refType);
@@ -2667,20 +2667,20 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
-    Assembly* currentAssembly = pAssembly->GetAssembly();
+    Assembly* currentAssembly = pAssembly->GetCurrentAssembly();
 
-    Module *pModule = currentAssembly->GetModule();
-    DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
+    Module *pModule = currentAssembly->GetManifestModule();
+    DomainFile * pDomainFile = pModule->GetDomainFile();
 
 #ifdef _DEBUG
     OBJECTREF orModule;
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(refAssembly);
-    orModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
+    orModule = (pDomainFile != NULL) ? pDomainFile->GetExposedModuleObjectIfExists() : NULL;
     if (orModule == NULL)
         orModule = pModule->GetExposedObject();
 #else
-    OBJECTREF orModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
+    OBJECTREF orModule = (pDomainFile != NULL) ? pDomainFile->GetExposedModuleObjectIfExists() : NULL;
     if (orModule != NULL)
         return (ReflectModuleBaseObject*)OBJECTREFToObject(orModule);
 
@@ -2705,7 +2705,7 @@ FCIMPL1(INT32, AssemblyHandle::GetToken, AssemblyBaseObject* pAssemblyUNSAFE) {
     DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
     mdAssembly token = mdAssemblyNil;
 
-    IMDInternalImport *mdImport = pAssembly->GetAssembly()->GetMDImport();
+    IMDInternalImport *mdImport = pAssembly->GetCurrentAssembly()->GetManifestImport();
 
     if (mdImport != 0)
     {
@@ -2905,7 +2905,7 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    DomainAssembly *pDomainModule = pModule->GetDomainAssembly();
+    DomainFile *pDomainModule = pModule->GetDomainFile();
 
     U1ARRAYREF dataArray = (U1ARRAYREF)sig;
     DWORD sigSize = dataArray->GetNumComponents();

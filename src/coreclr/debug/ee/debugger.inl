@@ -52,16 +52,16 @@ inline DebuggerModuleTable * Debugger::GetModuleTable()
 // @dbgtodo inspection - get rid of this entire class as we move things out-of-proc.
 //-----------------------------------------------------------------------------
 inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
-                                      DomainAssembly *  pDomainAssembly,
+                                      DomainFile *  pDomainFile,
                                       AppDomain *   pAppDomain) :
         m_enableClassLoadCallbacks(FALSE),
         m_pPrimaryModule(NULL),
         m_pRuntimeModule(pRuntimeModule),
-        m_pRuntimeDomainAssembly(pDomainAssembly),
+        m_pRuntimeDomainFile(pDomainFile),
         m_pAppDomain(pAppDomain)
 {
     LOG((LF_CORDB,LL_INFO10000, "DM::DM this:0x%x Module:0x%x DF:0x%x AD:0x%x\n",
-        this, pRuntimeModule, pDomainAssembly, pAppDomain));
+        this, pRuntimeModule, pDomainFile, pAppDomain));
 
     // Pick a primary module.
     // Arguably, this could be in DebuggerModuleTable::AddModule

@@ -120,6 +120,8 @@ typedef DPTR(class ComPlusCallMethodDesc) PTR_ComPlusCallMethodDesc;
 typedef VPTR(class DebugInterface)      PTR_DebugInterface;
 typedef DPTR(class Dictionary)          PTR_Dictionary;
 typedef VPTR(class DomainAssembly)      PTR_DomainAssembly;
+typedef VPTR(class DomainFile)          PTR_DomainFile;
+typedef VPTR(class DomainModule)        PTR_DomainModule;
 typedef DPTR(struct FailedAssembly)     PTR_FailedAssembly;
 typedef VPTR(class EditAndContinueModule) PTR_EditAndContinueModule;
 typedef DPTR(class EEClass)             PTR_EEClass;
@@ -427,6 +429,7 @@ extern DummyGlobalContract ___contract;
 #include "typehandle.inl"
 #include "object.inl"
 #include "clsload.inl"
+#include "domainfile.inl"
 #include "method.inl"
 #include "syncblk.inl"
 #include "threads.inl"

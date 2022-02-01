@@ -10,7 +10,4 @@ namespace System.ServiceProcess
     {
         public void Stop(bool stopDependentServices) { }
     }
-    public readonly partial struct SessionChangeDescription : System.IEquatable<System.ServiceProcess.SessionChangeDescription>
-    {
-    }
 }

@@ -317,7 +317,14 @@ namespace System.Net.Security.Tests
                     await t2.WaitAsync(TestConfiguration.PassingTestTimeout);
                 }
 
-                await Assert.ThrowsAsync<AuthenticationException>(() => t1);
+                if (close)
+                {
+                    await Assert.ThrowsAsync<IOException>(() => t1);
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<AuthenticationException>(() => t1);
+                }
             }
         }
 

@@ -19,7 +19,7 @@ internal static partial class Interop
         internal static partial bool CryptCreateHash(
             SafeProvHandle hProv,
             int Algid,
-            SafeCapiKeyHandle hKey,
+            SafeKeyHandle hKey,
             CryptCreateHashFlags dwFlags,
             out SafeHashHandle phHash);
     }

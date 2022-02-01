@@ -318,7 +318,12 @@ namespace System.Xml
 
         internal XmlReader CreateReader(string inputUri, XmlParserContext? inputContext)
         {
-            ArgumentException.ThrowIfNullOrEmpty(inputUri);
+            ArgumentNullException.ThrowIfNull(inputUri);
+
+            if (inputUri.Length == 0)
+            {
+                throw new ArgumentException(SR.XmlConvert_BadUri, nameof(inputUri));
+            }
 
             // resolve and open the url
             XmlResolver tmpResolver = GetXmlResolver() ?? new XmlUrlResolver();

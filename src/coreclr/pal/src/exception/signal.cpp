@@ -116,6 +116,10 @@ struct sigaction g_previous_sigabrt;
 
 #if !HAVE_MACH_EXCEPTIONS
 
+// Offset of the local variable containing pointer to windows style context in the common_signal_handler function.
+// This offset is relative to the frame pointer.
+int g_common_signal_handler_context_locvar_offset = 0;
+
 // TOP of special stack for handling stack overflow
 volatile void* g_stackOverflowHandlerStack = NULL;
 
@@ -236,11 +240,8 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
     }
 
 #ifdef INJECT_ACTIVATION_SIGNAL
-    if (flags & PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
-    {
-        handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
-        g_registered_activation_handler = true;
-    }
+    handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
+    g_registered_activation_handler = true;
 #endif
 
     return TRUE;
@@ -938,12 +939,11 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 #if !HAVE_MACH_EXCEPTIONS
     sigset_t signal_set;
     CONTEXT signalContextRecord;
-    CONTEXT* signalContextRecordPtr = &signalContextRecord;
     EXCEPTION_RECORD exceptionRecord;
     native_context_t *ucontext;
 
     ucontext = (native_context_t *)sigcontext;
-    g_hardware_exception_context_locvar_offset = (int)((char*)&signalContextRecordPtr - (char*)__builtin_frame_address(0));
+    g_common_signal_handler_context_locvar_offset = (int)((char*)&signalContextRecord - (char*)__builtin_frame_address(0));
 
     if (code == (SIGSEGV | StackOverflowFlag))
     {

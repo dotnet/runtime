@@ -138,7 +138,6 @@ namespace System.Runtime.InteropServices.Tests
                 Assert.Equal(expected, handle.Equals(other));
                 if (other is GCHandle otherHandle)
                 {
-                    Assert.Equal(expected, handle.Equals(otherHandle));
                     Assert.Equal(expected, handle == otherHandle);
                     Assert.Equal(!expected, handle != otherHandle);
                 }

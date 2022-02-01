@@ -150,16 +150,19 @@ namespace System.Text.RegularExpressions.Generator
 
             // Validate the options
             const RegexOptions SupportedOptions =
-                RegexOptions.Compiled |
-                RegexOptions.CultureInvariant |
-                RegexOptions.ECMAScript |
-                RegexOptions.ExplicitCapture |
                 RegexOptions.IgnoreCase |
-                RegexOptions.IgnorePatternWhitespace |
                 RegexOptions.Multiline |
-                RegexOptions.NonBacktracking |
+                RegexOptions.ExplicitCapture |
+                RegexOptions.Compiled |
+                RegexOptions.Singleline |
+                RegexOptions.IgnorePatternWhitespace |
                 RegexOptions.RightToLeft |
-                RegexOptions.Singleline;
+#if DEBUG
+                RegexOptions.Debug |
+#endif
+                RegexOptions.ECMAScript |
+                RegexOptions.CultureInvariant |
+                RegexOptions.NonBacktracking;
             if ((regexOptions & ~SupportedOptions) != 0)
             {
                 return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, methodSyntax.GetLocation(), "options");

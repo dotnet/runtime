@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #if DEBUG
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.RegularExpressions.Symbolic;
@@ -12,17 +11,16 @@ namespace System.Text.RegularExpressions
 {
     public partial class Regex
     {
-        /// <summary>True if debug tracing should be enabled, only in debug builds.</summary>
+        /// <summary>True if the regex has debugging enabled.</summary>
         [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal static bool EnableDebugTracing
+        internal bool IsDebug
         {
             // These members aren't used from IsDebug, but we want to keep them in debug builds for now,
-            // so this is a convenient place to include them rather than needing a debug-only illink file.
+            // so this is a convient place to include them rather than needing a debug-only illink file.
             [DynamicDependency(nameof(SaveDGML))]
             [DynamicDependency(nameof(GenerateUnicodeTables))]
             [DynamicDependency(nameof(GenerateRandomMembers))]
-            get;
-            set;
+            get => (roptions & RegexOptions.Debug) != 0;
         }
 
         /// <summary>Unwind the regex and save the resulting state graph in DGML</summary>
@@ -64,7 +62,7 @@ namespace System.Text.RegularExpressions
         /// <param name="negative">if true then generate inputs that do not match</param>
         /// <returns></returns>
         [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal IEnumerable<string> GenerateRandomMembers(int k, int randomseed, bool negative)
+        internal Collections.Generic.IEnumerable<string> GenerateRandomMembers(int k, int randomseed, bool negative)
         {
             if (factory is not SymbolicRegexRunnerFactory srmFactory)
             {

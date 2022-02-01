@@ -135,7 +135,10 @@ namespace System.Security.Authentication.ExtendedProtection
         /// </summary>
         private void AddIfNew(string serviceName)
         {
-            ArgumentException.ThrowIfNullOrEmpty(serviceName);
+            if (string.IsNullOrEmpty(serviceName))
+            {
+                throw new ArgumentException(SR.security_ServiceNameCollection_EmptyServiceName);
+            }
 
             serviceName = NormalizeServiceName(serviceName);
 

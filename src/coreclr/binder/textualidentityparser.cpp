@@ -200,9 +200,30 @@ namespace BINDER_SPACE
         // Nothing to do here
     }
 
+    BOOL TextualIdentityParser::IsSeparatorChar(WCHAR wcChar)
+    {
+        return ((wcChar == W(',')) || (wcChar == W('=')));
+    }
+
+    StringLexer::LEXEME_TYPE TextualIdentityParser::GetLexemeType(WCHAR wcChar)
+    {
+        switch (wcChar)
+        {
+        case W('='):
+            return LEXEME_TYPE_EQUALS;
+        case W(','):
+            return LEXEME_TYPE_COMMA;
+        case 0:
+            return LEXEME_TYPE_END_OF_STREAM;
+        default:
+            return LEXEME_TYPE_STRING;
+        }
+    }
+
     /* static */
     HRESULT TextualIdentityParser::Parse(SString          &textualIdentity,
-                                         AssemblyIdentity *pAssemblyIdentity)
+                                         AssemblyIdentity *pAssemblyIdentity,
+                                         BOOL              fPermitUnescapedQuotes)
     {
         HRESULT hr = S_OK;
 
@@ -212,7 +233,7 @@ namespace BINDER_SPACE
         {
             TextualIdentityParser identityParser(pAssemblyIdentity);
 
-            if (!identityParser.Parse(textualIdentity))
+            if (!identityParser.Parse(textualIdentity, fPermitUnescapedQuotes))
             {
                 IF_FAIL_GO(FUSION_E_INVALID_NAME);
             }
@@ -314,6 +335,18 @@ namespace BINDER_SPACE
                 textualIdentity.Append(ContentTypeToString(pAssemblyIdentity->m_kContentType));
             }
 
+            if (AssemblyIdentity::Have(dwIdentityFlags, AssemblyIdentity::IDENTITY_FLAG_CUSTOM))
+            {
+                textualIdentity.Append(W(", Custom="));
+                tmpString.Clear();
+                BlobToHex(pAssemblyIdentity->m_customBLOB, tmpString);
+                textualIdentity.Append(tmpString);
+            }
+            else if (AssemblyIdentity::Have(dwIdentityFlags,
+                                            AssemblyIdentity::IDENTITY_FLAG_CUSTOM_NULL))
+            {
+                textualIdentity.Append(W(", Custom=null"));
+            }
         }
         EX_CATCH_HRESULT(hr);
 
@@ -453,19 +486,19 @@ namespace BINDER_SPACE
         publicKeyOrToken.CloseBuffer(cbPublicKeyOrTokenBLOB * 2);
     }
 
-    BOOL TextualIdentityParser::Parse(SString &textualIdentity)
+    BOOL TextualIdentityParser::Parse(SString &textualIdentity, BOOL fPermitUnescapedQuotes)
     {
         BOOL fIsValid = TRUE;
         SString unicodeTextualIdentity;
 
         // Lexer modifies input string
         textualIdentity.ConvertToUnicode(unicodeTextualIdentity);
-        Init(unicodeTextualIdentity);
+        Init(unicodeTextualIdentity, TRUE /* fSupportEscaping */);
 
         SmallStackSString currentString;
 
         // Identity format is simple name (, attr = value)*
-        GO_IF_NOT_EXPECTED(GetNextLexeme(currentString), LEXEME_TYPE_STRING);
+        GO_IF_NOT_EXPECTED(GetNextLexeme(currentString, fPermitUnescapedQuotes), LEXEME_TYPE_STRING);
         m_pAssemblyIdentity->m_simpleName.Set(currentString);
         m_pAssemblyIdentity->m_simpleName.Normalize();
         m_pAssemblyIdentity->SetHave(AssemblyIdentity::IDENTITY_FLAG_SIMPLE_NAME);
@@ -499,7 +532,7 @@ namespace BINDER_SPACE
 
         // Lexer modifies input string
         textualString.ConvertToUnicode(unicodeTextualString);
-        Init(unicodeTextualString);
+        Init(unicodeTextualString, TRUE /* fSupportEscaping */);
 
         SmallStackSString currentString;
         GO_IF_NOT_EXPECTED(GetNextLexeme(currentString), LEXEME_TYPE_STRING);
@@ -516,7 +549,8 @@ namespace BINDER_SPACE
     {
         BOOL fIsValid = TRUE;
 
-        if (EqualsCaseInsensitive(attributeString, W("culture")))
+        if (EqualsCaseInsensitive(attributeString, W("culture")) ||
+            EqualsCaseInsensitive(attributeString, W("language")))
         {
             GO_IF_SEEN(AssemblyIdentity::IDENTITY_FLAG_CULTURE);
             GO_IF_WILDCARD(valueString);
@@ -552,7 +586,8 @@ namespace BINDER_SPACE
             GO_IF_SEEN(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN);
             GO_IF_WILDCARD(valueString);
 
-            if (!EqualsCaseInsensitive(valueString, W("null")))
+            if (!EqualsCaseInsensitive(valueString, W("null")) &&
+                !EqualsCaseInsensitive(valueString, W("neutral")))
             {
                 GO_IF_VALIDATE_FAILED(ValidatePublicKeyToken,
                                       AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN);
@@ -571,7 +606,8 @@ namespace BINDER_SPACE
             GO_IF_SEEN(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN);
             GO_IF_SEEN(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY);
 
-            if (!EqualsCaseInsensitive(valueString, W("null")))
+            if (!EqualsCaseInsensitive(valueString, W("null")) &&
+                !EqualsCaseInsensitive(valueString, W("neutral")))
             {
                 GO_IF_VALIDATE_FAILED(ValidatePublicKey, AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY);
                 HexToBlob(valueString,
@@ -623,6 +659,23 @@ namespace BINDER_SPACE
             else
             {
                 fIsValid = FALSE;
+            }
+        }
+        else if (EqualsCaseInsensitive(attributeString, W("custom")))
+        {
+            GO_IF_SEEN(AssemblyIdentity::IDENTITY_FLAG_CUSTOM);
+
+            if (EqualsCaseInsensitive(valueString, W("null")))
+            {
+                m_pAssemblyIdentity->SetHave(AssemblyIdentity::IDENTITY_FLAG_CUSTOM_NULL);
+            }
+            else
+            {
+                GO_IF_VALIDATE_FAILED(ValidateHex, AssemblyIdentity::IDENTITY_FLAG_CUSTOM);
+                HexToBlob(valueString,
+                          FALSE /* fValidateHex */,
+                          FALSE /* fIsToken */,
+                          m_pAssemblyIdentity->m_customBLOB);
             }
         }
 

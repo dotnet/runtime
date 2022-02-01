@@ -463,24 +463,10 @@ CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 // Enable partial compilation for Tier0 methods
 CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
-#if defined(DEBUG)
-// Randomly sprinkle patchpoints. Value is the likelyhood any given stack-empty point becomes a patchpoint.
-CONFIG_INTEGER(JitRandomOnStackReplacement, W("JitRandomOnStackReplacement"), 0)
-// Place patchpoint at the specified IL offset, if possible. Overrides random placement.
-CONFIG_INTEGER(JitOffsetOnStackReplacement, W("JitOffsetOnStackReplacement"), -1)
-#endif // debug
 
 #if defined(DEBUG)
-// EnableOsrRange allows you to limit the set of methods that will rely on OSR to escape
-// from Tier0 code. Methods outside the range that would normally be jitted at Tier0
-// and have patchpoints will instead be switched to optimized.
-CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange"))
-// EnablePatchpointRange allows you to limit the set of Tier0 methods that
-// will have patchpoints, and hence control which methods will create OSR methods.
-// Unlike EnableOsrRange, it will not alter the optimization setting for methods
-// outside the enabled range.
-CONFIG_STRING(JitEnablePatchpointRange, W("JitEnablePatchpointRange"))
-#endif
+CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange")) // Enable osr for only some methods
+#endif                                                   // debug
 
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)

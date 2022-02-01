@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics.SymbolStore
 {
-    public readonly struct SymbolToken : IEquatable<SymbolToken>
+    public readonly struct SymbolToken
     {
         private readonly int _token;
 

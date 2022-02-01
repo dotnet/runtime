@@ -139,7 +139,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
-            return LowerBinaryArithmeticCommon(node->AsOp());
+            return LowerBinaryArithmetic(node->AsOp());
 
         case GT_MUL:
         case GT_MULHI:
@@ -2708,16 +2708,10 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) &&
 #ifdef TARGET_XARCH
-            (op1->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG)
-#ifdef FEATURE_HW_INTRINSICS
-             || (op1->OperIs(GT_HWINTRINSIC) &&
-                 emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(op1->AsHWIntrinsic())))
-#endif // FEATURE_HW_INTRINSICS
-                 )
+            op1->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
 #else // TARGET_ARM64
-            op1->OperIs(GT_AND, GT_ADD, GT_SUB)
+            op1->OperIs(GT_AND, GT_ADD, GT_SUB))
 #endif
-                )
         {
             op1->gtFlags |= GTF_SET_FLAGS;
             op1->SetUnusedValue();
@@ -3798,29 +3792,32 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 
     assert(thisArgNode != nullptr);
     assert(thisArgNode->gtOper == GT_PUTARG_REG);
-    GenTree* thisExpr = thisArgNode->AsOp()->gtOp1;
+    GenTree* originalThisExpr = thisArgNode->AsOp()->gtOp1;
+    GenTree* thisExpr         = originalThisExpr;
 
     // We're going to use the 'this' expression multiple times, so make a local to copy it.
 
-    GenTree* base;
-    if (thisExpr->OperIs(GT_LCL_VAR))
+    unsigned lclNum;
+
+    if (call->IsTailCallViaJitHelper() && originalThisExpr->IsLocal())
     {
-        base = comp->gtNewLclvNode(thisExpr->AsLclVar()->GetLclNum(), thisExpr->TypeGet());
-    }
-    else if (thisExpr->OperIs(GT_LCL_FLD))
-    {
-        base = comp->gtNewLclFldNode(thisExpr->AsLclFld()->GetLclNum(), thisExpr->TypeGet(),
-                                     thisExpr->AsLclFld()->GetLclOffs());
+        // For ordering purposes for the special tailcall arguments on x86, we forced the
+        // 'this' pointer in this case to a local in Compiler::fgMorphTailCall().
+        // We could possibly use this case to remove copies for all architectures and non-tailcall
+        // calls by creating a new lcl var or lcl field reference, as is done in the
+        // LowerVirtualVtableCall() code.
+        assert(originalThisExpr->OperGet() == GT_LCL_VAR);
+        lclNum = originalThisExpr->AsLclVarCommon()->GetLclNum();
     }
     else
     {
         unsigned delegateInvokeTmp = comp->lvaGrabTemp(true DEBUGARG("delegate invoke call"));
-        base                       = comp->gtNewLclvNode(delegateInvokeTmp, thisExpr->TypeGet());
 
         LIR::Use thisExprUse(BlockRange(), &thisArgNode->AsOp()->gtOp1, thisArgNode);
         ReplaceWithLclVar(thisExprUse, delegateInvokeTmp);
 
         thisExpr = thisExprUse.Def(); // it's changed; reload it.
+        lclNum   = delegateInvokeTmp;
     }
 
     // replace original expression feeding into thisPtr with
@@ -3838,6 +3835,8 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 
     // the control target is
     // [originalThis + firstTgtOffs]
+
+    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, originalThisExpr->TypeGet(), lclNum);
 
     unsigned targetOffs = comp->eeGetEEInfo()->offsetOfDelegateFirstTarget;
     GenTree* result     = new (comp, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
@@ -4607,7 +4606,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     // If what we are passing as the thisptr is not already a local, make a new local to place it in
     // because we will be creating expressions based on it.
     unsigned lclNum;
-    if (thisPtr->OperIsLocal())
+    if (thisPtr->IsLocal())
     {
         lclNum = thisPtr->AsLclVarCommon()->GetLclNum();
     }
@@ -4891,28 +4890,19 @@ bool Lowering::AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, Ge
 //    addressing mode and transform them to a GT_LEA
 //
 // Arguments:
-//    addr - the use of the address we want to transform
+//    use - the use of the address we want to transform
 //    isContainable - true if this addressing mode can be contained
-//    parent - the node that consumes the given addr (most likely it's an IND)
+//    targetType - on arm we can use "scale" only for appropriate target type
 //
 // Returns:
 //    true if the address node was changed to a LEA, false otherwise.
 //
-bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent)
+bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types targetType)
 {
     if (!addr->OperIs(GT_ADD) || addr->gtOverflow())
     {
         return false;
     }
-
-#ifdef TARGET_ARM64
-    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() && !varTypeIsGC(addr))
-    {
-        // For Arm64 we avoid using LEA for volatile INDs
-        // because we won't be able to use ldar/star
-        return false;
-    }
-#endif
 
     GenTree* base   = nullptr;
     GenTree* index  = nullptr;
@@ -4928,8 +4918,6 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
                                                        &index,   // index val
                                                        &scale,   // scaling
                                                        &offset); // displacement
-
-    var_types targetType = parent->OperIsIndir() ? parent->TypeGet() : TYP_UNDEF;
 
 #ifdef TARGET_ARMARCH
     // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
@@ -5120,7 +5108,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             GenTree* parent = use.User();
             if (!parent->OperIsIndir() && !parent->OperIs(GT_ADD))
             {
-                TryCreateAddrMode(node, false, parent);
+                TryCreateAddrMode(node, false);
             }
         }
 #endif // !TARGET_ARMARCH
@@ -5134,7 +5122,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
-// LowerBinaryArithmeticCommon: lowers the given binary arithmetic node.
+// LowerBinaryArithmetic: lowers the given binary arithmetic node.
 //
 // Recognizes opportunities for using target-independent "combined" nodes
 // (currently AND_NOT on ARMArch). Performs containment checks.
@@ -5145,39 +5133,41 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 // Returns:
 //    The next node to lower.
 //
-GenTree* Lowering::LowerBinaryArithmeticCommon(GenTreeOp* binOp)
+GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* node)
 {
     // TODO-CQ-XArch: support BMI2 "andn" in codegen and condition
     // this logic on the support for the instruction set on XArch.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_ARMARCH
-    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND))
+    if (comp->opts.OptimizationEnabled() && node->OperIs(GT_AND))
     {
         GenTree* opNode  = nullptr;
         GenTree* notNode = nullptr;
-        if (binOp->gtGetOp1()->OperIs(GT_NOT))
+        if (node->gtGetOp1()->OperIs(GT_NOT))
         {
-            notNode = binOp->gtGetOp1();
-            opNode  = binOp->gtGetOp2();
+            notNode = node->gtGetOp1();
+            opNode  = node->gtGetOp2();
         }
-        else if (binOp->gtGetOp2()->OperIs(GT_NOT))
+        else if (node->gtGetOp2()->OperIs(GT_NOT))
         {
-            notNode = binOp->gtGetOp2();
-            opNode  = binOp->gtGetOp1();
+            notNode = node->gtGetOp2();
+            opNode  = node->gtGetOp1();
         }
 
         if (notNode != nullptr)
         {
-            binOp->gtOp1 = opNode;
-            binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
-            binOp->ChangeOper(GT_AND_NOT);
+            node->gtOp1 = opNode;
+            node->gtOp2 = notNode->AsUnOp()->gtGetOp1();
+            node->ChangeOper(GT_AND_NOT);
             BlockRange().Remove(notNode);
         }
     }
-#endif
+#endif // TARGET_ARMARCH
 
-    return LowerBinaryArithmetic(binOp);
+    ContainCheckBinary(node);
+
+    return node->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -6789,7 +6779,7 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
     assert(ind->TypeGet() != TYP_STRUCT);
-    TryCreateAddrMode(ind->Addr(), true, ind);
+    TryCreateAddrMode(ind->Addr(), true, ind->TypeGet());
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
         if (varTypeIsFloating(ind) && ind->Data()->IsCnsFltOrDbl())
@@ -6857,7 +6847,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
         // address containment in some cases so we end up creating trivial (reg + offfset)
         // or (reg + reg) LEAs that are not necessary.
-        TryCreateAddrMode(ind->Addr(), true, ind);
+        TryCreateAddrMode(ind->Addr(), true, ind->TypeGet());
         ContainCheckIndir(ind);
 
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
@@ -6870,7 +6860,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         // If the `ADDR` node under `STORE_OBJ(dstAddr, IND(struct(ADDR))`
         // is a complex one it could benefit from an `LEA` that is not contained.
         const bool isContainable = false;
-        TryCreateAddrMode(ind->Addr(), isContainable, ind);
+        TryCreateAddrMode(ind->Addr(), isContainable, ind->TypeGet());
     }
 }
 
@@ -6932,14 +6922,6 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
-
-    // Lose the type information stored in the source - we no longer need it.
-    if (blkNode->Data()->OperIs(GT_OBJ, GT_BLK))
-    {
-        blkNode->Data()->SetOper(GT_IND);
-        LowerIndir(blkNode->Data()->AsIndir());
-    }
-
     if (TryTransformStoreObjAsStoreInd(blkNode))
     {
         return;
@@ -7014,7 +6996,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
-    JITDUMP("Replacing STORE_OBJ with STOREIND for [%06u]\n", blkNode->gtTreeID);
+    JITDUMP("Replacing STORE_OBJ with STOREIND for [06%u]", blkNode->gtTreeID);
     blkNode->ChangeOper(GT_STOREIND);
     blkNode->ChangeType(regType);
 

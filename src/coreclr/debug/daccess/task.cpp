@@ -948,11 +948,6 @@ ClrDataAssembly::Release(THIS)
     return newRefs;
 }
 
-struct TrivialModuleIterator
-{
-    Module* m_module;
-};
-
 HRESULT STDMETHODCALLTYPE
 ClrDataAssembly::StartEnumModules(
     /* [out] */ CLRDATA_ENUM* handle)
@@ -963,10 +958,11 @@ ClrDataAssembly::StartEnumModules(
 
     EX_TRY
     {
-        TrivialModuleIterator* iter = new (nothrow) TrivialModuleIterator;
+        Assembly::ModuleIterator* iter = new (nothrow)
+            Assembly::ModuleIterator;
         if (iter)
         {
-            iter->m_module = m_assembly->GetModule();
+            *iter = m_assembly->IterateModules();
             *handle = TO_CDENUM(iter);
             status = S_OK;
         }
@@ -999,13 +995,12 @@ ClrDataAssembly::EnumModule(
 
     EX_TRY
     {
-        TrivialModuleIterator* iter = FROM_CDENUM(TrivialModuleIterator, *handle);
-        if (iter->m_module)
+        Assembly::ModuleIterator* iter =
+            FROM_CDENUM(Assembly::ModuleIterator, *handle);
+        if (iter->Next())
         {
             *mod = new (nothrow)
-                ClrDataModule(m_dac, iter->m_module);
-
-            iter->m_module = NULL;
+                ClrDataModule(m_dac, iter->GetModule());
             status = *mod ? S_OK : E_OUTOFMEMORY;
         }
         else
@@ -1036,7 +1031,8 @@ ClrDataAssembly::EndEnumModules(
 
     EX_TRY
     {
-        TrivialModuleIterator* iter = FROM_CDENUM(TrivialModuleIterator, handle);
+        Assembly::ModuleIterator* iter =
+            FROM_CDENUM(Assembly::ModuleIterator, handle);
         delete iter;
         status = S_OK;
     }
@@ -1174,7 +1170,7 @@ ClrDataAssembly::GetFileName(
     {
         COUNT_T _nameLen;
 
-        if (m_assembly->GetPEAssembly()->GetPath().
+        if (m_assembly->GetManifestFile()->GetPath().
             DacGetUnicode(bufLen, name, &_nameLen))
         {
             if (nameLen)

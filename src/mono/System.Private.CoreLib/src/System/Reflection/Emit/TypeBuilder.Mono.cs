@@ -74,7 +74,6 @@ namespace System.Reflection.Emit
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;
-        private bool is_byreflike_set;
 
         private int state;
 #endregion
@@ -274,7 +273,8 @@ namespace System.Reflection.Emit
         {
             if (interfaceType == null)
                 throw new ArgumentNullException(nameof(interfaceType));
-
+            if (interfaceType.IsByRef)
+                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
             check_not_created();
 
             if (interfaces != null)
@@ -408,7 +408,8 @@ namespace System.Reflection.Emit
             {
                 foreach (Type iface in interfaces)
                 {
-                    ArgumentNullException.ThrowIfNull(iface, nameof(interfaces));
+                    if (iface == null)
+                        throw new ArgumentNullException(nameof(interfaces));
                     if (iface.IsByRef)
                         throw new ArgumentException(nameof(interfaces));
                 }
@@ -837,7 +838,7 @@ namespace System.Reflection.Emit
             if (parent != null)
             {
                 if (parent.IsByRef)
-                    throw new NotSupportedException();
+                    throw new ArgumentException();
                 if (IsInterface)
                     throw new TypeLoadException();
             }
@@ -873,6 +874,17 @@ namespace System.Reflection.Emit
                         throw new TypeLoadException();
                     if (iface is TypeBuilder builder && !builder.is_created)
                         throw new TypeLoadException();
+                }
+            }
+
+            if (fields != null)
+            {
+                foreach (FieldBuilder fb in fields)
+                {
+                    if (fb == null)
+                        continue;
+                    if (fb.FieldType.IsByRef)
+                        throw new COMException();
                 }
             }
 
@@ -1532,10 +1544,6 @@ namespace System.Reflection.Emit
             {
                 attrs |= TypeAttributes.HasSecurity;
             }
-            else if (attrname == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
-            {
-                is_byreflike_set = true;
-            }
 
             if (cattrs != null)
             {
@@ -1563,7 +1571,8 @@ namespace System.Reflection.Emit
             if (eventtype == null)
                 throw new ArgumentNullException(nameof(eventtype));
             check_not_created();
-
+            if (eventtype.IsByRef)
+                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
             EventBuilder res = new EventBuilder(this, name, attributes, eventtype);
             if (events != null)
             {
@@ -1592,7 +1601,10 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+            if (name.Length == 0)
+                throw new ArgumentException("Empty name is not legal", nameof(name));
             if ((size <= 0) || (size > 0x3f0000))
                 throw new ArgumentException("Data size must be > 0 and < 0x3f0000");
             check_not_created();
@@ -1604,7 +1616,7 @@ namespace System.Reflection.Emit
             {
                 TypeBuilder tb = DefineNestedType(typeName,
                     TypeAttributes.NestedPrivate | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
-                                                   typeof(ValueType), null, FieldBuilder.RVADataPackingSize(size), size);
+                                                   typeof(ValueType), null, PackingSize.Size1, size);
                 tb.CreateType();
                 datablobtype = tb;
             }
@@ -1694,8 +1706,9 @@ namespace System.Reflection.Emit
 
         private static void check_name(string argName, string name)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name, argName);
-            if (name[0] == '\0')
+            if (name == null)
+                throw new ArgumentNullException(argName);
+            if (name.Length == 0 || name[0] == ((char)0))
                 throw new ArgumentException(SR.Argument_EmptyName, argName);
         }
 

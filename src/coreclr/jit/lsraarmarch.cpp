@@ -694,40 +694,36 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 {
                     buildInternalIntRegisterDefForNode(blkNode);
 #ifdef TARGET_ARM64
-                    const bool canUseLoadStorePairIntRegsInstrs = (size >= 2 * REGSIZE_BYTES);
+                    const bool dstAddrMayNeedReg = dstAddr->isContained();
+                    const bool srcAddrMayNeedReg = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
+                                                   ((srcAddrOrFill != nullptr) && srcAddrOrFill->isContained());
 
-                    if (canUseLoadStorePairIntRegsInstrs)
-                    {
-                        // CodeGen can use ldp/stp instructions sequence.
-                        buildInternalIntRegisterDefForNode(blkNode);
-                    }
-
-                    const bool isSrcAddrLocal = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
-                                                ((srcAddrOrFill != nullptr) && srcAddrOrFill->OperIsLocalAddr());
-                    const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
-
-                    // CodeGen can use 16-byte SIMD ldp/stp for larger block sizes
-                    // only when both source and destination base address registers have known alignment.
-                    // This is the case, when both registers are either sp or fp.
-                    bool canUse16ByteWideInstrs = isSrcAddrLocal && isDstAddrLocal && (size >= 2 * FP_REGSIZE_BYTES);
-
-                    // Note that the SIMD registers allocation is speculative - LSRA doesn't know at this point
-                    // whether CodeGen will use SIMD registers (i.e. if such instruction sequence will be more optimal).
-                    // Therefore, it must allocate an additional integer register anyway.
-                    if (canUse16ByteWideInstrs)
-                    {
-                        buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                        buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                    }
-
-                    const bool srcAddrMayNeedReg =
-                        isSrcAddrLocal || ((srcAddrOrFill != nullptr) && srcAddrOrFill->isContained());
-                    const bool dstAddrMayNeedReg = isDstAddrLocal || dstAddr->isContained();
-
-                    // The following allocates an additional integer register in a case
-                    // when a load instruction and a store instruction cannot be encoded using offset
-                    // from a corresponding base register.
                     if (srcAddrMayNeedReg && dstAddrMayNeedReg)
+                    {
+                        // The following allocates an additional integer register in a case
+                        // when a load instruction and a store instruction cannot be encoded.
+                        buildInternalIntRegisterDefForNode(blkNode);
+                        // In this case, CodeGen will use a SIMD register for copying.
+                        buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        // And in case of a larger block size, two SIMD registers.
+                        if (size >= 2 * REGSIZE_BYTES)
+                        {
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        }
+                    }
+                    else if (srcAddrMayNeedReg || dstAddrMayNeedReg)
+                    {
+                        if (size >= 2 * REGSIZE_BYTES)
+                        {
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        }
+                        else
+                        {
+                            buildInternalIntRegisterDefForNode(blkNode);
+                        }
+                    }
+                    else if (size >= 2 * REGSIZE_BYTES)
                     {
                         buildInternalIntRegisterDefForNode(blkNode);
                     }
@@ -785,7 +781,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
         useCount++;
-        BuildUse(blkNode->AsStoreDynBlk()->gtDynamicSize, sizeRegMask);
+        BuildUse(blkNode->AsDynBlk()->gtDynamicSize, sizeRegMask);
     }
 
     buildInternalRegisterUses();

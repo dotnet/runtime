@@ -200,16 +200,6 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"((\d{2,3}?)){2}", "1234", RegexOptions.None, 0, 4, true, "1234");
                 yield return (@"(abc\d{2,3}?){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc45");
 
-                // Testing selected FindOptimizations finds the right prefix
-                yield return (@"(^|a+)bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
-                yield return (@"(^|($|a+))bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
-                yield return (@"yz(^|a+)bc", " yzaabc", RegexOptions.None, 0, 7, true, "yzaabc");
-                yield return (@"(^a|a$) bc", "a bc", RegexOptions.None, 0, 4, true, "a bc");
-                yield return (@"(abcdefg|abcdef|abc|a)h", "    ah  ", RegexOptions.None, 0, 8, true, "ah");
-                yield return (@"(^abcdefg|abcdef|^abc|a)h", "    abcdefh  ", RegexOptions.None, 0, 13, true, "abcdefh");
-                yield return (@"(a|^abcdefg|abcdef|^abc)h", "    abcdefh  ", RegexOptions.None, 0, 13, true, "abcdefh");
-                yield return (@"(abcdefg|abcdef)h", "    abcdefghij  ", RegexOptions.None, 0, 16, true, "abcdefgh");
-
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // Back references not support with NonBacktracking
@@ -242,61 +232,17 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(\d{2,3}?)+?", "1234", RegexOptions.None, 0, 4, true, "12");
                 yield return (@"(\d{2,3}?)*?", "123456", RegexOptions.None, 0, 4, true, "");
 
-                foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline })
+                foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
                 {
                     yield return (@".*", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@".*c", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@"b.*", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@".*", "abc", lineOption, 2, 1, true, "c");
 
-                    yield return (@"a.*[bc]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
-                    yield return (@"a.*[bc]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
-                    yield return (@"a.*[bc]", "xyza12345d6789", lineOption, 0, 14, false, "");
-
-                    yield return (@"a.*[bcd]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
-                    yield return (@"a.*[bcd]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
-                    yield return (@"a.*[bcd]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
-                    yield return (@"a.*[bcd]", "xyza12345e6789", lineOption, 0, 14, false, "");
-
-                    yield return (@"a.*[bcde]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
-                    yield return (@"a.*[bcde]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
-                    yield return (@"a.*[bcde]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
-                    yield return (@"a.*[bcde]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
-                    yield return (@"a.*[bcde]", "xyza12345f6789", lineOption, 0, 14, false, "");
-
-                    yield return (@"a.*[bcdef]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
-                    yield return (@"a.*[bcdef]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
-                    yield return (@"a.*[bcdef]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
-                    yield return (@"a.*[bcdef]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
-                    yield return (@"a.*[bcdef]", "xyza12345f6789", lineOption, 0, 14, true, "a12345f");
-                    yield return (@"a.*[bcdef]", "xyza12345g6789", lineOption, 0, 14, false, "");
-
                     yield return (@".*?", "abc", lineOption, 1, 2, true, "");
                     yield return (@".*?c", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@"b.*?", "abc", lineOption, 1, 2, true, "b");
                     yield return (@".*?", "abc", lineOption, 2, 1, true, "");
-
-                    yield return (@"a.*?[bc]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
-                    yield return (@"a.*?[bc]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
-                    yield return (@"a.*?[bc]", "xyza12345d6789", lineOption, 0, 14, false, "");
-
-                    yield return (@"a.*?[bcd]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
-                    yield return (@"a.*?[bcd]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
-                    yield return (@"a.*?[bcd]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
-                    yield return (@"a.*?[bcd]", "xyza12345e6789", lineOption, 0, 14, false, "");
-
-                    yield return (@"a.*?[bcde]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
-                    yield return (@"a.*?[bcde]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
-                    yield return (@"a.*?[bcde]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
-                    yield return (@"a.*?[bcde]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
-                    yield return (@"a.*?[bcde]", "xyza12345f6789", lineOption, 0, 14, false, "");
-
-                    yield return (@"a.*?[bcdef]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
-                    yield return (@"a.*?[bcdef]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
-                    yield return (@"a.*?[bcdef]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
-                    yield return (@"a.*?[bcdef]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
-                    yield return (@"a.*?[bcdef]", "xyza12345f6789", lineOption, 0, 14, true, "a12345f");
-                    yield return (@"a.*?[bcdef]", "xyza12345g6789", lineOption, 0, 14, false, "");
                 }
 
                 // Nested loops
@@ -328,42 +274,8 @@ namespace System.Text.RegularExpressions.Tests
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
                 yield return (@"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzza", RegexOptions.None, 0, 18, false, string.Empty);
 
-                // Anchors
-                foreach (RegexOptions anchorOptions in new[] { RegexOptions.None, RegexOptions.Multiline })
-                {
-                    yield return (@"^abc", "abc", anchorOptions, 0, 3, true, "abc");
-                    yield return (@"^abc", " abc", anchorOptions, 0, 4, false, "");
-                    yield return (@"^abc|^def", "def", anchorOptions, 0, 3, true, "def");
-                    yield return (@"^abc|^def", " abc", anchorOptions, 0, 4, false, "");
-                    yield return (@"^abc|^def", " def", anchorOptions, 0, 4, false, "");
-                    yield return (@"abc|^def", " abc", anchorOptions, 0, 4, true, "abc");
-                    yield return (@"abc|^def|^efg", " abc", anchorOptions, 0, 4, true, "abc");
-                    yield return (@"^abc|def|^efg", " def", anchorOptions, 0, 4, true, "def");
-                    yield return (@"^abc|def", " def", anchorOptions, 0, 4, true, "def");
-                    yield return (@"abcd$", "1234567890abcd", anchorOptions, 0, 14, true, "abcd");
-                    yield return (@"abc{1,4}d$", "1234567890abcd", anchorOptions, 0, 14, true, "abcd");
-                    yield return (@"abc{1,4}d$", "1234567890abccccd", anchorOptions, 0, 17, true, "abccccd");
-                }
-                if (!RegexHelpers.IsNonBacktracking(engine))
-                {
-                    yield return (@"\Gabc", "abc", RegexOptions.None, 0, 3, true, "abc");
-                    yield return (@"\Gabc", " abc", RegexOptions.None, 0, 4, false, "");
-                    yield return (@"\Gabc", " abc", RegexOptions.None, 1, 3, true, "abc");
-                    yield return (@"\Gabc|\Gdef", "def", RegexOptions.None, 0, 3, true, "def");
-                    yield return (@"\Gabc|\Gdef", " abc", RegexOptions.None, 0, 4, false, "");
-                    yield return (@"\Gabc|\Gdef", " def", RegexOptions.None, 0, 4, false, "");
-                    yield return (@"\Gabc|\Gdef", " abc", RegexOptions.None, 1, 3, true, "abc");
-                    yield return (@"\Gabc|\Gdef", " def", RegexOptions.None, 1, 3, true, "def");
-                    yield return (@"abc|\Gdef", " abc", RegexOptions.None, 0, 4, true, "abc");
-                    yield return (@"\Gabc|def", " def", RegexOptions.None, 0, 4, true, "def");
-                }
-
                 // Anchors and multiline
-                yield return (@"^A$", "A\n", RegexOptions.Multiline, 0, 2, true, "A");
-                yield return (@"^A$", "ABC\n", RegexOptions.Multiline, 0, 4, false, string.Empty);
-                yield return (@"^A$", "123\nA", RegexOptions.Multiline, 0, 5, true, "A");
-                yield return (@"^A$", "123\nA\n456", RegexOptions.Multiline, 0, 9, true, "A");
-                yield return (@"^A$|^B$", "123\nB\n456", RegexOptions.Multiline, 0, 9, true, "B");
+                yield return (@"^A$", "ABC\n", RegexOptions.Multiline, 0, 2, false, string.Empty);
 
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
                 yield return (@"\A(line2\n)line3\Z", "line2\nline3\n", RegexOptions.Multiline, 0, 12, true, "line2\nline3");
@@ -506,38 +418,6 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
                 // Alternation construct
-                foreach (string input in new[] { "abc", "def" })
-                {
-                    string upper = input.ToUpperInvariant();
-
-                    // Two branches
-                    yield return (@"abc|def", input, RegexOptions.None, 0, input.Length, true, input);
-                    yield return (@"abc|def", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
-                    yield return (@"abc|def", upper, RegexOptions.None, 0, input.Length, false, "");
-
-                    // Three branches
-                    yield return (@"abc|agh|def", input, RegexOptions.None, 0, input.Length, true, input);
-                    yield return (@"abc|agh|def", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
-                    yield return (@"abc|agh|def", upper, RegexOptions.None, 0, input.Length, false, "");
-
-                    // Four branches
-                    yield return (@"abc|agh|def|aij", input, RegexOptions.None, 0, input.Length, true, input);
-                    yield return (@"abc|agh|def|aij", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
-                    yield return (@"abc|agh|def|aij", upper, RegexOptions.None, 0, input.Length, false, "");
-
-                    // Four branches (containing various other constructs)
-                    if (!RegexHelpers.IsNonBacktracking(engine))
-                    {
-                        yield return (@"abc|(agh)|(?=def)def|(?:(?(aij)aij|(?!)))", input, RegexOptions.None, 0, input.Length, true, input);
-                        yield return (@"abc|(agh)|(?=def)def|(?:(?(aij)aij|(?!)))", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
-                        yield return (@"abc|(agh)|(?=def)def|(?:(?(aij)aij|(?!)))", upper, RegexOptions.None, 0, input.Length, false, "");
-                    }
-
-                    // Sets in various positions in each branch
-                    yield return (@"a\wc|\wgh|de\w", input, RegexOptions.None, 0, input.Length, true, input);
-                    yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
-                    yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.None, 0, input.Length, false, "");
-                }
                 yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
@@ -560,6 +440,7 @@ namespace System.Text.RegularExpressions.Tests
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.None, 0, 4, false, string.Empty);
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
                 }
+                yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
 
                 // No Negation
                 yield return ("[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
@@ -983,7 +864,7 @@ namespace System.Text.RegularExpressions.Tests
             }
             string input = new string(chars);
 
-            Regex re = await RegexHelpers.GetRegexAsync(engine, @"a.{20}^", RegexOptions.None, TimeSpan.FromMilliseconds(10));
+            Regex re = await RegexHelpers.GetRegexAsync(engine, @"a.{20}$", RegexOptions.None, TimeSpan.FromMilliseconds(10));
             Assert.Throws<RegexMatchTimeoutException>(() => { re.Match(input); });
         }
 
@@ -1137,18 +1018,6 @@ namespace System.Text.RegularExpressions.Tests
                         new CaptureData("d", 0, 1),
                         new CaptureData(string.Empty, 1, 0),
                         new CaptureData(string.Empty, 1, 0)
-                    }
-                };
-                yield return new object[]
-                {
-                    engine,
-                    "(d+?)(e*?)(f+)", "dddeeefff", RegexOptions.None, 0, 9,
-                    new CaptureData[]
-                    {
-                        new CaptureData("dddeeefff", 0, 9),
-                        new CaptureData("ddd", 0, 3),
-                        new CaptureData("eee", 3, 3),
-                        new CaptureData("fff", 6, 3),
                     }
                 };
 

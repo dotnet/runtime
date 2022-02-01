@@ -141,8 +141,6 @@ void Phase::PrePhase()
 //
 void Phase::PostPhase(PhaseStatus status)
 {
-    comp->EndPhase(m_phase);
-
 #ifdef DEBUG
 
     // Don't dump or check post phase unless the phase made changes.
@@ -164,33 +162,16 @@ void Phase::PostPhase(PhaseStatus status)
     // well as the new-style phases that have been updated to return
     // PhaseStatus from their DoPhase methods.
     //
-    // clang-format off
-
-    static Phases s_allowlist[] = {
-        PHASE_INCPROFILE,
-        PHASE_IBCPREP,
-        PHASE_IMPORTATION,
-        PHASE_PATCHPOINTS,
-        PHASE_IBCINSTR,
-        PHASE_INDXCALL,
-        PHASE_MORPH_INLINE,
-        PHASE_ALLOCATE_OBJECTS,
-        PHASE_EMPTY_TRY,
-        PHASE_EMPTY_FINALLY,
-        PHASE_MERGE_FINALLY_CHAINS,
-        PHASE_CLONE_FINALLY,
-        PHASE_MERGE_THROWS,
-        PHASE_MORPH_GLOBAL,
-        PHASE_INVERT_LOOPS,
-        PHASE_OPTIMIZE_LAYOUT,
-        PHASE_FIND_LOOPS,
-        PHASE_BUILD_SSA,
-        PHASE_INSERT_GC_POLLS,
-        PHASE_RATIONALIZE,
-        PHASE_LOWERING,
-        PHASE_STACK_LEVEL_SETTER};
-
-    // clang-format on
+    static Phases s_allowlist[] = {PHASE_IMPORTATION,      PHASE_IBCINSTR,
+                                   PHASE_IBCPREP,          PHASE_INCPROFILE,
+                                   PHASE_INDXCALL,         PHASE_MORPH_INLINE,
+                                   PHASE_ALLOCATE_OBJECTS, PHASE_EMPTY_TRY,
+                                   PHASE_EMPTY_FINALLY,    PHASE_MERGE_FINALLY_CHAINS,
+                                   PHASE_CLONE_FINALLY,    PHASE_MERGE_THROWS,
+                                   PHASE_MORPH_GLOBAL,     PHASE_INVERT_LOOPS,
+                                   PHASE_OPTIMIZE_LAYOUT,  PHASE_FIND_LOOPS,
+                                   PHASE_BUILD_SSA,        PHASE_RATIONALIZE,
+                                   PHASE_LOWERING,         PHASE_STACK_LEVEL_SETTER};
 
     if (madeChanges)
     {
@@ -253,4 +234,6 @@ void Phase::PostPhase(PhaseStatus status)
 #if DUMP_FLOWGRAPHS
     comp->fgDumpFlowGraph(m_phase, Compiler::PhasePosition::PostPhase);
 #endif // DUMP_FLOWGRAPHS
+
+    comp->EndPhase(m_phase);
 }

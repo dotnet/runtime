@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
         {
-            if (concat.Kind != RegexNodeKind.Concatenate)
+            if (concat.Type != RegexNode.Concatenate)
             {
                 throw ThrowHelper.CreateArgumentException(ExceptionResource.ReplacementError);
             }
@@ -47,17 +47,17 @@ namespace System.Text.RegularExpressions
             {
                 RegexNode child = concat.Child(i);
 
-                switch (child.Kind)
+                switch (child.Type)
                 {
-                    case RegexNodeKind.Multi:
+                    case RegexNode.Multi:
                         vsb.Append(child.Str!);
                         break;
 
-                    case RegexNodeKind.One:
+                    case RegexNode.One:
                         vsb.Append(child.Ch);
                         break;
 
-                    case RegexNodeKind.Backreference:
+                    case RegexNode.Ref:
                         if (vsb.Length > 0)
                         {
                             rules.Append(strings.Length);

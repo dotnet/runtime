@@ -18,7 +18,7 @@ namespace System.Numerics.Tests
 
         // Invariant culture is commonly used for (de-)serialization and similar to en-US
         // Ukrainian (Ukraine) added to catch regressions (https://github.com/dotnet/runtime/issues/14545)
-        // Current culture to get additional value out of glob/loc test runs
+        // Current cultue to get additional value out of glob/loc test runs
         public static IEnumerable<object[]> Cultures
         {
             get
@@ -66,11 +66,11 @@ namespace System.Numerics.Tests
                 //invalid number style
                 // ******InvalidNumberStyles
                 NumberStyles invalid = (NumberStyles)0x7c00;
-                AssertExtensions.Throws<ArgumentException>("style", () =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     BigInteger.Parse("1", invalid).ToString("d");
                 });
-                AssertExtensions.Throws<ArgumentException>("style", () =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     BigInteger junk;
                     BigInteger.TryParse("1", invalid, null, out junk);
@@ -116,16 +116,6 @@ namespace System.Numerics.Tests
 
             Assert.True(BigInteger.TryParse("080000001", NumberStyles.HexNumber, null, out result));
             Assert.Equal(0x80000001u, result);
-
-            Assert.Throws<FormatException>(() =>
-            {
-                BigInteger.Parse("zzz", NumberStyles.HexNumber);
-            });
-
-            AssertExtensions.Throws<ArgumentException>("style", () =>
-            {
-                BigInteger.Parse("1", NumberStyles.AllowHexSpecifier | NumberStyles.AllowCurrencySymbol);
-            });
         }
 
         private static void RunFormatProviderParseStrings()

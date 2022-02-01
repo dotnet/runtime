@@ -17,16 +17,14 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
             Assert.Throws<ArgumentNullException>(() => new ServiceNameCollection(null));
         }
 
-        [Fact]
-        public void Constructor_CollectionContainsNullOrEmpty_Throws()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void Constructor_CollectionContainsNullOrEmpty_Throws(string item)
         {
-            AssertExtensions.Throws<ArgumentNullException>("serviceName", () => new ServiceNameCollection(new[] { (string)null }));
-            AssertExtensions.Throws<ArgumentNullException>("serviceName", () => new ServiceNameCollection(new[] { "first", null }));
-            AssertExtensions.Throws<ArgumentNullException>("serviceName", () => new ServiceNameCollection(new[] { null, "second" }));
-
-            AssertExtensions.Throws<ArgumentException>("serviceName", () => new ServiceNameCollection(new[] { "" }));
-            AssertExtensions.Throws<ArgumentException>("serviceName", () => new ServiceNameCollection(new[] { "first", "" }));
-            AssertExtensions.Throws<ArgumentException>("serviceName", () => new ServiceNameCollection(new[] { "", "second" }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new ServiceNameCollection(new[] { item }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new ServiceNameCollection(new[] { "first", item }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new ServiceNameCollection(new[] { item, "second" }));
         }
 
         [Fact]
@@ -186,8 +184,8 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
         public void Merge_NullOrEmptyString_Throws()
         {
             var collection = new ServiceNameCollection(new[] { "first", "second" });
-            AssertExtensions.Throws<ArgumentNullException>("serviceName", () => collection.Merge((string)null));
-            AssertExtensions.Throws<ArgumentException>("serviceName", () => collection.Merge(string.Empty));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Merge((string)null));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Merge(string.Empty));
         }
 
         [Fact]
@@ -222,22 +220,22 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
             Assert.Throws<NullReferenceException>(() => collection.Merge((IEnumerable)null));
         }
 
-        [Fact]
-        public void Merge_EnumerableContainingNullOrEmpty_Throws()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void Merge_EnumerableContainingNullOrEmpty_Throws(string item)
         {
             var collection = new ServiceNameCollection(new[] { "first", "second" });
-            AssertExtensions.Throws<ArgumentNullException>("serviceName", () => collection.Merge(new[] { (string)null }));
-            AssertExtensions.Throws<ArgumentNullException>("serviceName", () => collection.Merge(new[] { "third", null }));
-            AssertExtensions.Throws<ArgumentException>("serviceName", () => collection.Merge(new[] { "" }));
-            AssertExtensions.Throws<ArgumentException>("serviceName", () => collection.Merge(new[] { "third", "" }));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Merge(new[] { item }));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Merge(new[] { "third", item }));
         }
 
         [Fact]
         public void Merge_NonStringEnumerable_Throws()
         {
             var collection = new ServiceNameCollection(new[] { "first", "second" });
-            AssertExtensions.Throws<ArgumentNullException>("serviceName", () => collection.Merge(new[] { 3 }));
-            AssertExtensions.Throws<ArgumentNullException>("serviceName", () => collection.Merge(new[] { new object() }));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Merge(new[] { 3 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Merge(new[] { new object() }));
         }
 
         public static object[][] MergeCollectionsTestData =

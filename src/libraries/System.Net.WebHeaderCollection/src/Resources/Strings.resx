@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
+﻿<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -63,6 +62,9 @@
   </data>
   <data name="net_headers_rsp" xml:space="preserve">
     <value>This collection holds request headers and cannot contain the specified response header.</value>
+  </data>
+  <data name="net_emptyStringCall" xml:space="preserve">
+    <value>The parameter '{0}' cannot be an empty string.</value>
   </data>
   <data name="net_WebHeaderInvalidControlChars" xml:space="preserve">
     <value>Specified value has invalid Control characters.</value>

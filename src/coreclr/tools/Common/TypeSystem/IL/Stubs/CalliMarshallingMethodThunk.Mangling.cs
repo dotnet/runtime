@@ -20,7 +20,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return RuntimeMarshallingEnabled ? "CalliWithRuntimeMarshalling" : "Calli";
+                return "Calli";
             }
         }
     }

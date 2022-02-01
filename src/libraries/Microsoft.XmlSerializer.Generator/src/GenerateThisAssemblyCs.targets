@@ -4,8 +4,6 @@
   </ItemGroup>
 
   <Target Name="GenerateThisAssemblyCs"
-          Inputs="$(MSBuildThisFileFullPath)"
-          Outputs="$(IntermediateOutputPath)ThisAssembly.cs"
           BeforeTargets="CoreCompile">
     <PropertyGroup>
       <ThisAssemblyCsContents>
@@ -46,6 +44,6 @@ namespace Microsoft.XmlSerializer.Generator
       File="$(IntermediateOutputPath)ThisAssembly.cs"
       Lines="$(ThisAssemblyCsContents)"
       Overwrite="true"
-      Encoding="Unicode" />
+      Encoding="Unicode"/>
   </Target>
 </Project>

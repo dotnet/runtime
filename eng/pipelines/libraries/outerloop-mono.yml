@@ -23,7 +23,7 @@ jobs:
       platforms:
       - windows_x86
       - Browser_wasm
-      - ${{ if eq(variables['isRollingBuild'], true) }}:
+      - ${{ if eq(variables['isFullMatrix'], true) }}:
         - windows_x64
         - Linux_x64
         - Linux_arm
@@ -34,7 +34,7 @@ jobs:
         nameSuffix: AllSubsets_Mono
         buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true
         timeoutInMinutes: 180
-        includeAllPlatforms: ${{ variables['isRollingBuild'] }}
+        isFullMatrix: ${{ variables['isFullMatrix'] }}
         # extra steps, run tests
         extraStepsTemplate: /eng/pipelines/libraries/helix.yml
         extraStepsParameters:
@@ -44,7 +44,7 @@ jobs:
           creator: dotnet-bot
           testRunNamePrefixSuffix: Mono_$(_BuildConfig)
     
-  - ${{ if eq(variables['isRollingBuild'], false) }}:
+  - ${{ if eq(variables['isFullMatrix'], false) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -61,7 +61,7 @@ jobs:
           nameSuffix: AllSubsets_Mono
           buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true
           timeoutInMinutes: 180
-          includeAllPlatforms: ${{ variables['isRollingBuild'] }}
+          isFullMatrix: ${{ variables['isFullMatrix'] }}
           # extra steps, run tests
           extraStepsTemplate: /eng/pipelines/libraries/helix.yml
           extraStepsParameters:

@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
@@ -12,6 +13,16 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    public partial class RSA : AsymmetricAlgorithm
+    {
+        public static new partial RSA Create()
+        {
+            return new RSAImplementation.RSASecurityTransforms();
+        }
+    }
+#endif
+
     internal static partial class RSAImplementation
     {
         public sealed partial class RSASecurityTransforms : RSA
@@ -375,9 +386,12 @@ namespace System.Security.Cryptography
 
             public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
-                ArgumentNullException.ThrowIfNull(hash);
-                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
-                ArgumentNullException.ThrowIfNull(padding);
+                if (hash == null)
+                    throw new ArgumentNullException(nameof(hash));
+                if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                    throw HashAlgorithmNameNullOrEmpty();
+                if (padding == null)
+                    throw new ArgumentNullException(nameof(padding));
 
                 ThrowIfDisposed();
 
@@ -429,8 +443,14 @@ namespace System.Security.Cryptography
 
             public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
             {
-                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
-                ArgumentNullException.ThrowIfNull(padding);
+                if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                {
+                    throw HashAlgorithmNameNullOrEmpty();
+                }
+                if (padding == null)
+                {
+                    throw new ArgumentNullException(nameof(padding));
+                }
 
                 ThrowIfDisposed();
 
@@ -530,8 +550,14 @@ namespace System.Security.Cryptography
 
             public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
-                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
-                ArgumentNullException.ThrowIfNull(padding);
+                if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                {
+                    throw HashAlgorithmNameNullOrEmpty();
+                }
+                if (padding == null)
+                {
+                    throw new ArgumentNullException(nameof(padding));
+                }
 
                 ThrowIfDisposed();
 
@@ -769,5 +795,8 @@ namespace System.Security.Cryptography
                 return true;
             }
         }
+
+        private static Exception HashAlgorithmNameNullOrEmpty() =>
+            new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");
     }
 }

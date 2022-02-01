@@ -415,6 +415,8 @@ extern "C" void setFPReturn(int fpSize, INT64 retVal);
 extern "C" void getFPReturn(int fpSize, INT64 *retval);
 
 
+struct ComToManagedExRecord; // defined in cgencpu.cpp
+
 #include <pshpack1.h>
 struct DECLSPEC_ALIGN(8) UMEntryThunkCode
 {

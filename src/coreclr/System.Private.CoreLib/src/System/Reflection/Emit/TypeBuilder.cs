@@ -480,7 +480,11 @@ namespace System.Reflection.Emit
             string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, ModuleBuilder module,
             PackingSize iPackingSize, int iTypeSize, TypeBuilder? enclosingType)
         {
-            ArgumentException.ThrowIfNullOrEmpty(fullname);
+            if (fullname == null)
+                throw new ArgumentNullException(nameof(fullname));
+
+            if (fullname.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(fullname));
 
             if (fullname[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(fullname));
@@ -577,7 +581,11 @@ namespace System.Reflection.Emit
             FieldBuilder fdBuilder;
             TypeAttributes typeAttributes;
 
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            if (name.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
 
             if (size <= 0 || size >= 0x003f0000)
                 throw new ArgumentException(SR.Argument_BadSizeForData);
@@ -1274,7 +1282,11 @@ namespace System.Reflection.Emit
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            if (name.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
 
             AssemblyBuilder.CheckContext(returnType);
             AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
@@ -1362,9 +1374,23 @@ namespace System.Reflection.Emit
 
             lock (SyncRoot)
             {
-                ArgumentException.ThrowIfNullOrEmpty(name);
-                ArgumentException.ThrowIfNullOrEmpty(dllName);
-                ArgumentException.ThrowIfNullOrEmpty(importName);
+                if (name == null)
+                    throw new ArgumentNullException(nameof(name));
+
+                if (name.Length == 0)
+                    throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+
+                if (dllName == null)
+                    throw new ArgumentNullException(nameof(dllName));
+
+                if (dllName.Length == 0)
+                    throw new ArgumentException(SR.Argument_EmptyName, nameof(dllName));
+
+                if (importName == null)
+                    throw new ArgumentNullException(nameof(importName));
+
+                if (importName.Length == 0)
+                    throw new ArgumentException(SR.Argument_EmptyName, nameof(importName));
 
                 if ((attributes & MethodAttributes.Abstract) != 0)
                     throw new ArgumentException(SR.Argument_BadPInvokeMethod);
@@ -1766,7 +1792,10 @@ namespace System.Reflection.Emit
             Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+            if (name.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
 
             AssemblyBuilder.CheckContext(returnType);
             AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
@@ -1818,7 +1847,10 @@ namespace System.Reflection.Emit
 
         private EventBuilder DefineEventNoLock(string name, EventAttributes attributes, Type eventtype)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+            if (name.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             if (name[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
 
@@ -1890,9 +1922,7 @@ namespace System.Reflection.Emit
 
             int tkParent = 0;
             if (m_typeParent != null)
-            {
                 tkParent = m_module.GetTypeTokenInternal(m_typeParent);
-            }
 
             ModuleBuilder module = m_module;
 

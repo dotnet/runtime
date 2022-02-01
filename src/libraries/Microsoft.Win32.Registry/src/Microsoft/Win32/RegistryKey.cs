@@ -728,16 +728,16 @@ namespace Microsoft.Win32
                 throw new ArgumentNullException(nameof(name));
             }
 
-            int nextSlash = name.IndexOf('\\');
+            int nextSlash = name.IndexOf("\\", StringComparison.OrdinalIgnoreCase);
             int current = 0;
-            while (nextSlash >= 0)
+            while (nextSlash != -1)
             {
                 if ((nextSlash - current) > MaxKeyLength)
                 {
                     throw new ArgumentException(SR.Arg_RegKeyStrLenBug, nameof(name));
                 }
                 current = nextSlash + 1;
-                nextSlash = name.IndexOf('\\', current);
+                nextSlash = name.IndexOf("\\", current, StringComparison.OrdinalIgnoreCase);
             }
 
             if ((name.Length - current) > MaxKeyLength)

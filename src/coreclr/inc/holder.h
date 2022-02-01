@@ -1152,14 +1152,7 @@ FORCEINLINE void HolderFreeLibrary(HMODULE h) { FreeLibrary(h); }
 typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, NULL> HModuleHolder;
 
 template <typename T> FORCEINLINE
-void DoLocalFree(T* pMem)
-{
-#ifdef HOST_WINDOWS
-    (LocalFree)((void*)pMem);
-#else
-    (free)((void*)pMem);
-#endif
-}
+void DoLocalFree(T* pMem) { (LocalFree)((HLOCAL)pMem); }
 
 template<typename _TYPE>
 using LocalAllocHolder = SpecializedWrapper<_TYPE, DoLocalFree<_TYPE>>;

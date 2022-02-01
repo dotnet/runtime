@@ -529,8 +529,16 @@ ftype BankersRound(ftype value)
     if ((value -(integerPart +0.5)) == 0.0)
     {
         // round to even
+#if defined(TARGET_ARM) && defined(FEATURE_CORESYSTEM)
+        // @ARMTODO: On ARM when building on CoreSystem (where we link against the system CRT) an attempt to
+        // use fmod(float, float) fails to link (apparently this is converted to a reference to fmodf, which
+        // is not included in the system CRT). Use the double version instead.
+        if (fmod(double(integerPart), double(2.0)) == 0.0)
+            return integerPart;
+#else
         if (fmod(ftype(integerPart), ftype(2.0)) == 0.0)
             return integerPart;
+#endif
 
         // Else return the nearest even integer
         return (ftype)_copysign(ceil(fabs(value+0.5)),
@@ -1434,7 +1442,7 @@ HCIMPL2(void*, JIT_GetSharedNonGCStaticBaseDynamicClass_Helper, DomainLocalModul
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    MethodTable *pMT = pLocalModule->GetDomainAssembly()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
+    MethodTable *pMT = pLocalModule->GetDomainFile()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
     _ASSERTE(pMT);
 
     pMT->CheckRunClassInitThrowing();
@@ -1456,7 +1464,7 @@ HCIMPL2(void*, JIT_GetSharedNonGCStaticBaseDynamicClass, DomainLocalModule *pLoc
     if (pLocalInfo != NULL)
     {
         PTR_BYTE retval;
-        GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
+        GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pLocalModule->GetDomainFile()->GetModule()->GetLoaderAllocator(),
                                                pLocalInfo,
                                                &retval);
 
@@ -1478,7 +1486,7 @@ HCIMPL2(void, JIT_ClassInitDynamicClass_Helper, DomainLocalModule *pLocalModule,
 
     HELPER_METHOD_FRAME_BEGIN_0();
 
-    MethodTable *pMT = pLocalModule->GetDomainAssembly()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
+    MethodTable *pMT = pLocalModule->GetDomainFile()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
     _ASSERTE(pMT);
 
     pMT->CheckRunClassInitThrowing();
@@ -1517,7 +1525,7 @@ HCIMPL2(void*, JIT_GetSharedGCStaticBaseDynamicClass_Helper, DomainLocalModule *
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    MethodTable *pMT = pLocalModule->GetDomainAssembly()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
+    MethodTable *pMT = pLocalModule->GetDomainFile()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
     _ASSERTE(pMT);
 
     pMT->CheckRunClassInitThrowing();
@@ -1539,7 +1547,7 @@ HCIMPL2(void*, JIT_GetSharedGCStaticBaseDynamicClass, DomainLocalModule *pLocalM
     if (pLocalInfo != NULL)
     {
         PTR_BYTE retval;
-        GET_DYNAMICENTRY_GCSTATICS_BASEPOINTER(pLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
+        GET_DYNAMICENTRY_GCSTATICS_BASEPOINTER(pLocalModule->GetDomainFile()->GetModule()->GetLoaderAllocator(),
                                                pLocalInfo,
                                                &retval);
 
@@ -1853,7 +1861,7 @@ HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBaseDynamicClass, DomainLocalModule
         if (pLocalInfo != NULL)
         {
             PTR_BYTE retval;
-            GET_DYNAMICENTRY_NONGCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
+            GET_DYNAMICENTRY_NONGCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainFile()->GetModule()->GetLoaderAllocator(),
                                                             pLocalInfo,
                                                             &retval);
             return retval;
@@ -1864,7 +1872,7 @@ HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBaseDynamicClass, DomainLocalModule
     // then we have to go through the slow path
 
     // Obtain the Module
-    Module * pModule = pDomainLocalModule->GetDomainAssembly()->GetModule();
+    Module * pModule = pDomainLocalModule->GetDomainFile()->GetModule();
 
     // Obtain the MethodTable
     MethodTable * pMT = pModule->GetDynamicClassMT(dwDynamicClassDomainID);
@@ -1901,7 +1909,7 @@ HCIMPL2(void*, JIT_GetSharedGCThreadStaticBaseDynamicClass, DomainLocalModule *p
         if (pLocalInfo != NULL)
         {
             PTR_BYTE retval;
-            GET_DYNAMICENTRY_GCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
+            GET_DYNAMICENTRY_GCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainFile()->GetModule()->GetLoaderAllocator(),
                                                          pLocalInfo,
                                                          &retval);
 
@@ -1913,7 +1921,7 @@ HCIMPL2(void*, JIT_GetSharedGCThreadStaticBaseDynamicClass, DomainLocalModule *p
     // then we have to go through the slow path
 
     // Obtain the Module
-    Module * pModule = pDomainLocalModule->GetDomainAssembly()->GetModule();
+    Module * pModule = pDomainLocalModule->GetDomainFile()->GetModule();
 
     // Obtain the MethodTable
     MethodTable * pMT = pModule->GetDynamicClassMT(dwDynamicClassDomainID);

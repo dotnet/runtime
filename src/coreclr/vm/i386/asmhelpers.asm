@@ -43,6 +43,7 @@ EXTERN _COMPlusFrameHandlerRevCom:PROC
 endif ; FEATURE_COMINTEROP
 EXTERN __alloca_probe:PROC
 EXTERN _NDirectImportWorker@4:PROC
+EXTERN _UMThunkStubRareDisableWorker@8:PROC
 
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
@@ -52,7 +53,6 @@ EXTERN _CopyCtorCallStubWorker@4:PROC
 endif
 
 EXTERN _PreStubWorker@8:PROC
-EXTERN _TheUMEntryPrestubWorker@4:PROC
 
 ifdef FEATURE_COMINTEROP
 EXTERN _CLRToCOMWorker@8:PROC
@@ -254,6 +254,9 @@ COMPlusNestedExceptionHandler proto c
 
 FastNExportExceptHandler proto c
 .safeseh FastNExportExceptHandler
+
+UMThunkPrestubHandler proto c
+.safeseh UMThunkPrestubHandler
 
 ifdef FEATURE_COMINTEROP
 COMPlusFrameHandlerRevCom proto c
@@ -869,6 +872,23 @@ getFPReturn4:
    retn    8
 _getFPReturn@8 endp
 
+; VOID __cdecl UMThunkStubRareDisable()
+;<TODO>
+; @todo: this is very similar to StubRareDisable
+;</TODO>
+_UMThunkStubRareDisable proc public
+    push    eax
+    push    ecx
+
+    push    eax          ; Push the UMEntryThunk
+    push    ecx          ; Push thread
+    call    _UMThunkStubRareDisableWorker@8
+
+    pop     ecx
+    pop     eax
+    retn
+_UMThunkStubRareDisable endp
+
 
 ; void __stdcall JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
 _JIT_ProfilerEnterLeaveTailcallStub@4 proc public
@@ -1411,22 +1431,6 @@ _ThePreStubPatchLabel@0:
 public _ThePreStubPatchLabel@0
     ret
 _ThePreStubPatch@0 endp
-
-_TheUMEntryPrestub@0 proc public
-    ; push argument registers
-    push        ecx
-    push        edx
-
-    push    eax     ; UMEntryThunk*
-    call    _TheUMEntryPrestubWorker@4
-
-    ; pop argument registers
-    pop         edx
-    pop         ecx
-
-    ; eax = PCODE
-    jmp     eax     ; Tail Jmp
-_TheUMEntryPrestub@0 endp
 
 ifdef FEATURE_COMINTEROP
 ;==========================================================================

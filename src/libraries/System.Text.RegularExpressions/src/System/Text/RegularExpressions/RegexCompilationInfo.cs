@@ -47,7 +47,16 @@ namespace System.Text.RegularExpressions
             [MemberNotNull(nameof(_name))]
             set
             {
-                ArgumentException.ThrowIfNullOrEmpty(value, nameof(Name));
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(Name));
+                }
+
+                if (value.Length == 0)
+                {
+                    throw new ArgumentException(SR.Format(SR.InvalidEmptyArgument, nameof(Name)), nameof(Name));
+                }
+
                 _name = value;
             }
         }

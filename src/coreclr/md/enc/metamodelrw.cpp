@@ -309,15 +309,16 @@ ULONG CMiniMdRW::m_TruncatedEncTables[] =
 ULONG CMiniMdRW::GetTableForToken(      // Table index, or -1.
     mdToken     tkn)                    // Token to find.
 {
+    ULONG       ixTbl;                  // Loop control.
     ULONG       type = TypeFromToken(tkn);
 
     // Get the type -- if a string, no associated table.
     if (type >= mdtString)
         return (ULONG) -1;
     // Table number is same as high-byte of token.
-    ULONG ixTbl = type >> 24;
+    ixTbl = type >> 24;
     // Make sure.
-    _ASSERTE(ixTbl < TBL_COUNT);
+     _ASSERTE(g_TblIndex[ixTbl].m_Token == type);
 
     return ixTbl;
 } // CMiniMdRW::GetTableForToken

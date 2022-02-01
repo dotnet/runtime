@@ -234,11 +234,11 @@ FileLoadLevel MulticoreJitManager::GetModuleFileLoadLevel(Module * pModule)
 
     if (pModule != NULL)
     {
-        DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
+        DomainFile * pDomainFile = pModule->GetDomainFile();
 
-        if (pDomainAssembly != NULL)
+        if (pDomainFile != NULL)
         {
-            level = pDomainAssembly->GetLoadLevel();
+            level = pDomainFile->GetLoadLevel();
         }
     }
 
@@ -310,7 +310,7 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
 
     SString sAssemblyName;
     StackScratchBuffer scratch;
-    pMod->GetAssembly()->GetPEAssembly()->GetDisplayName(sAssemblyName);
+    pMod->GetAssembly()->GetManifestFile()->GetDisplayName(sAssemblyName);
 
     LPCUTF8 pAssemblyName = sAssemblyName.GetUTF8(scratch);
     unsigned lenAssemblyName = sAssemblyName.GetCount();
@@ -770,8 +770,21 @@ HRESULT MulticoreJitModuleEnumerator::HandleAssembly(DomainAssembly * pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
-    Module * pModule = pAssembly->GetModule();
-    return OnModule(pModule);
+    DomainAssembly::ModuleIterator modIt = pAssembly->IterateModules(kModIterIncludeLoaded);
+
+    HRESULT hr = S_OK;
+
+    while (modIt.Next() && SUCCEEDED(hr))
+    {
+        Module * pModule = modIt.GetModule();
+
+        if (pModule != NULL)
+        {
+            hr = OnModule(pModule);
+        }
+    }
+
+    return hr;
 }
 
 

@@ -422,25 +422,31 @@ namespace System.Net.Http
 
     internal static class StringBuilderExtensions
     {
+        // Characters that require escaping in quoted string
+        private static readonly char[] SpecialCharacters = new[] { '"', '\\' };
+
         public static void AppendKeyValue(this StringBuilder sb, string key, string value, bool includeQuotes = true, bool includeComma = true)
         {
-            sb.Append(key).Append('=');
-
+            sb.Append(key);
+            sb.Append('=');
             if (includeQuotes)
             {
-                ReadOnlySpan<char> valueSpan = value;
                 sb.Append('"');
+                int lastSpecialIndex = 0;
+                int specialIndex;
                 while (true)
                 {
-                    int i = valueSpan.IndexOfAny('"', '\\'); // Characters that require escaping in quoted string
-                    if (i >= 0)
+                    specialIndex = value.IndexOfAny(SpecialCharacters, lastSpecialIndex);
+                    if (specialIndex >= 0)
                     {
-                        sb.Append(valueSpan.Slice(0, i)).Append('\\').Append(valueSpan[i]);
-                        valueSpan = valueSpan.Slice(i + 1);
+                        sb.Append(value, lastSpecialIndex, specialIndex - lastSpecialIndex);
+                        sb.Append('\\');
+                        sb.Append(value[specialIndex]);
+                        lastSpecialIndex = specialIndex + 1;
                     }
                     else
                     {
-                        sb.Append(valueSpan);
+                        sb.Append(value, lastSpecialIndex, value.Length - lastSpecialIndex);
                         break;
                     }
                 }
@@ -453,7 +459,8 @@ namespace System.Net.Http
 
             if (includeComma)
             {
-                sb.Append(',').Append(' ');
+                sb.Append(',');
+                sb.Append(' ');
             }
         }
     }

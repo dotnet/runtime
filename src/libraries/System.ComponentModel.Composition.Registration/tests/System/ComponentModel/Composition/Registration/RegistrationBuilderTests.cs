@@ -44,7 +44,8 @@ namespace System.ComponentModel.Composition.Registration.Tests
                 : base("") { }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
         public void ShouldSucceed()
         {
             var rb = new RegistrationBuilder();
@@ -173,7 +174,8 @@ namespace System.ComponentModel.Composition.Registration.Tests
         [Export(typeof(IGenericInterface<>))]
         private class ClassExportingInterface<T> : IGenericInterface<T> { }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
         public void GenericInterfaceExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ClassExportingInterface<>));
@@ -186,7 +188,8 @@ namespace System.ComponentModel.Composition.Registration.Tests
         [Export(typeof(GenericBaseClass<>))]
         private class ClassExportingBaseClass<T> : GenericBaseClass<T> { }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
         public void GenericBaseClassExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ClassExportingBaseClass<>));
@@ -208,7 +211,8 @@ namespace System.ComponentModel.Composition.Registration.Tests
         [Export(typeof(ExplicitGenericClass<>))]
         private class ExplicitGenericClass<T> { }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
         public void ExplicitGenericExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ExplicitGenericClass<>));
@@ -219,7 +223,8 @@ namespace System.ComponentModel.Composition.Registration.Tests
         [Export(typeof(ExplicitGenericClass<,>))]
         private class ExplicitGenericClass<T, U> { }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
         public void ExplicitGenericArity2ExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ExplicitGenericClass<,>));

@@ -495,12 +495,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowFileLoadException_InvalidAssemblyName(string name)
-        {
-            throw new FileLoadException(SR.InvalidAssemblyName, name);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
@@ -528,6 +522,12 @@ namespace System
         internal static void ArgumentOutOfRangeException_Enum_Value()
         {
             throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_Enum);
+        }
+
+        internal static void ThrowForMissingPath_SafeFileHandle(string? path)
+        {
+            if (path is not null) return;
+            throw new IOException(SR.IO_SafeFileHandlePathNull);
         }
 
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)

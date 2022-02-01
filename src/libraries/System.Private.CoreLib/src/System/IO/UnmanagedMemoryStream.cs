@@ -46,7 +46,7 @@ namespace System.IO
         private long _offset;
         private FileAccess _access;
         private bool _isOpen;
-        private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
+        private Task<int>? _lastReadTask; // The last successful task returned from ReadAsync
 
         /// <summary>
         /// Creates a closed stream.
@@ -437,11 +437,12 @@ namespace System.IO
             try
             {
                 int n = Read(buffer, offset, count);
-                return _lastReadTask.GetTask(n);
+                Task<int>? t = _lastReadTask;
+                return (t != null && t.Result == n) ? t : (_lastReadTask = Task.FromResult<int>(n));
             }
             catch (Exception ex)
             {
-                Debug.Assert(ex is not OperationCanceledException);
+                Debug.Assert(!(ex is OperationCanceledException));
                 return Task.FromException<int>(ex);
             }
         }

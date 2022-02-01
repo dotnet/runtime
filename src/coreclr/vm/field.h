@@ -353,8 +353,6 @@ public:
 
     BOOL IsObjRef();
 
-    BOOL IsByRef();
-
     UINT LoadSize();
 
     // Return -1 if the type isn't loaded yet (i.e. if LookupFieldTypeHandle() would return null)

@@ -10,7 +10,6 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Logging;
-using ILLink.Shared;
 
 using ILSequencePoint = Internal.IL.ILSequencePoint;
 using MethodIL = Internal.IL.MethodIL;
@@ -48,13 +47,6 @@ namespace ILCompiler
         {
         }
 
-        public void LogMessage(string message)
-        {
-            MessageContainer? messageContainer = MessageContainer.CreateInfoMessage(message);
-            if(messageContainer.HasValue)
-                Writer.WriteLine(messageContainer.Value.ToMSBuildString());
-        }
-
         public void LogWarning(string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
         {
             MessageContainer? warning = MessageContainer.CreateWarningMessage(this, text, code, origin, subcategory);
@@ -62,18 +54,13 @@ namespace ILCompiler
                 Writer.WriteLine(warning.Value.ToMSBuildString());
         }
 
-        public void LogWarning(MessageOrigin origin, DiagnosticId id, params string[] args)
+        public void LogWarning(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None)
         {
-            MessageContainer? warning = MessageContainer.CreateWarningMessage(this, origin, id, args);
+            MessageOrigin messageOrigin = new MessageOrigin(origin);
+            MessageContainer? warning = MessageContainer.CreateWarningMessage(this, text, code, messageOrigin, subcategory);
             if (warning.HasValue)
                 Writer.WriteLine(warning.Value.ToMSBuildString());
         }
-
-        public void LogWarning(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None) =>
-            LogWarning(text, code, new MessageOrigin(origin), subcategory);
-
-        public void LogWarning(TypeSystemEntity origin, DiagnosticId id, params string[] args) =>
-            LogWarning(new MessageOrigin(origin), id, args);
 
         public void LogWarning(string text, int code, MethodIL origin, int ilOffset, string subcategory = MessageSubCategory.None)
         {
@@ -99,61 +86,11 @@ namespace ILCompiler
             LogWarning(text, code, messageOrigin, subcategory);
         }
 
-        public void LogWarning(MethodIL origin, int ilOffset, DiagnosticId id, params string[] args)
-        {
-            string document = null;
-            int? lineNumber = null;
-
-            IEnumerable<ILSequencePoint> sequencePoints = origin.GetDebugInfo()?.GetSequencePoints();
-            if (sequencePoints != null)
-            {
-                foreach (var sequencePoint in sequencePoints)
-                {
-                    if (sequencePoint.Offset <= ilOffset)
-                    {
-                        document = sequencePoint.Document;
-                        lineNumber = sequencePoint.LineNumber;
-                    }
-                }
-            }
-
-            MethodDesc warnedMethod = CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(origin.OwningMethod) ?? origin.OwningMethod;
-
-            MessageOrigin messageOrigin = new MessageOrigin(warnedMethod, document, lineNumber, null);
-            LogWarning(messageOrigin, id, args);
-        }
-
         public void LogWarning(string text, int code, string origin, string subcategory = MessageSubCategory.None)
         {
             MessageOrigin _origin = new MessageOrigin(origin);
             LogWarning(text, code, _origin, subcategory);
         }
-
-        public void LogWarning(string origin, DiagnosticId id, params string[] args)
-        {
-            MessageOrigin _origin = new MessageOrigin(origin);
-            LogWarning(_origin, id, args);
-        }
-
-        public void LogError(string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
-        {
-            MessageContainer? error = MessageContainer.CreateErrorMessage(text, code, subcategory, origin);
-            if (error.HasValue)
-                Writer.WriteLine(error.Value.ToMSBuildString());
-        }
-
-        public void LogError(MessageOrigin? origin, DiagnosticId id, params string[] args)
-        {
-            MessageContainer? error = MessageContainer.CreateErrorMessage(origin, id, args);
-            if (error.HasValue)
-                Writer.WriteLine(error.Value.ToMSBuildString());
-        }
-
-        public void LogError(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None) =>
-            LogError(text, code, subcategory, new MessageOrigin(origin));
-
-        public void LogError(TypeSystemEntity origin, DiagnosticId id, params string[] args) =>
-            LogError(new MessageOrigin(origin), id, args);
 
         internal bool IsWarningSuppressed(int code, MessageOrigin origin)
         {
@@ -230,7 +167,7 @@ namespace ILCompiler
                     {
                         if (_trimWarnedAssemblies.Add(assemblyName))
                         {
-                            LogWarning(GetModuleFileName(owningModule), DiagnosticId.AssemblyProducedTrimWarnings, assemblyName);
+                            LogWarning($"Assembly '{assemblyName}' produced trim warnings. For more information see https://aka.ms/dotnet-illink/libraries", 2104, GetModuleFileName(owningModule));
                         }
                     }
                 }
@@ -240,12 +177,12 @@ namespace ILCompiler
                     {
                         if (_aotWarnedAssemblies.Add(assemblyName))
                         {
-                            LogWarning(GetModuleFileName(owningModule), DiagnosticId.AssemblyProducedAOTWarnings, assemblyName);
+                            LogWarning($"Assembly '{assemblyName}' produced AOT analysis warnings.", 3053, GetModuleFileName(owningModule));
                         }
                     }
                 }
             }
-
+            
             return result;
         }
 
@@ -260,5 +197,12 @@ namespace ILCompiler
             }
             return assemblyName;
         }
+    }
+
+    public static class MessageSubCategory
+    {
+        public const string None = "";
+        public const string TrimAnalysis = "Trim analysis";
+        public const string AotAnalysis = "AOT analysis";
     }
 }

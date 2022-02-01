@@ -5,7 +5,6 @@ namespace ObjectiveCMarshalAPI
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Runtime.InteropServices.ObjectiveC;
@@ -270,7 +269,7 @@ namespace ObjectiveCMarshalAPI
             }
 
             Assert.True(false, "Unknown exception type");
-            throw new UnreachableException();
+            throw new Exception("Unreachable");
         }
 
         class Scenario

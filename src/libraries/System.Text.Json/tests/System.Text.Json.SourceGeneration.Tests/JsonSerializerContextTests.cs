@@ -24,7 +24,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public static void Converters_AndTypeInfoCreator_NotRooted_WhenMetadataNotPresent()
         {
             RemoteExecutor.Invoke(
-                () =>
+                new Action(() =>
                 {
                     object[] objArr = new object[] { new MyStruct() };
 
@@ -56,7 +56,8 @@ namespace System.Text.Json.SourceGeneration.Tests
                         Assert.NotNull(fieldInfo);
                         Assert.Null(fieldInfo.GetValue(optionsInstance));
                     }
-                }).Dispose();
+                }),
+                new RemoteInvokeOptions() { ExpectedExitCode = 0 }).Dispose();
         }
 
         [Fact]

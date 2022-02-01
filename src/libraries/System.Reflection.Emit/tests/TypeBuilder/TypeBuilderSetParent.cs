@@ -56,14 +56,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void SetParent_ByRefType_ThrowsNotSupportedExceptionOnCreation()
+        public void SetParent_ByRefType_ThrowsArgumentExceptionOnCreation()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
 
             type.SetParent(typeof(int).MakeByRefType());
             Assert.Equal(typeof(int).MakeByRefType(), type.BaseType);
 
-            Assert.Throws<NotSupportedException>(() => type.CreateTypeInfo());
+            AssertExtensions.Throws<ArgumentException>(null, () => type.CreateTypeInfo());
         }
 
         [Fact]

@@ -69,7 +69,7 @@ namespace System.Drawing.Tests
         {
             using (var fontCollection = new PrivateFontCollection())
             {
-                AssertExtensions.Throws<ArgumentException>(null, () => new FontFamily("Times New Roman", fontCollection));
+                Assert.Throws<ArgumentException>(null, () => new FontFamily("Times New Roman", fontCollection));
             }
         }
 

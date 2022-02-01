@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace System
 {
-    public struct ModuleHandle : IEquatable<ModuleHandle>
+    public struct ModuleHandle
     {
         private readonly IntPtr value;
 

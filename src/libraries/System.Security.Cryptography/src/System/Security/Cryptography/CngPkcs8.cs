@@ -1,33 +1,39 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
+
 namespace System.Security.Cryptography
 {
     internal static partial class CngPkcs8
     {
         internal struct Pkcs8Response
         {
-            internal CngKey Key;
+            internal SafeNCryptKeyHandle KeyHandle;
 
             internal string? GetAlgorithmGroup()
             {
-                return Key.AlgorithmGroup!.AlgorithmGroup;
+                return CngKeyLite.GetPropertyAsString(
+                    KeyHandle,
+                    CngKeyLite.KeyPropertyName.AlgorithmGroup,
+                    CngPropertyOptions.None);
             }
 
             internal void FreeKey()
             {
-                Key.Dispose();
+                KeyHandle.Dispose();
             }
         }
 
         private static Pkcs8Response ImportPkcs8(ReadOnlySpan<byte> keyBlob)
         {
-            CngKey key = CngKey.Import(keyBlob, CngKeyBlobFormat.Pkcs8PrivateBlob);
-            key.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
+            SafeNCryptKeyHandle handle = CngKeyLite.ImportKeyBlob(
+                Interop.NCrypt.NCRYPT_PKCS8_PRIVATE_KEY_BLOB,
+                keyBlob);
 
             return new Pkcs8Response
             {
-                Key = key,
+                KeyHandle = handle,
             };
         }
 
@@ -35,12 +41,15 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> keyBlob,
             ReadOnlySpan<char> password)
         {
-            CngKey key = CngKey.ImportEncryptedPkcs8(keyBlob, password);
-            key.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
+            SafeNCryptKeyHandle handle = CngKeyLite.ImportKeyBlob(
+                Interop.NCrypt.NCRYPT_PKCS8_PRIVATE_KEY_BLOB,
+                keyBlob,
+                encrypted: true,
+                password);
 
             return new Pkcs8Response
             {
-                Key = key,
+                KeyHandle = handle,
             };
         }
     }

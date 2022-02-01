@@ -96,9 +96,20 @@ namespace System.Runtime.Versioning
 
         public FrameworkName(string identifier, Version version, string? profile)
         {
-            identifier = identifier?.Trim()!;
-            ArgumentException.ThrowIfNullOrEmpty(identifier);
-            ArgumentNullException.ThrowIfNull(version);
+            if (identifier == null)
+            {
+                throw new ArgumentNullException(nameof(identifier));
+            }
+
+            identifier = identifier.Trim();
+            if (identifier.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyString, nameof(identifier));
+            }
+            if (version == null)
+            {
+                throw new ArgumentNullException(nameof(version));
+            }
 
             _identifier = identifier;
             _version = version;
@@ -111,7 +122,14 @@ namespace System.Runtime.Versioning
         //  - The version string must be in the System.Version format; an optional "v" or "V" prefix is allowed
         public FrameworkName(string frameworkName)
         {
-            ArgumentException.ThrowIfNullOrEmpty(frameworkName);
+            if (frameworkName == null)
+            {
+                throw new ArgumentNullException(nameof(frameworkName));
+            }
+            if (frameworkName.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyString, nameof(frameworkName));
+            }
 
             string[] components = frameworkName.Split(ComponentSeparator);
 

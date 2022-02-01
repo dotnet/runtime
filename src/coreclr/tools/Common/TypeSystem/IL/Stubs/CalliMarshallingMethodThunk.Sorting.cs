@@ -13,11 +13,6 @@ namespace Internal.IL.Stubs
         protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
             var otherMethod = (CalliMarshallingMethodThunk)other;
-            int result = RuntimeMarshallingEnabled.CompareTo(otherMethod.RuntimeMarshallingEnabled);
-            if (result != 0)
-            {
-                return result;
-            }
             return comparer.Compare(_targetSignature, otherMethod._targetSignature);
         }
     }

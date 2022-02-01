@@ -37,19 +37,15 @@ wasm_get_stack_size (void)
 static int
 wasm_get_stack_base (void)
 {
-	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
-	// Currently these hardcoded values are sufficient for a working prototype. It's an arbitrary nonzero
-	// value that aligns to 32 bits.
-	return 4;
+	g_assert_not_reached ();
+	return 0;
 }
 
 static int
 wasm_get_stack_size (void)
 {
-	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
-	// Currently these hardcoded values are sufficient for a working prototype. It's an arbitrary nonzero
-	// value that aligns to 32 bits.
-	return 4;
+	g_assert_not_reached ();
+	return 0;
 }
 
 #endif
@@ -205,13 +201,8 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*stsize = wasm_get_stack_size ();
 #endif
 
-#ifdef HOST_WASI
-	// TODO: For WASI, we need to ensure the stack is positioned correctly and reintroduce these assertions.
-	// Currently it works anyway in prototypes (except these checks would fail)
-#else
 	g_assert ((guint8*)&tmp > *staddr);
 	g_assert ((guint8*)&tmp < (guint8*)*staddr + *stsize);
-#endif
 }
 
 gboolean
@@ -281,8 +272,6 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 	if (res != 0)
 		g_error ("%s: pthread_attr_destroy failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
 
-	return TRUE;
-#elif defined(HOST_WASI)
 	return TRUE;
 #else
 	g_assert_not_reached ();

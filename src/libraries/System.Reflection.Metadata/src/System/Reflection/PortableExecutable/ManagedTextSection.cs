@@ -121,7 +121,7 @@ namespace System.Reflection.PortableExecutable
 
         public const int MappedFieldDataAlignment = 8;
 
-        internal int CalculateOffsetToMappedFieldDataStreamUnaligned()
+        public int CalculateOffsetToMappedFieldDataStream()
         {
             int result = ComputeOffsetToImportTable();
 
@@ -133,16 +133,6 @@ namespace System.Reflection.PortableExecutable
             }
 
             return result;
-        }
-
-        public int CalculateOffsetToMappedFieldDataStream()
-        {
-             int result = CalculateOffsetToMappedFieldDataStreamUnaligned();
-             if (MappedFieldDataSize != 0)
-             {
-                 result = BitArithmetic.Align(result, MappedFieldDataAlignment);
-             }
-             return result;
         }
 
         internal int ComputeOffsetToDebugDirectory()
@@ -195,7 +185,7 @@ namespace System.Reflection.PortableExecutable
         {
             // TODO: constants
             return RequiresStartupStub ?
-                rva + CalculateOffsetToMappedFieldDataStreamUnaligned() - (Is32Bit ? 6 : 10) :
+                rva + CalculateOffsetToMappedFieldDataStream() - (Is32Bit ? 6 : 10) :
                 0;
         }
 
@@ -303,8 +293,6 @@ namespace System.Reflection.PortableExecutable
             // mapped field data:
             if (mappedFieldDataBuilderOpt != null)
             {
-                if (mappedFieldDataBuilderOpt.Count != 0)
-                    builder.Align(MappedFieldDataAlignment);
                 builder.LinkSuffix(mappedFieldDataBuilderOpt);
             }
 

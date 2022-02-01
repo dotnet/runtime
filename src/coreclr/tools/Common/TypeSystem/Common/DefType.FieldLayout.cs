@@ -63,11 +63,6 @@ namespace Internal.TypeSystem
             /// True if type transitively has UnsafeValueTypeAttribute
             /// </summary>
             public const int IsUnsafeValueType = 0x200;
-
-            /// <summary>
-            /// True if the type transitively has any types with LayoutKind.Auto in its layout.
-            /// </summary>
-            public const int IsAutoLayoutOrHasAutoLayoutFields = 0x400;
         }
 
         private class StaticBlockInfo
@@ -117,21 +112,6 @@ namespace Internal.TypeSystem
                     ComputeIsUnsafeValueType();
                 }
                 return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.IsUnsafeValueType);
-            }
-        }
-
-        /// <summary>
-        /// Does a type have auto-layout or transitively have any fields of a type with auto-layout.
-        /// </summary>
-        public virtual bool IsAutoLayoutOrHasAutoLayoutFields
-        {
-            get
-            {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeLayout))
-                {
-                    ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
-                }
-                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.IsAutoLayoutOrHasAutoLayoutFields);
             }
         }
 
@@ -425,10 +405,6 @@ namespace Internal.TypeSystem
             if (!computedLayout.LayoutAbiStable)
             {
                 _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedInstanceLayoutAbiUnstable);
-            }
-            if (computedLayout.IsAutoLayoutOrHasAutoLayoutFields)
-            {
-                _fieldLayoutFlags.AddFlags(FieldLayoutFlags.IsAutoLayoutOrHasAutoLayoutFields);
             }
 
             if (computedLayout.Offsets != null)

@@ -37,7 +37,7 @@ namespace System.IO.MemoryMappedFiles
         {
             try
             {
-                if (disposing && !_view.IsClosed && CanWrite)
+                if (disposing && !_view.IsClosed)
                 {
                     Flush();
                 }

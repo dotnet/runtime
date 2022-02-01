@@ -1,147 +1,144 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class ECDiffieHellmanOpenSsl : ECDiffieHellman
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    internal static partial class ECDiffieHellmanImplementation
     {
-        private ECOpenSsl _key;
-
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("windows")]
-        public ECDiffieHellmanOpenSsl(ECCurve curve)
+#endif
+        public sealed partial class ECDiffieHellmanOpenSsl : ECDiffieHellman
         {
-            ThrowIfNotSupported();
-            _key = new ECOpenSsl(curve);
-            KeySizeValue = _key.KeySize;
-        }
+            private ECOpenSsl _key;
 
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("windows")]
-        public ECDiffieHellmanOpenSsl()
-            : this(521)
-        {
-        }
-
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("windows")]
-        public ECDiffieHellmanOpenSsl(int keySize)
-        {
-            ThrowIfNotSupported();
-            base.KeySize = keySize;
-            _key = new ECOpenSsl(this);
-        }
-
-        public override KeySizes[] LegalKeySizes =>
-            new[] {
-                new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
-                new KeySizes(minSize: 521, maxSize: 521, skipSize: 0)
-            };
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
+            public ECDiffieHellmanOpenSsl(ECCurve curve)
             {
-                _key?.Dispose();
-                _key = null!;
+                ThrowIfNotSupported();
+                _key = new ECOpenSsl(curve);
+                KeySizeValue = _key.KeySize;
             }
 
-            base.Dispose(disposing);
-        }
-
-        public override int KeySize
-        {
-            get
+            public ECDiffieHellmanOpenSsl()
+                : this(521)
             {
-                return base.KeySize;
             }
-            set
+
+            public ECDiffieHellmanOpenSsl(int keySize)
             {
-                if (KeySize == value)
-                {
-                    return;
-                }
-
-                // Set the KeySize before FreeKey so that an invalid value doesn't throw away the key
-                base.KeySize = value;
-
-                ThrowIfDisposed();
-                _key.Dispose();
+                ThrowIfNotSupported();
+                base.KeySize = keySize;
                 _key = new ECOpenSsl(this);
             }
-        }
 
-        public override void GenerateKey(ECCurve curve)
-        {
-            ThrowIfDisposed();
-            KeySizeValue = _key.GenerateKey(curve);
-        }
+            public override KeySizes[] LegalKeySizes =>
+                new[] {
+                    new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
+                    new KeySizes(minSize: 521, maxSize: 521, skipSize: 0)
+                };
 
-        public override ECDiffieHellmanPublicKey PublicKey
-        {
-            get
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    _key?.Dispose();
+                    _key = null!;
+                }
+
+                base.Dispose(disposing);
+            }
+
+            public override int KeySize
+            {
+                get
+                {
+                    return base.KeySize;
+                }
+                set
+                {
+                    if (KeySize == value)
+                    {
+                        return;
+                    }
+
+                    // Set the KeySize before FreeKey so that an invalid value doesn't throw away the key
+                    base.KeySize = value;
+
+                    ThrowIfDisposed();
+                    _key.Dispose();
+                    _key = new ECOpenSsl(this);
+                }
+            }
+
+            public override void GenerateKey(ECCurve curve)
             {
                 ThrowIfDisposed();
-                return new ECDiffieHellmanOpenSslPublicKey(_key.UpRefKeyHandle());
+                KeySizeValue = _key.GenerateKey(curve);
             }
-        }
 
-        public override void ImportParameters(ECParameters parameters)
-        {
-            ThrowIfDisposed();
-            KeySizeValue = _key.ImportParameters(parameters);
-        }
-
-        public override ECParameters ExportExplicitParameters(bool includePrivateParameters) =>
-            ECOpenSsl.ExportExplicitParameters(GetKey(), includePrivateParameters);
-
-        public override ECParameters ExportParameters(bool includePrivateParameters) =>
-            ECOpenSsl.ExportParameters(GetKey(), includePrivateParameters);
-
-        public override void ImportEncryptedPkcs8PrivateKey(
-            ReadOnlySpan<byte> passwordBytes,
-            ReadOnlySpan<byte> source,
-            out int bytesRead)
-        {
-            ThrowIfDisposed();
-            base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
-        }
-
-        public override void ImportEncryptedPkcs8PrivateKey(
-            ReadOnlySpan<char> password,
-            ReadOnlySpan<byte> source,
-            out int bytesRead)
-        {
-            ThrowIfDisposed();
-            base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_key == null)
+            public override ECDiffieHellmanPublicKey PublicKey
             {
-                throw new ObjectDisposedException(nameof(ECDiffieHellmanOpenSsl));
+                get
+                {
+                    ThrowIfDisposed();
+                    return new ECDiffieHellmanOpenSslPublicKey(_key.UpRefKeyHandle());
+                }
             }
-        }
 
-        private SafeEcKeyHandle GetKey()
-        {
-            ThrowIfDisposed();
-            return _key.Value;
-        }
+            public override void ImportParameters(ECParameters parameters)
+            {
+                ThrowIfDisposed();
+                KeySizeValue = _key.ImportParameters(parameters);
+            }
 
-        static partial void ThrowIfNotSupported();
+            public override ECParameters ExportExplicitParameters(bool includePrivateParameters) =>
+                ECOpenSsl.ExportExplicitParameters(GetKey(), includePrivateParameters);
+
+            public override ECParameters ExportParameters(bool includePrivateParameters) =>
+                ECOpenSsl.ExportParameters(GetKey(), includePrivateParameters);
+
+            public override void ImportEncryptedPkcs8PrivateKey(
+                ReadOnlySpan<byte> passwordBytes,
+                ReadOnlySpan<byte> source,
+                out int bytesRead)
+            {
+                ThrowIfDisposed();
+                base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
+            }
+
+            public override void ImportEncryptedPkcs8PrivateKey(
+                ReadOnlySpan<char> password,
+                ReadOnlySpan<byte> source,
+                out int bytesRead)
+            {
+                ThrowIfDisposed();
+                base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
+            }
+
+            private void ThrowIfDisposed()
+            {
+                if (_key == null)
+                {
+                    throw new ObjectDisposedException(
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+                        nameof(ECDiffieHellman)
+#else
+                        nameof(ECDiffieHellmanOpenSsl)
+#endif
+                    );
+                }
+            }
+
+            private SafeEcKeyHandle GetKey()
+            {
+                ThrowIfDisposed();
+                return _key.Value;
+            }
+
+            static partial void ThrowIfNotSupported();
+        }
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }
+#endif
 }

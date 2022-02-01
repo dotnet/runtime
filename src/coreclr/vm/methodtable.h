@@ -1517,8 +1517,6 @@ public:
 
     inline BOOL HasExplicitSize();
 
-    inline BOOL IsAutoLayoutOrHasAutoLayoutField();
-
     UINT32 GetNativeSize();
 
     DWORD           GetBaseSize()

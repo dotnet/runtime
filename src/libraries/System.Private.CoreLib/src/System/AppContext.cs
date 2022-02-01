@@ -94,7 +94,10 @@ namespace System
         /// <returns>A return value of true represents that the switch was set and <paramref name="isEnabled"/> contains the value of the switch</returns>
         public static bool TryGetSwitch(string switchName, out bool isEnabled)
         {
-            ArgumentException.ThrowIfNullOrEmpty(switchName);
+            if (switchName == null)
+                throw new ArgumentNullException(nameof(switchName));
+            if (switchName.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(switchName));
 
             if (s_switches != null)
             {
@@ -121,7 +124,10 @@ namespace System
         /// <param name="isEnabled">The value to assign</param>
         public static void SetSwitch(string switchName, bool isEnabled)
         {
-            ArgumentException.ThrowIfNullOrEmpty(switchName);
+            if (switchName == null)
+                throw new ArgumentNullException(nameof(switchName));
+            if (switchName.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(switchName));
 
             if (s_switches == null)
             {

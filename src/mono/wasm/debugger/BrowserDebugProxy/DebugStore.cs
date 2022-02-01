@@ -332,7 +332,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal LocalScopeHandleCollection localScopes;
         public bool IsStatic() => (methodDef.Attributes & MethodAttributes.Static) != 0;
         public int IsAsync { get; set; }
-        public DebuggerAttributesInfo DebuggerAttrInfo { get; set; }
+        public bool IsHiddenFromDebugger { get; }
         public TypeInfo TypeInfo { get; }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
@@ -370,7 +370,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 StartLocation = new SourceLocation(this, start);
                 EndLocation = new SourceLocation(this, end);
 
-                DebuggerAttrInfo = new DebuggerAttributesInfo();
                 foreach (var cattr in methodDef.GetCustomAttributes())
                 {
                     var ctorHandle = asmMetadataReader.GetCustomAttribute(cattr).Constructor;
@@ -378,25 +377,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         var container = asmMetadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
                         var name = asmMetadataReader.GetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                        switch (name)
+                        if (name == "DebuggerHiddenAttribute")
                         {
-                            case "DebuggerHiddenAttribute":
-                                DebuggerAttrInfo.HasDebuggerHidden = true;
-                                break;
-                            case "DebuggerStepThroughAttribute":
-                                DebuggerAttrInfo.HasStepThrough = true;
-                                break;
-                            case "DebuggerNonUserCodeAttribute":
-                                DebuggerAttrInfo.HasNonUserCode = true;
-                                break;
-                            case "DebuggerStepperBoundaryAttribute":
-                                DebuggerAttrInfo.HasStepperBoundary = true;
-                                break;
+                            this.IsHiddenFromDebugger = true;
+                            break;
                         }
 
                     }
                 }
-                DebuggerAttrInfo.ClearInsignificantAttrFlags();
             }
             localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
         }
@@ -484,38 +472,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         public override string ToString() => "MethodInfo(" + Name + ")";
-
-        public class DebuggerAttributesInfo
-        {
-            internal bool HasDebuggerHidden { get; set; }
-            internal bool HasStepThrough { get; set; }
-            internal bool HasNonUserCode { get; set; }
-            public bool HasStepperBoundary { get; internal set; }
-
-            internal void ClearInsignificantAttrFlags()
-            {
-                // hierarchy: hidden > stepThrough > nonUserCode > boundary
-                if (HasDebuggerHidden)
-                    HasStepThrough = HasNonUserCode = HasStepperBoundary = false;
-                else if (HasStepThrough)
-                    HasNonUserCode = HasStepperBoundary = false;
-                else if (HasNonUserCode)
-                    HasStepperBoundary = false;
-            }
-
-            public bool DoAttributesAffectCallStack(bool justMyCodeEnabled)
-            {
-                return HasStepThrough ||
-                    HasDebuggerHidden ||
-                    HasStepperBoundary ||
-                    (HasNonUserCode && justMyCodeEnabled);
-            }
-
-            public bool ShouldStepOut(EventKind eventKind)
-            {
-                return HasDebuggerHidden || (HasStepperBoundary && eventKind == EventKind.Step);
-            }
-        }
     }
 
     internal class TypeInfo

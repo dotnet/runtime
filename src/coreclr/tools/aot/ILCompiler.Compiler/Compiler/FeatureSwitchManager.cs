@@ -792,7 +792,7 @@ namespace ILCompiler
             }
         }
 
-        private class SubstitutionsReader : ProcessXmlBase
+        private class SubstitutionsReader : ProcessLinkerXmlBase
         {
             private readonly Dictionary<MethodDesc, BodySubstitution> _methodSubstitutions;
             private readonly Dictionary<FieldDesc, object> _fieldSubstitutions;
