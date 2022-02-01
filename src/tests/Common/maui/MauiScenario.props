@@ -8,6 +8,6 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.*-*" />
   </ItemGroup>
   <PropertyGroup>
-    <RuntimeIdentifier Condition="'$(TargetFramework)' == 'net6.0-ios'">ios-arm64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(TargetFramework)' == 'net6.0-ios'">iossimulator-x64</RuntimeIdentifier>
   </PropertyGroup>
 </Project>
