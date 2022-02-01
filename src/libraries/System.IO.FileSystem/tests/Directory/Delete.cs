@@ -11,6 +11,8 @@ namespace System.IO.Tests
     {
         static bool IsBindMountSupported => OperatingSystem.IsLinux() && !PlatformDetection.IsInContainer;
 
+        static bool IsBindMountSupportedAndOnUnixAndElevated => IsBindMountSupported && PlatformDetection.IsUnixAndElevated;
+
         #region Utilities
 
         protected virtual void Delete(string path)
@@ -203,10 +205,9 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(testDir));
         }
 
-        [ConditionalFact(nameof(IsBindMountSupported))]
+        [ConditionalFact(nameof(IsBindMountSupportedAndOnUnixAndElevated))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
-        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_NotFoundDirectory_ReadOnlyVolume()
         {
             ReadOnly_FileSystemHelper(readOnlyDirectory =>
