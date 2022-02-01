@@ -28,7 +28,7 @@ namespace ILLink.RoslynAnalyzer
 
 		static readonly Action<OperationAnalysisContext> s_dynamicTypeInvocation = operationContext => {
 			if (FindContainingSymbol (operationContext, DiagnosticTargets.All) is ISymbol containingSymbol &&
-				containingSymbol.HasAttribute (RequiresUnreferencedCodeAttribute))
+				containingSymbol.IsInRequiresScope (RequiresUnreferencedCodeAttribute))
 				return;
 
 			operationContext.ReportDiagnostic (Diagnostic.Create (s_dynamicTypeInvocationRule,
