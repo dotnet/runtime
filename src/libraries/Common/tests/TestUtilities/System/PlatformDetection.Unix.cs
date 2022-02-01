@@ -55,6 +55,8 @@ namespace System
 
         public static bool IsUnixAndElevated => !IsWindows && IsSuperUser;
 
+        public static bool IsUnixAndElevated => !IsWindows && IsSuperUser;
+
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();
