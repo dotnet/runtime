@@ -1532,13 +1532,31 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendResponse(msg_id, Result.OkFromObject(new { }), token);
         }
 
-        private async Task<bool> OnSetNextIP(MessageId sessionId, SourceLocation location, CancellationToken token)
+        private static bool IsNestedMethod(DebugStore store, Frame scope, SourceLocation foundLocation, SourceLocation targetLocation)
+        {
+            if (foundLocation.Line != targetLocation.Line || foundLocation.Column != targetLocation.Column)
+            {
+                SourceFile doc = store.GetFileById(scope.Method.Info.SourceId);
+                foreach (var method in doc.Methods)
+                {
+                    if (method.Token == scope.Method.Info.Token)
+                        continue;
+                    if (method.IsLexicallyContainedInMethod(scope.Method.Info))
+                        continue;
+                    SourceLocation newFoundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
+                                                .FirstOrDefault();
+                    if (!(newFoundLocation is null))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private async Task<bool> OnSetNextIP(MessageId sessionId, SourceLocation targetLocation, CancellationToken token)
         {
             DebugStore store = await RuntimeReady(sessionId, token);
             ExecutionContext context = GetContext(sessionId);
             Frame scope = context.CallStack.First<Frame>();
-
-            var targetLocation  = new SourceLocation(location.Id, location.Line, location.Column == 0 ? -1 : location.Column);
 
             SourceLocation foundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
                                                     .FirstOrDefault();
@@ -1546,28 +1564,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (foundLocation is null)
                  return false;
 
-            bool IsNestedMethod()
-            {
-                if (foundLocation.Line != location.Line || foundLocation.Column != location.Column)
-                {
-                    SourceFile doc = store.GetFileById(scope.Method.Info.SourceId);
-                    foreach (var method in doc.Methods)
-                    {
-                        if (method.Token == scope.Method.Info.Token)
-                            continue;
-                        if (method.IsLexicallyContainedInMethod(scope.Method.Info))
-                            continue;
-                        SourceLocation foundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
-                                                    .FirstOrDefault();
-                        if (!(foundLocation is null))
-                            return true;
-                    }
-                }
-                return false;
-            }
-
             //search if it's a nested method and it's return false because we cannot move to another method
-            if (IsNestedMethod())
+            if (IsNestedMethod(store, scope, foundLocation, targetLocation))
                 return false;
 
             var ilOffset = foundLocation.IlLocation;
