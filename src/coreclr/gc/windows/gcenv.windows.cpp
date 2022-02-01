@@ -458,6 +458,21 @@ Exit:
     if(pslpi)
         delete[] pslpi;  // release the memory allocated for the SLPI array.
 
+
+#ifdef TARGET_ARM64
+    // GetLogicalProcessorInformation doesn't report L3 cache size on our win-arm64 environment (current cache_size most
+    // likely represent L2 instead). We're going to use a processor-count based heuristic to predict its size and pick
+    // whatever is bigger. The same heuristic is used for Linux-arm64.
+    // More info: https://github.com/dotnet/runtime/issues/60166
+    uint32_t logicalCPUs = GetTotalProcessorCount();
+
+    // Estimate cache size based on CPU count
+    // Assume lower core count are lighter weight parts which are likely to have smaller caches
+    // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
+    size_t predictedSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
+    cache_size = std::max(predictedSize, cache_size);
+#endif
+
     return cache_size;
 }
 

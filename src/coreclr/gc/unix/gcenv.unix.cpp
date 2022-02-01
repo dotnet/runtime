@@ -915,30 +915,33 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 #endif
 
 #if defined(HOST_ARM64) && !defined(TARGET_OSX)
-    if (cacheSize == 0)
-    {
-        // It is currently expected to be missing cache size info
-        //
-        // _SC_LEVEL*_*CACHE_SIZE is not yet present.  Work is in progress to enable this for arm64
-        //
-        // /sys/devices/system/cpu/cpu*/cache/index*/ is also not yet present in most systems.
-        // Arm64 patch is in Linux kernel tip.
-        //
-        // midr_el1 is available in "/sys/devices/system/cpu/cpu0/regs/identification/midr_el1",
-        // but without an exhaustive list of ARM64 processors any decode of midr_el1
-        // Would likely be incomplete
+    // It is currently expected to be missing cache size info
+    //
+    // _SC_LEVEL*_*CACHE_SIZE is not yet present.  Work is in progress to enable this for arm64
+    //
+    // /sys/devices/system/cpu/cpu*/cache/index*/ is also not yet present in most systems.
+    // Arm64 patch is in Linux kernel tip.
+    //
+    // midr_el1 is available in "/sys/devices/system/cpu/cpu0/regs/identification/midr_el1",
+    // but without an exhaustive list of ARM64 processors any decode of midr_el1
+    // Would likely be incomplete
 
-        // Published information on ARM64 architectures is limited.
-        // If we use recent high core count chips as a guide for state of the art, we find
-        // total L3 cache to be 1-2MB/core.  As always, there are exceptions.
+    // Published information on ARM64 architectures is limited.
+    // If we use recent high core count chips as a guide for state of the art, we find
+    // total L3 cache to be 1-2MB/core.  As always, there are exceptions.
 
-        // Estimate cache size based on CPU count
-        // Assume lower core count are lighter weight parts which are likely to have smaller caches
-        // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
-        DWORD logicalCPUs = g_totalCpuCount;
+    // Estimate cache size based on CPU count
+    // Assume lower core count are lighter weight parts which are likely to have smaller caches
+    // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
 
-        cacheSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
-    }
+    // As of 2022, in most cases /sys/devices/system/cpu/cpu*/cache/index*/ does present, but only 
+    // reports L2 cache size and says nothing about L3 even if it exists. In this case we don't want
+    // to stuck with L2 (e.g. 256Kb on our test machine whether the real L3 is 32Mb)
+    // More details: https://github.com/dotnet/runtime/issues/60166
+    DWORD logicalCPUs = PAL_GetLogicalCpuCountFromOS();
+
+    size_t predictedSize = logicalCPUs*std::min(1536, std::max(256, (int)logicalCPUs*128))*1024;
+    cacheSize = std::max(predictedSize, cacheSize);
 #endif
 
 #if HAVE_SYSCTLBYNAME
