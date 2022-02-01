@@ -5,17 +5,44 @@
 
 .assembly InvalidCSharp { }
 
-.class public auto ansi sealed beforefieldinit InvalidCSharp.InvalidStructWithRefField
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.InvalidStructWithRefField
     extends [System.Runtime]System.ValueType
 {
     // Type requires IsByRefLikeAttribute to be valid.
     .field public string& invalid
 }
 
+.class public explicit ansi sealed beforefieldinit InvalidCSharp.InvalidRefFieldAlignment
+    extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .field [0] public int16 X
+    .field [2] public int32& Invalid
+}
+
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.ContainsRef
+    extends [System.Runtime]System.ValueType
+{
+    .field public object OverlapsWithX
+    .field public int32 Y
+}
+
+.class public explicit ansi sealed beforefieldinit InvalidCSharp.InvalidRefFieldOverlap
+    extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .field [0] public int32 X
+    .field [0] public valuetype InvalidCSharp.ContainsRef Invalid
+}
+
 // This is invalid metadata and is unable to be loaded.
 // -  [field sig] (0x80131815 (VER_E_FIELD_SIG))
 //
-// .class public auto ansi sealed beforefieldinit InvalidCSharp.InvalidStructWithStaticRefField
+// .class public sequential ansi sealed beforefieldinit InvalidCSharp.InvalidStructWithStaticRefField
 //     extends [System.Runtime]System.ValueType
 // {
 //     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
@@ -24,7 +51,7 @@
 //     .field public static string& invalid
 // }
 
-.class public auto ansi sealed beforefieldinit InvalidCSharp.WithRefField
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.WithRefField
     extends [System.Runtime]System.ValueType
 {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
@@ -57,7 +84,7 @@
     }
 }
 
-.class public auto ansi sealed beforefieldinit InvalidCSharp.WithRefStructField
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.WithRefStructField
     extends [System.Runtime]System.ValueType
 {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
@@ -91,7 +118,7 @@
     }
 }
 
-.class public auto ansi sealed beforefieldinit InvalidCSharp.WithTypedReferenceField`1<T>
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.WithTypedReferenceField`1<T>
     extends [System.Runtime]System.ValueType
 {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
