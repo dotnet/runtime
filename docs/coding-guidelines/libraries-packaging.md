@@ -92,6 +92,3 @@ In order to mitigate design-time/build-time performance issues with source gener
     <DisableSourceGeneratorPropertyName>CustomPropertyName</DisableSourceGeneratorPropertyName> 
   </PropertyGroup>
 ```
-
-### .NETFramework RID specific assets
-When targeting .NETFramework, RID specific assets are automatically added to the package if the project contains other compatible RID specific assets, mainly `netstandard2.0-windows`.
