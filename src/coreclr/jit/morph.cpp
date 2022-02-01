@@ -11556,6 +11556,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 }
             }
         }
+        break;
 
         default:
             break;
