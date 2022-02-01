@@ -3395,7 +3395,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_U2:
 #ifndef SPARCV9
 		case OP_FCONV_TO_I:
-		case OP_FCONV_TO_U:
 #endif
 		case OP_FCONV_TO_I4:
 		case OP_FCONV_TO_U4: {
