@@ -11686,12 +11686,38 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
         return tree;
     }
 
-    /* Currently we can only fold when the two subtrees exactly match */
-    /* GTF_ORDER_SIDEFF here covers volatile subtrees */
-
-    if ((tree->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) || GenTree::Compare(op1, op2, true) == false)
+    // Currently we can only fold when the two subtrees exactly match
+    // and everything is side effect free.
+    //
+    if (((tree->gtFlags & GTF_SIDE_EFFECT) != 0) || !GenTree::Compare(op1, op2, true))
     {
-        return tree; /* return unfolded tree */
+        // No folding.
+        //
+        return tree;
+    }
+
+    // GTF_ORDER_SIDEEFF here may indicate volatile subtrees.
+    // Or it may indicate a non-null assertion prop into an indir subtree.
+    //
+    // Check the operands.
+    //
+    if ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+    {
+        if ((op1->OperIs(GT_IND, GT_BLK, GT_OBJ) && ((op1->gtFlags & GTF_IND_VOLATILE) != 0)) ||
+            (op1->OperIs(GT_FIELD, GT_CLS_VAR) && ((op1->gtFlags & GTF_FLD_VOLATILE) != 0)))
+        {
+            // No folding.
+            //
+            return tree;
+        }
+
+        if ((op2->OperIs(GT_IND, GT_BLK, GT_OBJ) && ((op2->gtFlags & GTF_IND_VOLATILE) != 0)) ||
+            (op2->OperIs(GT_FIELD, GT_CLS_VAR) && ((op2->gtFlags & GTF_FLD_VOLATILE) != 0)))
+        {
+            // No folding.
+            //
+            return tree;
+        }
     }
 
     GenTree* cons;
