@@ -115,6 +115,16 @@ steps:
       ls -la
       ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir --verbose
       dotnet --info
+    displayName: Install MAUI workload
+    workingDirectory: $(Build.SourcesDirectory)
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core sdk'
+    inputs:
+      packageType: sdk
+      version: 6.0.x
+      installationPath: $(Build.SourcesDirectory)/dotnet
+      includePreviewVersions: true
+  - script: |
       dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --source https://aka.ms/dotnet6/nuget/index.json
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
