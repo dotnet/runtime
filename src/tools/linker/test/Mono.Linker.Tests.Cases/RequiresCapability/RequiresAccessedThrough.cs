@@ -24,9 +24,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			AccessedThroughReflectionOnGenericType<TestType>.Test ();
 			AccessThroughSpecialAttribute.Test ();
 			AccessThroughPInvoke.Test ();
-			AccessThroughNewConstraint.Test ();
-			AccessThroughNewConstraint.TestNewConstraintOnTypeParameter ();
-			AccessThroughNewConstraint.TestNewConstraintOnTypeParameterOfStaticType ();
+			AccessThroughNewConstraint.Test<TestType> ();
+			AccessThroughNewConstraint.TestNewConstraintOnTypeParameter<TestType> ();
+			AccessThroughNewConstraint.TestNewConstraintOnTypeParameterOfStaticType<TestType> ();
+			AccessThroughNewConstraint.TestNewConstraintOnTypeParameterInAnnotatedMethod ();
+			AccessThroughNewConstraint.TestNewConstraintOnTypeParameterInAnnotatedType ();
 			AccessThroughLdToken.Test ();
 		}
 
@@ -111,14 +113,23 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public NewConstraintTestType () { }
 			}
 
+
+			[RequiresUnreferencedCode ("Message for --NewConstraintTestAnnotatedType--")]
+			class NewConstraintTestAnnotatedType
+			{
+			}
+
 			static void GenericMethod<T> () where T : new() { }
 
 			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--")]
 			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
-			public static void Test ()
+			public static void Test<T> () where T : new()
 			{
 				GenericMethod<NewConstraintTestType> ();
+				GenericMethod<NewConstraintTestAnnotatedType> ();
+				GenericMethod<T> (); // should not crash analyzer
 			}
 
 			static class NewConstraintOnTypeParameterOfStaticType<T> where T : new()
@@ -126,24 +137,65 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static void DoNothing () { }
 			}
 
-			class NewConstaintOnTypeParameter<T> where T : new()
+			class NewConstraintOnTypeParameter<T> where T : new()
 			{
 			}
 
 			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--")]
 			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
-			public static void TestNewConstraintOnTypeParameter ()
+			public static void TestNewConstraintOnTypeParameter<T> () where T : new()
 			{
-				_ = new NewConstaintOnTypeParameter<NewConstraintTestType> ();
+				_ = new NewConstraintOnTypeParameter<NewConstraintTestType> ();
+				_ = new NewConstraintOnTypeParameter<NewConstraintTestAnnotatedType> ();
+				_ = new NewConstraintOnTypeParameter<T> (); // should not crash analyzer
+			}
+
+			[ExpectedWarning ("IL2026", "--AnnotatedMethod--")]
+			[ExpectedWarning ("IL3002", "--AnnotatedMethod--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--AnnotatedMethod--", ProducedBy = ProducedBy.Analyzer)]
+			public static void TestNewConstraintOnTypeParameterInAnnotatedMethod ()
+			{
+				AnnotatedMethod ();
+			}
+
+			[RequiresUnreferencedCode ("--AnnotatedMethod--")]
+			[RequiresAssemblyFiles ("--AnnotatedMethod--")]
+			[RequiresDynamicCode ("--AnnotatedMethod--")]
+			static void AnnotatedMethod ()
+			{
+				_ = new NewConstraintOnTypeParameter<NewConstraintTestType> ();
+				_ = new NewConstraintOnTypeParameter<NewConstraintTestAnnotatedType> ();
+			}
+
+			[ExpectedWarning ("IL2026", "--AnnotatedType--")]
+			public static void TestNewConstraintOnTypeParameterInAnnotatedType ()
+			{
+				AnnotatedType.Method ();
+			}
+
+			[RequiresUnreferencedCode ("--AnnotatedType--")]
+			class AnnotatedType
+			{
+				[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
+				public static void Method ()
+				{
+					_ = new NewConstraintOnTypeParameter<NewConstraintTestType> ();
+					_ = new NewConstraintOnTypeParameter<NewConstraintTestAnnotatedType> ();
+				}
 			}
 
 			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--")]
 			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
-			public static void TestNewConstraintOnTypeParameterOfStaticType ()
+			public static void TestNewConstraintOnTypeParameterOfStaticType<T> () where T : new()
 			{
 				NewConstraintOnTypeParameterOfStaticType<NewConstraintTestType>.DoNothing ();
+				NewConstraintOnTypeParameterOfStaticType<NewConstraintTestAnnotatedType>.DoNothing ();
+				NewConstraintOnTypeParameterOfStaticType<T>.DoNothing (); // should not crash analyzer
 			}
 		}
 

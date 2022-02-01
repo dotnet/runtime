@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -52,11 +54,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			var testDependenciesSource = GetTestDependencies (rootSourceDir, tree)
 				.Select (f => SyntaxFactory.ParseSyntaxTree (SourceText.From (File.OpenRead (f))));
+			var additionalFiles = GetAdditionalFiles (rootSourceDir, tree);
 
 			var (comp, model, exceptionDiagnostics) = await TestCaseCompilation.CreateCompilation (
 					tree,
 					msbuildProperties,
-					additionalSources: testDependenciesSource);
+					additionalSources: testDependenciesSource,
+					additionalFiles: additionalFiles);
 
 			// Note that the exception diagnostics will be empty until the analyzer has run,
 			// so be sure to get them after awaiting GetAnalyzerDiagnosticsAsync().
@@ -72,7 +76,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 				var attributeName = attribute.Name.ToString ();
 				if (attributeName != "SetupCompileBefore" && attributeName != "SandboxDependency")
 					continue;
-
 				var testNamespace = testSyntaxTree.GetRoot ().DescendantNodes ().OfType<NamespaceDeclarationSyntax> ().First ().Name.ToString ();
 				var testSuiteName = testNamespace.Substring (testNamespace.LastIndexOf ('.') + 1);
 				var args = LinkerTestBase.GetAttributeArguments (attribute);
@@ -92,6 +95,24 @@ namespace ILLink.RoslynAnalyzer.Tests
 					}
 				default:
 					throw new InvalidOperationException ();
+				}
+			}
+		}
+
+		private static IEnumerable<AdditionalText> GetAdditionalFiles(string rootSourceDir, SyntaxTree tree)
+		{
+			var resolver = new XmlFileResolver (rootSourceDir);
+			foreach (var attribute in tree.GetRoot ().DescendantNodes ().OfType<AttributeSyntax> ()) {
+				if (attribute.Name.ToString () == nameof (SetupLinkAttributesFile)
+					|| (attribute.Name.ToString ().Contains ("SetupCompileResource")
+						&& (string?) attribute.ArgumentList?.Arguments[1].ToString () == "\"ILLink.LinkAttributes.xml\"")) {
+					var xmlFileName = attribute.ArgumentList?.Arguments[0].ToString ().Trim ('"') ?? "";
+					var resolvedPath = resolver.ResolveReference (xmlFileName, rootSourceDir);
+					if (resolvedPath != null) {
+						var stream = resolver.OpenRead (resolvedPath);
+						XmlText text = new ("ILLink.LinkAttributes.xml", stream);
+						yield return text;
+					}
 				}
 			}
 		}

@@ -42,18 +42,23 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "Message from attribute's ctor.")]
+		[ExpectedWarning ("IL2026", "Message from attribute's type.")]
 		[RequiresOnAttributeCtor]
+		[RequiresOnAttributeType]
 		[KeptMember (".ctor()")]
 		public class Type
 		{
 			[ExpectedWarning ("IL2026", "Message from attribute's ctor.")]
+			[ExpectedWarning ("IL2026", "Message from attribute's type.")]
 			[RequiresOnAttributeCtor]
+			[RequiresOnAttributeType]
 			public void Method ()
 			{
 			}
 
 			[RequiresUnreferencedCode ("RUC on MethodAnnotatedWithRequires")]
 			[RequiresOnAttributeCtor]
+			[RequiresOnAttributeType]
 			public void MethodAnnotatedWithRequires ()
 			{
 			}
@@ -101,21 +106,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 		}
 
-		// https://github.com/dotnet/linker/issues/2529
-		[ExpectedWarning ("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2026", "Message from attribute's ctor.")]
 		[RequiresUnreferencedCode ("RUC on TypeWithRequires")]
 		[RequiresOnAttributeCtor]
 		public class TypeWithRequires
 		{
-			// https://github.com/dotnet/linker/issues/2529
-			[ExpectedWarning ("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
 			[RequiresOnAttributeCtor]
 			public void Method ()
 			{
 			}
 
-			// https://github.com/dotnet/linker/issues/2529
-			[ExpectedWarning ("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
 			[RequiresOnAttributeCtor]
 			public static void StaticMethod ()
 			{
@@ -133,5 +133,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 		}
+	}
+
+	[RequiresUnreferencedCode ("Message from attribute's type.")]
+	public class RequiresOnAttributeTypeAttribute : Attribute
+	{
 	}
 }
