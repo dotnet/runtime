@@ -83,8 +83,6 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 
 class PEAssembly final
 {
-    VPTR_BASE_CONCRETE_VTABLE_CLASS(PEAssembly)
-
 public:
 
     // ------------------------------------------------------------
