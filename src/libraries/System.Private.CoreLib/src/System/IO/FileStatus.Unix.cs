@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -180,8 +181,18 @@ namespace System.IO
         }
 
         internal FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
+            => GetAttributes(handle: null, path, fileName, continueOnError);
+
+        internal FileAttributes GetAttributes(SafeFileHandle handle, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path, continueOnError);
+            ReadOnlySpan<char> path = handle.Path;
+            ReadOnlySpan<char> fileName = Path.GetFileName(path);
+            return GetAttributes(handle, path, fileName, continueOnError);
+        }
+
+        private FileAttributes GetAttributes(SafeFileHandle? handle, ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
+        {
+            EnsureCachesInitialized(handle, path, continueOnError);
 
             if (!EntryExists)
                 return (FileAttributes)(-1);
@@ -204,6 +215,12 @@ namespace System.IO
         }
 
         internal void SetAttributes(string path, FileAttributes attributes, bool asDirectory)
+            => SetAttributes(handle: null, path, attributes, asDirectory);
+
+        internal void SetAttributes(SafeFileHandle handle, FileAttributes attributes, bool asDirectory)
+            => SetAttributes(handle, GetHandlePath(handle), attributes, asDirectory);
+
+        private void SetAttributes(SafeFileHandle? handle, string path, FileAttributes attributes, bool asDirectory)
         {
             // Validate that only flags from the attribute are being provided.  This is an
             // approximation for the validation done by the Win32 function.
@@ -220,22 +237,21 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_InvalidFileAttrs, "Attributes");
             }
 
-            EnsureCachesInitialized(path);
+            EnsureCachesInitialized(handle, path);
 
             if (!EntryExists)
                 FileSystemInfo.ThrowNotFound(path);
 
             if (Interop.Sys.CanSetHiddenFlag)
             {
-                if ((attributes & FileAttributes.Hidden) != 0 && (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == 0)
+                bool hidden = (attributes & FileAttributes.Hidden) != 0;
+                if (hidden ^ HasHiddenFlag)
                 {
-                    // If Hidden flag is set and cached file status does not have the flag set then set it
-                    Interop.CheckIo(Interop.Sys.LChflags(path, (_fileCache.UserFlags | (uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, asDirectory);
-                }
-                else if (HasHiddenFlag)
-                {
-                    // If Hidden flag is not set and cached file status does have the flag set then remove it
-                    Interop.CheckIo(Interop.Sys.LChflags(path, (_fileCache.UserFlags & ~(uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, asDirectory);
+                    uint flags = hidden ? _fileCache.UserFlags | (uint)Interop.Sys.UserFlags.UF_HIDDEN :
+                                          _fileCache.UserFlags & ~(uint)Interop.Sys.UserFlags.UF_HIDDEN;
+                    int rv = handle is not null ? Interop.Sys.FChflags(handle, flags) :
+                                                  Interop.Sys.LChflags(path!, flags);
+                    Interop.CheckIo(rv, path, asDirectory);
                 }
             }
 
@@ -256,7 +272,9 @@ namespace System.IO
             // Change the permissions on the file
             if (newMode != _fileCache.Mode)
             {
-                Interop.CheckIo(Interop.Sys.ChMod(path, newMode), path, asDirectory);
+                int rv = handle is not null ? Interop.Sys.FChMod(handle, newMode) :
+                                              Interop.Sys.ChMod(path!, newMode);
+                Interop.CheckIo(rv, path, asDirectory);
             }
 
             InvalidateCaches();
@@ -269,8 +287,14 @@ namespace System.IO
         }
 
         internal DateTimeOffset GetCreationTime(ReadOnlySpan<char> path, bool continueOnError = false)
+            => GetCreationTime(handle: null, path, continueOnError);
+
+        internal DateTimeOffset GetCreationTime(SafeFileHandle handle, bool continueOnError = false)
+            => GetCreationTime(handle, GetHandlePath(handle), continueOnError);
+
+        private DateTimeOffset GetCreationTime(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path, continueOnError);
+            EnsureCachesInitialized(handle, path, continueOnError);
 
             if (!EntryExists)
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
@@ -287,8 +311,14 @@ namespace System.IO
         }
 
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
+            => GetLastAccessTime(handle: null, path, continueOnError);
+
+        internal DateTimeOffset GetLastAccessTime(SafeFileHandle handle, bool continueOnError = false)
+            => GetLastAccessTime(handle, handle.Path, continueOnError);
+
+        private DateTimeOffset GetLastAccessTime(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path, continueOnError);
+            EnsureCachesInitialized(handle, path, continueOnError);
 
             if (!EntryExists)
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
@@ -297,11 +327,23 @@ namespace System.IO
         }
 
         internal void SetLastAccessTime(string path, DateTimeOffset time, bool asDirectory)
-            => SetAccessOrWriteTime(path, time, isAccessTime: true, asDirectory);
+            => SetLastAccessTime(handle: null, path, time, asDirectory);
+
+        internal void SetLastAccessTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
+            => SetLastAccessTime(handle, GetHandlePath(handle), time, asDirectory);
+
+        private void SetLastAccessTime(SafeFileHandle? handle, string path, DateTimeOffset time, bool asDirectory)
+            => SetAccessOrWriteTime(handle, path, time, isAccessTime: true, asDirectory);
 
         internal DateTimeOffset GetLastWriteTime(ReadOnlySpan<char> path, bool continueOnError = false)
+            => GetLastWriteTime(handle: null, path, continueOnError);
+
+        internal DateTimeOffset GetLastWriteTime(SafeFileHandle handle, bool continueOnError = false)
+            => GetLastWriteTime(handle, handle.Path, continueOnError);
+
+        private DateTimeOffset GetLastWriteTime(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path, continueOnError);
+            EnsureCachesInitialized(handle, path, continueOnError);
 
             if (!EntryExists)
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
@@ -310,14 +352,20 @@ namespace System.IO
         }
 
         internal void SetLastWriteTime(string path, DateTimeOffset time, bool asDirectory)
-            => SetAccessOrWriteTime(path, time, isAccessTime: false, asDirectory);
+            => SetLastWriteTime(handle: null, path, time, asDirectory);
+
+        internal void SetLastWriteTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
+            => SetLastWriteTime(handle, GetHandlePath(handle), time, asDirectory);
+
+        internal void SetLastWriteTime(SafeFileHandle? handle, string path, DateTimeOffset time, bool asDirectory)
+            => SetAccessOrWriteTime(handle, path, time, isAccessTime: false, asDirectory);
 
         private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
         {
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick);
         }
 
-        private unsafe void SetAccessOrWriteTimeCore(string path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime, bool asDirectory)
+        private unsafe void SetAccessOrWriteTimeCore(SafeFileHandle? handle, string path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime, bool asDirectory)
         {
             // This api is used to set creation time on non OSX platforms, and as a fallback for OSX platforms.
             // The reason why we use it to set 'creation time' is the below comment:
@@ -333,7 +381,7 @@ namespace System.IO
 
             // force a refresh so that we have an up-to-date times for values not being overwritten
             InvalidateCaches();
-            EnsureCachesInitialized(path);
+            EnsureCachesInitialized(handle, path);
 
             if (!EntryExists)
                 FileSystemInfo.ThrowNotFound(path);
@@ -365,7 +413,9 @@ namespace System.IO
                 buf[1].TvNsec = nanoseconds;
             }
 #endif
-            Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, asDirectory);
+            int rv = handle is not null ? Interop.Sys.FUTimens(handle, buf) :
+                                          Interop.Sys.UTimensat(path!, buf);
+            Interop.CheckIo(rv, path, asDirectory);
 
             // On OSX-like platforms, when the modification time is less than the creation time (including
             // when the modification time is already less than but access time is being set), the creation
@@ -382,7 +432,7 @@ namespace System.IO
 
             if (updateCreationTime)
             {
-                Interop.Error error = SetCreationTimeCore(path, _fileCache.BirthTime, _fileCache.BirthTimeNsec);
+                Interop.Error error = SetCreationTimeCore(handle, path, _fileCache.BirthTime, _fileCache.BirthTimeNsec);
                 if (error != Interop.Error.SUCCESS && error != Interop.Error.ENOTSUP)
                 {
                     Interop.CheckIo(error, path, asDirectory);
@@ -399,17 +449,27 @@ namespace System.IO
             return EntryExists ? _fileCache.Size : 0;
         }
 
+        internal void RefreshCaches(ReadOnlySpan<char> path)
+            => RefreshCaches(handle: null, path);
+
         // Tries to refresh the lstat cache (_fileCache).
         // This method should not throw. Instead, we store the results, and we will throw when the user attempts to access any of the properties when there was a failure
-        internal void RefreshCaches(ReadOnlySpan<char> path)
+        internal void RefreshCaches(SafeFileHandle? handle, ReadOnlySpan<char> path)
         {
-            path = Path.TrimEndingDirectorySeparator(path);
-
 #if !TARGET_BROWSER
             _isReadOnlyCache = -1;
 #endif
+            int rv;
+            if (handle is not null)
+            {
+                rv = Interop.Sys.FStat(handle, out _fileCache);
+            }
+            else
+            {
+                path = Path.TrimEndingDirectorySeparator(path);
+                rv = Interop.Sys.LStat(path, out _fileCache);
+            }
 
-            int rv = Interop.Sys.LStat(path, out _fileCache);
             if (rv < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -431,20 +491,24 @@ namespace System.IO
             // Check if the main path is a directory, or a link to a directory.
             int fileType = _fileCache.Mode & Interop.Sys.FileTypes.S_IFMT;
             bool isDirectory = fileType == Interop.Sys.FileTypes.S_IFDIR ||
-                               (fileType == Interop.Sys.FileTypes.S_IFLNK
-                                && Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0
-                                && (target.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
+                               (handle is null && // Don't follow links for SafeHandle APIs.
+                                fileType == Interop.Sys.FileTypes.S_IFLNK &&
+                                Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0 &&
+                                (target.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
 
             _state = isDirectory ? InitializedExistsDir : InitializedExistsFile;
         }
 
+        internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
+            => EnsureCachesInitialized(handle: null, path, continueOnError);
+
         // Checks if the file cache is uninitialized and refreshes it's value.
         // If it failed, and continueOnError is set to true, this method will throw.
-        internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
+        internal void EnsureCachesInitialized(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
             if (_state == Uninitialized)
             {
-                RefreshCaches(path);
+                RefreshCaches(handle, path);
             }
 
             if (!continueOnError)
@@ -470,6 +534,20 @@ namespace System.IO
             const long TicksPerMillisecond = 10000;
             const long TicksPerSecond = TicksPerMillisecond * 1000;
             return (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
+        }
+
+        private static string GetHandlePath(SafeFileHandle handle)
+        {
+            if (handle.Path is null)
+            {
+                ThrowHandleHasNoPath();
+            }
+            return handle.Path!;
+
+            static void ThrowHandleHasNoPath()
+            {
+                throw new ArgumentException(SR.Arg_HandleHasNoPath);
+            }
         }
     }
 }

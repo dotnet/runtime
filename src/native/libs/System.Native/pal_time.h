@@ -28,6 +28,13 @@ typedef struct ProcessCpuInformation
 PALEXPORT int32_t SystemNative_UTimensat(const char* path, TimeSpec* times);
 
 /**
+ * Sets the last access and last modified time of a file
+ *
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
+ */
+PALEXPORT int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times);
+
+/**
  * Gets a high-resolution timestamp that can be used for time-interval measurements.
  */
 PALEXPORT uint64_t SystemNative_GetTimestamp(void);
