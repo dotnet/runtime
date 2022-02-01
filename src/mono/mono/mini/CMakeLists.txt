@@ -271,6 +271,7 @@ endif()
 
 if(ENABLE_INTERP_LIB)
 add_library(mono-ee-interp STATIC "${interp_sources}")
+target_link_libraries(mono-ee-interp monoapi)
 install(TARGETS mono-ee-interp LIBRARY)
 endif()
 
