@@ -1053,6 +1053,9 @@
   <data name="Argument_HasToBeArrayClass" xml:space="preserve">
     <value>Must be an array type.</value>
   </data>
+  <data name="Arg_HandleHasNoPath" xml:space="preserve">
+    <value>The handle has no associated path.</value>
+  </data>
   <data name="Argument_IdnBadBidi" xml:space="preserve">
     <value>Left to right characters may not be mixed with right to left characters in IDN labels.</value>
   </data>
