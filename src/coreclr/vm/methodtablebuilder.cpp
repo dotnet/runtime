@@ -8432,8 +8432,8 @@ MethodTableBuilder::HandleExplicitLayout(
     // This is what we implement:
     //
     // 1. Verify that every OREF or BYREF is on a valid alignment.
-    // 2. Verify that OREFs or BYREFs only overlap with other OREFs or BYREFs.
-    // 3. If an OREF or BYREF does overlap with another OREF or BYREF, the class is marked unverifiable.
+    // 2. Verify that OREFs only overlap with other OREFs.
+    // 3. If an OREF does overlap with another OREF, the class is marked unverifiable.
     // 4. If an overlap of any kind occurs, the class will be marked NotTightlyPacked (affects ValueType.Equals()).
     //
     char emptyObject[TARGET_POINTER_SIZE];
@@ -8443,7 +8443,6 @@ MethodTableBuilder::HandleExplicitLayout(
         emptyObject[i] = empty;
         isObject[i]    = oref;
     }
-
 
     ExplicitClassTrust explicitClassTrust;
 
@@ -8492,10 +8491,18 @@ MethodTableBuilder::HandleExplicitLayout(
                 // If we got here, OREF or BYREF field was not pointer aligned. THROW.
                 break;
             }
+
+            // Other than alignment, a byref can be treated like an native pointer.
+            if (CorTypeInfo::IsByRef(type))
+                type = ELEMENT_TYPE_I;
+        }
+
+        if (CorTypeInfo::IsObjRef(type))
+        {
             // check if overlaps another object
             if (memcmp((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], (void *)isObject, sizeof(isObject)) == 0)
             {
-                // If we got here, an OREF or BYREF overlapped another OREF or BYREF. We permit this but mark the class unverifiable.
+                // If we got here, an OREF overlapped another OREF. We permit this but mark the class unverifiable.
                 fieldTrust.SetTrust(ExplicitFieldTrust::kLegal);
 
                 if (firstObjectOverlapOffset == ((DWORD)(-1)))
@@ -8508,13 +8515,13 @@ MethodTableBuilder::HandleExplicitLayout(
             // check if is empty at this point
             if (memcmp((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], (void *)emptyObject, sizeof(emptyObject)) == 0)
             {
-                // If we got here, this OREF or BYREF is overlapping no other fields (yet). Record that these bytes now contain an OREF or BYREF .
+                // If we got here, this OREF is overlapping no other fields (yet). Record that these bytes now contain an OREF.
                 memset((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], oref, sizeof(isObject));
                 fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
                 continue;
             }
 
-            // If we got here, the OREF or BYREF overlaps a non-OREF or non-BYREF. THROW.
+            // If we got here, the OREF overlaps a non-OREF. THROW.
             badOffset = pFD->GetOffset_NoLogging();
             fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
             break;
