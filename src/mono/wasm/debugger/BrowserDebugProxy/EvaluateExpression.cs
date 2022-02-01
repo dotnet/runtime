@@ -446,7 +446,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 description = message,
                 className
             };
-            Error = Result.OkFromObject(JObject.FromObject(
+            Error = Result.UserVisibleErr(JObject.FromObject(
                 new
                 {
                     result = result,
@@ -455,8 +455,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         exception = result,
                         stackTrace = StackTrace
                     }
-                }),
-                surfaceError: true); ;
+                }));
         }
 
         public void UpdateStackTrace()

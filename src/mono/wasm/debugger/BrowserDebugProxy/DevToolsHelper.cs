@@ -128,39 +128,37 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsOk => Value != null;
         public bool IsErr => Error != null;
 
-        private Result(JObject result, JObject error, bool surfaceError = false)
+        private Result(JObject resultOrError, bool isError, JObject error = null)
         {
-            if (result != null && error != null)
-                throw new ArgumentException($"Both {nameof(result)} and {nameof(error)} arguments cannot be non-null.");
-
-            bool resultHasError = string.Equals((result?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
-            if (result != null && resultHasError && !surfaceError)
+            bool resultHasError = isError || string.Equals((resultOrError?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
+            if (resultOrError != null && resultHasError)
             {
-                this.Value = null;
-                this.Error = result;
+                Value = null;
+                Error = resultOrError;
             }
             else
             {
-                this.Value = result;
-                this.Error = error;
+                Value = resultOrError;
+                Error = error;
             }
         }
-
         public static Result FromJson(JObject obj)
         {
             //Log ("protocol", $"from result: {obj}");
-            return new Result(obj["result"] as JObject, obj["error"] as JObject);
+            return new Result(obj["result"] as JObject, false, obj["error"] as JObject);
         }
 
-        public static Result Ok(JObject ok, bool surfaceError = false) => new Result(ok, null, surfaceError);
+        public static Result Ok(JObject ok) => new Result(ok, false);
 
-        public static Result OkFromObject(object ok, bool surfaceError = false) => Ok(JObject.FromObject(ok), surfaceError);
+        public static Result OkFromObject(object ok) => Ok(JObject.FromObject(ok));
 
-        public static Result Err(JObject err) => new Result(null, err);
+        public static Result Err(JObject err) => new Result(err, true);
 
-        public static Result Err(string msg) => new Result(null, JObject.FromObject(new { message = msg }));
+        public static Result Err(string msg) => new Result(JObject.FromObject(new { message = msg }), true);
 
-        public static Result Exception(Exception e) => new Result(null, JObject.FromObject(new { message = e.Message }));
+        public static Result UserVisibleErr(JObject result) => new Result { Value = result };
+
+        public static Result Exception(Exception e) => new Result(JObject.FromObject(new { message = e.Message }), true);
 
         public JObject ToJObject(MessageId target)
         {
