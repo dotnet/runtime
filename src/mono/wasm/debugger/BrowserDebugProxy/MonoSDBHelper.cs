@@ -163,7 +163,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         GetState = 3,
         GetInfo = 4,
         /* FIXME: Merge into GetInfo when the major protocol version is increased */
-        GetNewId = 5,
+        GetId = 5,
         /* Ditto */
         GetTid = 6,
         SetIp = 7,
