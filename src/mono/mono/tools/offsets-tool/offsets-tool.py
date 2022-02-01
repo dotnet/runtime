@@ -59,6 +59,7 @@ class OffsetsTool:
 		parser.add_argument ('--emscripten-sdk', dest='emscripten_path', help='path to emscripten sdk')
 		parser.add_argument ('--outfile', dest='outfile', help='path to output file', required=True)
 		parser.add_argument ('--monodir', dest='mono_path', help='path to mono source tree', required=True)
+		parser.add_argument ('--nativedir', dest='native_path', help='path to src/native', required=True)
 		parser.add_argument ('--targetdir', dest='target_path', help='path to mono tree configured for target', required=True)
 		parser.add_argument ('--abi=', dest='abi', help='ABI triple to generate', required=True)
 		parser.add_argument ('--sysroot=', dest='sysroot', help='path to sysroot headers of target')
@@ -222,6 +223,7 @@ class OffsetsTool:
 			args.mono_path + "/mono",
 			args.mono_path + "/mono/eglib",
 			args.mono_path + "/../native",
+			args.native_path + "/include/mono-2.0",
 			args.target_path,
 			args.target_path + "/mono/eglib"
 			]
