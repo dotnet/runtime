@@ -129,9 +129,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 Logger.LogInformation($"{message_prefix} launching proxy for {con_str}");
 
                 string logFilePath = Path.Combine(DebuggerTests.DebuggerTestBase.TestLogPath, $"{test_id}-proxy.log");
+                File.Delete(logFilePath);
+
                 var proxyLoggerFactory = LoggerFactory.Create(
                     builder => builder
-                        .AddFile(logFilePath, minimumLevel: LogLevel.Trace)
+                        .AddFile(logFilePath, minimumLevel: LogLevel.Information)
                         .AddFilter(null, LogLevel.Trace));
 
                 var proxy = new DebuggerProxy(proxyLoggerFactory, null, loggerId: test_id);

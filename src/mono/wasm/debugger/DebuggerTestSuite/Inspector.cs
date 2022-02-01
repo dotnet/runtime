@@ -43,9 +43,10 @@ namespace DebuggerTests
             Token = _cancellationTokenSource.Token;
 
             string logFilePath = Path.Combine(DebuggerTestBase.TestLogPath, $"{Id}-test.log");
+            File.Delete(logFilePath);
             _loggerFactory = LoggerFactory.Create(builder =>
                     builder
-                        .AddFile(logFilePath, minimumLevel: LogLevel.Trace)
+                        .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
                         .AddSimpleConsole(options =>
                             {
                                 options.SingleLine = true;
@@ -53,7 +54,7 @@ namespace DebuggerTests
                             })
                            .AddFilter(null, LogLevel.Trace));
 
-            Client = new InspectorClient(_loggerFactory.CreateLogger($"InspectorClient-{Id}"));
+            Client = new InspectorClient(_loggerFactory.CreateLogger($"{nameof(InspectorClient)}-{Id}"));
             _logger = _loggerFactory.CreateLogger($"{nameof(Inspector)}-{Id}");
         }
 
