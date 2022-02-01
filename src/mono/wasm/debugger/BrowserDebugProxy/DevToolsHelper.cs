@@ -130,6 +130,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private Result(JObject resultOrError, bool isError, JObject error = null)
         {
+            if (resultOrError != null && error != null)
+                throw new ArgumentException($"Both {nameof(resultOrError)} and {nameof(error)} arguments cannot be non-null.");
+
             bool resultHasError = isError || string.Equals((resultOrError?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
             if (resultOrError != null && resultHasError)
             {
