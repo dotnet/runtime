@@ -79,7 +79,7 @@ namespace Wasm.Build.Tests
                         DotnetWasmFromRuntimePack: false,
                         CreateProject: false,
                         HasV8Script: false,
-                        MainJS: "main.mjs",
+                        MainJS: "main.cjs",
                         Publish: false,
                         TargetFramework: "net7.0"
                         ));
@@ -98,7 +98,7 @@ namespace Wasm.Build.Tests
                             DotnetWasmFromRuntimePack: false,
                             CreateProject: false,
                             HasV8Script: false,
-                            MainJS: "main.mjs",
+                            MainJS: "main.cjs",
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));
