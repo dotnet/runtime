@@ -5197,7 +5197,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         {
             int             length;
             const char16_t* str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
-                                                                    asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
+                                                                     asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
             if ((cnsIndex < length) && (str != nullptr))
             {
                 GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], TYP_INT);
