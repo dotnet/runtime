@@ -517,7 +517,7 @@ namespace Microsoft.Extensions.Logging.Generators
                             {
                                 if (methods.ContainsKey(lm.Name))
                                 {
-                                    var currentCount = methods[lm.Name];
+                                    int currentCount = methods[lm.Name];
                                     lm.UniqueName = $"{lm.Name}{currentCount}";
                                     methods[lm.Name] = currentCount + 1;
                                 }

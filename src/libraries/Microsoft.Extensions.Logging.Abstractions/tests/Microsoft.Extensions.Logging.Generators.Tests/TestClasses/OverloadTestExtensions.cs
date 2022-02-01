@@ -11,7 +11,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         [LoggerMessage(EventId = 1, Level = LogLevel.Trace, Message = "M0{p0}")]
         public static partial void M0(ILogger logger, string p0);
 
-
         [LoggerMessage(EventId = 2, EventName = "M1Custom", Level = LogLevel.Trace, Message = "M1{p0}")]
         public static partial void M1(ILogger logger, int p0);
 
