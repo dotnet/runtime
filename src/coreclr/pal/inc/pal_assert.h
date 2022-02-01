@@ -34,7 +34,7 @@ extern "C" {
 #if defined(_DEBUG)
 #define _ASSERTE(e) do {                                        \
         if (!(e)) {                                             \
-            fprintf (stderr,                                    \
+            PAL_fprintf (PAL_get_stderr(PAL_get_caller),        \
                      "ASSERT FAILED\n"                          \
                      "\tExpression: %s\n"                       \
                      "\tLocation:   line %d in %s\n"            \
