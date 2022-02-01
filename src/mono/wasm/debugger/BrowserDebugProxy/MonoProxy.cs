@@ -1538,33 +1538,39 @@ namespace Microsoft.WebAssembly.Diagnostics
             ExecutionContext context = GetContext(sessionId);
             Frame scope = context.CallStack.First<Frame>();
 
-            var res = new List<SourceLocation>();
-            var sourceLocation = new SourceLocation(location.Id, location.Line, location.Column == 0 ? -1 : location.Column);
+            var targetLocation  = new SourceLocation(location.Id, location.Line, location.Column == 0 ? -1 : location.Column);
 
-            store.AddPossibleBreakpointsInMethodToList(sourceLocation, sourceLocation, res, scope.Method.Info);
-            if (res.Count == 0)
-                return false;
-            var bp = res.First();
+            SourceLocation foundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
+                                                    .FirstOrDefault();
 
-            //search if it's a nested function and it's return false because we cannot move to another function
-            if (bp.Line != location.Line || bp.Column != location.Column))
+            if (foundLocation is null)
+                 return false;
+
+            bool IsNestedMethod()
             {
-                res = new List<SourceLocation>();
-                SourceFile doc = store.GetFileById(scope.Method.Info.SourceId);
-                foreach (var method in doc.Methods)
+                if (foundLocation.Line != location.Line || foundLocation.Column != location.Column)
                 {
-                    if (method.Token == scope.Method.Info.Token)
-                        continue;
-                    store.AddPossibleBreakpointsInMethodToList(sourceLocation, sourceLocation, res, method);
-                    if (res.Count > 0 &&
-                        (method.StartLocation.Line > scope.Method.Info.StartLocation.Line ||
-                            (method.StartLocation.Line == scope.Method.Info.StartLocation.Line && method.StartLocation.Column > scope.Method.Info.StartLocation.Column)) &&
-                        (method.EndLocation.Line < scope.Method.Info.EndLocation.Line ||
-                            (method.EndLocation.Line == scope.Method.Info.EndLocation.Line && method.EndLocation.Column < scope.Method.Info.EndLocation.Column)))
-                        return false;
+                    SourceFile doc = store.GetFileById(scope.Method.Info.SourceId);
+                    foreach (var method in doc.Methods)
+                    {
+                        if (method.Token == scope.Method.Info.Token)
+                            continue;
+                        if (method.IsLexicallyContainedInMethod(scope.Method.Info))
+                            continue;
+                        SourceLocation foundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
+                                                    .FirstOrDefault();
+                        if (!(foundLocation is null))
+                            return true;
+                    }
                 }
+                return false;
             }
-            var ilOffset = bp.IlLocation;
+
+            //search if it's a nested method and it's return false because we cannot move to another method
+            if (IsNestedMethod())
+                return false;
+
+            var ilOffset = foundLocation.IlLocation;
             var ret = await context.SdbAgent.SetNextIP(scope.Method, context.ThreadId, ilOffset, token);
 
             if (!ret)

@@ -496,6 +496,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             public bool HasNonUserCode { get; internal set; }
             public bool HasStepperBoundary { get; internal set; }
         }
+
+        public bool IsLexicallyContainedInMethod(MethodInfo containerMethod)
+            => (StartLocation.Line > containerMethod.StartLocation.Line ||
+                    (StartLocation.Line == containerMethod.StartLocation.Line && StartLocation.Column > containerMethod.StartLocation.Column)) &&
+                (EndLocation.Line < containerMethod.EndLocation.Line ||
+                    (EndLocation.Line == containerMethod.EndLocation.Line && EndLocation.Column < containerMethod.EndLocation.Column));
     }
 
     internal class TypeInfo
@@ -1193,20 +1199,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             foreach (MethodInfo method in doc.Methods)
-            {
-                AddPossibleBreakpointsInMethodToList(start, end, res, method);
-            }
+                res.AddRange(FindBreakpointLocations(start, end, method));
             return res;
         }
 
-        public void AddPossibleBreakpointsInMethodToList(SourceLocation start, SourceLocation end, List<SourceLocation> res, MethodInfo method)
+        public IEnumerable<SourceLocation> FindBreakpointLocations(SourceLocation start, SourceLocation end, MethodInfo method)
         {
             if (!method.HasSequencePoints)
-                return;
+                yield break;
             foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
             {
                 if (!sequencePoint.IsHidden && Match(sequencePoint, start, end))
-                    res.Add(new SourceLocation(method, sequencePoint));
+                    yield return new SourceLocation(method, sequencePoint);
             }
         }
 
