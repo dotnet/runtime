@@ -5320,9 +5320,8 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         GenTree* const array = fgMorphTree(asIndex->Arr());
         GenTree* const index = fgMorphTree(asIndex->Index());
 
-        GenTreeIndexAddr* const indexAddr =
-            new (this, GT_INDEX_ADDR) GenTreeIndexAddr(array, index, elemTyp, elemStructType, elemSize,
-                                                       static_cast<unsigned>(lenOffs), elemOffs);
+        GenTreeIndexAddr* const indexAddr = new (this, GT_INDEX_ADDR)
+            GenTreeIndexAddr(array, index, elemTyp, elemStructType, elemSize, static_cast<unsigned>(lenOffs), elemOffs);
         indexAddr->gtFlags |= (array->gtFlags | index->gtFlags) & GTF_ALL_EFFECT;
 
         // Mark the indirection node as needing a range check if necessary.

@@ -17193,7 +17193,6 @@ bool Compiler::gtIsStaticGCBaseHelperCall(GenTree* tree)
     return false;
 }
 
-
 //------------------------------------------------------------------------
 // ParseArrayAddress: Rehydrate the array and index expression from ARR_ADDR.
 //
@@ -17222,7 +17221,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     // OK, new we have to figure out if any part of the "offset" is a constant contribution to the index.
     target_ssize_t elemOffset = GetFirstElemOffset();
     unsigned       elemSizeUn = (GetElemType() == TYP_STRUCT) ? comp->typGetObjLayout(GetElemClassHandle())->GetSize()
-                                                              : genTypeSize(GetElemType());
+                                                        : genTypeSize(GetElemType());
 
     assert(FitsIn<target_ssize_t>(elemSizeUn));
     target_ssize_t elemSize         = static_cast<target_ssize_t>(elemSizeUn);
@@ -17296,12 +17295,8 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     }
 }
 
-/* static */ void GenTreeArrAddr::ParseArrayAddressWork(GenTree*        tree,
-                                                        Compiler*       comp,
-                                                        target_ssize_t  inputMul,
-                                                        GenTree**       pArr,
-                                                        ValueNum*       pInxVN,
-                                                        target_ssize_t* pOffset)
+/* static */ void GenTreeArrAddr::ParseArrayAddressWork(
+    GenTree* tree, Compiler* comp, target_ssize_t inputMul, GenTree** pArr, ValueNum* pInxVN, target_ssize_t* pOffset)
 {
     if (tree->TypeIs(TYP_REF))
     {

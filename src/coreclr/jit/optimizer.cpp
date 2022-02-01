@@ -7926,9 +7926,9 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         ValueNum elemTypeEqVN = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
 
                         // Label this with a "dummy" PtrToArrElem so that we pick it up when looking at the ASG.
-                        ValueNum ptrToArrElemVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN,
-                                                                     vnStore->VNForNull(), vnStore->VNForNull(),
-                                                                     vnStore->VNForNull());
+                        ValueNum ptrToArrElemVN =
+                            vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN, vnStore->VNForNull(),
+                                               vnStore->VNForNull(), vnStore->VNForNull());
                         tree->gtVNPair.SetBoth(ptrToArrElemVN);
                     }
                     break;
