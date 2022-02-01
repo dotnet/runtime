@@ -1056,6 +1056,78 @@ OleColorMarshalingInfo *EEMarshalingData::GetOleColorMarshalingInfo()
 }
 #endif // FEATURE_COMINTEROP
 
+namespace
+{
+    MarshalInfo::MarshalType GetDisabledMarshallerType(
+        Module* pModule,
+        SigPointer sig,
+        const SigTypeContext * pTypeContext,
+        MethodTable** pMTOut,
+        UINT* errorResIDOut)
+    {
+        switch (sig.PeekElemTypeNormalized(pModule, pTypeContext))
+        {
+        case ELEMENT_TYPE_BOOLEAN:
+        case ELEMENT_TYPE_U1:
+            return MarshalInfo::MARSHAL_TYPE_GENERIC_U1;
+        case ELEMENT_TYPE_I1:
+            return MarshalInfo::MARSHAL_TYPE_GENERIC_1;
+        case ELEMENT_TYPE_CHAR:
+        case ELEMENT_TYPE_U2:
+            return MarshalInfo::MARSHAL_TYPE_GENERIC_U2;
+        case ELEMENT_TYPE_I2:
+            return MarshalInfo::MARSHAL_TYPE_GENERIC_2;
+        case ELEMENT_TYPE_U4:
+            return MarshalInfo::MARSHAL_TYPE_GENERIC_U4;
+        case ELEMENT_TYPE_I4:
+            return MarshalInfo::MARSHAL_TYPE_GENERIC_4;
+        case ELEMENT_TYPE_U8:
+        case ELEMENT_TYPE_I8:
+            return MarshalInfo::MARSHAL_TYPE_GENERIC_8;
+#ifdef TARGET_64BIT
+        case ELEMENT_TYPE_U:
+        case ELEMENT_TYPE_PTR:
+        case ELEMENT_TYPE_FNPTR:
+        case ELEMENT_TYPE_I:
+            return MarshalInfo::MARSHAL_TYPE_GENERIC_8;
+#else
+        case ELEMENT_TYPE_U:
+            return MarshalInfo::MARSHAL_TYPE_GENERIC_U4;
+        case ELEMENT_TYPE_PTR:
+        case ELEMENT_TYPE_FNPTR:
+        case ELEMENT_TYPE_I:
+            return MarshalInfo::MARSHAL_TYPE_GENERIC_4;
+#endif
+        case ELEMENT_TYPE_R4:
+            return MarshalInfo::MARSHAL_TYPE_FLOAT;
+        case ELEMENT_TYPE_R8:
+            return MarshalInfo::MARSHAL_TYPE_DOUBLE;
+        case ELEMENT_TYPE_VAR:
+        case ELEMENT_TYPE_VALUETYPE:
+        {
+            TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
+            MethodTable* pMT = sigTH.GetMethodTable();
+
+            if (!pMT->IsValueType() || pMT->ContainsPointers())
+            {
+                *errorResIDOut = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
+                return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
+            }
+            if (pMT->IsAutoLayoutOrHasAutoLayoutField())
+            {
+                *errorResIDOut = IDS_EE_BADMARSHAL_AUTOLAYOUT;
+                return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
+            }
+            *pMTOut = pMT;
+            return MarshalInfo::MARSHAL_TYPE_BLITTABLEVALUECLASS;
+        }
+        default:
+            *errorResIDOut = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
+            return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
+        }
+    }
+}
+
 //==========================================================================
 // Constructs MarshalInfo.
 //==========================================================================
@@ -1130,27 +1202,27 @@ MarshalInfo::MarshalInfo(Module* pModule,
     CHAR achDbgContext[DEBUG_CONTEXT_STR_LEN] = "";
     if (!pDebugName)
     {
-        strncpy_s(achDbgContext, COUNTOF(achDbgContext), "<Unknown>", _TRUNCATE);
+        strncpy_s(achDbgContext, ARRAY_SIZE(achDbgContext), "<Unknown>", _TRUNCATE);
     }
     else
     {
-        strncat_s(achDbgContext, COUNTOF(achDbgContext), pDebugClassName, _TRUNCATE);
-        strncat_s(achDbgContext, COUNTOF(achDbgContext), NAMESPACE_SEPARATOR_STR, _TRUNCATE);
-        strncat_s(achDbgContext, COUNTOF(achDbgContext), pDebugName, _TRUNCATE);
-        strncat_s(achDbgContext, COUNTOF(achDbgContext), " ", _TRUNCATE);
+        strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), pDebugClassName, _TRUNCATE);
+        strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), NAMESPACE_SEPARATOR_STR, _TRUNCATE);
+        strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), pDebugName, _TRUNCATE);
+        strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), " ", _TRUNCATE);
         switch (argidx)
         {
             case (UINT)-1:
-                strncat_s(achDbgContext, COUNTOF(achDbgContext), "field", _TRUNCATE);
+                strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), "field", _TRUNCATE);
                 break;
             case 0:
-                strncat_s(achDbgContext, COUNTOF(achDbgContext), "return value", _TRUNCATE);
+                strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), "return value", _TRUNCATE);
                 break;
             default:
             {
                 char buf[30];
-                sprintf_s(buf, COUNTOF(buf), "param #%lu", (ULONG)argidx);
-                strncat_s(achDbgContext, COUNTOF(achDbgContext), buf, _TRUNCATE);
+                sprintf_s(buf, ARRAY_SIZE(buf), "param #%lu", (ULONG)argidx);
+                strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), buf, _TRUNCATE);
             }
         }
     }
@@ -1163,7 +1235,30 @@ MarshalInfo::MarshalInfo(Module* pModule,
     m_byref = TRUE;
 #endif
 
+    // For COM IL-stub scenarios, we do not support disabling the runtime marshalling support.
+    // The runtime-integrated COM support uses a significant portion of the marshalling infrastructure as well as
+    // quite a bit of its own custom marshalling infrastructure to function in basically any aspect.
+    // As a result, disabling marshalling in COM scenarios isn't useful. Instead, we recommend that people set the
+    // feature switch to false to disable the runtime COM support if they want it disabled.
+    // For field marshalling scenarios, we also don't disable runtime marshalling. If we're already in a field
+    // marshalling scenario, we've already decided that the context for the owning type is using runtime marshalling,
+    // so the fields of the struct should also use runtime marshalling.
+    const bool useRuntimeMarshalling = ms != MARSHAL_SCENARIO_NDIRECT || pModule->IsRuntimeMarshallingEnabled();
 
+    if (!useRuntimeMarshalling)
+    {
+        m_in = TRUE;
+        m_out = FALSE;
+        m_byref = FALSE;
+        m_type = GetDisabledMarshallerType(
+            pModule,
+            sig,
+            pTypeContext,
+            &m_pMT,
+            &m_resID);
+        m_args.m_pMT = m_pMT;
+        return;
+    }
 
     // Retrieve the native type for the current parameter.
     if (!ParseNativeTypeInfo(token, pModule->GetMDImport(), &ParamInfo))
@@ -1322,6 +1417,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
     switch (mtype)
     {
         case ELEMENT_TYPE_BOOLEAN:
+
             switch (nativeType)
             {
                 case NATIVE_TYPE_BOOLEAN:
@@ -1482,10 +1578,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_I:
-            // Technically the "native int" and "native uint" types aren't supported in the WinRT scenario,
-            // but we need to not block ourselves from using them to enable accurate managed->native marshalling of
-            // projected types such as NotifyCollectionChangedEventArgs and NotifyPropertyChangedEventArgs.
-
             if (!(nativeType == NATIVE_TYPE_INT || nativeType == NATIVE_TYPE_UINT || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I;
@@ -1499,7 +1591,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_U:
-
             if (!(nativeType == NATIVE_TYPE_UINT || nativeType == NATIVE_TYPE_INT || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I;
@@ -1563,6 +1654,21 @@ MarshalInfo::MarshalInfo(Module* pModule,
         case ELEMENT_TYPE_VAR:
         {
             TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
+
+            if (sigTH.GetMethodTable()->IsValueType())
+            {
+                // For value types, we need to handle the "value type marshalled as a COM interface"
+                // case here for back-compat.
+                // Otherwise, we can go to the value-type case.
+#ifdef FEATURE_COMINTEROP
+                if (nativeType != NATIVE_TYPE_INTF)
+                {
+                    goto lValueClass;
+                }
+#else
+                goto lValueClass;
+#endif
+            }
 
             // Disallow marshaling generic types.
             if (sigTH.HasInstantiation())
@@ -1968,14 +2074,13 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                     }
                 }
-
                 else if (m_pMT->IsArray())
                 {
                     _ASSERTE(!"This invalid signature should never be hit!");
                     IfFailGoto(E_FAIL, lFail);
                 }
 #endif // FEATURE_COMINTEROP
-                else if (!m_pMT->IsValueType())
+                else
                 {
                     if (!(nativeType == NATIVE_TYPE_INTF || nativeType == NATIVE_TYPE_DEFAULT))
                     {
@@ -1989,12 +2094,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     m_resID = IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED;
                     IfFailGoto(E_FAIL, lFail);
 #endif // FEATURE_COMINTEROP
-                }
-
-                else
-                {
-                    _ASSERTE(m_pMT->IsValueType());
-                    goto lValueClass;
                 }
             }
             break;
@@ -2166,8 +2265,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T))
                         || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T))
                         || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T))
-                            // Crossgen scenarios block Vector<T> from even being loaded
-                            || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT))
+                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT))
                     )))
                 {
                     m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
@@ -2896,12 +2994,21 @@ UINT16 MarshalInfo::GetNativeSize(MarshalType mtype)
         #include "mtypes.h"
     };
 
-    _ASSERTE((SIZE_T)mtype < COUNTOF(nativeSizes));
+    _ASSERTE((SIZE_T)mtype < ARRAY_SIZE(nativeSizes));
     BYTE nativeSize = nativeSizes[mtype];
 
     if (nativeSize == VARIABLESIZE)
     {
         _ASSERTE(IsValueClass(mtype));
+        // For blittable types, use the GetNumInstanceFieldBytes method.
+        // When we generate IL stubs when marshalling is disabled,
+        // we reuse the blittable value class marshalling mechanism.
+        // In that scenario, only GetNumInstanceFieldBytes will return the correct value.
+        // GetNativeSize will return the size for when runtime marshalling is enabled.
+        if (mtype == MARSHAL_TYPE_BLITTABLEVALUECLASS)
+        {
+            return (UINT16) m_pMT->GetNumInstanceFieldBytes();
+        }
         return (UINT16) m_pMT->GetNativeSize();
     }
 
@@ -2959,7 +3066,7 @@ OVERRIDEPROC MarshalInfo::GetArgumentOverrideProc(MarshalType mtype)
         #include "mtypes.h"
     };
 
-    _ASSERTE((SIZE_T)mtype < COUNTOF(ILArgumentOverrideProcs));
+    _ASSERTE((SIZE_T)mtype < ARRAY_SIZE(ILArgumentOverrideProcs));
     return ILArgumentOverrideProcs[mtype];
 }
 
@@ -2979,7 +3086,7 @@ RETURNOVERRIDEPROC MarshalInfo::GetReturnOverrideProc(MarshalType mtype)
         #include "mtypes.h"
     };
 
-    _ASSERTE((SIZE_T)mtype < COUNTOF(ILReturnOverrideProcs));
+    _ASSERTE((SIZE_T)mtype < ARRAY_SIZE(ILReturnOverrideProcs));
     return ILReturnOverrideProcs[mtype];
 }
 
@@ -3172,7 +3279,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
             while (cbNativeType--)
             {
                 char num[100];
-                sprintf_s(num, COUNTOF(num), "0x%lx ", (ULONG)*pvNativeType);
+                sprintf_s(num, ARRAY_SIZE(num), "0x%lx ", (ULONG)*pvNativeType);
                 logbuf.AppendASCII(num);
                 switch (*(pvNativeType++))
                 {
@@ -3314,7 +3421,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
         logbuf.AppendASCII("MarshalType : ");
         {
             char num[100];
-            sprintf_s(num, COUNTOF(num), "0x%lx ", (ULONG)m_type);
+            sprintf_s(num, ARRAY_SIZE(num), "0x%lx ", (ULONG)m_type);
             logbuf.AppendASCII(num);
         }
         switch (m_type)

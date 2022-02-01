@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Test.Cryptography;
 using Xunit;
 
@@ -10,7 +13,7 @@ namespace System.Security.Cryptography.Tests
     public class HmacSha512Tests : Rfc4231HmacTests
     {
         protected override int BlockSize => 128;
-        protected override int MacSize => 64;
+        protected override int MacSize => HMACSHA512.HashSizeInBytes;
 
         protected override HMAC Create() => new HMACSHA512();
         protected override HashAlgorithm CreateHashAlgorithm() => SHA512.Create();
@@ -25,6 +28,31 @@ namespace System.Security.Cryptography.Tests
 
         protected override bool TryHashDataOneShot(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int written) =>
             HMACSHA512.TryHashData(key, source, destination, out written);
+
+        protected override byte[] HashDataOneShot(ReadOnlySpan<byte> key, Stream source) =>
+            HMACSHA512.HashData(key, source);
+
+        protected override byte[] HashDataOneShot(byte[] key, Stream source) =>
+            HMACSHA512.HashData(key, source);
+
+        protected override int HashDataOneShot(ReadOnlySpan<byte> key, Stream source, Span<byte> destination) =>
+            HMACSHA512.HashData(key, source, destination);
+
+        protected override ValueTask<int> HashDataOneShotAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            Memory<byte> destination,
+            CancellationToken cancellationToken) => HMACSHA512.HashDataAsync(key, source, destination, cancellationToken);
+
+        protected override ValueTask<byte[]> HashDataOneShotAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            CancellationToken cancellationToken) => HMACSHA512.HashDataAsync(key, source, cancellationToken);
+
+        protected override ValueTask<byte[]> HashDataOneShotAsync(
+            byte[] key,
+            Stream source,
+            CancellationToken cancellationToken) => HMACSHA512.HashDataAsync(key, source, cancellationToken);
 
         private static byte[][] s_testMacs4231 =
         {
@@ -99,7 +127,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void HMacSha512_Rfc2104_2()
+        public void HmacSha512_Rfc2104_2()
         {
             VerifyHmacRfc2104_2();
         }
@@ -108,6 +136,78 @@ namespace System.Security.Cryptography.Tests
         public void HmacSha512_ThrowsArgumentNullForNullConstructorKey()
         {
             AssertExtensions.Throws<ArgumentNullException>("key", () => new HMACSHA512(null));
+        }
+
+        [Fact]
+        public void HmacSha512_Stream_MultipleOf4096()
+        {
+            // Verfied with:
+            // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl sha512 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            VerifyRepeating(
+                input: "0102030405060708",
+                1024,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "05A7BB210D374B0CC36FFFA561045F1C1EB8E71905A50308B108D4677CCB0452A99B26EE41DD8E1D87D53A4F3E07B1231E5D3FFFCE7FD0C5C5A8B8F5E0206A11");
+        }
+
+        [Fact]
+        public void HmacSha512_Stream_NotMultipleOf4096()
+        {
+            // Verfied with:
+            // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl sha512 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            VerifyRepeating(
+                input: "0102030405060708",
+                1025,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "9040E87E9CC546C507C3DEE90D278975B0C2049F28E71CC6FEEA0F3690EC9D0B736F885FFAA611156DA0C2904FC2EEEAA9562B53EB50F590902B2AE38056C874");
+        }
+
+        [Fact]
+        public void HmacSha512_Stream_Empty()
+        {
+            // Verfied with:
+            // echo -n "" | openssl sha512 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            VerifyRepeating(
+                input: "",
+                0,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "2FEC800CA276C44985A35AEC92067E5E53A1BB80A6FDAB1D9C97D54068118F30AD4C33717466D372EA00BBF126E5B79C6F7143DD36C31F72028330E92AE3A359");
+        }
+
+        [Fact]
+        public async Task HmacSha512_Stream_MultipleOf4096_Async()
+        {
+            // Verfied with:
+            // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl sha512 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            await VerifyRepeatingAsync(
+                input: "0102030405060708",
+                1024,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "05A7BB210D374B0CC36FFFA561045F1C1EB8E71905A50308B108D4677CCB0452A99B26EE41DD8E1D87D53A4F3E07B1231E5D3FFFCE7FD0C5C5A8B8F5E0206A11");
+        }
+
+        [Fact]
+        public async Task HmacSha512_Stream_NotMultipleOf4096_Async()
+        {
+            // Verfied with:
+            // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl sha512 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            await VerifyRepeatingAsync(
+                input: "0102030405060708",
+                1025,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "9040E87E9CC546C507C3DEE90D278975B0C2049F28E71CC6FEEA0F3690EC9D0B736F885FFAA611156DA0C2904FC2EEEAA9562B53EB50F590902B2AE38056C874");
+        }
+
+        [Fact]
+        public async Task HmacSha512_Stream_Empty_Async()
+        {
+            // Verfied with:
+            // echo -n "" | openssl sha512 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            await VerifyRepeatingAsync(
+                input: "",
+                0,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "2FEC800CA276C44985A35AEC92067E5E53A1BB80A6FDAB1D9C97D54068118F30AD4C33717466D372EA00BBF126E5B79C6F7143DD36C31F72028330E92AE3A359");
         }
     }
 }

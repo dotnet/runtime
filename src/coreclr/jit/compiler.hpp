@@ -1078,45 +1078,57 @@ inline GenTree* Compiler::gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfo
     return node;
 }
 
-/*****************************************************************************
- *
- *  A little helper to create a data member reference node.
- */
-
-inline GenTree* Compiler::gtNewFieldRef(var_types typ, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
+//------------------------------------------------------------------------
+// gtNewFieldRef: a helper for creating GT_FIELD nodes.
+//
+// Normalizes struct types (for SIMD vectors). Sets GTF_GLOB_REF for fields
+// that may be pointing into globally visible memory.
+//
+// Arguments:
+//    type   - type for the field node
+//    fldHnd - the field handle
+//    obj    - the instance, an address
+//    offset - the field offset
+//
+// Return Value:
+//    The created node.
+//
+inline GenTree* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
 {
-    /* 'GT_FIELD' nodes may later get transformed into 'GT_IND' */
+    // GT_FIELD nodes are transformed into GT_IND nodes.
     assert(GenTree::s_gtNodeSizes[GT_IND] <= GenTree::s_gtNodeSizes[GT_FIELD]);
 
-    if (typ == TYP_STRUCT)
+    if (type == TYP_STRUCT)
     {
-        CORINFO_CLASS_HANDLE fieldClass;
-        (void)info.compCompHnd->getFieldType(fldHnd, &fieldClass);
-        typ = impNormStructType(fieldClass);
+        CORINFO_CLASS_HANDLE structHnd;
+        eeGetFieldType(fldHnd, &structHnd);
+        type = impNormStructType(structHnd);
     }
-    GenTree* tree = new (this, GT_FIELD) GenTreeField(typ, obj, fldHnd, offset);
+
+    GenTree* fieldNode = new (this, GT_FIELD) GenTreeField(type, obj, fldHnd, offset);
 
     // If "obj" is the address of a local, note that a field of that struct local has been accessed.
-    if (obj != nullptr && obj->OperGet() == GT_ADDR && varTypeIsStruct(obj->AsOp()->gtOp1) &&
-        obj->AsOp()->gtOp1->OperGet() == GT_LCL_VAR)
+    if ((obj != nullptr) && obj->OperIs(GT_ADDR) && varTypeIsStruct(obj->AsUnOp()->gtOp1) &&
+        obj->AsUnOp()->gtOp1->OperIs(GT_LCL_VAR))
     {
-        unsigned lclNum                  = obj->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
-        lvaTable[lclNum].lvFieldAccessed = 1;
+        LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
+
+        varDsc->lvFieldAccessed = 1;
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         // These structs are passed by reference; we should probably be able to treat these
         // as non-global refs, but downstream logic expects these to be marked this way.
-        if (lvaTable[lclNum].lvIsParam)
+        if (varDsc->lvIsParam)
         {
-            tree->gtFlags |= GTF_GLOB_REF;
+            fieldNode->gtFlags |= GTF_GLOB_REF;
         }
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
     }
     else
     {
-        tree->gtFlags |= GTF_GLOB_REF;
+        fieldNode->gtFlags |= GTF_GLOB_REF;
     }
 
-    return tree;
+    return fieldNode;
 }
 
 /*****************************************************************************
@@ -1974,13 +1986,18 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     // the VM requires us to keep the generics context alive or it is used in a look-up.
     // We keep it alive in the lookup scenario, even when the VM didn't ask us to,
     // because collectible types need the generics context when gc-ing.
+    //
+    // Methoods that can inspire OSR methods must always report context as live
+    //
     if (genericsContextIsThis)
     {
-        const bool mustKeep = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
+        const bool mustKeep      = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
+        const bool hasPatchpoint = doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints();
 
-        if (lvaGenericsContextInUse || mustKeep)
+        if (lvaGenericsContextInUse || mustKeep || hasPatchpoint)
         {
-            JITDUMP("Reporting this as generic context: %s\n", mustKeep ? "must keep" : "referenced");
+            JITDUMP("Reporting this as generic context: %s\n",
+                    mustKeep ? "must keep" : (hasPatchpoint ? "patchpoints" : "referenced"));
             return true;
         }
     }
@@ -2009,6 +2026,13 @@ inline bool Compiler::lvaReportParamTypeArg()
         // Otherwise, if an exact type parameter is needed in the body, report the generics context.
         // We do this because collectible types needs the generics context when gc-ing.
         if (lvaGenericsContextInUse)
+        {
+            return true;
+        }
+
+        // Methoods that have patchpoints always report context as live
+        //
+        if (doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints())
         {
             return true;
         }
@@ -2331,29 +2355,29 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
 {
-    assert(ILargNum < info.compILargsCount || tiVerificationNeeded);
+    assert(ILargNum < info.compILargsCount);
 
     // Note that this works because if compRetBuffArg/compTypeCtxtArg/lvVarargsHandleArg are not present
     // they will be BAD_VAR_NUM (MAX_UINT), which is larger than any variable number.
     if (ILargNum >= info.compRetBuffArg)
     {
         ILargNum++;
-        assert(ILargNum < info.compLocalsCount || tiVerificationNeeded); // compLocals count already adjusted.
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
     }
 
     if (ILargNum >= (unsigned)info.compTypeCtxtArg)
     {
         ILargNum++;
-        assert(ILargNum < info.compLocalsCount || tiVerificationNeeded); // compLocals count already adjusted.
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
     }
 
     if (ILargNum >= (unsigned)lvaVarargsHandleArg)
     {
         ILargNum++;
-        assert(ILargNum < info.compLocalsCount || tiVerificationNeeded); // compLocals count already adjusted.
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
     }
 
-    assert(ILargNum < info.compArgsCount || tiVerificationNeeded);
+    assert(ILargNum < info.compArgsCount);
     return (ILargNum);
 }
 
@@ -3334,14 +3358,14 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
     }
 }
 
-inline void Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd)
+inline void Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind)
 {
     if (lpFieldsModified == nullptr)
     {
         lpFieldsModified =
             new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::FieldHandleSet(comp->getAllocatorLoopHoist());
     }
-    lpFieldsModified->Set(fldHnd, true, FieldHandleSet::Overwrite);
+    lpFieldsModified->Set(fldHnd, fieldKind, FieldHandleSet::Overwrite);
 }
 
 inline void Compiler::LoopDsc::AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd)
@@ -3552,22 +3576,6 @@ inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index) co
         return comp->optReconstructArrIndex(limit->AsArrLen()->ArrRef(), index, BAD_VAR_NUM);
     }
     return false;
-}
-
-/*
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                Optimization activation rules                              XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-// should we try to replace integer multiplication with lea/add/shift sequences?
-inline bool Compiler::optAvoidIntMult(void)
-{
-    return (compCodeOpt() != SMALL_CODE);
 }
 
 /*
@@ -4335,20 +4343,9 @@ void GenTree::VisitOperands(TVisitor visitor)
             return;
         }
 
-        case GT_DYN_BLK:
-        {
-            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
-            if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(dynBlock->gtDynamicSize);
-            return;
-        }
-
         case GT_STORE_DYN_BLK:
         {
-            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
+            GenTreeStoreDynBlk* const dynBlock = this->AsStoreDynBlk();
             if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
             {
                 return;
@@ -4504,11 +4501,12 @@ inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
     return ((attribs & CORINFO_FLG_DONT_PROMOTE) != 0);
 }
 
-/*****************************************************************************
- * This node should not be referenced by anyone now. Set its values to garbage
- * to catch extra references
- */
-
+//------------------------------------------------------------------------------
+// DEBUG_DESTROY_NODE: sets value of tree to garbage to catch extra references
+//
+// Arguments:
+//    tree: This node should not be referenced by anyone now
+//
 inline void DEBUG_DESTROY_NODE(GenTree* tree)
 {
 #ifdef DEBUG
@@ -4527,6 +4525,19 @@ inline void DEBUG_DESTROY_NODE(GenTree* tree)
     // Don't call SetOper, because GT_COUNT is not a valid value
     tree->gtOper = GT_COUNT;
 #endif
+}
+
+//------------------------------------------------------------------------------
+// DEBUG_DESTROY_NODE: sets value of trees to garbage to catch extra references
+//
+// Arguments:
+//    tree, ...rest: These nodes should not be referenced by anyone now
+//
+template <typename... T>
+void DEBUG_DESTROY_NODE(GenTree* tree, T... rest)
+{
+    DEBUG_DESTROY_NODE(tree);
+    DEBUG_DESTROY_NODE(rest...);
 }
 
 //------------------------------------------------------------------------------

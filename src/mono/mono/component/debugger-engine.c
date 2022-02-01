@@ -807,12 +807,12 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	if (method->wrapper_type && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
 		goto exit;
 
-	/* 
+	/*
 	 * FIXME:
 	 * Stopping in memset makes half-initialized vtypes visible.
 	 * Stopping in memcpy makes half-copied vtypes visible.
 	 */
-	if (method->klass == mdbg_mono_defaults->string_class && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
+	if (method->klass == mono_get_string_class () && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
 		goto exit;
 
 	/*
@@ -999,7 +999,7 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 			hit = FALSE;
 		}
 	}
-				
+
 	if (loc) {
 		req->last_method = method;
 		req->last_line = loc->row;
@@ -1498,7 +1498,7 @@ mono_de_ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, S
 		err = rt_callbacks.handle_multiple_ss_requests ();
 
 		if (err == DE_ERR_NOT_IMPLEMENTED) {
-			PRINT_DEBUG_MSG (0, "Received a single step request while the previous one was still active.\n");		
+			PRINT_DEBUG_MSG (0, "Received a single step request while the previous one was still active.\n");
 			return DE_ERR_NOT_IMPLEMENTED;
 		}
 	}
@@ -1596,7 +1596,7 @@ get_class_to_get_builder_field (DbgEngineStackFrame *frame)
 
 		if (!this_obj)
 			return NULL;
-			
+
 		context = mono_get_generic_context_from_stack_frame (frame->ji, mono_get_generic_info_from_stack_frame (frame->ji, &the_frame->ctx));
 		inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (original_class), &context, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
@@ -1719,7 +1719,7 @@ get_notify_debugger_of_wait_completion_method (void)
 	if (notify_debugger_of_wait_completion_method_cache != NULL)
 		return notify_debugger_of_wait_completion_method_cache;
 	ERROR_DECL (error);
-	MonoClass* task_class = mono_class_load_from_name (mdbg_mono_defaults->corlib, "System.Threading.Tasks", "Task");
+	MonoClass* task_class = mono_class_load_from_name (mono_get_corlib (), "System.Threading.Tasks", "Task");
 	GPtrArray* array = mono_class_get_methods_by_name (task_class, "NotifyDebuggerOfWaitCompletion", 0x24, 1, FALSE, error);
 	mono_error_assert_ok (error);
 	g_assert (array->len == 1);

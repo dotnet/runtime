@@ -183,7 +183,7 @@ void DumpCustomAttributeProps(mdToken tkCA, mdToken tkType, mdToken tkOwner, BYT
 WCHAR* RstrW(unsigned id)
 {
     static WCHAR buffer[1024];
-    DWORD cchBuff = (DWORD)COUNTOF(buffer);
+    DWORD cchBuff = (DWORD)ARRAY_SIZE(buffer);
     WCHAR* buff = (WCHAR*)buffer;
     memset(buffer,0,sizeof(buffer));
     switch(id)
@@ -221,7 +221,7 @@ WCHAR* RstrW(unsigned id)
         case IDS_E_CANTACCESSW32RES:
         case IDS_E_CANTOPENW32RES:
         case IDS_ERRORREOPENINGFILE:
-            wcscpy_s(buffer,COUNTOF(buffer),W("// "));
+            wcscpy_s(buffer,ARRAY_SIZE(buffer),W("// "));
             buff +=3;
             cchBuff -= 3;
             break;
@@ -232,12 +232,12 @@ WCHAR* RstrW(unsigned id)
         case IDS_E_CODESIZE:
         case IDS_W_CREATEDMRES:
         case IDS_E_READINGMRES:
-            wcscpy_s(buffer,COUNTOF(buffer),W("%s// "));
+            wcscpy_s(buffer,ARRAY_SIZE(buffer),W("%s// "));
             buff +=5;
             cchBuff -= 5;
             break;
         case IDS_E_NORVA:
-            wcscpy_s(buffer,COUNTOF(buffer),W("/* "));
+            wcscpy_s(buffer,ARRAY_SIZE(buffer),W("/* "));
             buff += 3;
             cchBuff -= 3;
             break;
@@ -3695,7 +3695,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
                 if (FAILED(g_pImport->GetParamDefProps(tkArg, &wSequence, &dwAttr, &szName)))
                 {
                     char sz[256];
-                    sprintf_s(sz, COUNTOF(sz), RstrUTF(IDS_E_INVALIDRECORD), tkArg);
+                    sprintf_s(sz, ARRAY_SIZE(sz), RstrUTF(IDS_E_INVALIDRECORD), tkArg);
                     printError(GUICookie, sz);
                     continue;
                 }

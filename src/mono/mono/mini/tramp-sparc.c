@@ -104,7 +104,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Save r1 needed by the IMT code */
 	sparc_sti_imm (code, sparc_g1, sparc_sp, regs_offset + (sparc_g1 * sizeof (target_mgreg_t)));
 
-	/* 
+	/*
 	 * sparc_g5 contains the return address, the trampoline argument is stored in the
 	 * instruction stream after the call.
 	 */
@@ -114,7 +114,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Save fp regs since they are not preserved by calls */
 	for (i = 0; i < 16; i ++)
 		sparc_stdf_imm (code, sparc_f0 + (i * 2), sparc_sp, MONO_SPARC_STACK_BIAS + 320 + (i * 8));
-#endif	
+#endif
 
 	/* We receive the method address in %r1, so save it here */
 	sparc_sti_imm (code, method_reg, sparc_sp, MONO_SPARC_STACK_BIAS + 200);
@@ -186,7 +186,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Reload fp regs */
 	for (i = 0; i < 16; i ++)
 		sparc_lddf_imm (code, sparc_sp, MONO_SPARC_STACK_BIAS + 320 + (i * 8), sparc_f0 + (i * 2));
-#endif	
+#endif
 
 	sparc_jmpl (code, sparc_o0, sparc_g0, sparc_g0);
 
@@ -253,7 +253,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE, mono_get_generic_trampoline_simple_name (tramp_type)));
 
 	return buf;
-}	
+}
 
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)

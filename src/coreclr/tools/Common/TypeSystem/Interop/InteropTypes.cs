@@ -54,6 +54,11 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");
         }
 
+        public static MetadataType GetMarshalDirectiveException(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "MarshalDirectiveException");
+        }
+
         public static MetadataType GetVariant(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "Variant");
@@ -95,6 +100,16 @@ namespace Internal.TypeSystem.Interop
         public static bool IsSystemDecimal(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System", "Decimal");
+        }
+
+        public static bool IsSystemDelegate(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "Delegate");
+        }
+
+        public static bool IsSystemMulticastDelegate(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "MulticastDelegate");
         }
 
         public static bool IsSystemGuid(TypeSystemContext context, TypeDesc type)

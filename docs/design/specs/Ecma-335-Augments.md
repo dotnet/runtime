@@ -14,6 +14,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Covariant Return Types](#covariant-return-types)
 - [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
 - [Ref field support](#ref-fields)
+- [Rules for IL rewriters](#rules-for-il-rewriters)
 
 ## Signatures
 
@@ -993,3 +994,12 @@ Changes to signatures:
 
 ### II.23.2.12
 - Add TYPEDBYREF as a form of Type
+
+## Rules for IL Rewriters
+
+There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<T>(...)` which require that the PE file have a particular structure. In particular, that api requires that the associated RVA of a FieldDef which is used to create a span must be naturally aligned over the data type that `CreateSpan` is instantiated over. There are 2 major concerns.
+
+1. That the RVA be aligned when the PE file is constructed. This may be achieved by whatever means is most convenient for the compiler.
+2. That in the presence of IL rewriters that the RVA remains aligned. This section descibes metadata which will be processed by IL rewriters in order to maintain the required alignment.
+
+In order to maintain alignment, if the field needs alignment to be preserved, the field must be of a type locally defined within the module which has a Pack (§II.10.7) value of the desired alignment. Unlike other uses of the .pack directive, in this circumstance the .pack specifies a minimum alignment.

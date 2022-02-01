@@ -72,8 +72,6 @@
     <Compile Include="System\Security\AccessControl\RegistrySecurity.FileSystem.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -84,5 +82,7 @@
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.AccessControl" />
+    <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>
 </Project>

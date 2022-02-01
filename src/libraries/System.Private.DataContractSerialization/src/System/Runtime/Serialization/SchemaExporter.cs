@@ -736,7 +736,7 @@ namespace System.Runtime.Serialization
             hasRoot = true;
             if (type == Globals.TypeOfXmlElement || type == Globals.TypeOfXmlNodeArray)
             {
-                string? name = null;
+                string? name;
                 if (type == Globals.TypeOfXmlElement)
                 {
                     xsdType = CreateAnyElementType();

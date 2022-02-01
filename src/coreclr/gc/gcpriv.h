@@ -51,8 +51,8 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now disable regions StandAlone GC builds
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE)
+// For now disable regions outside of StandAlone GC builds
+#if defined (HOST_64BIT) && defined (BUILD_AS_STANDALONE)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -1175,6 +1175,7 @@ public:
     heap_segment* unlink_region_front();
     heap_segment* unlink_smallest_region (size_t size);
     size_t get_num_free_regions();
+    size_t get_size_committed_in_free() { return size_committed_in_free_regions; }
     size_t get_size_free_regions() { return size_free_regions; }
     heap_segment* get_first_free_region() { return head_free_region; }
     static void unlink_region (heap_segment* region);
@@ -1286,9 +1287,9 @@ public:
     PER_HEAP
     void verify_free_lists();
     PER_HEAP
-    void verify_regions (int gen_number, bool can_verify_gen_num);
+    void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail);
     PER_HEAP
-    void verify_regions (bool can_verify_gen_num);
+    void verify_regions (bool can_verify_gen_num, bool concurrent_p);
     PER_HEAP_ISOLATED
     void enter_gc_lock_for_verify_heap();
     PER_HEAP_ISOLATED
@@ -2155,8 +2156,6 @@ protected:
         );
     PER_HEAP
     void seg_clear_mark_array_bits_soh (heap_segment* seg);
-    PER_HEAP
-    void clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
     PER_HEAP
     void bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
 #ifdef VERIFY_HEAP
@@ -3595,9 +3594,6 @@ public:
 
     PER_HEAP
     int num_sip_regions;
-
-    PER_HEAP
-    size_t committed_in_free;
 
     PER_HEAP
     // After plan we calculate this as the planned end gen0 space;

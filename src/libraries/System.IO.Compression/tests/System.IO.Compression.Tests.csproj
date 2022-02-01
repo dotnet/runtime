@@ -3,6 +3,15 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <!-- This doesn't run on V8 shell because https://bugs.chromium.org/p/v8/issues/detail?id=12541 -->
+    <Scenario>WasmTestOnBrowser</Scenario>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="CompressionStreamUnitTests.ZLib.cs" />
     <Compile Include="CompressionStreamUnitTests.Deflate.cs" />

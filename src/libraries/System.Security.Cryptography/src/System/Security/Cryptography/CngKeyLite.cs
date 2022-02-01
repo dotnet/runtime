@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using Internal.Cryptography;
 
 using Microsoft.Win32.SafeHandles;
@@ -13,19 +11,40 @@ using ErrorCode = Interop.NCrypt.ErrorCode;
 
 namespace System.Security.Cryptography
 {
+    internal static class KeyPropertyName
+    {
+        internal const string Algorithm = "Algorithm Name";                 // NCRYPT_ALGORITHM_PROPERTY
+        internal const string AlgorithmGroup = "Algorithm Group";           // NCRYPT_ALGORITHM_GROUP_PROPERTY
+        internal const string ChainingMode = "Chaining Mode";               // NCRYPT_CHAINING_MODE_PROPERTY
+        internal const string ECCCurveName = "ECCCurveName";                // NCRYPT_ECC_CURVE_NAME
+        internal const string ECCParameters = "ECCParameters";              // BCRYPT_ECC_PARAMETERS
+        internal const string ExportPolicy = "Export Policy";               // NCRYPT_EXPORT_POLICY_PROPERTY
+        internal const string InitializationVector = "IV";                  // NCRYPT_INITIALIZATION_VECTOR
+        internal const string KeyType = "Key Type";                         // NCRYPT_KEY_TYPE_PROPERTY
+        internal const string KeyUsage = "Key Usage";                       // NCRYPT_KEY_USAGE_PROPERTY
+        internal const string Length = "Length";                            // NCRYPT_LENGTH_PROPERTY
+        internal const string Name = "Name";                                // NCRYPT_NAME_PROPERTY
+        internal const string ParentWindowHandle = "HWND Handle";           // NCRYPT_WINDOW_HANDLE_PROPERTY
+        internal const string PublicKeyLength = "PublicKeyLength";          // NCRYPT_PUBLIC_KEY_LENGTH (Win10+)
+        internal const string ProviderHandle = "Provider Handle";           // NCRYPT_PROVIDER_HANDLE_PROPERTY
+        internal const string UIPolicy = "UI Policy";                       // NCRYPT_UI_POLICY_PROPERTY
+        internal const string UniqueName = "Unique Name";                   // NCRYPT_UNIQUE_NAME_PROPERTY
+        internal const string UseContext = "Use Context";                   // NCRYPT_USE_CONTEXT_PROPERTY
+
+
+        //
+        // Properties defined by the CLR
+        //
+
+        /// <summary>
+        ///     Is the key a CLR created ephemeral key, it will contain a single byte with value 1 if the
+        ///     key was created by the CLR as an ephemeral key.
+        /// </summary>
+        internal const string ClrIsEphemeral = "CLR IsEphemeral";
+    }
+
     internal static class CngKeyLite
     {
-        internal static class KeyPropertyName
-        {
-            internal const string Algorithm = "Algorithm Name";                 // NCRYPT_ALGORITHM_PROPERTY
-            internal const string AlgorithmGroup = "Algorithm Group";           // NCRYPT_ALGORITHM_GROUP_PROPERTY
-            internal const string ECCCurveName = "ECCCurveName";                // NCRYPT_ECC_CURVE_NAME
-            internal const string ECCParameters = "ECCParameters";              // BCRYPT_ECC_PARAMETERS
-            internal const string ExportPolicy = "Export Policy";               // NCRYPT_EXPORT_POLICY_PROPERTY
-            internal const string Length = "Length";                            // NCRYPT_LENGTH_PROPERTY
-            internal const string PublicKeyLength = "PublicKeyLength";          // NCRYPT_PUBLIC_KEY_LENGTH (Win10+)
-        }
-
         private static readonly SafeNCryptProviderHandle s_microsoftSoftwareProviderHandle =
             OpenNCryptProvider("Microsoft Software Key Storage Provider"); // MS_KEY_STORAGE_PROVIDER
 
@@ -569,58 +588,13 @@ namespace System.Security.Cryptography
         /// </returns>
         private static byte[]? GetProperty(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {
-            Debug.Assert(!ncryptHandle.IsInvalid);
-            unsafe
-            {
-                int numBytesNeeded;
-                ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(ncryptHandle, propertyName, null, 0, out numBytesNeeded, options);
-                if (errorCode == ErrorCode.NTE_NOT_FOUND)
-                    return null;
-                if (errorCode != ErrorCode.ERROR_SUCCESS)
-                    throw errorCode.ToCryptographicException();
-
-                byte[] propertyValue = new byte[numBytesNeeded];
-                fixed (byte* pPropertyValue = propertyValue)
-                {
-                    errorCode = Interop.NCrypt.NCryptGetProperty(ncryptHandle, propertyName, pPropertyValue, propertyValue.Length, out numBytesNeeded, options);
-                }
-                if (errorCode == ErrorCode.NTE_NOT_FOUND)
-                    return null;
-                if (errorCode != ErrorCode.ERROR_SUCCESS)
-                    throw errorCode.ToCryptographicException();
-
-                Array.Resize(ref propertyValue, numBytesNeeded);
-                return propertyValue;
-            }
-        }
-
-        /// <summary>
-        /// Retrieve a well-known CNG string property. (Note: .NET Framework compat: this helper likes to return special values rather than throw exceptions for missing
-        /// or ill-formatted property values. Only use it for well-known properties that are unlikely to be ill-formatted.)
-        /// </summary>
-        internal static string? GetPropertyAsString(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
-        {
-            Debug.Assert(!ncryptHandle.IsInvalid);
-            byte[]? value = GetProperty(ncryptHandle, propertyName, options);
-            if (value == null)
-                return null;   // .NET Framework compat: return null if key not present.
-            if (value.Length == 0)
-                return string.Empty; // .NET Framework compat: return empty if property value is 0-length.
-
-            unsafe
-            {
-                fixed (byte* pValue = &value[0])
-                {
-                    string valueAsString = Marshal.PtrToStringUni((IntPtr)pValue)!;
-                    return valueAsString;
-                }
-            }
+            return CngHelpers.GetProperty(ncryptHandle, propertyName, options);
         }
 
         internal static string? GetCurveName(SafeNCryptHandle ncryptHandle)
         {
             Debug.Assert(!ncryptHandle.IsInvalid);
-            return GetPropertyAsString(ncryptHandle, KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
+            return ncryptHandle.GetPropertyAsString(KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
         }
 
         internal static void SetCurveName(SafeNCryptHandle keyHandle, string curveName)
@@ -654,98 +628,5 @@ namespace System.Security.Cryptography
                 }
             }
         }
-    }
-
-    // Limited version of CngExportPolicies from the Cng contract.
-    [Flags]
-    internal enum CngPropertyOptions : int
-    {
-        None = 0,
-        Persist = unchecked((int)0x80000000),     //NCRYPT_PERSIST_FLAG (The property should be persisted.)
-    }
-
-    // Limited version of CngKeyCreationOptions from the Cng contract.
-    [Flags]
-    internal enum CngKeyCreationOptions : int
-    {
-        None = 0x00000000,
-    }
-
-    // Limited version of CngKeyOpenOptions from the Cng contract.
-    [Flags]
-    internal enum CngKeyOpenOptions : int
-    {
-        None = 0x00000000,
-    }
-
-    // Limited version of CngExportPolicies from the Cng contract.
-    [Flags]
-    internal enum CngExportPolicies : int
-    {
-        None = 0x00000000,
-        AllowPlaintextExport = 0x00000002,      // NCRYPT_ALLOW_PLAINTEXT_EXPORT_FLAG
-    }
-}
-
-// Internal, lightweight versions of the SafeNCryptHandle types which are public in CNG.
-namespace Microsoft.Win32.SafeHandles
-{
-    internal class SafeNCryptHandle : SafeHandle
-    {
-        public SafeNCryptHandle()
-            : base(IntPtr.Zero, ownsHandle: true)
-        {
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            ErrorCode errorCode = Interop.NCrypt.NCryptFreeObject(handle);
-            bool success = (errorCode == ErrorCode.ERROR_SUCCESS);
-            Debug.Assert(success);
-            handle = IntPtr.Zero;
-            return success;
-        }
-
-        public override bool IsInvalid
-        {
-            get { return handle == IntPtr.Zero; }
-        }
-    }
-
-    internal class SafeNCryptKeyHandle : SafeNCryptHandle
-    {
-    }
-
-    internal sealed class SafeNCryptProviderHandle : SafeNCryptHandle
-    {
-    }
-
-    internal sealed class SafeNCryptSecretHandle : SafeNCryptHandle
-    {
-    }
-
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
-    internal sealed class DuplicateSafeNCryptKeyHandle : SafeNCryptKeyHandle
-    {
-        public DuplicateSafeNCryptKeyHandle(SafeNCryptKeyHandle original)
-            : base()
-        {
-            bool success = false;
-            original.DangerousAddRef(ref success);
-            if (!success)
-                throw new CryptographicException(); // DangerousAddRef() never actually sets success to false, so no need to expend a resource string here.
-            SetHandle(original.DangerousGetHandle());
-            _original = original;
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            _original.DangerousRelease();
-            SetHandle(IntPtr.Zero);
-            return true;
-        }
-
-        private readonly SafeNCryptKeyHandle _original;
     }
 }

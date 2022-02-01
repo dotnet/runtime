@@ -189,8 +189,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableSortedSet<T> Add(T value)
         {
-            bool mutated;
-            return this.Wrap(_root.Add(value, _comparer, out mutated));
+            return this.Wrap(_root.Add(value, _comparer, out _));
         }
 
         /// <summary>
@@ -198,8 +197,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableSortedSet<T> Remove(T value)
         {
-            bool mutated;
-            return this.Wrap(_root.Remove(value, _comparer, out mutated));
+            return this.Wrap(_root.Remove(value, _comparer, out _));
         }
 
         /// <summary>

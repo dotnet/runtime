@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Test.Cryptography;
 using Xunit;
 
@@ -39,7 +42,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         protected override int BlockSize => 64;
-        protected override int MacSize => 20;
+        protected override int MacSize => HMACSHA1.HashSizeInBytes;
 
         protected override HMAC Create() => new HMACSHA1();
         protected override HashAlgorithm CreateHashAlgorithm() => SHA1.Create();
@@ -54,6 +57,31 @@ namespace System.Security.Cryptography.Tests
 
         protected override bool TryHashDataOneShot(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int written) =>
             HMACSHA1.TryHashData(key, source, destination, out written);
+
+        protected override byte[] HashDataOneShot(ReadOnlySpan<byte> key, Stream source) =>
+            HMACSHA1.HashData(key, source);
+
+        protected override byte[] HashDataOneShot(byte[] key, Stream source) =>
+            HMACSHA1.HashData(key, source);
+
+        protected override int HashDataOneShot(ReadOnlySpan<byte> key, Stream source, Span<byte> destination) =>
+            HMACSHA1.HashData(key, source, destination);
+
+        protected override ValueTask<int> HashDataOneShotAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            Memory<byte> destination,
+            CancellationToken cancellationToken) => HMACSHA1.HashDataAsync(key, source, destination, cancellationToken);
+
+        protected override ValueTask<byte[]> HashDataOneShotAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            CancellationToken cancellationToken) => HMACSHA1.HashDataAsync(key, source, cancellationToken);
+
+        protected override ValueTask<byte[]> HashDataOneShotAsync(
+            byte[] key,
+            Stream source,
+            CancellationToken cancellationToken) => HMACSHA1.HashDataAsync(key, source, cancellationToken);
 
         [Fact]
         public void HmacSha1_Byte_Constructors()
@@ -128,9 +156,81 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void HMacSha1_Rfc2104_2()
+        public void HmacSha1_Rfc2104_2()
         {
             VerifyHmacRfc2104_2();
+        }
+
+        [Fact]
+        public void HmacSha1_Stream_MultipleOf4096()
+        {
+            // Verfied with:
+            // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl sha1 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            VerifyRepeating(
+                input: "0102030405060708",
+                1024,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "3CE5AE476733905861F031DDC2DEDF8CBB1FAA0B");
+        }
+
+        [Fact]
+        public void HmacSha1_Stream_NotMultipleOf4096()
+        {
+            // Verfied with:
+            // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl sha1 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            VerifyRepeating(
+                input: "0102030405060708",
+                1025,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "E18D7FB16A83CA17DB6CB0F1C083AA7A7094F627");
+        }
+
+        [Fact]
+        public void HmacSha1_Stream_Empty()
+        {
+            // Verfied with:
+            // echo -n "" | openssl sha1 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            VerifyRepeating(
+                input: "",
+                0,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "5433122F77BCF8A4D9B874B4149823EF5B7C207E");
+        }
+
+        [Fact]
+        public async Task HmacSha1_Stream_MultipleOf4096_Async()
+        {
+            // Verfied with:
+            // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl sha1 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            await VerifyRepeatingAsync(
+                input: "0102030405060708",
+                1024,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "3CE5AE476733905861F031DDC2DEDF8CBB1FAA0B");
+        }
+
+        [Fact]
+        public async Task HmacSha1_Stream_NotMultipleOf4096_Async()
+        {
+            // Verfied with:
+            // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl sha1 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            await VerifyRepeatingAsync(
+                input: "0102030405060708",
+                1025,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "E18D7FB16A83CA17DB6CB0F1C083AA7A7094F627");
+        }
+
+        [Fact]
+        public async Task HmacSha1_Stream_Empty_Async()
+        {
+            // Verfied with:
+            // echo -n "" | openssl sha1 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
+            await VerifyRepeatingAsync(
+                input: "",
+                0,
+                hexKey: "000102030405060708090A0B0C0D0E0F",
+                output: "5433122F77BCF8A4D9B874B4149823EF5B7C207E");
         }
     }
 }

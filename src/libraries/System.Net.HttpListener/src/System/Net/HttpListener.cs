@@ -110,7 +110,7 @@ namespace System.Net
 
         internal void AddPrefix(string uriPrefix)
         {
-            string? registeredPrefix = null;
+            string? registeredPrefix;
             try
             {
                 if (uriPrefix == null)

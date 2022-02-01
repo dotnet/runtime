@@ -31,7 +31,7 @@ steps:
         IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-!(*.symbols).nupkg
         
       # Other artifacts to include once they are being built
-      # IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
+      # EX. IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
 
   - task: CopyFiles@2
     displayName: Flatten packages
@@ -78,6 +78,20 @@ steps:
     inputs:
         archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64.*.zip
         destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
+  - task: ExtractFiles@1
+    displayName: Extract ios-arm runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
+  - task: ExtractFiles@1
+    displayName: Extract ios-arm64 runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm64.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm64
         overwriteExistingFiles: true
         cleanDestinationFolder: false
   - task: ExtractFiles@1

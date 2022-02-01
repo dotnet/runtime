@@ -44,17 +44,8 @@ namespace System.Net.Mail
 
         internal Message(string from, string to) : this()
         {
-            if (from == null)
-                throw new ArgumentNullException(nameof(from));
-
-            if (to == null)
-                throw new ArgumentNullException(nameof(to));
-
-            if (from.Length == 0)
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(from)), nameof(from));
-
-            if (to.Length == 0)
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(to)), nameof(to));
+            ArgumentException.ThrowIfNullOrEmpty(from);
+            ArgumentException.ThrowIfNullOrEmpty(to);
 
             _from = new MailAddress(from);
             MailAddressCollection collection = new MailAddressCollection();
@@ -532,7 +523,7 @@ namespace System.Net.Mail
                 }
 
                 string[] values = headers.GetValues(headerName)!;
-                string encodedValue = string.Empty;
+                string encodedValue;
                 for (int j = 0; j < values.Length; j++)
                 {
                     //encode if we need to
