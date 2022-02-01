@@ -36,15 +36,6 @@ namespace DebuggerTests
             await SendCommandAndCheck(null, "Browser.crash", null, -1, -1, null));
 
         [Fact]
-        public async Task BrowserClose()
-        {
-            ArgumentException ae = await Assert.ThrowsAsync<ArgumentException>(async () =>
-                                        await SendCommandAndCheck(null, "Browser.close", null, -1, -1, null));
-            Assert.Contains("Inspector.detached", ae.Message);
-            Assert.Contains("target_close", ae.Message);
-        }
-
-        [Fact]
         public async Task InspectorWaitForAfterMessageAlreadyReceived()
         {
             Result res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
