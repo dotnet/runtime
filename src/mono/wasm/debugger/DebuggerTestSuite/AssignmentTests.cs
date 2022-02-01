@@ -38,7 +38,6 @@ namespace DebuggerTests
         };
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64188")]
         [MemberData("GetTestData")]
         async Task InspectVariableBeforeAndAfterAssignment(string clazz, JObject checkDefault, JObject checkValue)
         {
