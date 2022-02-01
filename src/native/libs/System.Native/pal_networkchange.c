@@ -148,7 +148,7 @@ int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChang
         if (msghdr.rtm_version != RTM_VERSION)
         {
             // version mismatch
-            return;
+            return 1;
         }
 
         switch (msghdr.rtm_type)
