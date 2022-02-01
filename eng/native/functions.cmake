@@ -4,7 +4,7 @@ function(clr_unknown_arch)
     elseif(CLR_CROSS_COMPONENTS_BUILD)
         message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
-        message(FATAL_ERROR "Only AMD64, ARM64, LOONGARCH64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "Only AMD64, ARMV6, ARM64, LOONGARCH64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     endif()
 endfunction()
 
@@ -152,6 +152,10 @@ endfunction()
 # Finds and returns unwind libs
 function(find_unwind_libs UnwindLibs)
     if(CLR_CMAKE_HOST_ARCH_ARM)
+      find_library(UNWIND_ARCH NAMES unwind-arm)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_ARMV6)
       find_library(UNWIND_ARCH NAMES unwind-arm)
     endif()
 

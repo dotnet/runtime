@@ -47,6 +47,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
+#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
+
 namespace System
 {
     // xxHash32 is used for the hash code.

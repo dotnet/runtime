@@ -1357,6 +1357,12 @@ namespace System.DirectoryServices.AccountManagement
                             valueCollection = (ICollection)kvp.Value.Value;
                         }
 
+                        // We make a local copy of all elements to set, instead of adding them to the real property
+                        // directly. This allows us to override all existing elements without using Clear() and then Add(),
+                        // as that order sends a Clear operation and then a number of Append operations, which will fail.
+                        // Instead, setting the new list all at once will send a Clear operation and then an Update operation.
+                        var propertyValueList = new List<object>();
+
                         foreach (object oVal in valueCollection)
                         {
                             if (null != oVal)
@@ -1373,8 +1379,11 @@ namespace System.DirectoryServices.AccountManagement
                             if (p.unpersisted && null == oVal)
                                 continue;
 
-                            de.Properties[kvp.Key].Add(oVal);
+                            propertyValueList.Add(oVal);
                         }
+
+                        de.Properties[kvp.Key].Value = propertyValueList.ToArray();
+
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheToLdapConverter - Collection complete");
                     }
                     else

@@ -1,14 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// RegexTree is just a wrapper for a node tree with some
-// global information attached.
-
 using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
+    /// <summary>Wrapper for a node tree with additional information attached.</summary>
     internal sealed class RegexTree
     {
         public readonly RegexNode Root;
@@ -31,16 +28,5 @@ namespace System.Text.RegularExpressions
             Options = options;
             MinRequiredLength = minRequiredLength;
         }
-
-#if DEBUG
-        [ExcludeFromCodeCoverage]
-        public void Dump() => Root.Dump();
-
-        [ExcludeFromCodeCoverage]
-        public override string ToString() => Root.ToString();
-
-        [ExcludeFromCodeCoverage]
-        public bool Debug => (Options & RegexOptions.Debug) != 0;
-#endif
     }
 }

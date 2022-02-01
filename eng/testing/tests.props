@@ -7,6 +7,7 @@
     <TestDependsOn>$(TestDependsOn);GenerateRunScript;RunTests</TestDependsOn>
     <VSTestNoLogo>true</VSTestNoLogo>
     <ILLinkDescriptorsPath>$(MSBuildThisFileDirectory)ILLinkDescriptors\</ILLinkDescriptorsPath>
+    <TestSingleFile Condition="'$(TestNativeAot)' == 'true'">true</TestSingleFile>
   </PropertyGroup>
 
   <PropertyGroup>

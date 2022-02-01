@@ -39,7 +39,7 @@ int main ()
 {
 	char *s = g_malloc (256);
 	int i = 0;
-	
+
 	s [255] = 0;
 
 	for (i = 1; i < 256; i++)

@@ -390,9 +390,6 @@
   <data name="Xml_NotEnoughSpaceForSurrogatePair" xml:space="preserve">
     <value>The buffer is not large enough to fit a surrogate pair. Please provide a buffer of size at least 2 characters.</value>
   </data>
-  <data name="Xml_EmptyUrl" xml:space="preserve">
-    <value>The URL cannot be empty.</value>
-  </data>
   <data name="Xml_UnexpectedNodeInSimpleContent" xml:space="preserve">
     <value>Unexpected node type {0}. {1} method can only be called on elements with simple or empty content.</value>
   </data>
@@ -2829,9 +2826,6 @@
   <data name="Arg_NeverValueType" xml:space="preserve">
     <value>Only TypeKind.Root can be set for typeof(object) which is never value type.</value>
   </data>
-  <data name="XmlInternalErrorReaderAdvance" xml:space="preserve">
-    <value>Internal error: deserialization failed to advance over underlying stream.</value>
-  </data>
   <data name="Enc_InvalidByteInEncoding" xml:space="preserve">
     <value>Invalid byte was found at index {0}.</value>
   </data>
@@ -2843,9 +2837,6 @@
   </data>
   <data name="Arg_IncompatibleParamType" xml:space="preserve">
     <value>Type is incompatible.</value>
-  </data>
-  <data name="Xml_SystemPathResolverCannotOpenUri" xml:space="preserve">
-    <value>Cannot open '{0}'. The Uri parameter must be a file system relative or absolute path.</value>
   </data>
   <data name="Xml_EndOfInnerExceptionStack" xml:space="preserve">
     <value>--- End of inner exception stack trace ---</value>
@@ -3126,9 +3117,6 @@
   <data name="Xslt_NonTemplateTunnel" xml:space="preserve">
     <value>Stylesheet or function parameter '{0}' cannot have attribute 'tunnel'.</value>
   </data>
-  <data name="Xslt_RequiredOnFunction" xml:space="preserve">
-    <value>The 'required' attribute must not be specified for parameter '{0}'. Function parameters are always mandatory. </value>
-  </data>
   <data name="Xslt_ExcludeDefault" xml:space="preserve">
     <value>Value '#default' is used within the 'exclude-result-prefixes' attribute and the parent element of this attribute has no default namespace.</value>
   </data>
@@ -3306,9 +3294,6 @@
   <data name="Xslt_ScriptInvalidPrefix" xml:space="preserve">
     <value>Cannot find the script or external object that implements prefix '{0}'.</value>
   </data>
-  <data name="Xslt_ScriptDub" xml:space="preserve">
-    <value>Namespace '{0}' has a duplicate implementation.</value>
-  </data>
   <data name="Xslt_ScriptEmpty" xml:space="preserve">
     <value>The 'msxsl:script' element cannot be empty.</value>
   </data>
@@ -3344,9 +3329,6 @@
   </data>
   <data name="ArrayTypeIsNotSupported" xml:space="preserve">
     <value>Array of type {0} is not supported.</value>
-  </data>
-  <data name="Xml_MissingSerializationCodeException" xml:space="preserve">
-    <value>Type '{0}' cannot be serialized by XmlSerializer, serialization code for the type is missing. Consult the SDK documentation for adding it as a root serialization type. https://go.microsoft.com/fwlink/?LinkId=613136</value>
   </data>
   <data name="Xslt_UpperCaseFirstNotSupported" xml:space="preserve">
     <value>Uppercase-First sorting option is not supported.</value>
@@ -3444,14 +3426,8 @@ Usage: dotnet {0} [--assembly &lt;assembly file path&gt;] [--type &lt;type name&
   <data name="HelpHelp" xml:space="preserve">
     <value>     {0}|{1}       Show help.</value>
   </data>
-  <data name="MoreHelp" xml:space="preserve">
-    <value>If you would like more help, please type "sgen {0}".</value>
-  </data>
   <data name="GenerateSerializerNotFound" xml:space="preserve">
     <value>Method 'System.Xml.Serialization.XmlSerializer.GenerateSerializer' was not found. This is likely because you are using an older version of the framework. Please update to .NET Core v2.1 or later.</value>
-  </data>
-  <data name="event_XmlSerializerExpired" xml:space="preserve">
-    <value>Pre-generated serializer '{0}' has expired. You need to re-generate serializer for '{1}'</value>
   </data>
   <data name="CompilingScriptsNotSupported" xml:space="preserve">
     <value>Compiling JScript/CSharp scripts is not supported</value>

@@ -60,8 +60,14 @@ namespace System
         public static bool IsNotWindows => !IsWindows;
 
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
-        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
+#if NETCOREAPP
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                                                                     && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
+#else
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
+#endif
+        
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
         public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
@@ -69,9 +75,10 @@ namespace System
         public static bool IsSpeedOptimized => !IsSizeOptimized;
         public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsAppleMobile;
 
-        public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
-        public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || GetIsBrowserDomSupported();
+        public static bool IsBrowserDomSupported => IsEnvironmentVariableTrue("IsBrowserDomSupported");
+        public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
+        public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
 
@@ -86,34 +93,8 @@ namespace System
             return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
         }
 
-        // Please make sure that you have the libgdiplus dependency installed.
-        // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
-        public static bool IsDrawingSupported
-        {
-            get
-            {
-#if NETCOREAPP
-                if (!IsWindows)
-                {
-                    if (IsMobile)
-                    {
-                        return false;
-                    }
-                    else if (IsOSX)
-                    {
-                        return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
-                    }
-                    else
-                    {
-                       return NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
-                    }
-                }
-#endif
-
-                return IsNotWindowsNanoServer && IsNotWindowsServerCore;
-
-            }
-        }
+        // Drawing is not supported on non windows platforms in .NET 7.0+.
+        public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore;
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !(IsWindows && IsMonoRuntime); // https://github.com/dotnet/runtime/issues/34582
 
@@ -201,6 +182,7 @@ namespace System
 
         // Changed to `true` when linking
         public static bool IsBuiltWithAggressiveTrimming => false;
+        public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
@@ -216,7 +198,12 @@ namespace System
 
             if (IsOpenSslSupported)
             {
-                return OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
+                if (OpenSslVersion.Major >= 3)
+                {
+                    return true;
+                }
+                
+                return OpenSslVersion.Major == 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
             }
 
             if (IsAndroid)
@@ -494,12 +481,12 @@ namespace System
 #endif
         }
 
-        private static bool GetIsBrowserDomSupported()
+        private static bool IsEnvironmentVariableTrue(string variableName)
         {
             if (!IsBrowser)
                 return false;
 
-            var val = Environment.GetEnvironmentVariable("IsBrowserDomSupported");
+            var val = Environment.GetEnvironmentVariable(variableName);
             return (val != null && val == "true");
         }
     }

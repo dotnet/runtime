@@ -50,47 +50,47 @@ public static partial class DataContractJsonSerializerTests
     public static void DCJS_CharAsRoot()
     {
         // Special characters
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2f, @"""\/"""), (char)0x2f); // Expected output string is: \/
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x5c, @"""\\"""), (char)0x5c); // \\
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x27, @"""'"""), (char)0x27); // '
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x22, @"""\"""""), (char)0x22); // \"
+        Assert.StrictEqual((char)0x2f, SerializeAndDeserialize<char>((char)0x2f, @"""\/""")); // Expected output string is: \/
+        Assert.StrictEqual((char)0x5c, SerializeAndDeserialize<char>((char)0x5c, @"""\\""")); // \\
+        Assert.StrictEqual((char)0x27, SerializeAndDeserialize<char>((char)0x27, @"""'""")); // '
+        Assert.StrictEqual((char)0x22, SerializeAndDeserialize<char>((char)0x22, @"""\""""")); // \"
 
         // There are 5 ranges of characters that have output in the form of "\u<code>".
         // The following tests the start and end character and at least one character in each range
         // and also in between the ranges.
 
         // #1. 0x0000 - 0x001F
-        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MinValue, @"""\u0000"""), char.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x10, @"""\u0010"""), (char)0x10);
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x1f, @"""\u001f"""), (char)0x1f);
+        Assert.StrictEqual(char.MinValue, SerializeAndDeserialize<char>(char.MinValue, @"""\u0000"""));
+        Assert.StrictEqual((char)0x10, SerializeAndDeserialize<char>((char)0x10, @"""\u0010"""));
+        Assert.StrictEqual((char)0x1f, SerializeAndDeserialize<char>((char)0x1f, @"""\u001f"""));
 
         // Between #1 and #2
         Assert.StrictEqual('a', SerializeAndDeserialize<char>('a', @"""a""")); // 0x0061
 
         // #2. 0x0085
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x85, @"""\u0085"""), (char)0x85);
+        Assert.StrictEqual((char)0x85, SerializeAndDeserialize<char>((char)0x85, @"""\u0085"""));
 
         // Between #2 and #3
         Assert.StrictEqual('\u00F1', SerializeAndDeserialize<char>('\u00F1', "\"\u00F1\"")); // 0x00F1
 
         // #3. 0x2028 - 0x2029
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2028, @"""\u2028"""), (char)0x2028);
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2029, @"""\u2029"""), (char)0x2029);
+        Assert.StrictEqual((char)0x2028, SerializeAndDeserialize<char>((char)0x2028, @"""\u2028"""));
+        Assert.StrictEqual((char)0x2029, SerializeAndDeserialize<char>((char)0x2029, @"""\u2029"""));
 
         // Between #3 and #4
         Assert.StrictEqual('?', SerializeAndDeserialize<char>('?', @"""?""")); // 0x6F22
 
         // #4. 0xD800 - 0xDFFF
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xd800, @"""\ud800"""), (char)0xd800);
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xdabc, @"""\udabc"""), (char)0xdabc);
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xdfff, @"""\udfff"""), (char)0xdfff);
+        Assert.StrictEqual((char)0xd800, SerializeAndDeserialize<char>((char)0xd800, @"""\ud800"""));
+        Assert.StrictEqual((char)0xdabc, SerializeAndDeserialize<char>((char)0xdabc, @"""\udabc"""));
+        Assert.StrictEqual((char)0xdfff, SerializeAndDeserialize<char>((char)0xdfff, @"""\udfff"""));
 
         // Between #4 and #5
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xeabc, "\"\uEABC\""), (char)0xeabc);
+        Assert.StrictEqual((char)0xeabc, SerializeAndDeserialize<char>((char)0xeabc, "\"\uEABC\""));
 
         // #5. 0xFFFE - 0xFFFF
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xfffe, @"""\ufffe"""), (char)0xfffe);
-        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MaxValue, @"""\uffff"""), char.MaxValue);
+        Assert.StrictEqual((char)0xfffe, SerializeAndDeserialize<char>((char)0xfffe, @"""\ufffe"""));
+        Assert.StrictEqual(char.MaxValue, SerializeAndDeserialize<char>(char.MaxValue, @"""\uffff"""));
     }
 
     [Fact]
@@ -108,8 +108,8 @@ public static partial class DataContractJsonSerializerTests
     public static void DCJS_ByteAsRoot()
     {
         Assert.StrictEqual(10, SerializeAndDeserialize<byte>(10, "10"));
-        Assert.StrictEqual(SerializeAndDeserialize<byte>(byte.MinValue, "0"), byte.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<byte>(byte.MaxValue, "255"), byte.MaxValue);
+        Assert.StrictEqual(byte.MinValue, SerializeAndDeserialize<byte>(byte.MinValue, "0"));
+        Assert.StrictEqual(byte.MaxValue, SerializeAndDeserialize<byte>(byte.MaxValue, "255"));
     }
 
     [Fact]
@@ -139,26 +139,26 @@ public static partial class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_DoubleAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<double>(-1.2, "-1.2"), -1.2);
+        Assert.StrictEqual(-1.2, SerializeAndDeserialize<double>(-1.2, "-1.2"));
         Assert.StrictEqual(0, SerializeAndDeserialize<double>(0, "0"));
         Assert.StrictEqual(2.3, SerializeAndDeserialize<double>(2.3, "2.3"));
-        Assert.StrictEqual(SerializeAndDeserialize<double>(double.MinValue, "-1.7976931348623157E+308"), double.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<double>(double.MaxValue, "1.7976931348623157E+308"), double.MaxValue);
+        Assert.StrictEqual(double.MinValue, SerializeAndDeserialize<double>(double.MinValue, "-1.7976931348623157E+308"));
+        Assert.StrictEqual(double.MaxValue, SerializeAndDeserialize<double>(double.MaxValue, "1.7976931348623157E+308"));
     }
 
     [Fact]
     public static void DCJS_FloatAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<float>((float)-1.2, "-1.2"), (float)-1.2);
-        Assert.StrictEqual(SerializeAndDeserialize<float>((float)0, "0"), (float)0);
-        Assert.StrictEqual(SerializeAndDeserialize<float>((float)2.3, "2.3"), (float)2.3);
+        Assert.StrictEqual((float)-1.2, SerializeAndDeserialize<float>((float)-1.2, "-1.2"));
+        Assert.StrictEqual((float)0, SerializeAndDeserialize<float>((float)0, "0"));
+        Assert.StrictEqual((float)2.3, SerializeAndDeserialize<float>((float)2.3, "2.3"));
     }
 
     [Fact]
     public static void DCJS_FloatAsRoot_NotNetFramework()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MinValue, "-3.4028235E+38"), float.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MaxValue, "3.4028235E+38"), float.MaxValue);
+        Assert.StrictEqual(float.MinValue, SerializeAndDeserialize<float>(float.MinValue, "-3.4028235E+38"));
+        Assert.StrictEqual(float.MaxValue, SerializeAndDeserialize<float>(float.MaxValue, "3.4028235E+38"));
     }
 
     [Fact]

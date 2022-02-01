@@ -3,11 +3,11 @@
   <ItemGroup>
     <RuntimeGroup Include="unix">
       <Parent>any</Parent>
-      <Architectures>x64;x86;arm;armel;arm64;loongarch64;mips64;s390x</Architectures>
+      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x</Architectures>
     </RuntimeGroup>
     <RuntimeGroup Include="linux">
       <Parent>unix</Parent>
-      <Architectures>x64;x86;arm;armel;arm64;loongarch64;mips64;s390x</Architectures>
+      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x</Architectures>
     </RuntimeGroup>
     <RuntimeGroup Include="linux-musl">
       <Parent>linux</Parent>
@@ -28,6 +28,11 @@
 
     <RuntimeGroup Include="arch">
       <Parent>linux</Parent>
+      <Architectures>x64</Architectures>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="manjaro">
+      <Parent>arch</Parent>
       <Architectures>x64</Architectures>
     </RuntimeGroup>
 

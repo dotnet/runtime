@@ -294,11 +294,3 @@ inline CORINFO_CALLINFO_FLAGS combine(CORINFO_CALLINFO_FLAGS flag1, CORINFO_CALL
 {
     return (CORINFO_CALLINFO_FLAGS)(flag1 | flag2);
 }
-inline CORINFO_CALLINFO_FLAGS Compiler::addVerifyFlag(CORINFO_CALLINFO_FLAGS flags)
-{
-    if (tiVerificationNeeded)
-    {
-        flags = combine(flags, CORINFO_CALLINFO_VERIFICATION);
-    }
-    return flags;
-}
