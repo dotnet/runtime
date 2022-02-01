@@ -585,6 +585,10 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
 
+            // These constants are s_daysToMonth365/s_daysToMonth366 encoded as strings
+            // Unfortunately, it's the only way for JIT to fold RVA[const] at the moment,
+            // Once C# gets ROS<anything>=RVA we'll change s_daysToMonth365 to ReadOnlySpan<uint> and implement
+            // constant folding in JIT for it (for constant indices) and remove this
             const string DaysToMonth365Str = "\u0000\u001f\u003b\u005a\u0078\u0097\u00b5\u00d4\u00f3\u00111\u00130\u0014e\u0016d";
             const string DaysToMonth366Str = "\u0000\u001f\u003c\u005b\u0079\u0098\u00b6\u00d5\u00f4\u00112\u00131\u0014f\u0016e";
 
