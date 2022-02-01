@@ -23,9 +23,10 @@ namespace System.IO.Pipes.Tests
             _output = output;
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        private static bool IsRemoteExecutorSupportedAndOnUnixAndElevated => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndElevated;
+
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndElevated))]
         [OuterLoop("Needs sudo access")]
-        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         [InlineData(PipeOptions.None, PipeOptions.None)]
         [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly)]
         [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None)]
