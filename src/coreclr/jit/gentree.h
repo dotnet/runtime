@@ -3240,6 +3240,8 @@ struct GenTreeDblCon : public GenTree
 
 /* gtStrCon -- string  constant (GT_CNS_STR) */
 
+#define EMPTY_STRING_SCON (unsigned)-1
+
 struct GenTreeStrCon : public GenTree
 {
     unsigned              gtSconCPX;
@@ -3248,7 +3250,7 @@ struct GenTreeStrCon : public GenTree
     // Returns true if this GT_CNS_STR was imported for String.Empty field
     bool IsStringEmptyField()
     {
-        return gtSconCPX == 0 && gtScpHnd == nullptr;
+        return gtSconCPX == EMPTY_STRING_SCON && gtScpHnd == nullptr;
     }
 
     // Because this node can come from an inlined method we need to
