@@ -43,6 +43,8 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
             value: base64String
         }
     };
+    if (commands_received.has(id))
+        console.warn("Addind an id that already exists in commands_received");
     commands_received.set(id, buffer_obj);
 }
 

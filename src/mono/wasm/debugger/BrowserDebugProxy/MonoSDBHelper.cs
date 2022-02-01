@@ -163,7 +163,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         GetState = 3,
         GetInfo = 4,
         /* FIXME: Merge into GetInfo when the major protocol version is increased */
-        GetId = 5,
+        GetNewId = 5,
         /* Ditto */
         GetTid = 6,
         SetIp = 7,
@@ -700,8 +700,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class MonoSDBHelper
     {
         private static int debuggerObjectId;
-        private static int cmdId = 1;
-        private static int GetId() {return cmdId++;}
+        private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
+        private static int GetNewId() {return cmdId++;}
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
 
@@ -862,7 +862,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommand<T>(T command, MonoBinaryWriter arguments, CancellationToken token) =>
-            MonoBinaryReader.From (await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(proxy.RuntimeId, GetId(), (int)GetCommandSetForCommand(command), (int)(object)command, arguments?.ToBase64().data ?? string.Empty), token));
+            MonoBinaryReader.From (await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(proxy.RuntimeId, GetNewId(), (int)GetCommandSetForCommand(command), (int)(object)command, arguments?.ToBase64().data ?? string.Empty), token));
 
         internal CommandSet GetCommandSetForCommand<T>(T command) =>
             command switch {
@@ -885,7 +885,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             };
 
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommandWithParms<T>(T command, (string data, int length) encoded, int type, string extraParm, CancellationToken token) =>
-            MonoBinaryReader.From(await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommandWithParms(proxy.RuntimeId, GetId(), (int)GetCommandSetForCommand(command), (int)(object)command, encoded.data, encoded.length, type, extraParm), token));
+            MonoBinaryReader.From(await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommandWithParms(proxy.RuntimeId, GetNewId(), (int)GetCommandSetForCommand(command), (int)(object)command, encoded.data, encoded.length, type, extraParm), token));
 
         public async Task<int> CreateString(string value, CancellationToken token)
         {
@@ -2180,7 +2180,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 command = CmdVM.InvokeMethod,
                                 buffer = data,
                                 length = length,
-                                id = GetId()
+                                id = GetNewId()
                                 }),
                             name = propertyNameStr
                         }));
@@ -2507,7 +2507,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             buffer = data,
                             valtype,
                             length,
-                            id = GetId()
+                            id = GetNewId()
                         }));
                     }
                     if (!isRootHidden)
@@ -2639,7 +2639,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                         buffer = data,
                                         valtype = attr["set"]["valtype"],
                                         length,
-                                        id = GetId()
+                                        id = GetNewId()
                                 });
                         }
                         continue;
@@ -2659,7 +2659,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     command = CmdVM.InvokeMethod,
                                     buffer = data,
                                     length = length,
-                                    id = GetId()
+                                    id = GetNewId()
                                     }),
                                 name = propertyNameStr
                             }));
