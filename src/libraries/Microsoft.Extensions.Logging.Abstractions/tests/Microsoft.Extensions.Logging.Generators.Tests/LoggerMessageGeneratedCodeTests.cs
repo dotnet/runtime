@@ -420,13 +420,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public void ConstraintsTests()
         {
             var logger = new MockLogger();
-            var printer = new MessagePrinter<Message>();
 
+            var printer = new MessagePrinter<Message>();
             logger.Reset();
             printer.Print(logger, new Message() { Text = "Hello" });
             Assert.Equal(LogLevel.Information, logger.LastLogLevel);
             Assert.Null(logger.LastException);
             Assert.Equal("The message is Hello.", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
+
+            var printer2 = new MessagePrinterHasConstraintOnLogClassAndLogMethod<Message>();
+            logger.Reset();
+            printer2.Print(logger, new Message() { Text = "Hello" });
+            Assert.Equal(LogLevel.Information, logger.LastLogLevel);
+            Assert.Null(logger.LastException);
+            Assert.Equal("The message is `Hello`.", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
