@@ -50,6 +50,7 @@ bool IsInCantAllocStressLogRegion()
 size_t StressLog::writing_base_address;
 size_t StressLog::reading_base_address;
 
+bool s_showAllMessages = false;
 BOOL g_bDacBroken;
 WCHAR g_mdName[1];
 SYMBOLS* g_ExtSymbols;
@@ -665,14 +666,14 @@ bool ParseOptions(int argc, char* argv[])
                 {
                     int i = s_valueFilterCount++;
                     char* end = nullptr;
-                    s_valueFilter[i].start = strtoul(&arg[3], &end, 16);
+                    s_valueFilter[i].start = strtoull(&arg[3], &end, 16);
                     if (*end == '-')
                     {
-                        s_valueFilter[i].end = strtoul(end + 1, &end, 16);
+                        s_valueFilter[i].end = strtoull(end + 1, &end, 16);
                     }
                     else if (*end == '+')
                     {
-                        s_valueFilter[i].end = s_valueFilter[i].start + strtoul(end + 1, &end, 16);
+                        s_valueFilter[i].end = s_valueFilter[i].start + strtoull(end + 1, &end, 16);
                     }
                     else if (*end != '\0')
                     {
@@ -848,6 +849,10 @@ bool ParseOptions(int argc, char* argv[])
                 }
                 break;
 
+            case 'a':
+            case 'A':
+                s_showAllMessages = true;
+                break;
             case 'f':
             case 'F':
                 if (arg[2] == '\0')
@@ -1106,7 +1111,7 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
                 int numberOfArgs = (msg->numberOfArgsX << 3) + msg->numberOfArgs;
                 if (!fIgnoreMessage)
                 {
-                    bool fIncludeMessage = FilterMessage(hdr, tsl, msg->facility, format, deltaTime, numberOfArgs, msg->args);
+                    bool fIncludeMessage = s_showAllMessages || FilterMessage(hdr, tsl, msg->facility, format, deltaTime, numberOfArgs, msg->args);
                     if (!fIncludeMessage && s_valueFilterCount > 0)
                     {
                         for (int i = 0; i < numberOfArgs; i++)
@@ -1218,6 +1223,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     s_timeFilterEnd = 0;
     s_outputFileName = nullptr;
     s_fPrintFormatStrings = false;
+    s_showAllMessages = false;
     memset(&mapImageToStringId, 0, sizeof(mapImageToStringId));
 
     if (!ParseOptions(argc, argv))
