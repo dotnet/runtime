@@ -20,6 +20,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
                 internal static partial void Message(ILogger logger, string? text);
             }
         }
+
+        public partial class MessagePrinterHasConstraintOnLogClassAndLogMethod<T>
+            where T : Message
+        {
+            public void Print(ILogger logger, T message)
+            {
+                Log<Message>.Message(logger, message);
+            }
+
+            internal static partial class Log<U> where U : Message
+            {
+                [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "The message is {Text}.")]
+                internal static partial void Message(ILogger logger, U text);
+            }
+        }
     }
 
     internal static partial class ConstraintsTestExtensions<T>
@@ -94,5 +109,10 @@ namespace ConstraintInAnotherNamespace
     public class Message
     {
         public string? Text { get; set; }
+
+        public override string ToString()
+        {
+            return $"`{Text}`";
+        }
     }
 }
