@@ -88,6 +88,18 @@ namespace System.Text.RegularExpressions
         protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
             Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
 
+        protected internal virtual void Scan(Regex regex, ReadOnlySpan<char> text, int textstart, int prevlen, bool quick, TimeSpan timeout)
+        {
+            string? s = runtext;
+            if (text != s)
+            {
+                s = text.ToString();
+            }
+
+            Match? match = Scan(regex, s, 0, text.Length, textstart, prevlen, quick, timeout);
+            runmatch = match;
+        }
+
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
             this.quick = quick;
@@ -394,21 +406,21 @@ namespace System.Text.RegularExpressions
         /// then to leave runtextpos at the ending position. It should leave
         /// runtextpos where it started if there was no match.
         /// </summary>
-        protected abstract void Go();
+        protected virtual void Go() => throw new NotImplementedException();
 
         /// <summary>
         /// The responsibility of FindFirstChar() is to advance runtextpos
         /// until it is at the next position which is a candidate for the
         /// beginning of a successful match.
         /// </summary>
-        protected abstract bool FindFirstChar();
+        protected virtual bool FindFirstChar() => throw new NotImplementedException();
 
         /// <summary>
         /// InitTrackCount must initialize the runtrackcount field; this is
         /// used to know how large the initial runtrack and runstack arrays
         /// must be.
         /// </summary>
-        protected abstract void InitTrackCount();
+        protected virtual void InitTrackCount() => runtrackcount = 0;
 
         /// <summary>
         /// Initializes all the data members that are used by Go()

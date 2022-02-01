@@ -383,7 +383,49 @@ namespace System.Text.RegularExpressions
             RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
             try
             {
-                return runner.Scan(this, input, beginning, beginning + length, startat, prevlen, quick, internalMatchTimeout);
+                runner.Scan(this, input.AsSpan(beginning, length), startat - beginning, prevlen, quick, internalMatchTimeout);
+                Match? m = runner.runmatch;
+                runner.runmatch = null; // Reset runmatch
+                if (m is not null)
+                {
+                    if (!quick && m.Text != input)
+                    {
+                        m.Text = input;
+                    }
+
+                    // If there was a match and the original text was sliced, then add beggining to the index to get the real
+                    // Index of the match.
+                    if (m.Success && beginning != 0)
+                    {
+                        m.AddBeginningToIndex(beginning);
+                    }
+                }
+                return m;
+            }
+            finally
+            {
+                _runner = runner;
+            }
+        }
+
+        internal Match? Run(bool quick, int prevlen, ReadOnlySpan<char> input, int beginning, int length, int startat)
+        {
+            if ((uint)startat > (uint)input.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startat, ExceptionResource.BeginIndexNotNegative);
+            }
+            if ((uint)length > (uint)input.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length, ExceptionResource.LengthNotNegative);
+            }
+
+            RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
+            try
+            {
+                runner.Scan(this, input.Slice(beginning, length), startat - beginning, prevlen, quick, internalMatchTimeout);
+                Match? m = runner.runmatch;
+                runner.runmatch = null; // Reset runmatch
+                return m;
             }
             finally
             {

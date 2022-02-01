@@ -14,6 +14,15 @@ namespace System.Text.RegularExpressions
             RegexCache.GetOrAdd(pattern).IsMatch(input);
 
         /// <summary>
+        /// Searches the input span for one or more occurrences of the text supplied in the given pattern.
+        /// </summary>
+        /// <param name="input">The input span to be searched on.</param>
+        /// <param name="pattern">The Regex pattern to be used for matching.</param>
+        /// <returns><see langword="true"/> if the input matches the pattern, <see langword="false"/> otherwise.</returns>
+        public static bool IsMatch(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern) =>
+            RegexCache.GetOrAdd(pattern).IsMatch(input);
+
+        /// <summary>
         /// Searches the input string for one or more occurrences of the text
         /// supplied in the pattern parameter with matching options supplied in the options
         /// parameter.
@@ -21,7 +30,28 @@ namespace System.Text.RegularExpressions
         public static bool IsMatch(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).IsMatch(input);
 
+        /// <summary>
+        /// Searches the input span for one or more occurrences of the text supplied in the given pattern. It uses the passed in options.
+        /// </summary>
+        /// <param name="input">The input span to be searched on.</param>
+        /// <param name="pattern">The Regex pattern to be used for matching.</param>
+        /// <param name="options">The options to be used for matching</param>
+        /// <returns><see langword="true"/> if the input matches the pattern, <see langword="false"/> otherwise.</returns>
+        public static bool IsMatch(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) =>
+            RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).IsMatch(input);
+
         public static bool IsMatch(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+            RegexCache.GetOrAdd(pattern, options, matchTimeout).IsMatch(input);
+
+        /// <summary>
+        /// Searches the input span for one or more occurrences of the text supplied in the given pattern under the specified timeout. It uses the passed in options.
+        /// </summary>
+        /// <param name="input">The input span to be searched on.</param>
+        /// <param name="pattern">The Regex pattern to be used for matching.</param>
+        /// <param name="options">The options to be used for matching</param>
+        /// <param name="matchTimeout">Max time to be used for matching before returning.</param>
+        /// <returns><see langword="true"/> if the input matches the pattern, <see langword="false"/> otherwise. Also returns <see langword="false"/> for time out.</returns>
+        public static bool IsMatch(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).IsMatch(input);
 
         /// <summary>
@@ -35,6 +65,16 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
+            return Run(quick: true, -1, input, 0, input.Length, UseOptionR() ? input.Length : 0) is null;
+        }
+
+        /// <summary>
+        /// Searches the input span for one or more matches using the previous pattern,
+        /// options, and starting position.
+        /// </summary>
+        /// <returns><see langword="true"/> if the input matches the pattern, <see langword="false"/> otherwise.</returns>
+        public bool IsMatch(ReadOnlySpan<char> input)
+        {
             return Run(quick: true, -1, input, 0, input.Length, UseOptionR() ? input.Length : 0) is null;
         }
 
