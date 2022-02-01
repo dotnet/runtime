@@ -929,14 +929,29 @@ namespace DebuggerTests
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
 
-        [Fact]
-        public async Task SetBreakpointInProjectWithSpecialCharactersInPath()
+        [Theory]
+        [InlineData(
+            "DebuggerTests.CheckSpecialCharactersInPath", 
+            "debugger-test-special-char-in-path-%23%40/test%23.cs", 
+            "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]
+        [InlineData(
+            "DebuggerTests.CheckSNonAsciiCharactersInPath", 
+            "debugger-test-special-char-in-path-%23%40/non-ascii-test-ął.cs", 
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ął.cs")]
+        public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
+            string classWithNamespace, string expectedLocationSufix, string expectedFileLocation)
         {
-            var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", "DebuggerTests.CheckSpecialCharactersInPath", "Evaluate", 1);
+            var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
             Assert.True(
-                bp.Value["breakpointId"].Value<string>().EndsWith("debugger-test-special-char-in-path-%23%40/test.cs"), 
+                bp.Value["breakpointId"].Value<string>().EndsWith(expectedLocationSufix), 
                 "Failed to set a breakpoint in project with special characters in path."
                 );
+            await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
+                expectedFileLocation,
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                "Evaluate");
         }
     }
 }
