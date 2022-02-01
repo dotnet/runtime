@@ -4,14 +4,16 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.FlowAnalysis;
-using Microsoft.CodeAnalysis.Operations;
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -52,33 +54,51 @@ namespace ILLink.RoslynAnalyzer
 					}
 				}
 			});
-			// TODO: fix reporting for generic type substitutions. This should happen not only for method invocations,
-			// but for any reference to an instantiated method or type.
-			context.RegisterOperationAction (context => {
-				var invocationOperation = (IInvocationOperation) context.Operation;
-				ProcessInvocationOperation (context, invocationOperation);
-			}, OperationKind.Invocation);
+			context.RegisterSyntaxNodeAction (context => {
+				ProcessGenericParameters (context);
+			}, SyntaxKind.GenericName);
 		}
 
-		static void ProcessInvocationOperation (OperationAnalysisContext context, IInvocationOperation invocationOperation)
+		static void ProcessGenericParameters (SyntaxNodeAnalysisContext context)
 		{
-			if (context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope ())
+			// RUC on the containing symbol normally silences warnings, but when examining a generic base type,
+			// the containing symbol is the declared derived type. RUC on the derived type does not silence
+			// warnings about base type arguments.
+			if (context.ContainingSymbol is not null
+				&& context.ContainingSymbol is not INamedTypeSymbol
+				&& context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope ())
 				return;
 
-			ProcessTypeArguments (context, invocationOperation);
-		}
+			ImmutableArray<ITypeParameterSymbol> typeParams = default;
+			ImmutableArray<ITypeSymbol> typeArgs = default;
+			if (context.SemanticModel.GetTypeInfo (context.Node).Type is INamedTypeSymbol type) {
+				// INamedTypeSymbol inside nameof, commonly used to access the string value of a variable, type, or a memeber,
+				// can generate diagnostics warnings, which can be noisy and unhelpful. 
+				// Walking the node heirarchy to check if INamedTypeSymbol is inside a nameof to not generate diagnostics
+				var parentNode = context.Node;
+				while (parentNode != null) {
+					if (parentNode is InvocationExpressionSyntax invocationExpression && invocationExpression.Expression is IdentifierNameSyntax ident1) {
+						if (ident1.Identifier.ValueText.Equals ("nameof"))
+							return;
+					}
+					parentNode = parentNode.Parent;
+				}
+				typeParams = type.TypeParameters;
+				typeArgs = type.TypeArguments;
+			} else if (context.SemanticModel.GetSymbolInfo (context.Node, context.CancellationToken).Symbol is IMethodSymbol targetMethod) {
+				typeParams = targetMethod.TypeParameters;
+				typeArgs = targetMethod.TypeArguments;
+			}
 
-		static void ProcessTypeArguments (OperationAnalysisContext context, IInvocationOperation invocationOperation)
-		{
-			var targetMethod = invocationOperation.TargetMethod;
-			if (targetMethod.IsInRequiresUnreferencedCodeAttributeScope ())
-				return;
+			if (typeParams != null) {
+				Debug.Assert (typeParams.Length == typeArgs.Length);
 
-			for (int i = 0; i < targetMethod.TypeParameters.Length; i++) {
-				var sourceValue = GetTypeValueNodeFromGenericArgument (targetMethod.TypeArguments[i]);
-				var targetValue = new GenericParameterValue (targetMethod.TypeParameters[i]);
-				foreach (var diagnostic in GetDynamicallyAccessedMembersDiagnostics (sourceValue, targetValue, invocationOperation.Syntax.GetLocation ()))
-					context.ReportDiagnostic (diagnostic);
+				for (int i = 0; i < typeParams.Length; i++) {
+					var sourceValue = GetTypeValueNodeFromGenericArgument (typeArgs[i]);
+					var targetValue = new GenericParameterValue (typeParams[i]);
+					foreach (var diagnostic in GetDynamicallyAccessedMembersDiagnostics (sourceValue, targetValue, context.Node.GetLocation ()))
+						context.ReportDiagnostic (diagnostic);
+				}
 			}
 		}
 

@@ -19,7 +19,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public readonly ITypeParameterSymbol TypeParameterSymbol;
 
-		public partial bool HasDefaultConstructorConstraint () => TypeParameterSymbol.HasConstructorConstraint;
+		public partial bool HasDefaultConstructorConstraint () => TypeParameterSymbol.HasConstructorConstraint | TypeParameterSymbol.HasValueTypeConstraint | TypeParameterSymbol.HasUnmanagedTypeConstraint;
 
 		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes => TypeParameterSymbol.GetDynamicallyAccessedMemberTypes ();
 
