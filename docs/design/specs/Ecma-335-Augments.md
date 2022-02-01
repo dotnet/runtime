@@ -963,23 +963,21 @@ https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 - Add a new paragraph before the paragraph on the three special types. “Byref-like types are value types which may contain managed pointers, or pointers onto the VES stack. Byref-like types have the same restrictions as byrefs. Value types which are marked with the System.Runtime.CompilerServices.IsByRefLikeAttribute attribute are considered to be byref-like types.”
 - Replace “Typed references have the same restrictions as byrefs.” With “Typed references are byref-like types and have the same restrictions as normal byref-like types.”
 - Replace “They can be used for local variable and parameter signatures. The use of these types for fields, method return types, the element type of an array, or in boxing is not verifiable (§I.8.8). These two types are referred to as byref-like types.” With “If a function uses these types only for local variable and parameter signatures, then the use of those types is verifiable. Otherwise these types have the same restrictions as normal byref-like types.”
-### I.8.6.1
-- Remove “(A fifth kind, a local signature (see §I.8.6.1.3) is really a version of a location signature.)”
+
+### I.8.6.1.1
+- Add to the first paragraph a modified version of the third paragraph of I.8.6.1.3. "The typed reference ~~local variable signature~~ type signature states that the type is a structure which will contain both a managed pointer to a location and a runtime representation of the type that can be stored at that location. A typed reference signature is similar to a byref constraint(§I.8.6.1.2), but while the byref specifies the type as part of the byref constraint (and hence statically as part of the type description), a typed reference provides the type information dynamically."
+- Add a second paragraph which is a slight modification of the former fourth paragraph in section I.8.6.1.3. "The typed reference signature is actually represented as a built-in value type, like the integer and floating-point types. In the Base Class Library (see Partition IV Library) the type is known as System.TypedReference and in the assembly language used in Partition II it is designated by the keyword typedref. This type shall only be used for parameters, the type of a field, return values and local variables. It shall not be boxed, nor shall it be used as the type of an element of an array.
+- Move CLS Rule 14 to this section.
 
 ### I.8.6.1.2
 - Move the contents of the byref constraint paragraph from Section I.8.6.1.3 to a bullet point.
 “- The byref constraint states that the content of the corresponding location is a managed pointer. A managed pointer can point to a local variable, parameter, field of a compound type, or element of an array. However, when a call crosses a remoting boundary (see §I.12.5) a conforming implementation can use a copy-in/copy-out mechanism instead of a managed pointer. Thus programs shall not rely on the aliasing behavior of true pointers. A managed pointer cannot point to another managed pointer, but a managed pointer can point to a byref-like type.”
 
 ### I.8.6.1.3
-- Rename this section to ByRef-like and Typed Reference Signatures
-- Remove the first two paragraphs.
-- Remove “In addition, there is one special local signature.”
-- Remove “A typed reference is a full signature in itself and cannot be combined with other constraints. In particular, it is not possible to specify a byref whose type is typed reference.”
-- Replace “This type shall only be used for parameters and local variables. It shall not be boxed, nor shall it be used as the type of a field, element of an array, or return value.” With “A typed reference is considered to be a by-reflike structure”
-- Remove “A typed reference is a full signature in itself and cannot be combined with other constraints. In particular, it is not possible to specify a byref whose type is typed reference.” From the third paragraph
+- Edit the second sentence of the first paragraph. "A local signature specifies the contract on a local variable allocated during the running of a method. A local signature contains a full location signature~~, plus it can specify one additional constraint:~~."
+- Remove the rest of this section. Its contents have been moved into sections I.8.6.1.1 and I.8.6.1.2
 
 ### I.8.7
-- Remove “, local (§I.8.6.1.3)”
 - In the section about type compatibility when determining a type from a signature: The byref constraint is to be referenced from section I8.6.1.2 insetad of I.8.6.1.3
 
 ### I.8.9.2
