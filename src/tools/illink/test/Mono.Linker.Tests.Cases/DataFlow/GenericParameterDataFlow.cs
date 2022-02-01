@@ -25,9 +25,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestMultipleGenericParametersOnMethod ();
 			TestMethodGenericParametersViaInheritance ();
 
-			MakeGenericType.Test ();
-			MakeGenericMethod.Test ();
-
 			TestNewConstraintSatisfiesParameterlessConstructor<object> ();
 			TestStructConstraintSatisfiesParameterlessConstructor<TestStruct> ();
 			TestUnmanagedConstraintSatisfiesParameterlessConstructor<byte> ();
@@ -48,11 +45,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TypeRequiresNothingPassThrough<TestType>.Test ();
 		}
 
-		static void TestGenericParameterFlowsToField ()
-		{
-			TypeRequiresPublicFields<TestType>.TestFields ();
-		}
-
 		static void TestGenericParameterFlowsToReturnValue ()
 		{
 			_ = TypeRequiresPublicFields<TestType>.ReturnRequiresPublicFields ();
@@ -67,6 +59,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static Type FieldRequiresPublicMethods;
 
 		static Type FieldRequiresNothing;
+
 
 		class TypeRequiresPublicFields<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
@@ -93,13 +86,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				FieldRequiresNothing = typeof (T);
 			}
 
-
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 			public static Type ReturnRequiresPublicFields ()
 			{
 				return typeof (T);
 			}
-
 
 			[ExpectedWarning ("IL2088", "'" + nameof (T) + "'", nameof (TypeRequiresPublicFields<T>), nameof (ReturnRequiresPublicMethods))]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -107,7 +98,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				return typeof (T);
 			}
-
 			public static Type ReturnRequiresNothing ()
 			{
 				return typeof (T);
@@ -163,6 +153,77 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TypeRequiresPublicMethods<T>.Test ();
 				TypeRequiresNothing<T>.Test ();
 			}
+		}
+
+		static void TestBaseTypeGenericRequirements ()
+		{
+			new DerivedTypeWithInstantiatedGenericOnBase ();
+			new DerivedTypeWithInstantiationOverSelfOnBase ();
+			new DerivedTypeWithOpenGenericOnBase<TestType> ();
+			TestDerivedTypeWithOpenGenericOnBaseWithRUCOnBase ();
+			TestDerivedTypeWithOpenGenericOnBaseWithRUCOnDerived ();
+			new DerivedTypeWithOpenGenericOnBaseWithRequirements<TestType> ();
+		}
+
+		class GenericBaseTypeWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
+		{
+			public GenericBaseTypeWithRequirements ()
+			{
+				typeof (T).RequiresPublicFields ();
+			}
+		}
+
+		class DerivedTypeWithInstantiatedGenericOnBase : GenericBaseTypeWithRequirements<TestType>
+		{
+		}
+
+		class DerivedTypeWithInstantiationOverSelfOnBase : GenericBaseTypeWithRequirements<DerivedTypeWithInstantiationOverSelfOnBase>
+		{
+		}
+
+		[ExpectedWarning ("IL2091", nameof (GenericBaseTypeWithRequirements<T>))]
+		class DerivedTypeWithOpenGenericOnBase<T> : GenericBaseTypeWithRequirements<T>
+		{
+			// Analyzer does not see the base class constructor
+			[ExpectedWarning ("IL2091", nameof (GenericBaseTypeWithRequirements<T>), ProducedBy = ProducedBy.Trimmer)]
+			public DerivedTypeWithOpenGenericOnBase () { }
+		}
+
+		static void TestDerivedTypeWithOpenGenericOnBaseWithRUCOnBase ()
+		{
+			new DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<TestType> ();
+		}
+
+		[ExpectedWarning ("IL2109", nameof (BaseTypeWithOpenGenericDAMTAndRUC<T>))]
+		[ExpectedWarning ("IL2091", nameof (BaseTypeWithOpenGenericDAMTAndRUC<T>))]
+		class DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T> : BaseTypeWithOpenGenericDAMTAndRUC<T>
+		{
+			[ExpectedWarning ("IL2091", nameof (DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T>), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", nameof (BaseTypeWithOpenGenericDAMTAndRUC<T>), ProducedBy = ProducedBy.Trimmer)]
+			public DerivedTypeWithOpenGenericOnBaseWithRUCOnBase () { }
+		}
+
+		[RequiresUnreferencedCode ("RUC")]
+		class BaseTypeWithOpenGenericDAMTAndRUC<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T> { }
+
+
+		[ExpectedWarning ("IL2026", nameof (DerivedTypeWithOpenGenericOnBaseWithRUCOnDerived<TestType>))]
+		static void TestDerivedTypeWithOpenGenericOnBaseWithRUCOnDerived ()
+		{
+			new DerivedTypeWithOpenGenericOnBaseWithRUCOnDerived<TestType> ();
+		}
+		[ExpectedWarning ("IL2091", nameof (BaseTypeWithOpenGenericDAMT<T>))]
+		[RequiresUnreferencedCode ("RUC")]
+		class DerivedTypeWithOpenGenericOnBaseWithRUCOnDerived<T> : BaseTypeWithOpenGenericDAMT<T>
+		{
+		}
+
+		class BaseTypeWithOpenGenericDAMT<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T> { }
+
+
+		class DerivedTypeWithOpenGenericOnBaseWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
+			: GenericBaseTypeWithRequirements<T>
+		{
 		}
 
 		static void TestMultipleGenericParametersOnType ()
@@ -225,44 +286,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		static void TestBaseTypeGenericRequirements ()
+		static void TestDeepNestedTypesWithGenerics ()
 		{
-			new DerivedTypeWithInstantiatedGenericOnBase ();
-			new DerivedTypeWithInstantiationOverSelfOnBase ();
-			new DerivedTypeWithOpenGenericOnBase<TestType> ();
-			new DerivedTypeWithOpenGenericOnBaseWithRequirements<TestType> ();
+			RootTypeWithRequirements<TestType>.InnerTypeWithNoAddedGenerics.TestAccess ();
 		}
 
-		class GenericBaseTypeWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
+		class RootTypeWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TRoot>
 		{
-			public GenericBaseTypeWithRequirements ()
+			public class InnerTypeWithNoAddedGenerics
 			{
-				typeof (T).RequiresPublicFields ();
+				[ExpectedWarning ("IL2087", nameof (TRoot),
+						"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.RootTypeWithRequirements<TRoot>",
+						"type",
+						"DataFlowTypeExtensions.RequiresPublicMethods(Type)")]
+				public static void TestAccess ()
+				{
+					typeof (TRoot).RequiresPublicFields ();
+					typeof (TRoot).RequiresPublicMethods ();
+				}
 			}
-		}
-
-		class DerivedTypeWithInstantiatedGenericOnBase : GenericBaseTypeWithRequirements<TestType>
-		{
-		}
-
-		class GenericBaseTypeWithRequiresAll<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T>
-		{
-		}
-
-		class DerivedTypeWithInstantiationOverSelfOnBase : GenericBaseTypeWithRequirements<DerivedTypeWithInstantiationOverSelfOnBase>
-		{
-		}
-
-		[ExpectedWarning ("IL2091", nameof (GenericBaseTypeWithRequirements<T>))]
-		class DerivedTypeWithOpenGenericOnBase<T> : GenericBaseTypeWithRequirements<T>
-		{
-			[ExpectedWarning ("IL2091", nameof (GenericBaseTypeWithRequirements<T>))]
-			public DerivedTypeWithOpenGenericOnBase () { }
-		}
-
-		class DerivedTypeWithOpenGenericOnBaseWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
-			: GenericBaseTypeWithRequirements<T>
-		{
 		}
 
 		static void TestInterfaceTypeGenericRequirements ()
@@ -293,33 +335,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class InterfaceImplementationTypeWithOpenGenericOnBase<T> : IGenericInterfaceTypeWithRequirements<T>
 		{
 		}
-
 		class InterfaceImplementationTypeWithOpenGenericOnBaseWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
 			: IGenericInterfaceTypeWithRequirements<T>
 		{
-		}
-
-		static void TestDeepNestedTypesWithGenerics ()
-		{
-			RootTypeWithRequirements<TestType>.InnerTypeWithNoAddedGenerics.TestAccess ();
-		}
-
-		class RootTypeWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TRoot>
-		{
-			public class InnerTypeWithNoAddedGenerics
-			{
-				// The message is not ideal since we report the TRoot to come from RootTypeWithRequirements/InnerTypeWIthNoAddedGenerics
-				// while it originates on RootTypeWithRequirements, but it's correct from IL's point of view.
-				[ExpectedWarning ("IL2087", nameof (TRoot),
-						"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.RootTypeWithRequirements<TRoot>.InnerTypeWithNoAddedGenerics",
-						"type",
-						"DataFlowTypeExtensions.RequiresPublicMethods(Type)")]
-				public static void TestAccess ()
-				{
-					typeof (TRoot).RequiresPublicFields ();
-					typeof (TRoot).RequiresPublicMethods ();
-				}
-			}
 		}
 
 		static void TestTypeGenericRequirementsOnMembers ()
@@ -357,10 +375,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				set;
 			}
 
+			[ExpectedWarning ("IL2091", nameof (TypeGenericRequirementsOnMembers<TOuter>), ProducedBy = ProducedBy.Analyzer)]
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsProperty {
-				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
+				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = ProducedBy.Trimmer)]
 				get => null;
-				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
+				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = ProducedBy.Trimmer)]
 				set { }
 			}
 
@@ -369,8 +388,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public void PublicMethodsMethodParameter (TypeRequiresPublicMethods<TOuter> param) { }
 
 			public TypeRequiresPublicFields<TOuter> PublicFieldsMethodReturnValue () { return null; }
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))] // Return value
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))] // Compiler generated local variable
+
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsMethodReturnValue () { return null; }
 
 			public void PublicFieldsMethodLocalVariable ()
@@ -413,7 +433,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class PartialyInstantiatedMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TOuter>
 			: BaseForPartialInstantiation<TestType, TOuter>
 		{
-			[ExpectedWarning ("IL2091", nameof (BaseForPartialInstantiation<TestType, TOuter>), "'TMethods'")]
+			// Analyzer does not see the base class constructor
+			[ExpectedWarning ("IL2091", nameof (BaseForPartialInstantiation<TestType, TOuter>), "'TMethods'", ProducedBy = ProducedBy.Trimmer)]
 			public PartialyInstantiatedMethods () { }
 		}
 
@@ -482,156 +503,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			MethodRequiresPublicMethods<T> ();
 			MethodRequiresNothing<T> ();
 		}
-
-		static void TestMethodGenericParametersViaInheritance ()
-		{
-			TypeWithInstantiatedGenericMethodViaGenericParameter<TestType>.StaticRequiresPublicFields<TestType> ();
-			TypeWithInstantiatedGenericMethodViaGenericParameter<TestType>.StaticRequiresPublicFieldsNonGeneric ();
-
-			TypeWithInstantiatedGenericMethodViaGenericParameter<TestType>.StaticPartialInstantiation ();
-			TypeWithInstantiatedGenericMethodViaGenericParameter<TestType>.StaticPartialInstantiationUnrecognized ();
-
-			var instance = new TypeWithInstantiatedGenericMethodViaGenericParameter<TestType> ();
-
-			instance.InstanceRequiresPublicFields<TestType> ();
-			instance.InstanceRequiresPublicFieldsNonGeneric ();
-
-			instance.VirtualRequiresPublicFields<TestType> ();
-			instance.VirtualRequiresPublicMethods<TestType> ();
-
-			instance.CallInterface ();
-
-			IInterfaceWithGenericMethod interfaceInstance = (IInterfaceWithGenericMethod) instance;
-			interfaceInstance.InterfaceRequiresPublicFields<TestType> ();
-			interfaceInstance.InterfaceRequiresPublicMethods<TestType> ();
-		}
-
-		class BaseTypeWithGenericMethod
-		{
-			public static void StaticRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-				=> typeof (T).RequiresPublicFields ();
-			public void InstanceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-				=> typeof (T).RequiresPublicFields ();
-			public virtual void VirtualRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-				=> typeof (T).RequiresPublicFields ();
-
-			public static void StaticRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-				=> typeof (T).RequiresPublicMethods ();
-			public void InstanceRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]T> ()
-				=> typeof (T).RequiresPublicMethods ();
-			public virtual void VirtualRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]T> ()
-				=> typeof (T).RequiresPublicMethods ();
-
-			public static void StaticRequiresMultipleGenericParams<
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields,
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods> ()
-			{
-				typeof (TFields).RequiresPublicFields ();
-				typeof (TMethods).RequiresPublicMethods ();
-			}
-		}
-
-		interface IInterfaceWithGenericMethod
-		{
-			void InterfaceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ();
-			void InterfaceRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ();
-		}
-
-		class TypeWithInstantiatedGenericMethodViaGenericParameter<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TOuter>
-			: BaseTypeWithGenericMethod, IInterfaceWithGenericMethod
-		{
-			[ExpectedWarning ("IL2091",
-				"'TInner'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>.StaticRequiresPublicFields<TInner>()",
-				"'T'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresPublicMethods<T>()")]
-			public static void StaticRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TInner> ()
-			{
-				StaticRequiresPublicFields<TInner> ();
-				StaticRequiresPublicMethods<TInner> ();
-			}
-
-			[ExpectedWarning ("IL2091",
-				"'TOuter'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
-				"'T'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresPublicMethods<T>()")]
-			public static void StaticRequiresPublicFieldsNonGeneric ()
-			{
-				StaticRequiresPublicFields<TOuter> ();
-				StaticRequiresPublicMethods<TOuter> ();
-			}
-
-			public static void StaticPartialInstantiation ()
-			{
-				StaticRequiresMultipleGenericParams<TOuter, TestType> ();
-			}
-
-			[ExpectedWarning ("IL2091",
-				"'TOuter'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
-				"'TMethods'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields,TMethods>()")]
-			public static void StaticPartialInstantiationUnrecognized ()
-			{
-				StaticRequiresMultipleGenericParams<TestType, TOuter> ();
-			}
-
-			[ExpectedWarning ("IL2091",
-				"'TInner'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>.InstanceRequiresPublicFields<TInner>()",
-				"'T'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.InstanceRequiresPublicMethods<T>()")]
-			public void InstanceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TInner> ()
-			{
-				InstanceRequiresPublicFields<TInner> ();
-				InstanceRequiresPublicMethods<TInner> ();
-			}
-
-			[ExpectedWarning ("IL2091",
-				"'TOuter'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
-				"'T'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.InstanceRequiresPublicMethods<T>()")]
-			public void InstanceRequiresPublicFieldsNonGeneric ()
-			{
-				InstanceRequiresPublicFields<TOuter> ();
-				InstanceRequiresPublicMethods<TOuter> ();
-			}
-
-			public override void VirtualRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-			{
-				typeof (T).RequiresPublicFields ();
-			}
-
-			public override void VirtualRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-			{
-				typeof (T).RequiresPublicMethods ();
-			}
-
-			public void InterfaceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-			{
-				typeof (T).RequiresPublicFields (); ;
-			}
-
-			public void InterfaceRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-			{
-				typeof (T).RequiresPublicMethods ();
-			}
-
-			[ExpectedWarning ("IL2091",
-				"'TOuter'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
-				"'T'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.IInterfaceWithGenericMethod.InterfaceRequiresPublicMethods<T>()")]
-			public void CallInterface ()
-			{
-				IInterfaceWithGenericMethod interfaceInstance = (IInterfaceWithGenericMethod) this;
-				interfaceInstance.InterfaceRequiresPublicFields<TOuter> ();
-				interfaceInstance.InterfaceRequiresPublicMethods<TOuter> ();
-			}
-		}
-
 
 		static void TestMultipleGenericParametersOnMethod ()
 		{
@@ -706,477 +577,160 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeof (TNothing).RequiresNone ();
 		}
 
-
-		class MakeGenericType
+		static void TestMethodGenericParametersViaInheritance ()
 		{
-			public static void Test ()
+			TypeWithInstantiatedGenericMethodViaGenericParameter<TestType>.StaticRequiresPublicFields<TestType> ();
+			TypeWithInstantiatedGenericMethodViaGenericParameter<TestType>.StaticRequiresPublicFieldsNonGeneric ();
+
+			TypeWithInstantiatedGenericMethodViaGenericParameter<TestType>.StaticPartialInstantiation ();
+			TypeWithInstantiatedGenericMethodViaGenericParameter<TestType>.StaticPartialInstantiationUnrecognized ();
+
+			var instance = new TypeWithInstantiatedGenericMethodViaGenericParameter<TestType> ();
+
+			instance.InstanceRequiresPublicFields<TestType> ();
+			instance.InstanceRequiresPublicFieldsNonGeneric ();
+
+			instance.VirtualRequiresPublicFields<TestType> ();
+			instance.VirtualRequiresPublicMethods<TestType> ();
+
+			instance.CallInterface ();
+
+			IInterfaceWithGenericMethod interfaceInstance = (IInterfaceWithGenericMethod) instance;
+			interfaceInstance.InterfaceRequiresPublicFields<TestType> ();
+			interfaceInstance.InterfaceRequiresPublicMethods<TestType> ();
+		}
+
+		class BaseTypeWithGenericMethod
+		{
+			public static void StaticRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
+				=> typeof (T).RequiresPublicFields ();
+			public void InstanceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
+				=> typeof (T).RequiresPublicFields ();
+			public virtual void VirtualRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
+				=> typeof (T).RequiresPublicFields ();
+
+			public static void StaticRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+				=> typeof (T).RequiresPublicMethods ();
+			public void InstanceRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+				=> typeof (T).RequiresPublicMethods ();
+			public virtual void VirtualRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+				=> typeof (T).RequiresPublicMethods ();
+
+			public static void StaticRequiresMultipleGenericParams<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields,
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods> ()
 			{
-				TestNullType ();
-				TestUnknownInput (null);
-				TestWithUnknownTypeArray (null);
-				TestWithArrayUnknownIndexSet (0);
-				TestWithArrayUnknownLengthSet (1);
-				TestNoArguments ();
-
-				TestWithRequirements ();
-				TestWithRequirementsFromParam (null);
-				TestWithRequirementsFromParamWithMismatch (null);
-				TestWithRequirementsFromGenericParam<TestType> ();
-				TestWithRequirementsFromGenericParamWithMismatch<TestType> ();
-
-				TestWithNoRequirements ();
-				TestWithNoRequirementsFromParam (null);
-
-				TestWithMultipleArgumentsWithRequirements ();
-
-				TestWithNewConstraint ();
-				TestWithStructConstraint ();
-				TestWithUnmanagedConstraint ();
-				TestWithNullable ();
-			}
-
-			// This is OK since we know it's null, so MakeGenericType is effectively a no-op (will throw)
-			// so no validation necessary.
-			static void TestNullType ()
-			{
-				Type nullType = null;
-				nullType.MakeGenericType (typeof (TestType));
-			}
-
-			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType))]
-			static void TestUnknownInput (Type inputType)
-			{
-				inputType.MakeGenericType (typeof (TestType));
-			}
-
-			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType))]
-			static void TestWithUnknownTypeArray (Type[] types)
-			{
-				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (types);
-			}
-
-			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType))]
-			static void TestWithArrayUnknownIndexSet (int indexToSet)
-			{
-				Type[] types = new Type[1];
-				types[indexToSet] = typeof (TestType);
-				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (types);
-			}
-
-			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType))]
-			static void TestWithArrayUnknownLengthSet (int arrayLen)
-			{
-				Type[] types = new Type[arrayLen];
-				types[0] = typeof (TestType);
-				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (types);
-			}
-
-			static void TestNoArguments ()
-			{
-				typeof (TypeMakeGenericNoArguments).MakeGenericType ();
-			}
-
-			class TypeMakeGenericNoArguments
-			{
-			}
-
-			static void TestWithRequirements ()
-			{
-				// Currently this is not analyzable since we don't track array elements.
-				// Would be really nice to support this kind of code in the future though.
-				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (typeof (TestType));
-			}
-
-			static void TestWithRequirementsFromParam (
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
-			{
-				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (type);
-			}
-
-			// https://github.com/dotnet/linker/issues/2428
-			// [ExpectedWarning ("IL2071", "'T'")]
-			[ExpectedWarning ("IL2070", "'this'")]
-			static void TestWithRequirementsFromParamWithMismatch (
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
-			{
-				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (type);
-			}
-
-			static void TestWithRequirementsFromGenericParam<
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-			{
-				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (typeof (T));
-			}
-
-			// https://github.com/dotnet/linker/issues/2428
-			// [ExpectedWarning ("IL2091", "'T'")]
-			[ExpectedWarning ("IL2090", "'this'")] // Note that this actually produces a warning which should not be possible to produce right now
-			static void TestWithRequirementsFromGenericParamWithMismatch<
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TInput> ()
-			{
-				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (typeof (TInput));
-			}
-
-			class GenericWithPublicFieldsArgument<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
-			{
-			}
-
-			static void TestWithNoRequirements ()
-			{
-				typeof (GenericWithNoRequirements<>).MakeGenericType (typeof (TestType));
-			}
-
-			static void TestWithNoRequirementsFromParam (Type type)
-			{
-				typeof (GenericWithNoRequirements<>).MakeGenericType (type);
-			}
-
-			class GenericWithNoRequirements<T>
-			{
-			}
-
-			static void TestWithMultipleArgumentsWithRequirements ()
-			{
-				typeof (GenericWithMultipleArgumentsWithRequirements<,>).MakeGenericType (typeof (TestType), typeof (TestType));
-			}
-
-			class GenericWithMultipleArgumentsWithRequirements<
-				TOne,
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TTwo>
-			{
-			}
-
-			static void TestWithNewConstraint ()
-			{
-				typeof (GenericWithNewConstraint<>).MakeGenericType (typeof (TestType));
-			}
-
-			class GenericWithNewConstraint<T> where T : new()
-			{
-			}
-
-			static void TestWithStructConstraint ()
-			{
-				typeof (GenericWithStructConstraint<>).MakeGenericType (typeof (TestType));
-			}
-
-			class GenericWithStructConstraint<T> where T : struct
-			{
-			}
-
-			static void TestWithUnmanagedConstraint ()
-			{
-				typeof (GenericWithUnmanagedConstraint<>).MakeGenericType (typeof (TestType));
-			}
-
-			class GenericWithUnmanagedConstraint<T> where T : unmanaged
-			{
-			}
-
-			static void TestWithNullable ()
-			{
-				typeof (Nullable<>).MakeGenericType (typeof (TestType));
+				typeof (TFields).RequiresPublicFields ();
+				typeof (TMethods).RequiresPublicMethods ();
 			}
 		}
 
-		class MakeGenericMethod
+		interface IInterfaceWithGenericMethod
 		{
-			public static void Test ()
+			void InterfaceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ();
+			void InterfaceRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ();
+		}
+
+
+		class TypeWithInstantiatedGenericMethodViaGenericParameter<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TOuter>
+			: BaseTypeWithGenericMethod, IInterfaceWithGenericMethod
+		{
+			[ExpectedWarning ("IL2091",
+				"'TInner'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>.StaticRequiresPublicFields<TInner>()",
+				"'T'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresPublicMethods<T>()")]
+			public static void StaticRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TInner> ()
 			{
-				TestNullMethod ();
-				TestUnknownMethod (null);
-				TestUnknownMethodButNoTypeArguments (null);
-				TestWithUnknownTypeArray (null);
-				TestWithArrayUnknownIndexSet (0);
-				TestWithArrayUnknownIndexSetByRef (0);
-				TestWithArrayUnknownLengthSet (1);
-				TestWithArrayPassedToAnotherMethod ();
-				TestWithNoArguments ();
-				TestWithArgumentsButNonGenericMethod ();
-
-				TestWithRequirements ();
-				TestWithRequirementsFromParam (null);
-				TestWithRequirementsFromGenericParam<TestType> ();
-				TestWithRequirementsViaRuntimeMethod ();
-				TestWithRequirementsButNoTypeArguments ();
-
-				TestWithMultipleKnownGenericParameters ();
-				TestWithOneUnknownGenericParameter (null);
-				TestWithPartiallyInitializedGenericTypeArray ();
-				TestWithConditionalGenericTypeSet (true);
-
-				TestWithNoRequirements ();
-				TestWithNoRequirementsFromParam (null);
-				TestWithNoRequirementsViaRuntimeMethod ();
-				TestWithNoRequirementsUnknownType (null);
-				TestWithNoRequirementsWrongNumberOfTypeParameters ();
-				TestWithNoRequirementsUnknownArrayElement ();
-
-				TestWithMultipleArgumentsWithRequirements ();
-
-				TestWithNewConstraint ();
-				TestWithStructConstraint ();
-				TestWithUnmanagedConstraint ();
+				StaticRequiresPublicFields<TInner> ();
+				StaticRequiresPublicMethods<TInner> ();
 			}
 
-			static void TestNullMethod ()
+			[ExpectedWarning ("IL2091",
+				"'TOuter'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
+				"'T'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresPublicMethods<T>()")]
+			public static void StaticRequiresPublicFieldsNonGeneric ()
 			{
-				MethodInfo mi = null;
-				mi.MakeGenericMethod (typeof (TestType));
+				StaticRequiresPublicFields<TOuter> ();
+				StaticRequiresPublicMethods<TOuter> ();
 			}
 
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
-			static void TestUnknownMethod (MethodInfo mi)
+			public static void StaticPartialInstantiation ()
 			{
-				mi.MakeGenericMethod (typeof (TestType));
+				StaticRequiresMultipleGenericParams<TOuter, TestType> ();
 			}
 
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
-			static void TestUnknownMethodButNoTypeArguments (MethodInfo mi)
+			[ExpectedWarning ("IL2091",
+				nameof (TOuter),
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
+				"TMethods",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields, TMethods>()",
+				ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2091",
+				"'TOuter'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
+				"'TMethods'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields,TMethods>()",
+				ProducedBy = ProducedBy.Trimmer)]
+			public static void StaticPartialInstantiationUnrecognized ()
 			{
-				// Thechnically linker could figure this out, but it's not worth the complexity - such call will always fail at runtime.
-				mi.MakeGenericMethod (Type.EmptyTypes);
+				StaticRequiresMultipleGenericParams<TestType, TOuter> ();
 			}
 
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
-			static void TestWithUnknownTypeArray (Type[] types)
+			[ExpectedWarning ("IL2091",
+				"'TInner'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>.InstanceRequiresPublicFields<TInner>()",
+				"'T'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.InstanceRequiresPublicMethods<T>()")]
+			public void InstanceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TInner> ()
 			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
-					.MakeGenericMethod (types);
+				InstanceRequiresPublicFields<TInner> ();
+				InstanceRequiresPublicMethods<TInner> ();
 			}
 
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
-			static void TestWithArrayUnknownIndexSet (int indexToSet)
+			[ExpectedWarning ("IL2091",
+				"'TOuter'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
+				"'T'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.InstanceRequiresPublicMethods<T>()")]
+			public void InstanceRequiresPublicFieldsNonGeneric ()
 			{
-				Type[] types = new Type[1];
-				types[indexToSet] = typeof (TestType);
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
-					.MakeGenericMethod (types);
+				InstanceRequiresPublicFields<TOuter> ();
+				InstanceRequiresPublicMethods<TOuter> ();
 			}
 
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
-			static void TestWithArrayUnknownIndexSetByRef (int indexToSet)
+			public override void VirtualRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 			{
-				Type[] types = new Type[1];
-				types[0] = typeof (TestType);
-				ref Type t = ref types[indexToSet];
-				t = typeof (TestType);
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
-					.MakeGenericMethod (types);
+				typeof (T).RequiresPublicFields ();
 			}
 
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
-			static void TestWithArrayUnknownLengthSet (int arrayLen)
+			public override void VirtualRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
 			{
-				Type[] types = new Type[arrayLen];
-				types[0] = typeof (TestType);
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
-					.MakeGenericMethod (types);
+				typeof (T).RequiresPublicMethods ();
 			}
 
-			static void MethodThatTakesArrayParameter (Type[] types)
+			public void InterfaceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 			{
+				typeof (T).RequiresPublicFields (); ;
 			}
 
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
-			static void TestWithArrayPassedToAnotherMethod ()
+			public void InterfaceRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
 			{
-				Type[] types = new Type[1];
-				types[0] = typeof (TestType);
-				MethodThatTakesArrayParameter (types);
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
-					.MakeGenericMethod (types);
+				typeof (T).RequiresPublicMethods ();
 			}
 
-			static void TestWithNoArguments ()
+			[ExpectedWarning ("IL2091",
+				"'TOuter'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
+				"'T'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.IInterfaceWithGenericMethod.InterfaceRequiresPublicMethods<T>()")]
+			public void CallInterface ()
 			{
-				typeof (MakeGenericMethod).GetMethod (nameof (NonGenericMethod), BindingFlags.Static | BindingFlags.NonPublic)
-					.MakeGenericMethod ();
-			}
-
-			// This should not warn since we can't be always sure about the exact overload as we don't support
-			// method parameter signature matching, and thus the GetMethod may return multiple potential methods.
-			// It can happen that some are generic and some are not. The analysis should not fail on this.
-			static void TestWithArgumentsButNonGenericMethod ()
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (NonGenericMethod), BindingFlags.Static | BindingFlags.NonPublic)
-					.MakeGenericMethod (typeof (TestType));
-			}
-
-			static void NonGenericMethod ()
-			{
-			}
-
-			static void TestWithRequirements ()
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
-					.MakeGenericMethod (typeof (TestType));
-			}
-
-			static void TestWithRequirementsFromParam (
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
-					.MakeGenericMethod (type);
-			}
-
-			static void TestWithRequirementsFromGenericParam<
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
-					.MakeGenericMethod (typeof (T));
-			}
-
-
-			static void TestWithRequirementsViaRuntimeMethod ()
-			{
-				typeof (MakeGenericMethod).GetRuntimeMethod (nameof (GenericWithRequirements), Type.EmptyTypes)
-					.MakeGenericMethod (typeof (TestType));
-			}
-
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
-			static void TestWithRequirementsButNoTypeArguments ()
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
-					.MakeGenericMethod (Type.EmptyTypes);
-			}
-
-			public static void GenericWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-			{
-			}
-
-			static void TestWithMultipleKnownGenericParameters ()
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericMultipleParameters), BindingFlags.Static)
-					.MakeGenericMethod (typeof (TestType), typeof (TestType), typeof (TestType));
-			}
-
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
-			static void TestWithOneUnknownGenericParameter (Type[] types)
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericMultipleParameters), BindingFlags.Static)
-					.MakeGenericMethod (typeof (TestType), typeof (TestStruct), types[0]);
-			}
-
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
-			static void TestWithPartiallyInitializedGenericTypeArray ()
-			{
-				Type[] types = new Type[3];
-				types[0] = typeof (TestType);
-				types[1] = typeof (TestStruct);
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericMultipleParameters), BindingFlags.Static)
-					.MakeGenericMethod (types);
-			}
-
-			static void TestWithConditionalGenericTypeSet (bool thirdParameterIsStruct)
-			{
-				Type[] types = new Type[3];
-				types[0] = typeof (TestType);
-				types[1] = typeof (TestStruct);
-				if (thirdParameterIsStruct) {
-					types[2] = typeof (TestStruct);
-				} else {
-					types[2] = typeof (TestType);
-				}
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericMultipleParameters), BindingFlags.Static)
-					.MakeGenericMethod (types);
-			}
-
-			public static void GenericMultipleParameters<
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T,
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] U,
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] V> ()
-			{
-			}
-
-			static void TestWithNoRequirements ()
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements), BindingFlags.Static)
-					.MakeGenericMethod (typeof (TestType));
-			}
-
-			static void TestWithNoRequirementsFromParam (Type type)
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements), BindingFlags.Static)
-					.MakeGenericMethod (type);
-			}
-
-			static void TestWithNoRequirementsViaRuntimeMethod ()
-			{
-				typeof (MakeGenericMethod).GetRuntimeMethod (nameof (GenericWithNoRequirements), Type.EmptyTypes)
-					.MakeGenericMethod (typeof (TestType));
-			}
-
-			// There are no requirements, so no warnings
-			static void TestWithNoRequirementsUnknownType (Type type)
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements))
-					.MakeGenericMethod (type);
-			}
-
-			// There are no requirements, so no warnings
-			static void TestWithNoRequirementsWrongNumberOfTypeParameters ()
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements))
-					.MakeGenericMethod (typeof (TestType), typeof (TestType));
-			}
-
-			// There are no requirements, so no warnings
-			static void TestWithNoRequirementsUnknownArrayElement ()
-			{
-				Type[] types = new Type[1];
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements))
-					.MakeGenericMethod (types);
-			}
-
-			public static void GenericWithNoRequirements<T> ()
-			{
-			}
-
-
-			static void TestWithMultipleArgumentsWithRequirements ()
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithMultipleArgumentsWithRequirements), BindingFlags.Static | BindingFlags.NonPublic)
-					.MakeGenericMethod (typeof (TestType), typeof (TestType));
-			}
-
-			static void GenericWithMultipleArgumentsWithRequirements<
-				TOne,
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TTwo> ()
-			{
-			}
-
-			static void TestWithNewConstraint ()
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNewConstraint), BindingFlags.Static | BindingFlags.NonPublic)
-					.MakeGenericMethod (typeof (TestType));
-			}
-
-			static void GenericWithNewConstraint<T> () where T : new()
-			{
-				var t = new T ();
-			}
-
-			static void TestWithStructConstraint ()
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithStructConstraint), BindingFlags.Static | BindingFlags.NonPublic)
-					.MakeGenericMethod (typeof (TestType));
-			}
-
-			static void GenericWithStructConstraint<T> () where T : struct
-			{
-				var t = new T ();
-			}
-
-			static void TestWithUnmanagedConstraint ()
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithUnmanagedConstraint), BindingFlags.Static | BindingFlags.NonPublic)
-					.MakeGenericMethod (typeof (TestType));
-			}
-
-			static void GenericWithUnmanagedConstraint<T> () where T : unmanaged
-			{
-				var t = new T ();
+				IInterfaceWithGenericMethod interfaceInstance = (IInterfaceWithGenericMethod) this;
+				interfaceInstance.InterfaceRequiresPublicFields<TOuter> ();
+				interfaceInstance.InterfaceRequiresPublicMethods<TOuter> ();
 			}
 		}
 
@@ -1189,7 +743,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			RequiresParameterlessConstructor<T> ();
 		}
-
 		static void TestUnmanagedConstraintSatisfiesParameterlessConstructor<T> () where T : unmanaged
 		{
 			RequiresParameterlessConstructor<T> ();
@@ -1277,12 +830,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		static void TestGenericParameterFlowsToField ()
+		{
+			TypeRequiresPublicFields<TestType>.TestFields ();
+		}
+
 		public class TestType
 		{
 		}
-
 		public struct TestStruct
 		{
 		}
+
 	}
 }
