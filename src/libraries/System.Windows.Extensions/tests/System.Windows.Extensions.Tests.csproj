@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup>
     <Compile Include="X509Certificate2UITests.cs" />
     <Compile Include="X509Certificate2UIManualTests.cs" />
     <Compile Include="XamlAccessLevelTests.cs" />
