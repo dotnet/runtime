@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -72,13 +73,29 @@ namespace ILLink.RoslynAnalyzer.Tests
 		private static IEnumerable<string> GetTestDependencies (string rootSourceDir, SyntaxTree testSyntaxTree)
 		{
 			foreach (var attribute in testSyntaxTree.GetRoot ().DescendantNodes ().OfType<AttributeSyntax> ()) {
-				if (attribute.Name.ToString () != "SetupCompileBefore")
+				var attributeName = attribute.Name.ToString ();
+				if (attributeName != "SetupCompileBefore" && attributeName != "SandboxDependency")
 					continue;
-				var testNamespace = testSyntaxTree.GetRoot ().DescendantNodes ().OfType<NamespaceDeclarationSyntax> ().Single ().Name.ToString ();
+				var testNamespace = testSyntaxTree.GetRoot ().DescendantNodes ().OfType<NamespaceDeclarationSyntax> ().First ().Name.ToString ();
 				var testSuiteName = testNamespace.Substring (testNamespace.LastIndexOf ('.') + 1);
 				var args = LinkerTestBase.GetAttributeArguments (attribute);
-				foreach (var sourceFile in ((ImplicitArrayCreationExpressionSyntax) args["#1"]).DescendantNodes ().OfType<LiteralExpressionSyntax> ())
-					yield return Path.Combine (rootSourceDir, testSuiteName, LinkerTestBase.GetStringFromExpression (sourceFile));
+
+				switch (attributeName) {
+				case "SetupCompileBefore": {
+						foreach (var sourceFile in ((ImplicitArrayCreationExpressionSyntax) args["#1"]).DescendantNodes ().OfType<LiteralExpressionSyntax> ())
+							yield return Path.Combine (rootSourceDir, testSuiteName, LinkerTestBase.GetStringFromExpression (sourceFile));
+						break;
+					}
+				case "SandboxDependency": {
+						var sourceFile = LinkerTestBase.GetStringFromExpression (args["#0"]);
+						if (!sourceFile.EndsWith (".cs"))
+							throw new NotSupportedException ();
+						yield return Path.Combine (rootSourceDir, testSuiteName, sourceFile);
+						break;
+					}
+				default:
+					throw new InvalidOperationException ();
+				}
 			}
 		}
 
@@ -120,6 +137,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 			testAssemblyPath = Path.GetFullPath (Path.Combine (artifactsBinDir, "ILLink.RoslynAnalyzer.Tests", configDirectoryName, tfm));
 		}
 
+		// Accepts typeof expressions, with a format specifier
+		public static string GetStringFromExpression (TypeOfExpressionSyntax expr, SemanticModel semanticModel, SymbolDisplayFormat displayFormat)
+		{
+			var typeSymbol = semanticModel.GetSymbolInfo (expr.Type).Symbol;
+			return typeSymbol?.ToDisplayString (displayFormat) ?? throw new InvalidOperationException ();
+		}
+
 		// Accepts string literal expressions or binary expressions concatenating strings
 		public static string GetStringFromExpression (ExpressionSyntax expr, SemanticModel? semanticModel = null)
 		{
@@ -143,11 +167,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 				var token = strLiteral.Token;
 				Assert.Equal (SyntaxKind.StringLiteralToken, token.Kind ());
 				return token.ValueText;
-
-			case SyntaxKind.TypeOfExpression:
-				var typeofExpression = (TypeOfExpressionSyntax) expr;
-				var typeSymbol = semanticModel.GetSymbolInfo (typeofExpression.Type).Symbol;
-				return typeSymbol?.GetDisplayName () ?? string.Empty;
 
 			default:
 				Assert.True (false, "Unsupported expr kind " + expr.Kind ());

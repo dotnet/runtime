@@ -99,6 +99,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
+		// Analyzer doesn't support intrinsics: https://github.com/dotnet/linker/issues/2374
+		[ExpectedWarning ("IL2072", "'type'", nameof (ComplexTypeHandling) + "." + nameof (RequirePublicMethods) + "(Type)", "System.Object.GetType()",
+			ProducedBy = ProducedBy.Analyzer)]
 		static void TestArrayGetTypeFromMethodParamHelper (ArrayGetTypeFromMethodParamElement[] p)
 		{
 			RequirePublicMethods (p.GetType ());
@@ -121,6 +124,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static ArrayGetTypeFromFieldElement[] _arrayGetTypeFromField;
 
 		[Kept]
+		// Analyzer doesn't support intrinsics: https://github.com/dotnet/linker/issues/2374
+		[ExpectedWarning ("IL2072", "'type'", nameof (ComplexTypeHandling) + "." + nameof (RequirePublicMethods) + "(Type)", "System.Object.GetType()",
+			ProducedBy = ProducedBy.Analyzer)]
 		static void TestArrayGetTypeFromField ()
 		{
 			RequirePublicMethods (_arrayGetTypeFromField.GetType ());
@@ -134,6 +140,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
+		// Analyzer doesn't support intrinsics: https://github.com/dotnet/linker/issues/2374
+		[ExpectedWarning ("IL2026", "System.Type.GetType(String)",
+			ProducedBy = ProducedBy.Analyzer)]
+		// Analyzer doesn't track known types: https://github.com/dotnet/linker/issues/2273
+		[ExpectedWarning ("IL2072", "'type'", nameof (ComplexTypeHandling) + "." + nameof (RequirePublicMethods) + "(Type)", "System.Type.GetType(String)",
+			ProducedBy = ProducedBy.Analyzer)]
 		static void TestArrayTypeGetType ()
 		{
 			RequirePublicMethods (Type.GetType ("Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayTypeGetTypeElement[]"));
@@ -148,6 +160,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
+		// Analyzer doesn't support intrinsics: https://github.com/dotnet/linker/issues/2374
+		[ExpectedWarning ("IL2026", "Activator.CreateInstance(String, String)",
+			ProducedBy = ProducedBy.Analyzer)]
 		static void TestArrayCreateInstanceByName ()
 		{
 			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayCreateInstanceByNameElement[]");
