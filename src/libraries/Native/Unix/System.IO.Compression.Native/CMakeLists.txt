@@ -1,9 +1,5 @@
 project(System.IO.Compression.Native C)
 
-if (CLR_CMAKE_TARGET_BROWSER)
-    add_definitions(-s USE_ZLIB)
-endif()
-
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
 set(NATIVE_LIBS_EXTRA)
@@ -13,7 +9,21 @@ set(NATIVECOMPRESSION_SOURCES
     ../../AnyOS/zlib/pal_zlib.c
 )
 
-if (NOT CLR_CMAKE_TARGET_BROWSER)
+if (CLR_CMAKE_TARGET_BROWSER)
+    set (NATIVECOMPRESSION_SOURCES
+        ${NATIVECOMPRESSION_SOURCES}
+        ../../Windows/System.IO.Compression.Native/zlib/adler32.c
+        ../../Windows/System.IO.Compression.Native/zlib/compress.c
+        ../../Windows/System.IO.Compression.Native/zlib/crc32.c
+        ../../Windows/System.IO.Compression.Native/zlib/deflate.c
+        ../../Windows/System.IO.Compression.Native/zlib/inffast.c
+        ../../Windows/System.IO.Compression.Native/zlib/inflate.c
+        ../../Windows/System.IO.Compression.Native/zlib/inftrees.c
+        ../../Windows/System.IO.Compression.Native/zlib/trees.c
+        ../../Windows/System.IO.Compression.Native/zlib/zutil.c
+    )
+    set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS -Wno-implicit-fallthrough)
+else()
     #Include Brotli include files
     include_directories("../../AnyOS/brotli/include")
 

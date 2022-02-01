@@ -82,7 +82,6 @@
 
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <_EmccFlags Include="@(_EmccCommonFlags)" />
-      <_EmccFlags Include="-s USE_ZLIB=1" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(_EmccDefaultsRspPath)"
