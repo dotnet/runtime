@@ -1005,12 +1005,12 @@ class C
     }
 }";
 
-			// (17,9): warning IL2091: 'T' generic argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in 'C.M1<T>()'.
-			// The generic parameter 'S' of 'C.M2<S>()' does not have matching annotations.
+			// (17,9): warning IL2091: 'T' generic argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods'
+			// in 'C.M1<T>()'. The generic parameter 'S' of 'C.M2<S>()' does not have matching annotations.
 			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetGenericParameterWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter)
-				.WithSpan (17, 9, 17, 16)
+				.WithSpan (17, 9, 17, 14)
 				.WithArguments ("T", "C.M1<T>()", "S", "C.M2<S>()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
