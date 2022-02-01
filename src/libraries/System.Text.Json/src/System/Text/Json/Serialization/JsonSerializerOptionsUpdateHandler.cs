@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 [assembly: MetadataUpdateHandler(typeof(JsonSerializerOptionsUpdateHandler))]
 
@@ -19,6 +20,9 @@ namespace System.Text.Json
             {
                 options.Key.ClearClasses();
             }
+
+            // Flush the dynamic method cache
+            ReflectionEmitCachingMemberAccessor.Clear();
         }
     }
 }
