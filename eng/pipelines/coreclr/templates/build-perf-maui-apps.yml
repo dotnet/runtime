@@ -110,7 +110,7 @@ steps:
   #      cleanDestinationFolder: false
 
   - script: |
-      curl -o dotnet-install.sh 'https://dot.net/v1/dotnet-install.sh'
+      curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh' -v
       chmod -R a+rx .
       ls -la
       ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir --verbose
@@ -121,7 +121,7 @@ steps:
     displayName: 'Use .NET Core sdk'
     inputs:
       packageType: sdk
-      version: 6.0.x
+      version: 6.0.2xx
       installationPath: $(Build.SourcesDirectory)/dotnet
       includePreviewVersions: true
   - script: |
