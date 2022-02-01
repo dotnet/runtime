@@ -33,6 +33,7 @@ static int log_level = 1;
 G_BEGIN_DECLS
 
 EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attached);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_change_debugger_log_level (int new_log_level);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size, int valtype, char* newvalue);
 
@@ -353,6 +354,12 @@ mono_wasm_set_is_debugger_attached (gboolean is_attached)
 		g_ptr_array_free (assemblies, TRUE);
 		has_pending_lazy_loaded_assemblies = FALSE;
 	}
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_change_debugger_log_level (int new_log_level)
+{
+	mono_change_log_level (new_log_level);
 }
 
 extern void mono_wasm_add_dbg_command_received(mono_bool res_ok, int id, void* buffer, int buffer_len);
