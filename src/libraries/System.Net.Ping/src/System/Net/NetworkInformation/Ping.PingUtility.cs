@@ -24,7 +24,9 @@ namespace System.Net.NetworkInformation
                 throw new PlatformNotSupportedException(SR.net_ping_utility_not_found);
             }
 
-            // ping utility does not support specifying custom payload
+            // although the ping utility supports custom pattern via -p option, it supports
+            // specifying only up to 16B pattern which repeats in the payload. The option also might
+            // not be present in all distributions, so we forbid ping payload in general.
             if (buffer != DefaultSendBuffer && buffer != Array.Empty<byte>())
             {
                 throw new PlatformNotSupportedException(SR.net_ping_utility_custom_payload);

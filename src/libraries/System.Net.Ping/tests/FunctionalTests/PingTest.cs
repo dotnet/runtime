@@ -6,14 +6,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 
 using Xunit;
 using Xunit.Abstractions;
-using System.Runtime.InteropServices.GeneratedMarshalling;
 
 namespace System.Net.NetworkInformation.Tests
 {
@@ -74,6 +71,12 @@ namespace System.Net.NetworkInformation.Tests
 
             Assert.Contains(pingReply.Address, localIpAddresses); ///, "Reply address {pingReply.Address} is not expected local address.");
         }
+
+        private static byte[] GetPingPayloadForUnix(AddressFamily addressFamily)
+            // On Unix, Non-root processes cannot send arbitrary data in the ping packet payload
+            => Capability.CanUseRawSockets(addressFamily) || PlatformDetection.IsOSXLike
+                ? TestSettings.PayloadAsBytes
+                : Array.Empty<byte>();
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsync_InvalidArgs()
@@ -259,10 +262,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
 
-            // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-            byte[] buffer = Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike
-                ? TestSettings.PayloadAsBytes
-                : Array.Empty<byte>();
+            byte[] buffer = GetPingPayloadForUnix(localIpAddress.AddressFamily);
 
             SendBatchPing(
                 (ping) => ping.Send(localIpAddress, TestSettings.PingTimeout, buffer),
@@ -279,10 +279,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
 
-            // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-            byte[] buffer = Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike
-                ? TestSettings.PayloadAsBytes
-                : Array.Empty<byte>();
+            byte[] buffer = GetPingPayloadForUnix(localIpAddress.AddressFamily);
 
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer),
@@ -342,10 +339,7 @@ namespace System.Net.NetworkInformation.Tests
                 return;
             }
 
-            // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-            byte[] buffer = Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike
-                ? TestSettings.PayloadAsBytes
-                : Array.Empty<byte>();
+            byte[] buffer = GetPingPayloadForUnix(localIpAddress.AddressFamily);
 
             SendBatchPing(
                 (ping) => ping.Send(localIpAddress, TestSettings.PingTimeout, buffer, new PingOptions()),
@@ -369,10 +363,7 @@ namespace System.Net.NetworkInformation.Tests
                 return;
             }
 
-            // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-            byte[] buffer = Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike
-                ? TestSettings.PayloadAsBytes
-                : Array.Empty<byte>();
+            byte[] buffer = GetPingPayloadForUnix(localIpAddress.AddressFamily);
 
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer, new PingOptions()),
@@ -473,16 +464,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
 
-            if (localIpAddresses.Length == 0)
-            {
-                // no local addresses
-                return;
-            }
-
-            // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-            byte[] buffer = Capability.CanUseRawSockets(localIpAddresses[0].AddressFamily) || PlatformDetection.IsOSXLike
-                ? TestSettings.PayloadAsBytes
-                : Array.Empty<byte>();
+            byte[] buffer = GetPingPayloadForUnix(localIpAddresses[0].AddressFamily);
 
             SendBatchPing(
                 (ping) => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer),
@@ -499,16 +481,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
 
-            if (localIpAddresses.Length == 0)
-            {
-                // no local addresses
-                return;
-            }
-
-            // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-            byte[] buffer = Capability.CanUseRawSockets(localIpAddresses[0].AddressFamily) || PlatformDetection.IsOSXLike
-                ? TestSettings.PayloadAsBytes
-                : Array.Empty<byte>();
+            byte[] buffer = GetPingPayloadForUnix(localIpAddresses[0].AddressFamily);
 
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer),
@@ -559,16 +532,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
 
-            if (localIpAddresses.Length == 0)
-            {
-                // no local addresses
-                return;
-            }
-
-            // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-            byte[] buffer = Capability.CanUseRawSockets(localIpAddresses[0].AddressFamily) || PlatformDetection.IsOSXLike
-                ? TestSettings.PayloadAsBytes
-                : Array.Empty<byte>();
+            byte[] buffer = GetPingPayloadForUnix(localIpAddresses[0].AddressFamily);
 
             SendBatchPing(
                 (ping) => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, new PingOptions()),
@@ -585,16 +549,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
 
-            if (localIpAddresses.Length == 0)
-            {
-                // no local addresses
-                return;
-            }
-
-            // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-            byte[] buffer = Capability.CanUseRawSockets(localIpAddresses[0].AddressFamily) || PlatformDetection.IsOSXLike
-                ? TestSettings.PayloadAsBytes
-                : Array.Empty<byte>();
+            byte[] buffer = GetPingPayloadForUnix(localIpAddresses[0].AddressFamily);
 
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, new PingOptions()),
@@ -1003,7 +958,7 @@ namespace System.Net.NetworkInformation.Tests
 
             byte[] buffer = TestSettings.PayloadAsBytes;
             Ping ping = new Ping();
-            var ex = Assert.Throws<PlatformNotSupportedException>(() => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer));
+            Assert.Throws<PlatformNotSupportedException>(() => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer));
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
@@ -1020,7 +975,7 @@ namespace System.Net.NetworkInformation.Tests
 
             byte[] buffer = TestSettings.PayloadAsBytes;
             Ping ping = new Ping();
-            var ex = await Assert.ThrowsAsync<PlatformNotSupportedException>(() => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer));
+            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer));
         }
     }
 }
