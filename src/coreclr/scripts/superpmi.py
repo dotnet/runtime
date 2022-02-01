@@ -325,7 +325,7 @@ asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option t
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
 asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
-asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff between checked binaries and release binaries.")
+asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -1493,7 +1493,7 @@ class SuperPMIReplayAsmDiffs:
                 with ChangeDir(self.coreclr_args.core_root):
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
-                    logging.info("return_code: %s", return_code)
+                    logging.debug("return_code: %s", return_code)
 
                 base_metrics = read_csv_metrics(base_metrics_summary_file)
                 diff_metrics = read_csv_metrics(diff_metrics_summary_file)
@@ -1506,7 +1506,7 @@ class SuperPMIReplayAsmDiffs:
                     # Don't report as replay failure asm diffs (return code 2) if not checking diffs with Release build or missing data (return code 3).
                     # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
                     # reported as a replay failure.
-                    if (return_code != 2 || self.coreclr_args.diff_with_release is True) and return_code != 3:
+                    if (return_code != 2 or self.coreclr_args.diff_with_release) and return_code != 3:
                         result = False
                         files_with_replay_failures.append(mch_file)
 
@@ -1523,7 +1523,7 @@ class SuperPMIReplayAsmDiffs:
                 # There were diffs. Go through each method that created diffs and
                 # create a base/diff asm file with diffable asm. In addition, create
                 # a standalone .mc for easy iteration.
-                if is_nonzero_length_file(diff_mcl_file) and self.coreclr_args.diff_with_release is not True:
+                if is_nonzero_length_file(diff_mcl_file) and not self.coreclr_args.diff_with_release:
                     # AsmDiffs. Save the contents of the fail.mcl file to dig into failures.
 
                     if return_code == 0:
@@ -1712,7 +1712,7 @@ class SuperPMIReplayAsmDiffs:
 
         # Construct an overall Markdown summary file.
 
-        if len(all_md_summary_files) > 0 and self.coreclr_args.diff_with_release is not True:
+        if len(all_md_summary_files) > 0 and not self.coreclr_args.diff_with_release:
             overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
             if not os.path.isdir(self.coreclr_args.spmi_location):
                 os.makedirs(self.coreclr_args.spmi_location)

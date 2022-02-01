@@ -25,8 +25,8 @@ parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-source_directory", help="path to the directory of the dotnet/runtime source tree")
-parser.add_argument("-product_directory", help="path to the directory containing built binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Checked)")
-parser.add_argument("-release_directory", help="path to the directory containing release binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Release)")
+parser.add_argument("-base_directory", help="path to the directory containing base binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Checked)")
+parser.add_argument("-diff_directory", help="path to the directory containing diff binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Release)")
 
 is_windows = platform.system() == "Windows"
 
@@ -105,14 +105,6 @@ def main(main_args):
         -- contains the Checked JITs
     <source_directory>\payload\diff
         -- contains the Release JITs
-    <source_directory>\payload\jit-analyze
-        -- contains the self-contained jit-analyze build (from dotnet/jitutils)
-    <source_directory>\payload\git
-        -- contains a Portable ("xcopy installable") `git` tool, downloaded from:
-        https://netcorenativeassets.blob.core.windows.net/resource-packages/external/windows/git/Git-2.32.0-64-bit.zip
-        This is needed by jit-analyze to do `git diff` on the generated asm. The `<source_directory>\payload\git\cmd`
-        directory is added to the PATH.
-        NOTE: this only runs on Windows.
 
     Then, AzDO pipeline variables are set.
 
@@ -142,20 +134,6 @@ def main(main_args):
     base_jit_directory = os.path.join(correlation_payload_directory, "base")
     diff_jit_directory = os.path.join(correlation_payload_directory, "diff")
     jit_analyze_build_directory = os.path.join(correlation_payload_directory, "jit-analyze")
-    git_directory = os.path.join(correlation_payload_directory, "git")
-
-    ######## Get the portable `git` package
-
-    git_url = "https://netcorenativeassets.blob.core.windows.net/resource-packages/external/windows/git/Git-2.32.0-64-bit.zip"
-
-    print('Downloading {} -> {}'.format(git_url, git_directory))
-
-    urls = [ git_url ]
-    # There are too many files to be verbose in the download and copy.
-    download_files(urls, git_directory, verbose=False, display_progress=False)
-    git_exe_tool = os.path.join(git_directory, "cmd", "git.exe")
-    if not os.path.isfile(git_exe_tool):
-        print('Error: `git` not found at {}'.format(git_exe_tool))
 
     ######## Copy SuperPMI python scripts
 
@@ -181,53 +159,6 @@ def main(main_args):
     # Put the SuperPMI tools directly in the root of the correlation payload directory.
     print('Copying SuperPMI tools {} -> {}'.format(product_directory, correlation_payload_directory))
     copy_directory(product_directory, correlation_payload_directory, verbose_copy=True, match_func=match_superpmi_tool_files)
-
-    ######## Clone and build jitutils: we only need jit-analyze
-
-    try:
-        with TempDir() as jitutils_directory:
-            run_command(
-                ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
-
-            # Make sure ".dotnet" directory exists, by running the script at least once
-            dotnet_script_name = "dotnet.cmd" if is_windows else "dotnet.sh"
-            dotnet_script_path = os.path.join(source_directory, dotnet_script_name)
-            run_command([dotnet_script_path, "--info"], jitutils_directory)
-
-            # Build jit-analyze only, and build it as a self-contained app (not framework-dependent).
-            # What target RID are we building? It depends on where we're going to run this code.
-            # The RID catalog is here: https://docs.microsoft.com/en-us/dotnet/core/rid-catalog.
-            #   Windows x64 => win-x64
-            #   Windows x86 => win-x86
-            #   Windows arm32 => win-arm
-            #   Windows arm64 => win-arm64
-            #   Linux x64 => linux-x64
-            #   Linux arm32 => linux-arm
-            #   Linux arm64 => linux-arm64
-            #   macOS x64 => osx-x64
-
-            # NOTE: we currently only support running on Windows x86/x64 (we don't pass the target OS)
-            RID = None
-            if arch == "x86":
-                RID = "win-x86"
-            if arch == "x64":
-                RID = "win-x64"
-
-            # Set dotnet path to run build
-            os.environ["PATH"] = os.path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
-
-            run_command([
-                "dotnet",
-                "publish",
-                "-c", "Release",
-                "--runtime", RID,
-                "--self-contained",
-                "--output", jit_analyze_build_directory,
-                os.path.join(jitutils_directory, "src", "jit-analyze", "jit-analyze.csproj")],
-                jitutils_directory)
-    except PermissionError as pe_error:
-        # Details: https://bugs.python.org/issue26660
-        print('Ignoring PermissionError: {0}'.format(pe_error))
 
 
     # Set variables
