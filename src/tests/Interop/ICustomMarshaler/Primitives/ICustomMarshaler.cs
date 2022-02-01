@@ -615,7 +615,6 @@ namespace System.Runtime.InteropServices.Tests
 
         public static void Field_ParentIsStruct_ThrowsTypeLoadException()
         {
-            //  typeof(System.Runtime.InteropServices.MarshalDirectiveException): Struct 'StructWithCustomMarshalerField' requires marshalling that is not yet supported by this compiler.
             Assert.Throws<TypeLoadException>(() => StructWithCustomMarshalerFieldMethod(new StructWithCustomMarshalerField()));
         }
 

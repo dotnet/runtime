@@ -1165,11 +1165,6 @@ namespace Internal.TypeSystem.Interop
             }
 
             var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices", "ICustomMarshaler");
-            if (customMarshallerType == null)
-            {
-                ThrowHelper.ThrowMarshalDirectiveException();
-            }
-
             var getInstanceMethod = marshallerType.GetMethod(
                 "GetInstance",
                 new MethodSignature(MethodSignatureFlags.Static, 0, customMarshallerType, new[] { Context.GetWellKnownType(WellKnownType.String) }));
