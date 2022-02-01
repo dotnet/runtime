@@ -195,6 +195,8 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(BN_num_bits) \
     REQUIRED_FUNCTION(BN_set_word) \
     LEGACY_FUNCTION(CRYPTO_add_lock) \
+    LEGACY_FUNCTION(CRYPTO_free) \
+    LEGACY_FUNCTION(CRYPTO_strdup) \
     LEGACY_FUNCTION(CRYPTO_num_locks) \
     LEGACY_FUNCTION(CRYPTO_set_locking_callback) \
     REQUIRED_FUNCTION(d2i_ASN1_BIT_STRING) \
@@ -508,8 +510,8 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_renegotiate) \
     REQUIRED_FUNCTION(SSL_renegotiate_pending) \
     REQUIRED_FUNCTION(SSL_SESSION_free) \
-    REQUIRED_FUNCTION(SSL_SESSION_get0_hostname) \
-    REQUIRED_FUNCTION(SSL_SESSION_set1_hostname) \
+    FALLBACK_FUNCTION(SSL_SESSION_get0_hostname) \
+    FALLBACK_FUNCTION(SSL_SESSION_set1_hostname) \
     FALLBACK_FUNCTION(SSL_session_reused) \
     REQUIRED_FUNCTION(SSL_set_accept_state) \
     REQUIRED_FUNCTION(SSL_set_bio) \
@@ -664,6 +666,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define BN_num_bits BN_num_bits_ptr
 #define BN_set_word BN_set_word_ptr
 #define CRYPTO_add_lock CRYPTO_add_lock_ptr
+#define CRYPTO_free CRYPTO_free_ptr
+#define CRYPTO_strdup CRYPTO_strdup_ptr
 #define CRYPTO_num_locks CRYPTO_num_locks_ptr
 #define CRYPTO_set_locking_callback CRYPTO_set_locking_callback_ptr
 #define d2i_ASN1_BIT_STRING d2i_ASN1_BIT_STRING_ptr
@@ -1187,6 +1191,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_test_flags local_RSA_test_flags
 #define SSL_CTX_set_security_level local_SSL_CTX_set_security_level
 #define SSL_is_init_finished local_SSL_is_init_finished
+#define SSL_SESSION_get0_hostname local_SSL_SESSION_get0_hostname
+#define SSL_SESSION_set1_hostname local_SSL_SESSION_set1_hostname
 #define X509_CRL_get0_nextUpdate local_X509_CRL_get0_nextUpdate
 #define X509_NAME_get0_der local_X509_NAME_get0_der
 #define X509_PUBKEY_get0_param local_X509_PUBKEY_get0_param

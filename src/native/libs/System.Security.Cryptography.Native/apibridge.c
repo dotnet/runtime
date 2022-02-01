@@ -890,4 +890,25 @@ int local_EVP_PKEY_public_check(EVP_PKEY_CTX* ctx)
     }
 }
 
+const char * local_SSL_SESSION_get0_hostname(const SSL_SESSION *s)
+{
+    return s->tlsext_hostname;
+}
+
+int local_SSL_SESSION_set1_hostname(SSL_SESSION *s, const char *hostname)
+{
+    if (s->tlsext_hostname != NULL)
+    {
+        OPENSSL_free(s->tlsext_hostname);
+    }
+
+    if (hostname == NULL) {
+        s->tlsext_hostname = NULL;
+        return 1;
+    }
+
+    s->tlsext_hostname = OPENSSL_strdup(hostname);
+    return s->tlsext_hostname != NULL;
+}
+
 #endif

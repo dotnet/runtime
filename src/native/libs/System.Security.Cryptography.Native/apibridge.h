@@ -57,3 +57,5 @@ const X509_ALGOR* local_X509_get0_tbs_sigalg(const X509* x509);
 X509_PUBKEY* local_X509_get_X509_PUBKEY(const X509* x509);
 int32_t local_X509_get_version(const X509* x509);
 int32_t local_X509_up_ref(X509* x509);
+const char * local_SSL_SESSION_get0_hostname(const SSL_SESSION *s);
+int local_SSL_SESSION_set1_hostname(SSL_SESSION *s, const char *hostname);
