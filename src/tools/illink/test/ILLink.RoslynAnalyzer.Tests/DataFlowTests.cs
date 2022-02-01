@@ -49,7 +49,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (ByRefDataflow));
 		}
 
-		[Fact]
+		[Fact (Skip = "https://github.com/dotnet/linker/issues/2574")]
 		public Task ComplexTypeHandling ()
 		{
 			return RunTest (nameof (ComplexTypeHandling));
