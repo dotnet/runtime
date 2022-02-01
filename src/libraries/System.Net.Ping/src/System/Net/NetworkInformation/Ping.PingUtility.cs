@@ -24,6 +24,12 @@ namespace System.Net.NetworkInformation
                 throw new PlatformNotSupportedException(SR.net_ping_utility_not_found);
             }
 
+            // ping utility does not support specifying custom payload
+            if (buffer != DefaultSendBuffer && buffer != Array.Empty<byte>())
+            {
+                throw new PlatformNotSupportedException(SR.net_ping_utility_custom_payload);
+            }
+
             UnixCommandLinePing.PingFragmentOptions fragmentOption = UnixCommandLinePing.PingFragmentOptions.Default;
             if (options != null && address.AddressFamily == AddressFamily.InterNetwork)
             {
