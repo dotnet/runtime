@@ -432,7 +432,7 @@ void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssemb
     _ASSERTE(m_NativeMetadataAssemblyRefMap != NULL);
 
     _ASSERTE(rid <= GetNativeMetadataAssemblyCount());
-    m_NativeMetadataAssemblyRefMap[rid - 1] = pAssembly;
+    VolatileStore(&m_NativeMetadataAssemblyRefMap[rid - 1], pAssembly);
 }
 
 // Module initialization occurs in two phases: the constructor phase and the Initialize phase.
