@@ -347,7 +347,7 @@ mono_class_setup_fields (MonoClass *klass)
 				break;
 			}
 			if (m_type_is_byref (field->type) && (offset % MONO_ABI_ALIGNOF (gpointer) != 0)) {
-				mono_class_set_type_load_failure (klass, "Field '%s' has an invalid offset", field->name, offset);
+				mono_class_set_type_load_failure (klass, "Field '%s' has an invalid offset", field->name);
 				break;
 			}
 			if (offset < -1) { /*-1 is used to encode special static fields */
