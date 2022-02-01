@@ -784,11 +784,25 @@ namespace System.Runtime.InteropServices
         [System.CLSCompliantAttribute(false)]
         public static void* Realloc(void* ptr, nuint byteCount) { throw null; }
     }
-    public readonly partial struct NFloat : System.IComparable, System.IComparable<System.Runtime.InteropServices.NFloat>, System.IEquatable<System.Runtime.InteropServices.NFloat>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct NFloat : System.IEquatable<System.Runtime.InteropServices.NFloat>
+#if FEATURE_NFLOAT
+#pragma warning disable SA1001
+        , System.IComparable,
+          System.IComparable<System.Runtime.InteropServices.NFloat>,
+          System.IFormattable,
+          System.ISpanFormattable
+#pragma warning restore SA1001
+#endif // FEATURE_NFLOAT
     {
         private readonly int _dummyPrimitive;
         public NFloat(double value) { throw null; }
         public NFloat(float value) { throw null; }
+        public double Value { get { throw null; } }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals(System.Runtime.InteropServices.NFloat other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
+#if FEATURE_NFLOAT
         public static System.Runtime.InteropServices.NFloat Epsilon { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat MaxValue { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat MinValue { get { throw null; } }
@@ -796,12 +810,8 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat NegativeInfinity { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat PositiveInfinity { get { throw null; } }
         public static int Size { get { throw null; } }
-        public double Value { get { throw null; } }
         public int CompareTo(object? obj) { throw null; }
         public int CompareTo(System.Runtime.InteropServices.NFloat other) { throw null; }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public bool Equals(System.Runtime.InteropServices.NFloat other) { throw null; }
-        public override int GetHashCode() { throw null; }
         public static bool IsFinite(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsInfinity(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNaN(System.Runtime.InteropServices.NFloat value) { throw null; }
@@ -868,7 +878,6 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.IFormatProvider? provider) { throw null; }
-        public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString(string? format) { throw null; }
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
@@ -877,6 +886,7 @@ namespace System.Runtime.InteropServices
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Runtime.InteropServices.NFloat result) { throw null; }
+#endif // FEATURE_NFLOAT
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class OptionalAttribute : System.Attribute

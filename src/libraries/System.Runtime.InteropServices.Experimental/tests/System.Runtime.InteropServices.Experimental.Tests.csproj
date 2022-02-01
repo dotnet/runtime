@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <FeatureNFloat>true</FeatureNFloat>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureNFloat)' == 'true'">$(DefineConstants);FEATURE_NFLOAT</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Runtime\InteropServices\NFloatTests.cs" />
+  </ItemGroup>
+</Project>
