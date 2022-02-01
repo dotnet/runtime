@@ -516,20 +516,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal($"{nameof(OverloadTestExtensions.M0)}string", logger.LastFormattedString);
             Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
             Assert.Equal("M0", logger.LastEventId.Name);
-
-            logger.Reset();
-            OverloadTestExtensions.M1(logger, 1);
-            Assert.Null(logger.LastException);
-            Assert.Equal($"{nameof(OverloadTestExtensions.M1)}1", logger.LastFormattedString);
-            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
-            Assert.Equal("M1Custom", logger.LastEventId.Name);
-
-            logger.Reset();
-            OverloadTestExtensions.M1(logger, "string");
-            Assert.Null(logger.LastException);
-            Assert.Equal($"{nameof(OverloadTestExtensions.M1)}string", logger.LastFormattedString);
-            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
-            Assert.Equal("M1", logger.LastEventId.Name);
         }
 
         private static void AssertLastState(MockLogger logger, params KeyValuePair<string, object?>[] expected)
