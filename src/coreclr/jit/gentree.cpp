@@ -5795,7 +5795,7 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
 {
     if (node->IsStringEmptyField())
     {
-        JITDUMP("Folded String.Empty.Length to 0");
+        JITDUMP("Folded String.Empty.Length to 0\n");
         return gtNewIconNode(0);
     }
 
