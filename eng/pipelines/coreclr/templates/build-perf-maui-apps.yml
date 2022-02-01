@@ -113,8 +113,10 @@ steps:
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
       ls -la
-      ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir . --verbose
+      ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir .
+      ls -la
       dotnet --info
+      ./dotnet --info
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
   - script: |
