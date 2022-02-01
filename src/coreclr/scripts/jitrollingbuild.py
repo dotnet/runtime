@@ -74,6 +74,13 @@ If 'SUPERPMI_CACHE_DIRECTORY' environment variable is set to a path, it will use
 
 git_hash_help = "git hash"
 
+use_latest_jit_change_help = """\
+Starting with the given git hash, look backwards in the git log for the first change that includes any JIT
+change. We want to ensure that any git hash uploaded to the JIT rolling build store is a JIT change. This
+addresses a problem where Azure DevOps sometimes builds changes that come soon after a JIT change, instead of
+the JIT change itself.
+"""
+
 target_dir_help = "Directory to put the downloaded JIT."
 
 skip_cleanup_help = "Skip intermediate file removal."
@@ -97,6 +104,7 @@ common_parser.add_argument("-spmi_location", help=spmi_location_help)
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[common_parser])
 
 upload_parser.add_argument("-git_hash", required=True, help=git_hash_help)
+upload_parser.add_argument("--use_latest_jit_change", action="store_true", help=use_latest_jit_change_help)
 upload_parser.add_argument("-az_storage_key", help="Key for the clrjit Azure Storage location. Default: use the value of the CLRJIT_AZ_KEY environment variable.")
 upload_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 
@@ -458,6 +466,32 @@ def upload_command(coreclr_args):
     #        pdb_paths = [os.path.join(pdb_dir, item) for item in os.listdir(pdb_dir) if re.match(r'.*clrjit.*', item)]
     #        files += pdb_paths
 
+    # Figure out which git hash to use for the upload. By default, it is the required coreclr_args.git_hash argument.
+    # However, if "--use_latest_jit_change" is passed, we look backwards in the git log for the nearest git commit
+    # with a JIT change (it could, and often will be, the same as the argument git_hash).
+    jit_git_hash = coreclr_args.git_hash
+
+    if coreclr_args.use_latest_jit_change:
+        # Do all the remaining commands, including a number of 'git' commands including relative paths,
+        # from the root of the runtime repo.
+
+        with ChangeDir(coreclr_args.runtime_repo_location):
+            # Enumerate the last change, starting with the jit_git_hash, that included JIT changes.
+            command = [ "git", "log", "--pretty=format:%H", jit_git_hash, "-1", "--", "src/coreclr/jit/*" ]
+            print("Invoking: {}".format(" ".join(command)))
+            proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+            stdout_change_list, _ = proc.communicate()
+            return_code = proc.returncode
+            change_list_hashes = []
+            if return_code == 0:
+                change_list_hashes = stdout_change_list.decode('utf-8').strip().splitlines()
+
+            if len(change_list_hashes) == 0:
+                print("Couldn't find any JIT changes! Just using the argument git_hash")
+            else:
+                jit_git_hash = change_list_hashes[0]
+                print("Using git_hash {}".format(jit_git_hash))
+
     print("Uploading:")
     for item in files:
         print("  {}".format(item))
@@ -472,7 +506,7 @@ def upload_command(coreclr_args):
         raise RuntimeError("Missing azure storage package.")
 
     blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=coreclr_args.az_storage_key)
-    blob_folder_name = "{}/{}/{}/{}/{}".format(az_builds_root_folder, coreclr_args.git_hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type)
+    blob_folder_name = "{}/{}/{}/{}/{}".format(az_builds_root_folder, jit_git_hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type)
 
     total_bytes_uploaded = 0
 
@@ -683,6 +717,11 @@ def setup_args(args):
                             "git_hash",
                             lambda unused: True,
                             "Unable to set git_hash")
+
+        coreclr_args.verify(args,
+                            "use_latest_jit_change",
+                            lambda unused: True,
+                            "Unable to set use_latest_jit_change")
 
         coreclr_args.verify(args,
                             "az_storage_key",

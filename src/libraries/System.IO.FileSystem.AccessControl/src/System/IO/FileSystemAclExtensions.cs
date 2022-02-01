@@ -244,20 +244,8 @@ namespace System.IO
         /// <remarks>This extension method was added to .NET Core to bring the functionality that was provided by the `System.IO.Directory.CreateDirectory(System.String,System.Security.AccessControl.DirectorySecurity)` .NET Framework method.</remarks>
         public static DirectoryInfo CreateDirectory(this DirectorySecurity directorySecurity, string path)
         {
-            if (directorySecurity == null)
-            {
-                throw new ArgumentNullException(nameof(directorySecurity));
-            }
-
-            if (path == null)
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
-
-            if (path.Length == 0)
-            {
-                throw new ArgumentException(SR.Arg_PathEmpty);
-            }
+            ArgumentNullException.ThrowIfNull(directorySecurity);
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             DirectoryInfo dirInfo = new DirectoryInfo(path);
 

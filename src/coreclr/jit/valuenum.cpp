@@ -10632,7 +10632,15 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
             vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, vnpBaseNorm.GetLiberal())));
     }
 
-    if (!vnStore->GetVNFunc(vnpBaseNorm.GetConservative(), &baseAddrFunc) || (baseAddrFunc.m_func != VNF_PtrToStatic))
+    ValueNumPair excChkSet = vnStore->VNPForEmptyExcSet();
+
+    if (!vnStore->IsKnownNonNull(vnpBaseNorm.GetLiberal()))
+    {
+        excChkSet.SetLiberal(
+            vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, vnpBaseNorm.GetLiberal())));
+    }
+
+    if (!vnStore->IsKnownNonNull(vnpBaseNorm.GetConservative()))
     {
         excChkSet.SetConservative(
             vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, vnpBaseNorm.GetConservative())));
