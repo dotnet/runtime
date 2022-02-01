@@ -165,6 +165,7 @@
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttributeTests.cs" />
     <Compile Include="System\Diagnostics\StackTraceHiddenAttributeTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundExceptionTests.cs" />

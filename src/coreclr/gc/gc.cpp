@@ -2444,8 +2444,6 @@ heap_segment* gc_heap::reserved_free_regions_sip[max_generation];
 
 int         gc_heap::num_sip_regions = 0;
 
-size_t      gc_heap::committed_in_free = 0;
-
 size_t      gc_heap::end_gen0_region_space = 0;
 
 size_t      gc_heap::gen0_pinned_free_space = 0;
@@ -11139,9 +11137,6 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
 {
     heap_segment* region = 0;
 
-    // TODO: the update to committed_in_free is incorrect - we'd need synchorization 'cause a thread
-    // could be getting a small and another one could be getting a large region at the same time.
-    // This is only used for recording.
     if (gen_number <= max_generation)
     {
         assert (size == 0);
@@ -11543,6 +11538,8 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
     if (use_large_pages_p)
         return;
     uint8_t*  page_start = align_on_page (heap_segment_allocated(seg));
+    assert (heap_segment_committed (seg) >= page_start);
+
     size_t size = heap_segment_committed (seg) - page_start;
     extra_space = align_on_page (extra_space);
     if (size >= max ((extra_space + 2*OS_PAGE_SIZE), MIN_DECOMMIT_SIZE))
@@ -11563,10 +11560,10 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
 #endif
     assert (!use_large_pages_p);
     uint8_t* page_start = align_on_page (new_committed);
-    size_t size = heap_segment_committed (seg) - page_start;
+    ptrdiff_t size = heap_segment_committed (seg) - page_start;
     if (size > 0)
     {
-        bool decommit_succeeded_p = virtual_decommit (page_start, size, heap_segment_oh (seg), heap_number);
+        bool decommit_succeeded_p = virtual_decommit (page_start, (size_t)size, heap_segment_oh (seg), heap_number);
         if (decommit_succeeded_p)
         {
             dprintf (3, ("Decommitting heap segment [%Ix, %Ix[(%d)",
@@ -13564,7 +13561,6 @@ gc_heap::init_gc_heap (int  h_number)
     sip_seg_maxgen_interval = 3;
     num_condemned_regions = 0;
 #endif //STRESS_REGIONS
-    committed_in_free = 0;
     end_gen0_region_space = 0;
     gen0_pinned_free_space = 0;
     gen0_large_chunk_found = false;
@@ -24370,8 +24366,17 @@ size_t gc_heap::committed_size()
     }
 
 #ifdef USE_REGIONS
+    size_t committed_in_free = 0;
+
+    for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
+    {
+        committed_in_free += free_regions[kind].get_size_committed_in_free();
+    }
+
+    dprintf (3, ("h%d committed in free %Id", heap_number, committed_in_free));
+
     total_committed += committed_in_free;
-#endif //USE_REGIO
+#endif //USE_REGIONS
 
     return total_committed;
 }

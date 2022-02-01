@@ -925,15 +925,7 @@ namespace System
 
         private string ReplaceCore(string oldValue, string? newValue, CompareInfo? ci, CompareOptions options)
         {
-            if (oldValue is null)
-            {
-                throw new ArgumentNullException(nameof(oldValue));
-            }
-
-            if (oldValue.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
             // If they asked to replace oldValue with a null, replace all occurrences
             // with the empty string. AsSpan() will normalize appropriately.
@@ -1054,14 +1046,7 @@ namespace System
 
         public string Replace(string oldValue, string? newValue)
         {
-            if (oldValue is null)
-            {
-                throw new ArgumentNullException(nameof(oldValue));
-            }
-            if (oldValue.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
             // If newValue is null, treat it as an empty string.  Callers use this to remove the oldValue.
             newValue ??= Empty;

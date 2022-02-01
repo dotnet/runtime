@@ -13,10 +13,6 @@ using BCRYPT_PSS_PADDING_INFO = Interop.BCrypt.BCRYPT_PSS_PADDING_INFO;
 
 namespace System.Security.Cryptography
 {
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    internal static partial class RSAImplementation
-    {
-#endif
     public sealed partial class RSACng : RSA
     {
         private static readonly ConcurrentDictionary<HashAlgorithmName, int> s_hashSizes =
@@ -52,14 +48,9 @@ namespace System.Security.Cryptography
             }
 
             string? hashAlgorithmName = hashAlgorithm.Name;
-            if (string.IsNullOrEmpty(hashAlgorithmName))
-            {
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
-            }
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithmName, nameof(hashAlgorithm));
+
+            ArgumentNullException.ThrowIfNull(padding);
 
             if (hash.Length != GetHashSizeInBytes(hashAlgorithm))
             {
@@ -99,14 +90,8 @@ namespace System.Security.Cryptography
         public override unsafe bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
         {
             string? hashAlgorithmName = hashAlgorithm.Name;
-            if (string.IsNullOrEmpty(hashAlgorithmName))
-            {
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
-            }
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithmName, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
@@ -159,14 +144,8 @@ namespace System.Security.Cryptography
         public override unsafe bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
             string? hashAlgorithmName = hashAlgorithm.Name;
-            if (string.IsNullOrEmpty(hashAlgorithmName))
-            {
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
-            }
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithmName, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
@@ -199,7 +178,4 @@ namespace System.Security.Cryptography
             }
         }
     }
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    }
-#endif
 }

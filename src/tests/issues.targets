@@ -820,6 +820,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/DDB/B168384/LdfldaHack/*">
             <Issue>https://github.com/dotnet/runtime/issues/615</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_60035/Runtime_60035/*">
+            <Issue>https://github.com/dotnet/runtime/issues/64419</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>
         </ExcludeList>
@@ -2502,6 +2505,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)JIT/IL_Conformance/Old/Base/ckfinite/**">
             <Issue>https://github.com/dotnet/runtime/issues/54376</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/Runtime_64125/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
         <!-- End interpreter issues -->
     </ItemGroup>
 
@@ -2801,9 +2807,6 @@
         </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/ArmBase/Yield_*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/64179</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorExp_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/64179</Issue>
         </ExcludeList>
     </ItemGroup>
@@ -3347,6 +3350,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/SIMD/RayTracer/RayTracer/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/Runtime_64125/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>

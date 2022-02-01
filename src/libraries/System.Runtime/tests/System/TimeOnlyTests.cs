@@ -483,6 +483,17 @@ namespace System.Tests
             Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten));
             Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "r"));
             Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "O"));
+
+            Assert.Throws<FormatException>(() => {
+                    Span<char> buff = stackalloc char[100];
+                    timeOnly.TryFormat(buff, out charsWritten, "u");
+                });
+            Assert.Throws<FormatException>(() => {
+                    Span<char> buff = stackalloc char[100];
+                    timeOnly.TryFormat(buff, out charsWritten, "dd-yyyy");
+                });
+            Assert.Throws<FormatException>(() => $"{timeOnly:u}");
+            Assert.Throws<FormatException>(() => $"{timeOnly:dd-yyyy}");
         }
     }
 }

@@ -7,7 +7,7 @@ using Xunit;
 namespace System.Text.RegularExpressions.Tests
 {
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in .NET Framework.")]
-    [SkipOnPlatform(TestPlatforms.Browser, "Internal members accessed via reflection may have been trimmed away")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
     public class RegexReductionTests
     {
         // These tests depend on using reflection to access internals of Regex in order to validate
@@ -26,7 +26,7 @@ namespace System.Text.RegularExpressions.Tests
 
         static RegexReductionTests()
         {
-            if (PlatformDetection.IsNetFramework || PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsNetFramework || PlatformDetection.IsBuiltWithAggressiveTrimming)
             {
                 // These members may not exist or may have been trimmed away, and the tests won't run.
                 return;
