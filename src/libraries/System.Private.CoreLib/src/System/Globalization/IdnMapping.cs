@@ -438,7 +438,7 @@ namespace System.Globalization
                         /* handled already.  Find the next larger one: */
                         int j;
                         int m;
-                        int test = 0;
+                        int test;
                         for (m = c_maxint, j = iAfterLastDot;
                              j < iNextDot;
                              j += IsSupplementary(test) ? 2 : 1)
