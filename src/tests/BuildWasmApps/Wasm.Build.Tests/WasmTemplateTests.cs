@@ -18,7 +18,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BrowserBuildThenPublish(string config)
@@ -61,7 +61,7 @@ namespace Wasm.Build.Tests
                             UseCache: false));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void ConsoleBuildThenPublish(string config)
