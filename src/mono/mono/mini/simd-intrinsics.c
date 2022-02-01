@@ -829,7 +829,8 @@ emit_sys_numerics_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 	MonoInst *ins;
 	gboolean supported = FALSE;
 	int id;
-	MonoType *etype;
+	MonoType *etype, *type;
+	MonoClass *klass;
 
 	id = lookup_intrins (vector_methods, sizeof (vector_methods), cmethod);
 	if (id == -1)
@@ -869,8 +870,6 @@ emit_sys_numerics_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 	case SN_ConvertToUInt64:
 		break;
 	case SN_Equals:
-		MonoType *type;
-		MonoClass *klass;
 		klass = cmethod->klass;
 		type = m_class_get_byval_arg (klass);
 		etype = get_vector_t_elem_type (fsig->params [0]);
