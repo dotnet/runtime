@@ -61,12 +61,33 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #endif
 #endif
 
-// The portable build is performed on RHEL7 which doesn't define FICLONE yet.
-// Ensure FICLONE is defined for all Linux builds.
 #ifdef __linux__
+#include <sys/utsname.h>
+
+// Ensure FICLONE is defined for all Linux builds.
 #ifndef FICLONE
 #define FICLONE _IOW(0x94, 9, int)
 #endif
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
+// Ensure __NR_copy_file_range is defined for portable builds.
+#include <sys/syscall.h> // __NR_copy_file_range
+# if !defined(__NR_copy_file_range)
+#  if defined(__amd64__)
+#   define __NR_copy_file_range  326
+#  elif defined(__i386__)
+#   define __NR_copy_file_range  377
+#  elif defined(__arm__)
+#   define __NR_copy_file_range  391
+#  elif defined(__aarch64__)
+#   define __NR_copy_file_range  285
+#  else
+#   error Unknown architecture
+#  endif
+# endif
+#pragma clang diagnostic pop
+
 #endif
 
 #if HAVE_STAT64
@@ -332,6 +353,12 @@ int32_t SystemNative_Unlink(const char* path)
 
 intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode)
 {
+#if defined(SHM_NAME_MAX) // macOS
+    assert(strlen(name) <= SHM_NAME_MAX);
+#elif defined(PATH_MAX) // other Unixes
+    assert(strlen(name) <= PATH_MAX);
+#endif
+
 #if HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
     flags = ConvertOpenFlags(flags);
     if (flags == -1)
@@ -1146,9 +1173,44 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
 }
 #endif // !HAVE_FCOPYFILE
 
+
+#ifdef __linux__
+static ssize_t CopyFileRange(int inFd, int outFd, size_t len)
+{
+    return syscall(__NR_copy_file_range, inFd, NULL, outFd, NULL, len, 0);
+}
+
+static bool SupportsCopyFileRange()
+{
+    static volatile int s_isSupported = 0;
+
+    int isSupported = s_isSupported;
+    if (isSupported == 0)
+    {
+        isSupported = -1;
+
+        // Avoid known issues with copy_file_range that are fixed in Linux 5.3+ (https://lwn.net/Articles/789527/).
+        struct utsname name;
+        if (uname(&name) == 0)
+        {
+            unsigned int major = 0, minor = 0;
+            sscanf(name.release, "%u.%u", &major, &minor);
+            if (major > 5 || (major == 5 && minor >=3))
+            {
+                isSupported = CopyFileRange(-1, -1, 0) == -1 && errno != ENOSYS ? 1 : -1;
+            }
+        }
+
+        s_isSupported = isSupported;
+    }
+    return isSupported == 1;
+}
+#endif
+
 int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength)
 {
-    (void)sourceLength; // unused on some platforms.
+    // unused on some platforms.
+    (void)sourceLength;
 
     int inFd = ToFileDescriptor(sourceFd);
     int outFd = ToFileDescriptor(destinationFd);
@@ -1162,6 +1224,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     // Get the stats on the source file.
     int ret;
     bool copied = false;
+    bool trySendFile = true;
 
     // Certain files (e.g. procfs) may return a size of 0 even though reading them will
     // produce data. We use plain read/write for those.
@@ -1173,15 +1236,39 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
         copied = ret == 0;
     }
 #endif
+#ifdef __linux__
+    if (SupportsCopyFileRange() && !copied && sourceLength != 0)
+    {
+        do
+        {
+            size_t copyLength = (sourceLength >= SSIZE_MAX ? SSIZE_MAX : (size_t)sourceLength);
+            ssize_t sent = CopyFileRange(inFd, outFd, copyLength);
+            if (sent <= 0)
+            {
+                // sendfile will likely encounter the same error, don't try it.
+                trySendFile = false;
+                break; // Fall through.
+            }
+            else
+            {
+                assert(sent <= sourceLength);
+                sourceLength -= sent;
+            }
+        } while (sourceLength > 0);
+
+        copied = sourceLength == 0;
+    }
+#endif
 #if HAVE_SENDFILE_4
     // Try copying the data using sendfile.
-    if (!copied && sourceLength != 0)
+    if (trySendFile && !copied && sourceLength != 0)
     {
         // Note that per man page for large files, you have to iterate until the
         // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
         do
         {
-            ssize_t sent = sendfile(outFd, inFd, NULL, (sourceLength >= SSIZE_MAX ? SSIZE_MAX : (size_t)sourceLength));
+            size_t copyLength = (sourceLength >= SSIZE_MAX ? SSIZE_MAX : (size_t)sourceLength);
+            ssize_t sent = sendfile(outFd, inFd, NULL, copyLength);
             if (sent < 0)
             {
                 if (errno != EINVAL && errno != ENOSYS)

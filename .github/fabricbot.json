@@ -192,6 +192,14 @@
         },
         {
           "labels": [
+            "area-System.Runtime.InteropServices"
+          ],
+          "mentionees": [
+            "dotnet/interop-contrib"
+          ]
+        },
+        {
+          "labels": [
             "area-System.CodeDom"
           ],
           "mentionees": [

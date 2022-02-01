@@ -182,97 +182,6 @@ private:
         if (!bInitialized)
         {
             SECURITY_ATTRIBUTES * pSecurityAttributes = NULL;
-
-#ifndef FEATURE_CORESYSTEM // @CORESYSTEMTODO
-            PSECURITY_DESCRIPTOR pSD = NULL;
-            PSID pAdminSid = NULL;
-            HANDLE hToken = NULL;
-            PACL pACL = NULL;
-            LPVOID buffer = NULL;
-
-            if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))
-                goto cleanup;
-
-            // don't set pSecurityAttributes for AppContainer processes
-            if(!IsAppContainerProcess(hToken))
-            {
-                SECURITY_ATTRIBUTES securityAttributes;
-                PSID pUserSid = NULL;
-                SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
-                DWORD retLength;
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6211) // PREfast warning: Leaking memory 'pSD' due to an exception.
-#endif /*_PREFAST_ */
-                pSD = (PSECURITY_DESCRIPTOR) new char[SECURITY_DESCRIPTOR_MIN_LENGTH];
-                if (!pSD)
-                    goto cleanup;
-
-                if (GetTokenInformation(hToken, TokenOwner, NULL, 0, &retLength))
-                    goto cleanup;
-
-                buffer = (LPVOID) new char[retLength];
-                if (!buffer)
-                    goto cleanup;
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif /*_PREFAST_*/
-
-                // Get the SID for the current user
-                if (!GetTokenInformation(hToken, TokenOwner, (LPVOID) buffer, retLength, &retLength))
-                    goto cleanup;
-
-                pUserSid = ((TOKEN_OWNER *) buffer)->Owner;
-
-                // Get the SID for the admin group
-                // Create a SID for the BUILTIN\Administrators group.
-                if(! AllocateAndInitializeSid(&SIDAuthNT, 2,
-                    SECURITY_BUILTIN_DOMAIN_RID,
-                    DOMAIN_ALIAS_RID_ADMINS,
-                    0, 0, 0, 0, 0, 0,
-                    &pAdminSid))
-                    goto cleanup;
-
-                EXPLICIT_ACCESS ea[2];
-                ZeroMemory(ea, 2 * sizeof(EXPLICIT_ACCESS));
-
-                // Initialize an EXPLICIT_ACCESS structure for an ACE.
-                // The ACE will allow the current user full access
-                ea[0].grfAccessPermissions = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL; // KEY_ALL_ACCESS;
-                ea[0].grfAccessMode = SET_ACCESS;
-                ea[0].grfInheritance= NO_INHERITANCE;
-                ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-                ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-                ea[0].Trustee.ptstrName  = (LPTSTR) pUserSid;
-
-                // Initialize an EXPLICIT_ACCESS structure for an ACE.
-                // The ACE will allow admins full access
-                ea[1].grfAccessPermissions = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL; //KEY_ALL_ACCESS;
-                ea[1].grfAccessMode = SET_ACCESS;
-                ea[1].grfInheritance= NO_INHERITANCE;
-                ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-                ea[1].Trustee.TrusteeType = TRUSTEE_IS_GROUP;
-                ea[1].Trustee.ptstrName  = (LPTSTR) pAdminSid;
-
-                if (SetEntriesInAcl(2, ea, NULL, &pACL) != ERROR_SUCCESS)
-                    goto cleanup;
-
-                if (!InitializeSecurityDescriptor(pSD, SECURITY_DESCRIPTOR_REVISION))
-                    goto cleanup;
-
-                if (!SetSecurityDescriptorDacl(pSD, TRUE, pACL, FALSE))
-                    goto cleanup;
-
-                memset((void *) &securityAttributes, 0, sizeof(SECURITY_ATTRIBUTES));
-                securityAttributes.nLength              = sizeof(SECURITY_ATTRIBUTES);
-                securityAttributes.lpSecurityDescriptor = pSD;
-                securityAttributes.bInheritHandle       = FALSE;
-
-                pSecurityAttributes = &securityAttributes;
-            }
-#endif // !FEATURE_CORESYSTEM
-
             WCHAR objectName[MAX_LONGPATH] = {0};
             WCHAR objectNamePrefix[MAX_LONGPATH] = {0};
             GetObjectNamePrefix(processID, fromRuntime, objectNamePrefix);
@@ -291,14 +200,6 @@ private:
             hTerminationEvent    = ::WszCreateEvent(pSecurityAttributes, true, false, NULL);
             swprintf_s(objectName, MAX_LONGPATH, W("%sBBSweep_hProfWriterSemaphore"), objectNamePrefix);
             hProfWriterSemaphore = ::WszCreateSemaphore(pSecurityAttributes, MAX_COUNT, MAX_COUNT, objectName);
-
-#ifndef FEATURE_CORESYSTEM // @CORESYSTEMTODO
-cleanup:
-            if (pSD) delete [] ((char *) pSD);
-            if (pAdminSid) FreeSid(pAdminSid);
-            if (hToken) CloseHandle(hToken);
-            if (buffer) delete [] ((char *) buffer);
-#endif
         }
 
         bInitialized = hSweepMutex          &&
@@ -378,7 +279,7 @@ cleanup:
                 }
                 else
                 {
-#if defined (FEATURE_CORESYSTEM) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
 #define MODULE_NAME W("api-ms-win-security-appcontainer-l1-1-0.dll")
 #else
 #define MODULE_NAME W("kernel32.dll")

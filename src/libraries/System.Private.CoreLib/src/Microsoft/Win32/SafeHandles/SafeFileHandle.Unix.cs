@@ -186,7 +186,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             long fileLength;
             Interop.Sys.Permissions filePermissions;
-            return Open(fullPath, mode, access, share, options, preallocationSize, openPermissions, out fileLength, out filePermissions, null);
+            return Open(fullPath, mode, access, share, options, preallocationSize, openPermissions, out fileLength, out filePermissions, createOpenException);
         }
 
         private static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,

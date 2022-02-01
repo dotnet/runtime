@@ -252,7 +252,6 @@
              Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
@@ -272,7 +271,8 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Security.Cryptography" />
+    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

@@ -193,13 +193,11 @@ public:
 
     void recCanInline(CORINFO_METHOD_HANDLE callerHnd,
                       CORINFO_METHOD_HANDLE calleeHnd,
-                      uint32_t*                pRestrictions,
                       CorInfoInline         response,
                       DWORD                 exceptionCode);
     void dmpCanInline(DLDL key, const Agnostic_CanInline& value);
     CorInfoInline repCanInline(CORINFO_METHOD_HANDLE callerHnd,
                                CORINFO_METHOD_HANDLE calleeHnd,
-                               uint32_t*             pRestrictions,
                                DWORD*                exceptionCode);
 
     void recResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWORD exceptionCode);
