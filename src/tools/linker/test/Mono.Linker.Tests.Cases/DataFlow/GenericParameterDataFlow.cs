@@ -766,7 +766,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Warn about calls to the static methods and the ctor on the RUC type:
 		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.StaticMethod", "message")]
-		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.StaticMethodRequiresPublicMethods<U>", "message")]
+		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.StaticMethodRequiresPublicMethods<U>", "message", ProducedBy = ProducedBy.Trimmer)]
+		// https://github.com/dotnet/linker/issues/2573
+		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.StaticMethodRequiresPublicMethods<T>", "message", ProducedBy = ProducedBy.Analyzer)]
 		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.RUCTypeRequiresPublicFields", "message")]
 		// And about method generic parameters:
 		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>.InstanceMethodRequiresPublicMethods<U>()")]
@@ -775,12 +777,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// And about type generic parameters: (one for each reference to the type):
 		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // StaticMethod
 		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // StaticMethodRequiresPublicMethods<T>
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // RUCTypeRequiresPublicFields<T> local
 		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // RUCTypeRequiresPublicFields<T> ctor
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // InstanceMethod
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // InstanceMethodRequiresPublicMethods<T>
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // VirtualMethod
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // VirtualMethodRequiresPublicMethods<T>
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>", ProducedBy = ProducedBy.Trimmer)] // RUCTypeRequiresPublicFields<T> local
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>", ProducedBy = ProducedBy.Trimmer)] // InstanceMethod
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>", ProducedBy = ProducedBy.Trimmer)] // InstanceMethodRequiresPublicMethods<T>
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>", ProducedBy = ProducedBy.Trimmer)] // VirtualMethod
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>", ProducedBy = ProducedBy.Trimmer)] // VirtualMethodRequiresPublicMethods<T>
 		static void TestNoWarningsInRUCType<T> ()
 		{
 			RUCTypeRequiresPublicFields<T>.StaticMethod ();
