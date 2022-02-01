@@ -16,8 +16,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Suppress warnings about accessing methods with annotations via reflection - the test below does that a LOT
 	// (The test accessed these methods through DynamicallyAccessedMembers annotations which is effectively the same reflection access)
 	[UnconditionalSuppressMessage ("test", "IL2111")]
+
+	[ExpectedNoWarnings]
 	class VirtualMethodHierarchyDataflowAnnotationValidation
 	{
+		// The code below marks methods which have RUC on them, it's not the point of this test to validate these here
+		[UnconditionalSuppressMessage ("test", "IL2026")]
 		public static void Main ()
 		{
 			// The test uses data flow annotation to mark all public methods on the specified types

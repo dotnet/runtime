@@ -636,6 +636,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				static int privatefield;
 			}
 
+			// Analyzer doesn't implement DAM on type hierarchy yet
+			[ExpectedWarning ("IL2075", ProducedBy = ProducedBy.Analyzer)]
 			static void TestDAMOnTypeAccess (DAMAnnotatedClass instance)
 			{
 				instance.GetType ().GetField ("publicField");
@@ -787,6 +789,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
+			// Analyzer doesn't implement DAM on type hierarchy yet
+			[ExpectedWarning ("IL2075", ProducedBy = ProducedBy.Analyzer)]
 			static void TestDAMOnTypeAccess (DAMAnnotatedClass instance)
 			{
 				instance.GetType ().GetProperty ("publicProperty");

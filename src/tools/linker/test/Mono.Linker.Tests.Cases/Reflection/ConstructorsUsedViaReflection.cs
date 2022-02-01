@@ -21,21 +21,18 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestIfElse (true);
 		}
 
-		[RecognizedReflectionAccessPattern]
 		[Kept]
 		static void TestGetConstructors ()
 		{
 			var constructors = typeof (SimpleGetConstructors).GetConstructors ();
 		}
 
-		[RecognizedReflectionAccessPattern]
 		[Kept]
 		static void TestWithBindingFlags ()
 		{
 			var constructors = typeof (ConstructorsBindingFlags).GetConstructors (BindingFlags.Public | BindingFlags.Static);
 		}
 
-		[RecognizedReflectionAccessPattern]
 		[Kept]
 		static void TestWithUnknownBindingFlags (BindingFlags bindingFlags)
 		{
@@ -44,7 +41,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestNullType ()
 		{
 			Type type = null;
@@ -57,8 +53,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			return null;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetConstructors), new Type[] { typeof (BindingFlags) },
-			messageCode: "IL2075", message: new string[] { "FindType", "GetConstructors" })]
+		[ExpectedWarning ("IL2075", "FindType", "GetConstructors")]
 		[Kept]
 		static void TestDataFlowType ()
 		{
@@ -67,14 +62,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		private static void TestDataFlowWithAnnotation ([KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))][DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
 		{
 			var constructors = type.GetConstructors (BindingFlags.Public | BindingFlags.Static);
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestIfElse (bool decision)
 		{
 			Type myType;
