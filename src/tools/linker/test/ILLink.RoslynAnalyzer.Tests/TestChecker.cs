@@ -51,7 +51,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			if (_missing.Any ()) {
 				var missingLines = string.Join (
 					Environment.NewLine,
-					_missing.Select (md => $"({md.Attribute.GetLocation ().GetLineSpan ()}) {md.Message}"));
+					_missing.Select (md => $"({md.Attribute.Parent?.Parent?.GetLocation ().GetLineSpan ()}) {md.Message}"));
 				message += $@"Expected warnings were not generated:{Environment.NewLine}{missingLines}{Environment.NewLine}";
 			}
 			if (_unmatched.Any ()) {
