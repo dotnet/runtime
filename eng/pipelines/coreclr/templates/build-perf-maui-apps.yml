@@ -110,20 +110,13 @@ steps:
   #      cleanDestinationFolder: false
 
   - script: |
-      curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh' -v
+      curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
       ls -la
-      ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir --verbose
+      ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir . --verbose
       dotnet --info
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
-  - task: UseDotNet@2
-    displayName: 'Use .NET Core sdk'
-    inputs:
-      packageType: sdk
-      version: 6.0.2xx
-      installationPath: $(Build.SourcesDirectory)/dotnet
-      includePreviewVersions: true
   - script: |
       dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --source https://aka.ms/dotnet6/nuget/index.json
     displayName: Install MAUI workload
