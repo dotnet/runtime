@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
                 // are always 160 bits / 20 bytes (the size of SHA-1, and the only legal length for Q).
                 byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
                     derFormatSignature.AsSpan(0, derFormatSignature.Length),
-                    fieldSizeBits: 160);
+                    fieldSizeBits: SHA1.HashSizeInBits);
 
                 return ieeeFormatSignature;
             }

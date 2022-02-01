@@ -805,9 +805,8 @@ private:
         // unused                   = 0x00000001,
         COMPUTED_GLOBAL_CLASS       = 0x00000002,
 
-        // This flag applies to assembly, but it is stored so it can be cached in ngen image
-        COMPUTED_STRING_INTERNING   = 0x00000004,
-        NO_STRING_INTERNING         = 0x00000008,
+        // unused                   = 0x00000004,
+        // unused                   = 0x00000008,
 
         // This flag applies to assembly, but it is stored so it can be cached in ngen image
         COMPUTED_WRAP_EXCEPTIONS    = 0x00000010,
@@ -1400,7 +1399,7 @@ protected:
     void InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb);
 
     // Resolving
-    OBJECTHANDLE ResolveStringRef(DWORD Token, BaseDomain *pDomain, bool bNeedToSyncWithFixups);
+    OBJECTHANDLE ResolveStringRef(DWORD Token, BaseDomain *pDomain);
 
     CHECK CheckStringRef(RVA rva);
 
@@ -2024,13 +2023,6 @@ protected:
 
 
 public:
-    //-----------------------------------------------------------------------------------------
-    // If true,  strings only need to be interned at a per module basis, instead of at a
-    // per appdomain basis, which is the default. Use the module accessor so you don't need
-    // to touch the metadata in the ngen case
-    //-----------------------------------------------------------------------------------------
-    BOOL                    IsNoStringInterning();
-
     //-----------------------------------------------------------------------------------------
     // Returns a BOOL to indicate if we have computed whether compiler has instructed us to
     // wrap the non-CLS compliant exceptions or not.

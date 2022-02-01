@@ -10,7 +10,6 @@
 
 .assembly extern mscorlib{}
 .assembly b518440{}
-.module b518440.exe
 
 .class public A
 {

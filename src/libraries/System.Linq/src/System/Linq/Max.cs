@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 namespace System.Linq
 {
@@ -13,6 +13,11 @@ namespace System.Linq
             if (source == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (source.GetType() == typeof(int[]))
+            {
+                return Max((int[])source);
             }
 
             int value;
@@ -31,6 +36,57 @@ namespace System.Linq
                     {
                         value = x;
                     }
+                }
+            }
+
+            return value;
+        }
+
+        private static int Max(int[] array)
+        {
+            if (array.Length == 0)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            // Vectorize the search if possible.
+            int index, value;
+            if (Vector.IsHardwareAccelerated && array.Length >= Vector<int>.Count * 2)
+            {
+                // The array is at least two vectors long. Create a vector from the first N elements,
+                // and then repeatedly compare that against the next vector from the array.  At the end,
+                // the resulting vector will contain the maximum values found, and we then need only
+                // to find the max of those.
+                var maxes = new Vector<int>(array);
+                index = Vector<int>.Count;
+                do
+                {
+                    maxes = Vector.Max(maxes, new Vector<int>(array, index));
+                    index += Vector<int>.Count;
+                }
+                while (index + Vector<int>.Count <= array.Length);
+
+                value = maxes[0];
+                for (int i = 1; i < Vector<int>.Count; i++)
+                {
+                    if (maxes[i] > value)
+                    {
+                        value = maxes[i];
+                    }
+                }
+            }
+            else
+            {
+                value = array[0];
+                index = 1;
+            }
+
+            // Iterate through the remaining elements, comparing against the max.
+            for (int i = index; (uint)i < (uint)array.Length; i++)
+            {
+                if (array[i] > value)
+                {
+                    value = array[i];
                 }
             }
 
@@ -106,6 +162,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (source.GetType() == typeof(long[]))
+            {
+                return Max((long[])source);
+            }
+
             long value;
             using (IEnumerator<long> e = source.GetEnumerator())
             {
@@ -122,6 +183,58 @@ namespace System.Linq
                     {
                         value = x;
                     }
+                }
+            }
+
+            return value;
+        }
+
+        private static long Max(long[] array)
+        {
+            if (array.Length == 0)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            // Vectorize the search if possible.
+            int index;
+            long value;
+            if (Vector.IsHardwareAccelerated && array.Length >= Vector<long>.Count * 2)
+            {
+                // The array is at least two vectors long. Create a vector from the first N elements,
+                // and then repeatedly compare that against the next vector from the array.  At the end,
+                // the resulting vector will contain the maximum values found, and we then need only
+                // to find the max of those.
+                var maxes = new Vector<long>(array);
+                index = Vector<long>.Count;
+                do
+                {
+                    maxes = Vector.Max(maxes, new Vector<long>(array, index));
+                    index += Vector<long>.Count;
+                }
+                while (index + Vector<long>.Count <= array.Length);
+
+                value = maxes[0];
+                for (int i = 1; i < Vector<long>.Count; i++)
+                {
+                    if (maxes[i] > value)
+                    {
+                        value = maxes[i];
+                    }
+                }
+            }
+            else
+            {
+                value = array[0];
+                index = 1;
+            }
+
+            // Iterate through the remaining elements, comparing against the max.
+            for (int i = index; (uint)i < (uint)array.Length; i++)
+            {
+                if (array[i] > value)
+                {
+                    value = array[i];
                 }
             }
 
