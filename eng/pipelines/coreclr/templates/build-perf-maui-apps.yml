@@ -117,15 +117,12 @@ steps:
       ls -la
       dotnet --info
       ./dotnet --info
-    displayName: Install MAUI workload
-    workingDirectory: $(Build.SourcesDirectory)
-  - script: |
-      dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --source https://aka.ms/dotnet6/nuget/index.json
+      ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --source https://aka.ms/dotnet6/nuget/index.json
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
 
   - script: |
-      dotnet new maui -n MauiTesting
+      ./dotnet new maui -n MauiTesting
       cd MauiTesting
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
