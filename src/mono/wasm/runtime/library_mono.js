@@ -568,7 +568,8 @@ var MonoSupportLib = {
 			},
 		},
 
-		mono_wasm_add_dbg_command_received: function(res_ok, id, buffer, buffer_len) {
+		mono_wasm_add_dbg_command_received: function(res_ok, id, buffer, buffer_len) 
+		{
 			const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
 			const base64String = MONO._base64Converter.toBase64StringImpl(assembly_data);
 			const buffer_obj = {
@@ -578,7 +579,9 @@ var MonoSupportLib = {
 						value: base64String
 				}
 			}
-			MONO.commands_received = buffer_obj;
+			if (MONO.commands_received.has(id))
+        		console.warn("Addind an id that already exists in commands_received");
+			MONO.commands_received.set(id, buffer_obj);
 		},
 
 		mono_wasm_malloc_and_set_debug_buffer: function (command_parameters)
@@ -594,11 +597,18 @@ var MonoSupportLib = {
 			this._debugger_heap_bytes.set(this._base64_to_uint8 (command_parameters));
 		},
 
+		mono_get_and_delete_from_commands_received: function (id)
+		{
+			const res = MONO.commands_received.get(id);
+			MONO.commands_received.delete(id);
+			return res;
+		},
+
 		mono_wasm_send_dbg_command_with_parms: function (id, command_set, command, command_parameters, length, valtype, newvalue)
 		{
 			this.mono_wasm_malloc_and_set_debug_buffer(command_parameters);
 			this._c_fn_table.mono_wasm_send_dbg_command_with_parms_wrapper (id, command_set, command, this._debugger_buffer, length, valtype, newvalue.toString());
-			let { res_ok, res } = MONO.commands_received;
+			let { res_ok, res } =  this.mono_get_and_delete_from_commands_received(id);
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_invoke_method_debugger_agent_with_parms`);
 			return res;
@@ -608,7 +618,7 @@ var MonoSupportLib = {
 		{
 			this.mono_wasm_malloc_and_set_debug_buffer(command_parameters);
 			this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, this._debugger_buffer, command_parameters.length);
-			let { res_ok, res } = MONO.commands_received;
+			let { res_ok, res } =  this.mono_get_and_delete_from_commands_received(id);
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_send_dbg_command`);
 			return res;
@@ -617,7 +627,7 @@ var MonoSupportLib = {
 
 		mono_wasm_get_dbg_command_info: function ()
 		{
-			let { res_ok, res } =  MONO.commands_received;
+			let { res_ok, res } =  this.mono_get_and_delete_from_commands_received(0);
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_get_dbg_command_info`);
 			return res;
@@ -712,14 +722,14 @@ var MonoSupportLib = {
 				if (prop.get !== undefined) {
 					Object.defineProperty (proxy,
 							prop.name,
-							{ get () { return MONO.mono_wasm_send_dbg_command(-1, prop.get.commandSet, prop.get.command, prop.get.buffer, prop.get.length); },
-							set: function (newValue) { MONO.mono_wasm_send_dbg_command_with_parms(-1, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return MONO.commands_received.res_ok;}}
+							{ get () { return MONO.mono_wasm_send_dbg_command(prop.get.id, prop.get.commandSet, prop.get.command, prop.get.buffer, prop.get.length); },
+							set: function (newValue) { MONO.mono_wasm_send_dbg_command_with_parms(prop.set.id, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return true;}}
 					);
 				} else if (prop.set !== undefined ){
 					Object.defineProperty (proxy,
 						prop.name,
 						{ get () { return prop.value; },
-						  set: function (newValue) { MONO.mono_wasm_send_dbg_command_with_parms(-1, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return MONO.commands_received.res_ok;}}
+						  set: function (newValue) { MONO.mono_wasm_send_dbg_command_with_parms(prop.set.id, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return true;}}
 					);
 				} else {
 					proxy [prop.name] = prop.value;
@@ -835,6 +845,7 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_runtime_ready: function () {
+			MONO.commands_received = new Map();			
 			this.mono_wasm_runtime_is_ready = true;
 			this._clear_per_step_state ();
 
