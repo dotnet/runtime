@@ -25,6 +25,10 @@ internal static partial class Interop
             {
                 blob = new byte[blobSize];
             }
+            else
+            {
+                blob.Clear();
+            }
 
             fixed (byte* pbBlob = blob)
             {
