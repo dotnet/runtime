@@ -71,7 +71,9 @@ namespace ILLink.RoslynAnalyzer
 
 			ImmutableArray<ITypeParameterSymbol> typeParams = default;
 			ImmutableArray<ITypeSymbol> typeArgs = default;
-			if (context.SemanticModel.GetTypeInfo (context.Node).Type is INamedTypeSymbol type) {
+			var symbol = context.SemanticModel.GetSymbolInfo (context.Node).Symbol;
+			switch (symbol) {
+			case INamedTypeSymbol type:
 				// INamedTypeSymbol inside nameof, commonly used to access the string value of a variable, type, or a memeber,
 				// can generate diagnostics warnings, which can be noisy and unhelpful. 
 				// Walking the node heirarchy to check if INamedTypeSymbol is inside a nameof to not generate diagnostics
@@ -85,9 +87,11 @@ namespace ILLink.RoslynAnalyzer
 				}
 				typeParams = type.TypeParameters;
 				typeArgs = type.TypeArguments;
-			} else if (context.SemanticModel.GetSymbolInfo (context.Node, context.CancellationToken).Symbol is IMethodSymbol targetMethod) {
+				break;
+			case IMethodSymbol targetMethod:
 				typeParams = targetMethod.TypeParameters;
 				typeArgs = targetMethod.TypeArguments;
+				break;
 			}
 
 			if (typeParams != null) {
