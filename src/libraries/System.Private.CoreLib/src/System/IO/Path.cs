@@ -107,7 +107,15 @@ namespace System.IO
                 return false;
             }
 
-            return ExistsCore(fullPath);
+            bool result = ExistsCore(fullPath, out bool isDirectory);
+            if (result && PathInternal.IsDirectorySeparator(fullPath[fullPath.Length - 1]))
+            {
+                // Some sys-calls remove all trailing slashes and may give false positives for existing files.
+                // We want to make sure that if the path ends in a trailing slash, it's truly a directory.
+                return isDirectory;
+            }
+
+            return result;
         }
 
         /// <summary>

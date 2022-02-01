@@ -40,6 +40,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Max());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Max(x => x));
+            Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Max());
+            Assert.Throws<InvalidOperationException>(() => new List<int>().Max());
         }
 
         public static IEnumerable<object[]> Max_Int_TestData()
@@ -55,6 +57,12 @@ namespace System.Linq.Tests
             yield return new object[] { new int[] { 16, 9, 10, 7, 8 }, 16 };
             yield return new object[] { new int[] { 6, 9, 10, 0, 50 }, 50 };
             yield return new object[] { new int[] { -6, 0, -9, 0, -10, 0 }, 0 };
+
+            for (int length = 2; length < 33; length++)
+            {
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length)), length + length - 1 };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).ToArray()), length + length - 1 };
+            }
         }
 
         [Theory]
@@ -78,6 +86,12 @@ namespace System.Linq.Tests
             yield return new object[] { new long[] { 250, 49, 130, 47, 28 }, 250L };
             yield return new object[] { new long[] { 6, 9, 10, 0, int.MaxValue + 50L }, int.MaxValue + 50L };
             yield return new object[] { new long[] { 6, 50, 9, 50, 10, 50 }, 50L };
+
+            for (int length = 2; length < 33; length++)
+            {
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (long)i)), (long)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (long)i).ToArray()), (long)(length + length - 1) };
+            }
         }
 
         [Theory]
@@ -100,6 +114,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<long>().Max());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<long>().Max(x => x));
+            Assert.Throws<InvalidOperationException>(() => Array.Empty<long>().Max());
+            Assert.Throws<InvalidOperationException>(() => new List<long>().Max());
         }
 
         public static IEnumerable<object[]> Max_Float_TestData()
