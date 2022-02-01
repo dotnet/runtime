@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
@@ -406,9 +408,9 @@ namespace System
             ip = default;
         }
 
-        public static void ReverseInt32Ref(ref int buf, nint length)
+        public static void ReverseInt32Ref(ref int buf, nuint length)
         {
-            nint numBytes = length * sizeof(int);
+            int numBytes = (int)length * sizeof(int);
             int numBytesWritten = 0;
             ref byte first = ref Unsafe.As<int, byte>(ref buf);
             ref byte last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -sizeof(int));
@@ -433,7 +435,7 @@ namespace System
                     numBytesWritten += Vector256<byte>.Count * 2;
                 } while (numBytes - numBytesWritten >= Vector256<byte>.Count * 2);
             }
-            else if (Ssse3.IsSupported && Vector128<byte>.Count * 2 <= length)
+            else if (Ssse3.IsSupported && Vector128<byte>.Count * 2 <= numBytes)
             {
                 Vector128<byte> ReverseMask = Vector128.Create((byte)12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3);
                 last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -Vector128<byte>.Count);
@@ -455,18 +457,16 @@ namespace System
             ref int lastInt = ref Unsafe.As<byte, int>(ref last);
             while (numBytes - numBytesWritten > sizeof(int))
             {
-                int temp = firstInt;
-                firstInt = lastInt;
-                lastInt = temp;
+                (lastInt, firstInt) = (firstInt, lastInt);
                 firstInt = ref Unsafe.Add(ref firstInt, 1);
                 lastInt = ref Unsafe.Add(ref lastInt, -1);
                 numBytesWritten += sizeof(int) * 2;
             }
         }
 
-        public static void ReverseInt64Ref(ref long buf, nint length)
+        public static void ReverseInt64Ref(ref long buf, nuint length)
         {
-            nint numBytes = length * sizeof(long);
+            nint numBytes = (int)length * sizeof(long);
             int numBytesWritten = 0;
             ref byte first = ref Unsafe.As<long, byte>(ref buf);
             ref byte last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -sizeof(long));
@@ -491,7 +491,7 @@ namespace System
                     numBytesWritten += Vector256<byte>.Count * 2;
                 } while (numBytes - numBytesWritten >= Vector256<byte>.Count * 2);
             }
-            else if (Ssse3.IsSupported && Vector128<byte>.Count * 2 <= length)
+            else if (Ssse3.IsSupported && Vector128<byte>.Count * 2 <= numBytes)
             {
                 Vector128<byte> ReverseMask = Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7);
                 last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -Vector128<byte>.Count);
@@ -513,13 +513,53 @@ namespace System
             ref long lastLong = ref Unsafe.As<byte, long>(ref last);
             while (numBytes - numBytesWritten > sizeof(long))
             {
-                long temp = firstLong;
-                firstLong = lastLong;
-                lastLong = temp;
+                (lastLong, firstLong) = (firstLong, lastLong);
                 firstLong = ref Unsafe.Add(ref firstLong, 1);
                 lastLong = ref Unsafe.Add(ref lastLong, -1);
                 numBytesWritten += sizeof(long) * 2;
             }
+        }
+
+        public static void Reverse<T>(ref T elements, nuint length)
+        {
+            Debug.Assert(length > 0);
+            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    ReverseByteRef(ref Unsafe.As<T, byte>(ref elements), length);
+                    return;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(char))
+                {
+                    ReverseCharRef(ref Unsafe.As<T, char>(ref elements), length);
+                    return;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    ReverseInt32Ref(ref Unsafe.As<T, int>(ref elements), length);
+                    return;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    ReverseInt64Ref(ref Unsafe.As<T, long>(ref elements), length);
+                    return;
+                }
+            }
+            ReverseInner(ref elements, length);
+        }
+
+        private static void ReverseInner<T>(ref T elements, nuint length)
+        {
+            Debug.Assert(length > 0);
+            ref T first = ref elements;
+            ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, (int)length), -1);
+            do
+            {
+                (last, first) = (first, last);
+                first = ref Unsafe.Add(ref first, 1);
+                last = ref Unsafe.Add(ref last, -1);
+            } while (Unsafe.IsAddressLessThan(ref first, ref last));
         }
     }
 }

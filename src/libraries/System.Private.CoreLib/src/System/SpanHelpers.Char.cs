@@ -2016,9 +2016,9 @@ namespace System
             return BitOperations.TrailingZeroCount(selectedLanes) >> 3;
         }
 
-        public static void ReverseCharRef(ref char buf, nint length)
+        public static void ReverseCharRef(ref char buf, nuint length)
         {
-            nint numBytes = length * sizeof(char);
+            nint numBytes = (int)length * sizeof(char);
             int numBytesWritten = 0;
             ref byte first = ref Unsafe.As<char, byte>(ref buf);
             ref byte last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -sizeof(char));
@@ -2043,7 +2043,7 @@ namespace System
                     numBytesWritten += Vector256<byte>.Count * 2;
                 } while (numBytes - numBytesWritten >= Vector256<byte>.Count * 2);
             }
-            else if (Ssse3.IsSupported && Vector128<byte>.Count * 2 <= length)
+            else if (Ssse3.IsSupported && Vector128<byte>.Count * 2 <= numBytes)
             {
                 Vector128<byte> ReverseMask = Vector128.Create((byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1);
                 last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -Vector128<byte>.Count);
@@ -2065,9 +2065,7 @@ namespace System
             ref char lastChar = ref Unsafe.As<byte, char>(ref last);
             while (numBytes - numBytesWritten > sizeof(char))
             {
-                char temp = firstChar;
-                firstChar = lastChar;
-                lastChar = temp;
+                (lastChar, firstChar) = (firstChar, lastChar);
                 firstChar = ref Unsafe.Add(ref firstChar, 1);
                 lastChar = ref Unsafe.Add(ref lastChar, -1);
                 numBytesWritten += sizeof(char) * 2;

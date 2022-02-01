@@ -1550,46 +1550,9 @@ namespace System
             {
                 return;
             }
-
-            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                if (Unsafe.SizeOf<T>() == sizeof(byte))
-                {
-                    SpanHelpers.ReverseByteRef(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)), span.Length);
-                    return;
-                }
-                else if (Unsafe.SizeOf<T>() == sizeof(char))
-                {
-                    SpanHelpers.ReverseCharRef(ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)), span.Length);
-                    return;
-                }
-                else if (Unsafe.SizeOf<T>() == sizeof(int))
-                {
-                    SpanHelpers.ReverseInt32Ref(ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)), span.Length);
-                    return;
-                }
-                else if (Unsafe.SizeOf<T>() == sizeof(long))
-                {
-                    SpanHelpers.ReverseInt64Ref(ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)), span.Length);
-                    return;
-                }
-            }
-            ReverseInner<T>(span);
+            SpanHelpers.Reverse(ref MemoryMarshal.GetReference(span), (nuint)span.Length);
         }
 
-        private static void ReverseInner<T>(this Span<T> span)
-        {
-            ref T first = ref MemoryMarshal.GetReference(span);
-            ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, span.Length), -1);
-            do
-            {
-                T temp = first;
-                first = last;
-                last = temp;
-                first = ref Unsafe.Add(ref first, 1);
-                last = ref Unsafe.Add(ref last, -1);
-            } while (Unsafe.IsAddressLessThan(ref first, ref last));
-        }
 
         /// <summary>
         /// Creates a new span over the target array.

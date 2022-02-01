@@ -1742,44 +1742,7 @@ namespace System
             if (length <= 1)
                 return;
 
-            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                if (Unsafe.SizeOf<T>() == sizeof(byte))
-                {
-                    SpanHelpers.ReverseByteRef(ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index)), length);
-                    return;
-                }
-                else if (Unsafe.SizeOf<T>() == sizeof(char))
-                {
-                    SpanHelpers.ReverseCharRef(ref Unsafe.As<T, char>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index)), length);
-                    return;
-                }
-                else if (Unsafe.SizeOf<T>() == sizeof(int))
-                {
-                    SpanHelpers.ReverseInt32Ref(ref Unsafe.As<T, int>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index)), length);
-                    return;
-                }
-                else if (Unsafe.SizeOf<T>() == sizeof(long))
-                {
-                    SpanHelpers.ReverseInt64Ref(ref Unsafe.As<T, long>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index)), length);
-                    return;
-                }
-            }
-            ReverseInner(array, index, length);
-        }
-
-        private static void ReverseInner<T>(T[] array, int index, int length)
-        {
-            ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
-            ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, length), -1);
-            do
-            {
-                T temp = first;
-                first = last;
-                last = temp;
-                first = ref Unsafe.Add(ref first, 1);
-                last = ref Unsafe.Add(ref last, -1);
-            } while (Unsafe.IsAddressLessThan(ref first, ref last));
+            SpanHelpers.Reverse(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index), (nuint)length);
         }
 
         // Sorts the elements of an array. The sort compares the elements to each

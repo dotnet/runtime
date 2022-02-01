@@ -2239,16 +2239,17 @@ namespace System
             return (uint)BitOperations.TrailingZeroCount(selectedLanes) >> 2;
         }
 
-        public static void ReverseByteRef(ref byte buf, nint length)
+        public static void ReverseByteRef(ref byte buf, nuint length)
         {
+            int numBytes = (int)length;
             ref byte first = ref buf;
-            ref byte last = ref Unsafe.Add(ref Unsafe.Add(ref first, length), -1);
+            ref byte last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -1);
             int numBytesWritten = 0;
-            if (Avx2.IsSupported && Vector256<byte>.Count * 2 <= length)
+            if (Avx2.IsSupported && Vector256<byte>.Count * 2 <= numBytes)
             {
                 Vector256<byte> ReverseMask = Vector256.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, // first 128-bit lane
                 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);  // second 128-bit lane
-                last = ref Unsafe.Add(ref Unsafe.Add(ref first, length), -Vector256<byte>.Count);
+                last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -Vector256<byte>.Count);
                 do
                 {
                     Vector256<byte> tempFirst = Unsafe.As<byte, Vector256<byte>>(ref first);
@@ -2262,12 +2263,12 @@ namespace System
                     first = ref Unsafe.Add(ref first, Vector256<byte>.Count);
                     last = ref Unsafe.Add(ref last, -Vector256<byte>.Count);
                     numBytesWritten += Vector256<byte>.Count * 2;
-                } while ((length - numBytesWritten) >= Vector256<byte>.Count * 2);
+                } while ((numBytes - numBytesWritten) >= Vector256<byte>.Count * 2);
             }
-            else if (Ssse3.IsSupported && Vector128<byte>.Count * 2 <= length)
+            else if (Ssse3.IsSupported && Vector128<byte>.Count * 2 <= numBytes)
             {
                 Vector128<byte> ReverseMask = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-                last = ref Unsafe.Add(ref Unsafe.Add(ref first, length), -Vector128<byte>.Count);
+                last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -Vector128<byte>.Count);
                 do
                 {
                     Vector128<byte> tempFirst = Unsafe.As<byte, Vector128<byte>>(ref first);
@@ -2279,14 +2280,12 @@ namespace System
                     first = ref Unsafe.Add(ref first, Vector128<byte>.Count);
                     last = ref Unsafe.Add(ref last, -Vector128<byte>.Count);
                     numBytesWritten += Vector128<byte>.Count * 2;
-                } while ((length - numBytesWritten) >= Vector128<byte>.Count * 2);
+                } while ((numBytes - numBytesWritten) >= Vector128<byte>.Count * 2);
             }
-            last = ref Unsafe.Add(ref first, (length - numBytesWritten) - 1);
-            while ((length - numBytesWritten) > 1)
+            last = ref Unsafe.Add(ref first, (numBytes - numBytesWritten) - 1);
+            while ((numBytes - numBytesWritten) > 1)
             {
-                byte temp = first;
-                first = last;
-                last = temp;
+                (last, first) = (first, last);
                 first = ref Unsafe.Add(ref first, 1);
                 last = ref Unsafe.Add(ref last, -1);
                 numBytesWritten += 2;
