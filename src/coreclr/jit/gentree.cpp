@@ -11703,16 +11703,12 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
     //
     if ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0)
     {
-        if ((op1->OperIs(GT_IND, GT_BLK, GT_OBJ) && ((op1->gtFlags & GTF_IND_VOLATILE) != 0)) ||
-            (op1->OperIs(GT_FIELD, GT_CLS_VAR) && ((op1->gtFlags & GTF_FLD_VOLATILE) != 0)))
-        {
-            // No folding.
-            //
-            return tree;
-        }
+        // If op1 is "volatle" and op2 is not, we can still fold.
+        //
+        const bool op1MayBeVolatile = (op1->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+        const bool op2MayBeVolatile = (op2->gtFlags & GTF_ORDER_SIDEEFF) != 0;
 
-        if ((op2->OperIs(GT_IND, GT_BLK, GT_OBJ) && ((op2->gtFlags & GTF_IND_VOLATILE) != 0)) ||
-            (op2->OperIs(GT_FIELD, GT_CLS_VAR) && ((op2->gtFlags & GTF_FLD_VOLATILE) != 0)))
+        if (!op1MayBeVolatile || op2MayBeVolatile)
         {
             // No folding.
             //
