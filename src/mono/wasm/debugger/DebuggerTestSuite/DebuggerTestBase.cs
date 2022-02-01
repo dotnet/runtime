@@ -1215,7 +1215,7 @@ namespace DebuggerTests
             return await insp.WaitFor(Inspector.PAUSE);
         }
 
-        internal async Task<JObject> LoadAssemblyAndTestHotReloadUsingSDB(string asm_file_hot_reload, string class_name, string method_name, int id)
+        internal async Task<JObject> LoadAssemblyAndTestHotReloadUsingSDB(string asm_file_hot_reload, string class_name, string method_name, int id, Func<Task> rebindBreakpoint = null)
         {
             await cli.SendCommand("Debugger.resume", null, token);
             var bytes = File.ReadAllBytes($"{asm_file_hot_reload}.{id}.dmeta");
@@ -1245,6 +1245,10 @@ namespace DebuggerTests
                 dpdb = dpdb1
             });
             await cli.SendCommand("DotnetDebugger.applyUpdates", applyUpdates, token);
+
+            if (rebindBreakpoint != null)
+                await rebindBreakpoint();
+
             run_method = JObject.FromObject(new
             {
                 expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReloadUsingSDB:RunMethod', '" + class_name + "', '" + method_name + "'); }, 1);"

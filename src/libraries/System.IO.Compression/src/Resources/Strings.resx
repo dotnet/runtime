@@ -302,4 +302,7 @@
   <data name="EntryNameAlreadyExists" xml:space="preserve">
     <value>An entry named '{0}' already exists in the archive.</value>
   </data>
+  <data name="PlatformNotSupported_Compression" xml:space="preserve">
+    <value>System.IO.Compression is not supported on this platform.</value>
+  </data>
 </root>

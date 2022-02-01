@@ -498,16 +498,6 @@ namespace Internal.JitInterface
         CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN  = 0x00000001, // Type handle comes from an ldtoken
     }
 
-    public enum CorInfoInlineRestrictions
-    {
-        INLINE_RESPECT_BOUNDARY = 0x00000001, // You can inline if there are no calls from the method being inlined
-        INLINE_NO_CALLEE_LDSTR = 0x00000002, // You can inline only if you guarantee that if inlinee does an ldstr
-        // inlinee's module will never see that string (by any means).
-        // This is due to how we implement the NoStringInterningAttribute
-        // (by reusing the fixup table).
-        INLINE_SAME_THIS = 0x00000004, // You can inline only if the callee is on the same this reference as caller
-    }
-
     // If you add more values here, keep it in sync with TailCallTypeMap in ..\vm\ClrEtwAll.man
     // and the string enum in CEEInfo::reportTailCallDecision in ..\vm\JITInterface.cpp
     public enum CorInfoTailCall

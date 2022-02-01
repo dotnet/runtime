@@ -101,11 +101,11 @@
 
     .method public hidebysig specialname rtspecialname
         instance void .ctor (
-            !T
+            !T&
         ) cil managed
     {
         ldarg.0
-        ldarga.s 1
+        ldarg.1
         mkrefany !T
         stfld typedref valuetype InvalidCSharp.WithTypedReferenceField`1<!T>::Field
         ret
@@ -118,6 +118,20 @@
         ldfld typedref valuetype InvalidCSharp.WithTypedReferenceField`1<!T>::Field
         refanytype
         call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle )
+        ret
+    }
+
+    .method public hidebysig
+        instance bool ConfirmFieldInstance (
+            !T
+        ) cil managed
+    {
+        ldarg.0
+        ldfld typedref valuetype InvalidCSharp.WithTypedReferenceField`1<!T>::Field
+        refanyval !T
+        ldind.ref
+        ldarg.1
+        ceq
         ret
     }
 }

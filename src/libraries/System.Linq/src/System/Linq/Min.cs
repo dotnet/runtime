@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 namespace System.Linq
 {
@@ -13,6 +13,11 @@ namespace System.Linq
             if (source == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (source.GetType() == typeof(int[]))
+            {
+                return Min((int[])source);
             }
 
             int value;
@@ -31,6 +36,57 @@ namespace System.Linq
                     {
                         value = x;
                     }
+                }
+            }
+
+            return value;
+        }
+
+        private static int Min(int[] array)
+        {
+            if (array.Length == 0)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            // Vectorize the search if possible.
+            int index, value;
+            if (Vector.IsHardwareAccelerated && array.Length >= Vector<int>.Count * 2)
+            {
+                // The array is at least two vectors long. Create a vector from the first N elements,
+                // and then repeatedly compare that against the next vector from the array.  At the end,
+                // the resulting vector will contain the minimum values found, and we then need only
+                // to find the min of those.
+                var mins = new Vector<int>(array);
+                index = Vector<int>.Count;
+                do
+                {
+                    mins = Vector.Min(mins, new Vector<int>(array, index));
+                    index += Vector<int>.Count;
+                }
+                while (index + Vector<int>.Count <= array.Length);
+
+                value = mins[0];
+                for (int i = 1; i < Vector<int>.Count; i++)
+                {
+                    if (mins[i] < value)
+                    {
+                        value = mins[i];
+                    }
+                }
+            }
+            else
+            {
+                value = array[0];
+                index = 1;
+            }
+
+            // Iterate through the remaining elements, comparing against the min.
+            for (int i = index; (uint)i < (uint)array.Length; i++)
+            {
+                if (array[i] < value)
+                {
+                    value = array[i];
                 }
             }
 
@@ -88,6 +144,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (source.GetType() == typeof(long[]))
+            {
+                return Min((long[])source);
+            }
+
             long value;
             using (IEnumerator<long> e = source.GetEnumerator())
             {
@@ -104,6 +165,58 @@ namespace System.Linq
                     {
                         value = x;
                     }
+                }
+            }
+
+            return value;
+        }
+
+        private static long Min(long[] array)
+        {
+            if (array.Length == 0)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            // Vectorize the search if possible.
+            int index;
+            long value;
+            if (Vector.IsHardwareAccelerated && array.Length >= Vector<long>.Count * 2)
+            {
+                // The array is at least two vectors long. Create a vector from the first N elements,
+                // and then repeatedly compare that against the next vector from the array.  At the end,
+                // the resulting vector will contain the minimum values found, and we then need only
+                // to find the min of those.
+                var mins = new Vector<long>(array);
+                index = Vector<long>.Count;
+                do
+                {
+                    mins = Vector.Min(mins, new Vector<long>(array, index));
+                    index += Vector<long>.Count;
+                }
+                while (index + Vector<long>.Count <= array.Length);
+
+                value = mins[0];
+                for (int i = 1; i < Vector<long>.Count; i++)
+                {
+                    if (mins[i] < value)
+                    {
+                        value = mins[i];
+                    }
+                }
+            }
+            else
+            {
+                value = array[0];
+                index = 1;
+            }
+
+            // Iterate through the remaining elements, comparing against the min.
+            for (int i = index; (uint)i < (uint)array.Length; i++)
+            {
+                if (array[i] < value)
+                {
+                    value = array[i];
                 }
             }
 

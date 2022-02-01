@@ -1124,5 +1124,31 @@ namespace DebuggerTests
                 }
             );
         }
+
+        [Fact]
+        public async Task DebugHotReloadMethod_CheckBreakpointLineUpdated_ByVS_Simulated()
+        {
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            var bp = await SetBreakpoint(".*/MethodBody1.cs$", 48, 12, use_regex: true);
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody5", "StaticMethod1");
+
+            //apply first update
+            pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+                    asm_file_hot_reload, "MethodBody5", "StaticMethod1", 1, 
+                    rebindBreakpoint : async () =>
+                    {
+                        await RemoveBreakpoint(bp.Value["breakpointId"].Value<string>());
+                        await SetBreakpoint(".*/MethodBody1.cs$", 49, 12, use_regex: true);
+                    });
+
+            JToken top_frame = pause_location["callFrames"]?[0];
+            AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 49, 12, scripts, top_frame["location"]);
+
+        }
     }
 }
