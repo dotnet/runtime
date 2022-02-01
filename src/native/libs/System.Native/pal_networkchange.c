@@ -26,7 +26,7 @@
 
 #pragma clang diagnostic ignored "-Wcast-align" // NLMSG_* macros trigger this
 
-Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket)
+Error SystemNative_CreateNetworkChangeListenerSocket(intptr_t* retSocket)
 {
 #if HAVE_LINUX_RTNETLINK_H
     struct sockaddr_nl sa;
@@ -45,20 +45,6 @@ Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket)
         return (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
     }
 
-    // Added receive timeout to prevent recvmsg method in SystemNative_ReadEvents to block thread indefinitely.
-    // This allows method SystemNative_ReadEvents to periodically exit and allows .NET thread to exit if needed.
-    struct timeval tv;
-    tv.tv_sec = 1; //we will wait in SystemNative_ReadEvents method for max one second (TODO: is this good default value?)
-    tv.tv_usec = 0;
-
-    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) != 0)
-    {
-        *retSocket = -1;
-        Error palError = (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
-        close(sock);
-        return palError;
-    }
-
 #if HAVE_LINUX_RTNETLINK_H
     if (bind(sock, (struct sockaddr*)(&sa), sizeof(sa)) != 0)
     {
@@ -71,12 +57,6 @@ Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket)
 
     *retSocket = sock;
     return Error_SUCCESS;
-}
-
-Error SystemNative_CloseNetworkChangeListenerSocket(int32_t socket)
-{
-    int err = close(socket);
-    return err == 0 || CheckInterrupted(err) ? Error_SUCCESS : (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
 }
 
 #if HAVE_LINUX_RTNETLINK_H
@@ -93,18 +73,22 @@ static NetworkChangeKind ReadNewLinkMessage(struct nlmsghdr* hdr)
     return None;
 }
 
-void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
+int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
 {
     char buffer[4096];
     struct iovec iov = {buffer, sizeof(buffer)};
     struct sockaddr_nl sanl;
+    int fd = ToFileDescriptor(sock);
     struct msghdr msg = { .msg_name = (void*)(&sanl), .msg_namelen = sizeof(struct sockaddr_nl), .msg_iov = &iov, .msg_iovlen = 1 };
     ssize_t len;
-    while (CheckInterrupted(len = recvmsg(sock, &msg, 0)));
+    while (CheckInterrupted(len = recvmsg(fd, &msg, 0)));
+    if (len == 0)
+    {
+        return -1; // EOF.
+    }
     if (len == -1)
     {
-        // Probably means the socket has been closed.
-        return;
+        return errno == EAGAIN ? 0 : -1;
     }
 
     assert(len >= 0);
@@ -113,9 +97,9 @@ void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
         switch (hdr->nlmsg_type)
         {
             case NLMSG_DONE:
-                return; // End of a multi-part message; stop reading.
+                return 1; // End of a multi-part message; stop reading.
             case NLMSG_ERROR:
-                return;
+                return 1;
             case RTM_NEWADDR:
                 onNetworkChange(sock, AddressAdded);
                 break;
@@ -132,7 +116,7 @@ void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
                 if (dataAsRtMsg->rtm_table == RT_TABLE_MAIN)
                 {
                     onNetworkChange(sock, AvailabilityChanged);
-                    return;
+                    return 1;
                 }
                 break;
             }
@@ -140,15 +124,21 @@ void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
                 break;
         }
     }
+    return 1;
 }
 #elif HAVE_RT_MSGHDR
-void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
+int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
 {
     char buffer[4096];
-    ssize_t count = read(sock, buffer, sizeof(buffer));
-    if (count < 0)
+    int fd = ToFileDescriptor(sock);
+    ssize_t count = CheckInterrupted(read(fd, buffer, sizeof(buffer)));
+    if (count == 0)
     {
-        return;
+        return -1; // EOF.
+    }
+    if (count == -1)
+    {
+        return errno == EAGAIN ? 0 : -1;
     }
 
     struct rt_msghdr msghdr;
@@ -173,18 +163,20 @@ void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
             case RTM_DELETE:
             case RTM_REDIRECT:
                 onNetworkChange(sock, AvailabilityChanged);
-                return;
+                return 1;
             default:
                 break;
         }
     }
+    return 1;
 }
 #else
-void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
+int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
 {
     (void)sock;
     (void)onNetworkChange;
     // unreachable
     abort();
+    return 1;
 }
 #endif
