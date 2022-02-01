@@ -817,6 +817,7 @@ static guint16 vector_methods [] = {
 	SN_ConvertToSingle,
 	SN_ConvertToUInt32,
 	SN_ConvertToUInt64,
+	SN_Equals,
 	SN_Narrow,
 	SN_Widen,
 	SN_get_IsHardwareAccelerated,
@@ -866,6 +867,16 @@ emit_sys_numerics_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 	case SN_ConvertToInt64:
 	case SN_ConvertToUInt32:
 	case SN_ConvertToUInt64:
+		break;
+	case SN_Equals:
+		MonoType *type;
+		MonoClass *klass;
+		klass = cmethod->klass;
+		type = m_class_get_byval_arg (klass);
+		etype = get_vector_t_elem_type (fsig->params [0]);
+		g_assert (fsig->param_count == 2);
+		ins = emit_xcompare (cfg, klass, etype->type, args [0], args [1]);
+		return ins;
 	case SN_Narrow:
 	case SN_Widen:
 		// FIXME:
