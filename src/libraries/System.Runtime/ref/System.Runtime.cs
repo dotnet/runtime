@@ -10420,6 +10420,20 @@ namespace System.IO
         public static void WriteAllText(string path, string? contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static void SetCreationTime(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle, DateTime creationTime) { }
+        public static void SetCreationTimeUtc(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle, DateTime creationTimeUtc) { }
+        public static DateTime GetCreationTime(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle) { throw null; }
+        public static DateTime GetCreationTimeUtc(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle) { throw null; }
+        public static void SetLastAccessTime(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle, DateTime lastAccessTime) { }
+        public static void SetLastAccessTimeUtc(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle, DateTime lastAccessTimeUtc) { }
+        public static DateTime GetLastAccessTime(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle) { throw null; }
+        public static DateTime GetLastAccessTimeUtc(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle) { throw null; }
+        public static void SetLastWriteTime(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle, DateTime lastWriteTime) { }
+        public static void SetLastWriteTimeUtc(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle, DateTime lastWriteTimeUtc) { }
+        public static DateTime GetLastWriteTime(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle) { throw null; }
+        public static DateTime GetLastWriteTimeUtc(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle) { throw null; }
+        public static FileAttributes GetAttributes(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle) { throw null; }
+        public static void SetAttributes(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle, FileAttributes fileAttributes) { }
     }
     [System.FlagsAttribute]
     public enum FileAccess
