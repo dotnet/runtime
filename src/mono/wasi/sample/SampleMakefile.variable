@@ -1,0 +1,18 @@
+TOP=$(realpath $(CURDIR)/../../../../..)
+
+COMPILE_FLAGS=\
+    $(WASI_BIN_DIR)/*.a \
+	$(BROWSER_WASM_RUNTIME_PATH)/native/libSystem.Native.a \
+	--sysroot=$(WASI_SDK_ROOT)/share/wasi-sysroot \
+	-I$(TOP)/src/mono
+
+LINK_FLAGS=\
+	-Wl,--export=malloc,--export=free,--export=__heap_base,--export=__data_end \
+	-Wl,-z,stack-size=1048576,--initial-memory=5242880,--max-memory=52428800,-lwasi-emulated-mman
+
+ifndef DOTNET_ROOT
+$(error DOTNET_ROOT is undefined. Example: export DOTNET_ROOT=~/dotnet7)
+endif
+ifndef BROWSER_WASM_RUNTIME_PATH
+$(error BROWSER_WASM_RUNTIME_PATH is undefined. Example: export BROWSER_WASM_RUNTIME_PATH=$(DOTNET_ROOT)/packs/Microsoft.NETCore.App.Runtime.Mono.browser-wasm/7.0.0-alpha.1.22061.11/runtimes/browser-wasm)
+endif

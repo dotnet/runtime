@@ -82,7 +82,7 @@
 #define MONO_ARCH_LMF_REG_SP 11
 
 struct MonoLMF {
-	/* 
+	/*
 	 * If the second lowest bit is set to 1, then this is a MonoLMFExt structure, and
 	 * the other fields are not valid.
 	 */

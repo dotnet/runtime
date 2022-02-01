@@ -2576,7 +2576,6 @@ void Compiler::optAssertionGen(GenTree* tree)
 
         case GT_OBJ:
         case GT_BLK:
-        case GT_DYN_BLK:
         case GT_IND:
             // R-value indirections create non-null assertions, but not all indirections are R-values.
             // Those under ADDR nodes or on the LHS of ASGs are "locations", and will not end up
@@ -4626,9 +4625,9 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_OBJ:
         case GT_BLK:
-        case GT_DYN_BLK:
         case GT_IND:
         case GT_NULLCHECK:
+        case GT_STORE_DYN_BLK:
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_BOUNDS_CHECK:

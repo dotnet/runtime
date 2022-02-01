@@ -49,14 +49,8 @@ namespace System.IO
         /// </summary>
         public static void Copy(string sourceFileName, string destFileName, bool overwrite)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName), SR.ArgumentNull_FileName);
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
-            if (sourceFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(sourceFileName));
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             FileSystem.CopyFile(Path.GetFullPath(sourceFileName), Path.GetFullPath(destFileName), overwrite);
         }
@@ -298,7 +292,7 @@ namespace System.IO
             using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options))
             {
                 long fileLength = 0;
-                if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
+                if (sfh.CanSeek && (fileLength = sfh.GetFileLength()) > Array.MaxLength)
                 {
                     throw new IOException(SR.IO_FileTooLong2GB);
                 }
@@ -334,12 +328,8 @@ namespace System.IO
 
         public static void WriteAllBytes(string path, byte[] bytes)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(bytes);
 
             using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read);
             RandomAccess.WriteAtOffset(sfh, bytes, 0);
@@ -460,14 +450,8 @@ namespace System.IO
 
         public static void Move(string sourceFileName, string destFileName, bool overwrite)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName), SR.ArgumentNull_FileName);
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
-            if (sourceFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(sourceFileName));
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             string fullSourceFileName = Path.GetFullPath(sourceFileName);
             string fullDestFileName = Path.GetFullPath(destFileName);
@@ -572,7 +556,7 @@ namespace System.IO
             SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options);
 
             long fileLength = 0L;
-            if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
+            if (sfh.CanSeek && (fileLength = sfh.GetFileLength()) > Array.MaxLength)
             {
                 sfh.Dispose();
                 return Task.FromException<byte[]>(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.IO_FileTooLong2GB)));
@@ -651,12 +635,8 @@ namespace System.IO
 
         public static Task WriteAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(bytes);
 
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
@@ -691,7 +671,7 @@ namespace System.IO
                 cancellationToken.ThrowIfCancellationRequested();
                 string? line;
                 List<string> lines = new List<string>();
-                while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
+                while ((line = await sr.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != null)
                 {
                     lines.Add(line);
                     cancellationToken.ThrowIfCancellationRequested();
@@ -806,12 +786,8 @@ namespace System.IO
 
         private static void Validate(string path, Encoding encoding)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
         }
 
         private static byte[] ReadAllBytesUnknownLength(SafeFileHandle sfh)

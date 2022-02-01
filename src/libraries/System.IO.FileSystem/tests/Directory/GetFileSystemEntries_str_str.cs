@@ -697,9 +697,7 @@ namespace System.IO.Tests
             Assert.Empty(GetEntries(TestDirectory, "\t"));
         }
 
-        [Fact]
-        [PlatformSpecific(CaseSensitivePlatforms)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
         public void SearchPatternCaseSensitive()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -720,8 +718,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(CaseInsensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseInsensitiveOS))]
         public void SearchPatternCaseInsensitive()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

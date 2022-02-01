@@ -60,15 +60,7 @@ namespace System.IO.MemoryMappedFiles
         public static MemoryMappedFile OpenExisting(string mapName, MemoryMappedFileRights desiredAccessRights,
                                                                     HandleInheritability inheritability)
         {
-            if (mapName == null)
-            {
-                throw new ArgumentNullException(nameof(mapName), SR.ArgumentNull_MapName);
-            }
-
-            if (mapName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_MapNameEmptyString);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(mapName);
 
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
@@ -319,15 +311,7 @@ namespace System.IO.MemoryMappedFiles
                                                     MemoryMappedFileAccess access, MemoryMappedFileOptions options,
                                                     HandleInheritability inheritability)
         {
-            if (mapName == null)
-            {
-                throw new ArgumentNullException(nameof(mapName), SR.ArgumentNull_MapName);
-            }
-
-            if (mapName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_MapNameEmptyString);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(mapName);
 
             if (capacity <= 0)
             {

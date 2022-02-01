@@ -79,7 +79,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void PathEndsInAltTrailingSlash_Windows()
         {
-            string path = GetTestFilePath() + Path.DirectorySeparatorChar;
+            string path = GetTestFilePath() + Path.AltDirectorySeparatorChar;
             Assert.False(Exists(path));
         }
 
@@ -97,7 +97,7 @@ namespace System.IO.Tests
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
-            Assert.False(Exists(path + Path.DirectorySeparatorChar));
+            Assert.False(Exists(path + Path.AltDirectorySeparatorChar));
         }
 
         [Fact]
@@ -112,7 +112,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
         {
             Assert.All((IOInputs.GetPathsLongerThanMaxDirectory(GetTestFilePath())), (path) =>
@@ -167,8 +166,7 @@ namespace System.IO.Tests
 
         }
 
-        [Fact]
-        [PlatformSpecific(CaseInsensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseInsensitiveOS))]
         public void DoesCaseInsensitiveInvariantComparions()
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -178,8 +176,7 @@ namespace System.IO.Tests
             Assert.True(Exists(testFile.FullName.ToLowerInvariant()));
         }
 
-        [Fact]
-        [PlatformSpecific(CaseSensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
         public void DoesCaseSensitiveComparisons()
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -234,7 +231,6 @@ namespace System.IO.Tests
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/901", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Theory,
             MemberData(nameof(UncPathsWithoutShareName))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void UncPathWithoutShareNameAsPath_ReturnsFalse(string component)
         {
             Assert.False(Exists(component));

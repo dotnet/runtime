@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -86,8 +87,5 @@
   </data>
   <data name="TraceSwitchLevelTooHigh" xml:space="preserve">
     <value>Attempted to set {0} to a value that is too high.  Setting level to TraceLevel.Verbose</value>
-  </data>
-  <data name="InvalidNullEmptyArgument" xml:space="preserve">
-    <value>Argument {0} cannot be null or zero-length.</value>
   </data>
 </root>

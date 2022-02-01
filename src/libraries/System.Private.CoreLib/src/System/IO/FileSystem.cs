@@ -7,15 +7,8 @@ namespace System.IO
     {
         internal static void VerifyValidPath(string path, string argName)
         {
-            if (path == null)
-            {
-                throw new ArgumentNullException(argName);
-            }
-            else if (path.Length == 0)
-            {
-                throw new ArgumentException(SR.Arg_PathEmpty, argName);
-            }
-            else if (path.Contains('\0'))
+            ArgumentException.ThrowIfNullOrEmpty(path, argName);
+            if (path.Contains('\0'))
             {
                 throw new ArgumentException(SR.Argument_InvalidPathChars, argName);
             }
