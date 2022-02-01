@@ -29,9 +29,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected readonly ILogger logger;
 
-        public DevToolsProxy(ILoggerFactory loggerFactory)
+        public DevToolsProxy(ILoggerFactory loggerFactory, string loggerId)
         {
-            logger = loggerFactory.CreateLogger<DevToolsProxy>();
+            string loggerSuffix = string.IsNullOrEmpty(loggerId) ? string.Empty : $"-{loggerId}";
+            logger = loggerFactory.CreateLogger($"{nameof(DevToolsProxy)}{loggerSuffix}");
         }
 
         protected virtual Task<bool> AcceptEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
