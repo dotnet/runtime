@@ -585,14 +585,24 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
 
-            uint[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
-            if ((uint)day > days[month] - days[month - 1])
+            const string DaysToMonth365Str = "\u0000\u001f\u003b\u005a\u0078\u0097\u00b5\u00d4\u00f3\u00111\u00130\u0014e\u0016d";
+            const string DaysToMonth366Str = "\u0000\u001f\u003c\u005b\u0079\u0098\u00b6\u00d5\u00f4\u00112\u00131\u0014f\u0016e";
+
+            if (IsLeapYear(year))
+            {
+                return DateToTicks(year, month, day, DaysToMonth366Str);
+            }
+            return DateToTicks(year, month, day, DaysToMonth365Str);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong DateToTicks(int year, int month, int day, string daysToMonthMap)
+        {
+            if ((uint)day > daysToMonthMap[month] - daysToMonthMap[month - 1])
             {
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
-
-            uint n = DaysToYear((uint)year) + days[month - 1] + (uint)day - 1;
-            return n * (ulong)TicksPerDay;
+            return (DaysToYear((uint)year) + daysToMonthMap[month - 1] + (uint)day - 1) * (ulong)TicksPerDay;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
