@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading;
@@ -68,6 +69,15 @@ namespace Microsoft.Diagnostics.NETCore.Client
                 socket.Connect(new IpcUnixDomainSocketEndPoint(config.Address), timeout);
                 return new ExposedSocketNetworkStream(socket, ownsSocket: true);
             }
+#if DIAGNOSTICS_RUNTIME
+            else if (config.Transport == IpcEndpointConfig.TransportType.TcpSocket)
+            {
+                var tcpClient = new TcpClient ();
+                var endPoint = new IpcTcpSocketEndPoint(config.Address);
+                tcpClient.Connect(endPoint.EndPoint);
+                return tcpClient.GetStream();
+            }
+#endif
             else
             {
                 throw new ArgumentException($"Unsupported IpcEndpointConfig transport type {config.Transport}");
