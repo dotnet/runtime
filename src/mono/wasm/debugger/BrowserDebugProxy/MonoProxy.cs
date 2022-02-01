@@ -1547,7 +1547,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var bp = res.First();
 
             //search if it's a nested function and it's return false because we cannot move to another function
-            if (bp.Line != location.Line || (bp.Line == location.Line && bp.Column != location.Column))
+            if (bp.Line != location.Line || bp.Column != location.Column))
             {
                 res = new List<SourceLocation>();
                 SourceFile doc = store.GetFileById(scope.Method.Info.SourceId);
