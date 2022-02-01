@@ -47,6 +47,76 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(double.MaxValue, result.Value);
         }
 
+        public static IEnumerable<object[]> EqualsData()
+        {
+            yield return new object[] { new NFloat(789.0f), new NFloat(789.0f), true };
+            yield return new object[] { new NFloat(789.0f), new NFloat(-789.0f), false };
+            yield return new object[] { new NFloat(789.0f), new NFloat(0.0f), false };
+            yield return new object[] { new NFloat(789.0f), 789.0f, false };
+            yield return new object[] { new NFloat(789.0f), "789.0", false };
+        }
+
+        [Theory]
+        [MemberData(nameof(EqualsData))]
+        public void EqualsTest(NFloat f1, object obj, bool expected)
+        {
+            if (obj is NFloat f2)
+            {
+                Assert.Equal(expected, f1.Equals((object)f2));
+                Assert.Equal(expected, f1.Equals(f2));
+                Assert.Equal(expected, f1.GetHashCode().Equals(f2.GetHashCode()));
+            }
+            Assert.Equal(expected, f1.Equals(obj));
+        }
+
+        [Fact]
+        public void NaNEqualsTest()
+        {
+            NFloat f1 = new NFloat(float.NaN);
+            NFloat f2 = new NFloat(float.NaN);
+            Assert.Equal(f1.Value.Equals(f2.Value), f1.Equals(f2));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData(-4567.0f)]
+        [InlineData(-4567.89101f)]
+        [InlineData(0.0f)]
+        [InlineData(4567.0f)]
+        [InlineData(4567.89101f)]
+        [InlineData(float.NaN)]
+        public static void ToStringTest64(float value)
+        {
+            NFloat nfloat = new NFloat(value);
+
+            Assert.Equal(((double)value).ToString(), nfloat.ToString());
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+        [InlineData(-4567.0f)]
+        [InlineData(-4567.89101f)]
+        [InlineData(0.0f)]
+        [InlineData(4567.0f)]
+        [InlineData(4567.89101f)]
+
+        [InlineData(float.NaN)]
+        public static void ToStringTest32(float value)
+        {
+            NFloat nfloat = new NFloat(value);
+
+            Assert.Equal(value.ToString(), nfloat.ToString());
+        }
+
+        [Fact]
+        public unsafe void Size()
+        {
+            int size = PlatformDetection.Is32BitProcess ? 4 : 8;
+#pragma warning disable xUnit2000 // The value under test here is the sizeof expression
+            Assert.Equal(size, sizeof(NFloat));
+#pragma warning restore xUnit2000
+            Assert.Equal(size, Marshal.SizeOf<NFloat>());
+        }
+
+#if FEATURE_NFLOAT
         [Fact]
         public void Epsilon()
         {
@@ -127,16 +197,6 @@ namespace System.Runtime.InteropServices.Tests
             {
                 Assert.Equal(float.PositiveInfinity, result.Value);
             }
-        }
-
-        [Fact]
-        public unsafe void Size()
-        {
-            int size = PlatformDetection.Is32BitProcess ? 4 : 8;
-#pragma warning disable xUnit2000 // The value under test here is the sizeof expression
-            Assert.Equal(size, sizeof(NFloat));
-#pragma warning restore xUnit2000
-            Assert.Equal(size, Marshal.SizeOf<NFloat>());
         }
 
         [Theory]
@@ -854,64 +914,6 @@ namespace System.Runtime.InteropServices.Tests
                 Assert.Equal(float.IsSubnormal(value), result);
             }
         }
-
-        public static IEnumerable<object[]> EqualsData()
-        {
-            yield return new object[] { new NFloat(789.0f), new NFloat(789.0f), true };
-            yield return new object[] { new NFloat(789.0f), new NFloat(-789.0f), false };
-            yield return new object[] { new NFloat(789.0f), new NFloat(0.0f), false };
-            yield return new object[] { new NFloat(789.0f), 789.0f, false };
-            yield return new object[] { new NFloat(789.0f), "789.0", false };
-        }
-
-        [Theory]
-        [MemberData(nameof(EqualsData))]
-        public void EqualsTest(NFloat f1, object obj, bool expected)
-        {
-            if (obj is NFloat f2)
-            {
-                Assert.Equal(expected, f1.Equals((object)f2));
-                Assert.Equal(expected, f1.Equals(f2));
-                Assert.Equal(expected, f1.GetHashCode().Equals(f2.GetHashCode()));
-            }
-            Assert.Equal(expected, f1.Equals(obj));
-        }
-
-        [Fact]
-        public void NaNEqualsTest()
-        {
-            NFloat f1 = new NFloat(float.NaN);
-            NFloat f2 = new NFloat(float.NaN);
-            Assert.Equal(f1.Value.Equals(f2.Value), f1.Equals(f2));
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
-        [InlineData(-4567.0f)]
-        [InlineData(-4567.89101f)]
-        [InlineData(0.0f)]
-        [InlineData(4567.0f)]
-        [InlineData(4567.89101f)]
-        [InlineData(float.NaN)]
-        public static void ToStringTest64(float value)
-        {
-            NFloat nfloat = new NFloat(value);
-
-            Assert.Equal(((double)value).ToString(), nfloat.ToString());
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
-        [InlineData(-4567.0f)]
-        [InlineData(-4567.89101f)]
-        [InlineData(0.0f)]
-        [InlineData(4567.0f)]
-        [InlineData(4567.89101f)]
-
-        [InlineData(float.NaN)]
-        public static void ToStringTest32(float value)
-        {
-            NFloat nfloat = new NFloat(value);
-
-            Assert.Equal(value.ToString(), nfloat.ToString());
-        }
+#endif // FEATURE_NFLOAT
     }
 }
