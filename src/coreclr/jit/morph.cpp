@@ -5183,26 +5183,26 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 
     noway_assert(elemTyp != TYP_STRUCT || elemStructType != nullptr);
 
+    // Fold potential constant expressions, e.g. "ADD(CNS, CNS)"
     if (opts.OptimizationEnabled())
     {
-        // Fold potential constant expressions, e.g. "ADD(CNS, CNS)"
         asIndex->Index() = gtFoldExpr(asIndex->Index());
+    }
 
-        // Fold "cns_str"[cns_index] to ushort constant
-        if (asIndex->Arr()->OperIs(GT_CNS_STR) && asIndex->Index()->IsIntCnsFitsInI32())
+    // Fold "cns_str"[cns_index] to ushort constant
+    if (opts.OptimizationEnabled() && asIndex->Arr()->OperIs(GT_CNS_STR) && asIndex->Index()->IsIntCnsFitsInI32())
+    {
+        const int cnsIndex = static_cast<int>(asIndex->Index()->AsIntConCommon()->IconValue());
+        if (cnsIndex >= 0)
         {
-            const int cnsIndex = static_cast<int>(asIndex->Index()->AsIntConCommon()->IconValue());
-            if (cnsIndex >= 0)
+            int             length;
+            const char16_t* str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
+                                                                    asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
+            if ((cnsIndex < length) && (str != nullptr))
             {
-                int             length;
-                const char16_t* str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
-                                                                        asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
-                if ((cnsIndex < length) && (str != nullptr))
-                {
-                    GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], TYP_INT);
-                    INDEBUG(cnsCharNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-                    return cnsCharNode;
-                }
+                GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], TYP_INT);
+                INDEBUG(cnsCharNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                return cnsCharNode;
             }
         }
     }
