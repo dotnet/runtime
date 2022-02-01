@@ -397,7 +397,7 @@ gpointer
 mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoMemoryManager *mem_manager, guint32 *code_len)
 {
 	guint8 *code, *buf, *tramp;
-	
+
 	tramp = mono_get_trampoline_code (tramp_type);
 
 	const int size = TRAMPOLINE_SIZE;
@@ -538,7 +538,7 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
 	// FIXME: Currently, we always go to the slow path.
-	
+
 	/* Load trampoline addr */
 	x86_mov_reg_membase (code, X86_EAX, MONO_ARCH_RGCTX_REG, 4, 4);
 	/* Load mrgctx/vtable */

@@ -137,9 +137,6 @@
   <data name="CantRetrieveEntries" xml:space="preserve">
     <value>Cannot retrieve all entries.</value>
   </data>
-  <data name="DuplicateLogName" xml:space="preserve">
-    <value>Only the first eight characters of a custom log name are significant, and there is already another log on the system using the first eight characters of the name given. Name given: '{0}', name of existing log: '{1}'.</value>
-  </data>
   <data name="EventID" xml:space="preserve">
     <value>Invalid eventID value '{0}'. It must be in the range between '{1}' and '{2}'.</value>
   </data>
@@ -241,8 +238,5 @@
   </data>
   <data name="LogAlreadyExistsAsSource" xml:space="preserve">
     <value>Log {0} has already been registered as a source on the local computer.</value>
-  </data>
-  <data name="NotSupported_IONonFileDevices" xml:space="preserve"> 
-    <value>Opening Win32 devices other than file such as COM ports, printers, disk partitions and tape drives is not supported. Avoid use of "\\\\.\\" in the path.</value> 
   </data>
 </root>

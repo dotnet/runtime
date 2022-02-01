@@ -86,6 +86,9 @@ namespace ILCompiler.DependencyAnalysis
         private static extern void FinishObjWriter(IntPtr objWriter);
 
         [DllImport(NativeObjectWriterFileName)]
+        private static extern void SetDwarfVersion(IntPtr objWriter, ushort v);
+
+        [DllImport(NativeObjectWriterFileName)]
         private static extern void SwitchSection(IntPtr objWriter, string sectionName, CustomSectionAttributes attributes = 0, string comdatName = null);
 
         public void SetSection(ObjectNodeSection section)
@@ -884,6 +887,11 @@ namespace ILCompiler.DependencyAnalysis
             _isSingleFileCompilation = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation;
             _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(this, factory);
             _options = options;
+
+            if ((_options & ObjectWritingOptions.UseDwarf5) != 0)
+            {
+                SetDwarfVersion(_nativeObjectWriter, 5);
+            }
         }
 
         public void Dispose()
@@ -1319,5 +1327,6 @@ namespace ILCompiler.DependencyAnalysis
     {
         GenerateDebugInfo = 0x01,
         ControlFlowGuard = 0x02,
+        UseDwarf5 = 0x4,
     }
 }

@@ -10,12 +10,12 @@
  *
  * From the ECMA documentation
  */
- 
+
 #ifndef _MONO_METADATA_TABLEDEFS_H_
 #define _MONO_METADATA_TABLEDEFS_H_
 
 /*
- * 22.1.1  Values for AssemblyHashAlgorithm 
+ * 22.1.1  Values for AssemblyHashAlgorithm
  */
 
 enum {
@@ -42,7 +42,7 @@ enum {
 	FILE_CONTAINS_NO_METADATA   = 1
 };
 
-/* keep in synch with System.Security.Permissions.SecurityAction enum 
+/* keep in synch with System.Security.Permissions.SecurityAction enum
    (except for the special non-CAS cases) */
 enum {
 	SECURITY_ACTION_DEMAND        = 2,

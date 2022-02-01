@@ -90,7 +90,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
       <!-- binskim warning BA3001 PIE disabled on executable -->
-      <LinkerArg Include="-pie" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == ''" />
+      <LinkerArg Include="-pie" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == '' and '$(PositionIndependentExecutable)' != 'false'" />
       <!-- binskim warning BA3010 The GNU_RELRO segment is missing -->
       <LinkerArg Include="-Wl,-z,relro" Condition="'$(TargetOS)' != 'OSX'" />
       <!-- binskim warning BA3011 The BIND_NOW flag is missing -->

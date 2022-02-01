@@ -47,11 +47,6 @@
         <target state="translated">La lunghezza della matrice di destinazione non è sufficiente per copiare tutti gli elementi della raccolta. Controllare l'indice e la lunghezza della matrice.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">La matrice non può contenere elementi Null.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">L'indirizzo di inizio non può essere minore di zero o maggiore della lunghezza di input.</target>
@@ -212,11 +207,6 @@
         <target state="translated">La raccolta è di sola lettura.</target>
         <note />
       </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">Questa operazione può essere eseguita una sola volta per oggetto.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">
         <source>This platform does not support writing compiled regular expressions to an assembly.</source>
         <target state="translated">Questa piattaforma non supporta la scrittura di espressioni regolari compilate in un assembly.</target>
@@ -290,11 +280,6 @@
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \\ at end of pattern.</source>
         <target state="translated">Carattere \\ non valido alla fine del criterio.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">Codice operativo imprevisto nella generazione dell'espressione regolare: {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">

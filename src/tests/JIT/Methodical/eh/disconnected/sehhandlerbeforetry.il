@@ -12,16 +12,16 @@
   .ver 0:0:0:0
 }
 .assembly extern eh_common {}
-.assembly test
+.assembly 'sehhandlerbeforetry'
 {
   .ver 0:0:0:0
 }
-.module test.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512
 .corflags 0x00000001
 
+.class public auto ansi Test_sehhandlerbeforetry extends [mscorlib] System.Object {
 .method public static int32 main() {
     .entrypoint
     .maxstack  2
@@ -78,4 +78,5 @@ done:
 	ret
 	
 .try try_start to try_end filter filter_begin handler handler_begin to handler_end
+}
 }

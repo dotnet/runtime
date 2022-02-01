@@ -67,7 +67,6 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 // Returns:
 //    PhaseStatus indicating what, if anything, was changed.
 //
-
 PhaseStatus Compiler::fgInsertGCPolls()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
@@ -181,13 +180,6 @@ PhaseStatus Compiler::fgInsertGCPolls()
         constexpr bool computeDoms  = false;
         fgUpdateChangedFlowGraph(computePreds, computeDoms);
     }
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** After fgInsertGCPolls()\n");
-        fgDispBasicBlocks(true);
-    }
-#endif // DEBUG
 
     return result;
 }
@@ -3093,6 +3085,9 @@ void Compiler::fgSimpleLowering()
         fgDispHandlerTab();
         printf("\n");
     }
+
+    fgDebugCheckBBlist();
+    fgDebugCheckLinks();
 #endif
 }
 
@@ -3374,7 +3369,7 @@ void Compiler::fgCreateFunclets()
  * or are rarely executed.
  */
 
-void Compiler::fgDetermineFirstColdBlock()
+PhaseStatus Compiler::fgDetermineFirstColdBlock()
 {
 #ifdef DEBUG
     if (verbose)
@@ -3388,19 +3383,19 @@ void Compiler::fgDetermineFirstColdBlock()
     //
     assert(fgSafeBasicBlockCreation);
 
-    fgFirstColdBlock = nullptr;
+    assert(fgFirstColdBlock == nullptr);
 
     if (!opts.compProcedureSplitting)
     {
         JITDUMP("No procedure splitting will be done for this method\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
     if ((compHndBBtabCount > 0) && !opts.compProcedureSplittingEH)
     {
         JITDUMP("No procedure splitting will be done for this method with EH (by request)\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif // DEBUG
 
@@ -3411,7 +3406,7 @@ void Compiler::fgDetermineFirstColdBlock()
     if (compHndBBtabCount > 0)
     {
         JITDUMP("No procedure splitting will be done for this method with EH (implementation limitation)\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -3482,7 +3477,7 @@ void Compiler::fgDetermineFirstColdBlock()
 
         if (prevToFirstColdBlock == nullptr)
         {
-            return; // To keep Prefast happy
+            return PhaseStatus::MODIFIED_EVERYTHING; // To keep Prefast happy
         }
 
         // If we only have one cold block
@@ -3578,14 +3573,12 @@ EXIT:;
         {
             printf("fgFirstColdBlock is NULL.\n");
         }
-
-        fgDispBasicBlocks();
     }
-
-    fgVerifyHandlerTab();
 #endif // DEBUG
 
     fgFirstColdBlock = firstColdBlock;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 /* static */
@@ -3910,33 +3903,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         return;
     }
 
-    // Special handling for dynamic block ops.
-    if (tree->OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK))
-    {
-        GenTreeDynBlk* dynBlk    = tree->AsDynBlk();
-        GenTree*       sizeNode  = dynBlk->gtDynamicSize;
-        GenTree*       dstAddr   = dynBlk->Addr();
-        GenTree*       src       = dynBlk->Data();
-        bool           isReverse = dynBlk->IsReverseOp();
-
-        // We either have a DYN_BLK or a STORE_DYN_BLK. If the latter, we have a
-        // src (the Data to be stored), and isReverse tells us whether to evaluate
-        // that before dstAddr.
-        if (isReverse && (src != nullptr))
-        {
-            fgSetTreeSeqHelper(src, isLIR);
-        }
-        fgSetTreeSeqHelper(dstAddr, isLIR);
-        if (!isReverse && (src != nullptr))
-        {
-            fgSetTreeSeqHelper(src, isLIR);
-        }
-        fgSetTreeSeqHelper(sizeNode, isLIR);
-
-        fgSetTreeSeqFinish(dynBlk, isLIR);
-        return;
-    }
-
     /* Is it a 'simple' unary/binary operator? */
 
     if (kind & GTK_SMPOP)
@@ -4108,8 +4074,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             break;
 
         case GT_STORE_DYN_BLK:
-        case GT_DYN_BLK:
-            noway_assert(!"DYN_BLK nodes should be sequenced as a special case");
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->Addr(), isLIR);
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->Data(), isLIR);
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->gtDynamicSize, isLIR);
             break;
 
         default:

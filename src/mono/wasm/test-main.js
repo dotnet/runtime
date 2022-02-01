@@ -354,6 +354,27 @@ try {
     console.error(e);
 }
 
+if (is_node) {
+    const modulesToLoad = processedArguments.setenv["NPM_MODULES"];
+    if (modulesToLoad) {
+        modulesToLoad.split(',').forEach(module => {
+            const parts = module.split(':');
+
+            let message = `Loading npm '${parts[0]}'`;
+            const moduleExport = require(parts[0]);
+            if (parts.length == 2) {
+                message += ` and attaching to global as '${parts[1]}'.`;
+                globalThis[parts[1]] = moduleExport;
+            }
+
+            console.log(message);
+        });
+    }
+}
+
+// Must be after loading npm modules.
+processedArguments.setenv["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
+
 async function loadDotnet(file) {
     let loadScript = undefined;
     if (typeof WScript !== "undefined") { // Chakra

@@ -48,7 +48,7 @@ g_getenv(const gchar *variable)
 	gchar* val = NULL;
 	gint32 buffer_size = 1024;
 	gint32 retval;
-	var = u8to16(variable); 
+	var = u8to16(variable);
 	// FIXME This should loop in case another thread is growing the data.
 	buffer = g_new (gunichar2, buffer_size);
 	retval = GetEnvironmentVariableW (var, buffer, buffer_size);
@@ -68,7 +68,7 @@ g_getenv(const gchar *variable)
 	}
 	g_free(var);
 	g_free(buffer);
-	return val; 
+	return val;
 }
 
 gboolean
@@ -76,7 +76,7 @@ g_setenv(const gchar *variable, const gchar *value, gboolean overwrite)
 {
 	gunichar2 *var, *val;
 	gboolean result;
-	var = u8to16(variable); 
+	var = u8to16(variable);
 	val = u8to16(value);
 	result = (SetEnvironmentVariableW(var, val) != 0) ? TRUE : FALSE;
 	g_free(var);
@@ -88,7 +88,7 @@ void
 g_unsetenv(const gchar *variable)
 {
 	gunichar2 *var;
-	var = u8to16(variable); 
+	var = u8to16(variable);
 	SetEnvironmentVariableW(var, L"");
 	g_free(var);
 }
@@ -141,7 +141,7 @@ g_path_is_absolute (const char *filename)
 			(filename[2] == '\\' || filename[2] == '/'))
 			return TRUE;
 		/* UNC paths */
-		else if (filename[0] == '\\' && filename[1] == '\\' && 
+		else if (filename[0] == '\\' && filename[1] == '\\' &&
 			filename[2] != '\0')
 			return TRUE;
 	}

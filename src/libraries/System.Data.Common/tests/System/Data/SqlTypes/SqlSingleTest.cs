@@ -132,9 +132,12 @@ namespace System.Data.Tests.SqlTypes
             SqlSingle test22 = new SqlSingle(1.8e32);
 
             Assert.False(test0.Equals(test1));
+            Assert.False(test0.Equals((object)test1));
             Assert.False(test1.Equals(test2));
+            Assert.False(test1.Equals((object)test2));
             Assert.False(test2.Equals(new SqlString("TEST")));
             Assert.True(test2.Equals(test22));
+            Assert.True(test2.Equals((object)test22));
 
             // Static Equals()-method
             Assert.True(SqlSingle.Equals(test2, test22).Value);

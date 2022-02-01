@@ -96,7 +96,7 @@ namespace Microsoft.Interop
                 // of an array as long as it is non-null, matching the behavior of the built-in interop system
                 // for single-dimensional zero-based arrays.
 
-                // ref <elementType> <byRefIdentifier> = <managedIdentifer> == null ? ref *(<elementType*)0 : ref MemoryMarshal.GetArrayDataReference(<managedIdentifer>);
+                // ref <elementType> <byRefIdentifier> = ref <managedIdentifer> == null ? ref *(<elementType>*)0 : ref MemoryMarshal.GetArrayDataReference(<managedIdentifer>);
                 PrefixUnaryExpressionSyntax nullRef =
                     PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression,
                         CastExpression(
