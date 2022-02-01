@@ -2274,7 +2274,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             // In total, we end up transforming
             //
             // ta... = <early args>
-            // tb... = <late args> (without trashed GT_PUTARG_REG nodes)
+            // tb... = <late args>
             // tc = callTarget
             // GT_CALL tc, ta..., tb...
             //
@@ -2343,7 +2343,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 #ifdef DEBUG
                     if (comp->verbose)
                     {
-                        dspRegMask(argRegs & trashedByValidator);
+                        dspRegMask(argRegs);
                     }
 #endif
                     JITDUMP("\n");
@@ -2352,7 +2352,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
                     // arg then place the GT_PUTARG_REG after the call instead.
                     if ((argRegs & trashedByValidator) != 0)
                     {
-                        JITDUMP("CFG validator will trash register(s) ");
+                        JITDUMP("CFG validator will trash used register(s) ");
 #ifdef DEBUG
                         if (comp->verbose)
                         {
