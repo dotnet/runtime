@@ -193,16 +193,6 @@ Since .NET 7, non-Windows platforms are not supported. See https://aka.ms/system
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
-    <EmbeddedResource Include="Resources\System\Drawing\DefaultComponent.bmp">
-      <LogicalName>System.Drawing.DefaultComponent.bmp</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Resources\System\Drawing\Printing\PrintDocument.bmp" />
-    <EmbeddedResource Include="Resources\System\Drawing\ShieldIcon.ico">
-      <LogicalName>System.Drawing.ShieldIcon.ico</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <!-- Windows-specific -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="SRDescriptionAttribute.cs" />
     <Compile Include="System\Drawing\BitmapSelector.cs" />
     <Compile Include="System\Drawing\BufferedGraphicsManager.cs" />
@@ -215,7 +205,7 @@ Since .NET 7, non-Windows platforms are not supported. See https://aka.ms/system
     <Compile Include="System\Drawing\Internal\GpPathData.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
     <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
-    <Compile Include="System\Drawing\LocalAppContextSwitches.Windows.cs" />
+    <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
     <Compile Include="System\Drawing\Printing\DefaultPrintController.cs" />
     <Compile Include="System\Drawing\Printing\ModeField.cs" />
     <Compile Include="System\Drawing\Printing\PageSettings.cs" />
@@ -313,13 +303,22 @@ Since .NET 7, non-Windows platforms are not supported. See https://aka.ms/system
              Link="Common\Interop\Windows\User32\Interop.WindowFromDC.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT.cs"
              Link="Common\Interop\Windows\Interop.HRESULT.cs" />
+    <EmbeddedResource Include="Resources\System\Drawing\DefaultComponent.bmp">
+      <LogicalName>System.Drawing.DefaultComponent.bmp</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\System\Drawing\Printing\PrintDocument.bmp" />
+    <EmbeddedResource Include="Resources\System\Drawing\ShieldIcon.ico">
+      <LogicalName>System.Drawing.ShieldIcon.ico</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs"
              Link="Common\Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs" />
     <Compile Include="System\Drawing\DrawingCom.COMWrappers.cs" />
     <Compile Include="System\Drawing\Icon.COMWrappers.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.COMWrappers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.NoCOMWrappers.cs"
              Link="Common\Interop\Windows\Ole32\Interop.IStream.NoCOMWrappers.cs" />
     <Compile Include="System\Drawing\DrawingCom.NoCOMWrappers.cs" />
