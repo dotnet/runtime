@@ -938,7 +938,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     // reports L2 cache size and says nothing about L3 even if it exists. In this case we don't want
     // to stuck with L2 (e.g. 256Kb on our test machine whether the real L3 is 32Mb)
     // More details: https://github.com/dotnet/runtime/issues/60166
-    DWORD logicalCPUs = PAL_GetLogicalCpuCountFromOS();
+    DWORD logicalCPUs = g_totalCpuCount;
 
     size_t predictedSize = logicalCPUs*std::min(1536, std::max(256, (int)logicalCPUs*128))*1024;
     cacheSize = std::max(predictedSize, cacheSize);
