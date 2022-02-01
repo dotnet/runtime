@@ -609,12 +609,14 @@ void Usage()
     printf("     e.g. '-tid:2bc8,GC3,BG14' would print messages from thread 2bc8, the gc thread\n");
     printf("     associated with heap 3, and the background GC thread for heap 14\n");
     printf("\n");
-    printf(" -e: printf earliest messages from all threads\n");
+    printf(" -e: print earliest messages from all threads\n");
     printf(" -e:<thread id1>,<thread id2>,...: print earliest messages from the listed\n");
     printf("     threads. Thread ids are in hex, given as GC<decimal heap number>,\n");
     printf("     or BG<decimal heap number>\n");
     printf("     e.g. '-e:2bc8,GC3,BG14' would print the earliest messages from thread 2bc8,\n");
     printf("     the gc thread associated with heap 3, and the background GC thread for heap 14\n");
+    printf("\n");
+    printf(" -a: print all messages from all threads\n");
     printf("\n");
 }
 
