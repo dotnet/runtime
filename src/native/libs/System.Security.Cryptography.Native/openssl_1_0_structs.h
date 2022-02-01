@@ -169,7 +169,8 @@ struct x509_store_st
     X509_VERIFY_PARAM* param;
 };
 
-struct bio_st {
+struct bio_st
+{
     const void* _ignored1;
     const void* _ignored2;
     const void* _ignored3;
@@ -182,4 +183,42 @@ struct bio_st {
     const void*_ignored10;
     const void*_ignored11;
     int references;
+};
+
+#ifndef SSL_MAX_KRB5_PRINCIPAL_LENGTH
+#define SSL_MAX_KRB5_PRINCIPAL_LENGTH  256
+#endif
+struct ssl_session_st
+{
+    int _ignored0;
+    unsigned int _ignored2;
+    unsigned char _ignored3[SSL_MAX_KEY_ARG_LENGTH];
+    int _ignored4;
+    unsigned char _ignored5[SSL_MAX_MASTER_KEY_LENGTH];
+    unsigned int _ignored6;
+    unsigned char _ignored7[SSL_MAX_SSL_SESSION_ID_LENGTH];
+    unsigned int _ignored8;
+    unsigned char _ignored9[SSL_MAX_SID_CTX_LENGTH];
+#ifndef OPENSSL_NO_KRB5
+    unsigned int _ignored10;
+    unsigned char _ignored11[SSL_MAX_KRB5_PRINCIPAL_LENGTH];
+#endif
+#ifndef OPENSSL_NO_PSK
+    char * _ignored12;
+    char * _ignored13;
+#endif
+    int _ignored14;
+    void* _ignored15;
+    void* _ignored16;
+    long _ignored17;
+    int _ignored18;
+    long _ignored19;
+    long _ignored20;
+    unsigned int _ignored21;
+    void * _ignored22;
+    unsigned long _ignored23;
+    STACK_OF(SSL_CIPHER) *_ignored24;
+    CRYPTO_EX_DATA _ignored25;
+    struct ssl_session_st *prev, *next;
+    char *tlsext_hostname;
 };
