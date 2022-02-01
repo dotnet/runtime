@@ -326,6 +326,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                             {
                                                 qualifier = "in";
                                             }
+                                            else if (paramSymbol.RefKind == RefKind.Ref)
+                                            {
+                                                qualifier = "ref";
+                                            }
                                             string typeName = paramTypeSymbol.ToDisplayString(
                                                 SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
                                                     SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
