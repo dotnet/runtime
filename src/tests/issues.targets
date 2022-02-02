@@ -893,12 +893,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: AssemblyLoadContext.LoadFromAssemblyPath</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/SameNameDifferentAssembly/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/160</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/Primitives/ICustomMarshaler_TargetWindows/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/160</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/**/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: C++/CLI</Issue>
         </ExcludeList>
@@ -945,7 +939,7 @@
             <Issue>https://github.com/dotnet/runtimelab/issues/173</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/CustomMarshalers/CustomMarshalersTest/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/160</Issue>
+            <Issue>Specific to CoreCLR: Built-in COM Interop</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Decimal/DecimalTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/175</Issue>
