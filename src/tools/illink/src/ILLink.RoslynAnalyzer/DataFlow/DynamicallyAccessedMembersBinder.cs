@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
@@ -15,14 +14,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		// Returns the members of the type bound by memberTypes. For DynamicallyAccessedMemberTypes.All, this returns all members of the type and its
 		// nested types, including interface implementations, plus the same or any base types or implemented interfaces.
 		// DynamicallyAccessedMemberTypes.PublicNestedTypes and NonPublicNestedTypes do the same for members of the selected nested types.
-		public static IEnumerable<ISymbol> GetDynamicallyAccessedMembers (this ITypeSymbol typeDefinition, OperationAnalysisContext context, DynamicallyAccessedMemberTypes memberTypes, bool declaredOnly = false)
+		public static IEnumerable<ISymbol> GetDynamicallyAccessedMembers (this ITypeSymbol typeDefinition, DynamicallyAccessedMemberTypes memberTypes, bool declaredOnly = false)
 		{
 			if (memberTypes == DynamicallyAccessedMemberTypes.None)
 				yield break;
 
 			if (memberTypes == DynamicallyAccessedMemberTypes.All) {
 				var members = new List<ISymbol> ();
-				typeDefinition.GetAllOnType (context, declaredOnly, members);
+				typeDefinition.GetAllOnType (declaredOnly, members);
 				foreach (var m in members)
 					yield return m;
 				yield break;
@@ -69,7 +68,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				foreach (var nested in typeDefinition.GetNestedTypesOnType (filter: null, bindingFlags: BindingFlags.NonPublic)) {
 					yield return nested;
 					var members = new List<ISymbol> ();
-					nested.GetAllOnType (context, declaredOnly: false, members);
+					nested.GetAllOnType (declaredOnly: false, members);
 					foreach (var m in members)
 						yield return m;
 				}
@@ -79,7 +78,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				foreach (var nested in typeDefinition.GetNestedTypesOnType (filter: null, bindingFlags: BindingFlags.Public)) {
 					yield return nested;
 					var members = new List<ISymbol> ();
-					nested.GetAllOnType (context, declaredOnly: false, members);
+					nested.GetAllOnType (declaredOnly: false, members);
 					foreach (var m in members)
 						yield return m;
 				}
@@ -106,7 +105,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.Interfaces)) {
-				foreach (var i in typeDefinition.GetAllInterfaceImplementations (context, declaredOnly))
+				foreach (var i in typeDefinition.GetAllInterfaceImplementations (declaredOnly))
 					yield return i;
 			}
 		}
@@ -339,7 +338,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		// declaredOnly will cause this to retrieve interfaces recursively required by the type, but doesn't necessarily
 		// include interfaces required by any base types.
-		public static IEnumerable<ITypeSymbol> GetAllInterfaceImplementations (this ITypeSymbol thisType, OperationAnalysisContext context, bool declaredOnly)
+		public static IEnumerable<ITypeSymbol> GetAllInterfaceImplementations (this ITypeSymbol thisType, bool declaredOnly)
 		{
 			ITypeSymbol? type = thisType;
 			while (type != null) {
@@ -349,7 +348,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					ITypeSymbol? interfaceType = i;
 					if (interfaceType != null) {
 						// declaredOnly here doesn't matter since interfaces don't have base types
-						foreach (var innerInterface in interfaceType.GetAllInterfaceImplementations (context, declaredOnly: true))
+						foreach (var innerInterface in interfaceType.GetAllInterfaceImplementations (declaredOnly: true))
 							yield return innerInterface;
 					}
 				}
@@ -365,10 +364,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 #pragma warning disable RS1024
 		// declaredOnly will cause this to retrieve only members of the type, not of its base types. This includes interfaces recursively
 		// required by this type (but not members of these interfaces, or interfaces required only by base types).
-		public static void GetAllOnType (this ITypeSymbol type, OperationAnalysisContext context, bool declaredOnly, List<ISymbol> members) => GetAllOnType (type, context, declaredOnly, members, new HashSet<ITypeSymbol> (SymbolEqualityComparer.Default));
+		public static void GetAllOnType (this ITypeSymbol type, bool declaredOnly, List<ISymbol> members) => GetAllOnType (type, declaredOnly, members, new HashSet<ITypeSymbol> (SymbolEqualityComparer.Default));
 #pragma warning restore RS1024
 
-		static void GetAllOnType (ITypeSymbol type, OperationAnalysisContext context, bool declaredOnly, List<ISymbol> members, HashSet<ITypeSymbol> types)
+		static void GetAllOnType (ITypeSymbol type, bool declaredOnly, List<ISymbol> members, HashSet<ITypeSymbol> types)
 		{
 			if (!types.Add (type))
 				return;
@@ -376,18 +375,18 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			foreach (var nestedType in type.GetTypeMembers ().OfType<ITypeSymbol> ()) {
 				members.Add (nestedType);
 				// Base types and interfaces of nested types are always included.
-				GetAllOnType (nestedType, context, declaredOnly: false, members, types);
+				GetAllOnType (nestedType, declaredOnly: false, members, types);
 			}
 
 			if (!declaredOnly) {
 				var baseType = type.BaseType;
 				if (baseType != null)
-					GetAllOnType (baseType, context, declaredOnly: false, members, types);
+					GetAllOnType (baseType, declaredOnly: false, members, types);
 			}
 
 			if (!type.Interfaces.IsEmpty) {
 				if (declaredOnly) {
-					foreach (var iface in type.GetAllInterfaceImplementations (context, declaredOnly: true))
+					foreach (var iface in type.GetAllInterfaceImplementations (declaredOnly: true))
 						members.Add (iface);
 				} else {
 					foreach (var iface in type.Interfaces) {
@@ -395,7 +394,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 						var interfaceType = iface;
 						if (interfaceType == null)
 							continue;
-						GetAllOnType (interfaceType, context, declaredOnly: false, members, types);
+						GetAllOnType (interfaceType, declaredOnly: false, members, types);
 					}
 				}
 			}

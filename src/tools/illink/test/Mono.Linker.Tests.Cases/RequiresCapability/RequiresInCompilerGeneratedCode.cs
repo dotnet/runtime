@@ -94,7 +94,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				_ = _default.Value;
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
 			static IEnumerable<int> TestDynamicallyAccessedMethod ()
 			{
 				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
@@ -264,7 +264,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				_ = _default.Value;
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
 			static async void TestDynamicallyAccessedMethod ()
 			{
 				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
@@ -436,7 +436,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				_ = _default.Value;
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
 			static async IAsyncEnumerable<int> TestDynamicallyAccessedMethod ()
 			{
 				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
@@ -1146,7 +1146,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
 			static IEnumerable<int> TestDynamicallyAccessedMethodViaGenericMethodParameterInIterator ()
 			{
 				yield return 1;
@@ -1260,8 +1260,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				MethodWithRequires ();
 			}
 
-			[ExpectedWarning ("IL2026", "Requires to suppress", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "Requires to suppress", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "Requires to suppress")]
+			[ExpectedWarning ("IL2026", "Requires to suppress")]
 			public static void Test ()
 			{
 				// This is not a 100% reliable test, since in theory it can be marked in any order and so it could happen that the

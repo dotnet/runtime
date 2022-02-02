@@ -7,7 +7,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		protected override string TestSuiteName => "DataFlow";
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task AnnotatedMembersAccessedViaReflection ()
 		{
 			return RunTest (nameof (AnnotatedMembersAccessedViaReflection));

@@ -429,11 +429,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		class ReflectionAccessOnMethod
 		{
 			// Analyzer still dont understand RUC on type
-			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
+			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
+			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)")]
+			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()")]
+			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()")]
 			static void TestDAMAccess ()
 			{
 				// Warns because BaseWithoutRequiresOnType.Method as RUC on the method
@@ -511,11 +511,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public DerivedWithRequiresOnBaseWithoutRequires () { }
 			}
 
-			[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()")]
+			[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()")]
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()")]
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()")]
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()")]
 			static void TestDAMAccess ()
 			{
 				// Warns because the type has Requires
@@ -577,11 +577,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int DerivedStaticField;
 			}
 
-			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticField", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticField")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticField")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticField")]
+			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticField")]
+			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField")]
 			static void TestDAMAccess ()
 			{
 				typeof (WithRequires).RequiresPublicFields ();
@@ -636,8 +636,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				static int privatefield;
 			}
 
-			// Analyzer doesn't implement DAM on type hierarchy yet
-			[ExpectedWarning ("IL2075", ProducedBy = ProducedBy.Analyzer)]
 			static void TestDAMOnTypeAccess (DAMAnnotatedClass instance)
 			{
 				instance.GetType ().GetField ("publicField");
@@ -711,16 +709,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int DerivedStaticProperty { get; set; }
 			}
 
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set")]
+			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.get")]
+			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.set")]
+			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get")]
+			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set")]
 			static void TestDAMAccess ()
 			{
 				typeof (WithRequires).RequiresPublicProperties ();
@@ -789,8 +787,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			// Analyzer doesn't implement DAM on type hierarchy yet
-			[ExpectedWarning ("IL2075", ProducedBy = ProducedBy.Analyzer)]
 			static void TestDAMOnTypeAccess (DAMAnnotatedClass instance)
 			{
 				instance.GetType ().GetProperty ("publicProperty");

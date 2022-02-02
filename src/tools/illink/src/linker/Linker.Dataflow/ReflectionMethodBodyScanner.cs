@@ -1505,7 +1505,7 @@ namespace Mono.Linker.Dataflow
 		void RequireDynamicallyAccessedMembers (in AnalysisContext analysisContext, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
 		{
 			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (_context, this, analysisContext);
-			requireDynamicallyAccessedMembersAction.Invoke (new DiagnosticContext (analysisContext.Origin, analysisContext.DiagnosticsEnabled, _context), value, targetValue);
+			requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 		}
 
 		static BindingFlags? GetBindingFlagsFromValue (in MultiValue parameter) => (BindingFlags?) parameter.AsConstInt ();

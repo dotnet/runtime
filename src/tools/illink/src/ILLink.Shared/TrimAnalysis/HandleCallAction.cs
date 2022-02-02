@@ -38,6 +38,27 @@ namespace ILLink.Shared.TrimAnalysis
 				methodReturnValue = instanceValue;
 				break;
 
+			// Disable Type_GetMethod, Type_GetProperty, Type_GetField, Type_GetConstructor, Type_GetEvent, Activator_CreateInstance_Type
+			// These calls have annotations on the runtime by default, trying to analyze the annotations without intrinsic handling
+			// might end up generating unnecessary warnings. So we disable handling these calls until a proper intrinsic handling is made
+			case IntrinsicId.Type_GetMethod:
+				return true;
+
+			case IntrinsicId.Type_GetProperty:
+				return true;
+
+			case IntrinsicId.Type_GetField:
+				return true;
+
+			case IntrinsicId.Type_GetConstructor:
+				return true;
+
+			case IntrinsicId.Type_GetEvent:
+				return true;
+
+			case IntrinsicId.Activator_CreateInstance_Type:
+				return true;
+
 			default:
 				return false;
 			}
