@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // this test is the equivalent of Class_ImplicitOverrideVirtualNewslot.cs for structs.
 // The reason we are using IL is because C# doesn't allow struct to have virtual methods with 'virtual' keyword.
 // Methods that implement interface methods are by default virtual (which translates to 'virtual newslot final' in IL.
@@ -291,7 +292,7 @@
 
 } // end of class C4`1
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_Struct_ImplicitOverrideVirtualNewslot
        extends [mscorlib]System.Object
 {
   .field public static bool pass
@@ -345,7 +346,7 @@
     IL_004a:  call       void [System.Console]System.Console::WriteLine(string)
     IL_004f:  nop
     IL_0050:  ldc.i4.0
-    IL_0051:  stsfld     bool Test::pass
+    IL_0051:  stsfld     bool Test_Struct_ImplicitOverrideVirtualNewslot::pass
     IL_0056:  nop
     IL_0057:  ret
   } // end of method Test::TestNonGenInterface_NonGenType
@@ -404,7 +405,7 @@
     IL_005a:  call       void [System.Console]System.Console::WriteLine(string)
     IL_005f:  nop
     IL_0060:  ldc.i4.0
-    IL_0061:  stsfld     bool Test::pass
+    IL_0061:  stsfld     bool Test_Struct_ImplicitOverrideVirtualNewslot::pass
     IL_0066:  nop
     IL_0067:  ldloc.0
     IL_0068:  callvirt   instance int32 I::method2<int32>()
@@ -493,7 +494,7 @@
     IL_0100:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0105:  nop
     IL_0106:  ldc.i4.0
-    IL_0107:  stsfld     bool Test::pass
+    IL_0107:  stsfld     bool Test_Struct_ImplicitOverrideVirtualNewslot::pass
     IL_010c:  nop
     IL_010d:  ret
   } // end of method Test::TestNonGenInterface_GenType
@@ -552,7 +553,7 @@
     IL_005a:  call       void [System.Console]System.Console::WriteLine(string)
     IL_005f:  nop
     IL_0060:  ldc.i4.0
-    IL_0061:  stsfld     bool Test::pass
+    IL_0061:  stsfld     bool Test_Struct_ImplicitOverrideVirtualNewslot::pass
     IL_0066:  nop
     IL_0067:  ldloc.0
     IL_0068:  callvirt   instance int32 class IGen`1<int32>::method2<int32>()
@@ -641,7 +642,7 @@
     IL_0100:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0105:  nop
     IL_0106:  ldc.i4.0
-    IL_0107:  stsfld     bool Test::pass
+    IL_0107:  stsfld     bool Test_Struct_ImplicitOverrideVirtualNewslot::pass
     IL_010c:  nop
     IL_010d:  ret
   } // end of method Test::TestGenInterface_NonGenType
@@ -700,7 +701,7 @@
     IL_005a:  call       void [System.Console]System.Console::WriteLine(string)
     IL_005f:  nop
     IL_0060:  ldc.i4.0
-    IL_0061:  stsfld     bool Test::pass
+    IL_0061:  stsfld     bool Test_Struct_ImplicitOverrideVirtualNewslot::pass
     IL_0066:  nop
     IL_0067:  ldloc.0
     IL_0068:  callvirt   instance int32 class IGen`1<int32>::method2<int32>()
@@ -788,28 +789,31 @@
     IL_0100:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0105:  nop
     IL_0106:  ldc.i4.0
-    IL_0107:  stsfld     bool Test::pass
+    IL_0107:  stsfld     bool Test_Struct_ImplicitOverrideVirtualNewslot::pass
     IL_010c:  nop
     IL_010d:  ret
   } // end of method Test::TestGenInterface_GenType
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       73 (0x49)
     .maxstack  2
     .locals init (int32 V_0,
              bool V_1)
     IL_0000:  nop
-    IL_0001:  call       void Test::TestNonGenInterface_NonGenType()
+    IL_0001:  call       void Test_Struct_ImplicitOverrideVirtualNewslot::TestNonGenInterface_NonGenType()
     IL_0006:  nop
-    IL_0007:  call       void Test::TestNonGenInterface_GenType()
+    IL_0007:  call       void Test_Struct_ImplicitOverrideVirtualNewslot::TestNonGenInterface_GenType()
     IL_000c:  nop
-    IL_000d:  call       void Test::TestGenInterface_NonGenType()
+    IL_000d:  call       void Test_Struct_ImplicitOverrideVirtualNewslot::TestGenInterface_NonGenType()
     IL_0012:  nop
-    IL_0013:  call       void Test::TestGenInterface_GenType()
+    IL_0013:  call       void Test_Struct_ImplicitOverrideVirtualNewslot::TestGenInterface_GenType()
     IL_0018:  nop
-    IL_0019:  ldsfld     bool Test::pass
+    IL_0019:  ldsfld     bool Test_Struct_ImplicitOverrideVirtualNewslot::pass
     IL_001e:  ldc.i4.0
     IL_001f:  ceq
     IL_0021:  stloc.1
@@ -852,7 +856,7 @@
     // Code size       7 (0x7)
     .maxstack  8
     IL_0000:  ldc.i4.1
-    IL_0001:  stsfld     bool Test::pass
+    IL_0001:  stsfld     bool Test_Struct_ImplicitOverrideVirtualNewslot::pass
     IL_0006:  ret
   } // end of method Test::.cctor
 

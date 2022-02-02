@@ -5,7 +5,6 @@
 
 //
 // Types in this file are used for generated p/invokes (docs/design/features/source-generator-pinvokes.md).
-// See the DllImportGenerator experiment in https://github.com/dotnet/runtimelab.
 //
 namespace System.Runtime.InteropServices
 {
@@ -20,14 +19,11 @@ namespace System.Runtime.InteropServices
 #endif
     sealed class GeneratedDllImportAttribute : Attribute
     {
-        public bool BestFitMapping { get; set; }
-        public CallingConvention CallingConvention { get; set; }
         public CharSet CharSet { get; set; }
         public string? EntryPoint { get; set; }
         public bool ExactSpelling { get; set; }
         public bool PreserveSig { get; set; }
         public bool SetLastError { get; set; }
-        public bool ThrowOnUnmappableChar { get; set; }
 
         public GeneratedDllImportAttribute(string dllName)
         {

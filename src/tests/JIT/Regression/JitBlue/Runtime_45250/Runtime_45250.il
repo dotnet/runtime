@@ -7,7 +7,7 @@
 .assembly Runtime_45250
 {
 }
-.module Runtime_45250.dll
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit Runtime_45250.Program
        extends [System.Runtime]System.Object
@@ -77,6 +77,9 @@
   .method private hidebysig static int32
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
     IL_0000:  newobj     instance void Runtime_45250.Program/FuncGetter::.ctor()

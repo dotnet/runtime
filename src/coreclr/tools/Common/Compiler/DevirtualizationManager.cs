@@ -201,5 +201,16 @@ namespace ILCompiler
 
             return impl;
         }
+
+#if !READYTORUN
+        /// <summary>
+        /// Gets a value indicating whether it might be possible to obtain a constructed type data structure for the given type.
+        /// </summary>
+        /// <remarks>
+        /// This is a bit of a hack, but devirtualization manager has a global view of all allocated types
+        /// so it can answer this question.
+        /// </remarks>
+        public virtual bool CanConstructType(TypeDesc type) => true;
+#endif
     }
 }

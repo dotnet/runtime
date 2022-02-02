@@ -13,31 +13,31 @@ struct Gen : IGen
 	public void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);			
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread17.Eval(typeof(U)!=null);			
+		Interlocked.Increment(ref Test_thread17.Xcounter);
 	}
 		public static void ThreadPoolTest<U>()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread17.nThreads];
 		IGen obj = new Gen();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread17.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target<U>));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread17.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread17.Eval(Test_thread17.Xcounter==Test_thread17.nThreads);
+		Test_thread17.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread17
 {
 	public static int nThreads =50;
 	public static int counter = 0;

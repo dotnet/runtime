@@ -415,9 +415,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
         }
 
-#if FEATURE_COMPILE
-
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void AndAlso_NoMethod_NotStatic_ThrowsInvalidOperationException()
         {
             TypeBuilder type = GetTypeBuilder();
@@ -430,7 +428,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void OrElse_NoMethod_NotStatic_ThrowsInvalidOperationException()
         {
             TypeBuilder type = GetTypeBuilder();
@@ -443,7 +441,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void AndAlso_NoMethod_VoidReturnType_ThrowsArgumentException()
         {
             TypeBuilder type = GetTypeBuilder();
@@ -456,7 +454,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("method", () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void OrElse_NoMethod_VoidReturnType_ThrowsArgumentException()
         {
             TypeBuilder type = GetTypeBuilder();
@@ -469,7 +467,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(3)]
@@ -485,7 +483,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(3)]
@@ -501,7 +499,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void AndAlso_NoMethod_ExpressionDoesntMatchMethodParameters_ThrowsInvalidOperationException()
         {
             TypeBuilder type = GetTypeBuilder();
@@ -514,7 +512,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void OrElse_NoMethod_ExpressionDoesntMatchMethodParameters_ThrowsInvalidOperationException()
         {
             TypeBuilder type = GetTypeBuilder();
@@ -528,7 +526,7 @@ namespace System.Linq.Expressions.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void AndAlso_NoMethod_ReturnTypeNotEqualToParameterTypes_ThrowsArgumentException()
         {
             TypeBuilder type = GetTypeBuilder();
@@ -541,7 +539,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void OrElse_NoMethod_ReturnTypeNotEqualToParameterTypes_ThrowsArgumentException()
         {
             TypeBuilder type = GetTypeBuilder();
@@ -571,7 +569,7 @@ namespace System.Linq.Expressions.Tests
             yield return new object[] { GetTypeBuilder(), typeof(bool), new Type[0] };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(Operator_IncorrectMethod_TestData))]
         public static void Method_TrueOperatorIncorrectMethod_ThrowsArgumentException(TypeBuilder builder, Type returnType, Type[] parameterTypes)
         {
@@ -592,7 +590,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(Operator_IncorrectMethod_TestData))]
         public static void Method_FalseOperatorIncorrectMethod_ThrowsArgumentException(TypeBuilder builder, Type returnType, Type[]parameterTypes)
         {
@@ -613,7 +611,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(Operator_IncorrectMethod_TestData))]
         public static void AndAlso_NoMethod_TrueOperatorIncorrectMethod_ThrowsArgumentException(TypeBuilder builder, Type returnType, Type[] parameterTypes)
         {
@@ -632,7 +630,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(Operator_IncorrectMethod_TestData))]
         public static void OrElse_NoMethod_TrueOperatorIncorrectMethod_ThrowsArgumentException(TypeBuilder builder, Type returnType, Type[] parameterTypes)
         {
@@ -651,7 +649,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData("op_True")]
         [InlineData("op_False")]
         public static void Method_NoTrueFalseOperator_ThrowsArgumentException(string name)
@@ -674,7 +672,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData("op_True")]
         [InlineData("op_False")]
         public static void AndAlso_NoMethod_NoTrueFalseOperator_ThrowsArgumentException(string name)
@@ -694,7 +692,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData("op_True")]
         [InlineData("op_False")]
         public static void OrElse_NoMethod_NoTrueFalseOperator_ThrowsArgumentException(string name)
@@ -714,7 +712,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void Method_ParamsDontMatchOperator_ThrowsInvalidOperationException()
         {
             TypeBuilder builder = GetTypeBuilder();
@@ -735,7 +733,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), createdMethod));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void AndAlso_NoMethod_ParamsDontMatchOperator_ThrowsInvalidOperationException()
         {
             TypeBuilder builder = GetTypeBuilder();
@@ -753,7 +751,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(5), Expression.Constant(5)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void OrElse_NoMethod_ParamsDontMatchOperator_ThrowsInvalidOperationException()
         {
             TypeBuilder builder = GetTypeBuilder();
@@ -770,8 +768,6 @@ namespace System.Linq.Expressions.Tests
             TypeInfo createdType = builder.CreateTypeInfo();
             Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(5), Expression.Constant(5)));
         }
-
-#endif
 
         [Fact]
         public static void ImplicitConversionToBool_ThrowsArgumentException()
@@ -821,15 +817,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("(a OrElse b)", e2.ToString());
         }
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void AndAlsoGlobalMethod()
         {
             MethodInfo method = GlobalMethod(typeof(int), new[] { typeof(int), typeof(int) });
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(1), Expression.Constant(2), method));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void OrElseGlobalMethod()
         {
             MethodInfo method = GlobalMethod(typeof(int), new [] { typeof(int), typeof(int) });
@@ -851,7 +846,6 @@ namespace System.Linq.Expressions.Tests
             module.CreateGlobalFunctions();
             return module.GetMethod(globalMethod.Name);
         }
-#endif
 
         public class NonGenericClass
         {

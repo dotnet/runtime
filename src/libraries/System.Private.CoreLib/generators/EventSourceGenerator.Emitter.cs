@@ -32,7 +32,7 @@ namespace Generators
                     _builder.AppendLine("using System;");
                     GenType(ec);
 
-                    _context.AddSource($"{ec.ClassName}.Generated", SourceText.From(_builder.ToString(), Encoding.UTF8));
+                    _context.AddSource($"{ec.ClassName}.g.cs", SourceText.From(_builder.ToString(), Encoding.UTF8));
 
                     _builder.Clear();
                 }

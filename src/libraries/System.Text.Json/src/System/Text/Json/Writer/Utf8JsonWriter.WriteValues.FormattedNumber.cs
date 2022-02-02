@@ -67,7 +67,7 @@ namespace System.Text.Json
         private void WriteNumberValueIndented(ReadOnlySpan<byte> utf8Value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(utf8Value.Length < int.MaxValue - indent - 1 - s_newLineLength);
 

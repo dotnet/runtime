@@ -36,6 +36,8 @@ namespace System.IO.Hashing.Tests
         private const string DotNetNCHashing = ".NET now has non-crypto hashing";
         private const string SixtyThreeBytes = "A sixty-three byte test input requires substantial forethought!";
         private const string SixtyThreeBytes3 = SixtyThreeBytes + SixtyThreeBytes + SixtyThreeBytes;
+        private const string ThirtyTwoBytes = "This string has 32 ASCII bytes..";
+        private const string ThirtyTwoBytes3 = ThirtyTwoBytes + ThirtyTwoBytes + ThirtyTwoBytes;
 
         protected static IEnumerable<TestCase> TestCaseDefinitions { get; } =
             new[]
@@ -103,6 +105,11 @@ namespace System.IO.Hashing.Tests
                     $"{SixtyThreeBytes} (x3)",
                     Encoding.ASCII.GetBytes(SixtyThreeBytes3),
                     "239C7B3A85BD22B3"),
+                // stripe size
+                new TestCase(
+                    $"{ThirtyTwoBytes} (x3)",
+                    Encoding.ASCII.GetBytes(ThirtyTwoBytes3),
+                    "975E3E6FE7E67FBC")
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new XxHash64();

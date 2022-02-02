@@ -18,7 +18,7 @@ import argparse
 import os
 from coreclr_arguments import *
 from os import path
-from azdo_pipelines_util import run_command, copy_directory, set_pipeline_variable, ChangeDir, TempDir
+from jitutil import run_command, copy_directory, set_pipeline_variable, ChangeDir, TempDir
 
 parser = argparse.ArgumentParser(description="description")
 
@@ -103,7 +103,7 @@ def main(main_args):
 
     # create exploratory directory
     print('Copying {} -> {}'.format(scripts_src_directory, coreroot_directory))
-    copy_directory(scripts_src_directory, coreroot_directory, match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
+    copy_directory(scripts_src_directory, coreroot_directory, verbose_output=True, match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
 
     if is_windows:
         acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
@@ -113,7 +113,7 @@ def main(main_args):
 
     # copy CORE_ROOT
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, coreroot_directory))
-    copy_directory(coreclr_args.core_root_directory, coreroot_directory, match_func=acceptable_copy)
+    copy_directory(coreclr_args.core_root_directory, coreroot_directory, verbose_output=True, match_func=acceptable_copy)
 
     try:
         with TempDir() as tool_code_directory:
@@ -136,7 +136,7 @@ def main(main_args):
 
             # copy tool
             print('Copying {} -> {}'.format(publish_dir, dst_directory))
-            copy_directory(publish_dir, dst_directory, match_func=acceptable_copy)
+            copy_directory(publish_dir, dst_directory, verbose_output=True, match_func=acceptable_copy)
     except PermissionError as pe:
         print("Skipping file. Got error: %s", pe)
 

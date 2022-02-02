@@ -673,7 +673,7 @@ namespace System.Text.Json.Serialization.Tests
 
         // From https://github.com/dotnet/runtime/issues/882
         [Fact]
-        public static void OptionsFollowToConverter()
+        public static void OptionsFlowToConverter()
         {
             var builder = new StringBuilder();
             builder.Append("{\"type\": \"array\", \"array\": ");

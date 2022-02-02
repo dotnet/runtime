@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -225,6 +226,12 @@ namespace Microsoft.Interop
                     SyntaxKind.NotEqualsExpression,
                     IdentifierName(context.GetIdentifiers(info).managed),
                     LiteralExpression(SyntaxKind.NullLiteralExpression));
+        }
+
+        /// <inheritdoc/>
+        public virtual bool IsSupported(TargetFramework target, Version version)
+        {
+            return target is TargetFramework.Net && version.Major >= 6;
         }
 
         /// <inheritdoc/>

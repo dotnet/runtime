@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, EntryPoint = "SetCurrentDirectoryW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
-        internal static extern bool SetCurrentDirectory(string path);
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "SetCurrentDirectoryW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial bool SetCurrentDirectory(string path);
     }
 }

@@ -78,5 +78,5 @@ end:
 }
 
 
-.assembly bge_s.exe {}
+.assembly bge_s {}
 

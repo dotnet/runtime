@@ -17,16 +17,16 @@ struct Gen<T> : IGen<T>
 	public void Target(object p)
 	{		
 			ManualResetEvent evt = (ManualResetEvent) p;
-			Interlocked.Increment(ref Test.Xcounter);
+			Interlocked.Increment(ref Test_thread11.Xcounter);
 			evt.Set();
 	}
 	
 	public static void ThreadPoolTest()
 	{
-		ManualResetEvent[] evts = new ManualResetEvent[Test.nThreads];
-		WaitHandle[] hdls = new WaitHandle[Test.nThreads];
+		ManualResetEvent[] evts = new ManualResetEvent[Test_thread11.nThreads];
+		WaitHandle[] hdls = new WaitHandle[Test_thread11.nThreads];
 
-		for (int i=0; i<Test.nThreads; i++)
+		for (int i=0; i<Test_thread11.nThreads; i++)
 		{
 			evts[i] = new ManualResetEvent(false);
 			hdls[i] = (WaitHandle) evts[i];
@@ -34,19 +34,19 @@ struct Gen<T> : IGen<T>
 
 		IGen<T> obj = new Gen<T>();
 
-		for (int i = 0; i <Test.nThreads; i++)
+		for (int i = 0; i <Test_thread11.nThreads; i++)
 		{	
 			WaitCallback cb = new WaitCallback(obj.Target);
 			ThreadPool.QueueUserWorkItem(cb,evts[i]);
 		}
 
 		WaitHandle.WaitAll(hdls);
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread11.Eval(Test_thread11.Xcounter==Test_thread11.nThreads);
+		Test_thread11.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread11
 {
 	public static int nThreads =50;
 	public static int counter = 0;

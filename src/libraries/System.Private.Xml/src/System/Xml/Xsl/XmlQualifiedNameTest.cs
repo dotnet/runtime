@@ -128,15 +128,15 @@ namespace System.Xml.Xsl
                 }
                 else if ((object)this.Namespace == (object)wildcard)
                 {
-                    return "*:" + this.Name;
+                    return $"*:{this.Name}";
                 }
                 else if (_exclude)
                 {
-                    return "{~" + this.Namespace + "}:" + this.Name;
+                    return $"{{~{this.Namespace}}}:{this.Name}";
                 }
                 else
                 {
-                    return "{" + this.Namespace + "}:" + this.Name;
+                    return $"{{{this.Namespace}}}:{this.Name}";
                 }
             }
         }

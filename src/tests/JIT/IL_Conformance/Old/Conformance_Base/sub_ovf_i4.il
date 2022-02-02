@@ -315,4 +315,4 @@ END:
 }
 
 
-.assembly sub_ovf_i4.exe{}
+.assembly sub_ovf_i4{}

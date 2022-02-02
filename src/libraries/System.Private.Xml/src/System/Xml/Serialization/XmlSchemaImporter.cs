@@ -832,9 +832,9 @@ namespace System.Xml.Serialization
             if (duplicateTypes)
             {
                 member.ChoiceIdentifier = new ChoiceIdentifierAccessor();
-                member.ChoiceIdentifier.MemberName = member.Name + "ElementName";
+                member.ChoiceIdentifier.MemberName = $"{member.Name}ElementName";
                 // we need to create the EnumMapping to store all of the element names
-                member.ChoiceIdentifier.Mapping = ImportEnumeratedChoice(member.Elements, ns, member.Name + "ChoiceType");
+                member.ChoiceIdentifier.Mapping = ImportEnumeratedChoice(member.Elements, ns, $"{member.Name}ChoiceType");
                 member.ChoiceIdentifier.MemberIds = new string[member.Elements.Length];
                 ConstantMapping[] constants = ((EnumMapping)member.ChoiceIdentifier.Mapping).Constants!;
                 for (int i = 0; i < member.Elements.Length; i++)
@@ -1296,7 +1296,7 @@ namespace System.Xml.Serialization
                 if (choiceMember.ChoiceIdentifier != null) return null;
                 arrayMapping.TypeDesc = choiceMember.TypeDesc;
                 arrayMapping.Elements = choiceMember.Elements;
-                arrayMapping.TypeName = (type.Name == null || type.Name.Length == 0) ? "ArrayOf" + CodeIdentifier.MakePascal(arrayMapping.TypeDesc!.Name) : type.Name;
+                arrayMapping.TypeName = (type.Name == null || type.Name.Length == 0) ? $"ArrayOf{CodeIdentifier.MakePascal(arrayMapping.TypeDesc!.Name)}" : type.Name;
             }
             else if (item is XmlSchemaAll || item is XmlSchemaSequence)
             {
@@ -1313,7 +1313,7 @@ namespace System.Xml.Serialization
                     return null;
                 arrayMapping.Elements = new ElementAccessor[] { itemAccessor };
                 arrayMapping.TypeDesc = ((TypeMapping)itemAccessor.Mapping!).TypeDesc!.CreateArrayTypeDesc();
-                arrayMapping.TypeName = (type.Name == null || type.Name.Length == 0) ? "ArrayOf" + CodeIdentifier.MakePascal(itemAccessor.Mapping.TypeDesc.Name) : type.Name;
+                arrayMapping.TypeName = (type.Name == null || type.Name.Length == 0) ? $"ArrayOf{CodeIdentifier.MakePascal(itemAccessor.Mapping.TypeDesc.Name)}" : type.Name;
             }
             else
             {
@@ -1849,7 +1849,7 @@ namespace System.Xml.Serialization
         private PrimitiveMapping? ImportNonXsdPrimitiveDataType(XmlSchemaSimpleType dataType, string? ns, TypeFlags flags)
         {
             PrimitiveMapping? mapping = null;
-            TypeDesc? typeDesc = null;
+            TypeDesc? typeDesc;
             if (dataType.Name != null && dataType.Name.Length != 0)
             {
                 typeDesc = Scope.GetTypeDesc(dataType.Name, ns, flags);
@@ -1905,7 +1905,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls FindDataType")]
         private TypeDesc GetDataTypeSource(XmlSchemaSimpleType dataType, TypeFlags flags)
         {
-            TypeDesc? typeDesc = null;
+            TypeDesc? typeDesc;
             if (dataType.Name != null && dataType.Name.Length != 0)
             {
                 typeDesc = Scope.GetTypeDesc(dataType);

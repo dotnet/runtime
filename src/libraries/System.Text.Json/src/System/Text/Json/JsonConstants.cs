@@ -48,7 +48,6 @@ namespace System.Text.Json
         public static ReadOnlySpan<byte> EscapableChars => new byte[] { Quote, (byte)'n', (byte)'r', (byte)'t', Slash, (byte)'u', (byte)'b', (byte)'f' };
 
         public const int SpacesPerIndent = 2;
-        public const int MaxWriterDepth = 1_000;
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
         public const int StackallocByteThreshold = 256;

@@ -7,7 +7,7 @@
 using System;
 using System.Collections.Generic;
 
-internal class Test
+internal class Test_lifetime2
 {
     public static int aExists;
     public static int bExists;

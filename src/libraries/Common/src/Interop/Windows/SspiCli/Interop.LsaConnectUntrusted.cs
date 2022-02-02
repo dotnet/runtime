@@ -10,12 +10,7 @@ internal static partial class Interop
 {
     internal static partial class SspiCli
     {
-#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Interop.Libraries.SspiCli)]
         internal static partial int LsaConnectUntrusted(out SafeLsaHandle LsaHandle);
-#else
-        [DllImport(Interop.Libraries.SspiCli)]
-        internal static extern int LsaConnectUntrusted(out SafeLsaHandle LsaHandle);
-#endif
     }
 }

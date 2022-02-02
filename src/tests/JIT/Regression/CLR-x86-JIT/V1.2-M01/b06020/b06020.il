@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly b06020 {}
+.assembly extern xunit.core {}
 .class public auto ansi sealed jb
        extends [mscorlib]System.Object
 {
@@ -131,6 +132,9 @@
   .field static privatescope class x aO$PST0400000B
   .method public static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       14 (0xe)
     .maxstack  4

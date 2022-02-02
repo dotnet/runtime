@@ -1486,7 +1486,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         // Some nodes should never be marked unused, as they must be contained in the backend.
         // These may be marked as unused during dead code elimination traversal, but they *must* be subsequently
         // removed.
-        assert(!node->IsUnusedValue() || !node->OperIs(GT_FIELD_LIST, GT_LIST, GT_INIT_VAL));
+        assert(!node->IsUnusedValue() || !node->OperIs(GT_FIELD_LIST, GT_INIT_VAL));
 
         // Verify that the REVERSE_OPS flag is not set. NOTE: if we ever decide to reuse the bit assigned to
         // GTF_REVERSE_OPS for an LIR-only flag we will need to move this check to the points at which we
@@ -1636,7 +1636,7 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
     LIR::Range& blockRange = LIR::AsRange(block);
 
     GenTree* insertionPoint = nullptr;
-    if ((block->bbJumpKind == BBJ_COND) || (block->bbJumpKind == BBJ_SWITCH) || (block->bbJumpKind == BBJ_RETURN))
+    if (block->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_RETURN))
     {
         insertionPoint = blockRange.LastNode();
         assert(insertionPoint != nullptr);

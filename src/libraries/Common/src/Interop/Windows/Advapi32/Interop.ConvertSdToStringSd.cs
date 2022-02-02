@@ -8,15 +8,9 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "ConvertSecurityDescriptorToStringSecurityDescriptorW",
-            CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+            CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static partial bool ConvertSdToStringSd(
-#else
-        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "ConvertSecurityDescriptorToStringSecurityDescriptorW",
-            CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
-        internal static extern bool ConvertSdToStringSd(
-#endif
             byte[] securityDescriptor,
             /* DWORD */ uint requestedRevision,
             uint securityInformation,

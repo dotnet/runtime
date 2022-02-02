@@ -9,13 +9,8 @@ internal static partial class Interop
 {
     internal static partial class SspiCli
     {
-#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int LsaGetLogonSessionData(
-#else
-        [DllImport(Interop.Libraries.SspiCli, SetLastError = true)]
-        internal static extern int LsaGetLogonSessionData(
-#endif
             ref LUID LogonId,
             out SafeLsaReturnBufferHandle ppLogonSessionData);
     }

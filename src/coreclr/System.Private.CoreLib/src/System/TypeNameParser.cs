@@ -14,11 +14,11 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
-    internal sealed class SafeTypeNameParserHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed partial class SafeTypeNameParserHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         #region QCalls
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void _ReleaseTypeNameParser(IntPtr pTypeNameParser);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_ReleaseTypeNameParser")]
+        private static partial void Release(IntPtr pTypeNameParser);
         #endregion
 
         public SafeTypeNameParserHandle()
@@ -28,29 +28,29 @@ namespace System
 
         protected override bool ReleaseHandle()
         {
-            _ReleaseTypeNameParser(handle);
+            Release(handle);
             handle = IntPtr.Zero;
             return true;
         }
     }
 
-    internal sealed class TypeNameParser : IDisposable
+    internal sealed partial class TypeNameParser : IDisposable
     {
         #region QCalls
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void _CreateTypeNameParser(string typeName, ObjectHandleOnStack retHandle, bool throwOnError);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_CreateTypeNameParser", CharSet = CharSet.Unicode)]
+        private static partial void _CreateTypeNameParser(string typeName, ObjectHandleOnStack retHandle, bool throwOnError);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void _GetNames(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetNames")]
+        private static partial void _GetNames(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void _GetTypeArguments(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetTypeArguments")]
+        private static partial void _GetTypeArguments(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void _GetModifiers(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetModifiers")]
+        private static partial void _GetModifiers(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void _GetAssemblyName(SafeTypeNameParserHandle pTypeNameParser, StringHandleOnStack retString);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetAssemblyName")]
+        private static partial void _GetAssemblyName(SafeTypeNameParserHandle pTypeNameParser, StringHandleOnStack retString);
         #endregion
 
         #region Static Members

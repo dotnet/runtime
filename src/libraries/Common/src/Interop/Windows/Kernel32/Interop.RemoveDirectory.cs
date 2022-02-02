@@ -12,13 +12,8 @@ internal static partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use RemoveDirectory.
         /// </summary>
-#if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "RemoveDirectoryW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "RemoveDirectoryW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         private static partial bool RemoveDirectoryPrivate(string path);
-#else
-        [DllImport(Libraries.Kernel32, EntryPoint = "RemoveDirectoryW", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern bool RemoveDirectoryPrivate(string path);
-#endif
 
         internal static bool RemoveDirectory(string path)
         {

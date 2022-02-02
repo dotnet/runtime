@@ -12,7 +12,7 @@ markup_test (const char *s)
 	GMarkupParser *parser = g_new0 (GMarkupParser, 1);
 	GMarkupParseContext *context;
 	GError *gerror = NULL;
-	
+
 	context = g_markup_parse_context_new (parser, 0, 0, 0);
 
 	g_markup_parse_context_parse (context, s, strlen (s), &gerror);
@@ -39,7 +39,7 @@ invalid_documents (void)
 	do_bad_test ("<a b>");
 	do_bad_test ("<a b=>");
 	do_bad_test ("<a b=c>");
-	
+
 	return OK;
 }
 
@@ -49,7 +49,7 @@ valid_documents (void)
 	/* These should fail */
 	do_ok_test ("<a>");
 	do_ok_test ("<a a=\"b\">");
-	
+
 	return OK;
 }
 
@@ -114,7 +114,7 @@ end_element   (GMarkupParseContext *context,
 	       GError             **gerror)
 {
         AppConfigInfo* app_config = (AppConfigInfo*) user_data;
-	
+
         if (strcmp (element_name, "configuration") == 0) {
                 app_config->configuration_count--;
         } else if (strcmp (element_name, "startup") == 0) {
@@ -136,7 +136,7 @@ domain_test (const char *text)
 {
 	AppConfigInfo *app_config = g_new0 (AppConfigInfo, 1);
 	GMarkupParseContext *context;
-	
+
         context = g_markup_parse_context_new (&mono_parser, 0, app_config, NULL);
         if (g_markup_parse_context_parse (context, text, strlen (text), NULL)) {
                 g_markup_parse_context_end_parse (context, NULL);
@@ -164,7 +164,7 @@ mono_domain (void)
 {
 	AppConfigInfo *info;
 
-	info = domain_test ("<configuration><!--hello--><startup><!--world--><requiredRuntime version=\"v1\"><!--r--></requiredRuntime></startup></configuration>"); 
+	info = domain_test ("<configuration><!--hello--><startup><!--world--><requiredRuntime version=\"v1\"><!--r--></requiredRuntime></startup></configuration>");
 	if (info->required_runtime == NULL)
 		return FAILED ("No required runtime section");
 	if (strcmp (info->required_runtime, "v1") != 0)
@@ -182,7 +182,7 @@ mono_domain (void)
 	if ((strcmp ((char*)info->supported_runtimes->data, "v1") == 0)){
 		if (info->supported_runtimes->next == NULL)
 			return FAILED ("Expected 2 supported runtimes");
-		
+
 		if ((strcmp ((char*)info->supported_runtimes->next->data, "v2") != 0))
 			return FAILED ("Expected v1, v2, got %s", info->supported_runtimes->next->data);
 		if (info->supported_runtimes->next->next != NULL)
@@ -212,7 +212,7 @@ machine_config (void)
 {
 	char *data;
 	gsize size;
-	
+
 	if (g_file_get_contents ("../../data/net_1_1/machine.config", &data, &size, NULL)){
 		return markup_test (data);
 	}

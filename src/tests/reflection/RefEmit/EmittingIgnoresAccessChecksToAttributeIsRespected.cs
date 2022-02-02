@@ -8,7 +8,7 @@ using System.Reflection.Emit;
 
 class BaseClass1 { }
 
-class Test
+class Test_EmittingIgnoresAccessChecksToAttributeIsRespected
 {
 
     public static int Main()

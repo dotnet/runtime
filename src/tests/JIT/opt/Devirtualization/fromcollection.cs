@@ -29,7 +29,7 @@ public sealed class Derived : Base
 //  the underlying array. Better to do the former since it doesn't rely on
 //  being able to inline.
 
-public class Test
+public class Test_fromcollection
 {
     static Derived[] arrayOfDerived = new Derived[3];
     static List<Derived> listOfDerived = new List<Derived>();

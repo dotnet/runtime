@@ -9,10 +9,30 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Microsoft.Interop
 {
     /// <summary>
+    /// Target framework identifier
+    /// </summary>
+    public enum TargetFramework
+    {
+        Unknown,
+        Framework,
+        Core,
+        Standard,
+        Net
+    }
+
+    /// <summary>
     /// Interface for generation of marshalling code for P/Invoke stubs
     /// </summary>
     public interface IMarshallingGenerator
     {
+        /// <summary>
+        /// Determine if the generator is supported for the supplied version of the framework.
+        /// </summary>
+        /// <param name="target">The framework to target.</param>
+        /// <param name="version">The version of the framework.</param>
+        /// <returns>True if the marshaller is supported, otherwise false.</returns>
+        bool IsSupported(TargetFramework target, Version version);
+
         /// <summary>
         /// Get the native type syntax for <paramref name="info"/>
         /// </summary>

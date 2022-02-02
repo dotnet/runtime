@@ -25,7 +25,7 @@ class C2
         return ((C1<T>)o).a;
     }
 }
-class Test
+class Test_genisinst
 {
     public static int Main()
     {

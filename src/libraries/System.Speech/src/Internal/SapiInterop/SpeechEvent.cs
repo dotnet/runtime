@@ -26,7 +26,7 @@ namespace System.Speech.Internal.SapiInterop
             // Let the GC know if we have a unmanaged object with a given size
             if (_paramType == SPEVENTLPARAMTYPE.SPET_LPARAM_IS_POINTER || _paramType == SPEVENTLPARAMTYPE.SPET_LPARAM_IS_STRING)
             {
-                GC.AddMemoryPressure(_sizeMemoryPressure = Marshal.SizeOf(_lParam));
+                GC.AddMemoryPressure(_sizeMemoryPressure = sizeof(ulong));
             }
         }
 

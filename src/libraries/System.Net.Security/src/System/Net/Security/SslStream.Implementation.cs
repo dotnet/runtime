@@ -21,18 +21,6 @@ namespace System.Net.Security
         private int _nestedAuth;
         private bool _isRenego;
 
-        private enum Framing
-        {
-            Unknown = 0,    // Initial before any frame is processed.
-            BeforeSSL3,     // SSlv2
-            SinceSSL3,      // SSlv3 & TLS
-            Unified,        // Intermediate on first frame until response is processes.
-            Invalid         // Something is wrong.
-        }
-
-        // This is set on the first packet to figure out the framing style.
-        private Framing _framing = Framing.Unknown;
-
         private TlsFrameHelper.TlsFrameInfo _lastFrame;
 
         private object _handshakeLock => _sslAuthenticationOptions!;
@@ -270,7 +258,7 @@ namespace System.Net.Security
 
             try
             {
-                if (_decryptedBytesCount is not 0)
+                if ((_decryptedBytesCount | _internalBufferCount) != 0)
                 {
                     throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
                 }
@@ -459,33 +447,13 @@ namespace System.Net.Security
         private async ValueTask<ProtocolToken> ReceiveBlobAsync<TIOAdapter>(TIOAdapter adapter)
                  where TIOAdapter : IReadWriteAdapter
         {
-            int readBytes = await FillHandshakeBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
-            if (readBytes == 0)
-            {
-                throw new IOException(SR.net_io_eof);
-            }
-
-            if (_framing == Framing.Unified || _framing == Framing.Unknown)
-            {
-                _framing = DetectFraming(_handshakeBuffer.ActiveReadOnlySpan);
-            }
-
-            if (_framing != Framing.SinceSSL3)
-            {
-#pragma warning disable 0618
-                _lastFrame.Header.Version = SslProtocols.Ssl2;
-#pragma warning restore 0618
-                _lastFrame.Header.Length = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan) - TlsFrameHelper.HeaderSize;
-            }
-            else
-            {
-                TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame.Header);
-            }
+            await FillHandshakeBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
+            TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame.Header);
 
             if (_lastFrame.Header.Length < 0)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "invalid TLS frame size");
-                throw new IOException(SR.net_frame_read_size);
+                throw new AuthenticationException(SR.net_frame_read_size);
             }
 
             // Header length is content only so we must add header size as well.
@@ -507,9 +475,8 @@ namespace System.Net.Security
                     break;
                 case TlsContentType.Handshake:
                     if (!_isRenego && _handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
-                        (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null ||
-                        _sslAuthenticationOptions!.ServerOptionDelegate != null))
-                    {
+                        _sslAuthenticationOptions!.IsServer) // guard against malicious endpoints. We should not see ClientHello on client.
+                     {
                         TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
                                                                     TlsFrameHelper.ProcessingOptions.All :
                                                                     TlsFrameHelper.ProcessingOptions.ServerName;
@@ -566,29 +533,26 @@ namespace System.Net.Security
             // ActiveSpan will exclude the "discarded" data.
             _handshakeBuffer.Discard(frameSize);
 
-            if (_framing == Framing.SinceSSL3)
+            // Often more TLS messages fit into same packet. Get as many complete frames as we can.
+            while (_handshakeBuffer.ActiveLength > TlsFrameHelper.HeaderSize)
             {
-                // Often more TLS messages fit into same packet. Get as many complete frames as we can.
-                while (_handshakeBuffer.ActiveLength > TlsFrameHelper.HeaderSize)
+                TlsFrameHeader nextHeader = default;
+
+                if (!TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref nextHeader))
                 {
-                    TlsFrameHeader nextHeader = default;
-
-                    if (!TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref nextHeader))
-                    {
-                        break;
-                    }
-
-                    frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
-                    // Can process more handshake frames in single step, but we should avoid processing too much so as to preserve API boundary between handshake and I/O.
-                    if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) || frameSize > _handshakeBuffer.ActiveLength)
-                    {
-                        // We don't have full frame left or we already have app data which needs to be processed by decrypt.
-                        break;
-                    }
-
-                    chunkSize += frameSize;
-                    _handshakeBuffer.Discard(frameSize);
+                    break;
                 }
+
+                frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
+                // Can process more handshake frames in single step, but we should avoid processing too much so as to preserve API boundary between handshake and I/O.
+                if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) || frameSize > _handshakeBuffer.ActiveLength)
+                {
+                    // We don't have full frame left or we already have app data which needs to be processed by decrypt.
+                    break;
+                }
+
+                chunkSize += frameSize;
+                _handshakeBuffer.Discard(frameSize);
             }
 
             return _context!.NextMessage(availableData.Slice(0, chunkSize));
@@ -1062,13 +1026,13 @@ namespace System.Net.Security
 
         // This function tries to make sure buffer has at least minSize bytes available.
         // If we have enough data, it returns synchronously. If not, it will try to read
-        // remaining bytes from given stream.
-        private ValueTask<int> FillHandshakeBufferAsync<TIOAdapter>(TIOAdapter adapter, int minSize)
+        // remaining bytes from given stream. It will throw if unable to fulfill minSize.
+        private ValueTask FillHandshakeBufferAsync<TIOAdapter>(TIOAdapter adapter, int minSize)
              where TIOAdapter : IReadWriteAdapter
         {
             if (_handshakeBuffer.ActiveLength >= minSize)
             {
-                return new ValueTask<int>(minSize);
+                return ValueTask.CompletedTask;
             }
 
             int bytesNeeded = minSize - _handshakeBuffer.ActiveLength;
@@ -1084,15 +1048,15 @@ namespace System.Net.Security
                 int bytesRead = t.Result;
                 if (bytesRead == 0)
                 {
-                    return new ValueTask<int>(0);
+                    throw new IOException(SR.net_io_eof);
                 }
 
                 _handshakeBuffer.Commit(bytesRead);
             }
 
-            return new ValueTask<int>(minSize);
+            return ValueTask.CompletedTask;
 
-            async ValueTask<int> InternalFillHandshakeBufferAsync(TIOAdapter adap,  ValueTask<int> task, int minSize)
+            async ValueTask InternalFillHandshakeBufferAsync(TIOAdapter adap,  ValueTask<int> task, int minSize)
             {
                 while (true)
                 {
@@ -1105,29 +1069,11 @@ namespace System.Net.Security
                     _handshakeBuffer.Commit(bytesRead);
                     if (_handshakeBuffer.ActiveLength >= minSize)
                     {
-                        return minSize;
+                        return;
                     }
 
                     task = adap.ReadAsync(_handshakeBuffer.AvailableMemory);
                 }
-            }
-        }
-
-        private async ValueTask FillBufferAsync<TIOAdapter>(TIOAdapter adapter, int numBytesRequired)
-            where TIOAdapter : IReadWriteAdapter
-        {
-            Debug.Assert(_internalBufferCount > 0);
-            Debug.Assert(_internalBufferCount < numBytesRequired);
-
-            while (_internalBufferCount < numBytesRequired)
-            {
-                int bytesRead = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
-                if (bytesRead == 0)
-                {
-                    throw new IOException(SR.net_io_eof);
-                }
-
-                _internalBufferCount += bytesRead;
             }
         }
 
@@ -1223,204 +1169,15 @@ namespace System.Net.Security
             }
         }
 
-        // We need at least 5 bytes to determine what we have.
-        private Framing DetectFraming(ReadOnlySpan<byte> bytes)
-        {
-            /* PCTv1.0 Hello starts with
-             * RECORD_LENGTH_MSB  (ignore)
-             * RECORD_LENGTH_LSB  (ignore)
-             * PCT1_CLIENT_HELLO  (must be equal)
-             * PCT1_CLIENT_VERSION_MSB (if version greater than PCTv1)
-             * PCT1_CLIENT_VERSION_LSB (if version greater than PCTv1)
-             *
-             * ... PCT hello ...
-             */
-
-            /* Microsoft Unihello starts with
-             * RECORD_LENGTH_MSB  (ignore)
-             * RECORD_LENGTH_LSB  (ignore)
-             * SSL2_CLIENT_HELLO  (must be equal)
-             * SSL2_CLIENT_VERSION_MSB (if version greater than SSLv2) ( or v3)
-             * SSL2_CLIENT_VERSION_LSB (if version greater than SSLv2) ( or v3)
-             *
-             * ... SSLv2 Compatible Hello ...
-             */
-
-            /* SSLv2 CLIENT_HELLO starts with
-             * RECORD_LENGTH_MSB  (ignore)
-             * RECORD_LENGTH_LSB  (ignore)
-             * SSL2_CLIENT_HELLO  (must be equal)
-             * SSL2_CLIENT_VERSION_MSB (if version greater than SSLv2) ( or v3)
-             * SSL2_CLIENT_VERSION_LSB (if version greater than SSLv2) ( or v3)
-             *
-             * ... SSLv2 CLIENT_HELLO ...
-             */
-
-            /* SSLv2 SERVER_HELLO starts with
-             * RECORD_LENGTH_MSB  (ignore)
-             * RECORD_LENGTH_LSB  (ignore)
-             * SSL2_SERVER_HELLO  (must be equal)
-             * SSL2_SESSION_ID_HIT (ignore)
-             * SSL2_CERTIFICATE_TYPE (ignore)
-             * SSL2_CLIENT_VERSION_MSB (if version greater than SSLv2) ( or v3)
-             * SSL2_CLIENT_VERSION_LSB (if version greater than SSLv2) ( or v3)
-             *
-             * ... SSLv2 SERVER_HELLO ...
-             */
-
-            /* SSLv3 Type 2 Hello starts with
-              * RECORD_LENGTH_MSB  (ignore)
-              * RECORD_LENGTH_LSB  (ignore)
-              * SSL2_CLIENT_HELLO  (must be equal)
-              * SSL2_CLIENT_VERSION_MSB (if version greater than SSLv3)
-              * SSL2_CLIENT_VERSION_LSB (if version greater than SSLv3)
-              *
-              * ... SSLv2 Compatible Hello ...
-              */
-
-            /* SSLv3 Type 3 Hello starts with
-             * 22 (HANDSHAKE MESSAGE)
-             * VERSION MSB
-             * VERSION LSB
-             * RECORD_LENGTH_MSB  (ignore)
-             * RECORD_LENGTH_LSB  (ignore)
-             * HS TYPE (CLIENT_HELLO)
-             * 3 bytes HS record length
-             * HS Version
-             * HS Version
-             */
-
-            /* SSLv2 message codes
-             * SSL_MT_ERROR                0
-             * SSL_MT_CLIENT_HELLO         1
-             * SSL_MT_CLIENT_MASTER_KEY    2
-             * SSL_MT_CLIENT_FINISHED      3
-             * SSL_MT_SERVER_HELLO         4
-             * SSL_MT_SERVER_VERIFY        5
-             * SSL_MT_SERVER_FINISHED      6
-             * SSL_MT_REQUEST_CERTIFICATE  7
-             * SSL_MT_CLIENT_CERTIFICATE   8
-             */
-
-            int version = -1;
-
-            Debug.Assert(bytes.Length != 0, "Header buffer is not allocated.");
-
-            // If the first byte is SSL3 HandShake, then check if we have a SSLv3 Type3 client hello.
-            if (bytes[0] == (byte)TlsContentType.Handshake || bytes[0] == (byte)TlsContentType.AppData
-                || bytes[0] == (byte)TlsContentType.Alert)
-            {
-                if (bytes.Length < 3)
-                {
-                    return Framing.Invalid;
-                }
-
-                version = (bytes[1] << 8) | bytes[2];
-                if (version < 0x300 || version >= 0x500)
-                {
-                    return Framing.Invalid;
-                }
-
-                //
-                // This is an SSL3 Framing
-                //
-                return Framing.SinceSSL3;
-            }
-
-            if (bytes.Length < 3)
-            {
-                return Framing.Invalid;
-            }
-
-            if (bytes[2] > 8)
-            {
-                return Framing.Invalid;
-            }
-
-            if (bytes[2] == 0x1)  // SSL_MT_CLIENT_HELLO
-            {
-                if (bytes.Length >= 5)
-                {
-                    version = (bytes[3] << 8) | bytes[4];
-                }
-            }
-            else if (bytes[2] == 0x4) // SSL_MT_SERVER_HELLO
-            {
-                if (bytes.Length >= 7)
-                {
-                    version = (bytes[5] << 8) | bytes[6];
-                }
-            }
-
-            if (version != -1)
-            {
-                // If this is the first packet, the client may start with an SSL2 packet
-                // but stating that the version is 3.x, so check the full range.
-                // For the subsequent packets we assume that an SSL2 packet should have a 2.x version.
-                if (_framing == Framing.Unknown)
-                {
-                    if (version != 0x0002 && (version < 0x200 || version >= 0x500))
-                    {
-                        return Framing.Invalid;
-                    }
-                }
-                else
-                {
-                    if (version != 0x0002)
-                    {
-                        return Framing.Invalid;
-                    }
-                }
-            }
-
-            // When server has replied the framing is already fixed depending on the prior client packet
-            if (!_context!.IsServer || _framing == Framing.Unified)
-            {
-                return Framing.BeforeSSL3;
-            }
-
-            return Framing.Unified; // Will use Ssl2 just for this frame.
-        }
-
-        // Returns TLS Frame size.
+        // Returns TLS Frame size including header size.
         private int GetFrameSize(ReadOnlySpan<byte> buffer)
         {
-            int payloadSize = -1;
-            switch (_framing)
+            if (buffer.Length < SecureChannel.ReadHeaderSize)
             {
-                case Framing.Unified:
-                case Framing.BeforeSSL3:
-                    if (buffer.Length < 2)
-                    {
-                        throw new IOException(SR.net_ssl_io_frame);
-                    }
-                    // Note: Cannot detect version mismatch for <= SSL2
-
-                    if ((buffer[0] & 0x80) != 0)
-                    {
-                        // Two bytes
-                        payloadSize = (((buffer[0] & 0x7f) << 8) | buffer[1]) + 2;
-                    }
-                    else
-                    {
-                        // Three bytes
-                        payloadSize = (((buffer[0] & 0x3f) << 8) | buffer[1]) + 3;
-                    }
-
-                    break;
-                case Framing.SinceSSL3:
-                    if (buffer.Length < 5)
-                    {
-                        throw new IOException(SR.net_ssl_io_frame);
-                    }
-
-                    payloadSize = ((buffer[3] << 8) | buffer[4]) + 5;
-                    break;
-                default:
-                    throw new IOException(SR.net_frame_read_size);
+                throw new IOException(SR.net_ssl_io_frame);
             }
 
-            return payloadSize;
+            return ((buffer[3] << 8) | buffer[4]) + SecureChannel.ReadHeaderSize;
         }
     }
 }

@@ -453,4 +453,4 @@ FAIL:
 	ret
 }
 }
-.assembly ceq_r8.exe{}
+.assembly ceq_r8{}

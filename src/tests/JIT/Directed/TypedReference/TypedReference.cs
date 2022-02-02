@@ -5,7 +5,7 @@
 using System;
 
 
-public class BringUpTest
+public class BringUpTest_TypedReference
 {
     const int Pass = 100;
     const int Fail = -1;

@@ -294,4 +294,4 @@ FAIL:
 	ret
 }
 }
-.assembly clt_i8.exe{}
+.assembly clt_i8{}

@@ -1,12 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="IlasmPortablePdbTester.cs" />
     <Compile Include="IlasmPortablePdbTesterCommon.cs" />
     <Compile Include="IlasmPortablePdbTesterTypes.cs" />
-    <Compile Include="..\..\Common\XunitBase.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Resources\**" />

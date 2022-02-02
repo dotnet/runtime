@@ -12,14 +12,14 @@ using System.Runtime.CompilerServices;
 
 //Disable the warning about having variables that are not used
 #pragma warning disable 219
-public class Test
+public class Test_vars2
 {
 
     public static int Main()
     {
         try
         {
-            (new Test()).RunTest();
+            (new Test_vars2()).RunTest();
             Console.WriteLine("PASS");
             return 100;
         }

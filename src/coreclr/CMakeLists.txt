@@ -29,7 +29,6 @@ set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(VM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vm)
 set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/inc)
 set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
-set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/dlls/mscordac/palredefines.S)
 
 # Avoid logging when skipping up-to-date copies
@@ -85,12 +84,7 @@ endif()
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
     set(STATIC_LIBS_ONLY 1)
-
-    if(CLR_CMAKE_TARGET_WIN32)
-        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Windows Native.Windows)
-    else()
-        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix Native.Unix)
-    endif()
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 #-----------------------------------------
@@ -135,10 +129,17 @@ endif()
 #-------------------------------------
 # Include the basic prebuilt headers - required for getting fileversion resource details.
 include_directories("pal/prebuilt/inc")
-include_directories("${CLR_REPO_ROOT_DIR}/artifacts/obj/coreclr")
+include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
 add_subdirectory(tools/aot/jitinterface)
 
+
+if(NOT CLR_CROSS_COMPONENTS_BUILD)
+  # NativeAOT only buildable for a subset of CoreCLR-supported configurations
+  if((CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_WIN32) AND (CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_AMD64) AND NOT (CLR_CMAKE_HOST_OSX AND CLR_CMAKE_HOST_ARCH_ARM64))
+    add_subdirectory(nativeaot)
+  endif()
+endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake
@@ -246,7 +247,6 @@ add_subdirectory(debug)
 add_subdirectory(binder)
 add_subdirectory(classlibnative)
 add_subdirectory(dlls)
-add_subdirectory(ToolBox)
 add_subdirectory(tools)
 add_subdirectory(unwinder)
 add_subdirectory(interop)

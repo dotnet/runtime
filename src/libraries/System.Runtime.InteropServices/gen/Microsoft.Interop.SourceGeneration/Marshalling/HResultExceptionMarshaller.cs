@@ -16,6 +16,8 @@ namespace Microsoft.Interop
     {
         private static readonly TypeSyntax s_nativeType = PredefinedType(Token(SyntaxKind.IntKeyword));
 
+        public bool IsSupported(TargetFramework target, Version version) => true;
+
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
             Debug.Assert(info.ManagedType is SpecialTypeInfo(_, _, SpecialType.System_Int32));

@@ -1,4 +1,5 @@
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly legacy library calli2 { }
 .class private auto ansi beforefieldinit calli2
        extends [mscorlib]System.Object
@@ -17,6 +18,9 @@
   }
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     .locals init (int32 V_0,

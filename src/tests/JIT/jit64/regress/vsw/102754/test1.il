@@ -11,6 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern legacy library mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         
@@ -18,14 +19,13 @@
            01 2A 9C E3 )                                     
   
 }
-.assembly legacy library hello
+.assembly legacy library 'test1'
 {
 
 
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module hello.exe
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -43,6 +43,9 @@
     .method public hidebysig static int32 
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  2
       .locals (int64* V_0,

@@ -80,7 +80,7 @@ namespace System.Threading
     ///       cases, it is probably not worth optimizing for the single-wait case. It is possible with a small design change to
     ///       bypass the lock and use interlocked operations for uncontended cases, but at the cost of making multi-waits more
     ///       complicated and slower.
-    ///     - The wait state of a thread (<see cref="ThreadWaitInfo._waitSignalState"/>), among other things, is synchornized
+    ///     - The wait state of a thread (<see cref="ThreadWaitInfo._waitSignalState"/>), among other things, is synchronized
     ///       using the thread's <see cref="ThreadWaitInfo._waitMonitor"/>, so signalers and interrupters acquire the monitor's
     ///       lock before checking the wait state of a thread and signaling the thread to wake up.
     ///

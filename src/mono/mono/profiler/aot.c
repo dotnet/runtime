@@ -82,6 +82,12 @@ prof_jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 }
 
 static void
+prof_inline_method (MonoProfiler *prof, MonoMethod *method, MonoMethod *inlined_method)
+{
+	prof_jit_done (prof, inlined_method, NULL);
+}
+
+static void
 usage (void)
 {
 	mono_profiler_printf ("AOT profiler.");
@@ -396,6 +402,7 @@ mono_profiler_init_aot (const char *desc)
 	MonoProfilerHandle handle = mono_profiler_create (&aot_profiler);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 	mono_profiler_set_jit_done_callback (handle, prof_jit_done);
+	mono_profiler_set_inline_method_callback (handle, prof_inline_method);
 }
 
 static void

@@ -6,13 +6,14 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 
 
 .assembly extern mscorlib
 {
 }
-.assembly nativeinttest
+.assembly 'nativeint'
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -20,7 +21,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module nativeint.exe
 // MVID: {DA4EAAAA-684F-4AB1-AC9B-90B895DBBD60}
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -135,6 +135,9 @@
     .method public hidebysig static int32 
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       839 (0x347)
       .maxstack  4

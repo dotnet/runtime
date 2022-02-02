@@ -60,7 +60,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(typeof(int), property.PropertyType);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineProperty_GetAccessor_NoCustomModifiers()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public | TypeAttributes.AutoClass | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit);
@@ -82,7 +82,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(5, createdType.GetProperty("Property").GetGetMethod().Invoke(obj, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineProperty_GetAccessor_NullCustomModifiers()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public | TypeAttributes.AutoClass | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit);

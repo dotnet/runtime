@@ -9,13 +9,8 @@ internal static partial class Interop
 {
     internal static partial class SspiCli
     {
-#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Libraries.SspiCli)]
         internal static partial int LsaLookupAuthenticationPackage(
-#else
-        [DllImport(Libraries.SspiCli)]
-        internal static extern int LsaLookupAuthenticationPackage(
-#endif
             SafeLsaHandle LsaHandle,
             ref Advapi32.LSA_STRING PackageName,
             out int AuthenticationPackage

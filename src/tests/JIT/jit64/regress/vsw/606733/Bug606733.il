@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly fib
+.assembly 'Bug606733'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -17,7 +18,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module fib.exe
 // MVID: {F244F6A1-918F-4DD8-ABB5-5917EA8526B2}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -49,6 +49,9 @@
 
 .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       54 (0x36)
     .maxstack  2

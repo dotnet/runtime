@@ -1863,6 +1863,12 @@ namespace System.Threading.Tasks
             return Volatile.Read(ref m_contingentProperties)?.m_exceptionsHolder?.GetCancellationExceptionDispatchInfo(); // may be null
         }
 
+        /// <summary>Marks any exceptions stored in the Task as having been handled.</summary>
+        internal void MarkExceptionsAsHandled()
+        {
+            Volatile.Read(ref m_contingentProperties)?.m_exceptionsHolder?.MarkAsHandled(calledFromFinalizer: false);
+        }
+
         /// <summary>
         /// Throws an aggregate exception if the task contains exceptions.
         /// </summary>
@@ -2422,7 +2428,7 @@ namespace System.Threading.Tasks
         #region Await Support
         /// <summary>Gets an awaiter used to await this <see cref="System.Threading.Tasks.Task"/>.</summary>
         /// <returns>An awaiter instance.</returns>
-        /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
+        /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public TaskAwaiter GetAwaiter()
         {
             return new TaskAwaiter(this);
@@ -4546,7 +4552,7 @@ namespace System.Threading.Tasks
                     // Find continuationObject in the continuation list
                     int index = continuationsLocalListRef.IndexOf(continuationObject);
 
-                    if (index != -1)
+                    if (index >= 0)
                     {
                         // null out that TaskContinuation entry, which will be interpreted as "to be cleaned up"
                         continuationsLocalListRef[index] = null;
@@ -5621,6 +5627,20 @@ namespace System.Threading.Tasks
                 _registration = token.UnsafeRegister(static (state, cancellationToken) =>
                 {
                     var thisRef = (DelayPromiseWithCancellation)state!;
+
+                    // Normally RunContinuationsAsynchronously is set at construction time.  We don't want to
+                    // set it at construction because we want the timer firing (already on a thread pool thread with
+                    // a stack in which it's fine to execute arbitrary code) to synchronously invoke any continuations
+                    // from this task.  However, a cancellation request will come synchronously from a call to
+                    // CancellationTokenSource.Cancel, and we don't want to invoke arbitrary continuations from
+                    // this delay task as part of that Cancel call.  As such, we set RunContinuationsAsynchronously
+                    // after the fact, only when the task is being completed due to cancellation.  There is a race
+                    // condition here, such that if the timer also fired concurrently, it might win, in which case
+                    // it might also observe this RunContinuationsAsynchronously, but that's benign.  An alternative
+                    // is to make the whole cancellation registration queue, but that's visible in that the Task's
+                    // IsCompleted wouldn't be set synchronously as part of IsCompleted.
+                    thisRef.AtomicStateUpdate((int)TaskCreationOptions.RunContinuationsAsynchronously, 0);
+
                     if (thisRef.TrySetCanceled(cancellationToken))
                     {
                         thisRef.Cleanup();

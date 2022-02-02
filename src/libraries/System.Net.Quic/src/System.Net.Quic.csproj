@@ -121,15 +121,15 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.Cryptography.Encoding" />
+    <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Channels" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.OpenSsl\src\System.Security.Cryptography.OpenSsl.csproj" />
     <Reference Include="System.Diagnostics.StackTrace" Condition="'$(Configuration)' == 'Debug'" />
+    <Reference Include="System.Security.Cryptography.OpenSsl" />
   </ItemGroup>
 
   <!-- Support for deploying msquic -->

@@ -166,6 +166,10 @@ namespace System.Text.RegularExpressions.Symbolic.Unicode
             if (_relationDefault is null)
             {
                 BDD instance = BDD.Deserialize(Unicode.IgnoreCaseRelation.IgnoreCaseEnUsSerializedBDD, _solver);
+                byte[] tmp = instance.SerializeToBytes();
+                BDD instance2 = BDD.Deserialize(tmp, _solver);
+                if (instance != instance2)
+                    throw new Exception();
                 BDD instanceDomain = _solver.ShiftRight(instance, 16); // represents the set of all case-sensitive characters in the default culture.
                 _relationDefault = new IgnoreCaseRelation(instance, instanceDomain);
             }

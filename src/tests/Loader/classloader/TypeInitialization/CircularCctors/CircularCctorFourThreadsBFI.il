@@ -5,17 +5,17 @@
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.50103.00
 //  Copyright (C) Microsoft Corporation. All rights reserved.
 .assembly extern System.Console { auto }
+.assembly extern xunit.core {}
 .assembly extern System.Threading.Thread { auto }
 // Metadata version: v2.0.50103
 .assembly extern mscorlib { auto }
 
-.assembly CircularCctorFourThreads
+.assembly 'CircularCctorFourThreadsBFI'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module CircularCctorFourThreads.exe
 // MVID: {DCC29B4C-2098-4C6E-A788-8284AF4F4942}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -262,7 +262,7 @@
 
 } // end of class E
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_CircularCctorFourThreadsBFI
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  RunGetA() cil managed
@@ -307,6 +307,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       302 (0x12e)
     .maxstack  3
@@ -318,7 +321,7 @@
              bool V_5)
     IL_0000:  nop
     IL_0001:  ldnull
-    IL_0002:  ldftn      void Test::RunGetA()
+    IL_0002:  ldftn      void Test_CircularCctorFourThreadsBFI::RunGetA()
     IL_0008:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
     IL_000d:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
@@ -328,7 +331,7 @@
     IL_0019:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::set_Name(string)
     IL_001e:  nop
     IL_001f:  ldnull
-    IL_0020:  ldftn      void Test::RunGetC()
+    IL_0020:  ldftn      void Test_CircularCctorFourThreadsBFI::RunGetC()
     IL_0026:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
     IL_002b:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
@@ -338,7 +341,7 @@
     IL_0037:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::set_Name(string)
     IL_003c:  nop
     IL_003d:  ldnull
-    IL_003e:  ldftn      void Test::RunGetD()
+    IL_003e:  ldftn      void Test_CircularCctorFourThreadsBFI::RunGetD()
     IL_0044:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
     IL_0049:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
@@ -348,7 +351,7 @@
     IL_0055:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::set_Name(string)
     IL_005a:  nop
     IL_005b:  ldnull
-    IL_005c:  ldftn      void Test::RunGetE()
+    IL_005c:  ldftn      void Test_CircularCctorFourThreadsBFI::RunGetE()
     IL_0062:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
     IL_0067:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)

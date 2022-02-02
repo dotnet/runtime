@@ -378,7 +378,7 @@ namespace System.Tests
         public static void ParsePatterns()
         {
             string path = Directory.GetCurrentDirectory();
-            using (FileStream file = new FileStream(Path.Combine(path, "ibm-fpgen.txt"), FileMode.Open))
+            using (FileStream file = new FileStream(Path.Combine(path, "ibm-fpgen.txt"), FileMode.Open, FileAccess.Read))
             {
                 using (var streamReader = new StreamReader(file))
                 {

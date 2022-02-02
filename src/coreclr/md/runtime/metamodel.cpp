@@ -90,7 +90,7 @@ static const char* rDummy3ColNames[] = { "" };
 //-----------------------------------------------------------------------------
 
 // Define the array of Coded Token Definitions.
-#define MiniMdCodedToken(x) {lengthof(CMiniMdBase::mdt##x), CMiniMdBase::mdt##x, #x},
+#define MiniMdCodedToken(x) {ARRAY_SIZE(CMiniMdBase::mdt##x), CMiniMdBase::mdt##x, #x},
 const CCodedTokenDef g_CodedTokens [] = {
     MiniMdCodedTokens()
 };
@@ -98,7 +98,7 @@ const CCodedTokenDef g_CodedTokens [] = {
 
 // Define the array of Table Definitions.
 #undef MiniMdTable
-#define MiniMdTable(x) { { r##x##Cols, lengthof(r##x##Cols), x##Rec::COL_KEY, 0 }, r##x##ColNames, #x},
+#define MiniMdTable(x) { { r##x##Cols, ARRAY_SIZE(r##x##Cols), x##Rec::COL_KEY, 0 }, r##x##ColNames, #x},
 const CMiniTableDefEx g_Tables[TBL_COUNT] = {
     MiniMdTables()
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
@@ -107,7 +107,7 @@ const CMiniTableDefEx g_Tables[TBL_COUNT] = {
 };
 
 // Define a table descriptor for the obsolete v1.0 GenericParam table definition.
-const CMiniTableDefEx g_Table_GenericParamV1_1 = { { rGenericParamV1_1Cols, lengthof(rGenericParamV1_1Cols), GenericParamV1_1Rec::COL_KEY, 0 }, rGenericParamV1_1ColNames, "GenericParamV1_"};
+const CMiniTableDefEx g_Table_GenericParamV1_1 = { { rGenericParamV1_1Cols, ARRAY_SIZE(rGenericParamV1_1Cols), GenericParamV1_1Rec::COL_KEY, 0 }, rGenericParamV1_1ColNames, "GenericParamV1_"};
 
 
 
@@ -444,7 +444,7 @@ CMiniMdBase::encodeToken(
 //*****************************************************************************
 inline BYTE cbRID(ULONG ixMax) { return ixMax > USHRT_MAX ? (BYTE) sizeof(ULONG) : (BYTE) sizeof(USHORT); }
 
-#define _CBTKN(cRecs,tkns) cbRID((cRecs) << m_cb[lengthof(tkns)])
+#define _CBTKN(cRecs,tkns) cbRID((cRecs) << m_cb[ARRAY_SIZE(tkns)])
 
 //*****************************************************************************
 // Constructor.
@@ -723,7 +723,7 @@ CMiniMdBase::InitColsForTable(
     HRESULT     hr = S_OK;
 
     _ASSERTE((bExtra == 0) || (bExtra == 1));
-    _ASSERTE(NumItems(pCols) >= pTable->m_cCols);
+    _ASSERTE(ARRAY_SIZE(pCols) >= pTable->m_cCols);
 
     bExtra = 0;//<TODO>@FUTURE: save in schema header.  until then use 0.</TODO>
 
@@ -751,7 +751,7 @@ CMiniMdBase::InitColsForTable(
             ULONG iCdTkn = pCols[ixCol].m_Type - iCodedToken;
             ULONG cRecs = 0;
 
-            _ASSERTE(iCdTkn < lengthof(g_CodedTokens));
+            _ASSERTE(iCdTkn < ARRAY_SIZE(g_CodedTokens));
             CCodedTokenDef const *pCTD = &g_CodedTokens[iCdTkn];
 
             // Iterate the token list of this coded token.
@@ -1084,7 +1084,7 @@ CMiniMdBase::FindCustomAttributeFor(
 {
     HRESULT hr;
     int     ixFound;                // index of some custom value row.
-    ULONG   ulTarget = encodeToken(rid,tkObj,mdtHasCustomAttribute,lengthof(mdtHasCustomAttribute)); // encoded token representing target.
+    ULONG   ulTarget = encodeToken(rid,tkObj,mdtHasCustomAttribute, ARRAY_SIZE(mdtHasCustomAttribute)); // encoded token representing target.
     ULONG   ixCur;                  // Current row being examined.
     mdToken tkFound;                // Type of some custom value row.
     void   *pCur;                   // A custom value entry.
@@ -1107,7 +1107,7 @@ CMiniMdBase::FindCustomAttributeFor(
     {
         // Test the type of the current row.
         tkFound = getIX(pCur, _COLDEF(CustomAttribute,Type));
-        tkFound = decodeToken(tkFound, mdtCustomAttributeType, lengthof(mdtCustomAttributeType));
+        tkFound = decodeToken(tkFound, mdtCustomAttributeType, ARRAY_SIZE(mdtCustomAttributeType));
         if (tkFound == tkType)
         {
             *pFoundRid = ixCur;
@@ -1137,7 +1137,7 @@ CMiniMdBase::FindCustomAttributeFor(
             break;
         // Test the type of the current row.
         tkFound = getIX(pCur, _COLDEF(CustomAttribute,Type));
-        tkFound = decodeToken(tkFound, mdtCustomAttributeType, lengthof(mdtCustomAttributeType));
+        tkFound = decodeToken(tkFound, mdtCustomAttributeType, ARRAY_SIZE(mdtCustomAttributeType));
         if (tkFound == tkType)
         {
             *pFoundRid = ixCur;

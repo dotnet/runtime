@@ -156,7 +156,7 @@ public:
     WCHAR GetNextChar();
     BOOL  MoreChars() { LIMITED_METHOD_CONTRACT; return pData < pEnd; }
 
-    int Convert(__inout_ecount(nOut) LPWSTR pOut, int nOut);
+    int Convert(_Inout_updates_(nOut) LPWSTR pOut, int nOut);
 };
 
 // This table tells how to pick out 5-bits at a time (8 times) from 5-bytes of data.
@@ -195,11 +195,11 @@ WCHAR BytesToBase32::GetNextChar()
     unsigned int result = 0;
 
     _ASSERTE(pData <= pEnd);
-    _ASSERTE(nWhich >= 0 && nWhich < lengthof(decoder));
+    _ASSERTE(nWhich >= 0 && nWhich < ARRAY_SIZE(decoder));
 
     // If out of data, return signal value, > any valid char.
     if (pData == pEnd)
-        return base32[lengthof(base32)-1];
+        return base32[STRING_LENGTH(base32)];
 
 #if defined(_DEBUG)
     if (decoder[nWhich].l1)
@@ -243,11 +243,11 @@ WCHAR BytesToBase32::GetNextChar()
     }
 
     // Advance the 'state machine' -- which 5-bits from an 8-byte block.
-    if (++nWhich == lengthof(decoder))
+    if (++nWhich == ARRAY_SIZE(decoder))
         nWhich = 0;
 
     // Sanity check on value.
-    _ASSERTE(result < lengthof(base32));
+    _ASSERTE(result < ARRAY_SIZE(base32));
 
     return base32[result];
 } // WCHAR BytesToBase32::GetNextChar()
@@ -265,7 +265,7 @@ WCHAR BytesToBase32::GetNextChar()
 //
 //------------------------------------------------------------------------------
 int BytesToBase32::Convert(
-    __inout_ecount(nOut) LPWSTR pOut,
+    _Inout_updates_(nOut) LPWSTR pOut,
     int nOut)
 {
     WRAPPER_NO_CONTRACT;
@@ -304,32 +304,32 @@ private:
     bool IsCodeContractsFrame(MethodDesc* pMD);
     OBJECTREF GetRealExceptionObject();
     WCHAR* GetParamBufferForIndex(BucketParameterIndex paramIndex);
-    void LogParam(__in_z LPCWSTR paramValue, BucketParameterIndex paramIndex);
+    void LogParam(_In_z_ LPCWSTR paramValue, BucketParameterIndex paramIndex);
 
 protected:
     ~BaseBucketParamsManager();
 
-    typedef void (BaseBucketParamsManager::*DataPopulatorFunction)(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
+    typedef void (BaseBucketParamsManager::*DataPopulatorFunction)(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
     void PopulateBucketParameter(BucketParameterIndex paramIndex, DataPopulatorFunction pFnDataPopulator, int maxLength);
 
     void PopulateEventName(LPCWSTR eventTypeName);
     // functions for retrieving data to go into various bucket parameters
-    void GetAppName(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
-    void GetAppVersion(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
-    void GetAppTimeStamp(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
-    void GetModuleName(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
-    void GetModuleVersion(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
-    void GetModuleTimeStamp(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
-    void GetMethodDef(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
-    void GetIlOffset(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
-    void GetExceptionName(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
-    void GetPackageMoniker(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
-    void GetPRAID(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
-    void GetIlRva(__out_ecount(maxLength) WCHAR* targetParam, int maxLength);
+    void GetAppName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
+    void GetAppVersion(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
+    void GetAppTimeStamp(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
+    void GetModuleName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
+    void GetModuleVersion(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
+    void GetModuleTimeStamp(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
+    void GetMethodDef(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
+    void GetIlOffset(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
+    void GetExceptionName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
+    void GetPackageMoniker(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
+    void GetPRAID(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
+    void GetIlRva(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
 
 public:
     BaseBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE initialFaultingPc, Thread* pFaultingThread, OBJECTREF* pThrownException);
-    static int CopyStringToBucket(__out_ecount(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, __in_z LPCWSTR pSource, bool cannonicalize = false);
+    static int CopyStringToBucket(_Out_writes_(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, _In_z_ LPCWSTR pSource, bool cannonicalize = false);
     // function that consumers should call to populate the GMB
     virtual void PopulateBucketParameters() = 0;
 };
@@ -441,7 +441,7 @@ void BaseBucketParamsManager::PopulateBucketParameter(BucketParameterIndex param
     LogParam(targetParam, paramIndex);
 }
 
-void BaseBucketParamsManager::GetAppName(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
+void BaseBucketParamsManager::GetAppName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
 {
     CONTRACTL
     {
@@ -465,7 +465,7 @@ void BaseBucketParamsManager::GetAppName(__out_ecount(maxLength) WCHAR* targetPa
     }
 }
 
-void BaseBucketParamsManager::GetAppVersion(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
+void BaseBucketParamsManager::GetAppVersion(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
 {
     CONTRACTL
     {
@@ -490,7 +490,7 @@ void BaseBucketParamsManager::GetAppVersion(__out_ecount(maxLength) WCHAR* targe
             W("%d.%d.%d.%d"),
             major, minor, build, revision);
     }
-    else if (DwGetAssemblyVersion(appPath, verBuf, NumItems(verBuf)) != 0)
+    else if (DwGetAssemblyVersion(appPath, verBuf, ARRAY_SIZE(verBuf)) != 0)
     {
         wcscpy_s(targetParam, maxLength, verBuf);
     }
@@ -500,7 +500,7 @@ void BaseBucketParamsManager::GetAppVersion(__out_ecount(maxLength) WCHAR* targe
     }
 }
 
-void BaseBucketParamsManager::GetAppTimeStamp(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
+void BaseBucketParamsManager::GetAppTimeStamp(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
 {
     CONTRACTL
     {
@@ -532,7 +532,7 @@ void BaseBucketParamsManager::GetAppTimeStamp(__out_ecount(maxLength) WCHAR* tar
     EX_END_CATCH(SwallowAllExceptions)
 }
 
-void BaseBucketParamsManager::GetModuleName(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
+void BaseBucketParamsManager::GetModuleName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
 {
     CONTRACTL
     {
@@ -622,7 +622,7 @@ void BaseBucketParamsManager::GetModuleName(__out_ecount(maxLength) WCHAR* targe
     }
 }
 
-void BaseBucketParamsManager::GetModuleVersion(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
+void BaseBucketParamsManager::GetModuleVersion(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
 {
     CONTRACTL
     {
@@ -650,7 +650,7 @@ void BaseBucketParamsManager::GetModuleVersion(__out_ecount(maxLength) WCHAR* ta
         // if we failed to get a version and this isn't the manifest module then try that
         if (!gotFileVersion && !pModule->IsManifest())
         {
-            pModule = pModule->GetAssembly()->GetManifestModule();
+            pModule = pModule->GetAssembly()->GetModule();
             if (pModule)
                 gotFileVersion = GetFileVersionInfoForModule(pModule, major, minor, build, revision);
         }
@@ -678,7 +678,7 @@ void BaseBucketParamsManager::GetModuleVersion(__out_ecount(maxLength) WCHAR* ta
     }
 }
 
-void BaseBucketParamsManager::GetModuleTimeStamp(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
+void BaseBucketParamsManager::GetModuleTimeStamp(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
 {
     CONTRACTL
     {
@@ -701,7 +701,7 @@ void BaseBucketParamsManager::GetModuleTimeStamp(__out_ecount(maxLength) WCHAR* 
         {
             // We only store the IL timestamp in the native image for the
             // manifest module.  We should consider fixing this for Orcas.
-            PTR_PEAssembly pFile = pModule->GetAssembly()->GetManifestModule()->GetPEAssembly();
+            PTR_PEAssembly pFile = pModule->GetAssembly()->GetModule()->GetPEAssembly();
 
             // for dynamic modules use 0 as the time stamp
             ULONG ulTimeStamp = 0;
@@ -731,7 +731,7 @@ void BaseBucketParamsManager::GetModuleTimeStamp(__out_ecount(maxLength) WCHAR* 
     }
 }
 
-void BaseBucketParamsManager::GetMethodDef(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
+void BaseBucketParamsManager::GetMethodDef(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
 {
     CONTRACTL
     {
@@ -756,7 +756,7 @@ void BaseBucketParamsManager::GetMethodDef(__out_ecount(maxLength) WCHAR* target
     }
 }
 
-void BaseBucketParamsManager::GetIlOffset(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
+void BaseBucketParamsManager::GetIlOffset(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
 {
     CONTRACTL
     {
@@ -775,7 +775,7 @@ void BaseBucketParamsManager::GetIlOffset(__out_ecount(maxLength) WCHAR* targetP
                 ilOffset);
 }
 
-void BaseBucketParamsManager::GetExceptionName(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
+void BaseBucketParamsManager::GetExceptionName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
 {
     CONTRACTL
     {
@@ -845,7 +845,7 @@ void BaseBucketParamsManager::GetExceptionName(__out_ecount(maxLength) WCHAR* ta
     }
 }
 
-void BaseBucketParamsManager::GetPackageMoniker(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
+void BaseBucketParamsManager::GetPackageMoniker(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
 {
     CONTRACTL
     {
@@ -858,7 +858,7 @@ void BaseBucketParamsManager::GetPackageMoniker(__out_ecount(maxLength) WCHAR* t
     _ASSERTE(!"AppX support NYI for CoreCLR");
 }
 
-void BaseBucketParamsManager::GetPRAID(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
+void BaseBucketParamsManager::GetPRAID(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
 {
     CONTRACTL
     {
@@ -871,7 +871,7 @@ void BaseBucketParamsManager::GetPRAID(__out_ecount(maxLength) WCHAR* targetPara
     _ASSERTE(!"PRAID support NYI for CoreCLR");
 }
 
-void BaseBucketParamsManager::GetIlRva(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
+void BaseBucketParamsManager::GetIlRva(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
 {
     CONTRACTL
     {
@@ -1070,7 +1070,7 @@ OBJECTREF BaseBucketParamsManager::GetRealExceptionObject()
 //      because that is what a SHA1 hash coded in base32 will require.
 //    - the maxlen does not include the terminating nul.
 //------------------------------------------------------------------------------
-int BaseBucketParamsManager::CopyStringToBucket(__out_ecount(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, __in_z LPCWSTR pSource, bool cannonicalize)
+int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, _In_z_ LPCWSTR pSource, bool cannonicalize)
 {
     CONTRACTL
     {
@@ -1142,7 +1142,7 @@ int BaseBucketParamsManager::CopyStringToBucket(__out_ecount(targetMaxLength) LP
     return targLen;
 }
 
-void BaseBucketParamsManager::LogParam(__in_z LPCWSTR paramValue, BucketParameterIndex paramIndex)
+void BaseBucketParamsManager::LogParam(_In_z_ LPCWSTR paramValue, BucketParameterIndex paramIndex)
 {
 #ifdef _DEBUG
     LIMITED_METHOD_CONTRACT;

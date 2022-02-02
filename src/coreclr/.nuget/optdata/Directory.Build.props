@@ -1,4 +1,0 @@
-<Project>
-  <!-- OptData projects do not use the build props of the .nuget directory. Instead they use the root build props -->
-  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../../'))" />
-</Project>

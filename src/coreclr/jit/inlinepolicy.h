@@ -110,6 +110,8 @@ public:
         , m_CallsiteIsInLoop(false)
         , m_IsNoReturn(false)
         , m_IsNoReturnKnown(false)
+        , m_ConstArgFeedsIsKnownConst(false)
+        , m_ArgFeedsIsKnownConst(false)
     {
         // empty
     }
@@ -178,6 +180,8 @@ protected:
     bool                    m_CallsiteIsInLoop : 1;
     bool                    m_IsNoReturn : 1;
     bool                    m_IsNoReturnKnown : 1;
+    bool                    m_ConstArgFeedsIsKnownConst : 1;
+    bool                    m_ArgFeedsIsKnownConst : 1;
 };
 
 // ExtendedDefaultPolicy is a slightly more aggressive variant of
@@ -516,7 +520,7 @@ public:
         m_InlineContext = context;
     }
 
-    void NoteOffset(IL_OFFSETX offset) override
+    void NoteOffset(IL_OFFSET offset) override
     {
         m_Offset = offset;
     }
@@ -542,7 +546,7 @@ private:
     static FILE*         s_ReplayFile;
     static CritSecObject s_XmlReaderLock;
     InlineContext*       m_InlineContext;
-    IL_OFFSETX           m_Offset;
+    IL_OFFSET            m_Offset;
     bool                 m_WasForceInline;
 };
 

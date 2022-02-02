@@ -288,7 +288,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="sets">the BDDs to create the minterms for</param>
         /// <returns>BDDs for the minterm</returns>
-        public List<BDD> GenerateMinterms(params BDD[] sets) => _mintermGen.GenerateMinterms(sets);
+        public List<BDD> GenerateMinterms(IEnumerable<BDD> sets) => _mintermGen.GenerateMinterms(sets);
 
         /// <summary>
         /// Make a set containing all integers whose bits up to maxBit equal n.

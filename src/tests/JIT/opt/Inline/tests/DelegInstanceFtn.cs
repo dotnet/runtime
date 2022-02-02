@@ -3,7 +3,7 @@
 
 using System;
 
-internal class Test
+internal class Test_DelegInstanceFtn
 {
     private delegate object MyDeleg(string s);
 
@@ -17,7 +17,7 @@ internal class Test
 
     public static int Main()
     {
-        Test t = new Test();
+        Test_DelegInstanceFtn t = new Test_DelegInstanceFtn();
         MyDeleg d2 = new MyDeleg(t.f2);
         return Convert.ToInt32(d2("test2"));
     }

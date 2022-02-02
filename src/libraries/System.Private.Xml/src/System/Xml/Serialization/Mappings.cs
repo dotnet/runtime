@@ -132,11 +132,11 @@ namespace System.Xml.Serialization
         {
             if (Any)
             {
-                return (Namespace == null ? "##any" : Namespace) + ":" + Name;
+                return $"{(Namespace == null ? "##any" : Namespace)}:{Name}";
             }
             else
             {
-                return Namespace == defaultNs ? Name : Namespace + ":" + Name;
+                return Namespace == defaultNs ? Name : $"{Namespace}:{Name}";
             }
         }
     }
@@ -630,8 +630,7 @@ namespace System.Xml.Serialization
         }
         internal bool Declares(MemberMapping member, string? parent)
         {
-            StructMapping? m;
-            return (FindDeclaringMapping(member, out m, parent) != null);
+            return (FindDeclaringMapping(member, out _, parent) != null);
         }
 
         internal void SetContentModel(TextAccessor? text, bool hasElements)
@@ -1239,7 +1238,7 @@ namespace System.Xml.Serialization
             if (element.Parent == null || !(element.Parent is XmlSchema))
                 return;
 
-            XmlSchemaObjectTable? elements = null;
+            XmlSchemaObjectTable? elements;
             if (Schema != null && Schema.TargetNamespace == elementNs)
             {
                 XmlSchemas.Preprocess(Schema);

@@ -20,7 +20,7 @@ import os
 import re
 import shutil
 import threading
-from azdo_pipelines_util import run_command, TempDir
+from jitutil import run_command, TempDir
 from coreclr_arguments import *
 from os import path
 

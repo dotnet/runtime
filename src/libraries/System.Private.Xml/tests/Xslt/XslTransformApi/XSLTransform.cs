@@ -45,7 +45,8 @@ namespace System.Xml.Tests
         private const string XmlResolverDocumentName = "xmlResolver_document_function.xml";
         private static readonly string s_temporaryResolverDocumentFullName = Path.Combine(Path.GetTempPath(), typeof(XsltApiTestCaseBase) + "_" + Path.GetRandomFileName());
         private static readonly object s_temporaryResolverDocumentLock = new object();
-
+        protected static string absoluteUriXslFile = "xmlResolver_document_function_absolute_uri_replaced.xsl";
+        
         // Generic data for all derived test cases
         public string szXslNS = "http://www.w3.org/1999/XSL/Transform";
 
@@ -81,17 +82,20 @@ namespace System.Xml.Tests
             // In AppContainer access is denied to full path and the code below and related tests cannot run
             if (!PlatformDetection.IsInAppContainer)
             {
+                string testDirPath = Path.Combine(FilePathUtil.GetWriteableTestRootPath(), "TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi");
+
                 Directory.CreateDirectory(Path.GetDirectoryName(s_temporaryResolverDocumentFullName));
+                Directory.CreateDirectory(testDirPath);
 
                 // Replace absolute URI in xmlResolver_document_function.xml based on the environment, and store it under a different name
                 string xslFile = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi", "xmlResolver_document_function_absolute_uri.xsl");
-                string replacedXslFile = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi", "xmlResolver_document_function_absolute_uri_replaced.xsl");
-                File.Copy(xslFile, replacedXslFile, true);
+                absoluteUriXslFile = Path.Combine(testDirPath, "xmlResolver_document_function_absolute_uri_replaced.xsl");
+                File.Copy(xslFile, absoluteUriXslFile, true);
                 XmlDocument doc = new XmlDocument();
-                doc.Load(replacedXslFile);
+                doc.Load(absoluteUriXslFile);
                 string xslString = doc.OuterXml.Replace("ABSOLUTE_URI", s_temporaryResolverDocumentFullName);
                 doc.LoadXml(xslString);
-                doc.Save(replacedXslFile);
+                doc.Save(absoluteUriXslFile);
             }
         }
 
@@ -217,8 +221,10 @@ namespace System.Xml.Tests
         // Returns the full, lower-cased path of a file, based on LTM parameters
         public string FullFilePath(string szFile, bool normalizeToLower)
         {
-            if (szFile == null || szFile == string.Empty)
+            if (szFile == null || szFile == string.Empty || szFile == absoluteUriXslFile)
+            {
                 return szFile;
+            }
             // why is this check here?
             if (szFile.Length > 5)
             {

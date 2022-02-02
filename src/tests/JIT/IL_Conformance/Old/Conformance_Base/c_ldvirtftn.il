@@ -23,4 +23,4 @@ FAIL:
     ret
 }
 }
-.assembly c_ldvirtftn.exe {}
+.assembly c_ldvirtftn {}

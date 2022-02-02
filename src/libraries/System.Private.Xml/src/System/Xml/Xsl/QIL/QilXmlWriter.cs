@@ -115,7 +115,7 @@ namespace System.Xml.Xsl.Qil
             }
 
             if (s != null && s.Length != 0)
-                this.writer.WriteComment(name != null && name.Length != 0 ? name + ": " + s : s);
+                this.writer.WriteComment(name != null && name.Length != 0 ? $"{name}: {s}" : s);
         }
 
         /// <summary>
@@ -410,7 +410,7 @@ namespace System.Xml.Xsl.Qil
             /// <returns>the node name (unique across nodes)</returns>
             public string NameOf(QilNode n)
             {
-                string? name = null;
+                string? name;
 
                 object? old = n.Annotation;
                 NameAnnotation? a = old as NameAnnotation;

@@ -7,7 +7,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly test_3b { }
+.assembly 'b57952' { }
+.assembly extern xunit.core {}
 .namespace Test2A
 {
   .class private auto ansi beforefieldinit TestClass
@@ -44,6 +45,9 @@
     .method private hidebysig static 
             int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       38 (0x26)
       .maxstack  1

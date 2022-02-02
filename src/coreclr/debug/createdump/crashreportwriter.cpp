@@ -4,7 +4,7 @@
 #include "createdump.h"
 
 // Include the .NET Core version string instead of link because it is "static".
-#include "version.c"
+#include "_version.c"
 
 CrashReportWriter::CrashReportWriter(CrashInfo& crashInfo) :
     m_crashInfo(crashInfo)
@@ -84,18 +84,20 @@ CrashReportWriter::WriteCrashReport()
     {
         OpenObject();
         bool crashed = false;
-        if (thread->ManagedExceptionObject() != 0)
+        if (thread->Tid() == m_crashInfo.CrashThread())
         {
             crashed = true;
-            exceptionType = "0x05000000";   // ManagedException
-        }
-        else
-        {
-            if (thread->Tid() == m_crashInfo.CrashThread())
+            if (thread->ManagedExceptionObject() != 0)
             {
-                crashed = true;
+                exceptionType = "0x05000000";   // ManagedException
+            }
+            else
+            {
                 switch (m_crashInfo.Signal())
                 {
+                case 0:
+                    break;
+
                 case SIGILL:
                     exceptionType = "0x50000000";
                     break;
@@ -121,8 +123,11 @@ CrashReportWriter::WriteCrashReport()
                     break;
 
                 case SIGABRT:
-                default:
                     exceptionType = "0x30000000";
+                    break;
+
+                default:
+                    exceptionType = "0x00000000";
                     break;
                 }
             }
@@ -152,13 +157,13 @@ CrashReportWriter::WriteCrashReport()
         for (auto iterator = thread->StackFrames().cbegin(); iterator != thread->StackFrames().cend(); ++iterator)
         {
             if (thread->IsBeginRepeat(iterator))
-            { 
+            {
                 OpenObject();
                 WriteValue32("repeated", thread->NumRepeatedFrames());
                 OpenArray("repeated_frames");
             }
             if (thread->IsEndRepeat(iterator))
-            { 
+            {
                 CloseArray();   // repeated_frames
                 CloseObject();
             }

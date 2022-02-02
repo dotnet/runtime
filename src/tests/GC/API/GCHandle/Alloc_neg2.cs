@@ -8,7 +8,7 @@ This test verifies GCHandle.Alloc's ability to validate bad GCHandleTypes, since
 using System;
 using System.Runtime.InteropServices;
 
-public class Test
+public class Test_Alloc_neg2
 {
     public static int Main()
     {

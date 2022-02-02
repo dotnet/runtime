@@ -8,11 +8,15 @@
   .ver 4:0:0:0
 }
 .assembly 'array' { }
+.assembly extern xunit.core {}
 .namespace JitTest {
 .class private auto ansi beforefieldinit Test extends [mscorlib]System.Object
 {
 .method private hidebysig static int32 Main() cil managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack  32
 	.locals (unsigned int8[] ARR_u1,

@@ -108,7 +108,7 @@ public class CC4<T> : C4<T>, IGen<T>
 
 
 
-public class Test
+public class Test_Class2_ImplicitOverrideVirtualNewslot_Interface
 {
 
 	public static int counter = 0;

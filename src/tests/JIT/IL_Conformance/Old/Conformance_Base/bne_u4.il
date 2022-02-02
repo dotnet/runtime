@@ -128,4 +128,4 @@ FAIL:
 	ret
 }
 }
-.assembly bne_u4.exe{}
+.assembly bne_u4{}

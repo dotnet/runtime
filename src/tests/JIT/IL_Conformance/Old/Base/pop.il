@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly pop.exe{}
+.assembly 'pop'{}
 
 .class public _pop {
 

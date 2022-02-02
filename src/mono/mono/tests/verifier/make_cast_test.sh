@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -18,7 +18,7 @@ TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
 $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g" -e "s/LOAD/${TEST_LOAD}/g" -e "s/OP/${TEST_OP}/g" > $TEST_FILE <<//EOF
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly '${TEST_NAME}_generated'
@@ -29,25 +29,25 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g" -e "s/LOAD/
 
 .class ClassA extends [mscorlib]System.Object
 {
-    .method public hidebysig  specialname  rtspecialname 
-           instance default void .ctor ()  cil managed 
+    .method public hidebysig  specialname  rtspecialname
+           instance default void .ctor ()  cil managed
     {
         .maxstack 8
-        ldarg.0 
+        ldarg.0
         call instance void object::.ctor()
-        ret 
+        ret
     }
 }
 
 .class ClassSubA extends ClassA
 {
-    .method public hidebysig  specialname  rtspecialname 
-           instance default void .ctor ()  cil managed 
+    .method public hidebysig  specialname  rtspecialname
+           instance default void .ctor ()  cil managed
     {
         .maxstack 8
-        ldarg.0 
+        ldarg.0
         call instance void ClassA::.ctor()
-        ret 
+        ret
     }
 }
 
@@ -75,10 +75,10 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g" -e "s/LOAD/
 		call void foo ()
 		leave END
 	} catch [mscorlib]System.InvalidCastException {
-		pop 
+		pop
 		leave END
 	} catch [mscorlib]System.NullReferenceException {
-		pop 
+		pop
 		leave END
 
         }

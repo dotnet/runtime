@@ -95,7 +95,7 @@ static gpointer bp_trigger_page;
         do {                                                        \
 		code = mips_emit_exc_by_name (code, exc_name);	\
 		cfg->bb_exit->max_offset += 16;				\
-	} while (0) 
+	} while (0)
 
 #define MONO_EMIT_NEW_LOAD_R8(cfg,dr,addr) do { \
 		MonoInst *inst;				   \
@@ -192,7 +192,7 @@ mono_arch_flush_register_windows (void)
 {
 }
 
-gboolean 
+gboolean
 mono_arch_is_inst_imm (int opcode, int imm_opcode, gint64 imm)
 {
 	return TRUE;
@@ -462,7 +462,7 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
  * @arg_info: an array to store the result infos
  *
  * Gathers information on parameters such as size, alignment and
- * padding. arg_info should be large enought to hold param_count + 1 entries. 
+ * padding. arg_info should be large enought to hold param_count + 1 entries.
  *
  * Returns the size of the activation frame.
  */
@@ -473,7 +473,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	guint32 size, align, pad;
 	int offset = 0;
 
-	if (MONO_TYPE_ISSTRUCT (csig->ret)) { 
+	if (MONO_TYPE_ISSTRUCT (csig->ret)) {
 		frame_size += sizeof (target_mgreg_t);
 		offset += 4;
 	}
@@ -488,12 +488,12 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	arg_info [0].size = frame_size;
 
 	for (k = 0; k < param_count; k++) {
-		size = mini_type_stack_size_full (csig->params [k], &align, csig->pinvoke);
+		size = mini_type_stack_size_full (csig->params [k], &align, csig->pinvoke && !csig->marshalling_disabled);
 
 		/* ignore alignment for now */
 		align = 1;
 
-		frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);	
+		frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);
 		arg_info [k].pad = pad;
 		frame_size += size;
 		arg_info [k + 1].pad = 0;
@@ -768,7 +768,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 /*
  * mono_arch_regalloc_cost:
  *
- * Return the cost, in number of memory references, of the action of 
+ * Return the cost, in number of memory references, of the action of
  * allocating the variable VMV into a register during global register
  * allocation.
  */
@@ -1156,7 +1156,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				alignment = sizeof (target_mgreg_t);
 			} else {
 				klass = mono_class_from_mono_type_internal (sig->params [i]);
-				if (is_pinvoke)
+				if (sig->pinvoke && !sig->marshalling_disabled)
 					size = mono_class_native_size (klass, NULL);
 				else
 					size = mono_class_value_size (klass, NULL);
@@ -1390,7 +1390,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	/* spill down, we'll fix it in a separate pass */
 	// cfg->flags |= MONO_CFG_HAS_SPILLUP;
 
-	/* this is bug #60332: remove when #59509 is fixed, so no weird vararg 
+	/* this is bug #60332: remove when #59509 is fixed, so no weird vararg
 	 * call convs needs to be handled this way.
 	 */
 	if (cfg->flags & MONO_CFG_HAS_VARARGS)
@@ -1480,7 +1480,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset &= ~(align - 1);
 		cfg->sig_cookie = offset;
 		offset += size;
-	}			
+	}
 
 	offset += SIZEOF_REGISTER - 1;
 	offset &= ~(SIZEOF_REGISTER - 1);
@@ -1537,7 +1537,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		inst = cfg->args [i];
 		if (inst->opcode != OP_REGVAR) {
 			MonoType *arg_type;
-		 
+
 			if (sig->hasthis && (i == 0))
 				arg_type = mono_get_object_type ();
 			else
@@ -1599,10 +1599,10 @@ mono_arch_create_vars (MonoCompile *cfg)
 }
 
 /* Fixme: we need an alignment solution for enter_method and mono_arch_call_opcode,
- * currently alignment in mono_arch_call_opcode is computed without arch_get_argument_info 
+ * currently alignment in mono_arch_call_opcode is computed without arch_get_argument_info
  */
 
-/* 
+/*
  * take the arguments and generate the arch-specific
  * instructions to properly call the function in call.
  * This includes pushing, moving arguments to the right register
@@ -1622,9 +1622,9 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	cfg->disable_aot = TRUE;
 
 	/*
-	 * mono_ArgIterator_Setup assumes the signature cookie is 
+	 * mono_ArgIterator_Setup assumes the signature cookie is
 	 * passed first and all the arguments which were before it are
-	 * passed on the stack after the signature. So compensate by 
+	 * passed on the stack after the signature. So compensate by
 	 * passing a different signature.
 	 */
 	tmp_sig = mono_metadata_signature_dup (call->signature);
@@ -1651,7 +1651,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
-	
+
 	cinfo = get_call_info (cfg->mempool, sig);
 	if (cinfo->struct_ret)
 		call->used_iregs |= 1 << cinfo->struct_ret;
@@ -1827,7 +1827,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 #endif
 	cfg->param_area = (cfg->param_area + MIPS_STACK_ALIGNMENT - 1) & ~(MIPS_STACK_ALIGNMENT - 1);
 	cfg->flags |= MONO_CFG_HAS_CALLS;
-	/* 
+	/*
 	 * should set more info in call, such as the stack space
 	 * used by the args that needs to be added back to esp
 	 */
@@ -1846,7 +1846,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 #if 0
 		if (cfg->verbose_level > 0) {
 			char* nm = mono_method_full_name (cfg->method, TRUE);
-			g_print ("Method %s outarg_vt struct doffset=%d ainfo->size=%d ovf_size=%d\n", 
+			g_print ("Method %s outarg_vt struct doffset=%d ainfo->size=%d ovf_size=%d\n",
 				 nm, doffset, ainfo->size, ovf_size);
 			g_free (nm);
 		}
@@ -1878,7 +1878,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		guint32 size;
 
 		/* FIXME: alignment? */
-		if (call->signature->pinvoke) {
+		if (call->signature->pinvoke && !call->signature->marshalling_disabled) {
 			size = mono_type_native_stack_size (m_class_get_byval_arg (src->klass), NULL);
 			vtcopy->backend.is_pinvoke = 1;
 		} else {
@@ -1978,7 +1978,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 		MonoInst *last_ins = ins->prev;
 
 		switch (ins->opcode) {
-		case OP_MUL_IMM: 
+		case OP_MUL_IMM:
 			/* remove unnecessary multiplication with 1 */
 			if (ins->inst_imm == 1) {
 				if (ins->dreg != ins->sreg1) {
@@ -1997,11 +1997,11 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI4_MEMBASE:
-			/* 
-			 * OP_STORE_MEMBASE_REG reg, offset(basereg) 
+			/*
+			 * OP_STORE_MEMBASE_REG reg, offset(basereg)
 			 * OP_LOAD_MEMBASE offset(basereg), reg
 			 */
-			if (last_ins && (last_ins->opcode == OP_STOREI4_MEMBASE_REG 
+			if (last_ins && (last_ins->opcode == OP_STOREI4_MEMBASE_REG
 					 || last_ins->opcode == OP_STORE_MEMBASE_REG) &&
 			    ins->inst_basereg == last_ins->inst_destbasereg &&
 			    ins->inst_offset == last_ins->inst_offset) {
@@ -2015,7 +2015,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 				break;
 			}
-			/* 
+			/*
 			 * Note: reg1 must be different from the basereg in the second load
 			 * OP_LOAD_MEMBASE offset(basereg), reg1
 			 * OP_LOAD_MEMBASE offset(basereg), reg2
@@ -2041,11 +2041,11 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 #if 0
-			/* 
-			 * OP_STORE_MEMBASE_IMM imm, offset(basereg) 
+			/*
+			 * OP_STORE_MEMBASE_IMM imm, offset(basereg)
 			 * OP_LOAD_MEMBASE offset(basereg), reg
 			 * -->
-			 * OP_STORE_MEMBASE_IMM imm, offset(basereg) 
+			 * OP_STORE_MEMBASE_IMM imm, offset(basereg)
 			 * OP_ICONST reg, imm
 			 */
 			if (last_ins && (last_ins->opcode == OP_STOREI4_MEMBASE_IMM
@@ -2066,7 +2066,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->inst_basereg == last_ins->inst_destbasereg &&
 					ins->inst_offset == last_ins->inst_offset) {
 				ins->opcode = (ins->opcode == OP_LOADI1_MEMBASE) ? OP_ICONV_TO_I1 : OP_ICONV_TO_U1;
-				ins->sreg1 = last_ins->sreg1;				
+				ins->sreg1 = last_ins->sreg1;
 			}
 			break;
 		case OP_LOADU2_MEMBASE:
@@ -2075,22 +2075,22 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->inst_basereg == last_ins->inst_destbasereg &&
 					ins->inst_offset == last_ins->inst_offset) {
 				ins->opcode = (ins->opcode == OP_LOADI2_MEMBASE) ? OP_ICONV_TO_I2 : OP_ICONV_TO_U2;
-				ins->sreg1 = last_ins->sreg1;				
+				ins->sreg1 = last_ins->sreg1;
 			}
 			break;
 		case OP_ICONV_TO_I4:
 		case OP_ICONV_TO_U4:
 		case OP_MOVE:
 			ins->opcode = OP_MOVE;
-			/* 
-			 * OP_MOVE reg, reg 
+			/*
+			 * OP_MOVE reg, reg
 			 */
 			if (ins->dreg == ins->sreg1) {
 				MONO_DELETE_INS (bb, ins);
 				continue;
 			}
-			/* 
-			 * OP_MOVE sreg, dreg 
+			/*
+			 * OP_MOVE sreg, dreg
 			 * OP_MOVE dreg, sreg
 			 */
 			if (last_ins && last_ins->opcode == OP_MOVE &&
@@ -2537,7 +2537,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		MONO_BB_FOR_EACH_INS (bb, ins) {
 			mono_print_ins_index (idx++, ins);
 		}
-		
+
 	}
 #endif
 
@@ -2999,7 +2999,7 @@ loop_start:
 		MONO_BB_FOR_EACH_INS (bb, ins) {
 			mono_print_ins_index (idx++, ins);
 		}
-		
+
 	}
 #endif
 
@@ -3422,8 +3422,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_BREAK:
 			/*
-			 * gdb does not like encountering the hw breakpoint ins in the debugged code. 
-			 * So instead of emitting a trap, we emit a call a C function and place a 
+			 * gdb does not like encountering the hw breakpoint ins in the debugged code.
+			 * So instead of emitting a trap, we emit a call a C function and place a
 			 * breakpoint there.
 			 */
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break));
@@ -3516,7 +3516,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_mfhi (code, ins->dreg);
 			break;
 		}
-		case OP_IDIV_UN: 
+		case OP_IDIV_UN:
 		case OP_IREM_UN: {
 			guint32 *divisor_is_zero = (guint32 *)(void *)code;
 
@@ -3927,7 +3927,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_nop (code);
 			break;
 		}
-		case OP_CALL_HANDLER: 
+		case OP_CALL_HANDLER:
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 			mips_lui (code, mips_t9, mips_zero, 0);
 			mips_addiu (code, mips_t9, mips_t9, 0);
@@ -4281,16 +4281,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FSUB:
 			mips_fsubd (code, ins->dreg, ins->sreg1, ins->sreg2);
-			break;		
+			break;
 		case OP_FMUL:
 			mips_fmuld (code, ins->dreg, ins->sreg1, ins->sreg2);
-			break;		
+			break;
 		case OP_FDIV:
 			mips_fdivd (code, ins->dreg, ins->sreg1, ins->sreg2);
-			break;		
+			break;
 		case OP_FNEG:
 			mips_fnegd (code, ins->dreg, ins->sreg1);
-			break;		
+			break;
 		case OP_FCEQ:
 			mips_fcmpd (code, MIPS_FPU_EQ, ins->sreg1, ins->sreg2);
 			mips_addiu (code, ins->dreg, mips_zero, 1);
@@ -4399,7 +4399,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_fbtrue (code, 0);
 				mips_nop (code);
 			}
-			
+
 			mips_fcmpd (code, cond, ins->sreg1, ins->sreg2);
 			mips_nop (code);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
@@ -4460,7 +4460,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
 		}
-	       
+
 		cpos += max_len;
 
 		last_ins = ins;
@@ -4654,7 +4654,7 @@ mips_adjust_stackframe(MonoCompile *cfg)
 
 /*
  * Stack frame layout:
- * 
+ *
  *   ------------------- sp + cfg->stack_usage + cfg->param_area
  *      param area		incoming
  *   ------------------- sp + cfg->stack_usage + MIPS_STACK_PARAM_OFFSET
@@ -4663,7 +4663,7 @@ mips_adjust_stackframe(MonoCompile *cfg)
  *	ra
  *   ------------------- sp + cfg->stack_usage-4
  *   	spilled regs
- *   ------------------- sp + 
+ *   ------------------- sp +
  *   	MonoLMF structure	optional
  *   ------------------- sp + cfg->arch.lmf_offset
  *   	saved registers		s0-s8
@@ -4694,12 +4694,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	guint32 lmf_offset = cfg->arch.lmf_offset;
 	int cfa_offset = 0;
 	MonoBasicBlock *bb;
-	
+
 	sig = mono_method_signature_internal (method);
 	cfg->code_size = 768 + sig->param_count * 20;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
-	/* 
+	/*
 	 * compute max_offset in order to use short forward jumps.
 	 */
 	max_offset = 0;
@@ -4872,7 +4872,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
 		inst = cfg->args [pos];
-		
+
 		if (cfg->verbose_level > 2)
 			g_print ("Saving argument %d (type: %d)\n", i, ainfo->storage);
 		if (inst->opcode == OP_REGVAR) {
@@ -5184,8 +5184,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	int max_epilog_size = 50;
 
 	/* count the number of exception infos */
-     
-	/* 
+
+	/*
 	 * make sure we have enough space for exceptions
 	 * 24 is the simulated call to throw_exception_by_name
 	 */
@@ -5230,7 +5230,7 @@ void
 mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
 {
 	int this_dreg = mips_a0;
-	
+
 	if (vt_reg != -1)
 		this_dreg = mips_a1;
 
@@ -5480,7 +5480,7 @@ mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 
 	mono_arch_flush_icache (ip, code - ip);
 }
-	
+
 /*
  * mono_arch_start_single_stepping:
  *
@@ -5491,7 +5491,7 @@ mono_arch_start_single_stepping (void)
 {
 	mono_mprotect (ss_trigger_page, mono_pagesize (), 0);
 }
-	
+
 /*
  * mono_arch_stop_single_stepping:
  *

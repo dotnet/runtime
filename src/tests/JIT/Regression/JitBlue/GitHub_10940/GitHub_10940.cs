@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 // test will fail with exit code 0; if it does do so correctly, the calls will not be reordered and the test will
 // pass.
 
-class Test
+class Test_GitHub_10940
 {
     abstract class ValueSourceBase
     {
@@ -39,14 +39,14 @@ class Test
         }
     }
 
-    Test(string s, decimal d)
+    Test_GitHub_10940(string s, decimal d)
     {
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int M(ValueSourceBase vs)
     {
-        new Test(vs.GetString(), vs.GetDecimal());
+        new Test_GitHub_10940(vs.GetString(), vs.GetDecimal());
         return vs.GetReturnValue();
     }
 

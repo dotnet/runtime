@@ -9,10 +9,10 @@
 .assembly extern mscorlib
 {
 }
-.assembly hanoi // as "hanoi"
+.assembly 'hanoi2' // as "hanoi"
 {
 }
-.module hanoi.exe
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class value private auto ansi sealed CI
@@ -196,6 +196,9 @@ IL_001d:
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  4
       .locals (int32 V_0,

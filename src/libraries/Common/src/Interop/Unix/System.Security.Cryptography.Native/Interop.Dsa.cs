@@ -15,8 +15,8 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DsaUpRef(IntPtr dsa);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaDestroy")]
-        internal static extern void DsaDestroy(IntPtr dsa);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaDestroy")]
+        internal static partial void DsaDestroy(IntPtr dsa);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaGenerateKey")]
         [return: MarshalAs(UnmanagedType.Bool)]

@@ -19,7 +19,7 @@ namespace System.IO.Tests
     {
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
-            string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
+            string pipeName = GetNamedPipeServerStreamName();
             string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
 
             var server = new NamedPipeServerStream(pipeName, PipeDirection.In);
@@ -77,7 +77,7 @@ namespace System.IO.Tests
     }
 
     [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
-    [Collection("NoParallelTests")] // don't run in parallel, as file sharing logic is not thread-safe
+    [Collection(nameof(DisableParallelization))] // don't run in parallel, as file sharing logic is not thread-safe
     [OuterLoop("Requires admin privileges to create a file share")]
     [ConditionalClass(typeof(UncFilePathFileStreamStandaloneConformanceTests), nameof(CanShareFiles))]
     public class UncFilePathFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests

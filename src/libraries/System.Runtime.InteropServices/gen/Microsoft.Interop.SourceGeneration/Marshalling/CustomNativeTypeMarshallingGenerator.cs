@@ -23,6 +23,11 @@ namespace Microsoft.Interop
             _enableByValueContentsMarshalling = enableByValueContentsMarshalling;
         }
 
+        public bool IsSupported(TargetFramework target, Version version)
+        {
+            return target is TargetFramework.Net && version.Major >= 6;
+        }
+
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
         {
             return _nativeTypeMarshaller.AsArgument(info, context);

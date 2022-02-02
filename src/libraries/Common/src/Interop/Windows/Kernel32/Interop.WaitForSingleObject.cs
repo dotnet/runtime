@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
-        internal static extern int WaitForSingleObject(SafeWaitHandle handle, int timeout);
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
+        internal static partial int WaitForSingleObject(SafeWaitHandle handle, int timeout);
     }
 }

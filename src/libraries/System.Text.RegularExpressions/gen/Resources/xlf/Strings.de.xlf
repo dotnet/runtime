@@ -47,11 +47,6 @@
         <target state="translated">Das Zielarray ist nicht lang genug, um alle Elemente in der Sammlung zu kopieren. Prüfen Sie den Index und die Länge des Arrays.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">Das Array kann keine NULL-Elemente enthalten.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">Der Startindex darf nicht kleiner als 0 oder größer als die Eingabelänge sein.</target>
@@ -110,7 +105,7 @@
       <trans-unit id="InternalError_ScanRegex">
         <source>Internal error in ScanRegex.</source>
         <target state="translated">Interner Fehler in ScanRegex.</target>
-        <note />
+        <note>{Locked="ScanRegex"}</note>
       </trans-unit>
       <trans-unit id="InvalidEmptyArgument">
         <source>Argument {0} cannot be zero-length.</source>
@@ -135,12 +130,12 @@
       <trans-unit id="InvalidRegexGeneratorAttributeMessage">
         <source>The RegexGeneratorAttribute is malformed</source>
         <target state="translated">Das RegexGeneratorAttribute ist falsch formatiert.</target>
-        <note />
+        <note>{Locked="RegexGeneratorAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeTitle">
         <source>Invalid RegexGenerator usage</source>
         <target state="translated">Ungültige RegexGenerator-Verwendung</target>
-        <note />
+        <note>{Locked="RegexGenerator"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \\p{X} character escape.</source>
@@ -150,6 +145,16 @@
       <trans-unit id="LengthNotNegative">
         <source>Length cannot be less than 0 or exceed input length.</source>
         <target state="translated">Die Länge darf nicht kleiner als 0 sein oder die Eingabelänge überschreiten.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationMessage">
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
+        <target state="translated">Der RegexGenerator konnte aufgrund einer nicht unterstützten Option oder eines zu komplexen regulären Ausdrucks keine vollständige Quellimplementierung für den angegebenen regulären Ausdruck generieren.  Die Implementierung wird den regulären Ausdruck zur Laufzeit interpretieren.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationTitle">
+        <source>RegexGenerator limitation reached.</source>
+        <target state="translated">RegexGenerator-Begrenzung erreicht.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -194,17 +199,12 @@
       </trans-unit>
       <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
         <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="new">Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</target>
-        <note />
+        <target state="translated">RegEx-Ersätze durch Austausch von Gruppen werden bei RegexOptions.NonBacktracking nicht unterstützt.</target>
+        <note>{Locked="RegexOptions.NonBacktracking"}</note>
       </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Die Sammlung ist schreibgeschützt.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">Dieser Vorgang ist pro Objekt nur einmal zulässig.</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">
@@ -220,7 +220,7 @@
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Capture group numbers must be less than or equal to Int32.MaxValue.</source>
         <target state="translated">Erfassungsgruppennummern müssen kleiner oder gleich Int32.MaxValue sein.</target>
-        <note />
+        <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
         <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
@@ -280,11 +280,6 @@
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \\ at end of pattern.</source>
         <target state="translated">Unzulässiger \\ am Ende des Musters.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">Unerwarteter "opcode" bei Generierung von regulärem Ausdruck: {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">

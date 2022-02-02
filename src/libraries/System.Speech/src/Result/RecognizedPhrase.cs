@@ -159,7 +159,7 @@ namespace System.Speech.Recognition
                     int elementsOffset = (int)_serializedPhrase.ElementsOffset;
                     List<RecognizedWordUnit> wordList = new(countOfElements);
 
-                    int sizeofPhraseElement = Marshal.SizeOf(typeof(SPSERIALIZEDPHRASEELEMENT));
+                    int sizeofPhraseElement = Marshal.SizeOf<SPSERIALIZEDPHRASEELEMENT>();
 
                     GCHandle gc = GCHandle.Alloc(_phraseBuffer, GCHandleType.Pinned);
                     try
@@ -168,7 +168,7 @@ namespace System.Speech.Recognition
                         for (int i = 0; i < countOfElements; i++)
                         {
                             IntPtr elementBuffer = new((long)buffer + elementsOffset + i * sizeofPhraseElement);
-                            SPSERIALIZEDPHRASEELEMENT element = (SPSERIALIZEDPHRASEELEMENT)Marshal.PtrToStructure(elementBuffer, typeof(SPSERIALIZEDPHRASEELEMENT));
+                            SPSERIALIZEDPHRASEELEMENT element = Marshal.PtrToStructure<SPSERIALIZEDPHRASEELEMENT>(elementBuffer);
 
                             string displayForm = null, lexicalForm = null, pronunciation = null;
                             if (element.pszDisplayTextOffset != 0)
@@ -292,9 +292,9 @@ namespace System.Speech.Recognition
 
                         // Get the ITN and Look for replacement phrase/
                         IntPtr itnBuffer = new((long)buffer + _serializedPhrase.ReplacementsOffset);
-                        for (int i = 0; i < _serializedPhrase.cReplacements; i++, itnBuffer = (IntPtr)((long)itnBuffer + Marshal.SizeOf(typeof(SPPHRASEREPLACEMENT))))
+                        for (int i = 0; i < _serializedPhrase.cReplacements; i++, itnBuffer = (IntPtr)((long)itnBuffer + Marshal.SizeOf<SPPHRASEREPLACEMENT>()))
                         {
-                            SPPHRASEREPLACEMENT replacement = (SPPHRASEREPLACEMENT)Marshal.PtrToStructure(itnBuffer, typeof(SPPHRASEREPLACEMENT));
+                            SPPHRASEREPLACEMENT replacement = (SPPHRASEREPLACEMENT)Marshal.PtrToStructure<SPPHRASEREPLACEMENT>(itnBuffer);
                             string text = Marshal.PtrToStringUni(new IntPtr((long)buffer + replacement.pszReplacementText));
                             DisplayAttributes displayAttributes = RecognizedWordUnit.SapiAttributesToDisplayAttributes(replacement.bDisplayAttributes);
                             _replacementText.Add(new ReplacementText(displayAttributes, text, (int)replacement.ulFirstElement, (int)replacement.ulCountOfElements));
@@ -325,11 +325,11 @@ namespace System.Speech.Recognition
 
             if (isSapi53Header)
             {
-                serializedPhrase = (SPSERIALIZEDPHRASE)Marshal.PtrToStructure(phraseBuffer, typeof(SPSERIALIZEDPHRASE));
+                serializedPhrase = Marshal.PtrToStructure<SPSERIALIZEDPHRASE>(phraseBuffer);
             }
             else
             {
-                SPSERIALIZEDPHRASE_Sapi51 legacyPhrase = (SPSERIALIZEDPHRASE_Sapi51)Marshal.PtrToStructure(phraseBuffer, typeof(SPSERIALIZEDPHRASE_Sapi51));
+                SPSERIALIZEDPHRASE_Sapi51 legacyPhrase = Marshal.PtrToStructure<SPSERIALIZEDPHRASE_Sapi51>(phraseBuffer);
                 serializedPhrase = new SPSERIALIZEDPHRASE(legacyPhrase);
             }
 
@@ -539,7 +539,7 @@ namespace System.Speech.Recognition
         private static void RecursivelyExtractSemanticProperties(List<ResultPropertiesRef> propertyList, int semanticsOffset, IntPtr phraseBuffer, RuleNode ruleTree, IList<RecognizedWordUnit> words, bool isSapi53Header)
         {
             IntPtr propertyBuffer = new((long)phraseBuffer + semanticsOffset);
-            SPSERIALIZEDPHRASEPROPERTY property = (SPSERIALIZEDPHRASEPROPERTY)Marshal.PtrToStructure(propertyBuffer, typeof(SPSERIALIZEDPHRASEPROPERTY));
+            SPSERIALIZEDPHRASEPROPERTY property = Marshal.PtrToStructure<SPSERIALIZEDPHRASEPROPERTY>(propertyBuffer);
 
             string propertyName;
             SemanticValue thisSemanticValue = ExtractSemanticValueInformation(semanticsOffset, property, phraseBuffer, isSapi53Header, out propertyName);
@@ -572,7 +572,7 @@ namespace System.Speech.Recognition
         {
             IntPtr propertyBuffer = new((long)phraseBuffer + semanticsOffset);
             SPSERIALIZEDPHRASEPROPERTY property =
-                (SPSERIALIZEDPHRASEPROPERTY)Marshal.PtrToStructure(propertyBuffer, typeof(SPSERIALIZEDPHRASEPROPERTY));
+                Marshal.PtrToStructure<SPSERIALIZEDPHRASEPROPERTY>(propertyBuffer);
 
             string propertyName;
             SemanticValue thisSemanticValue = ExtractSemanticValueInformation(semanticsOffset, property, phraseBuffer, isSapi53Header, out propertyName);
@@ -695,7 +695,7 @@ namespace System.Speech.Recognition
                             break;
 
                         case VarEnum.VT_UI4:
-                            propertyValue = Marshal.PtrToStructure(valueBuffer, typeof(uint));
+                            propertyValue = Marshal.PtrToStructure<uint>(valueBuffer);
                             break;
 
                         case VarEnum.VT_I8:
@@ -703,15 +703,15 @@ namespace System.Speech.Recognition
                             break;
 
                         case VarEnum.VT_UI8:
-                            propertyValue = Marshal.PtrToStructure(valueBuffer, typeof(ulong));
+                            propertyValue = Marshal.PtrToStructure<ulong>(valueBuffer);
                             break;
 
                         case VarEnum.VT_R4:
-                            propertyValue = Marshal.PtrToStructure(valueBuffer, typeof(float));
+                            propertyValue = Marshal.PtrToStructure<float>(valueBuffer);
                             break;
 
                         case VarEnum.VT_R8:
-                            propertyValue = Marshal.PtrToStructure(valueBuffer, typeof(double));
+                            propertyValue = Marshal.PtrToStructure<double>(valueBuffer);
                             break;
 
                         case VarEnum.VT_BOOL:
@@ -754,7 +754,7 @@ namespace System.Speech.Recognition
             if (rule.NextSiblingOffset > 0)
             {
                 IntPtr elementBuffer = new((long)phraseBuffer + rule.NextSiblingOffset);
-                SPSERIALIZEDPHRASERULE ruleNext = (SPSERIALIZEDPHRASERULE)Marshal.PtrToStructure(elementBuffer, typeof(SPSERIALIZEDPHRASERULE));
+                SPSERIALIZEDPHRASERULE ruleNext = Marshal.PtrToStructure<SPSERIALIZEDPHRASERULE>(elementBuffer);
 
                 node._next = ExtractRules(grammar, ruleNext, phraseBuffer);
             }
@@ -762,7 +762,7 @@ namespace System.Speech.Recognition
             if (rule.FirstChildOffset > 0)
             {
                 IntPtr elementBuffer = new((long)phraseBuffer + rule.FirstChildOffset);
-                SPSERIALIZEDPHRASERULE ruleFirst = (SPSERIALIZEDPHRASERULE)Marshal.PtrToStructure(elementBuffer, typeof(SPSERIALIZEDPHRASERULE));
+                SPSERIALIZEDPHRASERULE ruleFirst = Marshal.PtrToStructure<SPSERIALIZEDPHRASERULE>(elementBuffer);
 
                 node._child = ExtractRules(grammar, ruleFirst, phraseBuffer);
             }
@@ -781,7 +781,7 @@ namespace System.Speech.Recognition
             {
                 IntPtr smlBuffer = gc.AddrOfPinnedObject();
 
-                SPSEMANTICERRORINFO semanticError = (SPSEMANTICERRORINFO)Marshal.PtrToStructure((IntPtr)((long)smlBuffer + (int)_serializedPhrase.SemanticErrorInfoOffset), typeof(SPSEMANTICERRORINFO));
+                SPSEMANTICERRORINFO semanticError = Marshal.PtrToStructure<SPSEMANTICERRORINFO>((IntPtr)((long)smlBuffer + (int)_serializedPhrase.SemanticErrorInfoOffset));
 
                 string source = Marshal.PtrToStringUni(new IntPtr((long)smlBuffer + semanticError.pszSourceOffset));
                 string description = Marshal.PtrToStringUni(new IntPtr((long)smlBuffer + semanticError.pszDescriptionOffset));

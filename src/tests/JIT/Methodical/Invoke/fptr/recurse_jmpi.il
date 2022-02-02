@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'recurse'// as "recurse"
+.assembly 'recurse_jmpi'// as "recurse"
 {
 
   //  .custom instance void ['mscorlib']System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -19,7 +19,7 @@
   
   
 }
-.module 'recurse.exe'
+.assembly extern xunit.core {}
 // MVID: {885F4995-E80A-480B-BB9B-30139BED90E1}
 .namespace TestCase
 {
@@ -64,6 +64,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       72 (0x48)
       .maxstack  2

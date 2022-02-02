@@ -40,5 +40,25 @@ namespace NativeExports
             result->b = input.b * 2;
             result->c = input.c * 2;
         }
+
+        [UnmanagedCallersOnly(EntryPoint = "blittablestructs_increment_invert_ptrfields_byref")]
+        [DNNE.C99DeclCode("struct ptr_fields { int* i; int* b; uint16_t* c; };")]
+        public static void IncrementInvertPointerFieldsByRef(
+            [DNNE.C99Type("struct ptr_fields*")] PointerFields* result)
+        {
+            *(result->i) += 1;
+            *(result->b) = !*(result->b);
+            *(result->c) += (char)1;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "blittablestructs_increment_invert_ptrfields_refreturn")]
+        public static void IncrementInvertPointerFieldsRefReturn(
+            [DNNE.C99Type("struct ptr_fields")] PointerFields input,
+            [DNNE.C99Type("struct ptr_fields*")] PointerFields* result)
+        {
+            *(result->i) = *(input.i) + 1;
+            *(result->b) = !(*input.b);
+            *(result->c) = (char)(*(input.c) + 1);
+        }
     }
 }

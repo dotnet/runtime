@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 using Xunit;
 
-namespace System.IO.FileSystem.DriveInfoTests
+namespace System.IO.FileSystem.Tests
 {
     public partial class DriveInfoUnixTests
     {
@@ -24,6 +24,7 @@ namespace System.IO.FileSystem.DriveInfoTests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60586", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestGetDrives()
         {
             var drives = DriveInfo.GetDrives();
@@ -41,7 +42,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         public void PropertiesOfInvalidDrive()
         {
             string invalidDriveName = "NonExistentDriveName";

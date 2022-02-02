@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -21,6 +22,11 @@ namespace Microsoft.Interop
             _elementType = elementType;
             _enablePinning = enablePinning;
             _options = options;
+        }
+
+        public bool IsSupported(TargetFramework target, Version version)
+        {
+            return target is TargetFramework.Net && version.Major >= 7;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -90,7 +96,7 @@ namespace Microsoft.Interop
                 // of an array as long as it is non-null, matching the behavior of the built-in interop system
                 // for single-dimensional zero-based arrays.
 
-                // ref <elementType> <byRefIdentifier> = <managedIdentifer> == null ? ref *(<elementType*)0 : ref MemoryMarshal.GetArrayDataReference(<managedIdentifer>);
+                // ref <elementType> <byRefIdentifier> = ref <managedIdentifer> == null ? ref *(<elementType>*)0 : ref MemoryMarshal.GetArrayDataReference(<managedIdentifer>);
                 PrefixUnaryExpressionSyntax nullRef =
                     PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression,
                         CastExpression(

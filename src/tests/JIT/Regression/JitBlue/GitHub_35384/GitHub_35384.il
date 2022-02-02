@@ -5,6 +5,7 @@
 
 .assembly extern System.Runtime {}
 .assembly GitHub_35384 {}
+.assembly extern xunit.core {}
 
 .class private sequential ansi sealed beforefieldinit Struct
        extends [System.Runtime]System.ValueType
@@ -39,6 +40,9 @@
   
   .method private hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack 1
     call       string Program::ValueTypeExplicitThisInstanceMethodCalli()

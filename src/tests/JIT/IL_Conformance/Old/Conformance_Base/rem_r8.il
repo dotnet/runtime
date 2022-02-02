@@ -650,4 +650,4 @@ FAIL1:
 
 }
 }
-.assembly rem_r8.exe{}
+.assembly rem_r8{}

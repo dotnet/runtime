@@ -216,10 +216,7 @@ if ($vs) {
     # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
   }
-
-  # Restore the solution to workaround https://github.com/dotnet/runtime/issues/32205
-  Invoke-Expression "& dotnet restore $vs"
-
+  
   # Launch Visual Studio with the locally defined environment variables
   ."$vs"
 
@@ -265,6 +262,10 @@ foreach ($argument in $PSBoundParameters.Keys)
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
+
+# Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
+# The later changes are ignored when using the cache.
+$env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 
 $failedBuilds = @()
 

@@ -4,7 +4,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly initobj.exe{
+.assembly 'initobj'{
 }
 
 .class public value sealed valClass{

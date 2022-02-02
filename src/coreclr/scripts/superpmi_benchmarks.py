@@ -17,10 +17,10 @@ import sys
 
 import stat
 from os import path
-from os.path import isfile
+from os.path import isfile, realpath
 from shutil import copyfile
 from coreclr_arguments import *
-from azdo_pipelines_util import run_command, ChangeDir, TempDir
+from jitutil import run_command, ChangeDir, TempDir
 
 # Start of parser object creation.
 is_windows = platform.system() == "Windows"
@@ -135,6 +135,9 @@ def build_and_run(coreclr_args, output_mch_name):
     artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
     project_file = path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
     benchmarks_dll = path.join(artifacts_directory, "MicroBenchmarks.dll")
+
+    # Workaround https://github.com/dotnet/sdk/issues/23430
+    project_file = realpath(project_file)
 
     if is_windows:
         shim_name = "%JitName%"

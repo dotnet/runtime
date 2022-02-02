@@ -59,4 +59,4 @@ FAIL:
 	ret
 }
 }
-.assembly stloc_r8.exe{}
+.assembly stloc_r8{}

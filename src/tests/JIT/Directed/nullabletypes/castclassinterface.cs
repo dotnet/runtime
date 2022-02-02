@@ -779,7 +779,7 @@ internal class NullableTest18
 
 
 
-internal class Test
+internal class Test_castclassinterface
 {
     private static int Main()
     {

@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly ldtoken.exe{}
+.assembly 'ldtoken'{}
 
 
 

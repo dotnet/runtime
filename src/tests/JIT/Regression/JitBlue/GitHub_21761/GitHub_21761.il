@@ -4,6 +4,7 @@
 .assembly extern System.Runtime { }
 .assembly extern System.Numerics.Vectors { }
 .assembly GitHub_21761 { }
+.assembly extern xunit.core {}
 
 // Some basic tests to ensure that the JIT handles non-zero
 // initialization correctly.
@@ -277,6 +278,9 @@ FAIL:
 
 .method hidebysig static int32 Main() cil managed
 {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (valuetype Point a)
 

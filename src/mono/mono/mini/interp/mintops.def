@@ -670,6 +670,8 @@ OPDEF(MINT_CALLI_NAT_DYNAMIC, "calli.nat.dynamic", 5, 1, 2, MintOpMethodToken)
 OPDEF(MINT_CALLI_NAT_FAST, "calli.nat.fast", 7, 1, 2, MintOpMethodToken)
 OPDEF(MINT_CALL_VARARG, "call.vararg", 6, 1, 1, MintOpMethodToken)
 OPDEF(MINT_CALLRUN, "callrun", 5, 1, 1, MintOpNoArgs)
+OPDEF(MINT_TAILCALL, "tailcall", 4, 0, 1, MintOpMethodToken)
+OPDEF(MINT_TAILCALL_VIRT, "tailcall.virt", 5, 0, 1, MintOpMethodToken)
 
 OPDEF(MINT_ICALL_V_V, "mono_icall_v_v", 3, 0, 1, MintOpShortInt)
 OPDEF(MINT_ICALL_V_P, "mono_icall_v_p", 4, 1, 1, MintOpShortInt)
@@ -706,7 +708,6 @@ OPDEF(MINT_LD_DELEGATE_METHOD_PTR, "ld_delegate_method_ptr", 3, 1, 1, MintOpNoAr
 
 // Math intrinsics
 // double
-OPDEF(MINT_ABS, "abs", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ASIN, "asin", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ASINH, "asinh", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ACOS, "acos", 3, 1, 1, MintOpNoArgs)
@@ -733,7 +734,6 @@ OPDEF(MINT_TAN, "tan", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_TANH, "tanh", 3, 1, 1, MintOpNoArgs)
 
 // float. These must be kept in the same order as their double counterpart
-OPDEF(MINT_ABSF, "absf", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ASINF, "asinf", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ASINHF, "asinhf", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ACOSF, "acosf", 3, 1, 1, MintOpNoArgs)

@@ -105,12 +105,12 @@ namespace System.Xml.XPath
             {
                 string message = args == null ? res : string.Format(res, args);
                 if (message == null)
-                    message = "UNKNOWN(" + res + ")";
+                    message = $"UNKNOWN({res})";
                 return message;
             }
             catch (MissingManifestResourceException)
             {
-                return "UNKNOWN(" + res + ")";
+                return $"UNKNOWN({res})";
             }
         }
 

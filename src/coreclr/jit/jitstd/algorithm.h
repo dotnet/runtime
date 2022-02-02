@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-
 #pragma once
+
+#include <minipal/utils.h>
 
 namespace jitstd
 {
@@ -148,7 +148,7 @@ void quick_sort(RandomAccessIterator first, RandomAccessIterator last, Less less
         RandomAccessIterator rightFirst = newLast + 1;
         RandomAccessIterator rightLast = last;
 
-        assert(depth < _countof(firstStack));
+        assert(depth < ARRAY_SIZE(firstStack));
 
         // Ideally, the 2 partitions should have the same size, that would guarantee
         // log2(n) stack space. If that's not the case then push the larger partition

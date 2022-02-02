@@ -8,6 +8,7 @@
 .assembly extern System.Diagnostics.Debug {}
 .assembly extern System.Console {}
 .assembly GitHub_26311 {}
+.assembly extern xunit.core {}
 
 
 
@@ -244,6 +245,9 @@
   .method private hidebysig static int32
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       26 (0x1a)
     .maxstack  8

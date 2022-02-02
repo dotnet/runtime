@@ -14,10 +14,10 @@
 
 using System;
 
-class Test{
+class Test_L_2_5_1{
 	public static int Main(){
 		int mi_RetCode;
-		mi_RetCode = B.Test();
+		mi_RetCode = B.Test_L_2_5_1();
 		
 		if(mi_RetCode == 100)
 			Console.WriteLine("Pass");
@@ -29,7 +29,7 @@ class Test{
 }
 
 struct B{
-	public static int Test(){
+	public static int Test_L_2_5_1(){
 		int mi_RetCode = 100;
 		
 		A.Cls ac = new A.Cls();
@@ -91,7 +91,7 @@ struct B{
 		
 		////////////////////////////////////////////
 		// Test access from within the nested class
-		if(ac.Test() != 100)
+		if(ac.Test_L_2_5_1() != 100)
 			mi_RetCode = 0;
 		
 		return mi_RetCode;
@@ -157,7 +157,7 @@ struct A{
 	}
 		
 	public struct Cls{
-		public int Test(){
+		public int Test_L_2_5_1(){
 			int mi_RetCode = 100;
 			
 			/////////////////////////////////////////////////////////////////////////

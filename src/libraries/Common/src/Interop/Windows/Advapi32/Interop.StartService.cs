@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, EntryPoint = "StartServiceW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool StartService(SafeServiceHandle serviceHandle, int argNum, IntPtr argPtrs);
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "StartServiceW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial bool StartService(SafeServiceHandle serviceHandle, int argNum, IntPtr argPtrs);
     }
 }

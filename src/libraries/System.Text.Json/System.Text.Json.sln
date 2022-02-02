@@ -21,9 +21,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web", "..\System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj", "{9BCCDA15-8907-4AE3-8871-2F17775DDE4C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration", "gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj", "{04AEB008-EE4F-44DE-A361-2DBD2D0FD6A4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn3.11", "gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj", "{04AEB008-EE4F-44DE-A361-2DBD2D0FD6A4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration", "gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj", "{6485EED4-C313-4551-9865-8ADCED603629}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn4.0", "gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj", "{6485EED4-C313-4551-9865-8ADCED603629}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json", "ref\System.Text.Json.csproj", "{7015E94D-D20D-48C8-86D7-6A996BE99E0E}"
 EndProject

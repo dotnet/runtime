@@ -11,7 +11,7 @@ using System.Text;
 
 internal static partial class Interop
 {
-    internal static partial class procfs
+    internal static partial class @procfs
     {
         private const string ExeFileName = "/exe";
         private const string CmdLineFileName = "/cmdline";

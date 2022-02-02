@@ -66,11 +66,12 @@ jobs:
     - ${{ parameters.steps }}
 
     - script: |
-        mkdir -p $(SpmiCollectionLocation)
-      displayName: Create directory for SPMI collection
+        mkdir $(SpmiCollectionLocation)
+        mkdir $(SpmiLogsLocation)
+      displayName: Create directories
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_replay_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -arch $(archType)
-      displayName: ${{ format('SuperPMI replay setup ({0} {1})', parameters.osGroup, parameters.archType) }}
+      displayName: ${{ format('SuperPMI replay setup ({0})', parameters.archType) }}
 
       # Run superpmi replay in helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
     <OutputPath>$(BaseOutputPathWithConfig)ilverify\Tests</OutputPath>
   </PropertyGroup>

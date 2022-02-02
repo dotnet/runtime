@@ -44,7 +44,7 @@ class EditAndContinueModule;
 class PEAssembly;
 class SimpleRWLock;
 
-typedef VPTR(PEAssembly) PTR_PEAssembly;
+typedef DPTR(PEAssembly) PTR_PEAssembly;
 
 // --------------------------------------------------------------------------------
 // Types
@@ -65,7 +65,7 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 // 1. HMODULE - these PE Files are loaded in response to "spontaneous" OS callbacks.
 //    These should only occur for .exe main modules and IJW dlls loaded via LoadLibrary
 //    or static imports in umnanaged code.
-//    These get their PEImage loaded directly in PEImage::LoadImage(HMODULE hMod)
+//    These get their PEImage loaded directly in PEImage::CreateFromHMODULE(HMODULE hMod)
 //
 // 2. Assemblies loaded directly or indirectly by the managed code - these are the most
 //    common case.  A path is obtained from assembly binding and the result is loaded
@@ -83,11 +83,6 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 
 class PEAssembly final
 {
-    // ------------------------------------------------------------
-    // SOS support
-    // ------------------------------------------------------------
-    VPTR_BASE_CONCRETE_VTABLE_CLASS(PEAssembly)
-
 public:
 
     // ------------------------------------------------------------
@@ -98,7 +93,7 @@ public:
     STDMETHOD_(ULONG, Release)();
 
 #ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
 #if CHECK_INVARIANTS
@@ -381,7 +376,7 @@ private:
 
 #ifdef DACCESS_COMPILE
     // just to make the DAC and GCC happy.
-    virtual ~PEAssembly() {};
+    ~PEAssembly() {};
     PEAssembly() = default;
 #else
     PEAssembly(
@@ -393,7 +388,7 @@ private:
         BINDER_SPACE::Assembly* pHostAssembly = NULL
     );
 
-    virtual ~PEAssembly();
+    ~PEAssembly();
 #endif
 
     void OpenMDImport();

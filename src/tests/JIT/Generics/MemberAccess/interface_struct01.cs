@@ -47,7 +47,7 @@ struct Gen<T> : IGen<T>
 
 }
 
-public class Test
+public class Test_interface_struct01
 {
     public static int Main()
     {

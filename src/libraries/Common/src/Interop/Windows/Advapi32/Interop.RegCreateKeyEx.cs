@@ -14,13 +14,8 @@ internal static partial class Interop
     {
         // Note: RegCreateKeyEx won't set the last error on failure - it returns
         // an error code if it fails.
-#if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegCreateKeyExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static partial int RegCreateKeyEx(
-#else
-        [DllImport(Libraries.Advapi32, EntryPoint = "RegCreateKeyExW", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        internal static extern int RegCreateKeyEx(
-#endif
             SafeRegistryHandle hKey,
             string lpSubKey,
             int Reserved,

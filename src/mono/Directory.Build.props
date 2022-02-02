@@ -12,12 +12,12 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Minimum target OS version, keep in sync with src/libraries/Native/build-native.sh -->
+    <!-- Minimum target OS version, keep in sync with src/native/libs/build-native.sh -->
     <iOSVersionMin>10.0</iOSVersionMin>
     <tvOSVersionMin>10.0</tvOSVersionMin>
     <watchOSVersionMin>2.0</watchOSVersionMin>
     <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
-    <macOSVersionMin>10.13</macOSVersionMin>
+    <macOSVersionMin>10.14</macOSVersionMin>
     <!-- FIXME: when we're building ios or tvOS cross-compilers hosted on OSX/arm64 targeting ios/arm64 we should set the min macOS version to 11.0, also -->
     <macOSVersionMin Condition="('$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'MacCatalyst') and '$(TargetArchitecture)' == 'arm64'">11.0</macOSVersionMin>
 

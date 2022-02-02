@@ -558,7 +558,7 @@ namespace System.Xml.XPath
         {
             if (null == localName)
                 throw new ArgumentNullException(nameof(localName));
-            int depth = _depth;
+            int depth;
             XPathNavigator? nav = GetElemNav(out depth);
             if (null != nav)
             {
@@ -711,7 +711,7 @@ namespace System.Xml.XPath
             ValidateNames.SplitQName(name, out prefix, out localname);
 
             // watch for a namespace name
-            bool IsXmlnsNoPrefix = false;
+            bool IsXmlnsNoPrefix;
             if ((IsXmlnsNoPrefix = (0 == prefix.Length && localname == "xmlns"))
                 || (prefix == "xmlns"))
             {
@@ -1024,7 +1024,7 @@ namespace System.Xml.XPath
                     }
                     else if (_depth > 0 && _nav.MoveToParent())
                     {
-                        Debug.Assert(_nav.NodeType == XPathNodeType.Element, _nav.NodeType.ToString() + " == XPathNodeType.Element");
+                        Debug.Assert(_nav.NodeType == XPathNodeType.Element, $"{_nav.NodeType} == XPathNodeType.Element");
                         _nodeType = XmlNodeType.EndElement;
                         _state = State.EndElement;
                         _depth--;

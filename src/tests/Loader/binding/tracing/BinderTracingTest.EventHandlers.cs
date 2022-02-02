@@ -9,7 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 
-using TestLibrary;
+using Xunit;
 
 namespace BinderTracingTests
 {
@@ -37,8 +37,8 @@ namespace BinderTracingTests
                 }
                 catch { }
 
-                Assert.AreEqual(1, handlers.Invocations.Count);
-                Assert.AreEqual(0, handlers.Binds.Count);
+                Assert.Equal(1, handlers.Invocations.Count);
+                Assert.Equal(0, handlers.Binds.Count);
                 return new BindOperation()
                 {
                     AssemblyName = assemblyName,
@@ -62,8 +62,8 @@ namespace BinderTracingTests
             {
                 Assembly asm = alc.LoadFromAssemblyName(assemblyName);
 
-                Assert.AreEqual(1, handlers.Invocations.Count);
-                Assert.AreEqual(1, handlers.Binds.Count);
+                Assert.Equal(1, handlers.Invocations.Count);
+                Assert.Equal(1, handlers.Binds.Count);
                 return new BindOperation()
                 {
                     AssemblyName = assemblyName,
@@ -87,8 +87,8 @@ namespace BinderTracingTests
             {
                 Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyName(assemblyName));
 
-                Assert.AreEqual(1, handlers.Invocations.Count);
-                Assert.AreEqual(1, handlers.Binds.Count);
+                Assert.Equal(1, handlers.Invocations.Count);
+                Assert.Equal(1, handlers.Binds.Count);
                 return new BindOperation()
                 {
                     AssemblyName = assemblyName,
@@ -111,10 +111,10 @@ namespace BinderTracingTests
             {
                 Assembly asm = alc.LoadFromAssemblyName(assemblyName);
 
-                Assert.AreEqual(1, handlerNull.Invocations.Count);
-                Assert.AreEqual(0, handlerNull.Binds.Count);
-                Assert.AreEqual(1, handlerLoad.Invocations.Count);
-                Assert.AreEqual(1, handlerLoad.Binds.Count);
+                Assert.Equal(1, handlerNull.Invocations.Count);
+                Assert.Equal(0, handlerNull.Binds.Count);
+                Assert.Equal(1, handlerLoad.Invocations.Count);
+                Assert.Equal(1, handlerLoad.Binds.Count);
                 return new BindOperation()
                 {
                     AssemblyName = assemblyName,
@@ -141,8 +141,8 @@ namespace BinderTracingTests
                 }
                 catch { }
 
-                Assert.AreEqual(1, handlers.Invocations.Count);
-                Assert.AreEqual(0, handlers.Binds.Count);
+                Assert.Equal(1, handlers.Invocations.Count);
+                Assert.Equal(0, handlers.Binds.Count);
                 return new BindOperation()
                 {
                     AssemblyName = assemblyName,
@@ -166,8 +166,8 @@ namespace BinderTracingTests
             {
                 Assembly asm = alc.LoadFromAssemblyName(assemblyName);
 
-                Assert.AreEqual(1, handlers.Invocations.Count);
-                Assert.AreEqual(1, handlers.Binds.Count);
+                Assert.Equal(1, handlers.Invocations.Count);
+                Assert.Equal(1, handlers.Binds.Count);
                 return new BindOperation()
                 {
                     AssemblyName = assemblyName,
@@ -192,8 +192,8 @@ namespace BinderTracingTests
                 // Result of AssemblyResolve event does not get checked for name mismatch
                 Assembly asm = alc.LoadFromAssemblyName(assemblyName);
 
-                Assert.AreEqual(1, handlers.Invocations.Count);
-                Assert.AreEqual(1, handlers.Binds.Count);
+                Assert.Equal(1, handlers.Invocations.Count);
+                Assert.Equal(1, handlers.Binds.Count);
                 return new BindOperation()
                 {
                     AssemblyName = assemblyName,
@@ -218,10 +218,10 @@ namespace BinderTracingTests
             {
                 Assembly asm = alc.LoadFromAssemblyName(assemblyName);
 
-                Assert.AreEqual(1, handlerNull.Invocations.Count);
-                Assert.AreEqual(0, handlerNull.Binds.Count);
-                Assert.AreEqual(1, handlerLoad.Invocations.Count);
-                Assert.AreEqual(1, handlerLoad.Binds.Count);
+                Assert.Equal(1, handlerNull.Invocations.Count);
+                Assert.Equal(0, handlerNull.Binds.Count);
+                Assert.Equal(1, handlerLoad.Invocations.Count);
+                Assert.Equal(1, handlerLoad.Binds.Count);
                 return new BindOperation()
                 {
                     AssemblyName = assemblyName,
@@ -283,7 +283,7 @@ namespace BinderTracingTests
             Assembly asm = Assembly.LoadFrom(assemblyPath);
             Type t = asm.GetType(DependentAssemblyTypeName);
             MethodInfo method = t.GetMethod("UseDependentAssembly", BindingFlags.Public | BindingFlags.Static);
-            Assert.Throws<TargetInvocationException, FileNotFoundException>(() => method.Invoke(null, new object[0]));
+            AssertExtensions.ThrowsWithInnerException<TargetInvocationException, FileNotFoundException>(() => method.Invoke(null, new object[0]));
 
             var assemblyName = new AssemblyName(asm.FullName);
             assemblyName.Name = "AssemblyToLoadDependency";

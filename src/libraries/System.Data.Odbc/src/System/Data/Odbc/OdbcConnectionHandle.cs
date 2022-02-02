@@ -33,7 +33,7 @@ namespace System.Data.Odbc
                 throw ADP.ArgumentNull(nameof(constr));
             }
 
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
 
             //Set connection timeout (only before open).
             //Note: We use login timeout since its odbc 1.0 option, instead of using
@@ -41,7 +41,7 @@ namespace System.Data.Odbc
             //a odbc 3.0 feature.  The ConnectionTimeout on the managed providers represents
             //the login timeout, nothing more.
             int connectionTimeout = connection.ConnectionTimeout;
-            retcode = SetConnectionAttribute2(ODBC32.SQL_ATTR.LOGIN_TIMEOUT, (IntPtr)connectionTimeout, (int)ODBC32.SQL_IS.UINTEGER);
+            SetConnectionAttribute2(ODBC32.SQL_ATTR.LOGIN_TIMEOUT, (IntPtr)connectionTimeout, (int)ODBC32.SQL_IS.UINTEGER);
 
             string connectionString = constr.UsersConnectionString(false);
 
@@ -53,9 +53,9 @@ namespace System.Data.Odbc
             connection.HandleError(this, retcode);
         }
 
-        private ODBC32.RetCode AutoCommitOff()
+        private ODBC32.SQLRETURN AutoCommitOff()
         {
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
 
             Debug.Assert(HandleState.Connected <= _handleState, "AutoCommitOff while in wrong state?");
 
@@ -66,8 +66,8 @@ namespace System.Data.Odbc
                 retcode = Interop.Odbc.SQLSetConnectAttrW(this, ODBC32.SQL_ATTR.AUTOCOMMIT, ODBC32.SQL_AUTOCOMMIT_OFF, (int)ODBC32.SQL_IS.UINTEGER);
                 switch (retcode)
                 {
-                    case ODBC32.RetCode.SUCCESS:
-                    case ODBC32.RetCode.SUCCESS_WITH_INFO:
+                    case ODBC32.SQLRETURN.SUCCESS:
+                    case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                         _handleState = HandleState.Transacted;
                         break;
                 }
@@ -76,9 +76,9 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode BeginTransaction(ref IsolationLevel isolevel)
+        internal ODBC32.SQLRETURN BeginTransaction(ref IsolationLevel isolevel)
         {
-            ODBC32.RetCode retcode = ODBC32.RetCode.SUCCESS;
+            ODBC32.SQLRETURN retcode = ODBC32.SQLRETURN.SUCCESS;
             ODBC32.SQL_ATTR isolationAttribute;
             if (IsolationLevel.Unspecified != isolevel)
             {
@@ -120,7 +120,7 @@ namespace System.Data.Odbc
                 //the value if th euser asks for it...
                 //We also still propagate the info, since it could be other info as well...
 
-                if (ODBC32.RetCode.SUCCESS_WITH_INFO == retcode)
+                if (ODBC32.SQLRETURN.SUCCESS_WITH_INFO == retcode)
                 {
                     isolevel = IsolationLevel.Unspecified;
                 }
@@ -128,8 +128,8 @@ namespace System.Data.Odbc
 
             switch (retcode)
             {
-                case ODBC32.RetCode.SUCCESS:
-                case ODBC32.RetCode.SUCCESS_WITH_INFO:
+                case ODBC32.SQLRETURN.SUCCESS:
+                case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                     //Turn off auto-commit (which basically starts the transaction)
                     retcode = AutoCommitOff();
                     _handleState = HandleState.TransactionInProgress;
@@ -138,14 +138,14 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode CompleteTransaction(short transactionOperation)
+        internal ODBC32.SQLRETURN CompleteTransaction(short transactionOperation)
         {
             bool mustRelease = false;
 
             try
             {
                 DangerousAddRef(ref mustRelease);
-                ODBC32.RetCode retcode = CompleteTransaction(transactionOperation, base.handle);
+                ODBC32.SQLRETURN retcode = CompleteTransaction(transactionOperation, base.handle);
                 return retcode;
             }
             finally
@@ -157,11 +157,11 @@ namespace System.Data.Odbc
             }
         }
 
-        private ODBC32.RetCode CompleteTransaction(short transactionOperation, IntPtr handle)
+        private ODBC32.SQLRETURN CompleteTransaction(short transactionOperation, IntPtr handle)
         {
             // must only call this code from ReleaseHandle or DangerousAddRef region
 
-            ODBC32.RetCode retcode = ODBC32.RetCode.SUCCESS;
+            ODBC32.SQLRETURN retcode = ODBC32.SQLRETURN.SUCCESS;
 
             try { }
             finally
@@ -169,7 +169,7 @@ namespace System.Data.Odbc
                 if (HandleState.TransactionInProgress == _handleState)
                 {
                     retcode = Interop.Odbc.SQLEndTran(HandleType, handle, transactionOperation);
-                    if ((ODBC32.RetCode.SUCCESS == retcode) || (ODBC32.RetCode.SUCCESS_WITH_INFO == retcode))
+                    if ((ODBC32.SQLRETURN.SUCCESS == retcode) || (ODBC32.SQLRETURN.SUCCESS_WITH_INFO == retcode))
                     {
                         _handleState = HandleState.Transacted;
                     }
@@ -186,21 +186,20 @@ namespace System.Data.Odbc
             //Debug.Assert((HandleState.Connected == _handleState) || (HandleState.TransactionInProgress == _handleState), "not expected HandleState.Connected");
             return retcode;
         }
-        private ODBC32.RetCode Connect(string connectionString)
+        private ODBC32.SQLRETURN Connect(string connectionString)
         {
             Debug.Assert(HandleState.Allocated == _handleState, "SQLDriverConnect while in wrong state?");
 
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
 
             try { }
             finally
             {
-                short cbActualSize;
-                retcode = Interop.Odbc.SQLDriverConnectW(this, ADP.PtrZero, connectionString, ODBC32.SQL_NTS, ADP.PtrZero, 0, out cbActualSize, (short)ODBC32.SQL_DRIVER.NOPROMPT);
+                retcode = Interop.Odbc.SQLDriverConnectW(this, ADP.PtrZero, connectionString, ODBC32.SQL_NTS, ADP.PtrZero, 0, out _, (short)ODBC32.SQL_DRIVER.NOPROMPT);
                 switch (retcode)
                 {
-                    case ODBC32.RetCode.SUCCESS:
-                    case ODBC32.RetCode.SUCCESS_WITH_INFO:
+                    case ODBC32.SQLRETURN.SUCCESS:
+                    case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                         _handleState = HandleState.Connected;
                         break;
                 }
@@ -212,55 +211,54 @@ namespace System.Data.Odbc
         protected override bool ReleaseHandle()
         {
             // NOTE: The SafeHandle class guarantees this will be called exactly once and is non-interrutible.
-            ODBC32.RetCode retcode;
 
             // must call complete the transaction rollback, change handle state, and disconnect the connection
-            retcode = CompleteTransaction(ODBC32.SQL_ROLLBACK, handle);
+            CompleteTransaction(ODBC32.SQL_ROLLBACK, handle);
 
             if ((HandleState.Connected == _handleState) || (HandleState.TransactionInProgress == _handleState))
             {
-                retcode = Interop.Odbc.SQLDisconnect(handle);
+                Interop.Odbc.SQLDisconnect(handle);
                 _handleState = HandleState.Allocated;
             }
             Debug.Assert(HandleState.Allocated == _handleState, "not expected HandleState.Allocated");
             return base.ReleaseHandle();
         }
 
-        internal ODBC32.RetCode GetConnectionAttribute(ODBC32.SQL_ATTR attribute, byte[] buffer, out int cbActual)
+        internal ODBC32.SQLRETURN GetConnectionAttribute(ODBC32.SQL_ATTR attribute, byte[] buffer, out int cbActual)
         {
-            ODBC32.RetCode retcode = Interop.Odbc.SQLGetConnectAttrW(this, attribute, buffer, buffer.Length, out cbActual);
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetConnectAttrW(this, attribute, buffer, buffer.Length, out cbActual);
             return retcode;
         }
 
-        internal ODBC32.RetCode GetFunctions(ODBC32.SQL_API fFunction, out short fExists)
+        internal ODBC32.SQLRETURN GetFunctions(ODBC32.SQL_API fFunction, out short fExists)
         {
-            ODBC32.RetCode retcode = Interop.Odbc.SQLGetFunctions(this, fFunction, out fExists);
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetFunctions(this, fFunction, out fExists);
             ODBC.TraceODBC(3, "SQLGetFunctions", retcode);
             return retcode;
         }
 
-        internal ODBC32.RetCode GetInfo2(ODBC32.SQL_INFO info, byte[] buffer, out short cbActual)
+        internal ODBC32.SQLRETURN GetInfo2(ODBC32.SQL_INFO info, byte[] buffer, out short cbActual)
         {
-            ODBC32.RetCode retcode = Interop.Odbc.SQLGetInfoW(this, info, buffer, checked((short)buffer.Length), out cbActual);
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetInfoW(this, info, buffer, checked((short)buffer.Length), out cbActual);
             return retcode;
         }
 
-        internal ODBC32.RetCode GetInfo1(ODBC32.SQL_INFO info, byte[] buffer)
+        internal ODBC32.SQLRETURN GetInfo1(ODBC32.SQL_INFO info, byte[] buffer)
         {
-            ODBC32.RetCode retcode = Interop.Odbc.SQLGetInfoW(this, info, buffer, checked((short)buffer.Length), ADP.PtrZero);
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetInfoW(this, info, buffer, checked((short)buffer.Length), ADP.PtrZero);
             return retcode;
         }
 
-        internal ODBC32.RetCode SetConnectionAttribute2(ODBC32.SQL_ATTR attribute, IntPtr value, int length)
+        internal ODBC32.SQLRETURN SetConnectionAttribute2(ODBC32.SQL_ATTR attribute, IntPtr value, int length)
         {
-            ODBC32.RetCode retcode = Interop.Odbc.SQLSetConnectAttrW(this, attribute, value, length);
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLSetConnectAttrW(this, attribute, value, length);
             ODBC.TraceODBC(3, "SQLSetConnectAttrW", retcode);
             return retcode;
         }
 
-        internal ODBC32.RetCode SetConnectionAttribute3(ODBC32.SQL_ATTR attribute, string buffer, int length)
+        internal ODBC32.SQLRETURN SetConnectionAttribute3(ODBC32.SQL_ATTR attribute, string buffer, int length)
         {
-            ODBC32.RetCode retcode = Interop.Odbc.SQLSetConnectAttrW(this, attribute, buffer, length);
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLSetConnectAttrW(this, attribute, buffer, length);
             return retcode;
         }
     }

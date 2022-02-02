@@ -8,20 +8,14 @@ namespace System.IO.Tests
     // Need to reuse the same virtual drive for all the test methods.
     // Creating and disposing one virtual drive per class achieves this.
     [PlatformSpecific(TestPlatforms.Windows)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsSubstAvailable))]
+    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks), nameof(MountHelper.IsSubstAvailable))]
     public class VirtualDrive_SymbolicLinks : BaseSymbolicLinks
     {
+        private VirtualDriveHelper VirtualDrive { get; } = new VirtualDriveHelper();
+
         protected override void Dispose(bool disposing)
         {
-            try
-            {
-                if (VirtualDriveLetter != default)
-                {
-                    MountHelper.DeleteVirtualDrive(VirtualDriveLetter);
-                    Directory.Delete(VirtualDriveTargetDir, recursive: true);
-                }
-            }
-            catch { } // avoid exceptions on dispose
+            VirtualDrive.Dispose();
             base.Dispose(disposing);
         }
 
@@ -210,38 +204,6 @@ namespace System.IO.Tests
             Assert.Equal(expectedTargetDirectoryInfoFullName, targetFileInfoFromDirectory.FullName);
         }
 
-        private string GetVirtualOrRealPath(bool condition) => condition ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir;
-
-        // Temporary Windows directory that can be mounted to a drive letter using the subst command
-        private string? _virtualDriveTargetDir = null;
-        private string VirtualDriveTargetDir
-        {
-            get
-            {
-                if (_virtualDriveTargetDir == null)
-                {
-                    // Create a folder inside the temp directory so that it can be mounted to a drive letter with subst
-                    _virtualDriveTargetDir = Path.Join(Path.GetTempPath(), GetRandomDirName());
-                    Directory.CreateDirectory(_virtualDriveTargetDir);
-                }
-
-                return _virtualDriveTargetDir;
-            }
-        }
-
-        // Windows drive letter that points to a mounted directory using the subst command
-        private char _virtualDriveLetter = default;
-        private char VirtualDriveLetter
-        {
-            get
-            {
-                if (_virtualDriveLetter == default)
-                {
-                    // Mount the folder to a drive letter
-                    _virtualDriveLetter = MountHelper.CreateVirtualDrive(VirtualDriveTargetDir);
-                }
-                return _virtualDriveLetter;
-            }
-        }
+        private string GetVirtualOrRealPath(bool condition) => condition ? $"{VirtualDrive.VirtualDriveLetter}:" : VirtualDrive.VirtualDriveTargetDir;
     }
 }

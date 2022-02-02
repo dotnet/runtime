@@ -82,11 +82,11 @@ internal static partial class Interop
             return Marshal.PtrToStringAnsi(GetX509RootStoreFile_private(&unused));
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
-        private static unsafe extern IntPtr GetX509RootStorePath_private(byte* defaultPath);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
+        private static unsafe partial IntPtr GetX509RootStorePath_private(byte* defaultPath);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStoreFile")]
-        private static unsafe extern IntPtr GetX509RootStoreFile_private(byte* defaultPath);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStoreFile")]
+        private static unsafe partial IntPtr GetX509RootStoreFile_private(byte* defaultPath);
 
         [GeneratedDllImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_X509StoreSetVerifyTime(

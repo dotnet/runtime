@@ -12,8 +12,8 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </summary>
     internal sealed class CharSetSolver : BDDAlgebra, ICharAlgebra<BDD>
     {
-        /// <summary>BDDs for all characters for fast lookup.</summary>
-        private readonly BDD[] _charPredTable = new BDD[char.MaxValue + 1];
+        /// <summary>BDDs for all ASCII characters for fast lookup.</summary>
+        private readonly BDD[] _charPredTable = new BDD[128];
         private readonly Unicode.IgnoreCaseTransformer _ignoreCase;
         internal readonly BDD _nonAscii;
 
@@ -40,8 +40,21 @@ namespace System.Text.RegularExpressions.Symbolic
             else
             {
                 //individual character BDDs are always fixed
-                return _charPredTable[c] ??= CreateSetFrom(c, 15);
+                BDD[] charPredTable = _charPredTable;
+                return c < charPredTable.Length ?
+                    charPredTable[c] ??= CreateBDDFromChar(c) :
+                    CreateBDDFromChar(c);
             }
+        }
+
+        private BDD CreateBDDFromChar(ushort c)
+        {
+            BDD bdd = BDD.True;
+            for (int k = 0; k < 16; k++)
+            {
+                bdd = (c & (1 << k)) == 0 ? GetOrCreateBDD(k, BDD.False, bdd) : GetOrCreateBDD(k, bdd, BDD.False);
+            }
+            return bdd;
         }
 
         /// <summary>
