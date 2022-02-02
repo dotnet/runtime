@@ -607,7 +607,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
     // More details: https://github.com/dotnet/runtime/issues/60166
     DWORD logicalCPUs = PAL_GetLogicalCpuCountFromOS();
 
-    size_t predictedSize = logicalCPUs*std::min(1536, std::max(256, (int)logicalCPUs*128))*1024;
+    size_t predictedSize = std::min(4096, std::max(256, (int)logicalCPUs*128))*1024;
     cacheSize = std::max(predictedSize, cacheSize);
 #endif
 

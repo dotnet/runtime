@@ -464,12 +464,12 @@ Exit:
     // likely represent L2 instead). We're going to use a processor-count based heuristic to predict its size and pick
     // whatever is bigger. The same heuristic is used for Linux-arm64.
     // More info: https://github.com/dotnet/runtime/issues/60166
-    uint32_t logicalCPUs = GetTotalProcessorCount();
+    uint32_t logicalCPUs = GCToOSInterface::GetTotalProcessorCount();
 
     // Estimate cache size based on CPU count
     // Assume lower core count are lighter weight parts which are likely to have smaller caches
     // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
-    size_t predictedSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
+    size_t predictedSize = std::min(4096, std::max(256, (int)logicalCPUs * 128)) * 1024;
     cache_size = std::max(predictedSize, cache_size);
 #endif
 
