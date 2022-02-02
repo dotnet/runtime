@@ -30,6 +30,7 @@ namespace System.IO
         {
             SearchOption searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
             IEnumerable<string> directoryEnumeration;
+            bool success = true;
 
             try
             {
@@ -61,10 +62,10 @@ namespace System.IO
                 {
                     CopyFile(enumeratedFile, enumeratedFile.Replace(sourcePath, destinationPath), true);
                 }
-                catch (IOException ex)
+                catch (IOException ex) when (success)
                 {
                     // Return false for read failures
-                    return ex.HResult == Interop.Errors.ERROR_ACCESS_DENIED ? false :
+                    success = ex.HResult == Interop.Errors.ERROR_ACCESS_DENIED ? false :
                         // Otherwise rethrow
                         throw ex;
                 }
@@ -72,7 +73,7 @@ namespace System.IO
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            return false;
+            return success;
         }
     }
 }
