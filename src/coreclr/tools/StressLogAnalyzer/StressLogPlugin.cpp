@@ -752,7 +752,7 @@ bool ParseOptions(int argc, char* argv[])
                         else
                         {
                             int i = s_threadFilterCount++;
-                            s_threadFilter[i] = strtoul(arg, &end, 16);
+                            s_threadFilter[i] = strtoull(arg, &end, 16);
                         }
                         if (*end == ',')
                         {
@@ -968,7 +968,7 @@ bool ParseOptions(int argc, char* argv[])
                         else
                         {
                             int i = s_printEarliestMessageFromThreadCount++;
-                            s_printEarliestMessageFromThread[i] = strtoul(arg, &end, 16);
+                            s_printEarliestMessageFromThread[i] = strtoull(arg, &end, 16);
                         }
                         if (*end == ',')
                         {
