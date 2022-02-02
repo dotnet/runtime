@@ -98,7 +98,7 @@ namespace ILLink.RoslynAnalyzer
 				Debug.Assert (typeParams.Length == typeArgs.Length);
 
 				for (int i = 0; i < typeParams.Length; i++) {
-					var sourceValue = GetTypeValueNodeFromGenericArgument (typeArgs[i]);
+					var sourceValue = GetTypeValueNodeFromGenericArgument (context, typeArgs[i]);
 					var targetValue = new GenericParameterValue (typeParams[i]);
 					foreach (var diagnostic in GetDynamicallyAccessedMembersDiagnostics (sourceValue, targetValue, context.Node.GetLocation ()))
 						context.ReportDiagnostic (diagnostic);
@@ -106,7 +106,7 @@ namespace ILLink.RoslynAnalyzer
 			}
 		}
 
-		static SingleValue GetTypeValueNodeFromGenericArgument (ITypeSymbol type)
+		static SingleValue GetTypeValueNodeFromGenericArgument (SyntaxNodeAnalysisContext context, ITypeSymbol type)
 		{
 			return type.Kind switch {
 				SymbolKind.TypeParameter => new GenericParameterValue ((ITypeParameterSymbol) type),
@@ -114,7 +114,8 @@ namespace ILLink.RoslynAnalyzer
 				// That said we only use it to perform the dynamically accessed members checks and for that purpose treating it as System.Type is perfectly valid.
 				SymbolKind.NamedType => new SystemTypeValue ((INamedTypeSymbol) type),
 				SymbolKind.ErrorType => UnknownValue.Instance,
-				// What about things like ArrayType or PointerType and so on. Linker treats these as "named types" since it can resolve them to concrete type
+				SymbolKind.ArrayType => new SystemTypeValue (context.Compilation.GetTypeByMetadataName ("System.Array")!),
+				// What about things like PointerType and so on. Linker treats these as "named types" since it can resolve them to concrete type
 				_ => throw new NotImplementedException ()
 			};
 		}
