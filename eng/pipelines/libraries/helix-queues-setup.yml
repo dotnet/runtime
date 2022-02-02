@@ -136,19 +136,19 @@ jobs:
             - Windows.10.Amd64.ServerRS5.Open
             - ${{ if ne(parameters.jobParameters.testScope, 'outerloop') }}:
               - Windows.10.Amd64.Server19H1.Open
-              - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h1.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
+              - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.ES.Open
             - Windows.11.Amd64.ClientPre.Open
             - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
-              - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h1.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
+              - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
             - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
               - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
-        - Windows.10.Amd64.Client19H1.Open
+        - Windows.10.Amd64.Client21H1.Open
 
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
@@ -169,7 +169,7 @@ jobs:
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
-        - Windows.10.Amd64.Client19H1.Open
+        - Windows.10.Amd64.Client21H1.Open
 
     # windows arm
     - ${{ if eq(parameters.platform, 'windows_arm') }}:
@@ -185,6 +185,6 @@ jobs:
 
     # WebAssembly windows
     - ${{ if eq(parameters.platform, 'Browser_wasm_win') }}:
-      - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h1.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-webassembly-amd64-20210702131541-6837048
+      - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-webassembly-amd64-20210702131541-6837048
 
     ${{ insert }}: ${{ parameters.jobParameters }}
