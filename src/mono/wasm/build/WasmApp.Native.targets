@@ -341,7 +341,7 @@
     <Message Text="Compiling assembly bitcode files with $(EmccLinkOptimizationFlag) ..." Importance="High" Condition="@(_BitCodeFile->Count()) > 0" />
     <EmccCompile
           SourceFiles="@(_BitCodeFile)"
-          Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; &quot;@$(_EmccCompileBitcodeRsp)&quot;"
+          Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot;"
           EnvironmentVariables="@(EmscriptenEnvVars)"
           DisableParallelCompile="$(DisableParallelEmccCompile)"
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
