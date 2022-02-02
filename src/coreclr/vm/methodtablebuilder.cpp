@@ -8491,10 +8491,6 @@ MethodTableBuilder::HandleExplicitLayout(
                 // If we got here, OREF or BYREF field was not pointer aligned. THROW.
                 break;
             }
-
-            // Other than alignment, a byref can be treated like a native pointer.
-            if (CorTypeInfo::IsByRef(type))
-                type = ELEMENT_TYPE_I;
         }
 
         if (CorTypeInfo::IsObjRef(type))
