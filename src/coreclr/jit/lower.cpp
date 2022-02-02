@@ -6855,6 +6855,10 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
+    if (!varTypeIsIntegralOrI(ind) || genTypeSize(ind) >= sizeof(int))
+    {
+        ind->gtType = TYP_INT;
+    }
 #ifdef TARGET_ARM64
     bool useNullCheck = true;
 #elif TARGET_ARM
