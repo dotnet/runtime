@@ -3278,7 +3278,9 @@ namespace Internal.JitInterface
 
         private InfoAccessType emptyStringLiteral(ref void* ppValue)
         {
-            return constructStringLiteral(_methodScope, (mdToken)CorTokenType.mdtString, ref ppValue);
+            ISymbolNode stringObject = _compilation.NodeFactory.SerializedStringObject("");
+            ppValue = (void*)ObjectToHandle(stringObject);
+            return stringObject.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
         }
 
         private uint getFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
