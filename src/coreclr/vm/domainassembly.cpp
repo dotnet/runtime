@@ -353,14 +353,7 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
 
         GCPROTECT_BEGIN(refClass);
 
-        if (GetPEAssembly()->IsDynamic())
-        {
-            refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE_BUILDER));
-        }
-        else
-        {
-            refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
-        }
+        refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
         refClass->SetModule(m_pModule);
 
         // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type

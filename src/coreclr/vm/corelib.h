@@ -575,10 +575,6 @@ DEFINE_FIELD_U(m_pFields,                   ReflectModuleBaseObject,    m_pGloba
 DEFINE_CLASS(MODULE,                Reflection,             RuntimeModule)
 DEFINE_FIELD(MODULE,                DATA,                   m_pData)
 
-DEFINE_CLASS(MODULE_BUILDER,        ReflectionEmit,         InternalModuleBuilder)
-#if FOR_ILLINK
-DEFINE_METHOD(MODULE_BUILDER,       CTOR,                   .ctor,                      IM_RetVoid)
-#endif
 DEFINE_CLASS(TYPE_BUILDER,          ReflectionEmit,         TypeBuilder)
 DEFINE_CLASS(ENUM_BUILDER,          ReflectionEmit,         EnumBuilder)
 

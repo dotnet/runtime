@@ -48,7 +48,7 @@ namespace System.Reflection.Emit
 
         private const string ManifestModuleName = "RefEmit_InMemoryManifestModule";
 
-        internal ModuleBuilder GetModuleBuilder(InternalModuleBuilder module)
+        internal ModuleBuilder GetModuleBuilder(RuntimeModule module)
         {
             Debug.Assert(module != null);
             Debug.Assert(InternalAssembly == module.Assembly);
@@ -128,7 +128,7 @@ namespace System.Reflection.Emit
         [MemberNotNull(nameof(_manifestModuleBuilder))]
         private void InitManifestModule()
         {
-            InternalModuleBuilder modBuilder = (InternalModuleBuilder)GetInMemoryAssemblyModule(InternalAssembly);
+            RuntimeModule modBuilder = (RuntimeModule)GetInMemoryAssemblyModule(InternalAssembly);
 
             // Note that this ModuleBuilder cannot be used for RefEmit yet
             // because it hasn't been initialized.
@@ -298,17 +298,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override bool Equals(object? obj)
-        {
-            if (obj is AssemblyBuilder ab)
-            {
-                return InternalAssembly.Equals(ab.InternalAssembly);
-            }
-            return false;
-        }
+        public override bool Equals(object? obj) => base.Equals(obj);
 
-        // Need a dummy GetHashCode to pair with Equals
-        public override int GetHashCode() => InternalAssembly.GetHashCode();
+        public override int GetHashCode() => base.GetHashCode();
 
         #region ICustomAttributeProvider Members
         public override object[] GetCustomAttributes(bool inherit) =>
