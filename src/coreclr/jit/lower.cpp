@@ -2267,11 +2267,14 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             // produced high-level IR. Instead we will use a GT_PHYSREG node
             // to get the target back from the register that contains the target.
             //
-            // Additionally, since the validator may not preserve arg registers
-            // (e.g. on x64) we have to move all GT_PUTARG_REG nodes that would
-            // otherwise be trashed ahead.
+            // Additionally, the validator does not preserve all arg registers,
+            // so we have to move all GT_PUTARG_REG nodes that would otherwise
+            // be trashed ahead. The JIT also has an internal invariant that
+            // once GT_PUTARG nodes start to appear in LIR, the call is coming
+            // up. To avoid breaking this invariant we move _all_ GT_PUTARG
+            // nodes (in particular, GC info reporting relies on this).
             //
-            // In total, we end up transforming
+            // To sum up, we end up transforming
             //
             // ta... = <early args>
             // tb... = <late args>
@@ -2280,13 +2283,12 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             //
             // into
             //
-            // ta... = <early args>
-            // tb... = <late args> (without trashed GT_PUTARG_REG nodes)
-            // tc = callTarget
-            // GT_CALL CORINFO_HELP_VALIDATE_INDIRECT_CALL, tc
-            // td = GT_PHYSREG REG_VALIDATE_INDIRECT_CALL_ADDR (preserved by helper)
-            // te = <moved GT_PUTARG_REG nodes>
-            // GT_CALL te, ta..., tb..., te...
+            // ta... = <early args> (without GT_PUTARG_* nodes)
+            // tb = callTarget
+            // GT_CALL CORINFO_HELP_VALIDATE_INDIRECT_CALL, tb
+            // tc = GT_PHYSREG REG_VALIDATE_INDIRECT_CALL_ADDR (preserved by helper)
+            // td = <moved GT_PUTARG_* nodes>
+            // GT_CALL tb, ta..., td..
             //
 
             GenTree* regNode = PhysReg(REG_VALIDATE_INDIRECT_CALL_ADDR, TYP_I_IMPL);
@@ -2321,51 +2323,25 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             BlockRange().InsertAfter(validate, regNode);
             LowerNode(regNode);
 
-            // Finally move all GT_PUTARG_REG nodes that the validate call may trash to after validation.
-            const regMaskTP trashedByValidator =
-                RBM_VALIDATE_INDIRECT_CALL_TRASH | genRegMask(REG_VALIDATE_INDIRECT_CALL_ADDR);
-            if ((trashedByValidator & RBM_ARG_REGS) != 0)
+            // Finally move all GT_PUTARG_* nodes
+            for (GenTreeCall::Use& use : call->Args())
             {
-                for (GenTreeCall::Use& use : call->LateArgs())
+                GenTree* node = use.GetNode();
+                if (!node->IsValue())
                 {
-                    GenTree* node = use.GetNode();
-                    JITDUMP("Checking whether late arg will be trashed by validator:\n");
-                    DISPTREE(node);
-                    assert(node->OperIsPutArg() || node->OperIsFieldList());
-                    fgArgTabEntry* entry   = comp->gtArgEntryByNode(call, node);
-                    regMaskTP      argRegs = 0;
-                    for (unsigned i = 0; i < entry->numRegs; i++)
-                    {
-                        argRegs |= genRegMask(entry->GetRegNum(i));
-                    }
-
-                    JITDUMP("Arg uses register(s) ");
-#ifdef DEBUG
-                    if (comp->verbose)
-                    {
-                        dspRegMask(argRegs);
-                    }
-#endif
-                    JITDUMP("\n");
-
-                    // If validate call will clobber any register used by this
-                    // arg then place the GT_PUTARG_REG after the call instead.
-                    if ((argRegs & trashedByValidator) != 0)
-                    {
-                        JITDUMP("CFG validator will trash used register(s) ");
-#ifdef DEBUG
-                        if (comp->verbose)
-                        {
-                            dspRegMask(argRegs & trashedByValidator);
-                        }
-#endif
-                        JITDUMP("\n");
-
-                        MoveCFGCallLateArg(call, node);
-                    }
-
-                    JITDUMP("\n");
+                    // Non-value nodes in early args are setup nodes for late args.
+                    continue;
                 }
+
+                assert(node->OperIsPutArg() || node->OperIsFieldList());
+                MoveCFGCallArg(call, node);
+            }
+
+            for (GenTreeCall::Use& use : call->LateArgs())
+            {
+                GenTree* node = use.GetNode();
+                assert(node->OperIsPutArg() || node->OperIsFieldList());
+                MoveCFGCallArg(call, node);
             }
             break;
         }
@@ -2454,7 +2430,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 
 //------------------------------------------------------------------------
 // IsInvariantInRange: Check if a node is invariant in the specified range. In
-// other words, can 'node' be moved to before 'endExclusive' without its
+// other words, can 'node' be moved to right before 'endExclusive' without its
 // computation changing values?
 //
 // Arguments:
@@ -2484,21 +2460,31 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive)
             return false;
         }
 
-        for (GenTree* intermediate = node->gtNext; intermediate != endExclusive; intermediate = intermediate->gtNext)
-        {
-            if (intermediate->OperIsLocalStore() && (intermediate->AsLclVarCommon()->GetLclNum() == lcl->GetLclNum()))
-            {
-                return false;
-            }
-        }
-
+        // Currently, non-address exposed locals have the property that their
+        // use occurs at the user, so no further interference check is
+        // necessary.
         return true;
     }
 
     return false;
 }
 
-void Lowering::MoveCFGCallLateArg(GenTreeCall* call, GenTree* node)
+//------------------------------------------------------------------------
+// MoveCFGCallArg: Given a call that will be CFG transformed using the
+// validate+call scheme, and an argument GT_PUTARG_* or GT_FIELD_LIST node,
+// move that node right before the call.
+//
+// Arguments:
+//    call - The call that is being CFG transformed
+//    node - The argument node
+//
+// Remarks:
+//    We can always move the GT_PUTARG_* node further ahead as the side-effects
+//    of these nodes are handled by LSRA. However, the operands of these nodes
+//    are not always safe to move further ahead; for invariant operands, we
+//    move them ahead as well to shorten the lifetime of these values.
+//
+void Lowering::MoveCFGCallArg(GenTreeCall* call, GenTree* node)
 {
     assert(node->OperIsPutArg() || node->OperIsFieldList());
 
@@ -2508,13 +2494,13 @@ void Lowering::MoveCFGCallLateArg(GenTreeCall* call, GenTree* node)
         for (GenTreeFieldList::Use& operand : node->AsFieldList()->Uses())
         {
             assert(operand.GetNode()->OperIsPutArg());
-            MoveCFGCallLateArg(call, operand.GetNode());
+            MoveCFGCallArg(call, operand.GetNode());
         }
     }
     else
     {
         GenTree* operand = node->AsOp()->gtGetOp1();
-        JITDUMP("Checking if we can move following operand together with the GT_PUTARG_REG\n");
+        JITDUMP("Checking if we can move operand of GT_PUTARG_* node:\n");
         DISPTREE(operand);
         if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsInvariantInRange(operand, call))
         {
