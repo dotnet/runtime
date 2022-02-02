@@ -13,8 +13,6 @@
     <PackageDescription>Internal transport package to provide aspnetcore with the assemblies from dotnet/runtime that make up the Microsoft.AspNetCore.App shared framework.</PackageDescription>
     <!-- Reference elements are missing from the nuspec: https://github.com/NuGet/Home/issues/8684. -->
     <NoWarn>$(NoWarn);NU5131</NoWarn>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <ServicingVersion>$(PatchVersion)</ServicingVersion>
   </PropertyGroup>
 
   <ItemGroup>
