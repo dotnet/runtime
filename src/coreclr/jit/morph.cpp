@@ -6265,20 +6265,32 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             FieldSeqNode* fldSeq =
                 !isBoxedStatic ? GetFieldSeqStore()->CreateSingleton(symHnd) : FieldSeqStore::NotAField();
 
-#ifdef TARGET_64BIT
+            // TODO-CQ: enable this optimization for 32 bit targets.
             bool isStaticReadOnlyInited = false;
-            bool plsSpeculative         = true;
-            if (info.compCompHnd->getStaticFieldCurrentClass(symHnd, &plsSpeculative) != NO_CLASS_HANDLE)
+#ifdef TARGET_64BIT
+            if (tree->TypeIs(TYP_REF) && !isBoxedStatic)
             {
-                isStaticReadOnlyInited = !plsSpeculative;
+                bool pIsSpeculative = true;
+                if (info.compCompHnd->getStaticFieldCurrentClass(symHnd, &pIsSpeculative) != NO_CLASS_HANDLE)
+                {
+                    isStaticReadOnlyInited = !pIsSpeculative;
+                }
             }
+#endif // TARGET_64BIT
 
-            // even if RelocTypeHint is REL32 let's still prefer IND over GT_CLS_VAR
-            // for static readonly fields of statically initialized classes - thus we can
-            // apply GTF_IND_INVARIANT flag and make it hoistable/CSE-friendly
-            if (isStaticReadOnlyInited || (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr)))
+            // TODO: choices made below have mostly historical reasons and
+            // should be unified to always use the IND(<address>) form.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef TARGET_64BIT
+            bool preferIndir =
+                isBoxedStatic || isStaticReadOnlyInited || (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr));
+#else  // !TARGET_64BIT
+            bool preferIndir = isBoxedStatic;
+#endif // !TARGET_64BIT
+
+            if (preferIndir)
             {
-                // The address is not directly addressible, so force it into a constant, so we handle it properly.
                 GenTreeFlags handleKind = GTF_EMPTY;
                 if (isBoxedStatic)
                 {
@@ -6321,7 +6333,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 return fgMorphSmpOp(tree);
             }
             else
-#endif // TARGET_64BIT
             {
                 // Only volatile or classinit could be set, and they map over
                 noway_assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_FLD_INITCLASS | GTF_COMMON_MASK)) == 0);

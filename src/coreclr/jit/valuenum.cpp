@@ -7802,8 +7802,24 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                 GenTree*      baseAddr = nullptr;
                 FieldSeqNode* fldSeq   = nullptr;
 
+                if (argIsVNFunc && funcApp.m_func == VNF_PtrToStatic)
+                {
+                    FieldSeqNode* fldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
+                    assert(fldSeq != nullptr); // We should never see an empty sequence here.
+
+                    if (fldSeq != FieldSeqStore::NotAField())
+                    {
+                        ValueNum newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
+                                                                             rhsVNPair.GetLiberal(), lhs->TypeGet());
+                        recordGcHeapStore(tree, newHeapVN DEBUGARG("static field store"));
+                    }
+                    else
+                    {
+                        fgMutateGcHeap(tree DEBUGARG("indirect store at NotAField PtrToStatic address"));
+                    }
+                }
                 // Is the LHS an array index expression?
-                if (argIsVNFunc && funcApp.m_func == VNF_PtrToArrElem)
+                else if (argIsVNFunc && funcApp.m_func == VNF_PtrToArrElem)
                 {
                     CORINFO_CLASS_HANDLE elemTypeEq =
                         CORINFO_CLASS_HANDLE(vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]));
@@ -8625,39 +8641,19 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     ValueNumPair   clsVarVNPair;
                     GenTreeClsVar* clsVar = tree->AsClsVar();
                     FieldSeqNode*  fldSeq = clsVar->gtFieldSeq;
-                    assert(fldSeq != nullptr); // We need to have one.
-                    CORINFO_FIELD_HANDLE fieldHnd = clsVar->gtClsVarHnd;
-                    assert(fieldHnd != NO_FIELD_HANDLE);
-                    ValueNum selectedStaticVar = ValueNumStore::NoVN;
+                    assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField())); // We need to have one.
 
-                    if (fldSeq == FieldSeqStore::NotAField())
-                    {
-                        // This is the box for a "boxed static" - see "fgMorphField".
-                        assert(gtIsStaticFieldPtrToBoxedStruct(clsVar->TypeGet(), fieldHnd));
+                    // This is a reference to heap memory.
+                    // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
+                    size_t   structSize = 0;
+                    ValueNum selectedStaticVar =
+                        vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq, &structSize);
+                    selectedStaticVar =
+                        vnStore->VNApplySelectorsTypeCheck(selectedStaticVar, tree->TypeGet(), structSize);
 
-                        // We will create an empty field sequence for VNF_PtrToStatic here. We will assume
-                        // the actual sequence will get appended later, when processing the TARGET_POINTER_SIZE
-                        // offset that is always added to this box to get to its payload.
-
-                        ValueNum fieldHndVN = vnStore->VNForHandle(ssize_t(fieldHnd), GTF_ICON_FIELD_HDL);
-                        ValueNum fieldSeqVN = vnStore->VNForFieldSeq(nullptr);
-                        clsVarVNPair.SetBoth(vnStore->VNForFunc(TYP_REF, VNF_PtrToStatic, fieldHndVN, fieldSeqVN));
-                    }
-                    else
-                    {
-                        // This is a reference to heap memory.
-                        // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
-
-                        size_t structSize = 0;
-                        selectedStaticVar =
-                            vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq, &structSize);
-                        selectedStaticVar =
-                            vnStore->VNApplySelectorsTypeCheck(selectedStaticVar, tree->TypeGet(), structSize);
-
-                        clsVarVNPair.SetLiberal(selectedStaticVar);
-                        // The conservative interpretation always gets a new, unique VN.
-                        clsVarVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                    }
+                    clsVarVNPair.SetLiberal(selectedStaticVar);
+                    // The conservative interpretation always gets a new, unique VN.
+                    clsVarVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
 
                     // The ValueNum returned must represent the full-sized IL-Stack value
                     // If we need to widen this value then we need to introduce a VNF_Cast here to represent
@@ -8834,9 +8830,22 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 if (!wasNewobj)
                 {
+                    // Indirections off of addresses for boxed statics represent bases for
+                    // the address of the static itself. Here we will use "nullptr" for the
+                    // field sequence and assume the actual static field will be appended to
+                    // it later, as part of numbering the method table pointer offset addition.
+                    if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    {
+                        assert(addrNvnp.BothEqual() && (addrXvnp == vnStore->VNPForEmptyExcSet()));
+                        ValueNum boxAddrVN  = addrNvnp.GetLiberal();
+                        ValueNum fieldSeqVN = vnStore->VNForFieldSeq(nullptr);
+                        ValueNum staticAddrVN =
+                            vnStore->VNForFunc(tree->TypeGet(), VNF_PtrToStatic, boxAddrVN, fieldSeqVN);
+                        tree->gtVNPair = ValueNumPair(staticAddrVN, staticAddrVN);
+                    }
                     // Is this invariant indirect expected to always return a non-null value?
                     // TODO-VNTypes: non-null indirects should only be used for TYP_REFs.
-                    if ((tree->gtFlags & GTF_IND_NONNULL) != 0)
+                    else if ((tree->gtFlags & GTF_IND_NONNULL) != 0)
                     {
                         assert(tree->gtFlags & GTF_IND_NONFAULTING);
                         tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_NonNullIndirect, addrNvnp);
@@ -10614,8 +10623,7 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
 
     // The normal VN for base address is used to create the NullPtrExc
     ValueNumPair vnpBaseNorm = vnStore->VNPNormalPair(baseVNP);
-
-    ValueNumPair excChkSet = vnStore->VNPForEmptyExcSet();
+    ValueNumPair excChkSet   = vnStore->VNPForEmptyExcSet();
 
     if (!vnStore->IsKnownNonNull(vnpBaseNorm.GetLiberal()))
     {
