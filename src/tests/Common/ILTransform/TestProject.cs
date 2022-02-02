@@ -130,7 +130,7 @@ public class TestProject
 
     public static bool IsIdentifier(char c)
     {
-        return Char.IsDigit(c) || Char.IsLetter(c) || c == '_' || c == '@';
+        return Char.IsDigit(c) || Char.IsLetter(c) || c == '_' || c == '@' || c == '$';
     }
 
     public static bool MakePublic(ref string line, bool force)
@@ -363,6 +363,44 @@ public class TestProject
             }
         }
         return true;
+    }
+
+    public void GetKeyNameRootNameAndSuffix(out string keyName, out string rootName, out string suffix)
+    {
+        string fileName = Path.GetFileName(RelativePath);
+        suffix = Path.GetExtension(fileName);
+        rootName = Path.GetFileNameWithoutExtension(fileName);
+        int suffixIndex = rootName.Length;
+        int keyNameIndex = suffixIndex;
+        if (rootName.EndsWith("_il_ro") || rootName.EndsWith("_il_do"))
+        {
+            suffixIndex -= 6;
+            keyNameIndex = suffixIndex;
+        }
+        else if (rootName.EndsWith("_cs_ro") || rootName.EndsWith("_cs_do"))
+        {
+            suffixIndex -= 6;
+        }
+        else if (rootName.EndsWith("_il_r") || rootName.EndsWith("_il_d"))
+        {
+            suffixIndex -= 5;
+            keyNameIndex = suffixIndex;
+        }
+        else if (rootName.EndsWith("_cs_r") || rootName.EndsWith("_cs_d"))
+        {
+            suffixIndex -= 5;
+        }
+        else if (rootName.EndsWith("_do") || rootName.EndsWith("_ro"))
+        {
+            suffixIndex -= 3;
+        }
+        else if (rootName.EndsWith("_d") || rootName.EndsWith("_r"))
+        {
+            suffixIndex -= 2;
+        }
+        keyName = rootName.Substring(0, keyNameIndex);
+        suffix = rootName.Substring(suffixIndex) + suffix;
+        rootName = rootName.Substring(0, suffixIndex);
     }
 
     private string GetProperty(string name, string defaultValue = "")
@@ -898,6 +936,107 @@ class TestProjectStore
         }
     }
 
+    private static string[] s_wrapperGroups = new string[] { "_do", "_ro", "_d", "_r", "" };
+
+    public void DeduplicateProjectNames()
+    {
+        foreach (string wrapperGroup in s_wrapperGroups)
+        {
+            Dictionary<string, List<TestProject>> rootNameToProjectMap = new Dictionary<string, List<TestProject>>();
+
+            foreach (TestProject testProject in _projects)
+            {
+                string projectName = Path.GetFileNameWithoutExtension(testProject.RelativePath);
+                if (wrapperGroup != "")
+                {
+                    if (!projectName.EndsWith(wrapperGroup))
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (s_wrapperGroups.Any(wg => wg != "" && projectName.EndsWith(wg)))
+                    {
+                        continue;
+                    }
+                }
+
+                testProject.GetKeyNameRootNameAndSuffix(out string keyName, out string _, out string _);
+                if (!rootNameToProjectMap.TryGetValue(keyName, out List<TestProject>? projects))
+                {
+                    projects = new List<TestProject>();
+                    rootNameToProjectMap.Add(keyName, projects);
+                }
+                projects.Add(testProject);
+            }
+
+            foreach (List<TestProject> projectList in rootNameToProjectMap.Values.Where(pl => pl.Count > 1))
+            {
+                int depth = 1;
+                do
+                {
+                    HashSet<string> folderCollisions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    bool foundCollision = false;
+                    foreach (TestProject project in projectList)
+                    {
+                        string projectDir = Path.GetDirectoryName(project.AbsolutePath)!;
+                        string dirKey = "";
+                        for (int i = 0; i < depth; i++)
+                        {
+                            dirKey += "/" + Path.GetFileName(projectDir);
+                            projectDir = Path.GetDirectoryName(projectDir)!;
+                        }
+                        if (!folderCollisions.Add(dirKey))
+                        {
+                            foundCollision = true;
+                            break;
+                        }
+                    }
+                    if (!foundCollision)
+                    {
+                        break;
+                    }
+                }
+                while (++depth < 2);
+
+                foreach (TestProject project in projectList)
+                {
+                    project.GetKeyNameRootNameAndSuffix(out string _, out string rootName, out string suffix);
+                    string projectDir = Path.GetDirectoryName(project.AbsolutePath)!;
+                    string parent = projectDir;
+                    string newRootName = rootName;
+                    for (int i = 0; i < depth; i++)
+                    {
+                        newRootName += "_" + Path.GetFileName(parent);
+                        parent = Path.GetDirectoryName(parent)!;
+                    }
+                    string newProjectPath = Path.Combine(projectDir, newRootName + suffix);
+                    File.Move(project.AbsolutePath, newProjectPath, overwrite: false);
+                    if (project.IsILProject)
+                    {
+                        RenameAssembly(project, rootName, newRootName);
+                    }
+                }
+            }
+        }
+    }
+
+    private void RenameAssembly(TestProject project, string oldAssemblyName, string newAssemblyName)
+    {
+        string[] source = File.ReadAllLines(project.TestClassSourceFile);
+        for (int lineIndex = 0; lineIndex < source.Length; lineIndex++)
+        {
+            string line = source[lineIndex];
+            if (line.Contains(".assembly") && line.Contains(oldAssemblyName))
+            {
+                source[lineIndex] = TestProject.ReplaceIdentifier(line, oldAssemblyName, newAssemblyName);
+                File.WriteAllLines(project.TestClassSourceFile, source);
+                break;
+            }
+        }
+    }
+
     public void GenerateAllWrappers(string outputDir)
     {
         HashSet<DebugOptimize> debugOptimizeMap = new HashSet<DebugOptimize>();
@@ -1299,7 +1438,7 @@ class TestProjectStore
     {
         List<string> lines = new List<string>(File.ReadAllLines(path));
 
-        if (Path.GetFileName(path).ToLower() == "bouncingball.cs")
+        if (Path.GetFileName(path).ToLower() == "expl_obj_1.cs")
         {
             Console.WriteLine("AnalyzeCSSource: {0}", path);
         }
@@ -1316,7 +1455,13 @@ class TestProjectStore
                 isMainFile = true;
             }
             int mainPos = line.IndexOf("int Main()");
-            if (mainPos >= 0)
+            int entrypointPos = -1;
+            if (mainPos < 0)
+            {
+                entrypointPos = line.IndexOf("TestEntrypoint()");
+            }
+
+            if (mainPos >= 0 || entrypointPos >= 0)
             {
                 int mainLineIndent = GetIndent(line);
                 mainMethodLine = mainLine;
@@ -1480,8 +1625,13 @@ class TestProjectStore
             for (int endIndex = lineIndex + 2; lineIndex < endIndex; lineIndex++)
             {
                 const string MainTag = " Main(";
+                const string mainTag = " main(";
                 string line = lines[lineIndex];
                 int mainPos = line.IndexOf(MainTag);
+                if (mainPos < 0)
+                {
+                    mainPos = line.IndexOf(mainTag);
+                }
                 if (mainPos >= 0)
                 {
                     mainMethodLine = lineIndex;
@@ -1498,12 +1648,13 @@ class TestProjectStore
                 int entrypointPos = line.IndexOf(TestEntrypointTag);
                 if (mainPos >= 0 || entrypointPos >= 0)
                 {
+                    testClassSourceFile = path;
+
                     while (--lineIndex >= 0 && testClassName == "")
                     {
                         if (TestProject.GetILClassName(lines[lineIndex], out string? className))
                         {
                             testClassName = className!;
-                            testClassSourceFile = path;
                             testClassLine = lineIndex;
                             while (--lineIndex >= 0)
                             {
@@ -1550,6 +1701,11 @@ class TestProjectStore
 
         foreach (TestProject project in _projects.Where(p => p.TestClassName != "" && p.MainMethodLine > 0))
         {
+            if (project.RelativePath.Contains("hfa_params"))
+            {
+                Console.WriteLine("Project: {0}", project.AbsolutePath);
+            }
+
             if (!_classNameMap.TryGetValue(project.TestClassName, out List<TestProject>? projectList))
             {
                 projectList = new List<TestProject>();
@@ -1562,21 +1718,18 @@ class TestProjectStore
                 Console.WriteLine("Project: {0}", project.AbsolutePath);
             }
 
-            if (project.TestClassNamespace != "")
+            string namespaceClass = project.TestClassNamespace + "#" + project.TestClassName;
+            if (!_namespaceNameMap.TryGetValue(namespaceClass, out Dictionary<DebugOptimize, List<TestProject>>? debugOptProjectMap))
             {
-                string namespaceClass = project.TestClassNamespace + "#" + project.TestClassName;
-                if (!_namespaceNameMap.TryGetValue(namespaceClass, out Dictionary<DebugOptimize, List<TestProject>>? debugOptProjectMap))
-                {
-                    debugOptProjectMap = new Dictionary<DebugOptimize, List<TestProject>>();
-                    _namespaceNameMap.Add(namespaceClass, debugOptProjectMap);
-                }
-                if (!debugOptProjectMap!.TryGetValue(project.DebugOptimize, out projectList))
-                {
-                    projectList = new List<TestProject>();
-                    debugOptProjectMap!.Add(project.DebugOptimize, projectList);
-                }
-                projectList!.Add(project);
+                debugOptProjectMap = new Dictionary<DebugOptimize, List<TestProject>>();
+                _namespaceNameMap.Add(namespaceClass, debugOptProjectMap);
             }
+            if (!debugOptProjectMap!.TryGetValue(project.DebugOptimize, out projectList))
+            {
+                projectList = new List<TestProject>();
+                debugOptProjectMap!.Add(project.DebugOptimize, projectList);
+            }
+            projectList!.Add(project);
 
             foreach (string file in project.CompileFiles)
             {
@@ -1628,7 +1781,22 @@ class TestProjectStore
 
             foreach (TestProject project in debugOptProjectMap.Values.SelectMany(v => v))
             {
-                string deduplicatedName = project.TestClassNamespace + "_" + Path.GetFileNameWithoutExtension(project.TestClassSourceFile);
+                if (project.RelativePath.Contains("hfa_params"))
+                {
+                    Console.WriteLine("Project: {0}", project.AbsolutePath);
+                }
+
+                if (Path.GetFileName(project.TestClassSourceFile) == "hfa_params.cs")
+                {
+                    Console.WriteLine("Project: {0}", project.AbsolutePath);    
+                }
+
+                string deduplicatedName = project.TestClassNamespace;
+                if (deduplicatedName == "")
+                {
+                    deduplicatedName = "Test";
+                }
+                deduplicatedName += "_" + Path.GetFileNameWithoutExtension(project.TestClassSourceFile);
                 if (existsInMultipleFolders)
                 {
                     deduplicatedName += "_" + Path.GetFileName(Path.GetDirectoryName(project.TestClassSourceFile)!);

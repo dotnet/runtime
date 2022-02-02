@@ -62,17 +62,22 @@ public class ILRewriter
         bool isILTest = Path.GetExtension(ilSource).ToLower() == ".il";
         bool rewritten = false;
 
-        if (Path.GetFileName(ilSource).Equals("bouncingball.cs", StringComparison.OrdinalIgnoreCase))
+        if (Path.GetFileName(ilSource).Equals("expl_obj_1.cs", StringComparison.OrdinalIgnoreCase))
         {
-            Console.WriteLine("RewriteFile: {0}", ilSource);
+            Console.WriteLine("RewriteFile: {0}", ilSource);    
         }
 
-        if (_testProject.MainMethodLine >= 0 && !_cleanupILModuleAssembly)
+        if (_testProject.MainMethodLine >= 0 /*&& !_cleanupILModuleAssembly*/)
         {
             int lineIndex = _testProject.MainMethodLine;
             string line = lines[lineIndex];
             const string MainTag = " Main(";
+            const string mainTag = " main(";
             int mainPos = line.IndexOf(MainTag);
+            if (mainPos < 0)
+            {
+                mainPos = line.IndexOf(mainTag);
+            }
             if (mainPos >= 0)
             {
                 int lineInBody = lineIndex;
@@ -108,48 +113,51 @@ public class ILRewriter
                     }
                 }
 
-                if (isILTest)
+                if (!_cleanupILModuleAssembly)
                 {
-                    while (lineIndex >= 0)
+                    if (isILTest)
+                    {
+                        while (lineIndex >= 0)
+                        {
+                            line = lines[lineIndex];
+                            bool isMethodLine = line.Contains(".method ");
+                            if (TestProject.MakePublic(ref line, force: isMethodLine))
+                            {
+                                lines[lineIndex] = line;
+                                rewritten = true;
+                                break;
+                            }
+                            if (isMethodLine)
+                            {
+                                break;
+                            }
+                            lineIndex--;
+                        }
+                    }
+                    else
                     {
                         line = lines[lineIndex];
-                        bool isMethodLine = line.Contains(".method ");
-                        if (TestProject.MakePublic(ref line, force: isMethodLine))
-                        {
-                            lines[lineIndex] = line;
-                            rewritten = true;
-                            break;
-                        }
-                        if (isMethodLine)
-                        {
-                            break;
-                        }
-                        lineIndex--;
+                        TestProject.MakePublic(ref line, force: true);
+                        lines[lineIndex] = line;
+                        rewritten = true;
                     }
-                }
-                else
-                {
-                    line = lines[lineIndex];
-                    TestProject.MakePublic(ref line, force: true);
-                    lines[lineIndex] = line;
-                    rewritten = true;
-                }
 
-                foreach (string baseClassName in _testProject.TestClassBases)
-                {
-                    for (int index = 0; index < lines.Count; index++)
+                    foreach (string baseClassName in _testProject.TestClassBases)
                     {
-                        line = lines[index];
-                        if (index != _testProject.TestClassLine &&
-                            (line.Contains("class") || line.Contains("struct")) &&
-                            line.Contains(baseClassName))
+                        for (int index = 0; index < lines.Count; index++)
                         {
-                            if (TestProject.MakePublic(ref line, force: true))
+                            line = lines[index];
+                            if (index != _testProject.TestClassLine &&
+                                (line.Contains("class") || line.Contains("struct")) &&
+                                line.Contains(baseClassName))
                             {
-                                lines[index] = line;
-                                rewritten = true;
+                                if (TestProject.MakePublic(ref line, force: true))
+                                {
+                                    lines[index] = line;
+                                    rewritten = true;
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
                 }
@@ -191,7 +199,16 @@ public class ILRewriter
             }
         }
 
-        if (_testProject.TestClassLine >= 0 && !_cleanupILModuleAssembly)
+        if (_testProject.TestClassLine < 0)
+        {
+            if (isILTest)
+            {
+                string classLine = $".class public auto ansi Test_{Path.GetFileNameWithoutExtension(ilSource)} extends [mscorlib] System.Object {{";
+                lines.Insert(_testProject.MainMethodLine, classLine);
+                lines.Add("}");
+            }
+        }
+        else if (!_cleanupILModuleAssembly)
         {
             string line = lines[_testProject.TestClassLine];
             if (line.IndexOf("public") < 0)
@@ -322,18 +339,17 @@ public class ILRewriter
                 }
             }
 
-            if (_testProject.TestClassNamespace == "" && _testProject.DeduplicatedClassName != null)
+            if (_testProject.TestClassNamespace == "" && _testProject.DeduplicatedNamespaceName != null)
             {
-                string injectedNamespaceName = TestProject.SanitizeIdentifier("Test_" + Path.GetFileNameWithoutExtension(ilSource));
                 int lineIndex = _testProject.NamespaceLine;
-                lines.Insert(lineIndex, (isILTest ? "." : "") + "namespace " + injectedNamespaceName);
+                lines.Insert(lineIndex, (isILTest ? "." : "") + "namespace " + _testProject.DeduplicatedNamespaceName);
                 lines.Insert(lineIndex + 1, "{");
                 lines.Add("}");
                 for (int i = lineIndex; i < lines.Count; i++)
                 {
                     if (TestProject.GetILClassName(lines[i], out string? className))
                     {
-                        string qualifiedClassName = injectedNamespaceName + "." + className!;
+                        string qualifiedClassName = _testProject.DeduplicatedNamespaceName + "." + className!;
                         for (int s = lineIndex; s < lines.Count; s++)
                         {
                             if (s != i)

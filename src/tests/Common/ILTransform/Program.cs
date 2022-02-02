@@ -11,6 +11,7 @@ public class ILTransform
         {
             string testRoot = "";
             bool deduplicateClassNames = false;
+            bool deduplicateProjectNames = false;
             string classToDeduplicate = "";
             bool fixImplicitSharedLibraries = false;
             bool addILFactAttributes = false;
@@ -48,6 +49,10 @@ public class ILTransform
                     else if (arg.StartsWith("-m"))
                     {
                         cleanUpILModuleAssembly = true;
+                    }
+                    else if (arg.StartsWith("-n"))
+                    {
+                        deduplicateProjectNames = true;
                     }
                     else
                     {
@@ -99,6 +104,10 @@ public class ILTransform
             else if (unifyDbgRelProjects)
             {
                 testStore.UnifyDbgRelProjects();
+            }
+            else if (deduplicateProjectNames)
+            {
+                testStore.DeduplicateProjectNames();
             }
             else
             {
