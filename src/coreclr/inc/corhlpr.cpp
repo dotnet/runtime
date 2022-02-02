@@ -6,8 +6,6 @@
  ** Corhlpr.h - signature helpers.                                         **
  **                                                                        **
  ****************************************************************************/
-#include <assert.h>
-
 #ifndef SOS_INCLUDE
 
 #ifdef _BLD_CLR
