@@ -10,13 +10,20 @@ namespace Microsoft.Extensions.Configuration.Xml
     /// </summary>
     public class XmlConfigurationProvider : FileConfigurationProvider
     {
+        private readonly XmlConfigurationSource configSource;
+
         /// <summary>
         /// Initializes a new instance with the specified source.
         /// </summary>
         /// <param name="source">The source settings.</param>
-        public XmlConfigurationProvider(XmlConfigurationSource source) : base(source) { }
+        public XmlConfigurationProvider(XmlConfigurationSource source) : base(source)
+        {
+            this.configSource = source;
+        }
 
         internal XmlDocumentDecryptor Decryptor { get; set; } = XmlDocumentDecryptor.Instance;
+
+        internal System.Collections.Generic.IDictionary<string, string> Data2 => Data;
 
         /// <summary>
         /// Loads the XML data from a stream.
@@ -24,7 +31,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <param name="stream">The stream to read.</param>
         public override void Load(Stream stream)
         {
-            Data = XmlStreamConfigurationProvider.Read(stream, Decryptor);
+            Data = XmlStreamConfigurationProvider.Read(stream, Decryptor, this.configSource.IgnoreElementNameForRepeats);
         }
     }
 }

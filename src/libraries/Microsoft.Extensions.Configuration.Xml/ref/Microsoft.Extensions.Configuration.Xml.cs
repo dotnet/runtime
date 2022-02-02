@@ -26,6 +26,7 @@ namespace Microsoft.Extensions.Configuration.Xml
     public partial class XmlConfigurationSource : Microsoft.Extensions.Configuration.FileConfigurationSource
     {
         public XmlConfigurationSource() { }
+        public bool IgnoreElementNameForRepeats { get; set; }
         public override Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
     }
     public partial class XmlDocumentDecryptor
@@ -41,10 +42,12 @@ namespace Microsoft.Extensions.Configuration.Xml
         public XmlStreamConfigurationProvider(Microsoft.Extensions.Configuration.Xml.XmlStreamConfigurationSource source) : base (default(Microsoft.Extensions.Configuration.StreamConfigurationSource)) { }
         public override void Load(System.IO.Stream stream) { }
         public static System.Collections.Generic.IDictionary<string, string> Read(System.IO.Stream stream, Microsoft.Extensions.Configuration.Xml.XmlDocumentDecryptor decryptor) { throw null; }
+        public static System.Collections.Generic.IDictionary<string, string> Read(System.IO.Stream stream, Microsoft.Extensions.Configuration.Xml.XmlDocumentDecryptor decryptor, bool ignoreElementNameForRepeats) { throw null; }
     }
     public partial class XmlStreamConfigurationSource : Microsoft.Extensions.Configuration.StreamConfigurationSource
     {
         public XmlStreamConfigurationSource() { }
+        public bool IgnoreElementNameForRepeats { get; set; }
         public override Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
     }
 }

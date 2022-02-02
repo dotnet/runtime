@@ -266,6 +266,29 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
+        public void RepeatedElementDoNotContributeToPrefixWithIgnoreElementNameForRepeats()
+        {
+            var xml =
+              @"<settings>
+                  <DefaultConnection>
+                      <ConnectionString>TestConnectionString1</ConnectionString>
+                      <Provider>SqlClient1</Provider>
+                  </DefaultConnection>
+                  <DefaultConnection>
+                      <ConnectionString>TestConnectionString2</ConnectionString>
+                      <Provider>SqlClient2</Provider>
+                  </DefaultConnection>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource() { IgnoreElementNameForRepeats = true });
+            xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml));
+
+            Assert.Equal("TestConnectionString1", xmlConfigSrc.Get("0:ConnectionString"));
+            Assert.Equal("SqlClient1", xmlConfigSrc.Get("0:Provider"));
+            Assert.Equal("TestConnectionString2", xmlConfigSrc.Get("1:ConnectionString"));
+            Assert.Equal("SqlClient2", xmlConfigSrc.Get("1:Provider"));
+        }
+
+        [Fact]
         public void RepeatedElementDetectionIsCaseInsensitive()
         {
             var xml =

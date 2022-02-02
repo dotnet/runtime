@@ -16,12 +16,16 @@ namespace Microsoft.Extensions.Configuration.Xml
     public class XmlStreamConfigurationProvider : StreamConfigurationProvider
     {
         private const string NameAttributeKey = "Name";
+        private readonly XmlStreamConfigurationSource configSource;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="source">The <see cref="XmlStreamConfigurationSource"/>.</param>
-        public XmlStreamConfigurationProvider(XmlStreamConfigurationSource source) : base(source) { }
+        public XmlStreamConfigurationProvider(XmlStreamConfigurationSource source) : base(source)
+        {
+            this.configSource = source;
+        }
 
         /// <summary>
         /// Read a stream of XML values into a key/value dictionary.
@@ -30,6 +34,20 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <param name="decryptor">The <see cref="XmlDocumentDecryptor"/> to use to decrypt.</param>
         /// <returns>The <see cref="IDictionary{String, String}"/> which was read from the stream.</returns>
         public static IDictionary<string, string> Read(Stream stream, XmlDocumentDecryptor decryptor)
+        {
+            return Read(stream, decryptor, false);
+        }
+
+        /// <summary>
+        /// Read a stream of XML values into a key/value dictionary.
+        /// </summary>
+        /// <param name="stream">The stream of XML data.</param>
+        /// <param name="decryptor">The <see cref="XmlDocumentDecryptor"/> to use to decrypt.</param>
+        /// <param name="ignoreElementNameForRepeats">When false, repeated elements are included as path of the
+        /// configuration key along with their index. When true, the name of the
+        /// repeated element is ignored and replaced with the index itself.</param>
+        /// <returns>The <see cref="IDictionary{String, String}"/> which was read from the stream.</returns>
+        public static IDictionary<string, string> Read(Stream stream, XmlDocumentDecryptor decryptor, bool ignoreElementNameForRepeats)
         {
             var readerSettings = new XmlReaderSettings()
             {
@@ -170,7 +188,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                 }
             }
 
-            return ProvideConfiguration(root);
+            return ProvideConfiguration(root, ignoreElementNameForRepeats);
         }
 
         /// <summary>
@@ -179,7 +197,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <param name="stream">The <see cref="Stream"/> to load ini configuration data from.</param>
         public override void Load(Stream stream)
         {
-            Data = Read(stream, XmlDocumentDecryptor.Instance);
+            Data = Read(stream, XmlDocumentDecryptor.Instance, this.configSource.IgnoreElementNameForRepeats);
         }
 
         private static string GetLineInfo(XmlReader reader)
@@ -245,7 +263,7 @@ namespace Microsoft.Extensions.Configuration.Xml
             return name;
         }
 
-        private static IDictionary<string, string> ProvideConfiguration(XmlConfigurationElement root)
+        private static IDictionary<string, string> ProvideConfiguration(XmlConfigurationElement root, bool ignoreElementNameForRepeats)
         {
             var configuration = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -264,17 +282,17 @@ namespace Microsoft.Extensions.Configuration.Xml
 
             ProcessElementAttributes(rootPrefix, root);
             ProcessElementContent(rootPrefix, root);
-            ProcessElementChildren(rootPrefix, root);
+            ProcessElementChildren(rootPrefix, root, ignoreElementNameForRepeats);
 
             return configuration;
 
-            void ProcessElement(Prefix prefix, XmlConfigurationElement element)
+            void ProcessElement(Prefix prefix, XmlConfigurationElement element, bool ignoreElementNameForRepeats)
             {
                 ProcessElementAttributes(prefix, element);
 
                 ProcessElementContent(prefix, element);
 
-                ProcessElementChildren(prefix, element);
+                ProcessElementChildren(prefix, element, ignoreElementNameForRepeats);
             }
 
             void ProcessElementAttributes(Prefix prefix, XmlConfigurationElement element)
@@ -305,13 +323,13 @@ namespace Microsoft.Extensions.Configuration.Xml
                 }
             }
 
-            void ProcessElementChildren(Prefix prefix, XmlConfigurationElement element)
+            void ProcessElementChildren(Prefix prefix, XmlConfigurationElement element, bool ignoreElementNameForRepeats)
             {
                 if (element.SingleChild != null)
                 {
                     var child = element.SingleChild;
 
-                    ProcessElementChild(prefix, child, null);
+                    ProcessElementChild(prefix, child, null, ignoreElementNameForRepeats);
 
                     return;
                 }
@@ -328,7 +346,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                     {
                         var child = childrenWithSameSiblingName[0];
 
-                        ProcessElementChild(prefix, child, null);
+                        ProcessElementChild(prefix, child, null, ignoreElementNameForRepeats);
                     }
                     else
                     {
@@ -337,16 +355,19 @@ namespace Microsoft.Extensions.Configuration.Xml
                         {
                             var child = childrenWithSameSiblingName[i];
 
-                            ProcessElementChild(prefix, child, i);
+                            ProcessElementChild(prefix, child, i, ignoreElementNameForRepeats);
                         }
                     }
                 }
             }
 
-            void ProcessElementChild(Prefix prefix, XmlConfigurationElement child, int? index)
+            void ProcessElementChild(Prefix prefix, XmlConfigurationElement child, int? index, bool ignoreElementNameForRepeats)
             {
                 // Add element name to prefix
-                prefix.Push(child.ElementName);
+                if (!(ignoreElementNameForRepeats && index.HasValue))
+                {
+                    prefix.Push(child.ElementName);
+                }
 
                 // Add value of name attribute to prefix
                 var hasName = !string.IsNullOrEmpty(child.Name);
@@ -361,7 +382,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                     prefix.Push(index.Value.ToString(CultureInfo.InvariantCulture));
                 }
 
-                ProcessElement(prefix, child);
+                ProcessElement(prefix, child, ignoreElementNameForRepeats);
 
                 // Remove index
                 if (index != null)
@@ -376,7 +397,10 @@ namespace Microsoft.Extensions.Configuration.Xml
                 }
 
                 // Remove element name
-                prefix.Pop();
+                if (!(ignoreElementNameForRepeats && index.HasValue))
+                {
+                    prefix.Pop();
+                }
             }
 
             void AddToConfiguration(string key, string value, int? lineNumber, int? linePosition)
