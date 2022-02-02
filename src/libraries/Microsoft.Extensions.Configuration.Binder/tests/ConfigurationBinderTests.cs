@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using Xunit;
 
@@ -934,6 +935,131 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(
                 SR.Format(SR.Error_FailedBinding, "MyByteArray", typeof(byte[])),
                 exception.Message);
+        }
+
+        [Fact]
+        public void CannotBindToCollectionWhenBindSingleElementsToArrayIsFalse()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"MyString", "hello world"},
+                {"Nested:Integer", "11"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            IConfiguration config = configurationBuilder.Build();
+
+            var stringArr = config.GetSection("MyString").Get<string[]>();
+            Assert.Null(stringArr);
+
+            var stringAsStr = config.GetSection("MyString").Get<string>();
+            Assert.Equal("hello world", stringAsStr);
+        }
+
+        [Fact]
+        public void CanBindToCollectionWhenBindSingleElementsToArrayIsTrue()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"MyString", "hello world"},
+                {"Nested:Integer", "11"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            IConfiguration config = configurationBuilder.Build();
+
+            var stringArr = config.GetSection("MyString").Get<string[]>(options => options.BindSingleElementsToArray = true);
+            Assert.Equal("hello world", stringArr[0]);
+            Assert.Equal(1, stringArr.Length);
+
+            var stringAsStr = config.GetSection("MyString").Get<string>(options => options.BindSingleElementsToArray = true);
+            Assert.Equal("hello world", stringAsStr);
+
+            var nested = config.GetSection("Nested").Get<NestedOptions>(options => options.BindSingleElementsToArray = true);
+            Assert.Equal(11, nested.Integer);
+
+            var nestedAsArray = config.GetSection("Nested").Get<NestedOptions[]>(options => options.BindSingleElementsToArray = true);
+            Assert.Equal(11, nestedAsArray[0].Integer);
+            Assert.Equal(1, nestedAsArray.Length);
+        }
+
+        [Fact]
+        public void ShouldGetArrayOfConfigurationSections()
+        {
+            var configRoot = new ConfigurationBuilder()
+                .AddInMemoryCollection(new KeyValuePair<string, string>[]
+                {
+                    new("Foo", "1"),
+                    new("Bar", "2")
+                })
+                .Build();
+
+            var sections = configRoot.Get<IConfigurationSection[]>();
+            var fooConfigSection = sections.SingleOrDefault(x => x.Key == "Foo");
+            var barConfigSection = sections.SingleOrDefault(x => x.Key == "Bar");
+
+            Assert.Equal(2, sections.Length);
+            Assert.Equal("1", fooConfigSection.Value);
+            Assert.Equal("2", barConfigSection.Value);
+        }
+
+        [Fact]
+        public void ShouldGetArrayOfConfigurationSectionsWhenBindSingleElementsToArrayIsTrue()
+        {
+            var configRoot = new ConfigurationBuilder()
+                .AddInMemoryCollection(new KeyValuePair<string, string>[]
+                {
+                    new("Foo", "1"),
+                    new("Bar", "2")
+                })
+                .Build();
+
+            var sections = configRoot.Get<IConfigurationSection[]>(options => options.BindSingleElementsToArray = true);
+            Assert.Equal(0, sections.Length);
+            sections = configRoot.GetChildren().ToArray();
+            var fooConfigSection = sections.SingleOrDefault(x => x.Key == "Foo");
+            var barConfigSection = sections.SingleOrDefault(x => x.Key == "Bar");
+
+            Assert.Equal(2, sections.Length);
+            Assert.Equal("1", fooConfigSection.Value);
+            Assert.Equal("2", barConfigSection.Value);
+        }
+
+        [Fact]
+        public void ShouldGetArrayOfIntegers()
+        {
+            var configRoot = new ConfigurationBuilder()
+                .AddInMemoryCollection(new KeyValuePair<string, string>[]
+                {
+                    new("Foo", "1"),
+                    new("Bar", "2")
+                })
+                .Build();
+
+            var values = configRoot.Get<int[]>();
+            Assert.Equal(2, values.Length);
+            Assert.True(values.Contains(1));
+            Assert.True(values.Contains(2));
+        }
+
+        [Fact]
+        public void BindEmptyValuesShouldWork()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"IntProperty", "5"},
+                {"ClassWithoutPublicConstructorProperty", ""},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            IConfiguration config = configurationBuilder.Build();
+
+            var val = config.Get<TestOptions>();
+            Assert.Equal(5, val.IntProperty);
+            Assert.Null(val.ClassWithoutPublicConstructorProperty);
         }
 
         private interface ISomeInterface

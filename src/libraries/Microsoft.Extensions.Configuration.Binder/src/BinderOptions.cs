@@ -21,5 +21,11 @@ namespace Microsoft.Extensions.Configuration
         /// of the missing properties.
         /// </summary>
         public bool ErrorOnUnknownConfiguration { get; set; }
+
+        /// <summary>
+        /// When false (the default), elements which don't have numbers as keys cannot be bound to arrays.
+        /// When true, elements without numbers are attempted to be bound as a single-element array.
+        /// </summary>
+        public bool BindSingleElementsToArray { get; set; }
     }
 }
