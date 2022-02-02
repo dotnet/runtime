@@ -118,6 +118,7 @@ jobs:
       - src/mono/mono/*
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/Version.Details.xml
+      - src/mono/wasm/emscripten-version.txt
     - subset: wasmdebuggertests
       include:
       - src/mono/wasm/debugger/*
