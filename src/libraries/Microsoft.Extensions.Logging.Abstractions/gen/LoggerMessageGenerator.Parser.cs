@@ -749,6 +749,7 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             public string Name = string.Empty;
             public string Type = string.Empty;
+            public string CodeName => NeedsAtSign ? "@" + Name : Name;
             public string? Qualifier;
             public bool NeedsAtSign;
             public bool IsLogger;
