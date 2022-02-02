@@ -469,8 +469,8 @@ Exit:
     // Estimate cache size based on CPU count
     // Assume lower core count are lighter weight parts which are likely to have smaller caches
     // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
-    size_t predictedSize = std::min(4096, std::max(256, (int)logicalCPUs * 128)) * 1024;
-    cache_size = std::max(predictedSize, cache_size);
+    size_t predictedSize = min(4096, max(256, logicalCPUs * 128)) * 1024;
+    cache_size = max(predictedSize, cache_size);
 #endif
 
     return cache_size;
