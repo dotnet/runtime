@@ -1,5 +1,5 @@
 {
-  "name": "browser-webpack",
+  "name": "browser-nextjs",
   "private": true,
   "license": "MIT",
   "main": "index.js",
@@ -13,6 +13,6 @@
   },
   "dependencies": {
     "@microsoft/dotnet-runtime": "file:bin/dotnet-runtime",
-    "underscore": "1.13.2"
+    "console-log-colors": "0.2.3"
   }
 }
