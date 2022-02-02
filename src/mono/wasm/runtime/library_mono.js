@@ -597,18 +597,11 @@ var MonoSupportLib = {
 			this._debugger_heap_bytes.set(this._base64_to_uint8 (command_parameters));
 		},
 
-		mono_get_and_delete_from_commands_received: function (id)
-		{
-			const res = MONO.commands_received.get(id);
-			MONO.commands_received.delete(id);
-			return res;
-		},
-
 		mono_wasm_send_dbg_command_with_parms: function (id, command_set, command, command_parameters, length, valtype, newvalue)
 		{
 			this.mono_wasm_malloc_and_set_debug_buffer(command_parameters);
 			this._c_fn_table.mono_wasm_send_dbg_command_with_parms_wrapper (id, command_set, command, this._debugger_buffer, length, valtype, newvalue.toString());
-			let { res_ok, res } =  this.mono_get_and_delete_from_commands_received(id);
+			let { res_ok, res } =  MONO.commands_received.remove(id);;
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_invoke_method_debugger_agent_with_parms`);
 			return res;
@@ -618,7 +611,7 @@ var MonoSupportLib = {
 		{
 			this.mono_wasm_malloc_and_set_debug_buffer(command_parameters);
 			this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, this._debugger_buffer, command_parameters.length);
-			let { res_ok, res } =  this.mono_get_and_delete_from_commands_received(id);
+			let { res_ok, res } =  MONO.commands_received.remove(id);
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_send_dbg_command`);
 			return res;
@@ -627,7 +620,7 @@ var MonoSupportLib = {
 
 		mono_wasm_get_dbg_command_info: function ()
 		{
-			let { res_ok, res } =  this.mono_get_and_delete_from_commands_received(0);
+			let { res_ok, res } =  MONO.commands_received.remove(0);
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_get_dbg_command_info`);
 			return res;
@@ -845,7 +838,8 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_runtime_ready: function () {
-			MONO.commands_received = new Map();			
+			MONO.commands_received = new Map();
+			MONO.commands_received.remove = function (key) { const value = this.get(key); this.delete(key); return value;};
 			this.mono_wasm_runtime_is_ready = true;
 			this._clear_per_step_state ();
 
