@@ -32,8 +32,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[ExpectedNoWarnings]
 	class RequiresWithCopyAssembly
 	{
-		[ExpectedWarning ("IL2026", "--IDerivedInterface.MethodInDerivedInterface--", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "--IBaseInterface.MethodInBaseInterface--", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2026", "--IDerivedInterface.MethodInDerivedInterface--")]
+		[ExpectedWarning ("IL2026", "--IBaseInterface.MethodInBaseInterface--")]
 		public static void Main ()
 		{
 			TestRequiresInMethodFromCopiedAssembly ();

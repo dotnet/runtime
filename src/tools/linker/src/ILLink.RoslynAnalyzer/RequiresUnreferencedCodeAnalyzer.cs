@@ -110,10 +110,7 @@ namespace ILLink.RoslynAnalyzer
 		protected override bool VerifyAttributeArguments (AttributeData attribute) =>
 			RequiresUnreferencedCodeUtils.VerifyRequiresUnreferencedCodeAttributeArguments (attribute);
 
-		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute)
-		{
-			var message = (string) requiresAttribute!.ConstructorArguments[0].Value!;
-			return MessageFormat.FormatRequiresAttributeMessageArg (message);
-		}
+		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute) =>
+			RequiresUnreferencedCodeUtils.GetMessageFromAttribute (requiresAttribute);
 	}
 }

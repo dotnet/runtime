@@ -52,13 +52,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				//   Construct the return value
 				// Note: this is temporary as eventually the handling of all method calls should be done in the shared code (not just intrinsics)
 				if (!CalledMethod.IsStatic) {
-					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction ();
-					requireDynamicallyAccessedMembersAction.Invoke (diagnosticContext, Instance, new MethodThisParameterValue (CalledMethod));
+					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, new ReflectionAccessAnalyzer ());
+					requireDynamicallyAccessedMembersAction.Invoke (Instance, new MethodThisParameterValue (CalledMethod));
 				}
 
 				for (int argumentIndex = 0; argumentIndex < Arguments.Length; argumentIndex++) {
-					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction ();
-					requireDynamicallyAccessedMembersAction.Invoke (diagnosticContext, Arguments[argumentIndex], new MethodParameterValue (CalledMethod.Parameters[argumentIndex]));
+					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, new ReflectionAccessAnalyzer ());
+					requireDynamicallyAccessedMembersAction.Invoke (Arguments[argumentIndex], new MethodParameterValue (CalledMethod.Parameters[argumentIndex]));
 				}
 			}
 

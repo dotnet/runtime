@@ -4,14 +4,18 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.InteropServices;
 using ILLink.Shared.TypeSystemProxy;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.Shared.TrimAnalysis
 {
+	[StructLayout (LayoutKind.Auto)]
 	partial struct RequireDynamicallyAccessedMembersAction
 	{
-		public void Invoke (in DiagnosticContext diagnosticContext, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
+		readonly DiagnosticContext _diagnosticContext;
+
+		public void Invoke (in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
 		{
 			foreach (var uniqueValue in value) {
 				if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
@@ -22,7 +26,7 @@ namespace ILLink.Shared.TrimAnalysis
 					var availableMemberTypes = valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes;
 					if (!Annotations.SourceHasRequiredAnnotations (availableMemberTypes, targetValue.DynamicallyAccessedMemberTypes, out var missingMemberTypes)) {
 						(var diagnosticId, var diagnosticArguments) = Annotations.GetDiagnosticForAnnotationMismatch (valueWithDynamicallyAccessedMembers, targetValue, missingMemberTypes);
-						diagnosticContext.AddDiagnostic (diagnosticId, diagnosticArguments);
+						_diagnosticContext.AddDiagnostic (diagnosticId, diagnosticArguments);
 					}
 				} else if (uniqueValue is SystemTypeValue systemTypeValue) {
 					MarkTypeForDynamicallyAccessedMembers (systemTypeValue.GetRepresentedType (), targetValue.DynamicallyAccessedMemberTypes);
@@ -44,7 +48,7 @@ namespace ILLink.Shared.TrimAnalysis
 						_ => throw new NotImplementedException ($"unsupported target value {targetValue}")
 					};
 
-					diagnosticContext.AddDiagnostic (diagnosticId, targetValue.GetDiagnosticArgumentsForAnnotationMismatch ().ToArray ());
+					_diagnosticContext.AddDiagnostic (diagnosticId, targetValue.GetDiagnosticArgumentsForAnnotationMismatch ().ToArray ());
 				}
 			}
 		}
