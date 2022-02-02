@@ -8492,7 +8492,7 @@ MethodTableBuilder::HandleExplicitLayout(
                 break;
             }
 
-            // Other than alignment, a byref can be treated like an native pointer.
+            // Other than alignment, a byref can be treated like a native pointer.
             if (CorTypeInfo::IsByRef(type))
                 type = ELEMENT_TYPE_I;
         }
