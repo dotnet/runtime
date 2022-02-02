@@ -265,7 +265,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
-.assembly /*20000001*/ b473131_byte
+.assembly /*20000001*/ 'b473131_fld'
 {
   .custom /*0C000001:0A000001*/ instance void [mscorlib/*23000001*/]System.Runtime.CompilerServices.CompilationRelaxationsAttribute/*01000003*/::.ctor(int32) /* 0A000001 */ = ( 01 00 08 00 00 00 00 00 ) 
   .custom /*0C000002:0A000002*/ instance void [mscorlib/*23000001*/]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute/*01000004*/::.ctor() /* 0A000002 */ = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
@@ -273,7 +273,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module b473131_byte.exe
+.assembly extern xunit.core {}
 // MVID: {93C4C3CC-5A75-464C-A0F3-61562010094F}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -319,6 +319,9 @@
           int32 Main() cil managed
   // SIG: 00 00 01
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Method begins at RVA 0x2064
     // Code size       11 (0xb)

@@ -531,10 +531,6 @@
 #include "safemath.h"
 #include "corerror.h"
 
-#ifndef __in
-#include <specstrings.h>
-#endif
-
 #define DACCESS_TABLE_RESOURCE "COREXTERNALDATAACCESSRESOURCE"
 
 #ifdef PAL_STDCPP_COMPAT
@@ -650,7 +646,7 @@ extern "C" {
 // These two functions are largely just for marking code
 // that is not fully converted.  DacWarning prints a debug
 // message, while DacNotImpl throws a not-implemented exception.
-void __cdecl DacWarning(__in __in_z char* format, ...);
+void __cdecl DacWarning(_In_ _In_z_ char* format, ...);
 void DacNotImpl(void);
 
 void    DacError(HRESULT err);
@@ -769,7 +765,7 @@ HRESULT DacReplacePatchesInHostMemory(MemoryRange range, PVOID pBuffer);
 #ifdef __cplusplus
 }
 class ReflectionModule;
-interface IMDInternalImport* DacGetMDImport(const class PEFile* peFile,
+interface IMDInternalImport* DacGetMDImport(const class PEAssembly* pPEAssembly,
                                             bool throwEx);
 interface IMDInternalImport* DacGetMDImport(const ReflectionModule* reflectionModule,
                                             bool throwEx);

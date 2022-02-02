@@ -6,6 +6,7 @@
 #define __MONO_METADATA_UPDATE_H__
 
 #include "mono/utils/mono-forward.h"
+#include "mono/utils/bsearch.h"
 #include "mono/metadata/loader-internals.h"
 #include "mono/metadata/metadata-internals.h"
 
@@ -56,5 +57,20 @@ mono_metadata_update_table_bounds_check (MonoImage *base_image, int table_index,
 
 gboolean
 mono_metadata_update_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, uint32_t orig_index, MonoImage **image_out, uint32_t *index_out);
+
+void*
+mono_metadata_update_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer);
+
+MonoMethod*
+mono_metadata_update_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
+
+uint32_t
+mono_metadata_update_get_field_idx (MonoClassField *field);
+
+MonoClassField *
+mono_metadata_update_get_field (MonoClass *klass, uint32_t fielddef_token);
+
+gpointer
+mono_metadata_update_get_static_field_addr (MonoClassField *field);
 
 #endif /*__MONO_METADATA_UPDATE_H__*/

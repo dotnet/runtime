@@ -395,5 +395,5 @@ FAIL:
 }
 }
 
-.assembly ldarg_n.exe {}
+.assembly ldarg_n {}
 

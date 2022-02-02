@@ -16,15 +16,22 @@
 GTNODE(NONE             , char               ,0,GTK_SPECIAL)
 
 //-----------------------------------------------------------------------------
+//  Nodes related to locals:
+//-----------------------------------------------------------------------------
+
+GTNODE(PHI              , GenTreePhi         ,0,GTK_SPECIAL)            // phi node for ssa.
+GTNODE(PHI_ARG          , GenTreePhiArg      ,0,GTK_LEAF)               // phi(phiarg, phiarg, phiarg)
+GTNODE(LCL_VAR          , GenTreeLclVar      ,0,GTK_LEAF)               // local variable
+GTNODE(LCL_FLD          , GenTreeLclFld      ,0,GTK_LEAF)               // field in a non-primitive variable
+GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,(GTK_UNOP|GTK_NOVALUE)) // store to local variable
+GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,(GTK_UNOP|GTK_NOVALUE)) // store to a part of the variable
+GTNODE(LCL_VAR_ADDR     , GenTreeLclVar      ,0,GTK_LEAF)               // address of local variable
+GTNODE(LCL_FLD_ADDR     , GenTreeLclFld      ,0,GTK_LEAF)               // address of field in a non-primitive variable
+
+//-----------------------------------------------------------------------------
 //  Leaf nodes (i.e. these nodes have no sub-operands):
 //-----------------------------------------------------------------------------
 
-GTNODE(LCL_VAR          , GenTreeLclVar      ,0,(GTK_LEAF|GTK_LOCAL))     // local variable
-GTNODE(LCL_FLD          , GenTreeLclFld      ,0,(GTK_LEAF|GTK_LOCAL))     // field in a non-primitive variable
-GTNODE(LCL_VAR_ADDR     , GenTreeLclVar      ,0,GTK_LEAF)               // address of local variable
-GTNODE(LCL_FLD_ADDR     , GenTreeLclFld      ,0,GTK_LEAF)               // address of field in a non-primitive variable
-GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,(GTK_UNOP|GTK_LOCAL|GTK_NOVALUE)) // store to local variable
-GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,(GTK_UNOP|GTK_LOCAL|GTK_NOVALUE)) // store to field in a non-primitive variable
 GTNODE(CATCH_ARG        , GenTree            ,0,GTK_LEAF)               // Exception object in a catch block
 GTNODE(LABEL            , GenTree            ,0,GTK_LEAF)               // Jump-target
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,GTK_LEAF)               // Address of a function
@@ -34,10 +41,10 @@ GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,GTK_LEAF|GTK_NOTLIR)    // Place
 //  Constant nodes:
 //-----------------------------------------------------------------------------
 
-GTNODE(CNS_INT          , GenTreeIntCon      ,0,(GTK_LEAF|GTK_CONST))
-GTNODE(CNS_LNG          , GenTreeLngCon      ,0,(GTK_LEAF|GTK_CONST))
-GTNODE(CNS_DBL          , GenTreeDblCon      ,0,(GTK_LEAF|GTK_CONST))
-GTNODE(CNS_STR          , GenTreeStrCon      ,0,(GTK_LEAF|GTK_CONST))
+GTNODE(CNS_INT          , GenTreeIntCon      ,0,GTK_LEAF)
+GTNODE(CNS_LNG          , GenTreeLngCon      ,0,GTK_LEAF)
+GTNODE(CNS_DBL          , GenTreeDblCon      ,0,GTK_LEAF)
+GTNODE(CNS_STR          , GenTreeStrCon      ,0,GTK_LEAF)
 
 //-----------------------------------------------------------------------------
 //  Unary  operators (1 operand):
@@ -77,32 +84,17 @@ GTNODE(ADDR             , GenTreeOp          ,0,GTK_UNOP)               // addre
 GTNODE(IND              , GenTreeIndir       ,0,GTK_UNOP)                // load indirection
 GTNODE(STOREIND         , GenTreeStoreInd    ,0,(GTK_BINOP|GTK_NOVALUE)) // store indirection
 
-                                                                        // TODO-Cleanup: GT_ARR_BOUNDS_CHECK should be made a GTK_BINOP now that it has only two child nodes
-GTNODE(ARR_BOUNDS_CHECK , GenTreeBoundsChk   ,0,(GTK_SPECIAL|GTK_NOVALUE))// array bounds check
+GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,(GTK_BINOP|GTK_EXOP|GTK_NOVALUE)) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
 
 GTNODE(OBJ              , GenTreeObj         ,0,(GTK_UNOP|GTK_EXOP))              // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
 GTNODE(STORE_OBJ        , GenTreeObj         ,0,(GTK_BINOP|GTK_EXOP|GTK_NOVALUE)) // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
 GTNODE(BLK              , GenTreeBlk         ,0,(GTK_UNOP|GTK_EXOP))              // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
 GTNODE(STORE_BLK        , GenTreeBlk         ,0,(GTK_BINOP|GTK_EXOP|GTK_NOVALUE)) // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
-GTNODE(DYN_BLK          , GenTreeDynBlk      ,0,GTK_SPECIAL)               // Dynamically sized block object
-GTNODE(STORE_DYN_BLK    , GenTreeDynBlk      ,0,(GTK_SPECIAL|GTK_NOVALUE)) // Dynamically sized block object
+GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,(GTK_SPECIAL|GTK_NOVALUE))        // Dynamically sized block store
 
 GTNODE(BOX              , GenTreeBox         ,0,(GTK_UNOP|GTK_EXOP|GTK_NOTLIR))
 GTNODE(FIELD            , GenTreeField       ,0,(GTK_UNOP|GTK_EXOP)) // Member-field
-
-#ifdef FEATURE_SIMD
-GTNODE(SIMD_CHK         , GenTreeBoundsChk   ,0,(GTK_SPECIAL|GTK_NOVALUE))// Compare whether an index is less than the given SIMD vector length, and call CORINFO_HELP_RNGCHKFAIL if not.
-                                                                        // TODO-CQ: In future may want to add a field that specifies different exceptions but we'll
-                                                                        // need VM assistance for that.
-                                                                        // TODO-CQ: It would actually be very nice to make this an unconditional throw, and expose the control flow that
-                                                                        // does the compare, so that it can be more easily optimized.  But that involves generating qmarks at import time...
-#endif // FEATURE_SIMD
-
-#ifdef FEATURE_HW_INTRINSICS
-GTNODE(HW_INTRINSIC_CHK  , GenTreeBoundsChk   ,0,(GTK_SPECIAL|GTK_NOVALUE))// Compare whether an imm8 argument is in the valid range, and throw ArgumentOutOfRangeException if not.
-#endif
-
-GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,(GTK_UNOP|GTK_EXOP))      // object allocator
+GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,(GTK_UNOP|GTK_EXOP)) // object allocator
 
 GTNODE(INIT_VAL         , GenTreeOp          ,0,GTK_UNOP)               // Initialization value for an initBlk
 
@@ -124,43 +116,23 @@ GTNODE(MOD              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(UDIV             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(UMOD             , GenTreeOp          ,0,GTK_BINOP)
 
-GTNODE(OR               , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
-GTNODE(XOR              , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
-GTNODE(AND              , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
-GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(OR               , GenTreeOp          ,1,GTK_BINOP)
+GTNODE(XOR              , GenTreeOp          ,1,GTK_BINOP)
+GTNODE(AND              , GenTreeOp          ,1,GTK_BINOP)
 
 GTNODE(LSH              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(RSH              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(RSZ              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROL              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROR              , GenTreeOp          ,0,GTK_BINOP)
-GTNODE(INC_SATURATE     , GenTreeOp          ,0,GTK_UNOP)  // saturating increment, used in division by a constant (LowerUnsignedDivOrMod)
-
-// Returns high bits (top N bits of the 2N bit result of an NxN multiply)
-// GT_MULHI is used in division by a constant (LowerUnsignedDivOrMod). We turn
-// the div into a MULHI + some adjustments. In codegen, we only use the
-// results of the high register, and we drop the low results.
-GTNODE(MULHI            , GenTreeOp          ,1,GTK_BINOP)
-
-// A mul that returns the 2N bit result of an NxN multiply. This op is used for
-// multiplies that take two ints and return a long result. For 32 bit targets,
-// all other multiplies with long results are morphed into helper calls.
-// It is similar to GT_MULHI, the difference being that GT_MULHI drops the lo
-// part of the result, whereas GT_MUL_LONG keeps both parts of the result.
-// MUL_LONG is also used on ARM64, where 64 bit multiplication is more expensive.
-#if !defined(TARGET_64BIT)
-GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,GTK_BINOP)
-#elif defined(TARGET_ARM64)
-GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP)
-#endif
 
 GTNODE(ASG              , GenTreeOp          ,0,(GTK_BINOP|GTK_NOTLIR))
-GTNODE(EQ               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
-GTNODE(NE               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
-GTNODE(LT               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
-GTNODE(LE               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
-GTNODE(GE               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
-GTNODE(GT               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
+GTNODE(EQ               , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(NE               , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(LT               , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(LE               , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(GE               , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(GT               , GenTreeOp          ,0,GTK_BINOP)
 
 // These are similar to GT_EQ/GT_NE but they generate "test" instead of "cmp" instructions.
 // Currently these are generated during lowering for code like ((x & y) eq|ne 0) only on
@@ -169,8 +141,8 @@ GTNODE(GT               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
 // codegen which emits a "test reg, reg" instruction, that would be more difficult to do
 // during lowering because the source operand is used twice so it has to be a lclvar.
 // Because of this there is no need to also add GT_TEST_LT/LE/GE/GT opers.
-GTNODE(TEST_EQ          , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
-GTNODE(TEST_NE          , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
+GTNODE(TEST_EQ          , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(TEST_NE          , GenTreeOp          ,0,GTK_BINOP)
 
 GTNODE(COMMA            , GenTreeOp          ,0,(GTK_BINOP|GTK_NOTLIR))
 
@@ -214,13 +186,38 @@ GTNODE(RSH_LO           , GenTreeOp          ,0,GTK_BINOP)
 #endif // !defined(TARGET_64BIT)
 
 #ifdef FEATURE_SIMD
-GTNODE(SIMD             , GenTreeSIMD        ,0,(GTK_BINOP|GTK_EXOP))     // SIMD functions/operators/intrinsics
+GTNODE(SIMD             , GenTreeSIMD        ,0,GTK_SPECIAL)     // SIMD functions/operators/intrinsics
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-GTNODE(HWINTRINSIC      , GenTreeHWIntrinsic ,0,(GTK_BINOP|GTK_EXOP))               // hardware intrinsics
+GTNODE(HWINTRINSIC      , GenTreeHWIntrinsic ,0,GTK_SPECIAL)               // hardware intrinsics
 #endif // FEATURE_HW_INTRINSICS
 
+//-----------------------------------------------------------------------------
+//  Backend-specific arithmetic nodes:
+//-----------------------------------------------------------------------------
+
+GTNODE(INC_SATURATE     , GenTreeOp          ,0,GTK_UNOP)  // saturating increment, used in division by a constant (LowerUnsignedDivOrMod)
+
+// Returns high bits (top N bits of the 2N bit result of an NxN multiply)
+// GT_MULHI is used in division by a constant (LowerUnsignedDivOrMod). We turn
+// the div into a MULHI + some adjustments. In codegen, we only use the
+// results of the high register, and we drop the low results.
+GTNODE(MULHI            , GenTreeOp          ,1,GTK_BINOP)
+
+// A mul that returns the 2N bit result of an NxN multiply. This op is used for
+// multiplies that take two ints and return a long result. For 32 bit targets,
+// all other multiplies with long results are morphed into helper calls.
+// It is similar to GT_MULHI, the difference being that GT_MULHI drops the lo
+// part of the result, whereas GT_MUL_LONG keeps both parts of the result.
+// MUL_LONG is also used on ARM64, where 64 bit multiplication is more expensive.
+#if !defined(TARGET_64BIT)
+GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,GTK_BINOP)
+#elif defined(TARGET_ARM64)
+GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP)
+#endif
+// AndNot - emitted on ARM/ARM64 as the BIC instruction. Also used for creating AndNot HWINTRINSIC vector nodes in a cross-ISA manner.
+GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP)
 //-----------------------------------------------------------------------------
 //  LIR specific compare and conditional branch/set nodes:
 //-----------------------------------------------------------------------------
@@ -241,8 +238,6 @@ GTNODE(BT               , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE))  // The
 //-----------------------------------------------------------------------------
 
 GTNODE(JTRUE            , GenTreeOp          ,0,(GTK_UNOP|GTK_NOVALUE))
-
-GTNODE(LIST             , GenTreeArgList     ,0,(GTK_BINOP|GTK_NOVALUE))
 
 //-----------------------------------------------------------------------------
 //  Other nodes that have special structure:
@@ -271,18 +266,20 @@ GTNODE(END_LFIN         , GenTreeVal         ,0,(GTK_LEAF|GTK_NOVALUE))   // end
 #endif // !FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------------
-//  Nodes used for optimizations.
-//-----------------------------------------------------------------------------
-
-GTNODE(PHI              , GenTreePhi         ,0,GTK_SPECIAL)              // phi node for ssa.
-GTNODE(PHI_ARG          , GenTreePhiArg      ,0,(GTK_LEAF|GTK_LOCAL))     // phi(phiarg, phiarg, phiarg)
-
-//-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes
 //-----------------------------------------------------------------------------
 
+#ifdef TARGET_ARM64
+GTNODE(MADD             , GenTreeOp          ,0, GTK_BINOP)                // Generates the Multiply-Add instruction (madd/msub)
+                                                                           // In future, we might consider enabling it for both armarch and xarch
+                                                                           // for floating-point MADD "unsafe" math
+#endif
 GTNODE(JMPTABLE         , GenTree            ,0, (GTK_LEAF|GTK_NOCONTAIN)) // Generates the jump table for switches
 GTNODE(SWITCH_TABLE     , GenTreeOp          ,0, (GTK_BINOP|GTK_NOVALUE))  // Jump Table based switch construct
+#ifdef TARGET_ARM64
+GTNODE(ADDEX,             GenTreeOp          ,0, GTK_BINOP)                // Add with sign/zero extension
+GTNODE(BFIZ             , GenTreeOp          ,0, GTK_BINOP)                // Bitfield Insert in Zero
+#endif
 
 //-----------------------------------------------------------------------------
 //  Nodes used only within the code generator:

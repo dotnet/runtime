@@ -9,34 +9,34 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_NewX509Stack")]
-        internal static extern SafeX509StackHandle NewX509Stack();
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_NewX509Stack")]
+        internal static partial SafeX509StackHandle NewX509Stack();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RecursiveFreeX509Stack")]
-        internal static extern void RecursiveFreeX509Stack(IntPtr stack);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RecursiveFreeX509Stack")]
+        internal static partial void RecursiveFreeX509Stack(IntPtr stack);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackFieldCount")]
-        internal static extern int GetX509StackFieldCount(SafeX509StackHandle stack);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackFieldCount")]
+        internal static partial int GetX509StackFieldCount(SafeX509StackHandle stack);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackFieldCount")]
-        internal static extern int GetX509StackFieldCount(SafeSharedX509StackHandle stack);
-
-        /// <summary>
-        /// Gets a pointer to a certificate within a STACK_OF(X509). This pointer will later
-        /// be freed, so it should be cloned via new X509Certificate2(IntPtr)
-        /// </summary>
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackField")]
-        internal static extern IntPtr GetX509StackField(SafeX509StackHandle stack, int loc);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackFieldCount")]
+        internal static partial int GetX509StackFieldCount(SafeSharedX509StackHandle stack);
 
         /// <summary>
         /// Gets a pointer to a certificate within a STACK_OF(X509). This pointer will later
         /// be freed, so it should be cloned via new X509Certificate2(IntPtr)
         /// </summary>
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackField")]
-        internal static extern IntPtr GetX509StackField(SafeSharedX509StackHandle stack, int loc);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackField")]
+        internal static partial IntPtr GetX509StackField(SafeX509StackHandle stack, int loc);
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_X509StackAddDirectoryStore(SafeX509StackHandle stack, string storePath);
+        /// <summary>
+        /// Gets a pointer to a certificate within a STACK_OF(X509). This pointer will later
+        /// be freed, so it should be cloned via new X509Certificate2(IntPtr)
+        /// </summary>
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackField")]
+        internal static partial IntPtr GetX509StackField(SafeSharedX509StackHandle stack, int loc);
+
+        [GeneratedDllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
+        private static partial int CryptoNative_X509StackAddDirectoryStore(SafeX509StackHandle stack, string storePath);
 
         internal static void X509StackAddDirectoryStore(SafeX509StackHandle stack, string storePath)
         {
@@ -46,8 +46,8 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_X509StackAddMultiple(SafeX509StackHandle dest, SafeX509StackHandle src);
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_X509StackAddMultiple(SafeX509StackHandle dest, SafeX509StackHandle src);
 
         internal static void X509StackAddMultiple(SafeX509StackHandle dest, SafeX509StackHandle src)
         {

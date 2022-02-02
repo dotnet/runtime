@@ -8,7 +8,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-public class Test
+public class Test_PinnedHandle
 {
     public static int Main()
     {

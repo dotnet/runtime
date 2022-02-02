@@ -16,69 +16,56 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 {
     internal class SampleProfile
     {
+        private Dictionary<BasicBlock, long> _rawSamples = new Dictionary<BasicBlock, long>();
+        private Dictionary<BasicBlock, long> _smoothedSamples;
+        private Dictionary<(BasicBlock, BasicBlock), long> _smoothedEdgeSamples;
+
         public SampleProfile(
             MethodIL methodIL,
-            FlowGraph fg,
-            Dictionary<BasicBlock, long> samples,
-            Dictionary<BasicBlock, long> smoothedSamples,
-            Dictionary<(BasicBlock, BasicBlock), long> smoothedEdgeSamples)
+            FlowGraph fg)
         {
             MethodIL = methodIL;
             FlowGraph = fg;
-            Samples = samples;
-            SmoothedSamples = smoothedSamples;
-            SmoothedEdgeSamples = smoothedEdgeSamples;
         }
 
         public MethodIL MethodIL { get; }
         public FlowGraph FlowGraph { get; }
-        public Dictionary<BasicBlock, long> Samples { get; }
-        public Dictionary<BasicBlock, long> SmoothedSamples { get; }
-        public Dictionary<(BasicBlock, BasicBlock), long> SmoothedEdgeSamples { get; }
+        public IReadOnlyDictionary<BasicBlock, long> RawSamples => _rawSamples;
+        public IReadOnlyDictionary<BasicBlock, long> SmoothedSamples => _smoothedSamples;
+        public IReadOnlyDictionary<(BasicBlock, BasicBlock), long> SmoothedEdgeSamples => _smoothedEdgeSamples;
+        public long AttributedSamples { get; set; }
 
-        /// <summary>
-        /// Given pairs of runs (as relative IPs in this function), create a sample profile.
-        /// </summary>
-        public static SampleProfile CreateFromLbr(MethodIL il, FlowGraph fg, NativeToILMap map, IEnumerable<(uint fromRva, uint toRva, long count)> runs)
+        public bool TryAttributeSamples(int ilOffset, long count)
         {
-            Dictionary<BasicBlock, long> bbSamples = fg.BasicBlocks.ToDictionary(bb => bb, bb => 0L);
-            foreach ((uint from, uint to, long count) in runs)
-            {
-                foreach (BasicBlock bb in map.LookupRange(from, to).Select(fg.Lookup).Distinct())
-                {
-                    if (bb != null)
-                        bbSamples[bb] += count;
-                }
-            }
+            BasicBlock bb = FlowGraph.Lookup(ilOffset);
+            if (bb == null)
+                return false;
 
-            FlowSmoothing<BasicBlock> flowSmooth = new FlowSmoothing<BasicBlock>(bbSamples, fg.Lookup(0), bb => bb.Targets, (bb, isForward) => bb.Size * (isForward ? 1 : 50) + 2);
-            flowSmooth.Perform();
-
-            return new SampleProfile(il, fg, bbSamples, flowSmooth.NodeResults, flowSmooth.EdgeResults);
+            AttributeSamples(bb, count);
+            return true;
         }
 
-        /// <summary>
-        /// Given some IL offset samples into a method, construct a profile.
-        /// </summary>
-        public static SampleProfile Create(MethodIL il, FlowGraph fg, IEnumerable<int> ilOffsetSamples)
+        public void AttributeSamples(BasicBlock bb, long count)
         {
-            // Now associate raw IL-offset samples with basic blocks.
-            Dictionary<BasicBlock, long> bbSamples = fg.BasicBlocks.ToDictionary(bb => bb, bb => 0L);
-            foreach (int ofs in ilOffsetSamples)
-            {
-                if (ofs == -1)
-                    continue;
+            Debug.Assert(FlowGraph.Lookup(bb.Start) == bb);
+            CollectionsMarshal.GetValueRefOrAddDefault(_rawSamples, bb, out _) += count;
+            AttributedSamples += count;
+        }
 
-                BasicBlock bb = fg.Lookup(ofs);
-                if (bb != null)
-                    bbSamples[bb]++;
+        public void SmoothFlow()
+        {
+            foreach (BasicBlock bb in FlowGraph.BasicBlocks)
+            {
+                if (!_rawSamples.ContainsKey(bb))
+                    _rawSamples.Add(bb, 0);
             }
 
-            // Smooth the graph to produce something that satisfies flow conservation.
-            FlowSmoothing<BasicBlock> flowSmooth = new FlowSmoothing<BasicBlock>(bbSamples, fg.Lookup(0), bb => bb.Targets, (bb, isForward) => bb.Size * (isForward ? 1 : 50) + 2);
+            FlowSmoothing<BasicBlock> flowSmooth = new(_rawSamples, FlowGraph.Lookup(0), bb => bb.Targets, (bb, isForward) => bb.Size * (isForward ? 1 : 50) + 2);
             flowSmooth.Perform();
-
-            return new SampleProfile(il, fg, bbSamples, flowSmooth.NodeResults, flowSmooth.EdgeResults);
+            _smoothedSamples = flowSmooth.NodeResults;
+            _smoothedEdgeSamples = flowSmooth.EdgeResults;
         }
+
+        public override string ToString() => $"{AttributedSamples} samples";
     }
 }

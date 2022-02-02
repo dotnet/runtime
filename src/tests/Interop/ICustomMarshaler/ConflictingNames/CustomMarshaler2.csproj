@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>library</OutputType>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
     <DefineConstants>$(DefineConstants);CUSTOMMARSHALERS2</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

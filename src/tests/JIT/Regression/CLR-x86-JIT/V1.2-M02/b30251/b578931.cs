@@ -4,7 +4,7 @@
 
 using System;
 
-class Test
+class Test_b578931
 {
     static int Main()
     {

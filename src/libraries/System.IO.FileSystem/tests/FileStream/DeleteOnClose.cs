@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -10,6 +11,7 @@ namespace System.IO.Tests
     public class FileStream_DeleteOnClose : FileSystemTest
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled), nameof(PlatformDetection.IsThreadingSupported))]
+        [OuterLoop]
         public async Task OpenOrCreate_DeleteOnClose_UsableAsMutex()
         {
             var cts = new CancellationTokenSource();
@@ -62,6 +64,7 @@ namespace System.IO.Tests
                 }
             };
 
+            var sw = Stopwatch.StartNew();
             var tasks = new Task[50];
             for (int i = 0; i < tasks.Length; i++)
             {
@@ -69,12 +72,13 @@ namespace System.IO.Tests
             }
 
             // Wait for 1000 locks.
-            cts.CancelAfter(TimeSpan.FromSeconds(60)); // Test timeout.
+            cts.CancelAfter(TimeSpan.FromSeconds(240)); // Test timeout (reason for outerloop)
             Volatile.Write(ref locksRemaining, 500);
             await Task.WhenAll(tasks);
+            sw.Stop();
 
             Assert.True(exclusive, "Exclusive");
-            Assert.False(cts.IsCancellationRequested, "Test cancelled");
+            Assert.False(cts.IsCancellationRequested, $"Test cancelled with {locksRemaining}/500 locks remaining after {sw.Elapsed.TotalSeconds} seconds");
             Assert.False(File.Exists(path), "File exists");
         }
     }

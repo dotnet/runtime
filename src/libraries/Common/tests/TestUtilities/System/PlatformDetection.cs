@@ -28,6 +28,7 @@ namespace System
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
         public static bool IsNotMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") != "aot";
+        public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
@@ -38,8 +39,10 @@ namespace System
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsNotBrowser => !IsBrowser;
-        public static bool IsMobile => IsBrowser || IsMacCatalyst || IsiOS || IstvOS || IsAndroid;
+        public static bool IsMobile => IsBrowser || IsAppleMobile || IsAndroid;
         public static bool IsNotMobile => !IsMobile;
+        public static bool IsAppleMobile => IsMacCatalyst || IsiOS || IstvOS;
+        public static bool IsNotAppleMobile => !IsAppleMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
@@ -48,24 +51,34 @@ namespace System
         public static bool IsNotArm64Process => !IsArm64Process;
         public static bool IsArmOrArm64Process => IsArmProcess || IsArm64Process;
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
-        public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess);
+        public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
+        public static bool IsNotX86Process => !IsX86Process;
+        public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess && !IsNativeAot);
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
-        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
+#if NETCOREAPP
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                                                                     && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
+#else
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
+#endif
+        
         public static bool IsThreadingSupported => !IsBrowser;
-        public static bool IsBinaryFormatterSupported => IsNotMobile;
+        public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
+        public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
 
         public static bool IsSpeedOptimized => !IsSizeOptimized;
-        public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsiOS || IstvOS || IsMacCatalyst;
+        public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsAppleMobile;
 
-        public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
-        public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || GetIsBrowserDomSupported();
+        public static bool IsBrowserDomSupported => IsEnvironmentVariableTrue("IsBrowserDomSupported");
+        public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
+        public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
 
@@ -77,70 +90,43 @@ namespace System
         private static readonly Lazy<bool> s_LinqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
         private static bool GetLinqExpressionsBuiltWithIsInterpretingOnly()
         {
-            Type type = typeof(LambdaExpression);
-            if (type != null)
-            {
-                // The "Accept" method is under FEATURE_COMPILE conditional so it should not exist
-                MethodInfo methodInfo = type.GetMethod("Accept", BindingFlags.NonPublic | BindingFlags.Static);
-                return methodInfo == null;
-            }
-
-            return false;
+            return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
         }
 
-        // Please make sure that you have the libgdiplus dependency installed.
-        // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
-        public static bool IsDrawingSupported
-        {
-            get
-            {
-#if NETCOREAPP
-                if (!IsWindows)
-                {
-                    if (IsMobile)
-                    {
-                        return false;
-                    }
-                    else if (IsOSX)
-                    {
-                        return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
-                    }
-                    else
-                    {
-                       return NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
-                    }
-                }
-#endif
-
-                return IsNotWindowsNanoServer && IsNotWindowsServerCore;
-
-            }
-        }
+        // Drawing is not supported on non windows platforms in .NET 7.0+.
+        public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore;
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !(IsWindows && IsMonoRuntime); // https://github.com/dotnet/runtime/issues/34582
 
-        public static bool IsLineNumbersSupported => true;
+        public static bool IsLineNumbersSupported => !IsNativeAot;
 
         public static bool IsInContainer => GetIsInContainer();
-        public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime; // matches definitions in clr.featuredefines.props
+        public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
         public static bool SupportsSsl3 => GetSsl3Support();
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
 #if NETCOREAPP
         public static bool IsReflectionEmitSupported => RuntimeFeature.IsDynamicCodeSupported;
+        public static bool IsNotReflectionEmitSupported => !IsReflectionEmitSupported;
 #else
         public static bool IsReflectionEmitSupported => true;
 #endif
 
-        public static bool IsInvokingStaticConstructorsSupported => true;
+        public static bool IsInvokingStaticConstructorsSupported => !IsNativeAot;
+
+        public static bool IsMetadataUpdateSupported => !IsNativeAot;
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit
-        public static bool IsXmlDsigXsltTransformSupported => !PlatformDetection.IsInAppContainer;
+        public static bool IsXmlDsigXsltTransformSupported => !PlatformDetection.IsInAppContainer && IsReflectionEmitSupported;
 
         public static bool IsPreciseGcSupported => !IsMonoRuntime;
 
         public static bool IsNotIntMaxValueArrayIndexSupported => s_largeArrayIsNotSupported.Value;
+
+        public static bool IsAssemblyLoadingSupported => !IsNativeAot;
+        public static bool IsMethodBodySupported => !IsNativeAot;
+        public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
@@ -164,6 +150,28 @@ namespace System
             }
         }
 
+        private static volatile Tuple<bool> s_lazyMetadataTokensSupported;
+        public static bool IsMetadataTokenSupported
+        {
+            get
+            {
+                if (s_lazyMetadataTokensSupported == null)
+                {
+                    bool metadataTokensSupported = false;
+                    try
+                    {
+                        _ = typeof(PlatformDetection).MetadataToken;
+                        metadataTokensSupported = true;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+                    s_lazyMetadataTokensSupported = Tuple.Create<bool>(metadataTokensSupported);
+                }
+                return s_lazyMetadataTokensSupported.Item1;
+            }
+        }
+
         public static bool IsDomainJoinedMachine => !Environment.MachineName.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase);
         public static bool IsNotDomainJoinedMachine => !IsDomainJoinedMachine;
 
@@ -174,6 +182,7 @@ namespace System
 
         // Changed to `true` when linking
         public static bool IsBuiltWithAggressiveTrimming => false;
+        public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
@@ -189,7 +198,12 @@ namespace System
 
             if (IsOpenSslSupported)
             {
-                return OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
+                if (OpenSslVersion.Major >= 3)
+                {
+                    return true;
+                }
+                
+                return OpenSslVersion.Major == 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
             }
 
             if (IsAndroid)
@@ -467,12 +481,12 @@ namespace System
 #endif
         }
 
-        private static bool GetIsBrowserDomSupported()
+        private static bool IsEnvironmentVariableTrue(string variableName)
         {
             if (!IsBrowser)
                 return false;
 
-            var val = Environment.GetEnvironmentVariable("IsBrowserDomSupported");
+            var val = Environment.GetEnvironmentVariable(variableName);
             return (val != null && val == "true");
         }
     }

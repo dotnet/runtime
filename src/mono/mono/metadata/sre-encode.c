@@ -2,8 +2,8 @@
  * \file
  * Routines for encoding SRE builders into a
  * MonoDynamicImage and generating tokens.
- *   
- * 
+ *
+ *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *
@@ -161,8 +161,8 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 		g_assert_not_reached ();
 		return;
 	}
-		
-	if (type->byref)
+
+	if (m_type_is_byref (type))
 		sigbuffer_add_value (buf, MONO_TYPE_BYREF);
 
 	switch (type->type){
@@ -343,13 +343,13 @@ handle_enum:
 		break;
 	case MONO_TYPE_VALUETYPE: {
 		MonoClass *klass = val->vtable->klass;
-		
+
 		if (m_class_is_enumtype (klass)) {
 			*ret_type = mono_class_enum_basetype_internal (klass)->type;
 			goto handle_enum;
 		} else if (mono_is_corlib_image (m_class_get_image (klass)) && strcmp (m_class_get_name_space (klass), "System") == 0 && strcmp (m_class_get_name (klass), "DateTime") == 0) {
 			len = 8;
-		} else 
+		} else
 			g_error ("we can't encode valuetypes, we should have never reached this line");
 		break;
 	}
@@ -422,7 +422,7 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoDynamicTable *table;
-	guint32 token, scope, enclosing;
+	guint32 token, enclosing;
 	MonoClass *klass;
 
 	/* if the type requires a typespec, we must try that first*/
@@ -438,7 +438,7 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 	/*
 	 * If it's in the same module and not a generic type parameter:
 	 */
-	if ((m_class_get_image (klass) == &assembly->image) && (type->type != MONO_TYPE_VAR) && 
+	if ((m_class_get_image (klass) == &assembly->image) && (type->type != MONO_TYPE_VAR) &&
 			(type->type != MONO_TYPE_MVAR)) {
 		token = MONO_TYPEDEFORREF_TYPEDEF | (MONO_HANDLE_GETVAL (tb, table_idx) << MONO_TYPEDEFORREF_BITS);
 		/* This function is called multiple times from sre and sre-save, so same object is okay */
@@ -450,9 +450,6 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 		enclosing = mono_dynimage_encode_typedef_or_ref_full (assembly, m_class_get_byval_arg (m_class_get_nested_in (klass)), FALSE);
 		/* get the typeref idx of the enclosing type */
 		enclosing >>= MONO_TYPEDEFORREF_BITS;
-		scope = (enclosing << MONO_RESOLUTION_SCOPE_BITS) | MONO_RESOLUTION_SCOPE_TYPEREF;
-	} else {
-		scope = mono_reflection_resolution_scope_from_image (assembly, m_class_get_image (klass));
 	}
 	table = &assembly->tables [MONO_TABLE_TYPEREF];
 	token = MONO_TYPEDEFORREF_TYPEREF | (table->next_idx << MONO_TYPEDEFORREF_BITS); /* typeref */

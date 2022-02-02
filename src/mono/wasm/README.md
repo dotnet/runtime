@@ -2,7 +2,7 @@
 
 This depends on `emsdk` to be installed.
 
-## emsdk on mac
+## emsdk on macOS
 
 * You can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk` .
 Note: Irrespective of `$(EMSDK_PATH)`'s value, `provision-wasm` will always install into `$reporoot/src/mono/wasm/emsdk`.
@@ -17,13 +17,7 @@ Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.23
 
 Make sure to set `EMSDK_PATH` variable, whenever building, or running tests for wasm.
 
-### Windows dependencies
-
-Windows build [requirements](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md)
-
-If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically during the build.
-
-## Building on mac
+## Building on macOS
 
 * To build the whole thing, with libraries:
 
@@ -33,9 +27,17 @@ If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically duri
 
 `make runtime`
 
-### Note: Additional msbuild arguments can be passed with: `make build-all MSBUILD_ARGS="/p:a=b"`
+**Note:** Additional msbuild arguments can be passed with: `make build-all MSBUILD_ARGS="/p:a=b"`
 
-### Bulding on windows
+## emsdk on Windows
+
+Windows build [requirements](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md)
+
+If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically during the build.
+
+**Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/wasm/emsdk` directory should be manually deleted and then a rebuild attempted.
+
+## Bulding on Windows
 
 * To build everything
 
@@ -47,7 +49,7 @@ If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically duri
 
 The latest engines can be installed with jsvu (JavaScript engine Version Updater https://github.com/GoogleChromeLabs/jsvu)
 
-### Mac
+### macOS
 
 * Install npm with brew:
 
@@ -83,7 +85,7 @@ Add `~/.jsvu` to your `PATH`:
 
 Library tests can be run with js engines: `v8`, `SpiderMonkey`,or `JavaScriptCore`:
 
-### Mac
+### macOS
 
 * `v8`: `make run-tests-v8-$(lib_name)`
 * SpiderMonkey: `make run-tests-sm-$(lib_name)`
@@ -105,7 +107,7 @@ Examples of running tests for individual libraries:
 `.\dotnet.cmd build /t:Test /p:TargetOS=Browser src\libraries\System.Collections.Concurrent\tests`
 `.\dotnet.cmd build /t:Test /p:TargetOS=Browser /p:JSEngine="SpiderMonkey" src\libraries\System.Text.Json\tests`
 
-### Browser tests on mac
+### Browser tests on macOS
 
 Or they can be run with a browser (Chrome):
 
@@ -125,9 +127,9 @@ The wrapper script used to actually run these tests, accepts:
 
 * set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/netcoreapp3.1/Microsoft.DotNet.XHarness.CLI.dll`
 
-### Note: Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
+**Note:** Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 
-## Debugger tests on mac
+## Debugger tests on macOS
 
 Debugger tests need `Google Chrome` to be installed.
 
@@ -147,15 +149,37 @@ The samples in `src/mono/sample/wasm` can be build and run like this:
 
 * console Hello world sample
 
-`dotnet build /t:RunSample console/Wasm.Console.Sample.csproj`
+`dotnet build /t:RunSample console-v8-cjs/Wasm.Console.V8.CJS.Sample.csproj`
 
 * browser TestMeaning sample
 
-`dotnet build /t:RunSample browser/Wasm.Browser.Sample.csproj`
+`dotnet build /t:RunSample browser/Wasm.Browser.CJS.Sample.csproj`
 
 To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the above command lines.
 
-### Upgrading Emscripten
+* bench sample
+
+Also check [bench](../sample/wasm/browser-bench/README.md) sample to measure mono/wasm runtime performance.
+
+## Templates
+
+The wasm templates, located in the `templates` directory, are templates for `dotnet new`, VS and VS for Mac. They are packaged and distributed as part of the `wasm-tools` workload. We have 2 templates, `wasmbrowser` and `wasmconsole`, for browser and console WebAssembly applications.
+
+For details about using `dotnet new` see the dotnet tool [documentation](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-new).
+
+To test changes in the templates, use `dotnet new -i <path>`.
+
+Example use of the `wasmconsole` template:
+
+    > dotnet new wasmconsole
+    > dotnet publish
+    > cd bin/Debug/net7.0/browser-wasm/AppBundle
+    > node main.cjs
+    mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
+    Hello World!
+    Args:
+
+## Upgrading Emscripten
 
 Bumping Emscripten version involves these steps:
 

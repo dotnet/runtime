@@ -51,4 +51,4 @@ FAIL:
 	ret
 }
 }
-.assembly bgt_u.exe{}
+.assembly bgt_u{}

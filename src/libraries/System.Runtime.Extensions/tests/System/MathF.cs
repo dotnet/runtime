@@ -1063,6 +1063,16 @@ namespace System.Tests
         [InlineData(6.58088599f, 2)]
         [InlineData(8.82497783f, 3)]
         [InlineData(float.PositiveInfinity, unchecked((int)(0x7FFFFFFF)))]
+        [InlineData(-8.066849f, 3)]
+        [InlineData(4.345240f, 2)]
+        [InlineData(-8.381433f, 3)]
+        [InlineData(-6.531673f, 2)]
+        [InlineData(9.267057f, 3)]
+        [InlineData(0.661986f, -1)]
+        [InlineData(-0.406604f, -2)]
+        [InlineData(0.561760f, -1)]
+        [InlineData(0.774152f, -1)]
+        [InlineData(-0.678764f, -1)]
         public static void ILogB(float value, int expectedResult)
         {
             Assert.Equal(expectedResult, MathF.ILogB(value));

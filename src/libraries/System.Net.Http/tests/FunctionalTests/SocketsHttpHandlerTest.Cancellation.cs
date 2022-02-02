@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -102,6 +103,97 @@ namespace System.Net.Http.Functional.Tests
                 }
             }, server => Task.CompletedTask, // doesn't actually connect to server
             options: new GenericLoopbackOptions() { UseSsl = false });
+        }
+
+        [OuterLoop]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(bool useSsl)
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support ConnectCallback
+                return;
+            }
+
+            if (!TestAsync)
+            {
+                // Test relies on ordering of async operations, so we can't test the sync case
+                return;
+            }
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                int connectCount = 0;
+
+                TaskCompletionSource tcsFirstConnectionInitiated = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource tcsFirstRequestCanceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                using (var handler = CreateHttpClientHandler())
+                using (var client = CreateHttpClient(handler))
+                {
+                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
+                    socketsHandler.ConnectCallback = async (context, token) =>
+                    {
+                        // Note we force serialization of connection creation by waiting on tcsFirstConnectionInitiated below,
+                        // so we don't need to worry about concurrent access to connectCount.
+                        bool isFirstConnection = connectCount == 0;
+                        connectCount++;
+
+                        Assert.True(connectCount <= 2);
+
+                        if (isFirstConnection)
+                        {
+                            tcsFirstConnectionInitiated.SetResult();
+                        }
+                        else
+                        {
+                            Assert.True(tcsFirstConnectionInitiated.Task.IsCompletedSuccessfully);
+                        }
+
+                        // Wait until first request is cancelled and has completed
+                        await tcsFirstRequestCanceled.Task;
+
+                        if (isFirstConnection)
+                        {
+                            // Fail the first connection attempt
+                            throw new Exception("Failing first connection");
+                        }
+                        else
+                        {
+                            // Succeed the second connection attempt
+                            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                            await socket.ConnectAsync(context.DnsEndPoint, token);
+                            return new NetworkStream(socket, ownsSocket: true);
+                        }
+                    };
+
+                    using CancellationTokenSource cts = new CancellationTokenSource();
+                    Task<HttpResponseMessage> t1 = client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact }, cts.Token);
+
+                    // Wait for the connection attempt to be initiated before we send the second request, to avoid races in connection creation
+                    await tcsFirstConnectionInitiated.Task;
+                    Task<HttpResponseMessage> t2 = client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact }, default);
+
+                    // Cancel the first message and wait for it to complete
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t1);
+
+                    // Signal connections to proceed
+                    tcsFirstRequestCanceled.SetResult();
+
+                    // Second request should succeed, even though the first connection failed
+                    HttpResponseMessage resp2 = await t2;
+                    Assert.Equal(HttpStatusCode.OK, resp2.StatusCode);
+                    Assert.Equal("Hello world", await resp2.Content.ReadAsStringAsync());
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync(content: "Hello world");
+            },
+            options: new GenericLoopbackOptions() { UseSsl = useSsl });
         }
 
         [OuterLoop("Incurs significant delay")]

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -38,99 +38,99 @@ $SED -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/DELEGAT
 {
 	.field  private  int32 dd
 
-	.method public virtual hidebysig instance default string ToString ()  cil managed 
+	.method public virtual hidebysig instance default string ToString ()  cil managed
 	{
 		.maxstack 8
 		ldstr "test"
-		ret 
+		ret
 	}
 
-	.method public hidebysig instance default void NonVirtMethod ()  cil managed 
+	.method public hidebysig instance default void NonVirtMethod ()  cil managed
 	{
 		.maxstack 8
-		ret 
+		ret
 	}
 
 }
 
 .class public auto ansi sealed ToStringDelegate extends [mscorlib]System.MulticastDelegate
 {
-	.method public hidebysig  specialname  rtspecialname 
-		instance default void .ctor (object 'object', native int 'method')  runtime managed 
+	.method public hidebysig  specialname  rtspecialname
+		instance default void .ctor (object 'object', native int 'method')  runtime managed
 	{
 	}
 
 	.method public virtual  hidebysig  newslot
-		instance default string Invoke ()  runtime managed 
+		instance default string Invoke ()  runtime managed
 	{
 	}
 
- 	.method public virtual  hidebysig  newslot 
-		instance default class [mscorlib]System.IAsyncResult BeginInvoke (class [mscorlib]System.AsyncCallback callback, object 'object')  runtime managed 
+ 	.method public virtual  hidebysig  newslot
+		instance default class [mscorlib]System.IAsyncResult BeginInvoke (class [mscorlib]System.AsyncCallback callback, object 'object')  runtime managed
 	{
 	}
 
-	.method public virtual  hidebysig  newslot 
-		instance default string EndInvoke (class [mscorlib]System.IAsyncResult result)  runtime managed 
+	.method public virtual  hidebysig  newslot
+		instance default string EndInvoke (class [mscorlib]System.IAsyncResult result)  runtime managed
 	{
 	}
 }
 
 .class public auto ansi sealed DelegateNoArg extends [mscorlib]System.MulticastDelegate
 {
-	.method public hidebysig  specialname  rtspecialname 
-		instance default void .ctor (object 'object', native int 'method')  runtime managed 
+	.method public hidebysig  specialname  rtspecialname
+		instance default void .ctor (object 'object', native int 'method')  runtime managed
 	{
 	}
 
 	.method public virtual  hidebysig  newslot
-		instance default void Invoke ()  runtime managed 
+		instance default void Invoke ()  runtime managed
 	{
 	}
 
- 	.method public virtual  hidebysig  newslot 
-		instance default class [mscorlib]System.IAsyncResult BeginInvoke (class [mscorlib]System.AsyncCallback callback, object 'object')  runtime managed 
+ 	.method public virtual  hidebysig  newslot
+		instance default class [mscorlib]System.IAsyncResult BeginInvoke (class [mscorlib]System.AsyncCallback callback, object 'object')  runtime managed
 	{
 	}
 
-	.method public virtual  hidebysig  newslot 
-		instance default void EndInvoke (class [mscorlib]System.IAsyncResult result)  runtime managed 
+	.method public virtual  hidebysig  newslot
+		instance default void EndInvoke (class [mscorlib]System.IAsyncResult result)  runtime managed
 	{
 	}
-} 
+}
 
 .class public auto ansi sealed DelegateIntArg extends [mscorlib]System.MulticastDelegate
 {
-	.method public hidebysig  specialname  rtspecialname 
-		instance default void .ctor (object 'object', native int 'method')  runtime managed 
+	.method public hidebysig  specialname  rtspecialname
+		instance default void .ctor (object 'object', native int 'method')  runtime managed
 	{
 	}
 
 	.method public virtual  hidebysig  newslot
-		instance default void Invoke (int32 d)  runtime managed 
+		instance default void Invoke (int32 d)  runtime managed
 	{
 	}
 
- 	.method public virtual  hidebysig  newslot 
-		instance default class [mscorlib]System.IAsyncResult BeginInvoke (int32 d, class [mscorlib]System.AsyncCallback callback, object 'object')  runtime managed 
+ 	.method public virtual  hidebysig  newslot
+		instance default class [mscorlib]System.IAsyncResult BeginInvoke (int32 d, class [mscorlib]System.AsyncCallback callback, object 'object')  runtime managed
 	{
 	}
 
-	.method public virtual  hidebysig  newslot 
-		instance default void EndInvoke (class [mscorlib]System.IAsyncResult result)  runtime managed 
+	.method public virtual  hidebysig  newslot
+		instance default void EndInvoke (class [mscorlib]System.IAsyncResult result)  runtime managed
 	{
 	}
-} 
+}
 
 .class public Parent
   	extends [mscorlib]System.Object
 {
-	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed
 	{
 		.maxstack 8
 		ldarg.0
 		call instance void object::.ctor()
-		ret 
+		ret
 	}
 
 	.method public virtual void VirtMethod ()
@@ -163,12 +163,12 @@ $SED -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/DELEGAT
 .class public auto ansi beforefieldinit Driver
         extends Parent
 {
-	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed
 	{
 		.maxstack 8
 		ldarg.0
 		call instance void Parent::.ctor()
-		ret 
+		ret
 	}
 
 	.method public static void Method ()
@@ -210,7 +210,7 @@ $SED -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/DELEGAT
 	{
 		.maxstack 8
 		.locals init (MyValueType V_0)
-	
+
 		OPCODE
 		LDFTN_OP
 DELEGATE_OP:
@@ -234,11 +234,11 @@ DELEGATE_OP:
 		{
 			pop
 			leave END
-	
+
 		}
 END:
 		ldc.i4.0
-		ret 
+		ret
 
 	}
 }

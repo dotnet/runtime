@@ -6,7 +6,7 @@
 
 Testing that generic argument types for co/contravariant generic types are boxed
 (VSW 543506)
-Test: under Loader\ClassLoader\Generics\Variance\IL
+Test_vsw543506: under Loader\ClassLoader\Generics\Variance\IL
 Positive and negative tests on casting valuetype instantiations such as
 Positive:
 "	IPos<int> is castable to IPos<int>   (exact match on value types)
@@ -34,7 +34,7 @@ public class C<T> : IPos<T>, INeg<T>
 enum intEnum : int {}
 enum uintEnum : uint {}
 
-class Test
+class Test_vsw543506
 {
 
 	public static bool pass;

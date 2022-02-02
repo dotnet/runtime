@@ -43,7 +43,7 @@ CorTypeInfo::FindPrimitiveType(LPCUTF8 name)
 
     _ASSERTE(name != NULL);
 
-    for (unsigned int i = 1; i < _countof(CorTypeInfo::info); i++)
+    for (unsigned int i = 1; i < ARRAY_SIZE(CorTypeInfo::info); i++)
     {   // can skip ELEMENT_TYPE_END (index 0)
         if ((info[i].className != NULL) && (strcmp(name, info[i].className) == 0))
             return (CorElementType)i;
@@ -2553,7 +2553,7 @@ UINT MetaSig::GetElemSize(CorElementType etype, TypeHandle thValueType)
     }
     CONTRACTL_END
 
-    if ((UINT)etype >= COUNTOF(gElementTypeInfo))
+    if ((UINT)etype >= ARRAY_SIZE(gElementTypeInfo))
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_COMPLUS_SIG);
 
     int cbsize = gElementTypeInfo[(UINT)etype].m_cbSize;
@@ -2728,7 +2728,7 @@ HRESULT TypeIdentifierData::Init(Module *pModule, mdToken tk)
 
             args[0].Init(SERIALIZATION_TYPE_STRING, 0);
             args[1].Init(SERIALIZATION_TYPE_STRING, 0);
-            IfFailRet(ParseKnownCaArgs(caType, args, lengthof(args)));
+            IfFailRet(ParseKnownCaArgs(caType, args, ARRAY_SIZE(args)));
 
             m_cbScope = args[0].val.str.cbStr;
             m_pchScope = args[0].val.str.pStr;
@@ -3547,7 +3547,7 @@ ErrExit:
 #ifdef DACCESS_COMPILE
     ThrowHR(hr);
 #else
-    EEFileLoadException::Throw(pModule2->GetFile(), hr);
+    EEFileLoadException::Throw(pModule2->GetPEAssembly(), hr);
 #endif //!DACCESS_COMPILE
 } // CompareTypeTokens
 
@@ -4903,20 +4903,67 @@ void PromoteCarefully(promote_func   fn,
     (*fn) (ppObj, sc, flags);
 }
 
+class ByRefPointerOffsetsReporter
+{
+    promote_func* _fn;
+    ScanContext* _sc;
+    PTR_VOID _src;
+
+    void Report(SIZE_T pointerOffset)
+    {
+        WRAPPER_NO_CONTRACT;
+        PTR_PTR_Object fieldRef = dac_cast<PTR_PTR_Object>(PTR_BYTE(_src) + pointerOffset);
+        (*_fn)(fieldRef, _sc, GC_CALL_INTERIOR);
+    }
+
+public:
+    ByRefPointerOffsetsReporter(promote_func* fn, ScanContext* sc, PTR_VOID pSrc)
+        : _fn{fn}
+        , _sc{sc}
+        , _src{pSrc}
+    {
+        WRAPPER_NO_CONTRACT;
+    }
+
+    void Find(PTR_MethodTable pMT, SIZE_T baseOffset)
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(pMT != nullptr);
+        _ASSERTE(pMT->IsByRefLike());
+
+        if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
+        {
+            Report(baseOffset);
+            return;
+        }
+
+        ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+        for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+        {
+            if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+            {
+                PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+                if (pFieldMT->IsByRefLike())
+                {
+                    Find(pFieldMT, baseOffset + pFD->GetOffset());
+                }
+            }
+            else if (pFD->IsByRef())
+            {
+                Report(baseOffset + pFD->GetOffset());
+            }
+        }
+    }
+};
+
 void ReportPointersFromValueType(promote_func *fn, ScanContext *sc, PTR_MethodTable pMT, PTR_VOID pSrc)
 {
     WRAPPER_NO_CONTRACT;
 
     if (pMT->IsByRefLike())
     {
-        FindByRefPointerOffsetsInByRefLikeObject(
-            pMT,
-            0 /* baseOffset */,
-            [&](SIZE_T pointerOffset)
-            {
-                PTR_PTR_Object fieldRef = dac_cast<PTR_PTR_Object>(PTR_BYTE(pSrc) + pointerOffset);
-                (*fn)(fieldRef, sc, GC_CALL_INTERIOR);
-            });
+        ByRefPointerOffsetsReporter reporter{fn, sc, pSrc};
+        reporter.Find(pMT, 0 /* baseOffset */);
     }
 
     if (!pMT->ContainsPointers())

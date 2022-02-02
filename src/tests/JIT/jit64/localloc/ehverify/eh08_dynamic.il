@@ -6,10 +6,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 .assembly extern mscorlib{}
-.assembly extern common{}
-.assembly eh05{}
+.assembly extern localloc_common{}
+.assembly 'eh08_dynamic'{}
 
 .class private auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object
@@ -26,7 +27,7 @@
 	fault
 	{
     IL_0000:  ldc.i4.4
-    IL_0001:  ldsfld     int32 [common]LocallocTesting.Global::stackAllocSize
+    IL_0001:  ldsfld     int32 [localloc_common]LocallocTesting.Global::stackAllocSize
     IL_0006:  mul
     IL_0007:  localloc
     IL_0009:  stloc.0
@@ -37,6 +38,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  1
     .locals init (int32 retValue)

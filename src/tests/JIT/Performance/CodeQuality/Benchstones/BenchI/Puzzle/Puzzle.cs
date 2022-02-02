@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.BenchI
 {
@@ -363,19 +359,6 @@ public class Puzzle
         }
 
         return result;
-    }
-
-    [Benchmark]
-    public static void Test()
-    {
-        Puzzle P = new Puzzle();
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                P.Bench();
-            }
-        }
     }
 
     private static bool TestBase()

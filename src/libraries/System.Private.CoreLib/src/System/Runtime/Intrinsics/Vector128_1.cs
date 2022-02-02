@@ -69,6 +69,8 @@ namespace System.Runtime.Intrinsics
                    (typeof(T) == typeof(short)) ||
                    (typeof(T) == typeof(int)) ||
                    (typeof(T) == typeof(long)) ||
+                   (typeof(T) == typeof(nint)) ||
+                   (typeof(T) == typeof(nuint)) ||
                    (typeof(T) == typeof(sbyte)) ||
                    (typeof(T) == typeof(float)) ||
                    (typeof(T) == typeof(ushort)) ||
@@ -103,6 +105,8 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        public T this[int index] => this.GetElement(index);
+
         /// <summary>Adds two vectors to compute their sum.</summary>
         /// <param name="left">The vector to add with <paramref name="right" />.</param>
         /// <param name="right">The vector to add with <paramref name="left" />.</param>
@@ -114,7 +118,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -164,7 +168,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -224,7 +228,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -242,7 +246,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right);
+                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right);
                 result.SetElementUnsafe(index, value);
             }
 
@@ -276,7 +280,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -369,7 +373,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Count; i++)
             {
-                var value = this.GetElement(i);
+                T value = this.GetElement(i);
                 hashCode.Add(value);
             }
 

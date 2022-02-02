@@ -135,7 +135,7 @@ namespace System.Xml.Serialization
             if (qname == null || qname.IsEmpty)
                 return null;
 
-            string key = item.GetType().Name + ":" + qname.ToString();
+            string key = $"{item.GetType().Name}:{qname}";
             ArrayList? list = (ArrayList?)ObjectCache[key];
             if (list == null)
             {
@@ -156,7 +156,7 @@ namespace System.Xml.Serialization
                 else
                 {
                     Warnings.Add(SR.Format(SR.XmlMismatchSchemaObjects, item.GetType().Name, qname.Name, qname.Namespace));
-                    Warnings.Add("DEBUG:Cached item key:\r\n" + (string?)looks[cachedItem] + "\r\nnew item key:\r\n" + (string?)looks[item]);
+                    Warnings.Add($"DEBUG:Cached item key:\r\n{(string?)looks[cachedItem]}\r\nnew item key:\r\n{(string?)looks[item]}");
                 }
             }
             // no match found we need to insert the new type in the cache
@@ -512,8 +512,7 @@ namespace System.Xml.Serialization
                         XmlAttribute attribute = attrs[i];
                         if (attribute.LocalName == Wsdl.ArrayType && attribute.NamespaceURI == Wsdl.Namespace)
                         {
-                            string dims;
-                            XmlQualifiedName qname = TypeScope.ParseWsdlArrayType(attribute.Value, out dims, item);
+                            XmlQualifiedName qname = TypeScope.ParseWsdlArrayType(attribute.Value, out _, item);
                             XmlSchemaType? type = (XmlSchemaType?)_schemas.Find(qname, typeof(XmlSchemaType), false);
                             AddRef(refs, type);
                         }

@@ -567,26 +567,6 @@ public:
                 PopValue();
                 break;
 
-            case GT_DYN_BLK:
-                assert(TopValue(2).Node() == node);
-                assert(TopValue(1).Node() == node->AsDynBlk()->Addr());
-                assert(TopValue(0).Node() == node->AsDynBlk()->gtDynamicSize);
-
-                // The block size may be the result of an indirection so we need
-                // to escape the location that may be associated with it.
-                EscapeValue(TopValue(0), node);
-
-                if (!TopValue(2).Indir(TopValue(1)))
-                {
-                    // If the address comes from another indirection (e.g. DYN_BLK(IND(...))
-                    // then we need to escape the location.
-                    EscapeLocation(TopValue(1), node);
-                }
-
-                PopValue();
-                PopValue();
-                break;
-
             case GT_RETURN:
                 if (TopValue(0).Node() != node)
                 {
@@ -829,14 +809,13 @@ private:
     //    user - the node that uses the indirection
     //
     // Notes:
-    //    This returns 0 for indirection of unknown size, typically GT_DYN_BLK.
-    //    GT_IND nodes that have type TYP_STRUCT are expected to only appears
-    //    on the RHS of an assignment, in which case the LHS size will be used instead.
-    //    Otherwise 0 is returned as well.
+    //    This returns 0 for indirection of unknown size. GT_IND nodes that have type
+    //    TYP_STRUCT are expected to only appears on the RHS of an assignment, in which
+    //    case the LHS size will be used instead. Otherwise 0 is returned as well.
     //
     unsigned GetIndirSize(GenTree* indir, GenTree* user)
     {
-        assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_DYN_BLK, GT_FIELD));
+        assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_FIELD));
 
         if (indir->TypeGet() != TYP_STRUCT)
         {
@@ -883,7 +862,7 @@ private:
             case GT_OBJ:
                 return indir->AsBlk()->GetLayout()->GetSize();
             default:
-                assert(indir->OperIs(GT_IND, GT_DYN_BLK));
+                assert(indir->OperIs(GT_IND));
                 return 0;
         }
     }

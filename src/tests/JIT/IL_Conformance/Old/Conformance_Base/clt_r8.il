@@ -449,4 +449,4 @@ FAIL:
 	ret
 }
 }
-.assembly clt_r8.exe{}
+.assembly clt_r8{}

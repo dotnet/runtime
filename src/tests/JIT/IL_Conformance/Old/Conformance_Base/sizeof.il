@@ -53,4 +53,4 @@ FAIL:
 	ret
 }
 }
-.assembly sizeof.exe{}
+.assembly 'sizeof'{}

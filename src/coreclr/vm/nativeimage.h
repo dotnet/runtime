@@ -57,7 +57,7 @@ public:
 };
 
 class ReadyToRunInfo;
-class PEFile;
+class PEAssembly;
 class PEImage;
 
 // This class represents a  ReadyToRun image with native OS-specific envelope. As of today,
@@ -93,6 +93,7 @@ private:
 
 private:
     NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
+    void AddComponentAssemblyToCache(Assembly *assembly);
 
 protected:
     void Initialize(READYTORUN_HEADER *header, LoaderAllocator *loaderAllocator, AllocMemTracker *pamTracker);

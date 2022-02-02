@@ -10,6 +10,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 5:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
@@ -42,7 +43,6 @@
   .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module more_tailcalls.dll
 // MVID: {81332D24-430E-4E25-88E2-383124EB3597}
 .custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
@@ -949,6 +949,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       1835 (0x72b)
     .maxstack  4

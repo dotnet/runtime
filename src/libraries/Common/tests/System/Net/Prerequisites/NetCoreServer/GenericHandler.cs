@@ -83,6 +83,11 @@ namespace NetCoreServer
                 await TestHandler.InvokeAsync(context);
                 return;
             }
+            if (path.Equals(new PathString("/large.ashx")))
+            {
+                await LargeResponseHandler.InvokeAsync(context);
+                return;
+            }
 
             // Default handling.
             await EchoHandler.InvokeAsync(context);

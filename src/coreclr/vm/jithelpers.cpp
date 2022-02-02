@@ -529,16 +529,8 @@ ftype BankersRound(ftype value)
     if ((value -(integerPart +0.5)) == 0.0)
     {
         // round to even
-#if defined(TARGET_ARM) && defined(FEATURE_CORESYSTEM)
-        // @ARMTODO: On ARM when building on CoreSystem (where we link against the system CRT) an attempt to
-        // use fmod(float, float) fails to link (apparently this is converted to a reference to fmodf, which
-        // is not included in the system CRT). Use the double version instead.
-        if (fmod(double(integerPart), double(2.0)) == 0.0)
-            return integerPart;
-#else
         if (fmod(ftype(integerPart), ftype(2.0)) == 0.0)
             return integerPart;
-#endif
 
         // Else return the nearest even integer
         return (ftype)_copysign(ceil(fabs(value+0.5)),
@@ -1442,7 +1434,7 @@ HCIMPL2(void*, JIT_GetSharedNonGCStaticBaseDynamicClass_Helper, DomainLocalModul
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    MethodTable *pMT = pLocalModule->GetDomainFile()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
+    MethodTable *pMT = pLocalModule->GetDomainAssembly()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
     _ASSERTE(pMT);
 
     pMT->CheckRunClassInitThrowing();
@@ -1464,7 +1456,7 @@ HCIMPL2(void*, JIT_GetSharedNonGCStaticBaseDynamicClass, DomainLocalModule *pLoc
     if (pLocalInfo != NULL)
     {
         PTR_BYTE retval;
-        GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pLocalModule->GetDomainFile()->GetModule()->GetLoaderAllocator(),
+        GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
                                                pLocalInfo,
                                                &retval);
 
@@ -1486,7 +1478,7 @@ HCIMPL2(void, JIT_ClassInitDynamicClass_Helper, DomainLocalModule *pLocalModule,
 
     HELPER_METHOD_FRAME_BEGIN_0();
 
-    MethodTable *pMT = pLocalModule->GetDomainFile()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
+    MethodTable *pMT = pLocalModule->GetDomainAssembly()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
     _ASSERTE(pMT);
 
     pMT->CheckRunClassInitThrowing();
@@ -1525,7 +1517,7 @@ HCIMPL2(void*, JIT_GetSharedGCStaticBaseDynamicClass_Helper, DomainLocalModule *
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    MethodTable *pMT = pLocalModule->GetDomainFile()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
+    MethodTable *pMT = pLocalModule->GetDomainAssembly()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
     _ASSERTE(pMT);
 
     pMT->CheckRunClassInitThrowing();
@@ -1547,7 +1539,7 @@ HCIMPL2(void*, JIT_GetSharedGCStaticBaseDynamicClass, DomainLocalModule *pLocalM
     if (pLocalInfo != NULL)
     {
         PTR_BYTE retval;
-        GET_DYNAMICENTRY_GCSTATICS_BASEPOINTER(pLocalModule->GetDomainFile()->GetModule()->GetLoaderAllocator(),
+        GET_DYNAMICENTRY_GCSTATICS_BASEPOINTER(pLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
                                                pLocalInfo,
                                                &retval);
 
@@ -1861,7 +1853,7 @@ HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBaseDynamicClass, DomainLocalModule
         if (pLocalInfo != NULL)
         {
             PTR_BYTE retval;
-            GET_DYNAMICENTRY_NONGCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainFile()->GetModule()->GetLoaderAllocator(),
+            GET_DYNAMICENTRY_NONGCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
                                                             pLocalInfo,
                                                             &retval);
             return retval;
@@ -1872,7 +1864,7 @@ HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBaseDynamicClass, DomainLocalModule
     // then we have to go through the slow path
 
     // Obtain the Module
-    Module * pModule = pDomainLocalModule->GetDomainFile()->GetModule();
+    Module * pModule = pDomainLocalModule->GetDomainAssembly()->GetModule();
 
     // Obtain the MethodTable
     MethodTable * pMT = pModule->GetDynamicClassMT(dwDynamicClassDomainID);
@@ -1909,7 +1901,7 @@ HCIMPL2(void*, JIT_GetSharedGCThreadStaticBaseDynamicClass, DomainLocalModule *p
         if (pLocalInfo != NULL)
         {
             PTR_BYTE retval;
-            GET_DYNAMICENTRY_GCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainFile()->GetModule()->GetLoaderAllocator(),
+            GET_DYNAMICENTRY_GCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
                                                          pLocalInfo,
                                                          &retval);
 
@@ -1921,7 +1913,7 @@ HCIMPL2(void*, JIT_GetSharedGCThreadStaticBaseDynamicClass, DomainLocalModule *p
     // then we have to go through the slow path
 
     // Obtain the Module
-    Module * pModule = pDomainLocalModule->GetDomainFile()->GetModule();
+    Module * pModule = pDomainLocalModule->GetDomainAssembly()->GetModule();
 
     // Obtain the MethodTable
     MethodTable * pMT = pModule->GetDynamicClassMT(dwDynamicClassDomainID);
@@ -2441,7 +2433,7 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
 
     Module* module = GetModule(scopeHnd);
-    return module->ResolveStringRef(metaTok, module->GetAssembly()->Parent(), false);
+    return module->ResolveStringRef(metaTok, module->GetAssembly()->Parent());
 }
 
 /*********************************************************************/
@@ -2639,74 +2631,8 @@ HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 }
 HCIMPLEND
 
-/*********************************************************************
-// Allocate a multi-dimensional array
-*/
-OBJECTREF allocNewMDArr(TypeHandle typeHnd, unsigned dwNumArgs, va_list args)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(dwNumArgs > 0);
-    } CONTRACTL_END;
-
-    // Get the arguments in the right order
-
-    INT32* fwdArgList;
-
-#ifdef TARGET_X86
-    fwdArgList = (INT32*)args;
-
-    // reverse the order
-    INT32* p = fwdArgList;
-    INT32* q = fwdArgList + (dwNumArgs-1);
-    while (p < q)
-    {
-        INT32 t = *p; *p = *q; *q = t;
-        p++; q--;
-    }
-#else
-    // create an array where fwdArgList[0] == arg[0] ...
-    fwdArgList = (INT32*) _alloca(dwNumArgs * sizeof(INT32));
-    for (unsigned i = 0; i < dwNumArgs; i++)
-    {
-        fwdArgList[i] = va_arg(args, INT32);
-    }
-#endif
-
-    return AllocateArrayEx(typeHnd, fwdArgList, dwNumArgs);
-}
-
-/*********************************************************************
-// Allocate a multi-dimensional array with lower bounds specified.
-// The caller pushes both sizes AND/OR bounds for every dimension
-*/
-
-HCIMPL2VA(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF    ret = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(ret);    // Set up a frame
-
-    TypeHandle typeHnd(classHnd);
-    typeHnd.CheckRestore();
-    _ASSERTE(typeHnd.GetMethodTable()->IsArray());
-
-    va_list dimsAndBounds;
-    va_start(dimsAndBounds, dwNumArgs);
-
-    ret = allocNewMDArr(typeHnd, dwNumArgs, dimsAndBounds);
-    va_end(dimsAndBounds);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(ret);
-}
-HCIMPLEND
-
 /*************************************************************/
-HCIMPL3(Object*, JIT_NewMDArrNonVarArg, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs, INT32 * pArgList)
+HCIMPL3(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs, INT32 * pArgList)
 {
     FCALL_CONTRACT;
 
@@ -5182,7 +5108,10 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 #endif
 
     SetSP(&frameContext, currentSP);
+
+#if defined(TARGET_AMD64)
     frameContext.Rbp = currentFP;
+#endif
 
     // Note we can get here w/o triggering, if there is an existing OSR method and
     // we hit the patchpoint.
@@ -5196,9 +5125,184 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     ClrRestoreNonvolatileContext(&frameContext);
 }
 
+// Jit helper invoked at a partial compilation patchpoint.
+//
+// Similar to Jit_Patchpoint, but invoked when execution
+// reaches a point in a method where the continuation
+// was never jitted (eg an exceptional path).
+//
+// Unlike regular patchpoints, partial compilation patchpoints
+// must always transitio.
+//
+void JIT_PartialCompilationPatchpoint(int ilOffset)
+{
+    // This method will not return normally
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    // Patchpoint identity is the helper return address
+    PCODE ip = (PCODE)_ReturnAddress();
+
+    // Fetch or setup patchpoint info for this patchpoint.
+    EECodeInfo codeInfo(ip);
+    MethodDesc* pMD = codeInfo.GetMethodDesc();
+    LoaderAllocator* allocator = pMD->GetLoaderAllocator();
+    OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
+    PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
+
+#if _DEBUG
+    const int ppId = ppInfo->m_patchpointId;
+#endif
+
+    // See if we have an OSR method for this patchpoint.
+    bool isNewMethod = false;
+    DWORD backoffs = 0;
+    while (ppInfo->m_osrMethodCode == NULL)
+    {
+        // Invalid patchpoints are fatal, for partial compilation patchpoints
+        //
+        if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_PartialCompilationPatchpoint: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                    ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        }
+
+        // Make sure no other thread is trying to create the OSR method.
+        //
+        LONG oldFlags = ppInfo->m_flags;
+        if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_PartialCompilationPatchpoint: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            __SwitchToThread(0, backoffs++);
+            continue;
+        }
+
+        // Make sure we win the race to create the OSR method
+        //
+        LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
+        BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
+
+        if (!triggerTransition)
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_PartialCompilationPatchpoint: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            __SwitchToThread(0, backoffs++);
+            continue;
+        }
+
+        // Invoke the helper to build the OSR method
+        //
+        // TODO: may not want to optimize this part of the method, if it's truly partial compilation
+        // and can't possibly rejoin into the main flow.
+        //
+        // (but consider: throw path in method with try/catch, OSR method will contain more than just the throw?)
+        //
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_PartialCompilationPatchpoint: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
+        PCODE newMethodCode = HCCALL3(JIT_Patchpoint_Framed, pMD, codeInfo, ilOffset);
+
+        // If that failed, mark the patchpoint as invalid.
+        // This is fatal, for partial compilation patchpoints
+        //
+        if (newMethodCode == NULL)
+        {
+            STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_PartialCompilationPatchpoint: patchpoint (0x%p) OSR method creation failed,"
+                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
+            InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+            break;
+        }
+
+        // We've successfully created the osr method; make it available.
+        _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+        ppInfo->m_osrMethodCode = newMethodCode;
+        isNewMethod = true;
+    }
+
+    // If we get here, we have code to transition to...
+    PCODE osrMethodCode = ppInfo->m_osrMethodCode;
+    _ASSERTE(osrMethodCode != NULL);
+
+    Thread *pThread = GetThread();
+
+#ifdef FEATURE_HIJACK
+    // We can't crawl the stack of a thread that currently has a hijack pending
+    // (since the hijack routine won't be recognized by any code manager). So we
+    // Undo any hijack, the EE will re-attempt it later.
+    pThread->UnhijackThread();
+#endif
+
+    // Find context for the original method
+    CONTEXT frameContext;
+    frameContext.ContextFlags = CONTEXT_FULL;
+    RtlCaptureContext(&frameContext);
+
+    // Walk back to the original method frame
+    pThread->VirtualUnwindToFirstManagedCallFrame(&frameContext);
+
+    // Remember original method FP and SP because new method will inherit them.
+    UINT_PTR currentSP = GetSP(&frameContext);
+    UINT_PTR currentFP = GetFP(&frameContext);
+
+    // We expect to be back at the right IP
+    if ((UINT_PTR)ip != GetIP(&frameContext))
+    {
+        // Should be fatal
+        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_PartialCompilationPatchpoint: patchpoint (0x%p) TRANSITION"
+            " unexpected context IP 0x%p\n", ip, GetIP(&frameContext));
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
+
+    // Now unwind back to the original method caller frame.
+    EECodeInfo callerCodeInfo(GetIP(&frameContext));
+    frameContext.ContextFlags = CONTEXT_FULL;
+    ULONG_PTR establisherFrame = 0;
+    PVOID handlerData = NULL;
+    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(&frameContext), callerCodeInfo.GetFunctionEntry(),
+        &frameContext, &handlerData, &establisherFrame, NULL);
+
+    // Now, set FP and SP back to the values they had just before this helper was called,
+    // since the new method must have access to the original method frame.
+    //
+    // TODO: if we access the patchpointInfo here, we can read out the FP-SP delta from there and
+    // use that to adjust the stack, likely saving some stack space.
+
+#if defined(TARGET_AMD64)
+    // If calls push the return address, we need to simulate that here, so the OSR
+    // method sees the "expected" SP misalgnment on entry.
+    _ASSERTE(currentSP % 16 == 0);
+    currentSP -= 8;
+#endif
+
+    SetSP(&frameContext, currentSP);
+
+#if defined(TARGET_AMD64)
+    frameContext.Rbp = currentFP;
+#endif
+
+    // Note we can get here w/o triggering, if there is an existing OSR method and
+    // we hit the patchpoint.
+    const int transitionLogLevel = isNewMethod ? LL_INFO10 : LL_INFO1000;
+    LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_PartialCompilationPatchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
+
+    // Install new entry point as IP
+    SetIP(&frameContext, osrMethodCode);
+
+    // Transition!
+    RtlRestoreContext(&frameContext, NULL);
+}
+
 #else
 
 void JIT_Patchpoint(int* counter, int ilOffset)
+{
+    // Stub version if OSR feature is disabled
+    //
+    // Should not be called.
+
+    UNREACHABLE();
+}
+
+void JIT_PartialCompilationPatchpoint(int* counter, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //
@@ -5838,7 +5942,7 @@ void InitJitHelperLogging()
                 else
                 {
                     _ASSERTE(((size_t)hlpFunc->pfnHelper - 1) >= 0 &&
-                             ((size_t)hlpFunc->pfnHelper - 1) < COUNTOF(hlpDynamicFuncTable));
+                             ((size_t)hlpFunc->pfnHelper - 1) < ARRAY_SIZE(hlpDynamicFuncTable));
                     VMHELPDEF* dynamicHlpFunc = &hlpDynamicFuncTable[((size_t)hlpFunc->pfnHelper - 1)];
 
                     // While we're here initialize the table of VMHELPCOUNTDEF

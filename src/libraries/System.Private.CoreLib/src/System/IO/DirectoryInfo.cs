@@ -5,16 +5,9 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
-#if MS_IO_REDIST
-using Microsoft.IO.Enumeration;
-
-namespace Microsoft.IO
-#else
 using System.IO.Enumeration;
 
 namespace System.IO
-#endif
 {
     public sealed partial class DirectoryInfo : FileSystemInfo
     {
@@ -195,10 +188,7 @@ namespace System.IO
 
         public void MoveTo(string destDirName)
         {
-            if (destDirName == null)
-                throw new ArgumentNullException(nameof(destDirName));
-            if (destDirName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
+            ArgumentException.ThrowIfNullOrEmpty(destDirName);
 
             string destination = Path.GetFullPath(destDirName);
 

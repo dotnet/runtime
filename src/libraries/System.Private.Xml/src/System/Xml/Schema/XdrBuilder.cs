@@ -653,7 +653,7 @@ namespace System.Xml.Schema
             { // inline xdr schema
                 if (builder._XdrName != null)
                 {
-                    builder._TargetNamespace = builder._NameTable.Add("x-schema:#" + builder._XdrName);
+                    builder._TargetNamespace = builder._NameTable.Add($"x-schema:#{builder._XdrName}");
                 }
                 else
                 {

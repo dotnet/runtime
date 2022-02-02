@@ -2320,7 +2320,7 @@ HRESULT CordbObjectValue::GetLength(ULONG32 *pcchString)
 // Return Value: S_OK or CORDBG_E_INVALID_OBJECT, CORDBG_E_OBJECT_NEUTERED, or E_INVALIDARG  on failure
 HRESULT CordbObjectValue::GetString(ULONG32 cchString,
                                     ULONG32 *pcchString,
-                                    __out_ecount_opt(cchString) WCHAR szString[])
+                                    _Out_writes_bytes_opt_(cchString) WCHAR szString[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -2464,7 +2464,7 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
             CorDebugExceptionObjectStackFrame& currentStackFrame = pStackFrames[index];
 
             CordbAppDomain* pAppDomain = GetProcess()->LookupOrCreateAppDomain(currentDacFrame.vmAppDomain);
-            CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmDomainFile);
+            CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmDomainAssembly);
 
             hr = pModule->QueryInterface(IID_ICorDebugModule, reinterpret_cast<void**>(&currentStackFrame.pModule));
             _ASSERTE(SUCCEEDED(hr));
@@ -2653,18 +2653,18 @@ HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
         return hr;
 
     mdMethodDef functionMethodDef = 0;
-    VMPTR_DomainFile functionDomainFile;
+    VMPTR_DomainAssembly functionDomainAssembly;
     NativeCodeFunctionData nativeCodeForDelFunc;
 
-    hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainFile, &functionMethodDef);
+    hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainAssembly, &functionMethodDef);
     if (hr != S_OK)
         return hr;
 
     // TODO: How to ensure results are sanitized?
     // Also, this is expensive. Do we really care that much about this?
-    pDAC->GetNativeCodeInfo(functionDomainFile, functionMethodDef, &nativeCodeForDelFunc);
+    pDAC->GetNativeCodeInfo(functionDomainAssembly, functionMethodDef, &nativeCodeForDelFunc);
 
-    RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionDomainFile));
+    RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionDomainAssembly));
     RSSmartPtr<CordbFunction> func;
     {
         RSLockHolder lockHolder(GetProcess()->GetProcessLock());

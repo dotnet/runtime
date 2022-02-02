@@ -4,7 +4,7 @@
 
 using System;
 
-public class Test {
+public class Test_Collect0 {
 	public static int Main() {
 
 		int[] array = new int[25];

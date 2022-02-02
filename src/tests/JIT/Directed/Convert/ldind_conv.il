@@ -3,10 +3,11 @@
 
 
 .assembly extern mscorlib { auto }
+.assembly extern xunit.core {}
 .assembly extern System.Console { auto }
 .assembly extern System.Runtime { auto }
 
-.assembly test { }
+.assembly 'ldind_conv' { }
 
 .class auto Program extends [System.Runtime]System.Object
 {
@@ -20,6 +21,9 @@
 
   .method private hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack 8
 

@@ -15,8 +15,8 @@ internal static partial class Interop
         // We take a long* (rather than a out long) to avoid the pinning overhead.
         // We don't set last error since we don't need the extended error info.
 
-        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true)]
         [SuppressGCTransition]
-        internal static extern unsafe BOOL QueryPerformanceCounter(long* lpPerformanceCount);
+        internal static unsafe partial BOOL QueryPerformanceCounter(long* lpPerformanceCount);
     }
 }

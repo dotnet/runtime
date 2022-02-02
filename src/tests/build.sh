@@ -5,11 +5,10 @@ build_Tests()
     echo "${__MsgPrefix}Building Tests..."
 
     __ProjectFilesDir="$__TestDir"
-    __TestBinDir="$__TestWorkingDir"
     __Exclude="$__RepoRootDir/src/tests/issues.targets"
 
-    if [[ -f  "${__TestWorkingDir}/build_info.json" ]]; then
-        rm  "${__TestWorkingDir}/build_info.json"
+    if [[ -f  "${__TestBinDir}/build_info.json" ]]; then
+        rm  "${__TestBinDir}/build_info.json"
     fi
 
     if [[ "$__RebuildTests" -ne 0 ]]; then
@@ -90,6 +89,7 @@ build_Tests()
     export __BinDir
     export __TestBinDir
     export __SkipManaged
+    export __SkipRestorePackages
     export __SkipGenerateLayout
     export __SkipTestWrappers
     export __BuildTestProject
@@ -99,7 +99,6 @@ build_Tests()
     export __CopyNativeProjectsAfterCombinedTestBuild
     export __CopyNativeTestBinaries
     export __Priority
-    export __DoCrossgen2
     export __CreatePerfmap
     export __CompositeBuildMode
     export __BuildTestWrappersOnly
@@ -152,6 +151,7 @@ usage_list+=("-dir:xxx - build all tests in a given directory");
 usage_list+=("-tree:xxx - build all tests in a given subtree");
 
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
+usage_list+=("-nativeaot: Builds the tests for Native AOT compilation.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
 usage_list+=("-composite: Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).")
 usage_list+=("-perfmap: emit perfmap symbol files when compiling the framework assemblies using Crossgen2.")
@@ -159,7 +159,7 @@ usage_list+=("-allTargets: Build managed tests for all target platforms (includi
 
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
 usage_list+=("-runtests: run tests after building them.")
-usage_list+=("-excludemonofailures: Mark the build as running on Mono runtime so that mono-specific issues are honored.")
+usage_list+=("-mono: Build the tests for the Mono runtime honoring mono-specific issues.")
 
 usage_list+=("-log: base file name to use for log files (used in lab pipelines that build tests in multiple steps to retain logs for each step.")
 
@@ -184,18 +184,19 @@ handle_arguments_local() {
             __CopyNativeProjectsAfterCombinedTestBuild=false
             __SkipGenerateLayout=1
             __SkipTestWrappers=1
-            __SkipCrossgenFramework=1
             ;;
 
         crossgen2|-crossgen2)
-            __DoCrossgen2=1
             __TestBuildMode=crossgen2
             ;;
 
         composite|-composite)
             __CompositeBuildMode=1
-            __DoCrossgen2=1
             __TestBuildMode=crossgen2
+            ;;
+
+        nativeaot|-nativeaot)
+            __TestBuildMode=nativeaot
             ;;
 
         perfmap|-perfmap)
@@ -252,6 +253,10 @@ handle_arguments_local() {
             __Mono=1
             ;;
 
+        mono|-mono)
+            __Mono=1
+            ;;
+
         mono_aot|-mono_aot)
             __Mono=1
             __MonoAot=1
@@ -287,14 +292,11 @@ export __ProjectDir
 __SkipTestWrappers=0
 __BuildTestWrappersOnly=0
 __Compiler=clang
-__CompilerMajorVersion=
-__CompilerMinorVersion=
 __ConfigureOnly=0
 __CopyNativeProjectsAfterCombinedTestBuild=true
 __CopyNativeTestBinaries=0
 __CrossBuild=0
 __DistroRid=""
-__DoCrossgen2=
 __CompositeBuildMode=
 __CreatePerfmap=
 __TestBuildMode=
@@ -303,7 +305,6 @@ __BuildTestDir="%3B"
 __BuildTestTree="%3B"
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=0
-__IsMSBuildOnNETCoreSupported=0
 __MSBCleanBuildArgs=
 __NativeTestIntermediatesDir=
 __PortableBuild=1
@@ -312,12 +313,10 @@ __RootBinDir="$__RepoRootDir/artifacts"
 __RunTests=0
 __SkipConfigure=0
 __SkipGenerateLayout=0
-__SkipGenerateVersion=0
 __SkipManaged=0
 __SkipNative=0
 __SkipRestore=""
 __SkipRestorePackages=0
-__SkipCrossgenFramework=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=()
 __UseNinja=0
@@ -369,7 +368,7 @@ __OSPlatformConfig="$__TargetOS.$__BuildArch.$__BuildType"
 __BinDir="$__RootBinDir/bin/coreclr/$__OSPlatformConfig"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__RepoRootDir/src/tests"
-__TestWorkingDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
+__TestBinDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
@@ -388,10 +387,10 @@ if [[ -z "$HOME" ]]; then
 fi
 
 if [[ "$__RebuildTests" -ne 0 ]]; then
-    if [[ -d "${__TestWorkingDir}" ]]; then
-        echo "Removing tests build dir: ${__TestWorkingDir}"
-        rm -rf "${__TestWorkingDir}"
-    fi
+    echo "Removing test build dir: ${__TestBinDir}"
+    rm -rf "${__TestBinDir}"
+    echo "Removing test intermediate dir: ${__TestIntermediatesDir}"
+    rm -rf "${__TestIntermediatesDir}"
 fi
 
 build_Tests

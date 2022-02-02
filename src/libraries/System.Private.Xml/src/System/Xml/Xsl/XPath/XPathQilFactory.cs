@@ -180,7 +180,7 @@ namespace System.Xml.Xsl.XPath
                 case XmlTypeCode.Boolean: return ConvertToBoolean(n);
                 case XmlTypeCode.Node: return EnsureNodeSet(n);
                 case XmlTypeCode.Item: return n;
-                default: Debug.Fail("Unexpected XmlTypeCode: " + requiredType); return null;
+                default: Debug.Fail($"Unexpected XmlTypeCode: {requiredType}"); return null;
             }
         }
 

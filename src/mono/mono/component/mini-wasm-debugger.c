@@ -33,6 +33,7 @@ static int log_level = 1;
 G_BEGIN_DECLS
 
 EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attached);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_change_debugger_log_level (int new_log_level);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size, int valtype, char* newvalue);
 
@@ -54,6 +55,8 @@ static gboolean has_pending_lazy_loaded_assemblies;
 
 #define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
 
+extern void mono_wasm_debugger_log (int level, char *message);
+
 void wasm_debugger_log (int level, const gchar *format, ...)
 {
 	va_list args;
@@ -62,19 +65,7 @@ void wasm_debugger_log (int level, const gchar *format, ...)
 	va_start (args, format);
 	mesg = g_strdup_vprintf (format, args);
 	va_end (args);
-
-	EM_ASM ({
-		var level = $0;
-		var message = Module.UTF8ToString ($1);
-		var namespace = "Debugger.Debug";
-
-		if (MONO["logging"] && MONO.logging["debugger"]) {
-			MONO.logging.debugger (level, message);
-			return;
-		}
-
-		console.debug("%s: %s", namespace, message);
-	}, level, mesg);
+	mono_wasm_debugger_log(level, mesg);
 	g_free (mesg);
 }
 
@@ -151,15 +142,13 @@ mono_wasm_enable_debugging_internal (int debug_level)
 }
 
 static void
-mono_wasm_debugger_init (MonoDefaults *mono_defaults)
+mono_wasm_debugger_init (void)
 {
 	int debug_level = mono_wasm_get_debug_level();
 	mono_wasm_enable_debugging_internal (debug_level);
 
 	if (!debugger_enabled)
 		return;
-
-	mdbg_mono_defaults = mono_defaults;
 
 	DebuggerEngineCallbacks cbs = {
 		.tls_get_restore_state = tls_get_restore_state,
@@ -186,7 +175,7 @@ mono_wasm_debugger_init (MonoDefaults *mono_defaults)
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 	mono_profiler_set_assembly_loaded_callback (prof, assembly_loaded);
 
-//debugger-agent initialization	
+//debugger-agent initialization
 	DebuggerTransport trans;
 	trans.name = "buffer-wasm-communication";
 	trans.send = receive_debugger_agent_message;
@@ -214,7 +203,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 		MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
 		if (handle) {
 			MonoPPDBFile *ppdb = handle->ppdb;
-			if (ppdb && !mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy. 
+			if (ppdb && !mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy.
 				pdb_image = mono_ppdb_get_image (ppdb);
 				mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
 				return;
@@ -351,7 +340,7 @@ write_value_to_buffer (MdbgProtBuffer *buf, MonoTypeEnum type, const char* varia
 	return TRUE;
 }
 
-EMSCRIPTEN_KEEPALIVE void 
+EMSCRIPTEN_KEEPALIVE void
 mono_wasm_set_is_debugger_attached (gboolean is_attached)
 {
 	mono_set_is_debugger_attached (is_attached);
@@ -367,16 +356,28 @@ mono_wasm_set_is_debugger_attached (gboolean is_attached)
 	}
 }
 
-EMSCRIPTEN_KEEPALIVE gboolean 
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_change_debugger_log_level (int new_log_level)
+{
+	mono_change_log_level (new_log_level);
+}
+
+extern void mono_wasm_add_dbg_command_received(mono_bool res_ok, int id, void* buffer, int buffer_len);
+
+EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size, int valtype, char* newvalue)
 {
+	if (!debugger_enabled) {
+		EM_ASM ({
+			MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
+		}, 0, id, 0, 0);
+		return TRUE;
+	}
 	MdbgProtBuffer bufWithParms;
 	buffer_init (&bufWithParms, 128);
 	m_dbgprot_buffer_add_data (&bufWithParms, data, size);
 	if (!write_value_to_buffer(&bufWithParms, valtype, newvalue)) {
-		EM_ASM ({
-			MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
-		}, 0, id, 0, 0);
+		mono_wasm_add_dbg_command_received(0, id, 0, 0);
 		return TRUE;
 	}
 	mono_wasm_send_dbg_command(id, command_set, command, bufWithParms.buf, m_dbgprot_buffer_len(&bufWithParms));
@@ -384,15 +385,21 @@ mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, i
 	return TRUE;
 }
 
-EMSCRIPTEN_KEEPALIVE gboolean 
+EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size)
 {
+	if (!debugger_enabled) {
+		EM_ASM ({
+			MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
+		}, 0, id, 0, 0);
+		return TRUE;
+	}
 	ss_calculate_framecount (NULL, NULL, TRUE, NULL, NULL);
 	MdbgProtBuffer buf;
 	buffer_init (&buf, 128);
 	gboolean no_reply;
 	MdbgProtErrorCode error = 0;
-	if (command_set == MDBGPROT_CMD_SET_VM && command == MDBGPROT_CMD_VM_INVOKE_METHOD ) 
+	if (command_set == MDBGPROT_CMD_SET_VM && command == MDBGPROT_CMD_VM_INVOKE_METHOD )
 	{
 		DebuggerTlsData* tls = mono_wasm_get_tls ();
 		InvokeData invoke_data;
@@ -402,22 +409,19 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	}
 	else
 		error = mono_process_dbg_packet (id, command_set, command, &no_reply, data, data + size, &buf);
-	EM_ASM ({
-		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
-	}, error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);
-	
+
+	mono_wasm_add_dbg_command_received(error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);
+
 	buffer_free (&buf);
 	return TRUE;
 }
 
-static gboolean 
+static gboolean
 receive_debugger_agent_message (void *data, int len)
 {
-	EM_ASM ({
-		MONO.mono_wasm_add_dbg_command_received (1, -1, $0, $1);
-	}, data, len);
+	mono_wasm_add_dbg_command_received(1, -1, data, len);
 	mono_wasm_save_thread_context();
-	mono_wasm_fire_debugger_agent_message ();	
+	mono_wasm_fire_debugger_agent_message ();
 	return FALSE;
 }
 
@@ -434,7 +438,7 @@ mono_wasm_breakpoint_hit (void)
 }
 
 static void
-mono_wasm_debugger_init (MonoDefaults *mono_defaults)
+mono_wasm_debugger_init (void)
 {
 }
 

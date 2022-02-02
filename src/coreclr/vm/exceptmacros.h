@@ -502,11 +502,11 @@ LPCWSTR GetPathForErrorMessagesT(T *pImgObj)
     }
 }
 
-VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(__in_z const char *cond));
+VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const char *cond));
 
 template <typename T>
 NOINLINE
-VOID ThrowBadFormatWorkerT(UINT resID, T * pImgObj DEBUGARG(__in_z const char *cond))
+VOID ThrowBadFormatWorkerT(UINT resID, T * pImgObj DEBUGARG(_In_z_ const char *cond))
 {
 #ifdef DACCESS_COMPILE
     ThrowBadFormatWorker(resID, nullptr DEBUGARG(cond));
@@ -520,7 +520,7 @@ VOID ThrowBadFormatWorkerT(UINT resID, T * pImgObj DEBUGARG(__in_z const char *c
 // Worker macro for throwing BadImageFormat exceptions.
 //
 //     resID:     resource ID in mscorrc.rc. Message may not have substitutions. resID is permitted (but not encouraged) to be 0.
-//     imgObj:    one of Module* or PEFile* or PEImage* (must support GetPathForErrorMessages method.)
+//     imgObj:    one of Module* or PEAssembly* or PEImage* (must support GetPathForErrorMessages method.)
 //
 #define IfFailThrowBF(hresult, resID, imgObj)   \
     do                                          \

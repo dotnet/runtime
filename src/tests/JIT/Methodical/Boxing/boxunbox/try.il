@@ -9,6 +9,7 @@
 
 .assembly extern mscorlib { }
 .assembly 'try' { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class private auto ansi beforefieldinit App
@@ -181,6 +182,9 @@
     .method private hidebysig static int32 
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  1
       .locals (int32 V_0)

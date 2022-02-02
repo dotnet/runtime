@@ -101,12 +101,16 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
+    # Build/Generate native prerequisites
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.nativeprereqs $(crossArg) -arch $(archType) -c $(buildConfig) -ci /bl:$(Build.SourcesDirectory)artifacts/log/$(buildConfig)/CoreCLRNativePrereqs.binlog
+      displayName: Build and generate native prerequisites
+
     # Build CoreCLR JIT
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -nopgooptimize -component alljits
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -component alljits -component spmi
         displayName: Build CoreCLR JIT
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -nopgooptimize -skiprestoreoptdata -component alljits
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -component alljits -component spmi
         displayName: Build CoreCLR JIT
 
     - ${{ if eq(parameters.uploadAs, 'azureBlob') }}:
@@ -114,7 +118,7 @@ jobs:
       - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
         displayName: Upgrade Pip to latest and install azure-storage-blob Python package
 
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitrollingbuild.py upload -build_type $(buildConfig) -arch $(archType) -host_os $(osGroup) -git_hash $(Build.SourceVersion)
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitrollingbuild.py upload -build_type $(buildConfig) -arch $(archType) -host_os $(osGroup) -git_hash $(Build.SourceVersion) --use_latest_jit_change
         displayName: Upload JIT to Azure Storage
         env:
           CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline

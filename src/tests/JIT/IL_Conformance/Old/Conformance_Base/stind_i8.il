@@ -74,4 +74,4 @@ FAIL:
 	ret
 }
 }
-.assembly stind_i8.exe{}
+.assembly stind_i8{}

@@ -72,7 +72,7 @@ static MonoDomain *mono_root_domain;
 
 gboolean mono_dont_free_domains;
 
-/* AppConfigInfo: Information about runtime versions supported by an 
+/* AppConfigInfo: Information about runtime versions supported by an
  * aplication.
  */
 typedef struct {
@@ -134,13 +134,13 @@ create_root_domain (void)
 #endif
 
 	MONO_PROFILER_RAISE (domain_loaded, (domain));
-	
+
 	return domain;
 }
 
 /**
  * mono_init_internal:
- * 
+ *
  * Creates the initial application domain and initializes the mono_defaults
  * structure.
  * This function is guaranteed to not run any IL code.
@@ -236,7 +236,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 			g_print ("WARNING: The requested runtime version \"%s\" is unavailable.\n", runtime_version);
 		else
 			g_print ("WARNING: The runtime version supported by this application is unavailable.\n");
-		g_print ("Using default runtime: %s\n", default_runtime->runtime_version); 
+		g_print ("Using default runtime: %s\n", default_runtime->runtime_version);
 	}
 
 	/* The selected runtime will be the first one for which there is a mscrolib.dll */
@@ -251,7 +251,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	}
 
 	g_slist_free (runtimes);
-	
+
 	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
 		switch (status){
 		case MONO_IMAGE_ERROR_ERRNO: {
@@ -273,7 +273,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 			/* to suppress compiler warning */
 			break;
 		}
-		
+
 		exit (1);
 	}
 	mono_defaults.corlib = mono_assembly_get_image_internal (ass);
@@ -425,7 +425,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 /**
  * mono_init:
- * 
+ *
  * Creates the initial application domain and initializes the mono_defaults
  * structure.
  *
@@ -451,7 +451,7 @@ mono_init (const char *domain_name)
  * structure.
  * This function is guaranteed to not run any IL code.
  * The runtime is initialized using the runtime version required by the
- * provided executable. The version is determined by looking at the exe 
+ * provided executable. The version is determined by looking at the exe
  * configuration file and the version PE field)
  *
  * \returns the initial domain.
@@ -464,9 +464,9 @@ mono_init_from_assembly (const char *domain_name, const char *filename)
 
 /**
  * mono_init_version:
- * 
+ *
  * Used by the runtime, users should use \c mono_jit_init instead.
- * 
+ *
  * Creates the initial application domain and initializes the \c mono_defaults
  * structure.
  *
@@ -833,7 +833,7 @@ get_runtime_by_version (const char *version)
 		if (strcmp (version, supported_runtimes[n].runtime_version) == 0)
 			return &supported_runtimes[n];
 	}
-	
+
 	vlen = strlen (version);
 	if (vlen >= 4 && version [1] - '0' >= 4) {
 		for (n=0; n<max; n++) {
@@ -841,7 +841,7 @@ get_runtime_by_version (const char *version)
 				return &supported_runtimes[n];
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -851,7 +851,7 @@ get_runtimes_from_exe (const char *file, MonoImage **out_image)
 	const MonoRuntimeInfo* runtime = NULL;
 	MonoImage *image = NULL;
 	GSList *runtimes = NULL;
-	
+
 	/* Look for a runtime with the exact version */
 	image = mono_assembly_open_from_bundle (mono_alc_get_default (), file, NULL, NULL);
 

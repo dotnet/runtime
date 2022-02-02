@@ -6,6 +6,7 @@ namespace Dynamic
     using System;
     using System.Runtime.InteropServices;
     using TestLibrary;
+    using Xunit;
 
     internal class NETServerTest
     {
@@ -29,8 +30,8 @@ namespace Dynamic
 
                 try
                 {
-                    Assert.IsTrue(obj.EqualByCCW(obj));
-                    Assert.IsTrue(obj.NotEqualByRCW(obj));
+                    Assert.True(obj.EqualByCCW(obj));
+                    Assert.True(obj.NotEqualByRCW(obj));
                 }
                 finally
                 {

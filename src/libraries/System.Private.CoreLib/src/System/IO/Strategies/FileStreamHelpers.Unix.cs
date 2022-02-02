@@ -34,9 +34,6 @@ namespace System.IO.Strategies
         internal static void ThrowInvalidArgument(SafeFileHandle handle) =>
             throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.EINVAL), handle.Path);
 
-        internal static unsafe void SetFileLength(SafeFileHandle handle, long length) =>
-            CheckFileCall(Interop.Sys.FTruncate(handle, length), handle.Path);
-
         /// <summary>Flushes the file's OS buffer.</summary>
         internal static void FlushToDisk(SafeFileHandle handle)
         {

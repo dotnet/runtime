@@ -29,7 +29,7 @@ inline void DoStrTest_vsprintf(const char *formatstr, char* param, const char *c
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, _countof(buf), formatstr, param);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, param);
     if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
     {
         Fail("ERROR: failed to insert string \"%s\" into \"%s\"\n"
@@ -43,7 +43,7 @@ inline void DoWStrTest_vsprintf(const char *formatstr, WCHAR* param, const char 
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, _countof(buf), formatstr, param);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, param);
     if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
     {
         Fail("ERROR: failed to insert wide string \"%s\" into \"%s\"\n"
@@ -57,7 +57,7 @@ inline void DoCharTest_vsprintf(const char *formatstr, char param, const char *c
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, _countof(buf), formatstr, param);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, param);
     if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
     {
         Fail("ERROR: failed to insert char \'%c\' (%d) into \"%s\"\n"
@@ -71,7 +71,7 @@ inline void DoWCharTest_vsprintf(const char *formatstr, WCHAR param, const char 
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, _countof(buf), formatstr, param);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, param);
     if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
     {
         Fail("ERROR: failed to insert wide char \'%c\' (%d) into \"%s\"\n"
@@ -85,7 +85,7 @@ inline void DoNumTest_vsprintf(const char *formatstr, int value, const char *che
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, _countof(buf), formatstr, value);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, value);
     if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
     {
         Fail("ERROR: failed to insert %#x into \"%s\"\n"
@@ -99,7 +99,7 @@ inline void DoI64Test_vsprintf(const char *formatstr, INT64 value, char *valuest
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, _countof(buf), formatstr, value);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, value);
     if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
@@ -114,7 +114,7 @@ inline void DoDoubleTest_vsprintf(const char *formatstr, double value, const cha
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, _countof(buf), formatstr, value);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, value);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0 &&
         memcmp(buf, checkstr2, strlen(checkstr2) + 1) != 0)
     {
@@ -131,7 +131,7 @@ inline void DoArgumentPrecTest_vsprintf(const char *formatstr, int precision, vo
 {
     char buf[256];
 
-    testvsp(buf, _countof(buf), formatstr, precision, param);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, precision, param);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0 &&
         memcmp(buf, checkstr2, strlen(checkstr2) + 1) != 0)
     {
@@ -148,7 +148,7 @@ inline void DoArgumentPrecDoubleTest_vsprintf(const char *formatstr, int precisi
 {
     char buf[256];
 
-    testvsp(buf, _countof(buf), formatstr, precision, param);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, precision, param);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0 &&
         memcmp(buf, checkstr2, strlen(checkstr2) + 1) != 0)
     {
@@ -165,7 +165,7 @@ inline void DoPointerTest_vsprintf(const char *formatstr, void* param, char* par
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, _countof(buf), formatstr, param);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, param);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1))
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
@@ -180,7 +180,7 @@ inline void DoI64DoubleTest_vsprintf(const char *formatstr, INT64 value, char *v
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, _countof(buf), formatstr, value);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, value);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0)
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
@@ -195,7 +195,7 @@ inline void DoTest_vsprintf(const char *formatstr, int param, const char *checks
     char buf[256] = { 0 };
     int n = -1;
 
-    testvsp(buf, _countof(buf), formatstr, &n);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, &n);
 
     if (n != param)
     {
@@ -214,7 +214,7 @@ inline void DoShortTest_vsprintf(const char *formatstr, int param, const char *c
     char buf[256] = { 0 };
     short int n = -1;
 
-    testvsp(buf, _countof(buf), formatstr, &n);
+    testvsp(buf, ARRAY_SIZE(buf), formatstr, &n);
 
     if (n != param)
     {

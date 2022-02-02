@@ -389,7 +389,7 @@ namespace System.IO.Packaging
             if (partUri == null)
                 return new ArgumentNullException(nameof(partUri));
 
-            Exception? argumentException = null;
+            Exception? argumentException;
 
             argumentException = GetExceptionIfAbsoluteUri(partUri);
             if (argumentException != null)
@@ -611,7 +611,9 @@ namespace System.IO.Packaging
         /// to reduce the parsing and number of allocations for Strings and Uris
         /// we cache the results after parsing.
         /// </summary>
+ #pragma warning disable CA1067 // Override Equals because it implements IEquatable<T>; not overriding to avoid possible regressions in code that's working
         internal sealed class ValidatedPartUri : Uri, IComparable<ValidatedPartUri>, IEquatable<ValidatedPartUri>
+#pragma warning restore CA1067
         {
             //------------------------------------------------------
             //
@@ -684,13 +686,15 @@ namespace System.IO.Packaging
                 {
                     if (_partUriExtension == null)
                     {
-                        _partUriExtension = Path.GetExtension(_partUriString);
+                        string partUriExtension = Path.GetExtension(_partUriString);
 
                         //If extension is absent just return the empty string
                         //else remove the leading "." from the returned extension
                         //string
-                        if (_partUriExtension.Length > 0)
-                            _partUriExtension = _partUriExtension.Substring(1);
+                        if (partUriExtension.Length > 0)
+                            partUriExtension = partUriExtension.Substring(1);
+
+                        _partUriExtension = partUriExtension;
                     }
                     return _partUriExtension;
                 }

@@ -8,8 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Logcat
     {
-        [DllImport(Libraries.Liblog)]
-        private static extern void __android_log_print(LogLevel level, string? tag, string format, string args, IntPtr ptr);
+        [GeneratedDllImport(Libraries.Liblog, CharSet = CharSet.Ansi)]
+        private static partial void __android_log_print(LogLevel level, string? tag, string format, string args, IntPtr ptr);
 
         internal static void AndroidLogPrint(LogLevel level, string? tag, string message) =>
             __android_log_print(level, tag, "%s", message, IntPtr.Zero);

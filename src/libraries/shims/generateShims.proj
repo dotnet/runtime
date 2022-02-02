@@ -13,7 +13,6 @@
        <_contractName>%(GenFacadesContracts.Identity)</_contractName>
        <_contractStrongNameKeyId>%(GenFacadesContracts.StrongNameKeyId)</_contractStrongNameKeyId>
        <_contractStrongNameKeyId Condition="'$(_contractStrongNameKeyId)' == ''">Microsoft</_contractStrongNameKeyId>
-       <_contractDirProperty>%(GenFacadesContracts.ContractDir)</_contractDirProperty>
        <_contractAssembly>$(%(GenFacadesContracts.ContractDir))$(_contractName).dll</_contractAssembly>
        <_contractProjectFile>generated/$(_contractName).csproj</_contractProjectFile>
      </PropertyGroup>
@@ -37,7 +36,6 @@
   <PropertyGroup>
     <AssemblyVersion>$(_contractAssemblyVersion)</AssemblyVersion>
     <StrongNameKeyId>$(_contractStrongNameKeyId)</StrongNameKeyId>
-    <ContractAssemblyPath>%24($(_contractDirProperty))%24(MSBuildProjectName).dll</ContractAssemblyPath>
   </PropertyGroup>
   <Import Condition="'%24(MSBuildProjectFullPath)' == '%24(MSBuildThisFileFullPath)'" Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>

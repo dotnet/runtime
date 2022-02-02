@@ -4,11 +4,7 @@
 using System;
 using System.IO;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     /// <summary>Provides file and directory enumeration options.</summary>
     public class EnumerationOptions

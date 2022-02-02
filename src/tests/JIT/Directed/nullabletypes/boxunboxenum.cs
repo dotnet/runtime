@@ -134,7 +134,7 @@ internal class NullableTest3
 
 
 
-internal class Test
+internal class Test_boxunboxenum
 {
     private static int Main()
     {

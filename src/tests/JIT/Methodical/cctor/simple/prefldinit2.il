@@ -12,7 +12,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly precise2
+.assembly 'prefldinit2'
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -20,7 +20,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module precise2.exe
+.assembly extern xunit.core {}
 // MVID: {C486E388-5E60-42FA-B093-89857CB047D8}
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -192,6 +192,9 @@
       IL_005d:  beq.s      IL_0081
 
       IL_005f:  ldstr      "in Main() after new test(), measure.a is {0}"
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       IL_0064:  ldsfld     int32 measure::a
       IL_0069:  box        [mscorlib]System.Int32
       IL_006e:  call       void [System.Console]System.Console::WriteLine(string,

@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'test'
+.assembly 'i8u8'
 {
 
   //  .custom instance void ['mscorlib']System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -19,7 +19,7 @@
   
   
 }
-.module 'test.exe'
+.assembly extern xunit.core {}
 // MVID: {FBE787B7-6007-478A-AA78-9465C2020C0C}
 .namespace TestCase
 {
@@ -60,6 +60,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       42 (0x2a)
       .maxstack  2

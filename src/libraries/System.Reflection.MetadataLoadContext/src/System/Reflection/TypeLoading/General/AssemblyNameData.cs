@@ -32,8 +32,10 @@ namespace System.Reflection.TypeLoading
                 Version = Version,
                 CultureName = CultureName,
                 ContentType = ContentType,
+#pragma warning disable SYSLIB0037 // AssemblyName members HashAlgorithm and ProcessorArchitecture are obsolete
                 HashAlgorithm = HashAlgorithm,
                 ProcessorArchitecture = ProcessorArchitecture
+#pragma warning restore
             };
 
             // Yes, *we* have to clone the array. AssemblyName.SetPublicKey() violates framework guidelines and doesn't make a copy.

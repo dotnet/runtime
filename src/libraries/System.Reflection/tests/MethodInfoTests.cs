@@ -381,6 +381,16 @@ namespace System.Reflection.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => GetMethod(typeof(MethodInfoDefaultParameters), "OptionalStringParameter").Invoke(new MethodInfoDefaultParameters(), new object[] { Type.Missing }));
         }
 
+        [Fact]
+        public void Invoke_TwoParameters_CustomBinder_IncorrectTypeArguments()
+        {
+            MethodInfo method = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.StaticIntIntMethodReturningInt));
+            var args = new object[] { "10", "100" };
+            Assert.Equal(110, method.Invoke(null, BindingFlags.Default, new ConvertStringToIntBinder(), args, null));
+            Assert.True(args[0] is int);
+            Assert.True(args[1] is int);
+        }
+
         [Theory]
         [InlineData(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1), new Type[] { typeof(int) })]
         [InlineData(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod2), new Type[] { typeof(string), typeof(int) })]

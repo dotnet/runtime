@@ -1679,5 +1679,5 @@ END:
 
 
 
-.assembly ldc_conv_ovf_i4_i1.exe{}
+.assembly ldc_conv_ovf_i4_i1{}
 

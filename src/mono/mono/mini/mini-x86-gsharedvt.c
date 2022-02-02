@@ -98,7 +98,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 		 * Map ret arg.
 		 * This handles the case when the method returns a normal vtype, and when it returns a type arg, and its instantiated
 		 * with a vtype.
-		 */		
+		 */
 		g_ptr_array_add (map, GUINT_TO_POINTER (caller_cinfo->vret_arg_offset / sizeof (target_mgreg_t)));
 		g_ptr_array_add (map, GUINT_TO_POINTER (callee_cinfo->vret_arg_offset / sizeof (target_mgreg_t)));
 	}
@@ -160,13 +160,13 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 	if (var_ret) {
 		switch (cinfo->ret.storage) {
 		case ArgInIReg:
-			if (gsharedvt_in && !sig->ret->byref && sig->ret->type == MONO_TYPE_I1)
+			if (gsharedvt_in && !m_type_is_byref (sig->ret) && sig->ret->type == MONO_TYPE_I1)
 				info->ret_marshal = GSHAREDVT_RET_I1;
-			else if (gsharedvt_in && !sig->ret->byref && (sig->ret->type == MONO_TYPE_U1 || sig->ret->type == MONO_TYPE_BOOLEAN))
+			else if (gsharedvt_in && !m_type_is_byref (sig->ret) && (sig->ret->type == MONO_TYPE_U1 || sig->ret->type == MONO_TYPE_BOOLEAN))
 				info->ret_marshal = GSHAREDVT_RET_U1;
-			else if (gsharedvt_in && !sig->ret->byref && sig->ret->type == MONO_TYPE_I2)
+			else if (gsharedvt_in && !m_type_is_byref (sig->ret) && sig->ret->type == MONO_TYPE_I2)
 				info->ret_marshal = GSHAREDVT_RET_I2;
-			else if (gsharedvt_in && !sig->ret->byref && (sig->ret->type == MONO_TYPE_U2 || sig->ret->type == MONO_TYPE_CHAR))
+			else if (gsharedvt_in && !m_type_is_byref (sig->ret) && (sig->ret->type == MONO_TYPE_U2 || sig->ret->type == MONO_TYPE_CHAR))
 				info->ret_marshal = GSHAREDVT_RET_U2;
 			else if (cinfo->ret.is_pair)
  				info->ret_marshal = GSHAREDVT_RET_IREGS;

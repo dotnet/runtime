@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SendMessage")]
-        internal static extern unsafe Error SendMessage(SafeHandle socket, MessageHeader* messageHeader, SocketFlags flags, long* sent);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SendMessage")]
+        internal static unsafe partial Error SendMessage(SafeHandle socket, MessageHeader* messageHeader, SocketFlags flags, long* sent);
     }
 }

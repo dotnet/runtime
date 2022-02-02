@@ -46,7 +46,7 @@ namespace System.Net.NetworkInformation
         public unsafe BsdIPv4GlobalStatistics()
         {
             Interop.Sys.IPv4GlobalStatistics statistics;
-            if (Interop.Sys.GetIPv4GlobalStatistics(out statistics) == -1)
+            if (Interop.Sys.GetIPv4GlobalStatistics(&statistics) == -1)
             {
                 throw new NetworkInformationException(SR.net_PInvokeError);
             }

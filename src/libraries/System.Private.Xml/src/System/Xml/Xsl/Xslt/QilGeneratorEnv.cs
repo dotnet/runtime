@@ -132,7 +132,7 @@ namespace System.Xml.Xsl.Xslt
                         case FuncId.ElementAvailable: return CompileElementAvailable(args[0]);
                         case FuncId.FunctionAvailable: return CompileFunctionAvailable(args[0]);
                         default:
-                            Debug.Fail(func.id + " is present in the function table, but absent from the switch");
+                            Debug.Fail($"{func.id} is present in the function table, but absent from the switch");
                             return null;
                     }
                 }
@@ -249,7 +249,7 @@ namespace System.Xml.Xsl.Xslt
                     case XmlTypeCode.String: args[i] = _f.ConvertToString(args[i]); break;
                     case XmlTypeCode.Node: args[i] = xmlTypeFormalArg.IsSingleton ? _f.ConvertToNode(args[i]) : _f.ConvertToNodeSet(args[i]); break;
                     case XmlTypeCode.Item: break;
-                    default: Debug.Fail("This XmlTypeCode should never be inferred from a Clr type: " + xmlTypeFormalArg.TypeCode); break;
+                    default: Debug.Fail($"This XmlTypeCode should never be inferred from a Clr type: {xmlTypeFormalArg.TypeCode}"); break;
                 }
             }
 
@@ -606,7 +606,7 @@ namespace System.Xml.Xsl.Xslt
                 if (formatPicture.NodeType == QilNodeType.LiteralString)
                 {
                     QilIterator fmtIdx = _f.Let(_f.InvokeRegisterDecimalFormatter(formatPicture, format));
-                    fmtIdx.DebugName = _f.QName("formatter" + _formatterCnt++, XmlReservedNs.NsXslDebug).ToString();
+                    fmtIdx.DebugName = _f.QName($"formatter{_formatterCnt++}", XmlReservedNs.NsXslDebug).ToString();
                     _gloVars.Add(fmtIdx);
                     return _f.InvokeFormatNumberStatic(value, fmtIdx);
                 }

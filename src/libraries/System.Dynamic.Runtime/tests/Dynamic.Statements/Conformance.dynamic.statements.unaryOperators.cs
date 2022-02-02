@@ -251,7 +251,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
     //<Expects Status=success></Expects>
     // <Code>
 
-    public class temp
+    public class Temp
     {
     }
 
@@ -265,7 +265,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
         public static int MainMethod(string[] args)
         {
-            temp t = new temp();
+            Temp t = new Temp();
             dynamic d = t as dynamic;
             try
             {
@@ -399,7 +399,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
     // <Code>
     //<Expects Status=warning>\(26,18\).*CS1981</Expects>
 
-    public class temp
+    public class Temp
     {
         public dynamic MyTest()
         {
@@ -418,7 +418,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
         public static int MainMethod(string[] args)
         {
-            dynamic d = new temp();
+            dynamic d = new Temp();
             bool b = d.MyTest() is dynamic;
             if (b != true)
                 return 1;

@@ -42,15 +42,11 @@ namespace System.Text.Json.Reflection
         public static Type? GetCompatibleGenericBaseClass(
             this Type type,
             Type baseType,
-            Type? objectType = null,
             bool sourceGenType = false)
         {
             Debug.Assert(baseType.IsGenericType);
             Debug.Assert(!baseType.IsInterface);
             Debug.Assert(baseType == baseType.GetGenericTypeDefinition());
-
-            // Work around not being able to use typeof(object) directly during compile-time src gen type analysis.
-            objectType ??= typeof(object);
 
             Type? baseTypeToCheck = type;
 
@@ -309,6 +305,19 @@ namespace System.Text.Json.Reflection
 
             deserializationCtor = ctorWithAttribute ?? publicParameterlessCtor ?? lonePublicCtor;
             return true;
+        }
+
+        public static object? GetDefaultValue(this ParameterInfo parameterInfo)
+        {
+            object? defaultValue = parameterInfo.DefaultValue;
+
+            // DBNull.Value is sometimes used as the default value (returned by reflection) of nullable params in place of null.
+            if (defaultValue == DBNull.Value && parameterInfo.ParameterType != typeof(DBNull))
+            {
+                return null;
+            }
+
+            return defaultValue;
         }
     }
 }

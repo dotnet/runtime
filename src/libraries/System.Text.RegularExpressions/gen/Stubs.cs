@@ -54,13 +54,13 @@ namespace System.Threading
 {
     internal static class InterlockedExtensions
     {
-        public static int Or(ref int location1, int value)
+        public static uint Or(ref uint location1, uint value)
         {
-            int current = location1;
+            uint current = location1;
             while (true)
             {
-                int newValue = current | value;
-                int oldValue = Interlocked.CompareExchange(ref location1, newValue, current);
+                uint newValue = current | value;
+                uint oldValue = (uint)Interlocked.CompareExchange(ref Unsafe.As<uint, int>(ref location1), (int)newValue, (int)current);
                 if (oldValue == current)
                 {
                     return oldValue;

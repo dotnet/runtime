@@ -573,7 +573,7 @@ namespace System.Xml.Xsl
                         if (!isXQ)
                             goto case XmlTypeCode.Element;
 
-                        s += "{(element" + NameAndType(true) + "?&text?&comment?&processing-instruction?)*}";
+                        s += $"{{(element{NameAndType(true)}?&text?&comment?&processing-instruction?)*}}";
                         break;
 
                     case XmlTypeCode.Element:
@@ -586,7 +586,7 @@ namespace System.Xml.Xsl
             {
                 // Get QualifiedName from SchemaType
                 if (SchemaType.QualifiedName.IsEmpty)
-                    s = "<:" + s_typeNames[(int)TypeCode];
+                    s = $"<:{s_typeNames[(int)TypeCode]}";
                 else
                     s = QNameToString(SchemaType.QualifiedName);
             }
@@ -613,7 +613,7 @@ namespace System.Xml.Xsl
 
             if (SchemaType.QualifiedName.IsEmpty)
             {
-                typeName = "typeof(" + nodeName + ")";
+                typeName = $"typeof({nodeName})";
             }
             else
             {
@@ -628,7 +628,7 @@ namespace System.Xml.Xsl
             if (nodeName == "*" && typeName == "*")
                 return "";
 
-            return "(" + nodeName + ", " + typeName + ")";
+            return $"({nodeName}, {typeName})";
         }
 
         /// <summary>
@@ -649,15 +649,15 @@ namespace System.Xml.Xsl
             }
             else if (name.Namespace == XmlReservedNs.NsXs)
             {
-                return "xs:" + name.Name;
+                return $"xs:{name.Name}";
             }
             else if (name.Namespace == XmlReservedNs.NsXQueryDataType)
             {
-                return "xdt:" + name.Name;
+                return $"xdt:{name.Name}";
             }
             else
             {
-                return "{" + name.Namespace + "}" + name.Name;
+                return $"{{{name.Namespace}}}{name.Name}";
             }
         }
 

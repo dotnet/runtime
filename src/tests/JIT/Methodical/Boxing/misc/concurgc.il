@@ -6,9 +6,10 @@
 .assembly extern System.Threading.Thread { auto }
 .assembly extern mscorlib { auto }
 
-.assembly 'concur'// as "concur"
+.assembly 'concurgc'// as "concur"
 {
 }
+.assembly extern xunit.core {}
 .namespace Test
 {
   .class auto ansi App extends [mscorlib]System.Object
@@ -31,6 +32,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  3
       .locals ([0] class Test.App app,

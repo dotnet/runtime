@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 /// <summary>
 ///  Pass LPArray Size by ref keyword using SizeParamIndex Attributes
@@ -65,12 +65,12 @@ public class ClientMarshalArrayAsSizeParamIndexByRefTest
 
         byte byte_Array_Size = 1;
         byte[] arrByte = Helper.InitArray<byte>(byte_Array_Size);
-        Assert.IsTrue(MarshalCStyleArrayByte_AsByRef_AsSizeParamIndex(ref byte_Array_Size, ref arrByte));
+        Assert.True(MarshalCStyleArrayByte_AsByRef_AsSizeParamIndex(ref byte_Array_Size, ref arrByte));
 
         //Construct Expected array
         int expected_ByteArray_Size = Byte.MinValue;
         byte[] expectedArrByte = Helper.GetExpChangeArray<byte>(expected_ByteArray_Size);
-        Assert.IsTrue(Helper.EqualArray<byte>(arrByte, (int)byte_Array_Size, expectedArrByte, (int)expectedArrByte.Length));
+        Assert.True(Helper.EqualArray<byte>(arrByte, (int)byte_Array_Size, expectedArrByte, (int)expectedArrByte.Length));
 
         Console.WriteLine(strDescription + " Ends!");
     }
@@ -84,11 +84,11 @@ public class ClientMarshalArrayAsSizeParamIndexByRefTest
         sbyte sbyte_Array_Size = (sbyte)10;
         sbyte[] arrSbyte = Helper.InitArray<sbyte>(sbyte_Array_Size);
 
-        Assert.IsTrue(MarshalCStyleArraySbyte_AsByRef_AsSizeParamIndex(ref sbyte_Array_Size, ref arrSbyte));
+        Assert.True(MarshalCStyleArraySbyte_AsByRef_AsSizeParamIndex(ref sbyte_Array_Size, ref arrSbyte));
 
         //Construct Expected
         sbyte[] expectedArrSbyte = Helper.GetExpChangeArray<sbyte>(sbyte.MaxValue);
-        Assert.IsTrue(Helper.EqualArray<sbyte>(arrSbyte, (int)sbyte_Array_Size, expectedArrSbyte, (int)sbyte.MaxValue));
+        Assert.True(Helper.EqualArray<sbyte>(arrSbyte, (int)sbyte_Array_Size, expectedArrSbyte, (int)sbyte.MaxValue));
 
         Console.WriteLine(strDescription + " Ends!");
     }
@@ -103,11 +103,11 @@ public class ClientMarshalArrayAsSizeParamIndexByRefTest
         short[] arrShort = Helper.InitArray<short>(10);
         int expected_ByteArraySize = 20;
 
-        Assert.IsTrue(MarshalCStyleArrayShort_AsByRef_AsSizeParamIndex(ref short_Array_Size, ref arrShort));
+        Assert.True(MarshalCStyleArrayShort_AsByRef_AsSizeParamIndex(ref short_Array_Size, ref arrShort));
 
         //Construct Expected
         short[] expectedArrShort = Helper.GetExpChangeArray<short>(expected_ByteArraySize);
-        Assert.IsTrue(Helper.EqualArray<short>(arrShort, (int)short_Array_Size, expectedArrShort, expectedArrShort.Length));
+        Assert.True(Helper.EqualArray<short>(arrShort, (int)short_Array_Size, expectedArrShort, expectedArrShort.Length));
 
         Console.WriteLine(strDescription + " Ends!");
     }
@@ -134,11 +134,11 @@ public class ClientMarshalArrayAsSizeParamIndexByRefTest
         ushort[] arrUshort = Helper.InitArray<ushort>(ushort_Array_Size);
 
         int expected_UshortArraySize = ushort.MaxValue;
-        Assert.IsTrue(MarshalCStyleArrayUshort_AsByRef_AsSizeParamIndex(ref arrUshort, ref ushort_Array_Size));
+        Assert.True(MarshalCStyleArrayUshort_AsByRef_AsSizeParamIndex(ref arrUshort, ref ushort_Array_Size));
 
         //Construct Expected
         ushort[] expectedArrShort = Helper.GetExpChangeArray<ushort>(expected_UshortArraySize);
-        Assert.IsTrue(Helper.EqualArray<ushort>(arrUshort, (int)ushort_Array_Size, expectedArrShort, expectedArrShort.Length));
+        Assert.True(Helper.EqualArray<ushort>(arrUshort, (int)ushort_Array_Size, expectedArrShort, expectedArrShort.Length));
 
         Console.WriteLine(strDescription + " Ends!");
     }
@@ -152,12 +152,12 @@ public class ClientMarshalArrayAsSizeParamIndexByRefTest
         Int32 Int32_Array_Size = (Int32)10;
         Int32[] arrInt32 = Helper.InitArray<Int32>(Int32_Array_Size);
 
-        Assert.IsTrue(MarshalCStyleArrayInt_AsByRef_AsSizeParamIndex(ref Int32_Array_Size, Int32.MaxValue, ref arrInt32));
+        Assert.True(MarshalCStyleArrayInt_AsByRef_AsSizeParamIndex(ref Int32_Array_Size, Int32.MaxValue, ref arrInt32));
 
         //Construct Expected
         int expected_UshortArraySize = 1;
         Int32[] expectedArrInt32 = Helper.GetExpChangeArray<Int32>(expected_UshortArraySize);
-        Assert.IsTrue(Helper.EqualArray<Int32>(arrInt32, Int32_Array_Size, expectedArrInt32, expectedArrInt32.Length));
+        Assert.True(Helper.EqualArray<Int32>(arrInt32, Int32_Array_Size, expectedArrInt32, expectedArrInt32.Length));
 
         Console.WriteLine(strDescription + " Ends!");
     }
@@ -170,12 +170,12 @@ public class ClientMarshalArrayAsSizeParamIndexByRefTest
 
         UInt32 UInt32_Array_Size = (UInt32)1234;
         UInt32[] arrUInt32 = Helper.InitArray<UInt32>((Int32)UInt32_Array_Size);
-        Assert.IsTrue(MarshalCStyleArrayUInt_AsByRef_AsSizeParamIndex(ref arrUInt32, 1234, ref UInt32_Array_Size));
+        Assert.True(MarshalCStyleArrayUInt_AsByRef_AsSizeParamIndex(ref arrUInt32, 1234, ref UInt32_Array_Size));
 
         //Construct Expected
         int expected_UInt32ArraySize = 4321;
         UInt32[] expectedArrUInt32 = Helper.GetExpChangeArray<UInt32>(expected_UInt32ArraySize);
-        Assert.IsTrue(Helper.EqualArray<UInt32>(arrUInt32, (Int32)UInt32_Array_Size, expectedArrUInt32, (Int32)expectedArrUInt32.Length));
+        Assert.True(Helper.EqualArray<UInt32>(arrUInt32, (Int32)UInt32_Array_Size, expectedArrUInt32, (Int32)expectedArrUInt32.Length));
 
         Console.WriteLine(strDescription + " Ends!");
     }
@@ -188,12 +188,12 @@ public class ClientMarshalArrayAsSizeParamIndexByRefTest
 
         long long_Array_Size = (long)10;
         long[] arrLong = Helper.InitArray<long>((Int32)long_Array_Size);
-        Assert.IsTrue(MarshalCStyleArrayLong_AsByRef_AsSizeParamIndex(ref long_Array_Size, ref arrLong));
+        Assert.True(MarshalCStyleArrayLong_AsByRef_AsSizeParamIndex(ref long_Array_Size, ref arrLong));
 
         //Construct Expected Array
         int expected_LongArraySize = 20;
         long[] expectedArrLong = Helper.GetExpChangeArray<long>(expected_LongArraySize);
-        Assert.IsTrue(Helper.EqualArray<long>(arrLong, (Int32)long_Array_Size, expectedArrLong, (Int32)expectedArrLong.Length));
+        Assert.True(Helper.EqualArray<long>(arrLong, (Int32)long_Array_Size, expectedArrLong, (Int32)expectedArrLong.Length));
 
         Console.WriteLine(strDescription + " Ends!");
     }
@@ -207,12 +207,12 @@ public class ClientMarshalArrayAsSizeParamIndexByRefTest
         ulong ulong_Array_Size = (ulong)0;
         ulong[] arrUlong = Helper.InitArray<ulong>((Int32)ulong_Array_Size);
 
-        Assert.IsTrue(MarshalCStyleArrayUlong_AsByRef_AsSizeParamIndex(ref ulong_Array_Size, ref arrUlong));
+        Assert.True(MarshalCStyleArrayUlong_AsByRef_AsSizeParamIndex(ref ulong_Array_Size, ref arrUlong));
 
         //Construct Expected
         int expected_ULongArraySize = 0;
         ulong[] expectedArrUlong = Helper.GetExpChangeArray<ulong>(expected_ULongArraySize);
-        Assert.IsTrue(Helper.EqualArray<ulong>(arrUlong, (Int32)ulong_Array_Size, expectedArrUlong, (Int32)expectedArrUlong.Length));
+        Assert.True(Helper.EqualArray<ulong>(arrUlong, (Int32)ulong_Array_Size, expectedArrUlong, (Int32)expectedArrUlong.Length));
 
         Console.WriteLine(strDescription + " Ends!");
     }
@@ -227,12 +227,12 @@ public class ClientMarshalArrayAsSizeParamIndexByRefTest
         String[] arrString = Helper.InitArray<String>(array_Size);
         String[] arrString2 = Helper.InitArray<String>(array_Size);
 
-        Assert.IsTrue(MarshalCStyleArrayString_AsByRef_AsSizeParamIndex(ref array_Size, ref arrString, ref arrString2));
+        Assert.True(MarshalCStyleArrayString_AsByRef_AsSizeParamIndex(ref array_Size, ref arrString, ref arrString2));
 
         //Construct Expected
         int expected_StringArraySize = 10;
         String[] expArrString = Helper.GetExpChangeArray<String>(expected_StringArraySize);
-        Assert.IsTrue(Helper.EqualArray<String>(arrString, array_Size, expArrString, expArrString.Length));
+        Assert.True(Helper.EqualArray<String>(arrString, array_Size, expArrString, expArrString.Length));
 
         Console.WriteLine(strDescription + " Ends!");
     }

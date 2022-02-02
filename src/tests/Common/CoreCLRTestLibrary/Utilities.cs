@@ -13,6 +13,7 @@ using System.Runtime.Loader;
 using System.Security;
 using System.Text;
 using System.Threading;
+using Xunit;
 
 namespace TestLibrary
 {
@@ -89,6 +90,17 @@ namespace TestLibrary
 
         // return whether or not the OS is a 64 bit OS
         public static bool Is64 => (IntPtr.Size == 8);
+
+        public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+        public static bool IsNotMonoRuntime => !IsMonoRuntime;
+        public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
+#if NETCOREAPP
+        public static bool IsReflectionEmitSupported => RuntimeFeature.IsDynamicCodeSupported;
+        public static bool IsNotReflectionEmitSupported => !IsReflectionEmitSupported;
+#else
+        public static bool IsReflectionEmitSupported => true;
+#endif
+        public static bool SupportsExceptionInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
 
         public static string ByteArrayToString(byte[] bytes)
         {
@@ -205,7 +217,7 @@ namespace TestLibrary
                 return 0;
             }
 
-            Assert.AreEqual(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
+            Assert.Equal(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
             return osvi.dwMajorVersion;
         }
         internal static uint GetWindowsMinorVersion()
@@ -215,7 +227,7 @@ namespace TestLibrary
                 return 0;
             }
 
-            Assert.AreEqual(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
+            Assert.Equal(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
             return osvi.dwMinorVersion;
         }
         internal static uint GetWindowsBuildNumber()
@@ -225,7 +237,7 @@ namespace TestLibrary
                 return 0;
             }
 
-            Assert.AreEqual(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
+            Assert.Equal(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
             return osvi.dwBuildNumber;
         }
 

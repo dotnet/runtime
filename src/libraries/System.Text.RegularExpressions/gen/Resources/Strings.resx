@@ -119,9 +119,11 @@
   </resheader>
   <data name="InvalidRegexGeneratorAttributeTitle" xml:space="preserve">
     <value>Invalid RegexGenerator usage</value>
+    <comment>{Locked="RegexGenerator"}</comment>
   </data>
   <data name="InvalidRegexGeneratorAttributeMessage" xml:space="preserve">
     <value>The RegexGeneratorAttribute is malformed</value>
+    <comment>{Locked="RegexGeneratorAttribute"}</comment>
   </data>
   <data name="MultipleRegexGeneratorAttributesMessage" xml:space="preserve">
     <value>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</value>
@@ -135,6 +137,12 @@
   <data name="InvalidLangVersionMessage" xml:space="preserve">
     <value>C# LangVersion of 10 or greater is required</value>
   </data>
+  <data name="LimitedSourceGenerationTitle" xml:space="preserve">
+    <value>RegexGenerator limitation reached.</value>
+  </data>
+  <data name="LimitedSourceGenerationMessage" xml:space="preserve">
+    <value>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</value>
+  </data>
   <data name="Generic" xml:space="preserve">
     <value>Regular expression parser error '{0}' at offset {1}.</value>
   </data>
@@ -147,9 +155,6 @@
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
-  <data name="ArgumentNull_ArrayWithNullElements" xml:space="preserve">
-    <value>The array cannot contain null elements.</value>
-  </data>
   <data name="ShorthandClassInCharacterRange" xml:space="preserve">
     <value>Cannot include class \\{0} in character range.</value>
   </data>
@@ -161,6 +166,7 @@
   </data>
   <data name="QuantifierOrCaptureGroupOutOfRange" xml:space="preserve">
     <value>Capture group numbers must be less than or equal to Int32.MaxValue.</value>
+    <comment>{Locked="Int32.MaxValue"}</comment>
   </data>
   <data name="CaptureGroupOfZero" xml:space="preserve">
     <value>Capture number cannot be zero.</value>
@@ -188,6 +194,7 @@
   </data>
   <data name="InternalError_ScanRegex" xml:space="preserve">
     <value>Internal error in ScanRegex.</value>
+    <comment>{Locked="ScanRegex"}</comment>
   </data>
   <data name="CaptureGroupNameInvalid" xml:space="preserve">
     <value>Invalid group name: Group names must begin with a word character.</value>
@@ -230,9 +237,6 @@
   </data>
   <data name="NotSupported_ReadOnlyCollection" xml:space="preserve">
     <value>Collection is read-only.</value>
-  </data>
-  <data name="OnlyAllowedOnce" xml:space="preserve">
-    <value>This operation is only allowed once per object.</value>
   </data>
   <data name="PlatformNotSupported_CompileToAssembly" xml:space="preserve">
     <value>This platform does not support writing compiled regular expressions to an assembly.</value>
@@ -279,9 +283,6 @@
   <data name="AlternationHasUndefinedReferenceNoPlaceholder" xml:space="preserve">
     <value>Alternation has a reference to undefined group.</value>
   </data>
-  <data name="UnexpectedOpcode" xml:space="preserve">
-    <value>Unexpected opcode in regular expression generation: {0}.</value>
-  </data>
   <data name="UnrecognizedUnicodeProperty" xml:space="preserve">
     <value>Unknown property '{0}'.</value>
   </data>
@@ -302,5 +303,9 @@
   </data>
   <data name="UnterminatedComment" xml:space="preserve">
     <value>Unterminated (?#...) comment.</value>
+  </data>
+  <data name="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups" xml:space="preserve">
+    <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
+    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
 </root>

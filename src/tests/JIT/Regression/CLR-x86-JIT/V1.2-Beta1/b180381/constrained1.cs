@@ -4,7 +4,7 @@
 
 using System;
 
-public class Test
+public class Test_constrained1
 {
     public static void M<T>(T t)
     {

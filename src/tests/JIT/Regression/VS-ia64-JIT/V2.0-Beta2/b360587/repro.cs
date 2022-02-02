@@ -28,7 +28,7 @@ public class MyDispose : IDisposable
     }
 }
 
-public class Test
+public class Test_repro
 {
 
     // OUT:
@@ -285,7 +285,7 @@ public class Test
 
     public static int Main()
     {
-        Test t = new Test();
+        Test_repro t = new Test_repro();
         int retVal = 0;
 
         // using in switch statements

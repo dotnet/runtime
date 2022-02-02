@@ -127,7 +127,7 @@ namespace System.Xml.Xsl.XPath
                 case XPathOperatorGroup.Negate: return NegateOperator(op, left!);
                 case XPathOperatorGroup.Union: return UnionOperator(op, left, right!);
                 default:
-                    Debug.Fail(op + " is not a valid XPathOperator");
+                    Debug.Fail($"{op} is not a valid XPathOperator");
                     return null;
             }
         }
@@ -600,7 +600,7 @@ namespace System.Xml.Xsl.XPath
                         case FuncId.Ceiling: return _f.InvokeCeiling(args[0]);
                         case FuncId.Round: return _f.InvokeRound(args[0]);
                         default:
-                            Debug.Fail(func.id + " is present in the function table, but absent from the switch");
+                            Debug.Fail($"{func.id} is present in the function table, but absent from the switch");
                             return null;
                     }
                 }

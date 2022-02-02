@@ -7,13 +7,42 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public class Vector2Tests
+    public sealed class Vector2Tests
     {
         [Fact]
         public void Vector2MarshalSizeTest()
         {
             Assert.Equal(8, Marshal.SizeOf<Vector2>());
             Assert.Equal(8, Marshal.SizeOf<Vector2>(new Vector2()));
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f)]
+        [InlineData(1.0f, 0.0f)]
+        [InlineData(3.1434343f, 1.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f)]
+        public void Vector2IndexerGetTest(float x, float y)
+        {
+            var vector = new Vector2(x, y);
+
+            Assert.Equal(x, vector[0]);
+            Assert.Equal(y, vector[1]);
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f)]
+        [InlineData(1.0f, 0.0f)]
+        [InlineData(3.1434343f, 1.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f)]
+        public void Vector2IndexerSetTest(float x, float y)
+        {
+            var vector = new Vector2(0.0f, 0.0f);
+
+            vector[0] = x;
+            vector[1] = y;
+
+            Assert.Equal(x, vector[0]);
+            Assert.Equal(y, vector[1]);
         }
 
         [Fact]
@@ -844,8 +873,8 @@ namespace System.Numerics.Tests
         public void Vector2ConstructorTest3()
         {
             Vector2 target = new Vector2(float.NaN, float.MaxValue);
-            Assert.Equal(target.X, float.NaN);
-            Assert.Equal(target.Y, float.MaxValue);
+            Assert.Equal(float.NaN, target.X);
+            Assert.Equal(float.MaxValue, target.Y);
         }
 
         // A test for Vector2f (float)

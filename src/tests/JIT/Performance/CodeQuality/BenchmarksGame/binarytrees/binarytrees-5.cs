@@ -18,14 +18,10 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Microsoft.Xunit.Performance;
-
-[assembly: OptimizeForBenchmarks]
-[assembly: MeasureGCCounts]
 
 namespace BenchmarksGame
 {
-    public sealed class BinaryTrees_5
+    public class BinaryTrees_5
     {
         public const int MinDepth = 4;
 
@@ -38,12 +34,6 @@ namespace BenchmarksGame
 
             // Return 100 on success, anything else on failure.
             return check - expected + 100;
-        }
-
-        [Benchmark(InnerIterationCount = 7)]
-        public static void RunBench()
-        {
-            Benchmark.Iterate(() => Bench(16, false));
         }
 
         static int Bench(int n, bool verbose)

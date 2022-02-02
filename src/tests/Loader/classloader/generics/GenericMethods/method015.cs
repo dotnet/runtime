@@ -12,7 +12,7 @@ struct Foo
 		
 }
 
-public class Test
+public class Test_method015
 {
 	public static int counter = 0;
 	public static bool result = true;

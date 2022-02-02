@@ -195,10 +195,20 @@ enum UnhandledExceptionLocation
 };
 
 #ifdef HOST_WINDOWS
+
+// Must be the same as the copy in pal.h and the WriteDumpFlags enum in the diagnostics repo
+enum
+{
+    GenerateDumpFlagsNone = 0x00,
+    GenerateDumpFlagsLoggingEnabled = 0x01,
+    GenerateDumpFlagsVerboseLoggingEnabled = 0x02,
+    GenerateDumpFlagsCrashReportEnabled = 0x04
+};
+
 void InitializeCrashDump();
 void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 #endif
-bool GenerateDump(LPCWSTR dumpName, int dumpType, bool diag);
+bool GenerateDump(LPCWSTR dumpName, INT dumpType, ULONG32 flags);
 
 // Generates crash dumps if enabled for both Windows and Linux
 void CrashDumpAndTerminateProcess(UINT exitCode);
@@ -337,7 +347,7 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
 //==========================================================================
 
 ULONG GetExceptionMessage(OBJECTREF throwable,
-                          __inout_ecount(bufferLength) LPWSTR buffer,
+                          _Inout_updates_(bufferLength) LPWSTR buffer,
                           ULONG bufferLength);
 void GetExceptionMessage(OBJECTREF throwable, SString &result);
 STRINGREF GetExceptionMessage(OBJECTREF throwable);

@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly div.exe{}
+.assembly 'div'{}
 
 .class public _div {
 

@@ -161,7 +161,7 @@ namespace System.Reflection.Tests
             if (asm.Location.Length > 0)
             {
                 Assert.Throws<ArgumentNullException>(() => asm.GetFile(null));
-                AssertExtensions.Throws<ArgumentException>(null, () => asm.GetFile(""));
+                Assert.Throws<ArgumentException>(() => asm.GetFile(""));
                 Assert.Null(asm.GetFile("NonExistentfile.dll"));
                 Assert.NotNull(asm.GetFile("System.Reflection.Tests.dll"));
 
@@ -710,6 +710,12 @@ namespace System.Reflection.Tests
             Assembly loadedAssembly = Assembly.Load(aBytes);
             Assert.NotNull(loadedAssembly);
             Assert.Equal(assembly.FullName, loadedAssembly.FullName);
+
+            System.Runtime.Loader.AssemblyLoadContext alc = System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(loadedAssembly);
+            string expectedName = "Assembly.Load(byte[], ...)";
+            Assert.Equal(expectedName, alc.Name);
+            Assert.Contains(expectedName, alc.ToString());
+            Assert.Contains("System.Runtime.Loader.IndividualAssemblyLoadContext", alc.ToString());
         }
 
         [Fact]

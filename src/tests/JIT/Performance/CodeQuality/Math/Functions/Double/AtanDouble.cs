@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const double atanDoubleDelta = 0.0004;
         private const double atanDoubleExpectedResult = 0.78539816322061329;
-
-        [Benchmark(InnerIterationCount = AtanDoubleIterations)]
-        public static void AtanDoubleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        AtanDoubleTest();
-                    }
-                }
-            }
-        }
 
         public static void AtanDoubleTest()
         {

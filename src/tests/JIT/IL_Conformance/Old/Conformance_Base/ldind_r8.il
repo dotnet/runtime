@@ -77,4 +77,4 @@ FAIL:
 }
 }
 
-.assembly ldind_r8.exe{}
+.assembly ldind_r8{}

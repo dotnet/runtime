@@ -57,7 +57,7 @@ public class Gen<T> : Outer<T>.GenBase<T>
 	}
 }
 
-public class Test
+public class Test_NestedBaseClass06
 {
 	public static int counter = 0;
 	public static bool result = true;

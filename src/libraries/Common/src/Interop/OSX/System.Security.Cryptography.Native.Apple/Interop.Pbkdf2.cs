@@ -21,6 +21,7 @@ internal static partial class Interop
             fixed (byte* pSalt = salt)
             fixed (byte* pDestination = destination)
             {
+                int ccStatus;
                 int ret = AppleCryptoNative_Pbkdf2(
                     prfAlgorithm,
                     pPassword,
@@ -30,7 +31,7 @@ internal static partial class Interop
                     iterations,
                     pDestination,
                     destination.Length,
-                    out int ccStatus);
+                    &ccStatus);
 
                 if (ret == 0)
                 {
@@ -47,8 +48,8 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern unsafe int AppleCryptoNative_Pbkdf2(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static unsafe partial int AppleCryptoNative_Pbkdf2(
             PAL_HashAlgorithm prfAlgorithm,
             byte* password,
             int passwordLen,
@@ -57,6 +58,6 @@ internal static partial class Interop
             int iterations,
             byte* derivedKey,
             int derivedKeyLen,
-            out int errorCode);
+            int* errorCode);
     }
 }

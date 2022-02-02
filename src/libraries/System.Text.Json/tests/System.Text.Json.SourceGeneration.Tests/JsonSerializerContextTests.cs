@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.DotNet.RemoteExecutor;
@@ -23,7 +24,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public static void Converters_AndTypeInfoCreator_NotRooted_WhenMetadataNotPresent()
         {
             RemoteExecutor.Invoke(
-                new Action(() =>
+                () =>
                 {
                     object[] objArr = new object[] { new MyStruct() };
 
@@ -55,8 +56,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                         Assert.NotNull(fieldInfo);
                         Assert.Null(fieldInfo.GetValue(optionsInstance));
                     }
-                }),
-                new RemoteInvokeOptions() { ExpectedExitCode = 0 }).Dispose();
+                }).Dispose();
         }
 
         [Fact]
@@ -87,6 +87,45 @@ namespace System.Text.Json.SourceGeneration.Tests
             PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
         [JsonSerializable(typeof(Person))]
         internal partial class PersonJsonContext : JsonSerializerContext
+        {
+        }
+
+        // Regression test for https://github.com/dotnet/runtime/issues/62079
+        [Fact]
+        public static void SupportsPropertiesWithCustomConverterFactory()
+        {
+            var value = new ClassWithCustomConverterFactoryProperty { MyEnum = Serialization.Tests.SampleEnum.MinZero };
+            string json = JsonSerializer.Serialize(value, SingleClassWithCustomConverterFactoryPropertyContext.Default.ClassWithCustomConverterFactoryProperty);
+            Assert.Equal(@"{""MyEnum"":""MinZero""}", json);
+        }
+
+        public class ParentClass
+        {
+            public ClassWithCustomConverterFactoryProperty? Child { get; set; }
+        }
+
+        [JsonSerializable(typeof(ParentClass))]
+        internal partial class SingleClassWithCustomConverterFactoryPropertyContext : JsonSerializerContext
+        {
+        }
+
+        // Regression test for https://github.com/dotnet/runtime/issues/61860
+        [Fact]
+        public static void SupportsGenericParameterWithCustomConverterFactory()
+        {
+            var value = new List<TestEnum> { TestEnum.Cee };
+            string json = JsonSerializer.Serialize(value, GenericParameterWithCustomConverterFactoryContext.Default.ListTestEnum);
+            Assert.Equal(@"[""Cee""]", json);
+        }
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public enum TestEnum
+        {
+            Aye, Bee, Cee
+        }
+
+        [JsonSerializable(typeof(List<TestEnum>))]
+        internal partial class GenericParameterWithCustomConverterFactoryContext : JsonSerializerContext
         {
         }
     }

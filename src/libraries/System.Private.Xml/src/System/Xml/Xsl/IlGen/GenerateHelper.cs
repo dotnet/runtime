@@ -143,7 +143,7 @@ namespace System.Xml.Xsl.IlGen
             if (storageType == typeof(byte[]))
                 ToAtomicValue = typeof(XmlILStorageConverter).GetMethod("BytesToAtomicValue");
             else if (storageType != typeof(XPathItem) && storageType != typeof(XPathNavigator))
-                ToAtomicValue = typeof(XmlILStorageConverter).GetMethod(storageType.Name + "ToAtomicValue");
+                ToAtomicValue = typeof(XmlILStorageConverter).GetMethod($"{storageType.Name}ToAtomicValue");
         }
     }
 

@@ -12,12 +12,12 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly jumper // as "jumper"
+.assembly 'jumper4' // as "jumper"
 {
  //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
                         }
-.module jumper.exe
+.assembly extern xunit.core {}
 // MVID: {2E4A2D77-5614-4325-A9DC-CBB90842669E}
 .namespace MS
 {
@@ -74,6 +74,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       96 (0x60)
       .maxstack  2

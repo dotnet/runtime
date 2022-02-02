@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "OutputDebugStringW", ExactSpelling = true)]
-        internal static extern void OutputDebugString(string message);
+        [GeneratedDllImport(Interop.Libraries.Kernel32, EntryPoint = "OutputDebugStringW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial void OutputDebugString(string message);
     }
 }

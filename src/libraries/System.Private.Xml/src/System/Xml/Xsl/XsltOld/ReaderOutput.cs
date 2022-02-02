@@ -71,7 +71,7 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     if (localName.Length > 0)
                     {
-                        return _nameTable.Add(prefix + ":" + localName);
+                        return _nameTable.Add($"{prefix}:{localName}");
                     }
                     else
                     {

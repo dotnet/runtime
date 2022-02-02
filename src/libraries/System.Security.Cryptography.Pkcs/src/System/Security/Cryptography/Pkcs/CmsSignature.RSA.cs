@@ -90,10 +90,81 @@ namespace System.Security.Cryptography.Pkcs
                 string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 int digestValueLength);
+
+            private protected bool SignCore(
+#if NETCOREAPP || NETSTANDARD2_1
+                ReadOnlySpan<byte> dataHash,
+#else
+                byte[] dataHash,
+#endif
+                HashAlgorithmName hashAlgorithmName,
+                X509Certificate2 certificate,
+                AsymmetricAlgorithm? key,
+                bool silent,
+                RSASignaturePadding signaturePadding,
+                [NotNullWhen(true)] out byte[]? signatureValue)
+            {
+                RSA certPublicKey = certificate.GetRSAPublicKey()!;
+
+                // If there's no private key, fall back to the public key for a "no private key" exception.
+                RSA? privateKey = key as RSA ??
+                    PkcsPal.Instance.GetPrivateKeyForSigning<RSA>(certificate, silent) ??
+                    certPublicKey;
+
+                if (privateKey is null)
+                {
+                    signatureValue = null;
+                    return false;
+                }
+
+#if NETCOREAPP || NETSTANDARD2_1
+                byte[] signature = new byte[privateKey.KeySize / 8];
+
+                bool signed = privateKey.TrySignHash(
+                    dataHash,
+                    signature,
+                    hashAlgorithmName,
+                    signaturePadding,
+                    out int bytesWritten);
+
+                if (signed && signature.Length == bytesWritten)
+                {
+                    signatureValue = signature;
+
+                    if (key is not null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, signaturePadding))
+                    {
+                        // key did not match certificate
+                        signatureValue = null;
+                        return false;
+                    }
+
+                    return true;
+                }
+#endif
+                signatureValue = privateKey.SignHash(
+#if NETCOREAPP || NETSTANDARD2_1
+                    dataHash.ToArray(),
+#else
+                    dataHash,
+#endif
+                    hashAlgorithmName,
+                    signaturePadding);
+
+                if (key is not null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, signaturePadding))
+                {
+                    // key did not match certificate
+                    signatureValue = null;
+                    return false;
+                }
+
+                return true;
+            }
         }
 
         private sealed class RSAPkcs1CmsSignature : RSACmsSignature
         {
+            internal override RSASignaturePadding? SignaturePadding => RSASignaturePadding.Pkcs1;
+
             public RSAPkcs1CmsSignature(string? signatureAlgorithm, HashAlgorithmName? expectedDigest)
                 : base(signatureAlgorithm, expectedDigest)
             {
@@ -133,70 +204,85 @@ namespace System.Security.Cryptography.Pkcs
                 AsymmetricAlgorithm? key,
                 bool silent,
                 [NotNullWhen(true)] out string? signatureAlgorithm,
-                [NotNullWhen(true)] out byte[]? signatureValue)
+                [NotNullWhen(true)] out byte[]? signatureValue,
+                out byte[]? signatureParameters)
             {
-                RSA certPublicKey = certificate.GetRSAPublicKey()!;
-
-                // If there's no private key, fall back to the public key for a "no private key" exception.
-                RSA? privateKey = key as RSA ??
-                    PkcsPal.Instance.GetPrivateKeyForSigning<RSA>(certificate, silent) ??
-                    certPublicKey;
-
-                if (privateKey == null)
-                {
-                    signatureAlgorithm = null;
-                    signatureValue = null;
-                    return false;
-                }
-
-                signatureAlgorithm = Oids.Rsa;
-
-#if NETCOREAPP || NETSTANDARD2_1
-                byte[] signature = new byte[privateKey.KeySize / 8];
-
-                bool signed = privateKey.TrySignHash(
+                bool result = SignCore(
                     dataHash,
-                    signature,
                     hashAlgorithmName,
+                    certificate,
+                    key,
+                    silent,
                     RSASignaturePadding.Pkcs1,
-                    out int bytesWritten);
+                    out signatureValue);
 
-                if (signed && signature.Length == bytesWritten)
-                {
-                    signatureValue = signature;
-
-                    if (key != null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, RSASignaturePadding.Pkcs1))
-                    {
-                        // key did not match certificate
-                        signatureValue = null;
-                        return false;
-                    }
-
-                    return true;
-                }
-#endif
-                signatureValue = privateKey.SignHash(
-#if NETCOREAPP || NETSTANDARD2_1
-                    dataHash.ToArray(),
-#else
-                    dataHash,
-#endif
-                    hashAlgorithmName,
-                    RSASignaturePadding.Pkcs1);
-
-                if (key != null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, RSASignaturePadding.Pkcs1))
-                {
-                    // key did not match certificate
-                    signatureValue = null;
-                    return false;
-                }
-
-                return true;
+                signatureAlgorithm = result ? Oids.Rsa : null;
+                signatureParameters = null;
+                return result;
             }
         }
 
         private sealed class RSAPssCmsSignature : RSACmsSignature
         {
+            // SEQUENCE
+            private static readonly byte[] s_rsaPssSha1Parameters = new byte[] { 0x30, 0x00 };
+
+            // SEQUENCE
+            //  [0]
+            //    SEQUENCE
+            //      OBJECT IDENTIFIER 2.16.840.1.101.3.4.2.1
+            //  [1]
+            //    SEQUENCE
+            //      OBJECT IDENTIFIER 1.2.840.113549.1.1.8
+            //      SEQUENCE
+            //        OBJECT IDENTIFIER 2.16.840.1.101.3.4.2.1
+            //  [2]
+            //    INTEGER 32
+            private static readonly byte[] s_rsaPssSha256Parameters = new byte[] {
+                0x30, 0x30, 0xA0, 0x0D, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02,
+                0x01, 0xA1, 0x1A, 0x30, 0x18, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08,
+                0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0xA2, 0x03, 0x02,
+                0x01, 0x20,
+            };
+
+            // SEQUENCE
+            //  [0]
+            //    SEQUENCE
+            //      OBJECT IDENTIFIER 2.16.840.1.101.3.4.2.2
+            //  [1]
+            //    SEQUENCE
+            //      OBJECT IDENTIFIER 1.2.840.113549.1.1.8
+            //      SEQUENCE
+            //        OBJECT IDENTIFIER 2.16.840.1.101.3.4.2.2
+            //  [2]
+            //    INTEGER 48
+            private static readonly byte[] s_rsaPssSha384Parameters = new byte[] {
+                0x30, 0x30, 0xA0, 0x0D, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02,
+                0x02, 0xA1, 0x1A, 0x30, 0x18, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08,
+                0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0xA2, 0x03, 0x02,
+                0x01, 0x30,
+            };
+
+            // SEQUENCE
+            //  [0]
+            //    SEQUENCE
+            //      OBJECT IDENTIFIER 2.16.840.1.101.3.4.2.3
+            //  [1]
+            //    SEQUENCE
+            //      OBJECT IDENTIFIER 1.2.840.113549.1.1.8
+            //      SEQUENCE
+            //        OBJECT IDENTIFIER 2.16.840.1.101.3.4.2.3
+            //  [2]
+            //    INTEGER 64
+            private static readonly byte[] s_rsaPssSha512Parameters = new byte[] {
+                0x30, 0x30, 0xA0, 0x0D, 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02,
+                0x03, 0xA1, 0x1A, 0x30, 0x18, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08,
+                0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0xA2, 0x03, 0x02,
+                0x01, 0x40,
+            };
+
+            internal override RSASignaturePadding? SignaturePadding => RSASignaturePadding.Pss;
+
             public RSAPssCmsSignature() : base(null, null)
             {
             }
@@ -276,11 +362,56 @@ namespace System.Security.Cryptography.Pkcs
                 X509Certificate2 certificate,
                 AsymmetricAlgorithm? key,
                 bool silent,
-                out string signatureAlgorithm,
-                out byte[] signatureValue)
+                [NotNullWhen(true)] out string? signatureAlgorithm,
+                [NotNullWhen(true)] out byte[]? signatureValue,
+                out byte[]? signatureParameters)
             {
-                Debug.Fail("RSA-PSS requires building parameters, which has no API.");
-                throw new CryptographicException();
+                bool result = SignCore(
+                    dataHash,
+                    hashAlgorithmName,
+                    certificate,
+                    key,
+                    silent,
+                    RSASignaturePadding.Pss,
+                    out signatureValue);
+
+                if (result)
+                {
+                    signatureAlgorithm = Oids.RsaPss;
+
+                    if (hashAlgorithmName == HashAlgorithmName.SHA1)
+                    {
+                        signatureParameters = s_rsaPssSha1Parameters;
+                    }
+                    else if (hashAlgorithmName == HashAlgorithmName.SHA256)
+                    {
+                        signatureParameters = s_rsaPssSha256Parameters;
+                    }
+                    else if (hashAlgorithmName == HashAlgorithmName.SHA384)
+                    {
+                        signatureParameters = s_rsaPssSha384Parameters;
+                    }
+                    else if (hashAlgorithmName == HashAlgorithmName.SHA512)
+                    {
+                        signatureParameters = s_rsaPssSha512Parameters;
+                    }
+                    else
+                    {
+                        // The only hash algorithm we don't support is MD5.
+                        // We shouldn't get here with anything other than MD5.
+                        Debug.Assert(hashAlgorithmName == HashAlgorithmName.MD5, $"Unsupported digest algorithm '{hashAlgorithmName.Name}'");
+                        signatureAlgorithm = null;
+                        signatureParameters = null;
+                        return false;
+                    }
+                }
+                else
+                {
+                    signatureAlgorithm = null;
+                    signatureParameters = null;
+                }
+
+                return result;
             }
         }
     }

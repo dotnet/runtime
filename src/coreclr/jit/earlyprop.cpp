@@ -110,7 +110,7 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
     if ((basicBlock->bbFlags & bbFlag) == 0)
     {
         printf("%s is not set on " FMT_BB " but is required because of the following tree \n", bbFlagStr,
-               compCurBB->bbNum);
+               basicBlock->bbNum);
         gtDispTree(tree);
         assert(false);
     }
@@ -288,19 +288,19 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
                 return nullptr;
             }
 
-            // When replacing GT_ARR_LENGTH nodes with constants we can end up with GT_ARR_BOUNDS_CHECK
+            // When replacing GT_ARR_LENGTH nodes with constants we can end up with GT_BOUNDS_CHECK
             // nodes that have constant operands and thus can be trivially proved to be useless. It's
             // better to remove these range checks here, otherwise they'll pass through assertion prop
             // (creating useless (c1 < c2)-like assertions) and reach RangeCheck where they are finally
             // removed. Common patterns like new int[] { x, y, z } benefit from this.
 
-            if ((tree->gtNext != nullptr) && tree->gtNext->OperIs(GT_ARR_BOUNDS_CHECK))
+            if ((tree->gtNext != nullptr) && tree->gtNext->OperIs(GT_BOUNDS_CHECK))
             {
                 GenTreeBoundsChk* check = tree->gtNext->AsBoundsChk();
 
-                if ((check->gtArrLen == tree) && check->gtIndex->IsCnsIntOrI())
+                if ((check->GetArrayLength() == tree) && check->GetIndex()->IsCnsIntOrI())
                 {
-                    ssize_t checkConstVal = check->gtIndex->AsIntCon()->IconValue();
+                    ssize_t checkConstVal = check->GetIndex()->AsIntCon()->IconValue();
                     if ((checkConstVal >= 0) && (checkConstVal < actualConstVal))
                     {
                         GenTree* comma = check->gtGetParent(nullptr);
@@ -700,7 +700,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
     assert(fgStmtListThreaded);
     while (canRemoveNullCheck && (currentTree != tree) && (currentTree != nullptr))
     {
-        if ((*nullCheckParent == nullptr) && (nullCheckTree->gtGetChildPointer(currentTree) != nullptr))
+        if ((*nullCheckParent == nullptr) && currentTree->TryGetUse(nullCheckTree))
         {
             *nullCheckParent = currentTree;
         }

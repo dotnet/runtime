@@ -8,7 +8,7 @@
 
 //TEST ASSEMBLY:
 .assembly Generated26 { .hash algorithm 0x00008004 }
-.module Generated26.exe
+.assembly extern xunit.core {}
 
 .class public BaseClass0 
 {
@@ -136,7 +136,7 @@
 	.method public hidebysig newslot abstract virtual instance string Method2<M0>() cil managed { }
 	.method public hidebysig newslot abstract virtual instance string Method3<M0>() cil managed { }
 }
-.class private auto ansi beforefieldinit Framework {
+.class public auto ansi beforefieldinit Generated26 {
 	.method static void M.BaseClass0<(BaseClass0)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
@@ -667,30 +667,30 @@
 		initobj valuetype MyStruct76`1<class BaseClass0>
 		.try {  ldloc V_3
 				ldstr "MyStruct76::Method4.MI.604()#MyStruct76::Method5.MI.606()#MyStruct76::Method6.607<System.Object>()#"
-				call void Framework::M.IBase1.T<class BaseClass0,valuetype MyStruct76`1<class BaseClass0>>(!!1,string) leave.s LV0
+				call void Generated26::M.IBase1.T<class BaseClass0,valuetype MyStruct76`1<class BaseClass0>>(!!1,string) leave.s LV0
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
 		.try {  ldloc V_3
 				ldstr "MyStruct76::Method4.MI.604()#MyStruct76::Method5.MI.606()#MyStruct76::Method6.607<System.Object>()#"
-				call void Framework::M.IBase1.A<valuetype MyStruct76`1<class BaseClass0>>(!!0,string) leave.s LV1
+				call void Generated26::M.IBase1.A<valuetype MyStruct76`1<class BaseClass0>>(!!0,string) leave.s LV1
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
 		.try {  ldloc V_3
 				ldstr "MyStruct76::Method0.608()#MyStruct76::Method1.MI.610()#MyStruct76::Method2.MI.612<System.Object>()#MyStruct76::Method3.613<System.Object>()#"
-				call void Framework::M.IBase0<valuetype MyStruct76`1<class BaseClass0>>(!!0,string) leave.s LV2
+				call void Generated26::M.IBase0<valuetype MyStruct76`1<class BaseClass0>>(!!0,string) leave.s LV2
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV2} LV2:
 		.locals init (valuetype MyStruct76`1<class BaseClass1> V_4)
 		ldloca V_4
 		initobj valuetype MyStruct76`1<class BaseClass1>
 		.try {  ldloc V_4
 				ldstr "MyStruct76::Method4.MI.604()#MyStruct76::Method5.MI.606()#MyStruct76::Method6.607<System.Object>()#"
-				call void Framework::M.IBase1.T<class BaseClass0,valuetype MyStruct76`1<class BaseClass1>>(!!1,string) leave.s LV3
+				call void Generated26::M.IBase1.T<class BaseClass0,valuetype MyStruct76`1<class BaseClass1>>(!!1,string) leave.s LV3
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV3} LV3:
 		.try {  ldloc V_4
 				ldstr "MyStruct76::Method4.MI.604()#MyStruct76::Method5.MI.606()#MyStruct76::Method6.607<System.Object>()#"
-				call void Framework::M.IBase1.A<valuetype MyStruct76`1<class BaseClass1>>(!!0,string) leave.s LV4
+				call void Generated26::M.IBase1.A<valuetype MyStruct76`1<class BaseClass1>>(!!0,string) leave.s LV4
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV4} LV4:
 		.try {  ldloc V_4
 				ldstr "MyStruct76::Method0.608()#MyStruct76::Method1.MI.610()#MyStruct76::Method2.MI.612<System.Object>()#MyStruct76::Method3.613<System.Object>()#"
-				call void Framework::M.IBase0<valuetype MyStruct76`1<class BaseClass1>>(!!0,string) leave.s LV5
+				call void Generated26::M.IBase0<valuetype MyStruct76`1<class BaseClass1>>(!!0,string) leave.s LV5
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV5} LV5:
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -712,7 +712,7 @@
 				      "MyStruct76::Method1.MI.610()#" +
 				      "MyStruct76::Method2.MI.612<System.Object>()#" +
 				      "MyStruct76::Method3.613<System.Object>()#"
-				call void Framework::M.MyStruct76.T<class BaseClass0,valuetype MyStruct76`1<class BaseClass0>>(!!1,string) leave.s LV0
+				call void Generated26::M.MyStruct76.T<class BaseClass0,valuetype MyStruct76`1<class BaseClass0>>(!!1,string) leave.s LV0
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
 		.try {  ldloc V_5
 				ldstr "MyStruct76::Method4.MI.604()#" +
@@ -722,7 +722,7 @@
 				      "MyStruct76::Method1.MI.610()#" +
 				      "MyStruct76::Method2.MI.612<System.Object>()#" +
 				      "MyStruct76::Method3.613<System.Object>()#"
-				call void Framework::M.MyStruct76.A<valuetype MyStruct76`1<class BaseClass0>>(!!0,string) leave.s LV1
+				call void Generated26::M.MyStruct76.A<valuetype MyStruct76`1<class BaseClass0>>(!!0,string) leave.s LV1
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
 		.locals init (valuetype MyStruct76`1<class BaseClass1> V_6)
 		ldloca V_6
@@ -735,7 +735,7 @@
 				      "MyStruct76::Method1.MI.610()#" +
 				      "MyStruct76::Method2.MI.612<System.Object>()#" +
 				      "MyStruct76::Method3.613<System.Object>()#"
-				call void Framework::M.MyStruct76.T<class BaseClass1,valuetype MyStruct76`1<class BaseClass1>>(!!1,string) leave.s LV2
+				call void Generated26::M.MyStruct76.T<class BaseClass1,valuetype MyStruct76`1<class BaseClass1>>(!!1,string) leave.s LV2
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV2} LV2:
 		.try {  ldloc V_6
 				ldstr "MyStruct76::Method4.MI.604()#" +
@@ -745,7 +745,7 @@
 				      "MyStruct76::Method1.MI.610()#" +
 				      "MyStruct76::Method2.MI.612<System.Object>()#" +
 				      "MyStruct76::Method3.613<System.Object>()#"
-				call void Framework::M.MyStruct76.B<valuetype MyStruct76`1<class BaseClass1>>(!!0,string) leave.s LV3
+				call void Generated26::M.MyStruct76.B<valuetype MyStruct76`1<class BaseClass1>>(!!0,string) leave.s LV3
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV3} LV3:
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -1075,12 +1075,15 @@
 	}
 	.method public hidebysig static int32  Main() cil managed
 	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  10
-		call void Framework::MethodCallingTest()
-		call void Framework::ConstrainedCallsTest()
-		call void Framework::StructConstrainedInterfaceCallsTest()
-		call void Framework::CalliTest()
+		call void Generated26::MethodCallingTest()
+		call void Generated26::ConstrainedCallsTest()
+		call void Generated26::StructConstrainedInterfaceCallsTest()
+		call void Generated26::CalliTest()
 		ldc.i4 100
 		ret
 	}

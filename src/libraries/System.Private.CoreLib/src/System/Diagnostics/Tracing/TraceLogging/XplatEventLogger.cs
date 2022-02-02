@@ -14,7 +14,7 @@ using System.Runtime.Versioning;
 
 namespace System.Diagnostics.Tracing
 {
-    internal sealed class XplatEventLogger : EventListener
+    internal sealed partial class XplatEventLogger : EventListener
     {
         public XplatEventLogger() {}
 
@@ -38,11 +38,11 @@ namespace System.Diagnostics.Tracing
             return null;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern bool IsEventSourceLoggingEnabled();
+        [GeneratedDllImport(RuntimeHelpers.QCall)]
+        private static partial bool IsEventSourceLoggingEnabled();
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);
+        [GeneratedDllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static partial void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);
 
         private static readonly List<char> escape_seq = new List<char> { '\b', '\f', '\n', '\r', '\t', '\"', '\\' };
         private static readonly Dictionary<char, string> seq_mapping = new Dictionary<char, string>()

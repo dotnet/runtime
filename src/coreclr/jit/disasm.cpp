@@ -108,7 +108,7 @@ typedef struct codeBlk
 
 /* static */
 size_t __stdcall DisAssembler::disCchAddr(
-    const DIS* pdis, DIS::ADDR addr, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
+    const DIS* pdis, DIS::ADDR addr, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
 {
     DisAssembler* pDisAsm = (DisAssembler*)pdis->PvClient();
     assert(pDisAsm);
@@ -116,7 +116,7 @@ size_t __stdcall DisAssembler::disCchAddr(
 }
 
 size_t DisAssembler::disCchAddrMember(
-    const DIS* pdis, DIS::ADDR addr, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
+    const DIS* pdis, DIS::ADDR addr, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
 {
     /* First check the termination type of the instruction
      * because this might be a helper or static function call
@@ -348,7 +348,7 @@ size_t DisAssembler::disCchAddrMember(
 
 /* static */
 size_t __stdcall DisAssembler::disCchFixup(
-    const DIS* pdis, DIS::ADDR addr, size_t size, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
+    const DIS* pdis, DIS::ADDR addr, size_t size, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
 {
     DisAssembler* pDisAsm = (DisAssembler*)pdis->PvClient();
     assert(pDisAsm);
@@ -357,7 +357,7 @@ size_t __stdcall DisAssembler::disCchFixup(
 }
 
 size_t DisAssembler::disCchFixupMember(
-    const DIS* pdis, DIS::ADDR addr, size_t size, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
+    const DIS* pdis, DIS::ADDR addr, size_t size, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
 {
 #if defined(TARGET_XARCH)
 
@@ -588,7 +588,7 @@ size_t DisAssembler::disCchFixupMember(
 
 /* static */
 size_t __stdcall DisAssembler::disCchRegRel(
-    const DIS* pdis, DIS::REGA reg, DWORD disp, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp)
+    const DIS* pdis, DIS::REGA reg, DWORD disp, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp)
 {
     DisAssembler* pDisAsm = (DisAssembler*)pdis->PvClient();
     assert(pDisAsm);
@@ -597,7 +597,7 @@ size_t __stdcall DisAssembler::disCchRegRel(
 }
 
 size_t DisAssembler::disCchRegRelMember(
-    const DIS* pdis, DIS::REGA reg, DWORD disp, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp)
+    const DIS* pdis, DIS::REGA reg, DWORD disp, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp)
 {
 #if defined(TARGET_XARCH)
 
@@ -800,7 +800,7 @@ size_t DisAssembler::disCchRegRelMember(
  */
 
 /* static */
-size_t __stdcall DisAssembler::disCchReg(const DIS* pdis, DIS::REGA reg, __in_ecount(cchMax) wchar_t* wz, size_t cchMax)
+size_t __stdcall DisAssembler::disCchReg(const DIS* pdis, DIS::REGA reg, _In_reads_(cchMax) wchar_t* wz, size_t cchMax)
 {
     DisAssembler* pDisAsm = (DisAssembler*)pdis->PvClient();
     assert(pDisAsm);
@@ -808,7 +808,7 @@ size_t __stdcall DisAssembler::disCchReg(const DIS* pdis, DIS::REGA reg, __in_ec
     return pDisAsm->disCchRegMember(pdis, reg, wz, cchMax);
 }
 
-size_t DisAssembler::disCchRegMember(const DIS* pdis, DIS::REGA reg, __in_ecount(cchMax) wchar_t* wz, size_t cchMax)
+size_t DisAssembler::disCchRegMember(const DIS* pdis, DIS::REGA reg, _In_reads_(cchMax) wchar_t* wz, size_t cchMax)
 {
     // TODO-Review: DIS::REGA does not directly map to our regNumber! E.g., look at DISARM64::REGA --
     // the Wt registers come first (and do map to our regNumber), but the Xt registers follow.
@@ -1102,7 +1102,7 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
     }
 
     wchar_t wz[MAX_CLASSNAME_LENGTH];
-    pdis->CchFormatInstr(wz, _countof(wz));
+    pdis->CchFormatInstr(wz, ArrLen(wz));
 
     if (printit)
     {
@@ -1133,7 +1133,7 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
             wchar_t wzBytes[MAX_CLASSNAME_LENGTH];
             assert(cchBytesMax < MAX_CLASSNAME_LENGTH);
 
-            size_t cchBytes = pdis->CchFormatBytes(wzBytes, _countof(wzBytes));
+            size_t cchBytes = pdis->CchFormatBytes(wzBytes, ArrLen(wzBytes));
 
             if (cchBytes > CCH_INDENT)
             {
@@ -1168,7 +1168,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
 
     wchar_t wz[MAX_CLASSNAME_LENGTH];
 
-    pdis->CchFormatAddr(addr, wz, _countof(wz));
+    pdis->CchFormatAddr(addr, wz, ArrLen(wz));
 
     size_t cchIndent = (size_t)fprintf(pfile, "  %ls: ", wz);
 
@@ -1190,7 +1190,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
     }
 
     wchar_t wzBytes[64];
-    size_t  cchBytes = pdis->CchFormatBytes(wzBytes, _countof(wzBytes));
+    size_t  cchBytes = pdis->CchFormatBytes(wzBytes, ArrLen(wzBytes));
 
     wchar_t* pwzBytes;
     wchar_t* pwzNext;
@@ -1228,7 +1228,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
 
         if (fFirst)
         {
-            pdis->CchFormatInstr(wz, _countof(wz));
+            pdis->CchFormatInstr(wz, ArrLen(wz));
             fprintf(pfile, "%-*ls %ls\n", cchBytesMax, pwzBytes, wz);
         }
 

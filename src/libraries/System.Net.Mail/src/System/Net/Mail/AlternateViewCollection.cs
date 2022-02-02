@@ -29,20 +29,14 @@ namespace System.Net.Mail
 
         protected override void RemoveItem(int index)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             base.RemoveItem(index);
         }
 
         protected override void ClearItems()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             base.ClearItems();
         }
@@ -50,10 +44,7 @@ namespace System.Net.Mail
 
         protected override void SetItem(int index, AlternateView item)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (item == null)
             {
@@ -65,10 +56,7 @@ namespace System.Net.Mail
 
         protected override void InsertItem(int index, AlternateView item)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (item == null)
             {

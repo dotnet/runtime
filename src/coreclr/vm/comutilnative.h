@@ -35,18 +35,10 @@ void FreeExceptionData(ExceptionData *pedata);
 
 class ExceptionNative
 {
-private:
-    enum ExceptionMessageKind {
-        ThreadAbort = 1,
-        ThreadInterrupted = 2,
-        OutOfMemory = 3
-    };
-
 public:
     static FCDECL1(FC_BOOL_RET, IsImmutableAgileException, Object* pExceptionUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsTransient, INT32 hresult);
     static FCDECL3(StringObject *, StripFileInfo, Object *orefExcepUNSAFE, StringObject *orefStrUNSAFE, CLR_BOOL isRemoteStackTrace);
-    static void QCALLTYPE GetMessageFromNativeResources(ExceptionMessageKind kind, QCall::StringHandleOnStack retMesg);
     static FCDECL0(VOID, PrepareForForeignExceptionRaise);
     static FCDECL3(VOID, GetStackTracesDeepCopy, Object* pExceptionObjectUnsafe, Object **pStackTraceUnsafe, Object **pDynamicMethodsUnsafe);
     static FCDECL3(VOID, SaveStackTracesFromDeepCopy, Object* pExceptionObjectUnsafe, Object *pStackTraceUnsafe, Object *pDynamicMethodsUnsafe);
@@ -61,6 +53,13 @@ public:
     static FCDECL0(UINT32, GetExceptionCount);
 };
 
+enum class ExceptionMessageKind {
+    ThreadAbort = 1,
+    ThreadInterrupted = 2,
+    OutOfMemory = 3
+};
+extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(ExceptionMessageKind kind, QCall::StringHandleOnStack retMesg);
+
 //
 // Buffer
 //
@@ -68,10 +67,10 @@ class Buffer
 {
 public:
     static FCDECL3(VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
-
-    static void QCALLTYPE MemMove(void *dst, void *src, size_t length);
-    static void QCALLTYPE Clear(void *dst, size_t length);
 };
+
+extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length);
+extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length);
 
 const UINT MEM_PRESSURE_COUNT = 4;
 
@@ -150,14 +149,6 @@ public:
     static FCDECL0(UINT64,  GetSegmentSize);
     static FCDECL0(int,     GetLastGCPercentTimeInGC);
     static FCDECL1(UINT64,  GetGenerationSize, int gen);
-    static
-    INT64 QCALLTYPE GetTotalMemory();
-
-    static
-    void QCALLTYPE Collect(INT32 generation, INT32 mode);
-
-    static
-    void QCALLTYPE WaitForPendingFinalizers();
 
     static FCDECL0(int,     GetMaxGeneration);
     static FCDECL1(void,    KeepAlive, Object *obj);
@@ -170,26 +161,6 @@ public:
 
     static FCDECL3(Object*, AllocateNewArray, void* elementTypeHandle, INT32 length, INT32 flags);
 
-#ifdef FEATURE_BASICFREEZE
-    static
-    void* QCALLTYPE RegisterFrozenSegment(void *pSection, SIZE_T sizeSection);
-
-    static
-    void QCALLTYPE UnregisterFrozenSegment(void *segmentHandle);
-#endif // FEATURE_BASICFREEZE
-
-    static
-    int QCALLTYPE StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC);
-
-    static
-    int QCALLTYPE EndNoGCRegion();
-
-    static
-    void QCALLTYPE _AddMemoryPressure(UINT64 bytesAllocated);
-
-    static
-    void QCALLTYPE _RemoveMemoryPressure(UINT64 bytesAllocated);
-
     NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
     static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
 
@@ -201,6 +172,25 @@ private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
     NOINLINE static void GarbageCollectModeAny(int generation);
 };
+
+extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
+
+extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode);
+
+extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers();
+#ifdef FEATURE_BASICFREEZE
+extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void *pSection, SIZE_T sizeSection);
+
+extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void *segmentHandle);
+#endif // FEATURE_BASICFREEZE
+
+extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC);
+
+extern "C" int QCALLTYPE GCInterface_EndNoGCRegion();
+
+extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated);
+
+extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated);
 
 class COMInterlocked
 {
@@ -220,8 +210,9 @@ public:
 
         static FCDECL0(void, FCMemoryBarrier);
         static FCDECL0(void, FCMemoryBarrierLoad);
-        static void QCALLTYPE MemoryBarrierProcessWide();
 };
+
+extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 
 class ValueTypeHelper {
 public:

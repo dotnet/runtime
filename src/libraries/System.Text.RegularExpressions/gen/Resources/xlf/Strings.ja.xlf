@@ -47,11 +47,6 @@
         <target state="translated">ターゲット配列の長さが不足しているため、コレクション内のすべての項目をコピーできません。配列のインデックスと長さをご確認ください。</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">配列に null 要素を含めることはできません。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">開始インデックスに 0 より小さい値または入力長より大きい値を指定することはできません。</target>
@@ -110,7 +105,7 @@
       <trans-unit id="InternalError_ScanRegex">
         <source>Internal error in ScanRegex.</source>
         <target state="translated">ScanRegex に内部エラーが発生しました。</target>
-        <note />
+        <note>{Locked="ScanRegex"}</note>
       </trans-unit>
       <trans-unit id="InvalidEmptyArgument">
         <source>Argument {0} cannot be zero-length.</source>
@@ -135,12 +130,12 @@
       <trans-unit id="InvalidRegexGeneratorAttributeMessage">
         <source>The RegexGeneratorAttribute is malformed</source>
         <target state="translated">RegexGeneratorAttribute の形式に誤りがあります</target>
-        <note />
+        <note>{Locked="RegexGeneratorAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeTitle">
         <source>Invalid RegexGenerator usage</source>
         <target state="translated">RegexGenerator の使用法が無効です</target>
-        <note />
+        <note>{Locked="RegexGenerator"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \\p{X} character escape.</source>
@@ -150,6 +145,16 @@
       <trans-unit id="LengthNotNegative">
         <source>Length cannot be less than 0 or exceed input length.</source>
         <target state="translated">長さを 0 未満に設定したり、入力の長さを超えることはできません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationMessage">
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
+        <target state="translated">オプションがサポートされていないか、または正規表現が複雑すぎるため、RegexGenerator は指定された正規表現の完全なソース実装を生成できませんでした。 実装では、実行時に正規表現が解釈されます。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationTitle">
+        <source>RegexGenerator limitation reached.</source>
+        <target state="translated">RegexGenerator の制限に達しました。</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -192,14 +197,14 @@
         <target state="translated">失敗した Match で Result を呼び出すことはできません。</target>
         <note />
       </trans-unit>
+      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
+        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
+        <target state="translated">RegexOptions.NonBacktracking では、グループの置換による正規表現の置換はサポートされていません。</target>
+        <note>{Locked="RegexOptions.NonBacktracking"}</note>
+      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">コレクションは読み取り専用です。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">この操作は、オブジェクトに付き 1 回のみ実行できます。</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">
@@ -215,7 +220,7 @@
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Capture group numbers must be less than or equal to Int32.MaxValue.</source>
         <target state="translated">キャプチャ グループ数は、Int32.MaxValue 以下でなければなりません。</target>
-        <note />
+        <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
         <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
@@ -275,11 +280,6 @@
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \\ at end of pattern.</source>
         <target state="translated">パターンの末尾に無効な \\ があります。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">正規表現の生成中に予期しない Opcode: {0} が発生しました。</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">

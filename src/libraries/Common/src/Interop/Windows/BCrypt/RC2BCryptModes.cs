@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using Internal.NativeCrypto;
 
@@ -26,10 +27,8 @@ namespace Internal.Cryptography
             SafeAlgorithmHandle hAlg = Cng.BCryptOpenAlgorithmProvider(Cng.BCRYPT_RC2_ALGORITHM, null, Cng.OpenAlgorithmProviderFlags.NONE);
             hAlg.SetCipherMode(cipherMode);
 
-            if (effectiveKeyLength != 0)
-            {
-                Cng.SetEffectiveKeyLength(hAlg, effectiveKeyLength);
-            }
+            Debug.Assert(effectiveKeyLength > 0);
+            Cng.SetEffectiveKeyLength(hAlg, effectiveKeyLength);
 
             return hAlg;
         }

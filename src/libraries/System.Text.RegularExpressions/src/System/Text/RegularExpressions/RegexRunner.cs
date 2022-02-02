@@ -57,6 +57,9 @@ namespace System.Text.RegularExpressions
         protected internal Match? runmatch;        // result object
         protected internal Regex? runregex;        // regex object
 
+        // TODO: Expose something as protected internal: https://github.com/dotnet/runtime/issues/59629
+        private protected bool quick;              // false if match details matter, true if only the fact that match occurred matters
+
         private int _timeout;              // timeout in milliseconds (needed for actual)
         private bool _ignoreTimeout;
         private int _timeoutOccursAt;
@@ -68,7 +71,7 @@ namespace System.Text.RegularExpressions
         private const int TimeoutCheckFrequency = 1000;
         private int _timeoutChecksToSkip;
 
-        protected internal RegexRunner() { }
+        protected RegexRunner() { }
 
         /// <summary>
         /// Scans the string to find the first match. Uses the Match object
@@ -82,11 +85,13 @@ namespace System.Text.RegularExpressions
         /// and we could use a separate method Skip() that will quickly scan past
         /// any characters that we know can't match.
         /// </summary>
-        protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
+        protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
             Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
 
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
+            this.quick = quick;
+
             // Handle timeout argument
             _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
             bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
@@ -140,16 +145,10 @@ namespace System.Text.RegularExpressions
             bool initialized = false;
             while (true)
             {
-#if DEBUG
-                if (regex.IsDebug)
-                {
-                    Debug.WriteLine("");
-                    Debug.WriteLine($"Search range: from {runtextbeg} to {runtextend}");
-                    Debug.WriteLine($"Firstchar search starting at {runtextpos} stopping at {stoppos}");
-                }
-#endif
-
                 // Find the next potential location for a match in the input.
+#if DEBUG
+                Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling FindFirstChar at {nameof(runtextbeg)}={runtextbeg}, {nameof(runtextpos)}={runtextpos}, {nameof(runtextend)}={runtextend}");
+#endif
                 if (FindFirstChar())
                 {
                     if (!ignoreTimeout)
@@ -165,15 +164,10 @@ namespace System.Text.RegularExpressions
                         initialized = true;
                     }
 
-#if DEBUG
-                    if (regex.IsDebug)
-                    {
-                        Debug.WriteLine($"Executing engine starting at {runtextpos}");
-                        Debug.WriteLine("");
-                    }
-#endif
-
                     // See if there's a match at this position.
+#if DEBUG
+                    Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling Go at {nameof(runtextpos)}={runtextpos}");
+#endif
                     Go();
 
                     // If we got a match, we're done.
@@ -218,8 +212,10 @@ namespace System.Text.RegularExpressions
         /// This optionally repeatedly hands out the same Match instance, updated with new information.
         /// <paramref name="reuseMatchObject"/> should be set to false if the Match object is handed out to user code.
         /// </remarks>
-        internal void Scan<TState>(Regex regex, string text, int textstart, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject, TimeSpan timeout)
+        internal void ScanInternal<TState>(Regex regex, string text, int textstart, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject, TimeSpan timeout)
         {
+            quick = false;
+
             // Handle timeout argument
             _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
             bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
@@ -257,16 +253,10 @@ namespace System.Text.RegularExpressions
             bool initialized = false;
             while (true)
             {
-#if DEBUG
-                if (regex.IsDebug)
-                {
-                    Debug.WriteLine("");
-                    Debug.WriteLine($"Search range: from {runtextbeg} to {runtextend}");
-                    Debug.WriteLine($"Firstchar search starting at {runtextpos} stopping at {stoppos}");
-                }
-#endif
-
                 // Find the next potential location for a match in the input.
+#if DEBUG
+                Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling FindFirstChar at {nameof(runtextbeg)}={runtextbeg}, {nameof(runtextpos)}={runtextpos}, {nameof(runtextend)}={runtextend}");
+#endif
                 if (FindFirstChar())
                 {
                     if (!ignoreTimeout)
@@ -283,11 +273,7 @@ namespace System.Text.RegularExpressions
                     }
 
 #if DEBUG
-                    if (regex.IsDebug)
-                    {
-                        Debug.WriteLine($"Executing engine starting at {runtextpos}");
-                        Debug.WriteLine("");
-                    }
+                    Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling Go at {nameof(runtextpos)}={runtextpos}");
 #endif
 
                     // See if there's a match at this position.
@@ -399,19 +385,6 @@ namespace System.Text.RegularExpressions
             if (0 > _timeoutOccursAt && 0 < currentMillis)
                 return;
 
-#if DEBUG
-            if (runregex!.IsDebug)
-            {
-                Debug.WriteLine("");
-                Debug.WriteLine("RegEx match timeout occurred!");
-                Debug.WriteLine($"Specified timeout:       {TimeSpan.FromMilliseconds(_timeout)}");
-                Debug.WriteLine($"Timeout check frequency: {TimeoutCheckFrequency}");
-                Debug.WriteLine($"Search pattern:          {runregex.pattern}");
-                Debug.WriteLine($"Input:                   {runtext}");
-                Debug.WriteLine("About to throw RegexMatchTimeoutException.");
-            }
-#endif
-
             throw new RegexMatchTimeoutException(runtext!, runregex!.pattern!, TimeSpan.FromMilliseconds(_timeout));
         }
 
@@ -514,9 +487,12 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected bool IsBoundary(int index, int startpos, int endpos)
         {
-            return (index > startpos && RegexCharClass.IsWordChar(runtext![index - 1])) !=
-                   (index < endpos && RegexCharClass.IsWordChar(runtext![index]));
+            return (index > startpos && RegexCharClass.IsBoundaryWordChar(runtext![index - 1])) !=
+                   (index < endpos && RegexCharClass.IsBoundaryWordChar(runtext![index]));
         }
+
+        /// <summary>Called to determine a char's inclusion in the \w set.</summary>
+        internal static bool IsWordChar(char ch) => RegexCharClass.IsWordChar(ch);
 
         protected bool IsECMABoundary(int index, int startpos, int endpos)
         {
@@ -704,81 +680,77 @@ namespace System.Text.RegularExpressions
         /// Dump the current state
         /// </summary>
         [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal virtual void DumpState()
+        internal virtual void DebugTraceCurrentState()
         {
-            Debug.WriteLine($"Text:  {TextposDescription()}");
-            Debug.WriteLine($"Track: {StackDescription(runtrack!, runtrackpos)}");
-            Debug.WriteLine($"Stack: {StackDescription(runstack!, runstackpos)}");
-        }
+            Debug.WriteLineIf(Regex.EnableDebugTracing, $"Text:  {DescribeTextPosition()}");
+            Debug.WriteLineIf(Regex.EnableDebugTracing, $"Track: {DescribeStack(runtrack!, runtrackpos)}");
+            Debug.WriteLineIf(Regex.EnableDebugTracing, $"Stack: {DescribeStack(runstack!, runstackpos)}");
 
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        private static string StackDescription(int[] a, int index)
-        {
-            var sb = new StringBuilder();
-
-            sb.Append(a.Length - index);
-            sb.Append('/');
-            sb.Append(a.Length);
-
-            if (sb.Length < 8)
+            string DescribeTextPosition()
             {
-                sb.Append(' ', 8 - sb.Length);
-            }
+                var sb = new StringBuilder();
 
-            sb.Append('(');
+                sb.Append(runtextpos);
 
-            for (int i = index; i < a.Length; i++)
-            {
-                if (i > index)
+                if (sb.Length < 8)
                 {
-                    sb.Append(' ');
+                    sb.Append(' ', 8 - sb.Length);
                 }
-                sb.Append(a[i]);
+
+                if (runtextpos > runtextbeg)
+                {
+                    sb.Append(RegexCharClass.DescribeChar(runtext![runtextpos - 1]));
+                }
+                else
+                {
+                    sb.Append('^');
+                }
+
+                sb.Append('>');
+
+                for (int i = runtextpos; i < runtextend; i++)
+                {
+                    sb.Append(RegexCharClass.DescribeChar(runtext![i]));
+                }
+                if (sb.Length >= 64)
+                {
+                    sb.Length = 61;
+                    sb.Append("...");
+                }
+                else
+                {
+                    sb.Append('$');
+                }
+
+                return sb.ToString();
             }
 
-            sb.Append(')');
-
-            return sb.ToString();
-        }
-
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal virtual string TextposDescription()
-        {
-            var sb = new StringBuilder();
-
-            sb.Append(runtextpos);
-
-            if (sb.Length < 8)
+            static string DescribeStack(int[] stack, int index)
             {
-                sb.Append(' ', 8 - sb.Length);
-            }
+                var sb = new StringBuilder();
 
-            if (runtextpos > runtextbeg)
-            {
-                sb.Append(RegexCharClass.CharDescription(runtext![runtextpos - 1]));
-            }
-            else
-            {
-                sb.Append('^');
-            }
+                sb.Append(stack.Length - index).Append('/').Append(stack.Length);
 
-            sb.Append('>');
+                if (sb.Length < 8)
+                {
+                    sb.Append(' ', 8 - sb.Length);
+                }
 
-            for (int i = runtextpos; i < runtextend; i++)
-            {
-                sb.Append(RegexCharClass.CharDescription(runtext![i]));
-            }
-            if (sb.Length >= 64)
-            {
-                sb.Length = 61;
-                sb.Append("...");
-            }
-            else
-            {
-                sb.Append('$');
-            }
+                sb.Append('(');
 
-            return sb.ToString();
+                for (int i = index; i < stack.Length; i++)
+                {
+                    if (i > index)
+                    {
+                        sb.Append(' ');
+                    }
+                    sb.Append(stack[i]);
+                }
+
+                sb.Append(')');
+
+                return sb.ToString();
+            }
         }
 #endif
     }

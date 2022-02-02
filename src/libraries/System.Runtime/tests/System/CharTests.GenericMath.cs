@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/54910", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
     [RequiresPreviewFeaturesAttribute]
     public class CharTests_GenericMath
     {

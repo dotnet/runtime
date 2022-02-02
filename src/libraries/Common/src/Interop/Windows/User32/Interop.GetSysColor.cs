@@ -15,7 +15,7 @@ internal static partial class Interop
         // index that doesn't exist.
 
         [SuppressGCTransition]
-        [DllImport(Libraries.User32, ExactSpelling = true)]
-        internal static extern uint GetSysColor(int nIndex);
+        [GeneratedDllImport(Libraries.User32, ExactSpelling = true)]
+        internal static partial uint GetSysColor(int nIndex);
     }
 }

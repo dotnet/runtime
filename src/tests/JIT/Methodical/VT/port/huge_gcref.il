@@ -17,14 +17,14 @@
            
   
 }
-.assembly 'test' // as "test"
+.assembly 'huge_gcref' // as "test"
 {
 
 
   
   
 }
-.module 'test.exe'
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class value private auto ansi sealed TestStruct extends [mscorlib]System.ValueType
@@ -42,6 +42,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  70
       .locals (value class JitTest.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,] matrix,

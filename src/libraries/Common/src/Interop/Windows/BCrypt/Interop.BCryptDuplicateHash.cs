@@ -23,8 +23,8 @@ internal static partial class Interop
             return newHash;
         }
 
-        [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        private static extern NTSTATUS BCryptDuplicateHash(
+        [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+        private static partial NTSTATUS BCryptDuplicateHash(
             SafeBCryptHashHandle hHash,
             out SafeBCryptHashHandle phNewHash,
             IntPtr pbHashObject,

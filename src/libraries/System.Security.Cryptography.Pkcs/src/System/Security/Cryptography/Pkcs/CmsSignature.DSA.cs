@@ -29,6 +29,8 @@ namespace System.Security.Cryptography.Pkcs
             private readonly HashAlgorithmName _expectedDigest;
             private readonly string? _signatureAlgorithm;
 
+            internal override RSASignaturePadding? SignaturePadding => null;
+
             internal DSACmsSignature(string? signatureAlgorithm, HashAlgorithmName expectedDigest)
             {
                 _signatureAlgorithm = signatureAlgorithm;
@@ -109,9 +111,11 @@ namespace System.Security.Cryptography.Pkcs
                 AsymmetricAlgorithm? key,
                 bool silent,
                 [NotNullWhen(true)] out string? signatureAlgorithm,
-                [NotNullWhen(true)] out byte[]? signatureValue)
+                [NotNullWhen(true)] out byte[]? signatureValue,
+                out byte[]? signatureParameters)
             {
                 Debug.Assert(Helpers.IsDSASupported);
+                signatureParameters = null;
 
                 // If there's no private key, fall back to the public key for a "no private key" exception.
                 DSA? dsa = key as DSA ??

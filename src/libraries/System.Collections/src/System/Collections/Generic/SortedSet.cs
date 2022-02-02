@@ -466,7 +466,6 @@ namespace System.Collections.Generic
                             {
                                 parentOfMatch = newGrandParent;
                             }
-                            grandParent = newGrandParent;
                         }
                     }
                 }
@@ -823,7 +822,7 @@ namespace System.Collections.Generic
                 return set1.Count == set2.Count && set1.SetEquals(set2);
             }
 
-            bool found = false;
+            bool found;
             foreach (T item1 in set1)
             {
                 found = false;
@@ -1681,41 +1680,27 @@ namespace System.Collections.Generic
 #if DEBUG
                 Debug.Assert(count == GetCount());
 #endif
-
-                // Breadth-first traversal to recreate nodes, preorder traversal to replicate nodes.
-
-                var originalNodes = new Stack<Node>(2 * Log2(count) + 2);
-                var newNodes = new Stack<Node>(2 * Log2(count) + 2);
                 Node newRoot = ShallowClone();
 
-                Node? originalCurrent = this;
-                Node newCurrent = newRoot;
+                var pendingNodes = new Stack<(Node source, Node target)>(2 * Log2(count) + 2);
+                pendingNodes.Push((this, newRoot));
 
-                while (originalCurrent != null)
+                while (pendingNodes.TryPop(out var next))
                 {
-                    originalNodes.Push(originalCurrent);
-                    newNodes.Push(newCurrent);
-                    newCurrent.Left = originalCurrent.Left?.ShallowClone();
-                    originalCurrent = originalCurrent.Left;
-                    newCurrent = newCurrent.Left!;
-                }
+                    Node clonedNode;
 
-                while (originalNodes.Count != 0)
-                {
-                    originalCurrent = originalNodes.Pop();
-                    newCurrent = newNodes.Pop();
-
-                    Node? originalRight = originalCurrent.Right;
-                    Node? newRight = originalRight?.ShallowClone();
-                    newCurrent.Right = newRight;
-
-                    while (originalRight != null)
+                    if (next.source.Left is Node left)
                     {
-                        originalNodes.Push(originalRight);
-                        newNodes.Push(newRight!);
-                        newRight!.Left = originalRight.Left?.ShallowClone();
-                        originalRight = originalRight.Left;
-                        newRight = newRight.Left;
+                        clonedNode = left.ShallowClone();
+                        next.target.Left = clonedNode;
+                        pendingNodes.Push((left, clonedNode));
+                    }
+
+                    if (next.source.Right is Node right)
+                    {
+                        clonedNode = right.ShallowClone();
+                        next.target.Right = clonedNode;
+                        pendingNodes.Push((right, clonedNode));
                     }
                 }
 
@@ -1937,7 +1922,7 @@ namespace System.Collections.Generic
             {
                 _current = null;
                 Node? node = _tree.root;
-                Node? next = null, other = null;
+                Node? next, other;
                 while (node != null)
                 {
                     next = (_reverse ? node.Right : node.Left);
@@ -1976,7 +1961,7 @@ namespace System.Collections.Generic
 
                 _current = _stack.Pop();
                 Node? node = (_reverse ? _current.Left : _current.Right);
-                Node? next = null, other = null;
+                Node? next, other;
                 while (node != null)
                 {
                     next = (_reverse ? node.Right : node.Left);

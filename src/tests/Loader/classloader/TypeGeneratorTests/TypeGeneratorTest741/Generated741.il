@@ -8,7 +8,7 @@
 
 //TEST ASSEMBLY:
 .assembly Generated741 { .hash algorithm 0x00008004 }
-.module Generated741.exe
+.assembly extern xunit.core {}
 
 .class public BaseClass0 
 {
@@ -202,7 +202,7 @@
 	.method public hidebysig newslot abstract virtual instance string Method5() cil managed { }
 	.method public hidebysig newslot abstract virtual instance string Method6<M0>() cil managed { }
 }
-.class private auto ansi beforefieldinit Framework {
+.class public auto ansi beforefieldinit Generated741 {
 	.method static void M.BaseClass0<(BaseClass0)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
@@ -2210,351 +2210,351 @@
 		stloc.0
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G2_C264::Method6.7231<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.T<class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!1,string)
+		call void Generated741::M.G1_C5.T<class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G2_C264::Method6.7231<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.A<class G3_C1213`1<class BaseClass0>>(!!0,string)
+		call void Generated741::M.G1_C5.A<class G3_C1213`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G3_C1213`1<class BaseClass0>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G3_C1213`1<class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.T<class BaseClass1,class G3_C1213`1<class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase2.B.T<class BaseClass1,class G3_C1213`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.B<class G3_C1213`1<class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase2.B.B<class G3_C1213`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C264::Method4.MI.7229()#G2_C264::Method5.7230()#G2_C264::Method6.MI.7232<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase1.T<class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C264::Method4.MI.7229()#G2_C264::Method5.7230()#G2_C264::Method6.MI.7232<System.Object>()#"
-		call void Framework::M.IBase1.A<class G3_C1213`1<class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase1.A<class G3_C1213`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G3_C1213`1<class BaseClass0>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G3_C1213`1<class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.IBase2.A.T<class BaseClass1,class G3_C1213`1<class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase2.A.T<class BaseClass1,class G3_C1213`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.IBase2.A.B<class G3_C1213`1<class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase2.A.B<class G3_C1213`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G3_C1213::ClassMethod1861.MI.14916()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.G2_C264.T.T<class BaseClass0,class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!2,string)
+		call void Generated741::M.G2_C264.T.T<class BaseClass0,class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G3_C1213::ClassMethod1861.MI.14916()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.G2_C264.A.T<class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!1,string)
+		call void Generated741::M.G2_C264.A.T<class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G3_C1213::ClassMethod1861.MI.14916()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.G2_C264.A.A<class G3_C1213`1<class BaseClass0>>(!!0,string)
+		call void Generated741::M.G2_C264.A.A<class G3_C1213`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G3_C1213::ClassMethod1861.MI.14916()#G3_C1213::ClassMethod3809.14914()#G3_C1213::ClassMethod3810.14915()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.G3_C1213.T<class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!1,string)
+		call void Generated741::M.G3_C1213.T<class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G3_C1213::ClassMethod1861.MI.14916()#G3_C1213::ClassMethod3809.14914()#G3_C1213::ClassMethod3810.14915()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.G3_C1213.A<class G3_C1213`1<class BaseClass0>>(!!0,string)
+		call void Generated741::M.G3_C1213.A<class G3_C1213`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass0,class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass0,class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.IBase2.A.T<class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase2.A.T<class BaseClass0,class G3_C1213`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.IBase2.A.A<class G3_C1213`1<class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase2.A.A<class G3_C1213`1<class BaseClass0>>(!!0,string)
 		newobj instance void class G3_C1213`1<class BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G2_C264::Method6.7231<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.T<class BaseClass0,class G3_C1213`1<class BaseClass1>>(!!1,string)
+		call void Generated741::M.G1_C5.T<class BaseClass0,class G3_C1213`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G2_C264::Method6.7231<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.A<class G3_C1213`1<class BaseClass1>>(!!0,string)
+		call void Generated741::M.G1_C5.A<class G3_C1213`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G3_C1213`1<class BaseClass1>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G3_C1213`1<class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.IBase2.B.T<class BaseClass1,class G3_C1213`1<class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase2.B.T<class BaseClass1,class G3_C1213`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.IBase2.B.B<class G3_C1213`1<class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase2.B.B<class G3_C1213`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C264::Method4.MI.7229()#G2_C264::Method5.7230()#G2_C264::Method6.MI.7232<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass0,class G3_C1213`1<class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase1.T<class BaseClass0,class G3_C1213`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C264::Method4.MI.7229()#G2_C264::Method5.7230()#G2_C264::Method6.MI.7232<System.Object>()#"
-		call void Framework::M.IBase1.A<class G3_C1213`1<class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase1.A<class G3_C1213`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G3_C1213`1<class BaseClass1>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G3_C1213`1<class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.IBase2.A.T<class BaseClass1,class G3_C1213`1<class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase2.A.T<class BaseClass1,class G3_C1213`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.IBase2.A.B<class G3_C1213`1<class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase2.A.B<class G3_C1213`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G3_C1213::ClassMethod1861.MI.14916()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.G2_C264.T.T<class BaseClass0,class BaseClass0,class G3_C1213`1<class BaseClass1>>(!!2,string)
+		call void Generated741::M.G2_C264.T.T<class BaseClass0,class BaseClass0,class G3_C1213`1<class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G3_C1213::ClassMethod1861.MI.14916()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.G2_C264.A.T<class BaseClass0,class G3_C1213`1<class BaseClass1>>(!!1,string)
+		call void Generated741::M.G2_C264.A.T<class BaseClass0,class G3_C1213`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G3_C1213::ClassMethod1861.MI.14916()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.G2_C264.A.A<class G3_C1213`1<class BaseClass1>>(!!0,string)
+		call void Generated741::M.G2_C264.A.A<class G3_C1213`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G3_C1213::ClassMethod1861.MI.14916()#G3_C1213::ClassMethod3809.14914()#G3_C1213::ClassMethod3810.14915()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.G3_C1213.T<class BaseClass1,class G3_C1213`1<class BaseClass1>>(!!1,string)
+		call void Generated741::M.G3_C1213.T<class BaseClass1,class G3_C1213`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G3_C1213::ClassMethod1861.MI.14916()#G3_C1213::ClassMethod3809.14914()#G3_C1213::ClassMethod3810.14915()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G3_C1213::Method7.14913<System.Object>()#"
-		call void Framework::M.G3_C1213.B<class G3_C1213`1<class BaseClass1>>(!!0,string)
+		call void Generated741::M.G3_C1213.B<class G3_C1213`1<class BaseClass1>>(!!0,string)
 		newobj instance void class G2_C264`2<class BaseClass0,class BaseClass0>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G2_C264::Method6.7231<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.T<class BaseClass0,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!1,string)
+		call void Generated741::M.G1_C5.T<class BaseClass0,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G2_C264::Method6.7231<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.A<class G2_C264`2<class BaseClass0,class BaseClass0>>(!!0,string)
+		call void Generated741::M.G1_C5.A<class G2_C264`2<class BaseClass0,class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.T<class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase2.B.T<class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.B<class G2_C264`2<class BaseClass0,class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase2.B.B<class G2_C264`2<class BaseClass0,class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C264::Method4.MI.7229()#G2_C264::Method5.7230()#G2_C264::Method6.MI.7232<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass0,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase1.T<class BaseClass0,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C264::Method4.MI.7229()#G2_C264::Method5.7230()#G2_C264::Method6.MI.7232<System.Object>()#"
-		call void Framework::M.IBase1.A<class G2_C264`2<class BaseClass0,class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase1.A<class G2_C264`2<class BaseClass0,class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C264::Method7.MI.7227<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C264::Method7.MI.7227<System.Object>()#"
-		call void Framework::M.IBase2.A.T<class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase2.A.T<class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C264::Method7.MI.7227<System.Object>()#"
-		call void Framework::M.IBase2.A.B<class G2_C264`2<class BaseClass0,class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase2.A.B<class G2_C264`2<class BaseClass0,class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G2_C264::ClassMethod1861.7233()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G2_C264::Method7.7226<System.Object>()#"
-		call void Framework::M.G2_C264.T.T<class BaseClass0,class BaseClass0,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!2,string)
+		call void Generated741::M.G2_C264.T.T<class BaseClass0,class BaseClass0,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G2_C264::ClassMethod1861.7233()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G2_C264::Method7.7226<System.Object>()#"
-		call void Framework::M.G2_C264.A.T<class BaseClass0,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!1,string)
+		call void Generated741::M.G2_C264.A.T<class BaseClass0,class G2_C264`2<class BaseClass0,class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G2_C264::ClassMethod1861.7233()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G2_C264::Method7.7226<System.Object>()#"
-		call void Framework::M.G2_C264.A.A<class G2_C264`2<class BaseClass0,class BaseClass0>>(!!0,string)
+		call void Generated741::M.G2_C264.A.A<class G2_C264`2<class BaseClass0,class BaseClass0>>(!!0,string)
 		newobj instance void class G2_C264`2<class BaseClass0,class BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G2_C264::Method6.7231<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.T<class BaseClass0,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!1,string)
+		call void Generated741::M.G1_C5.T<class BaseClass0,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G2_C264::Method6.7231<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.A<class G2_C264`2<class BaseClass0,class BaseClass1>>(!!0,string)
+		call void Generated741::M.G1_C5.A<class G2_C264`2<class BaseClass0,class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.T<class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase2.B.T<class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.B<class G2_C264`2<class BaseClass0,class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase2.B.B<class G2_C264`2<class BaseClass0,class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C264::Method4.MI.7229()#G2_C264::Method5.7230()#G2_C264::Method6.MI.7232<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass0,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase1.T<class BaseClass0,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C264::Method4.MI.7229()#G2_C264::Method5.7230()#G2_C264::Method6.MI.7232<System.Object>()#"
-		call void Framework::M.IBase1.A<class G2_C264`2<class BaseClass0,class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase1.A<class G2_C264`2<class BaseClass0,class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C264::Method7.MI.7227<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C264::Method7.MI.7227<System.Object>()#"
-		call void Framework::M.IBase2.A.T<class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase2.A.T<class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C264::Method7.MI.7227<System.Object>()#"
-		call void Framework::M.IBase2.A.B<class G2_C264`2<class BaseClass0,class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase2.A.B<class G2_C264`2<class BaseClass0,class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G2_C264::ClassMethod1861.7233()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G2_C264::Method7.7226<System.Object>()#"
-		call void Framework::M.G2_C264.T.T<class BaseClass0,class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!2,string)
+		call void Generated741::M.G2_C264.T.T<class BaseClass0,class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G2_C264::ClassMethod1861.7233()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G2_C264::Method7.7226<System.Object>()#"
-		call void Framework::M.G2_C264.A.T<class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!1,string)
+		call void Generated741::M.G2_C264.A.T<class BaseClass1,class G2_C264`2<class BaseClass0,class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G2_C264::ClassMethod1861.7233()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G2_C264::Method7.7226<System.Object>()#"
-		call void Framework::M.G2_C264.A.B<class G2_C264`2<class BaseClass0,class BaseClass1>>(!!0,string)
+		call void Generated741::M.G2_C264.A.B<class G2_C264`2<class BaseClass0,class BaseClass1>>(!!0,string)
 		newobj instance void class G2_C264`2<class BaseClass1,class BaseClass0>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G2_C264::Method6.7231<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!1,string)
+		call void Generated741::M.G1_C5.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G2_C264::Method6.7231<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.B<class G2_C264`2<class BaseClass1,class BaseClass0>>(!!0,string)
+		call void Generated741::M.G1_C5.B<class G2_C264`2<class BaseClass1,class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase2.B.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.B<class G2_C264`2<class BaseClass1,class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase2.B.B<class G2_C264`2<class BaseClass1,class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.MI.4805<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase1.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.MI.4805<System.Object>()#"
-		call void Framework::M.IBase1.B<class G2_C264`2<class BaseClass1,class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase1.B<class G2_C264`2<class BaseClass1,class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C264::Method7.MI.7227<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C264::Method7.MI.7227<System.Object>()#"
-		call void Framework::M.IBase2.A.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase2.A.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C264::Method7.MI.7227<System.Object>()#"
-		call void Framework::M.IBase2.A.B<class G2_C264`2<class BaseClass1,class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase2.A.B<class G2_C264`2<class BaseClass1,class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C264::Method4.MI.7229()#G2_C264::Method5.7230()#G2_C264::Method6.MI.7232<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass0,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase1.T<class BaseClass0,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C264::Method4.MI.7229()#G2_C264::Method5.7230()#G2_C264::Method6.MI.7232<System.Object>()#"
-		call void Framework::M.IBase1.A<class G2_C264`2<class BaseClass1,class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase1.A<class G2_C264`2<class BaseClass1,class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G2_C264::ClassMethod1861.7233()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G2_C264::Method7.7226<System.Object>()#"
-		call void Framework::M.G2_C264.T.T<class BaseClass1,class BaseClass0,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!2,string)
+		call void Generated741::M.G2_C264.T.T<class BaseClass1,class BaseClass0,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G2_C264::ClassMethod1861.7233()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G2_C264::Method7.7226<System.Object>()#"
-		call void Framework::M.G2_C264.B.T<class BaseClass0,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!1,string)
+		call void Generated741::M.G2_C264.B.T<class BaseClass0,class G2_C264`2<class BaseClass1,class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G2_C264::ClassMethod1861.7233()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G2_C264::Method7.7226<System.Object>()#"
-		call void Framework::M.G2_C264.B.A<class G2_C264`2<class BaseClass1,class BaseClass0>>(!!0,string)
+		call void Generated741::M.G2_C264.B.A<class G2_C264`2<class BaseClass1,class BaseClass0>>(!!0,string)
 		newobj instance void class G2_C264`2<class BaseClass1,class BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G2_C264::Method6.7231<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!1,string)
+		call void Generated741::M.G1_C5.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G2_C264::Method6.7231<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.B<class G2_C264`2<class BaseClass1,class BaseClass1>>(!!0,string)
+		call void Generated741::M.G1_C5.B<class G2_C264`2<class BaseClass1,class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase2.B.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.B<class G2_C264`2<class BaseClass1,class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase2.B.B<class G2_C264`2<class BaseClass1,class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.MI.4805<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase1.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.MI.4805<System.Object>()#"
-		call void Framework::M.IBase1.B<class G2_C264`2<class BaseClass1,class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase1.B<class G2_C264`2<class BaseClass1,class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C264::Method7.MI.7227<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G2_C264::Method7.MI.7227<System.Object>()#"
-		call void Framework::M.IBase2.A.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase2.A.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C264::Method7.MI.7227<System.Object>()#"
-		call void Framework::M.IBase2.A.B<class G2_C264`2<class BaseClass1,class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase2.A.B<class G2_C264`2<class BaseClass1,class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C264::Method4.MI.7229()#G2_C264::Method5.7230()#G2_C264::Method6.MI.7232<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass0,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase1.T<class BaseClass0,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C264::Method4.MI.7229()#G2_C264::Method5.7230()#G2_C264::Method6.MI.7232<System.Object>()#"
-		call void Framework::M.IBase1.A<class G2_C264`2<class BaseClass1,class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase1.A<class G2_C264`2<class BaseClass1,class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G2_C264::ClassMethod1861.7233()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G2_C264::Method7.7226<System.Object>()#"
-		call void Framework::M.G2_C264.T.T<class BaseClass1,class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!2,string)
+		call void Generated741::M.G2_C264.T.T<class BaseClass1,class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G2_C264::ClassMethod1861.7233()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G2_C264::Method7.7226<System.Object>()#"
-		call void Framework::M.G2_C264.B.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!1,string)
+		call void Generated741::M.G2_C264.B.T<class BaseClass1,class G2_C264`2<class BaseClass1,class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G2_C264::ClassMethod1325.MI.7234<System.Object>()#G2_C264::ClassMethod1861.7233()#G2_C264::Method4.7228()#G2_C264::Method5.7230()#G2_C264::Method6.7231<System.Object>()#G2_C264::Method7.7226<System.Object>()#"
-		call void Framework::M.G2_C264.B.B<class G2_C264`2<class BaseClass1,class BaseClass1>>(!!0,string)
+		call void Generated741::M.G2_C264.B.B<class G2_C264`2<class BaseClass1,class BaseClass1>>(!!0,string)
 		newobj instance void class G1_C5`1<class BaseClass0>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G1_C5::ClassMethod1325.4807<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.4804<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.T<class BaseClass0,class G1_C5`1<class BaseClass0>>(!!1,string)
+		call void Generated741::M.G1_C5.T<class BaseClass0,class G1_C5`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G1_C5::ClassMethod1325.4807<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.4804<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.A<class G1_C5`1<class BaseClass0>>(!!0,string)
+		call void Generated741::M.G1_C5.A<class G1_C5`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G1_C5`1<class BaseClass0>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G1_C5`1<class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.T<class BaseClass1,class G1_C5`1<class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase2.B.T<class BaseClass1,class G1_C5`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.B<class G1_C5`1<class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase2.B.B<class G1_C5`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.MI.4805<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass0,class G1_C5`1<class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase1.T<class BaseClass0,class G1_C5`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.MI.4805<System.Object>()#"
-		call void Framework::M.IBase1.A<class G1_C5`1<class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase1.A<class G1_C5`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G1_C5`1<class BaseClass0>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G1_C5`1<class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.A.T<class BaseClass1,class G1_C5`1<class BaseClass0>>(!!1,string)
+		call void Generated741::M.IBase2.A.T<class BaseClass1,class G1_C5`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.A.B<class G1_C5`1<class BaseClass0>>(!!0,string)
+		call void Generated741::M.IBase2.A.B<class G1_C5`1<class BaseClass0>>(!!0,string)
 		newobj instance void class G1_C5`1<class BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G1_C5::ClassMethod1325.4807<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.4804<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.T<class BaseClass1,class G1_C5`1<class BaseClass1>>(!!1,string)
+		call void Generated741::M.G1_C5.T<class BaseClass1,class G1_C5`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::ClassMethod1324.4806()#G1_C5::ClassMethod1325.4807<System.Object>()#G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.4804<System.Object>()#G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.G1_C5.B<class G1_C5`1<class BaseClass1>>(!!0,string)
+		call void Generated741::M.G1_C5.B<class G1_C5`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G1_C5`1<class BaseClass1>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G1_C5`1<class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.T<class BaseClass1,class G1_C5`1<class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase2.B.T<class BaseClass1,class G1_C5`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.B.B<class G1_C5`1<class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase2.B.B<class G1_C5`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.MI.4805<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass1,class G1_C5`1<class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase1.T<class BaseClass1,class G1_C5`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.MI.4805<System.Object>()#"
-		call void Framework::M.IBase1.B<class G1_C5`1<class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase1.B<class G1_C5`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G1_C5`1<class BaseClass1>>(!!2,string)
+		call void Generated741::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G1_C5`1<class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.A.T<class BaseClass1,class G1_C5`1<class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase2.A.T<class BaseClass1,class G1_C5`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method7.4801<System.Object>()#"
-		call void Framework::M.IBase2.A.B<class G1_C5`1<class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase2.A.B<class G1_C5`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.MI.4805<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass0,class G1_C5`1<class BaseClass1>>(!!1,string)
+		call void Generated741::M.IBase1.T<class BaseClass0,class G1_C5`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C5::Method4.4802()#G1_C5::Method5.4803()#G1_C5::Method6.MI.4805<System.Object>()#"
-		call void Framework::M.IBase1.A<class G1_C5`1<class BaseClass1>>(!!0,string)
+		call void Generated741::M.IBase1.A<class G1_C5`1<class BaseClass1>>(!!0,string)
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
 		ret
@@ -3810,12 +3810,15 @@
 	}
 	.method public hidebysig static int32  Main() cil managed
 	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  10
-		call void Framework::MethodCallingTest()
-		call void Framework::ConstrainedCallsTest()
-		call void Framework::StructConstrainedInterfaceCallsTest()
-		call void Framework::CalliTest()
+		call void Generated741::MethodCallingTest()
+		call void Generated741::ConstrainedCallsTest()
+		call void Generated741::StructConstrainedInterfaceCallsTest()
+		call void Generated741::CalliTest()
 		ldc.i4 100
 		ret
 	}

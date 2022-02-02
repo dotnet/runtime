@@ -26,17 +26,17 @@ public struct Gen
 		catch(T)
 		{
 				Console.WriteLine("Caught Wrong Exception");
-				Test.Eval(false);			
+				Test_typeparameter018.Eval(false);			
 		}
 		catch(Ex E)
 		{
-			Test.Eval(Object.ReferenceEquals(e,E));
+			Test_typeparameter018.Eval(Object.ReferenceEquals(e,E));
 		
 		}
 	}
 }
 
-public class Test
+public class Test_typeparameter018
 {
 	public static int counter = 0;
 	public static bool result = true;

@@ -1,11 +1,12 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -41,7 +42,7 @@ namespace Mono.Linker
 		/// Create an error message.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the error</param>
-		/// <param name="code">Unique error ID. Please see https://github.com/mono/linker/blob/main/docs/error-codes.md
+		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
 		/// for the list of errors and possibly add a new one</param>
 		/// <param name="subcategory">Optionally, further categorize this error</param>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
@@ -52,6 +53,22 @@ namespace Mono.Linker
 				throw new ArgumentOutOfRangeException (nameof (code), $"The provided code '{code}' does not fall into the error category, which is in the range of 1000 to 2000 (inclusive).");
 
 			return new MessageContainer (MessageCategory.Error, text, code, subcategory, origin);
+		}
+
+		/// <summary>
+		/// Create an error message.
+		/// </summary>
+		/// <param name="origin">Filename, line, and column where the error was found</param>
+		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
+		/// for the list of errors and possibly add a new one</param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Error' category</returns>
+		internal static MessageContainer CreateErrorMessage (MessageOrigin? origin, DiagnosticId id, params string[] args)
+		{
+			if (!((int) id >= 1000 && (int) id <= 2000))
+				throw new ArgumentOutOfRangeException (nameof (id), $"The provided code '{(int) id}' does not fall into the error category, which is in the range of 1000 to 2000 (inclusive).");
+
+			return new MessageContainer (MessageCategory.Error, id, origin: origin, args: args);
 		}
 
 		/// <summary>
@@ -81,7 +98,7 @@ namespace Mono.Linker
 		/// </summary>
 		/// <param name="context">Context with the relevant warning suppression info.</param>
 		/// <param name="text">Humanly readable message describing the warning</param>
-		/// <param name="code">Unique warning ID. Please see https://github.com/mono/linker/blob/main/docs/error-codes.md
+		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
 		/// for the list of warnings and possibly add a new one</param>
 		/// /// <param name="origin">Filename or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
@@ -94,6 +111,25 @@ namespace Mono.Linker
 				throw new ArgumentOutOfRangeException (nameof (code), $"The provided code '{code}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
 
 			return CreateWarningMessageContainer (context, text, code, origin, version, subcategory);
+		}
+
+		/// <summary>
+		/// Create a warning message.
+		/// </summary>
+		/// <param name="context">Context with the relevant warning suppression info.</param>
+		/// <param name="origin">Filename or member where the warning is coming from</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
+		/// for the list of warnings and possibly add a new one</param>
+		/// <param name="version">Optional warning version number. Versioned warnings can be controlled with the
+		/// warning wave option --warn VERSION. Unversioned warnings are unaffected by this option. </param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
+		internal static MessageContainer CreateWarningMessage (LinkContext context, MessageOrigin origin, DiagnosticId id, WarnVersion version, params string[] args)
+		{
+			if (!((int) id > 2000 && (int) id <= 6000))
+				throw new ArgumentOutOfRangeException (nameof (id), $"The provided code '{(int) id}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
+
+			return CreateWarningMessageContainer (context, origin, id, version, id.GetDiagnosticSubcategory (), args);
 		}
 
 		/// <summary>
@@ -141,16 +177,54 @@ namespace Mono.Linker
 			return new MessageContainer (MessageCategory.Warning, text, code, subcategory, origin);
 		}
 
+		private static MessageContainer CreateWarningMessageContainer (LinkContext context, MessageOrigin origin, DiagnosticId id, WarnVersion version, string subcategory, params string[] args)
+		{
+			if (!(version >= WarnVersion.ILLink0 && version <= WarnVersion.Latest))
+				throw new ArgumentException ($"The provided warning version '{version}' is invalid.");
+
+			if (context.IsWarningSuppressed ((int) id, origin))
+				return Empty;
+
+			if (version > context.WarnVersion)
+				return Empty;
+
+			if (TryLogSingleWarning (context, (int) id, origin, subcategory))
+				return Empty;
+
+			if (context.IsWarningAsError ((int) id))
+				return new MessageContainer (MessageCategory.WarningAsError, id, subcategory, origin, args);
+
+			return new MessageContainer (MessageCategory.Warning, id, subcategory, origin, args);
+		}
+
+		public bool IsWarningMessage ([NotNullWhen (true)] out int? code)
+		{
+			code = null;
+
+			if (Category is MessageCategory.Warning or MessageCategory.WarningAsError) {
+				// Warning messages always have a code.
+				code = Code!;
+				return true;
+			}
+
+			return false;
+		}
+
 		static bool TryLogSingleWarning (LinkContext context, int code, MessageOrigin origin, string subcategory)
 		{
 			if (subcategory != MessageSubCategory.TrimAnalysis)
 				return false;
 
-			Debug.Assert (origin.MemberDefinition != null);
-			var declaringType = origin.MemberDefinition?.DeclaringType ?? (origin.MemberDefinition as TypeDefinition);
-			var assembly = declaringType.Module.Assembly;
+			// There are valid cases where we can't map the message to an assembly
+			// For example if it's caused by something in an xml file passed on the command line
+			// In that case, give up on single-warn collapse and just print out the warning on its own.
+			var assembly = origin.Provider switch {
+				AssemblyDefinition asm => asm,
+				TypeDefinition type => type.Module.Assembly,
+				IMemberDefinition member => member.DeclaringType.Module.Assembly,
+				_ => null
+			};
 
-			Debug.Assert (assembly != null);
 			if (assembly == null)
 				return false;
 
@@ -164,7 +238,7 @@ namespace Mono.Linker
 				return false;
 
 			if (context.AssembliesWithGeneratedSingleWarning.Add (assemblyName))
-				context.LogWarning ($"Assembly '{assemblyName}' produced trim warnings. For more information see https://aka.ms/dotnet-illink/libraries", 2104, context.GetAssemblyLocation (assembly));
+				context.LogWarning (context.GetAssemblyLocation (assembly), DiagnosticId.AssemblyProducedTrimWarnings, assemblyName);
 
 			return true;
 		}
@@ -198,6 +272,15 @@ namespace Mono.Linker
 			Text = text;
 		}
 
+		private MessageContainer (MessageCategory category, DiagnosticId id, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null, params string[] args)
+		{
+			Code = (int) id;
+			Category = category;
+			Origin = origin;
+			SubCategory = subcategory;
+			Text = new DiagnosticString (id).GetMessage (args);
+		}
+
 		public override string ToString () => ToMSBuildString ();
 
 		public string ToMSBuildString ()
@@ -229,17 +312,24 @@ namespace Mono.Linker
 				sb.Append (" ")
 					.Append (cat)
 					.Append (" IL")
-					.Append (Code.Value.ToString ("D4"))
+					// Warning and error messages always have a code.
+					.Append (Code!.Value.ToString ("D4"))
 					.Append (": ");
 			} else {
 				sb.Append (" ");
 			}
 
-			if (Origin?.MemberDefinition != null) {
-				if (Origin?.MemberDefinition is MethodDefinition method)
+			if (Origin?.Provider != null) {
+				if (Origin?.Provider is MethodDefinition method)
 					sb.Append (method.GetDisplayName ());
+				else if (Origin?.Provider is MemberReference memberRef)
+					sb.Append (memberRef.GetDisplayName ());
+				else if (Origin?.Provider is IMemberDefinition member)
+					sb.Append (member.FullName);
+				else if (Origin?.Provider is AssemblyDefinition assembly)
+					sb.Append (assembly.Name.Name);
 				else
-					sb.Append (Origin?.MemberDefinition.FullName);
+					throw new NotSupportedException ();
 
 				sb.Append (": ");
 			}
@@ -252,7 +342,7 @@ namespace Mono.Linker
 		public bool Equals (MessageContainer other) =>
 			(Category, Text, Code, SubCategory, Origin) == (other.Category, other.Text, other.Code, other.SubCategory, other.Origin);
 
-		public override bool Equals (object obj) => obj is MessageContainer messageContainer && Equals (messageContainer);
+		public override bool Equals (object? obj) => obj is MessageContainer messageContainer && Equals (messageContainer);
 		public override int GetHashCode () => (Category, Text, Code, SubCategory, Origin).GetHashCode ();
 
 		public int CompareTo (MessageContainer other)

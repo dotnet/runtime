@@ -5,10 +5,13 @@
     <PublishTrimmed>false</PublishTrimmed>
     <TestRuntime>true</TestRuntime>
     <Scenario>WasmTestOnBrowser</Scenario>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <!-- setting WasmXHarnessMonoArgs doesn't work here, but see runtime.js -->
+    <!-- setting WasmXHarnessMonoArgs doesn't work here, but see main.js -->
     <!-- <WasmXHarnessMonoArgs>- -setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug</WasmXHarnessMonoArgs> -->
   </PropertyGroup>
   <ItemGroup>

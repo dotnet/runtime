@@ -2,6 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <PropertyGroup>
+    <IsShipping>false</IsShipping>
     <PackageDescription>This package provides a low-level ReadyToRun file format decoder. This package is experimental.</PackageDescription>
   </PropertyGroup>
 

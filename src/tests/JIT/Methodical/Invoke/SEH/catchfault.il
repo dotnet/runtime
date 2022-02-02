@@ -14,7 +14,7 @@
 .assembly 'catchfault'// as "catchfault"
 {
 }
-.module 'catchfault.exe'
+.assembly extern xunit.core {}
 // MVID: {FCE369B5-E876-4E32-B744-1740582FF3B2}
 .namespace JitTest
 {
@@ -155,6 +155,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       97 (0x61)
       .maxstack  1

@@ -520,7 +520,7 @@ namespace System.Xml.Serialization
         private object? ReadTypedPrimitive(XmlQualifiedName type, bool elementCanBeType)
         {
             InitPrimitiveIDs();
-            object? value = null;
+            object? value;
             if (!IsPrimitiveNamespace(type.Namespace) || (object)type.Name == (object)_urTypeID)
                 return ReadXmlNodes(elementCanBeType);
 
@@ -682,7 +682,7 @@ namespace System.Xml.Serialization
         protected object? ReadTypedNull(XmlQualifiedName type)
         {
             InitPrimitiveIDs();
-            object? value = null;
+            object? value;
             if (!IsPrimitiveNamespace(type.Namespace) || (object)type.Name == (object)_urTypeID)
             {
                 return null;
@@ -792,12 +792,11 @@ namespace System.Xml.Serialization
                 int colon = attr.Value.LastIndexOf(':');
                 if (colon < 0)
                 {
-                    attr.Value = _r.LookupNamespace("") + ":" + attr.Value;
+                    attr.Value = $"{_r.LookupNamespace("")}:{attr.Value}";
                 }
                 else
                 {
-                    attr.Value = string.Concat(_r.LookupNamespace(attr.Value.Substring(0, colon)), ":",
-                        attr.Value.AsSpan(colon + 1));
+                    attr.Value = $"{_r.LookupNamespace(attr.Value.Substring(0, colon))}:{attr.Value.AsSpan(colon + 1)}";
                 }
             }
             return;
@@ -1287,7 +1286,7 @@ namespace System.Xml.Serialization
         private string CurrentTag() =>
             _r.NodeType switch
             {
-                XmlNodeType.Element => "<" + _r.LocalName + " xmlns='" + _r.NamespaceURI + "'>",
+                XmlNodeType.Element => $"<{_r.LocalName} xmlns='{_r.NamespaceURI}'>",
                 XmlNodeType.EndElement => ">",
                 XmlNodeType.Text => _r.Value,
                 XmlNodeType.CDATA => "CDATA",
@@ -1771,10 +1770,9 @@ namespace System.Xml.Serialization
         protected void ReadReferencedElements()
         {
             _r.MoveToContent();
-            string? dummy;
             while (_r.NodeType != XmlNodeType.EndElement && _r.NodeType != XmlNodeType.None)
             {
-                ReadReferencingElement(null, null, true, out dummy);
+                ReadReferencingElement(null, null, true, out _);
                 _r.MoveToContent();
             }
             DoFixups();
@@ -1791,8 +1789,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencedElement(string? name, string? ns)
         {
-            string? dummy;
-            return ReadReferencingElement(name, ns, out dummy);
+            return ReadReferencingElement(name, ns, out _);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
@@ -1811,7 +1808,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencingElement(string? name, string? ns, bool elementCanBeType, out string? fixupReference)
         {
-            object? o = null;
+            object? o;
             EnsureCallbackTables();
 
             _r.MoveToContent();
@@ -1886,8 +1883,7 @@ namespace System.Xml.Serialization
             string? xsiTypeName = null;
             string? xsiTypeNs = null;
             int skippableNodeCount = 0;
-            int lineNumber = -1, linePosition = -1;
-            XmlNode? unknownNode = null;
+            XmlNode? unknownNode;
             if (Reader.NodeType == XmlNodeType.Attribute)
             {
                 XmlAttribute attr = Document.CreateAttribute(elemName, elemNs);
@@ -1896,7 +1892,7 @@ namespace System.Xml.Serialization
             }
             else
                 unknownNode = Document.CreateElement(elemName, elemNs);
-            GetCurrentPosition(out lineNumber, out linePosition);
+            GetCurrentPosition(out _, out _);
             XmlElement? unknownElement = unknownNode as XmlElement;
 
             while (Reader.MoveToNextAttribute())
@@ -2129,8 +2125,8 @@ namespace System.Xml.Serialization
             internal Member(XmlSerializationReaderCodeGen outerClass, string source, string? arraySource, string? arrayName, int i, MemberMapping mapping, bool multiRef, string? choiceSource)
             {
                 _source = source;
-                _arrayName = arrayName + "_" + i.ToString(CultureInfo.InvariantCulture);
-                _choiceArrayName = "choice_" + _arrayName;
+                _arrayName = string.Create(CultureInfo.InvariantCulture, $"{arrayName}_{i}");
+                _choiceArrayName = $"choice_{_arrayName}";
                 _choiceSource = choiceSource;
 
                 if (mapping.TypeDesc!.IsArrayLike)
@@ -2146,14 +2142,13 @@ namespace System.Xml.Serialization
                         _choiceArraySource = outerClass.GetArraySource(mapping.TypeDesc, _choiceArrayName, multiRef);
 
                         string a = _choiceArrayName;
-                        string c = "c" + a;
+                        string c = $"c{a}";
                         bool choiceUseReflection = mapping.ChoiceIdentifier.Mapping!.TypeDesc!.UseReflection;
                         string choiceTypeFullName = mapping.ChoiceIdentifier.Mapping.TypeDesc.CSharpName;
-                        string castString = choiceUseReflection ? "" : "(" + choiceTypeFullName + "[])";
+                        string castString = choiceUseReflection ? "" : $"({choiceTypeFullName}[])";
 
-                        string init = a + " = " + castString +
-                            "EnsureArrayIndex(" + a + ", " + c + ", " + outerClass.RaCodeGen.GetStringForTypeof(choiceTypeFullName, choiceUseReflection) + ");";
-                        _choiceArraySource = init + outerClass.RaCodeGen.GetStringForArrayMember(a, c + "++", mapping.ChoiceIdentifier.Mapping.TypeDesc);
+                        string init = $"{a} = {castString}EnsureArrayIndex({a}, {c}, {outerClass.RaCodeGen.GetStringForTypeof(choiceTypeFullName, choiceUseReflection)});";
+                        _choiceArraySource = init + outerClass.RaCodeGen.GetStringForArrayMember(a, $"{c}++", mapping.ChoiceIdentifier.Mapping.TypeDesc);
                     }
                     else
                     {
@@ -2539,7 +2534,7 @@ namespace System.Xml.Serialization
                     member.ParamsReadSource = $"paramsRead[{i}]";
                 if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                 {
-                    string nameSpecified = mapping.Name + "Specified";
+                    string nameSpecified = $"{mapping.Name}Specified";
                     for (int j = 0; j < mappings.Length; j++)
                     {
                         if (mappings[j].Name == nameSpecified)
@@ -2616,7 +2611,7 @@ namespace System.Xml.Serialization
             WriteWhileNotLoopStart();
             Writer.Indent++;
 
-            string unknownNode = "UnknownNode((object)p, " + ExpectedElements(members) + ");";
+            string unknownNode = $"UnknownNode((object)p, {ExpectedElements(members)});";
             WriteMemberElements(members, unknownNode, unknownNode, anyElement, anyText, null);
 
             Writer.WriteLine("Reader.MoveToContent();");
@@ -2719,7 +2714,7 @@ namespace System.Xml.Serialization
 
                 if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                 {
-                    string nameSpecified = mapping.Name + "Specified";
+                    string nameSpecified = $"{mapping.Name}Specified";
                     for (int j = 0; j < mappings.Length; j++)
                     {
                         if (mappings[j].Name == nameSpecified)
@@ -2731,7 +2726,7 @@ namespace System.Xml.Serialization
                 }
             }
 
-            string fixupMethodName = "fixup_" + methodName;
+            string fixupMethodName = $"fixup_{methodName}";
             bool anyFixups = WriteMemberFixupBegin(members, fixupMethodName, "p");
 
             if (members.Length > 0 && members[0].Mapping.IsReturnValue) Writer.WriteLine("IsReturnValue = true;");
@@ -2770,7 +2765,7 @@ namespace System.Xml.Serialization
         private void WriteCreateCollection(TypeDesc td, string source)
         {
             bool useReflection = td.UseReflection;
-            string item = (td.ArrayElementTypeDesc == null ? "object" : td.ArrayElementTypeDesc.CSharpName) + "[]";
+            string item = $"{(td.ArrayElementTypeDesc == null ? "object" : td.ArrayElementTypeDesc.CSharpName)}[]";
             bool arrayElementUseReflection = td.ArrayElementTypeDesc == null ? false : td.ArrayElementTypeDesc.UseReflection;
 
             //cannot call WriteArrayLocalDecl since 'ci' is always
@@ -2780,7 +2775,7 @@ namespace System.Xml.Serialization
             Writer.Write(item);
             Writer.Write(" ");
             Writer.Write("ci =");
-            Writer.Write("(" + item + ")");
+            Writer.Write($"({item})");
             Writer.Write(source);
             Writer.WriteLine(";");
 
@@ -2793,7 +2788,7 @@ namespace System.Xml.Serialization
             if (!arrayElementUseReflection)
                 Writer.Write("ci[i]");
             else
-                Writer.Write(RaCodeGen.GetReflectionVariable(typeof(Array).FullName!, "0") + "[ci , i]");
+                Writer.Write($"{RaCodeGen.GetReflectionVariable(typeof(Array).FullName!, "0")}[ci , i]");
 
 
             if (useReflection) Writer.WriteLine("}");
@@ -2819,7 +2814,7 @@ namespace System.Xml.Serialization
             member.Elements = new ElementAccessor[] { element };
             Member[] members = new Member[] { new Member(this, "o", "o", "a", 0, member) };
             Writer.WriteLine("Reader.MoveToContent();");
-            string unknownNode = "UnknownNode(null, " + ExpectedElements(members) + ");";
+            string unknownNode = $"UnknownNode(null, {ExpectedElements(members)});";
             WriteMemberElements(members, "throw CreateUnknownNodeException();", unknownNode, element.Any ? members[0] : null, null, null);
             if (element.IsSoap)
             {
@@ -2914,9 +2909,9 @@ namespace System.Xml.Serialization
         private string WriteHashtable(EnumMapping mapping, string typeName)
         {
             CodeIdentifier.CheckValidIdentifier(typeName);
-            string? propName = MakeUnique(mapping, typeName + "Values");
+            string? propName = MakeUnique(mapping, $"{typeName}Values");
             if (propName == null) return CodeIdentifier.GetCSharpName(typeName);
-            string? memberName = MakeUnique(mapping, "_" + propName);
+            string? memberName = MakeUnique(mapping, $"_{propName}");
             propName = CodeIdentifier.GetCSharpName(propName);
 
             Writer.WriteLine();
@@ -3092,7 +3087,7 @@ namespace System.Xml.Serialization
 
                 Writer.Write("return ");
                 if (derived.TypeDesc!.UseReflection && isTypedReturn)
-                    Writer.Write("(" + returnTypeName + ")");
+                    Writer.Write($"({returnTypeName})");
                 Writer.Write(methodName);
                 Writer.Write("(");
                 if (derived.TypeDesc.IsNullable)
@@ -3259,7 +3254,7 @@ namespace System.Xml.Serialization
                 Writer.Indent++;
                 Writer.WriteLine("if (isNull) {");
                 Writer.Indent++;
-                Writer.WriteLine("if (xsiType != null) return (" + typeName + ")ReadTypedNull(xsiType);");
+                Writer.WriteLine($"if (xsiType != null) return ({typeName})ReadTypedNull(xsiType);");
                 Writer.Write("else return ");
                 if (structMapping.TypeDesc.IsValueType)
                 {
@@ -3282,7 +3277,7 @@ namespace System.Xml.Serialization
             if (structMapping.TypeDesc.IsRoot)
             {
                 Writer.Indent++;
-                Writer.WriteLine("return ReadTypedPrimitive(new System.Xml.XmlQualifiedName(\"" + Soap.UrType + "\", \"" + XmlSchema.Namespace + "\"));");
+                Writer.WriteLine($"return ReadTypedPrimitive(new System.Xml.XmlQualifiedName(\"{Soap.UrType}\", \"{XmlSchema.Namespace}\"));");
                 Writer.Indent--;
             }
             Writer.WriteLine("}");
@@ -3341,7 +3336,7 @@ namespace System.Xml.Serialization
                         member.ParamsReadSource = $"paramsRead[{i}]";
                     member.IsNullable = mapping.TypeDesc!.IsNullable;
                     if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
-                        member.CheckSpecifiedSource = RaCodeGen.GetStringForMember("o", mapping.Name + "Specified", structMapping.TypeDesc);
+                        member.CheckSpecifiedSource = RaCodeGen.GetStringForMember("o", $"{mapping.Name}Specified", structMapping.TypeDesc);
                     if (mapping.Text != null)
                         anyText = member;
                     if (mapping.Attribute != null && mapping.Attribute.Any)
@@ -3423,7 +3418,7 @@ namespace System.Xml.Serialization
                 }
                 WriteWhileNotLoopStart();
                 Writer.Indent++;
-                string unknownNode = "UnknownNode((object)o, " + ExpectedElements(allMembers) + ");";
+                string unknownNode = $"UnknownNode((object)o, {ExpectedElements(allMembers)});";
                 WriteMemberElements(allMembers, unknownNode, unknownNode, anyElement, anyText, null);
                 Writer.WriteLine("Reader.MoveToContent();");
 
@@ -3478,13 +3473,13 @@ namespace System.Xml.Serialization
                     string source = RaCodeGen.GetStringForMember("o", mapping.Name, structMapping.TypeDesc);
                     Member member = new Member(this, source, source, "a", i, mapping, GetChoiceIdentifierSource(mapping, "o", structMapping.TypeDesc));
                     if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
-                        member.CheckSpecifiedSource = RaCodeGen.GetStringForMember("o", mapping.Name + "Specified", structMapping.TypeDesc);
+                        member.CheckSpecifiedSource = RaCodeGen.GetStringForMember("o", $"{mapping.Name}Specified", structMapping.TypeDesc);
                     if (!mapping.IsSequence)
                         member.ParamsReadSource = $"paramsRead[{i}]";
                     members[i] = member;
                 }
 
-                fixupMethodName = "fixup_" + methodName;
+                fixupMethodName = $"fixup_{methodName}";
                 anyFixups = WriteMemberFixupBegin(members, fixupMethodName, "o");
 
                 // we're able to not do WriteMemberBegin here because we don't allow arrays as attributes
@@ -3537,7 +3532,7 @@ namespace System.Xml.Serialization
 
                     string memberSource = /*member.IsList ? source + ".Add(" :*/ member.ArraySource;
 
-                    string targetSource = "GetTarget(ids[" + fixupIndex + "])";
+                    string targetSource = $"GetTarget(ids[{fixupIndex}])";
                     TypeDesc td = member.Mapping.TypeDesc!;
                     if (td.IsCollection || td.IsEnumerable)
                     {
@@ -3566,7 +3561,7 @@ namespace System.Xml.Serialization
 
                         if (typed)
                         {
-                            WriteCatchCastException(member.Mapping.TypeDesc!, targetSource, "ids[" + fixupIndex + "]");
+                            WriteCatchCastException(member.Mapping.TypeDesc!, targetSource, $"ids[{fixupIndex}]");
                         }
                     }
                     Writer.Indent--;
@@ -3764,7 +3759,7 @@ namespace System.Xml.Serialization
                 Writer.WriteLine("();");
 
                 //Writer.Write(xmlnsMember.ArraySource);
-                Writer.Write("((" + xmlnsMember.Mapping.TypeDesc.CSharpName + ")" + xmlnsMember.ArraySource + ")");
+                Writer.Write($"(({xmlnsMember.Mapping.TypeDesc.CSharpName}){xmlnsMember.ArraySource})");
                 Writer.WriteLine(".Add(Reader.Name.Length == 5 ? \"\" : Reader.LocalName, Reader.Value);");
 
                 Writer.Indent--;
@@ -3803,7 +3798,7 @@ namespace System.Xml.Serialization
                         AttributeAccessor attribute = (AttributeAccessor)attributes[i]!;
                         if (i > 0)
                             qnames += ", ";
-                        qnames += attribute.IsSpecialXmlNamespace ? XmlReservedNs.NsXml : (attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : "") + ":" + attribute.Name;
+                        qnames += attribute.IsSpecialXmlNamespace ? XmlReservedNs.NsXml : $"{(attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : "")}:{attribute.Name}";
                     }
                     WriteQuotedCSharpString(qnames);
                 }
@@ -3931,7 +3926,7 @@ namespace System.Xml.Serialization
                 if (member.IsArrayLike)
                 {
                     string a = member.ArrayName;
-                    string c = "c" + a;
+                    string c = $"c{a}";
 
                     TypeDesc typeDesc = member.Mapping.TypeDesc!;
                     string typeDescFullName = typeDesc.CSharpName;
@@ -3946,7 +3941,7 @@ namespace System.Xml.Serialization
 
                         if (member.Mapping.ChoiceIdentifier != null)
                         {
-                            WriteArrayLocalDecl(member.Mapping.ChoiceIdentifier.Mapping!.TypeDesc!.CSharpName + "[]",
+                            WriteArrayLocalDecl($"{member.Mapping.ChoiceIdentifier.Mapping!.TypeDesc!.CSharpName}[]",
                                                 member.ChoiceArrayName, "null",
                                                 member.Mapping.ChoiceIdentifier.Mapping.TypeDesc);
                             Writer.Write("int c");
@@ -4022,7 +4017,7 @@ namespace System.Xml.Serialization
 
                     if (!firstElement)
                         qnames += ", ";
-                    qnames += ns + ":" + e.Name;
+                    qnames += $"{ns}:{e.Name}";
                     firstElement = false;
                 }
             }
@@ -4047,7 +4042,7 @@ namespace System.Xml.Serialization
 
             if (checkType)
             {
-                WriteIfNotSoapRoot(elementElseString + " continue;");
+                WriteIfNotSoapRoot($"{elementElseString} continue;");
                 WriteMemberElementsCheckType(checkTypeHrefsSource);
             }
             else
@@ -4315,7 +4310,7 @@ namespace System.Xml.Serialization
                         {
                             WriteSourceBegin(member.ArraySource);
                             TypeDesc td = ((NullableMapping)e.Mapping).BaseMapping!.TypeDesc!;
-                            Writer.Write(RaCodeGen.GetStringForCreateInstance(e.Mapping.TypeDesc.CSharpName, e.Mapping.TypeDesc.UseReflection, false, true, "(" + td.CSharpName + ")" + checkTypeSource));
+                            Writer.Write(RaCodeGen.GetStringForCreateInstance(e.Mapping.TypeDesc.CSharpName, e.Mapping.TypeDesc.UseReflection, false, true, $"({td.CSharpName}){checkTypeSource}"));
                         }
                         else
                         {
@@ -4410,26 +4405,25 @@ namespace System.Xml.Serialization
         private string GetArraySource(TypeDesc typeDesc, string arrayName, bool multiRef)
         {
             string a = arrayName;
-            string c = "c" + a;
+            string c = $"c{a}";
             string init = "";
 
             if (multiRef)
             {
-                init = "soap = (System.Object[])EnsureArrayIndex(soap, " + c + "+2, typeof(System.Object)); ";
+                init = $"soap = (System.Object[])EnsureArrayIndex(soap, {c}+2, typeof(System.Object)); ";
             }
             bool useReflection = typeDesc.UseReflection;
             if (typeDesc.IsArray)
             {
                 string arrayTypeFullName = typeDesc.ArrayElementTypeDesc!.CSharpName;
                 bool arrayUseReflection = typeDesc.ArrayElementTypeDesc.UseReflection;
-                string castString = useReflection ? "" : "(" + arrayTypeFullName + "[])";
-                init = init + a + " = " + castString +
-                    "EnsureArrayIndex(" + a + ", " + c + ", " + RaCodeGen.GetStringForTypeof(arrayTypeFullName, arrayUseReflection) + ");";
-                string arraySource = RaCodeGen.GetStringForArrayMember(a, c + "++", typeDesc);
+                string castString = useReflection ? "" : $"({arrayTypeFullName}[])";
+                init = $"{init}{a} = {castString}EnsureArrayIndex({a}, {c}, {RaCodeGen.GetStringForTypeof(arrayTypeFullName, arrayUseReflection)});";
+                string arraySource = RaCodeGen.GetStringForArrayMember(a, $"{c}++", typeDesc);
                 if (multiRef)
                 {
-                    init = init + " soap[1] = " + a + ";";
-                    init = init + " if (ReadReference(out soap[" + c + "+2])) " + arraySource + " = null; else ";
+                    init = $"{init} soap[1] = {a};";
+                    init = $"{init} if (ReadReference(out soap[{c}+2])) {arraySource} = null; else ";
                 }
                 return init + arraySource;
             }
@@ -4463,12 +4457,12 @@ namespace System.Xml.Serialization
                             Writer.Write(" soap[1] = ");
 
                         string a = member.ArrayName;
-                        string c = "c" + a;
+                        string c = $"c{a}";
 
                         bool arrayUseReflection = typeDesc.ArrayElementTypeDesc!.UseReflection;
                         string arrayTypeFullName = typeDesc.ArrayElementTypeDesc.CSharpName;
                         if (!arrayUseReflection)
-                            Writer.Write("(" + arrayTypeFullName + "[])");
+                            Writer.Write($"({arrayTypeFullName}[])");
                         Writer.Write("ShrinkArray(");
                         Writer.Write(a);
                         Writer.Write(", ");
@@ -4485,12 +4479,12 @@ namespace System.Xml.Serialization
                         {
                             WriteSourceBegin(member.ChoiceSource!);
                             a = member.ChoiceArrayName;
-                            c = "c" + a;
+                            c = $"c{a}";
 
                             bool choiceUseReflection = member.Mapping.ChoiceIdentifier.Mapping!.TypeDesc!.UseReflection;
                             string choiceTypeName = member.Mapping.ChoiceIdentifier.Mapping.TypeDesc.CSharpName;
                             if (!choiceUseReflection)
-                                Writer.Write("(" + choiceTypeName + "[])");
+                                Writer.Write($"({choiceTypeName}[])");
                             Writer.Write("ShrinkArray(");
                             Writer.Write(a);
                             Writer.Write(", ");
@@ -4619,7 +4613,7 @@ namespace System.Xml.Serialization
                 WriteWhileNotLoopStart();
                 Writer.Indent++;
 
-                string unknownNode = "UnknownNode(null, " + ExpectedElements(members) + ");";
+                string unknownNode = $"UnknownNode(null, {ExpectedElements(members)});";
                 WriteMemberElements(members, unknownNode, unknownNode, null, null, null);
                 Writer.WriteLine("Reader.MoveToContent();");
 
@@ -4954,7 +4948,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    Writer.WriteLine("// " + "missing real mapping for " + derived.XsiType);
+                    Writer.WriteLine($"// missing real mapping for {derived.XsiType}");
                     Writer.Write("throw CreateMissingIXmlSerializableType(");
                     WriteQuotedCSharpString(derived.XsiType.Name);
                     Writer.Write(", ");

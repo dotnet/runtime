@@ -17,28 +17,28 @@ class GenInt : IGen<int>
 	public virtual void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread24.Eval(typeof(U)!=null);
+		Interlocked.Increment(ref Test_thread24.Xcounter);
 	}
 	
 	public static void ThreadPoolTest<U>()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread24.nThreads];
 		IGen<int> obj = new GenInt();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread24.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target<U>));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread24.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread24.Eval(Test_thread24.Xcounter==Test_thread24.nThreads);
+		Test_thread24.Xcounter = 0;
 	}
 }
 
@@ -49,28 +49,28 @@ class GenDouble : IGen<double>
 	public virtual void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread24.Eval(typeof(U)!=null);
+		Interlocked.Increment(ref Test_thread24.Xcounter);
 	}
 	
 	public static void ThreadPoolTest<U>()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread24.nThreads];
 		IGen<double> obj = new GenDouble();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread24.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target<U>));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread24.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread24.Eval(Test_thread24.Xcounter==Test_thread24.nThreads);
+		Test_thread24.Xcounter = 0;
 	}
 }
 
@@ -81,28 +81,28 @@ class GenString : IGen<string>
 	public virtual void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread24.Eval(typeof(U)!=null);
+		Interlocked.Increment(ref Test_thread24.Xcounter);
 	}
 	
 	public static void ThreadPoolTest<U>()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread24.nThreads];
 		IGen<string> obj = new GenString();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread24.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target<U>));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread24.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread24.Eval(Test_thread24.Xcounter==Test_thread24.nThreads);
+		Test_thread24.Xcounter = 0;
 	}
 }
 
@@ -113,28 +113,28 @@ class GenObject : IGen<object>
 	public virtual void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread24.Eval(typeof(U)!=null);
+		Interlocked.Increment(ref Test_thread24.Xcounter);
 	}
 	
 	public static void ThreadPoolTest<U>()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread24.nThreads];
 		IGen<object> obj = new GenObject();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread24.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target<U>));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread24.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread24.Eval(Test_thread24.Xcounter==Test_thread24.nThreads);
+		Test_thread24.Xcounter = 0;
 	}
 }
 
@@ -145,32 +145,32 @@ class GenGuid : IGen<Guid>
 	public virtual void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread24.Eval(typeof(U)!=null);
+		Interlocked.Increment(ref Test_thread24.Xcounter);
 	}
 	
 	public static void ThreadPoolTest<U>()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread24.nThreads];
 		IGen<Guid> obj = new GenGuid();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread24.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target<U>));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread24.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread24.Eval(Test_thread24.Xcounter==Test_thread24.nThreads);
+		Test_thread24.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread24
 {
 	public static int nThreads =50;
 	public static int counter = 0;

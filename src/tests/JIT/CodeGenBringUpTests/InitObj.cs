@@ -13,7 +13,7 @@ public struct MyClass
     public int z;
 }
 
-public class BringUpTest
+public class BringUpTest_InitObj
 {
     const int Pass = 100;
     const int Fail = -1;

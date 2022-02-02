@@ -5,11 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO.Enumeration
-#else
 namespace System.IO.Enumeration
-#endif
 {
     internal static class FileSystemEnumerableFactory
     {
@@ -80,7 +76,7 @@ namespace System.IO.Enumeration
                     }
                     else
                     {
-                        if (Path.DirectorySeparatorChar != '\\' && expression.IndexOfAny(s_unixEscapeChars) != -1)
+                        if (Path.DirectorySeparatorChar != '\\' && expression.IndexOfAny(s_unixEscapeChars) >= 0)
                         {
                             // Backslash isn't the default separator, need to escape (e.g. Unix)
                             expression = expression.Replace("\\", "\\\\");

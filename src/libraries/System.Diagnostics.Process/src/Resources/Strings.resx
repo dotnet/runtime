@@ -215,9 +215,6 @@
   <data name="PendingAsyncOperation" xml:space="preserve">
     <value>An async read operation has already been started on the stream.</value>
   </data>
-  <data name="InvalidParameter" xml:space="preserve">
-    <value>Invalid value '{1}' for parameter '{0}'.</value>
-  </data>
   <data name="CategoryHelpCorrupt" xml:space="preserve">
     <value>Cannot load Category Help data because an invalid index '{0}' was read from the registry.</value>
   </data>
@@ -311,9 +308,6 @@
   <data name="UseShellExecuteNotSupported" xml:space="preserve">
     <value>UseShellExecute is not supported on this platform.</value>
   </data>
-  <data name="GetProcessInfoNotSupported" xml:space="preserve">
-    <value>Retrieving information about local processes is not supported on this platform.</value>
-  </data>
   <data name="StandardInputEncodingNotAllowed" xml:space="preserve">
     <value>StandardInputEncoding is only supported when standard input is redirected.</value>
   </data>
@@ -325,6 +319,9 @@
   </data>
   <data name="ArgumentAndArgumentListInitialized" xml:space="preserve">
     <value>Only one of Arguments or ArgumentList may be used.</value>
+  </data>
+  <data name="ArgumentListMayNotContainNull" xml:space="preserve">
+    <value>ArgumentList may not contain null.</value>
   </data>
   <data name="KillEntireProcessTree_DisallowedBecauseTreeContainsCallingProcess" xml:space="preserve">
     <value>Cannot be used to terminate a process tree containing the calling process.</value>

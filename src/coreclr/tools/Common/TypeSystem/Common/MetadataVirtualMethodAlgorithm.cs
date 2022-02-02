@@ -452,9 +452,9 @@ namespace Internal.TypeSystem
 
             // Now, we have the unification group from the type, or have discovered its defined on the current type.
             // Adjust the group to contain all of the elements that are added to it on this type, remove the components that
-            // have seperated themselves from the group
+            // have separated themselves from the group
 
-            // Start with removing methods that seperated themselves from the group via name/sig matches
+            // Start with removing methods that separated themselves from the group via name/sig matches
             MethodDescHashtable separatedMethods = null;
 
             foreach (MethodDesc memberMethod in unificationGroup.Members)
@@ -475,13 +475,13 @@ namespace Internal.TypeSystem
 
             if (separatedMethods != null)
             {
-                foreach (MethodDesc seperatedMethod in MethodDescHashtable.Enumerator.Get(separatedMethods))
+                foreach (MethodDesc separatedMethod in MethodDescHashtable.Enumerator.Get(separatedMethods))
                 {
-                    unificationGroup.RemoveFromGroup(seperatedMethod);
+                    unificationGroup.RemoveFromGroup(separatedMethod);
                 }
             }
 
-            // Next find members which have seperated or added themselves to the group via MethodImpls
+            // Next find members which have separated or added themselves to the group via MethodImpls
             foreach (MethodImplRecord methodImplRecord in currentType.VirtualMethodImplsForType)
             {
                 MethodDesc declSlot = FindSlotDefiningMethodForVirtualMethod(methodImplRecord.Decl);

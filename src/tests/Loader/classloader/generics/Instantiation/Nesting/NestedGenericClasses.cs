@@ -5,7 +5,7 @@
 
 using System;
 
-public class Test
+public class Test_NestedGenericClasses
 {
    public static int Main()
    {

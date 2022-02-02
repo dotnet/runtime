@@ -91,7 +91,7 @@ namespace System.Xml
                     {
                         if (_localName.Length > 0)
                         {
-                            string n = string.Concat(_prefix, ":", _localName);
+                            string n = $"{_prefix}:{_localName}";
                             lock (ownerDoc.NameTable)
                             {
                                 if (_name == null)

@@ -101,8 +101,8 @@ typedef enum {
 #define INTERP_IMETHOD_IS_TAGGED_UNBOX(im) ((mono_u)(im) & 1)
 #define INTERP_IMETHOD_UNTAG_UNBOX(im) ((InterpMethod*)((mono_u)(im) & ~1))
 
-/* 
- * Structure representing a method transformed for the interpreter 
+/*
+ * Structure representing a method transformed for the interpreter
  */
 typedef struct InterpMethod InterpMethod;
 struct InterpMethod {
@@ -130,6 +130,7 @@ struct InterpMethod {
 	MonoJitInfo *jinfo;
 	MonoFtnDesc *ftndesc;
 	MonoFtnDesc *ftndesc_unbox;
+	MonoDelegateTrampInfo *del_info;
 
 	guint32 locals_size;
 	guint32 alloca_size;
@@ -226,11 +227,6 @@ typedef struct {
 	guchar *stack_pointer;
 	/* Used for allocation of localloc regions */
 	FrameDataAllocator data_stack;
-	/* Used when a thread self-suspends at a safepoint in the interpreter, points to the
-	 * currently executing frame. (If a thread self-suspends somewhere else in the runtime, this
-	 * is NULL - the LMF will point to the InterpFrame before the thread exited the interpreter)
-	 */
-	InterpFrame *safepoint_frame;
 } ThreadContext;
 
 typedef struct {
@@ -279,7 +275,7 @@ static inline int
 mint_type(MonoType *type_)
 {
 	MonoType *type = mini_native_type_replace_type (type_);
-	if (type->byref)
+	if (m_type_is_byref (type))
 		return MINT_TYPE_I;
 enum_type:
 	switch (type->type) {

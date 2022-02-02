@@ -93,6 +93,6 @@ END:
 }
 
 
-.assembly ldc_c_ret.exe {}
+.assembly ldc_c_ret {}
 
 

@@ -60,7 +60,7 @@ namespace System.Xml.Xsl.Runtime
             char perMilleSymbol = _posFormatInfo.PerMilleSymbol[0];
 
             int commaIndex = 0;
-            int groupingSize = 0;
+            int groupingSize;
             int decimalIndex = -1;
             int lastDigitIndex = -1;
 

@@ -4,14 +4,14 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public class Test
+public class Test_DevDiv_255294
 {
     static bool f;
 
     public static int Main()
     {
         f = true;
-        Test test = new Test();
+        Test_DevDiv_255294 test = new Test_DevDiv_255294();
         return test.HugeMethod();
     }
 

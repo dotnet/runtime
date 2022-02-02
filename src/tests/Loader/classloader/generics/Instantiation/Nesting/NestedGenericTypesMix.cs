@@ -5,7 +5,7 @@
 
 using System;
 
-public class Test
+public class Test_NestedGenericTypesMix
 {
    public static int Main()
    {

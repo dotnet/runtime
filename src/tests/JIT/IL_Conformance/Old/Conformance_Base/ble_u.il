@@ -45,4 +45,4 @@ FAIL:
 	ret
 }
 }
-.assembly ble_u.exe{}
+.assembly ble_u{}

@@ -56,14 +56,17 @@ class ExecutableAllocator
     // Callback to the runtime to report fatal errors
     static FatalErrorHandler g_fatalErrorHandler;
 
-#if USE_UPPER_ADDRESS
-    // Preferred region to allocate the code in.
-    static BYTE* g_codeMinAddr;
-    static BYTE* g_codeMaxAddr;
-    static BYTE* g_codeAllocStart;
-    // Next address to try to allocate for code in the preferred region.
-    static BYTE* g_codeAllocHint;
-#endif // USE_UPPER_ADDRESS
+#if USE_LAZY_PREFERRED_RANGE
+    static BYTE* g_lazyPreferredRangeStart;
+    // Next address to try to allocate for code in the lazy preferred region.
+    static BYTE* g_lazyPreferredRangeHint;
+#endif // USE_LAZY_PREFERRED_RANGE
+
+    // For PAL, this region represents the area that is eagerly reserved on
+    // startup where executable memory and static fields are preferrably kept.
+    // For Windows, this is the region that we lazily reserve from.
+    static BYTE* g_preferredRangeMin;
+    static BYTE* g_preferredRangeMax;
 
     // Caches the COMPlus_EnableWXORX setting
     static bool g_isWXorXEnabled;
@@ -154,14 +157,16 @@ public:
     // Return true if W^X is enabled
     static bool IsWXORXEnabled();
 
-    // Use this function to initialize the g_codeAllocHint
-    // during startup. base is runtime .dll base address,
-    // size is runtime .dll virtual size.
-    static void InitCodeAllocHint(size_t base, size_t size, int randomPageOffset);
+    // Use this function to initialize g_lazyPreferredRangeHint during startup.
+    // base is runtime .dll base address, size is runtime .dll virtual size.
+    static void InitLazyPreferredRange(size_t base, size_t size, int randomPageOffset);
 
-    // Use this function to reset the g_codeAllocHint
-    // after unloading an AppDomain
-    static void ResetCodeAllocHint();
+    // Use this function to reset g_lazyPreferredRangeHint after unloading code.
+    static void ResetLazyPreferredRangeHint();
+
+    // Use this function to initialize the preferred range of executable memory
+    // from PAL.
+    static void InitPreferredRange();
 
     // Returns TRUE if p is located in near clr.dll that allows us
     // to use rel32 IP-relative addressing modes.

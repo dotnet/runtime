@@ -269,7 +269,7 @@ public class GenJaggedObjectArray : IGenSub<object[][]>
 }
 
 
-public class Test
+public class Test_Class04
 {
     public static int counter = 0;
     public static bool result = true;

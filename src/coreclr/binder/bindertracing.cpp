@@ -147,12 +147,12 @@ namespace
         DomainAssembly *parentAssembly = spec->GetParentAssembly();
         if (parentAssembly != nullptr)
         {
-            PEAssembly *peAssembly = parentAssembly->GetFile();
-            _ASSERTE(peAssembly != nullptr);
-            peAssembly->GetDisplayName(request.RequestingAssembly);
+            PEAssembly *pPEAssembly = parentAssembly->GetPEAssembly();
+            _ASSERTE(pPEAssembly != nullptr);
+            pPEAssembly->GetDisplayName(request.RequestingAssembly);
 
             AppDomain *domain = parentAssembly->GetAppDomain();
-            AssemblyBinder *binder = peAssembly->GetAssemblyBinder();
+            AssemblyBinder *binder = pPEAssembly->GetAssemblyBinder();
 
             GetAssemblyLoadContextNameFromBinder(binder, domain, request.RequestingAssemblyLoadContext);
         }
@@ -176,8 +176,8 @@ namespace BinderTracing
 {
     static thread_local bool t_AssemblyLoadStartInProgress = false;
 
-    AssemblyBindOperation::AssemblyBindOperation(AssemblySpec *assemblySpec, const WCHAR *assemblyPath)
-        : m_bindRequest { assemblySpec, nullptr, assemblyPath }
+    AssemblyBindOperation::AssemblyBindOperation(AssemblySpec *assemblySpec, const SString& assemblyPath)
+        : m_bindRequest { assemblySpec, SString::Empty(), assemblyPath }
         , m_populatedBindRequest { false }
         , m_checkedIgnoreBind { false }
         , m_ignoreBind { false }

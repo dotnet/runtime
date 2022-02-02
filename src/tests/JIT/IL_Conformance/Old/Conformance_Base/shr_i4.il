@@ -220,4 +220,4 @@ FAIL:
 .try TRY_START to TRY_END catch [mscorlib]System.Exception handler HANDLER to END_HANDLER
 }
 }
-.assembly shr_i4.exe{}
+.assembly shr_i4{}
