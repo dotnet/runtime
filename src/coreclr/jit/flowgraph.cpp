@@ -945,6 +945,10 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
     {
         return false;
     }
+    else if (addr->OperIs(GT_INDEX_ADDR))
+    {
+        return !addr->AsIndexAddr()->IsNotNull();
+    }
     else if (addr->OperIs(GT_ARR_ADDR))
     {
         return (addr->gtFlags & GTF_ARR_ADDR_NONNULL) == 0;
