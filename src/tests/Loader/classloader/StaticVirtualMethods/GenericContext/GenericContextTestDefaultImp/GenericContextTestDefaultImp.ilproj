@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="GenericContextCommonAndImplementation.ilproj" />
-    <ProjectReference Include="GenericContextCommonCs.csproj" />
-    <Compile Include="GenericContextTest.il" />
+    <ProjectReference Include="../GenericContextCommonCs.csproj" />
+    <Compile Include="GenericContextTestDefaultImp.il" />
   </ItemGroup>
 </Project>

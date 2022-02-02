@@ -25,6 +25,82 @@
     .method public newslot virtual abstract static void GenericMethod<U>() {}
 }
 
+.class interface public abstract auto ansi IFaceNonGenericDefaultImp
+{
+    .method public newslot virtual static void NormalMethod()
+    {
+        ldstr "IFaceNonGenericDefaultImp.NormalMethod"
+        stsfld string [GenericContextCommonCs]Statics::String
+        ret
+    }
+    .method public newslot virtual static void GenericMethod<U>()
+    {
+        ldstr "IFaceNonGenericDefaultImp.GenericMethod<"
+        ldtoken !!0
+        call string[GenericContextCommonCs] Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+        ldstr ">"
+        call string[System.Runtime] System.String::Concat(string, string, string)
+        stsfld string [GenericContextCommonCs]Statics::String
+        ret
+    }
+}
+
+.class interface public abstract auto ansi IFaceGenericDefaultImp`1<T>
+{
+    .method public newslot virtual static void NormalMethod()
+    {
+        ldstr "IFaceGenericDefaultImp`1<"
+        ldtoken !0
+        call string[GenericContextCommonCs] Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+        ldstr ">.NormalMethod"
+        call string[System.Runtime] System.String::Concat(string, string, string)
+        stsfld string [GenericContextCommonCs]Statics::String
+        ret
+    }
+    .method public newslot virtual static void GenericMethod<U>()
+    {
+        ldstr "IFaceGenericDefaultImp`1<"
+        ldtoken !0
+        call string[GenericContextCommonCs] Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+        ldstr ">.GenericMethod<"
+        ldtoken !!0
+        call string[GenericContextCommonCs] Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+        ldstr ">"
+        call string[System.Runtime] System.String::Concat(string, string, string)
+        call string[System.Runtime] System.String::Concat(string, string, string)
+        stsfld string [GenericContextCommonCs]Statics::String
+        ret
+    }
+}
+
+.class interface public abstract auto ansi IFaceCuriouslyRecurringGenericDefaultImp`1<(class IFaceCuriouslyRecurringGeneric`1<!0>) T> 
+{
+    .method public newslot virtual static void NormalMethod()
+    {
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<"
+        ldtoken !0
+        call string[GenericContextCommonCs] Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+        ldstr ">.NormalMethod"
+        call string[System.Runtime] System.String::Concat(string, string, string)
+        stsfld string [GenericContextCommonCs]Statics::String
+        ret
+    }
+    .method public newslot virtual static void GenericMethod<U>()
+    {
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<"
+        ldtoken !0
+        call string[GenericContextCommonCs] Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+        ldstr ">.GenericMethod<"
+        ldtoken !!0
+        call string[GenericContextCommonCs] Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+        ldstr ">"
+        call string[System.Runtime] System.String::Concat(string, string, string)
+        call string[System.Runtime] System.String::Concat(string, string, string)
+        stsfld string [GenericContextCommonCs]Statics::String
+        ret
+    }
+}
+
 .class public sealed auto ansi GenericStruct`1<T>
        extends[System.Runtime] System.ValueType
 {
