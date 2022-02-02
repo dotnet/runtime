@@ -76,7 +76,7 @@ namespace Wasm.Build.Tests
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                        DotnetWasmFromRuntimePack: false,
+                        DotnetWasmFromRuntimePack: true,
                         CreateProject: false,
                         HasV8Script: false,
                         MainJS: "main.cjs",
@@ -95,7 +95,7 @@ namespace Wasm.Build.Tests
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: false,
+                            DotnetWasmFromRuntimePack: true,
                             CreateProject: false,
                             HasV8Script: false,
                             MainJS: "main.cjs",
