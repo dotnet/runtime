@@ -12,7 +12,7 @@ namespace System.IO
             => SetCreationTime(handle: null, path, time, asDirectory);
 
         internal void SetCreationTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
-            => SetCreationTime(handle, handle.Path, time, asDirectory);
+            => SetCreationTime(handle, GetHandlePath(handle), time, asDirectory);
 
         private void SetCreationTime(SafeFileHandle? handle, string path, DateTimeOffset time, bool asDirectory)
         {
