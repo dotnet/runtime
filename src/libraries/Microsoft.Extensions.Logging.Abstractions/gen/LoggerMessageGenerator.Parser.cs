@@ -321,6 +321,15 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 break;
                                             }
 
+                                            string? qualifier = null;
+                                            if (paramSymbol.RefKind == RefKind.In)
+                                            {
+                                                qualifier = "in";
+                                            }
+                                            else if (paramSymbol.RefKind == RefKind.Ref)
+                                            {
+                                                qualifier = "ref";
+                                            }
                                             string typeName = paramTypeSymbol.ToDisplayString(
                                                 SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
                                                     SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
@@ -329,6 +338,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             {
                                                 Name = paramName,
                                                 Type = typeName,
+                                                Qualifier = qualifier,
                                                 IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol!, loggerSymbol),
                                                 IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol!, exceptionSymbol),
                                                 IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol!, logLevelSymbol),
@@ -478,7 +488,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 Keyword = classDec.Keyword.ValueText,
                                                 Namespace = nspace,
                                                 Name = classDec.Identifier.ToString() + classDec.TypeParameterList,
-                                                Constraints = classDec.ConstraintClauses.ToString(),
                                                 ParentClass = null,
                                             };
 
@@ -497,7 +506,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                                     Keyword = parentLoggerClass.Keyword.ValueText,
                                                     Namespace = nspace,
                                                     Name = parentLoggerClass.Identifier.ToString() + parentLoggerClass.TypeParameterList,
-                                                    Constraints = parentLoggerClass.ConstraintClauses.ToString(),
                                                     ParentClass = null,
                                                 };
 
@@ -700,7 +708,6 @@ namespace Microsoft.Extensions.Logging.Generators
             public string Keyword = string.Empty;
             public string Namespace = string.Empty;
             public string Name = string.Empty;
-            public string Constraints = string.Empty;
             public LoggerClass? ParentClass;
         }
 
@@ -732,6 +739,7 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             public string Name = string.Empty;
             public string Type = string.Empty;
+            public string? Qualifier;
             public bool IsLogger;
             public bool IsException;
             public bool IsLogLevel;
