@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
-using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
@@ -13,16 +12,6 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    public partial class RSA : AsymmetricAlgorithm
-    {
-        public static new partial RSA Create()
-        {
-            return new RSAImplementation.RSASecurityTransforms();
-        }
-    }
-#endif
-
     internal static partial class RSAImplementation
     {
         public sealed partial class RSASecurityTransforms : RSA
@@ -632,27 +621,27 @@ namespace System.Security.Cryptography
             {
                 if (hashAlgorithmName == HashAlgorithmName.MD5)
                 {
-                    hashSizeInBytes = 128 >> 3;
+                    hashSizeInBytes = MD5.HashSizeInBytes;
                     return Interop.AppleCrypto.PAL_HashAlgorithm.Md5;
                 }
                 else if (hashAlgorithmName == HashAlgorithmName.SHA1)
                 {
-                    hashSizeInBytes = 160 >> 3;
+                    hashSizeInBytes = SHA1.HashSizeInBytes;
                     return Interop.AppleCrypto.PAL_HashAlgorithm.Sha1;
                 }
                 else if (hashAlgorithmName == HashAlgorithmName.SHA256)
                 {
-                    hashSizeInBytes = 256 >> 3;
+                    hashSizeInBytes = SHA256.HashSizeInBytes;
                     return Interop.AppleCrypto.PAL_HashAlgorithm.Sha256;
                 }
                 else if (hashAlgorithmName == HashAlgorithmName.SHA384)
                 {
-                    hashSizeInBytes = 384 >> 3;
+                    hashSizeInBytes = SHA384.HashSizeInBytes;
                     return Interop.AppleCrypto.PAL_HashAlgorithm.Sha384;
                 }
                 else if (hashAlgorithmName == HashAlgorithmName.SHA512)
                 {
-                    hashSizeInBytes = 512 >> 3;
+                    hashSizeInBytes = SHA512.HashSizeInBytes;
                     return Interop.AppleCrypto.PAL_HashAlgorithm.Sha512;
                 }
 

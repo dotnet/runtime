@@ -13,10 +13,6 @@ using BCRYPT_PSS_PADDING_INFO = Interop.BCrypt.BCRYPT_PSS_PADDING_INFO;
 
 namespace System.Security.Cryptography
 {
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    internal static partial class RSAImplementation
-    {
-#endif
     public sealed partial class RSACng : RSA
     {
         private static readonly ConcurrentDictionary<HashAlgorithmName, int> s_hashSizes =
@@ -182,7 +178,4 @@ namespace System.Security.Cryptography
             }
         }
     }
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    }
-#endif
 }
