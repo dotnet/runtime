@@ -54,7 +54,7 @@ namespace System.IO
             attrList.commonAttr = Interop.libc.AttrList.ATTR_CMN_CRTIME;
 
             // Follow links when using SafeFileHandle API.
-            int flags = handle is null ? new CULong(Interop.libc.FSOPT_NOFOLLOW) : 0;
+            CULong flags = handle is null ? new CULong(Interop.libc.FSOPT_NOFOLLOW) : 0;
 
             Interop.Error error =
                 Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), flags) == 0 ?
