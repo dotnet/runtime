@@ -196,13 +196,35 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
 
     return MapViewOfFileEx(hMap, FILE_MAP_ALL_ACCESS, 0, 0, fileSize, MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS);
 }
+
+Volatile<bool> StressLog::disabled;
+Volatile<LONG> StressLog::writerCount;
+
+StressLog::~StressLog()
+{
+    if (StressLogChunk::s_memoryMapped)
+    {
+        StressLog::disabled = true;        
+        while (writerCount != 0)
+        {
+            // spin until all writers are gone before closing the file
+        }
+    }
+}
 #endif //MEMORY_MAPPED_STRESSLOG
+
+
 
 /*********************************************************************************/
 void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThreadArg,
     unsigned maxBytesTotalArg, void* moduleBase, LPWSTR logFilename)
 {
     STATIC_CONTRACT_LEAF;
+
+#ifdef MEMORY_MAPPED_STRESSLOG
+    StressLog::disabled = false;
+    StressLog::writerCount = 0;
+#endif
 
     if (theLog.MaxSizePerThread != 0)
     {
@@ -840,6 +862,15 @@ void StressLog::LogMsg(unsigned level, unsigned facility, int cArgs, const char*
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
+#ifdef MEMORY_MAPPED_STRESSLOG
+    InterlockedIncrement(&StressLog::writerCount);
+    if (StressLog::disabled) 
+    {
+        InterlockedDecrement(&StressLog::writerCount);
+        return;
+    }
+#endif
+
     // Any stresslog LogMsg could theoretically create a new stress log and thus
     // enter a critical section.  But we don't want these to cause violations in
     // CANNOT_TAKE_LOCK callers, since the callers would otherwise be fine in runs that don't
@@ -859,12 +890,21 @@ void StressLog::LogMsg(unsigned level, unsigned facility, int cArgs, const char*
             msgs = CreateThreadStressLog();
 
             if (msgs == 0)
+            {
+#ifdef MEMORY_MAPPED_STRESSLOG
+                InterlockedDecrement(&StressLog::writerCount);
+#endif
                 return;
+            }
         }
         va_start(Args, format);
         msgs->LogMsg(facility, cArgs, format, Args);
         va_end(Args);
     }
+
+#ifdef MEMORY_MAPPED_STRESSLOG
+    InterlockedDecrement(&StressLog::writerCount);
+#endif
 
     // Stress Log ETW feature available only on the desktop versions of the runtime
 #endif //!DACCESS_COMPILE
@@ -879,6 +919,16 @@ void StressLog::LogMsg(unsigned level, unsigned facility, const StressLogMsg &ms
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
+
+
+#ifdef MEMORY_MAPPED_STRESSLOG
+    InterlockedIncrement(&StressLog::writerCount);
+    if (StressLog::disabled) 
+    {
+        InterlockedDecrement(&StressLog::writerCount);
+        return;
+    }
+#endif
 
     // Any stresslog LogMsg could theoretically create a new stress log and thus
     // enter a critical section.  But we don't want these to cause violations in
@@ -897,7 +947,12 @@ void StressLog::LogMsg(unsigned level, unsigned facility, const StressLogMsg &ms
             msgs = CreateThreadStressLog();
 
             if (msgs == 0)
+            {
+#ifdef MEMORY_MAPPED_STRESSLOG
+                InterlockedDecrement(&StressLog::writerCount);
+#endif
                 return;
+            }
         }
 #ifdef HOST_WINDOWS 
         // On Linux, this cast: (va_list)msg.m_args gives a compile error
@@ -911,6 +966,9 @@ void StressLog::LogMsg(unsigned level, unsigned facility, const StressLogMsg &ms
 #endif //HOST_WINDOWS
     }
 
+#ifdef MEMORY_MAPPED_STRESSLOG
+    InterlockedDecrement(&StressLog::writerCount);
+#endif
     // Stress Log ETW feature available only on the desktop versions of the runtime
 #endif //!DACCESS_COMPILE
 }
