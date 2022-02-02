@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    public sealed class NullMarshallingGeneratorFactory : IMarshallingGeneratorFactory
+    public sealed class UnsupportedMarshallingFactory : IMarshallingGeneratorFactory
     {
         public IMarshallingGenerator Create(
             TypePositionInfo info,

@@ -19,8 +19,8 @@ namespace Microsoft.Interop.Analyzers
 
         private static readonly string[] s_unsupportedTypeNames = new string[]
         {
-            "System.Runtime.InteropServices.HandleRef",
             "System.Runtime.InteropServices.CriticalHandle",
+            "System.Runtime.InteropServices.HandleRef",
             "System.Text.StringBuilder"
         };
 

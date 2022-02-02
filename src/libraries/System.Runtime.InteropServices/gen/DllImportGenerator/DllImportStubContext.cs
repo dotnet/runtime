@@ -207,7 +207,7 @@ namespace Microsoft.Interop
                 else
                 {
                     // If we're in a "supported" scenario, then emit a diagnostic as our final fallback.
-                    generatorFactory = new NullMarshallingGeneratorFactory();
+                    generatorFactory = new UnsupportedMarshallingFactory();
                 }
 
                 generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);

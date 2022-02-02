@@ -49,12 +49,7 @@ namespace Microsoft.Interop
     /// An indication of "missing support" will trigger the fallback logic, which is
     /// the forwarder marshaler.
     /// </remarks>
-    public sealed record MissingSupportMarshallingInfo : MarshallingInfo
-    {
-        public static readonly MarshallingInfo Instance = new MissingSupportMarshallingInfo();
-
-        private MissingSupportMarshallingInfo() { }
-    }
+    public record MissingSupportMarshallingInfo : MarshallingInfo;
 
     /// <summary>
     /// Character encoding enumeration.
@@ -167,6 +162,18 @@ namespace Microsoft.Interop
             MarshallingFeatures,
             UseDefaultMarshalling
         );
+
+
+    /// <summary>
+    /// Marshalling information is lacking because of support not because it is
+    /// unknown or non-existent. Includes information about element types in case
+    /// we need to rehydrate the marshalling info into an attribute for the fallback marshaller.
+    /// </summary>
+    /// <remarks>
+    /// An indication of "missing support" will trigger the fallback logic, which is
+    /// the forwarder marshaler.
+    /// </remarks>
+    public sealed record MissingSupportCollectionMarshallingInfo(CountInfo CountInfo, MarshallingInfo ElementMarshallingInfo) : MissingSupportMarshallingInfo;
 
     public sealed class MarshallingAttributeInfoParser
     {
@@ -543,7 +550,7 @@ namespace Microsoft.Interop
             if (arrayMarshaller is null)
             {
                 // If the array marshaler type is not available, then we cannot marshal arrays but indicate it is missing.
-                return MissingSupportMarshallingInfo.Instance;
+                return new MissingSupportCollectionMarshallingInfo(arraySizeInfo, elementMarshallingInfo);
             }
 
             ITypeSymbol? valuePropertyType = ManualTypeMarshallingHelper.FindValueProperty(arrayMarshaller)?.Type;
@@ -746,7 +753,7 @@ namespace Microsoft.Interop
                 if (arrayMarshaller is null)
                 {
                     // If the array marshaler type is not available, then we cannot marshal arrays but indicate it is missing.
-                    marshallingInfo = MissingSupportMarshallingInfo.Instance;
+                    marshallingInfo = new MissingSupportCollectionMarshallingInfo(parsedCountInfo, GetMarshallingInfo(elementType, useSiteAttributes, indirectionLevel + 1, inspectedElements, ref maxIndirectionLevelUsed));
                     return true;
                 }
 
@@ -786,30 +793,24 @@ namespace Microsoft.Interop
 
         private MarshallingInfo GetBlittableMarshallingInfo(ITypeSymbol type)
         {
-            MarshallingInfo marshallingInfo;
             if (type.TypeKind is TypeKind.Enum or TypeKind.Pointer or TypeKind.FunctionPointer
-                || type.SpecialType.IsIntegralType()
-                || type.SpecialType is SpecialType.System_Void
-                    or SpecialType.System_Single
-                    or SpecialType.System_Double
-                    or SpecialType.System_Boolean)
+                || type.SpecialType.IsAlwaysBlittable()
+                || type.SpecialType == SpecialType.System_Boolean)
             {
                 // Treat primitive types and enums as having no marshalling info.
                 // They are supported in configurations where runtime marshalling is enabled.
-                marshallingInfo = NoMarshallingInfo.Instance;
+                return NoMarshallingInfo.Instance;
             }
 
             else if (_compilation.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute) is null)
             {
                 // If runtime marshalling cannot be disabled, then treat this as a "missing support" scenario so we can gracefully fall back to using the fowarder downlevel.
-                marshallingInfo = MissingSupportMarshallingInfo.Instance;
+                return new MissingSupportMarshallingInfo();
             }
             else
             {
-                marshallingInfo = new UnmanagedBlittableMarshallingInfo();
+                return new UnmanagedBlittableMarshallingInfo();
             }
-
-            return marshallingInfo;
         }
 
         private bool TryGetAttributeIndirectionLevel(AttributeData attrData, out int indirectionLevel)

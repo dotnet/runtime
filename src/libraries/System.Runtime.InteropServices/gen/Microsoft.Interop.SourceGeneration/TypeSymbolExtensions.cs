@@ -95,9 +95,7 @@ namespace Microsoft.Interop
 
         public static bool IsIntegralType(this SpecialType type)
         {
-            return type switch
-            {
-                SpecialType.System_SByte
+            return type is SpecialType.System_SByte
                 or SpecialType.System_Byte
                 or SpecialType.System_Int16
                 or SpecialType.System_UInt16
@@ -106,9 +104,24 @@ namespace Microsoft.Interop
                 or SpecialType.System_Int64
                 or SpecialType.System_UInt64
                 or SpecialType.System_IntPtr
-                or SpecialType.System_UIntPtr => true,
-                _ => false
-            };
+                or SpecialType.System_UIntPtr;
+        }
+
+        public static bool IsAlwaysBlittable(this SpecialType type)
+        {
+            return type is SpecialType.System_Void
+                    or SpecialType.System_SByte
+                    or SpecialType.System_Byte
+                    or SpecialType.System_Int16
+                    or SpecialType.System_UInt16
+                    or SpecialType.System_Int32
+                    or SpecialType.System_UInt32
+                    or SpecialType.System_Int64
+                    or SpecialType.System_UInt64
+                    or SpecialType.System_IntPtr
+                    or SpecialType.System_UIntPtr
+                    or SpecialType.System_Single
+                    or SpecialType.System_Double;
         }
     }
 }

@@ -45,7 +45,9 @@ internal static partial class Interop
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(SimpleStringBufferMarshaller))] StringBuilder headers,
 #else
+#pragma warning disable CA1838 // Uses pooled StringBuilder
             [In] StringBuilder headers,
+#pragma warning restore CA1838 // Uses pooled StringBuilder
 #endif
             uint headersLength,
             uint modifiers);
