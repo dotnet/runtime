@@ -62,7 +62,7 @@ public class ILRewriter
         bool isILTest = Path.GetExtension(ilSource).ToLower() == ".il";
         bool rewritten = false;
 
-        if (Path.GetFileName(ilSource).Equals("expl_obj_1.cs", StringComparison.OrdinalIgnoreCase))
+        if (Path.GetFileName(ilSource).Equals("instance.il", StringComparison.OrdinalIgnoreCase))
         {
             Console.WriteLine("RewriteFile: {0}", ilSource);    
         }
@@ -121,7 +121,7 @@ public class ILRewriter
                         {
                             line = lines[lineIndex];
                             bool isMethodLine = line.Contains(".method ");
-                            if (TestProject.MakePublic(ref line, force: isMethodLine))
+                            if (TestProject.MakePublic(isILTest: isILTest, ref line, force: isMethodLine))
                             {
                                 lines[lineIndex] = line;
                                 rewritten = true;
@@ -137,7 +137,7 @@ public class ILRewriter
                     else
                     {
                         line = lines[lineIndex];
-                        TestProject.MakePublic(ref line, force: true);
+                        TestProject.MakePublic(isILTest: isILTest, ref line, force: true);
                         lines[lineIndex] = line;
                         rewritten = true;
                     }
@@ -151,7 +151,7 @@ public class ILRewriter
                                 (line.Contains("class") || line.Contains("struct")) &&
                                 line.Contains(baseClassName))
                             {
-                                if (TestProject.MakePublic(ref line, force: true))
+                                if (TestProject.MakePublic(isILTest: isILTest, ref line, force: true))
                                 {
                                     lines[index] = line;
                                     rewritten = true;
@@ -211,26 +211,9 @@ public class ILRewriter
         else if (!_cleanupILModuleAssembly)
         {
             string line = lines[_testProject.TestClassLine];
-            if (line.IndexOf("public") < 0)
-            {
-                if (line.IndexOf("private ") >= 0)
-                {
-                    line = line.Replace("private ", "public ");
-                }
-                else if (line.Contains("internal "))
-                {
-                    line = line.Replace("internal ", "public ");
-                }
-                else if (!isILTest)
-                {
-                    line = TestProject.AddAfterIndent(line, "public ");
-                }
-                if (!_deduplicateClassNames)
-                {
-                    lines[_testProject.TestClassLine] = line;
-                    rewritten = true;
-                }
-            }
+            TestProject.MakePublic(isILTest: isILTest, ref line, force: true);
+            lines[_testProject.TestClassLine] = line;
+            rewritten = true;
         }
 
         if (!_deduplicateClassNames && !_cleanupILModuleAssembly)
