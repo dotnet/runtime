@@ -4636,7 +4636,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Run an early flow graph simplification pass
         //
         auto earlyUpdateFlowGraphPhase = [this]() {
-            const bool doTailDup = false;
+            constexpr bool doTailDup = false;
             fgUpdateFlowGraph(doTailDup);
         };
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
@@ -4776,6 +4776,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Unroll loops
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
+
+        // Clear loop table info that is not used after this point, and might become invalid.
+        //
+        DoPhase(this, PHASE_CLEAR_LOOP_INFO, &Compiler::optClearLoopIterInfo);
     }
 
 #ifdef DEBUG
@@ -4909,7 +4913,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // update the flowgraph if we modified it during the optimization phase
                 //
                 auto optUpdateFlowGraphPhase = [this]() {
-                    const bool doTailDup = false;
+                    constexpr bool doTailDup = false;
                     fgUpdateFlowGraph(doTailDup);
                 };
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, optUpdateFlowGraphPhase);
@@ -4966,11 +4970,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_SIMPLE_LOWERING, &Compiler::fgSimpleLowering);
 
-#ifdef DEBUG
-    fgDebugCheckBBlist();
-    fgDebugCheckLinks();
-#endif
-
     // Enable this to gather statistical data such as
     // call and register argument info, flowgraph and loop info, etc.
     compJitStats();
@@ -5020,10 +5019,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
-
-#ifdef DEBUG
-    fgDebugCheckLinks();
-#endif
 
 #if FEATURE_LOOP_ALIGN
     // Place loop alignment instructions
@@ -5630,10 +5625,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     // Set this before the first 'BADCODE'
     // Skip verification where possible
-    //.tiVerificationNeeded = !compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
     assert(compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION));
-
-    assert(!compIsForInlining() || !tiVerificationNeeded); // Inlinees must have been verified.
 
     /* Setup an error trap */
 
@@ -6161,17 +6153,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
                 eeGetMethodFullName(info.compMethodHnd), dspPtr(impTokenLookupContextHandle)));
     }
 
-    if (tiVerificationNeeded)
-    {
-        JITLOG((LL_INFO10000, "tiVerificationNeeded initially set to true for %s\n", info.compFullName));
-    }
 #endif // DEBUG
 
-    /* Since tiVerificationNeeded can be turned off in the middle of
-       compiling a method, and it might have caused blocks to be queued up
-       for reimporting, impCanReimport can be used to check for reimporting. */
-
-    impCanReimport = (tiVerificationNeeded || compStressCompile(STRESS_CHK_REIMPORT, 15));
+    impCanReimport = compStressCompile(STRESS_CHK_REIMPORT, 15);
 
     /* Initialize set a bunch of global values */
 
@@ -6401,9 +6385,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         // Honor the config setting that tells the jit to
         // always optimize methods with loops.
         //
-        // If that's not set, and OSR is enabled, the jit may still
+        // If neither of those apply, and OSR is enabled, the jit may still
         // decide to optimize, if there's something in the method that
-        // OSR currently cannot handle.
+        // OSR currently cannot handle, or we're optionally suppressing
+        // OSR by method hash.
         //
         const char* reason = nullptr;
 
@@ -6411,35 +6396,42 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             reason = "tail.call and not BBINSTR";
         }
-        else if ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0)
+        else if (compHasBackwardJump && ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
         {
-            if (compHasBackwardJump)
-            {
-                reason = "loop";
-            }
+            reason = "loop";
         }
-        else if (JitConfig.TC_OnStackReplacement() > 0)
+
+        if (compHasBackwardJump && (reason == nullptr) && (JitConfig.TC_OnStackReplacement() > 0))
         {
-            const bool patchpointsOK = compCanHavePatchpoints(&reason);
-            assert(patchpointsOK || (reason != nullptr));
+            const char* noPatchpointReason = nullptr;
+            bool        canEscapeViaOSR    = compCanHavePatchpoints(&reason);
 
 #ifdef DEBUG
-            // Optionally disable OSR by method hash.
-            //
-            if (patchpointsOK && compHasBackwardJump)
+            if (canEscapeViaOSR)
             {
+                // Optionally disable OSR by method hash. This will force any
+                // method that might otherwise get trapped in Tier0 to be optimized.
+                //
                 static ConfigMethodRange JitEnableOsrRange;
                 JitEnableOsrRange.EnsureInit(JitConfig.JitEnableOsrRange());
                 const unsigned hash = impInlineRoot()->info.compMethodHash();
                 if (!JitEnableOsrRange.Contains(hash))
                 {
-                    JITDUMP("Disabling OSR -- Method hash 0x%08x not within range ", hash);
-                    JITDUMPEXEC(JitEnableOsrRange.Dump());
-                    JITDUMP("\n");
-                    reason = "OSR disabled by JitEnableOsrRange";
+                    canEscapeViaOSR = false;
+                    reason          = "OSR disabled by JitEnableOsrRange";
                 }
             }
 #endif
+
+            if (canEscapeViaOSR)
+            {
+                JITDUMP("\nOSR enabled for this method\n");
+            }
+            else
+            {
+                JITDUMP("\nOSR disabled for this method: %s\n", noPatchpointReason);
+                assert(reason != nullptr);
+            }
         }
 
         if (reason != nullptr)
@@ -9389,7 +9381,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 FALLTHROUGH;
 
             case GT_BLK:
-            case GT_DYN_BLK:
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
 
@@ -9742,7 +9733,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 //
 void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
-    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK, GT_DYN_BLK));
+    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(TYP_INT);
     block->bbFlags |= BBF_HAS_NULLCHECK;

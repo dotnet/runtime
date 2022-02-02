@@ -781,11 +781,11 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
         if(desiredLoadLevel == FullInfo)
         {
             VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
-            VMPTR_DomainFile vmDomainFile = m_pModule->GetRuntimeDomainFile();
-            if (!vmDomainFile.IsNull())
+            VMPTR_DomainAssembly vmDomainAssembly = m_pModule->GetRuntimeDomainAssembly();
+            if (!vmDomainAssembly.IsNull())
             {
-                DomainFileInfo info;
-                pDac->GetDomainFileData(vmDomainFile, &info);
+                DomainAssemblyInfo info;
+                pDac->GetDomainAssemblyData(vmDomainAssembly, &info);
                 vmAppDomain = info.vmAppDomain;
             }
             pDac->GetClassInfo(vmAppDomain, vmTypeHandle, &m_classInfo);
@@ -941,7 +941,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
                         fieldToken,
                         ELEMENT_TYPE_MAX,
                         classToken,
-                        m_pModule->GetRuntimeDomainFile());
+                        m_pModule->GetRuntimeDomainAssembly());
     }
     else
     {
@@ -966,7 +966,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
                                                                     // This is used only for log messages, and could
                                                                     // be removed.
                         classToken,                                 // metadata token for the class
-                        m_pModule->GetRuntimeDomainFile());         // Domain file for the class
+                        m_pModule->GetRuntimeDomainAssembly());         // Domain file for the class
     }
 } // CordbClass::InitFieldData
 

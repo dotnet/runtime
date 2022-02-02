@@ -95,6 +95,10 @@ export function mono_wasm_detach_debugger(): void {
     cwraps.mono_wasm_set_is_debugger_attached(false);
 }
 
+export function mono_wasm_change_debugger_log_level(level: number): void {
+    cwraps.mono_wasm_change_debugger_log_level(level);
+}
+
 /**
  * Raises an event for the debug proxy
  */

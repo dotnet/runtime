@@ -188,10 +188,7 @@ namespace System.IO
 
         public void MoveTo(string destDirName)
         {
-            if (destDirName == null)
-                throw new ArgumentNullException(nameof(destDirName));
-            if (destDirName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
+            ArgumentException.ThrowIfNullOrEmpty(destDirName);
 
             string destination = Path.GetFullPath(destDirName);
 

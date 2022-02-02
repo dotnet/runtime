@@ -297,25 +297,25 @@ inline Assembly *Module::LookupAssemblyRef(mdAssemblyRef token)
 inline void Module::ForceStoreAssemblyRef(mdAssemblyRef token, Assembly *value)
 {
     WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
-    _ASSERTE(value->GetManifestModule());
+    _ASSERTE(value->GetModule());
     _ASSERTE(TypeFromToken(token) == mdtAssemblyRef);
 
-    m_ManifestModuleReferencesMap.AddElement(this, RidFromToken(token), value->GetManifestModule());
+    m_ManifestModuleReferencesMap.AddElement(this, RidFromToken(token), value->GetModule());
 }
 
 inline void Module::StoreAssemblyRef(mdAssemblyRef token, Assembly *value)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(value->GetManifestModule());
+    _ASSERTE(value->GetModule());
     _ASSERTE(TypeFromToken(token) == mdtAssemblyRef);
-    m_ManifestModuleReferencesMap.TrySetElement(RidFromToken(token), value->GetManifestModule());
+    m_ManifestModuleReferencesMap.TrySetElement(RidFromToken(token), value->GetModule());
 }
 
 inline mdAssemblyRef Module::FindAssemblyRef(Assembly *targetAssembly)
 {
     WRAPPER_NO_CONTRACT;
 
-    return m_ManifestModuleReferencesMap.Find(targetAssembly->GetManifestModule()) | mdtAssemblyRef;
+    return m_ManifestModuleReferencesMap.Find(targetAssembly->GetModule()) | mdtAssemblyRef;
 }
 
 #endif //DACCESS_COMPILE

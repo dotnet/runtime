@@ -297,7 +297,7 @@ private:
     void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
-    GenTree* LowerBinaryArithmetic(GenTreeOp* node);
+    GenTree* LowerBinaryArithmetic(GenTreeOp* binOp);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);
@@ -306,7 +306,7 @@ private:
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
     void LowerPutArgStk(GenTreePutArgStk* tree);
 
-    bool TryCreateAddrMode(GenTree* addr, bool isContainable, var_types targetType = TYP_UNDEF);
+    bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 
     bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);
 
@@ -343,6 +343,8 @@ private:
     void LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
+    GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
+    GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
 #elif defined(TARGET_ARM64)
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
@@ -564,8 +566,8 @@ public:
     }
 
 #ifdef FEATURE_HW_INTRINSICS
-    // Return true if 'node' is a containable HWIntrinsic op.
-    bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node, bool* supportsRegOptional);
+    // Tries to get a containable node for a given HWIntrinsic
+    bool TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree** pNode, bool* supportsRegOptional);
 #endif // FEATURE_HW_INTRINSICS
 
     static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);

@@ -12,16 +12,16 @@
   .ver 0:0:0:0
 }
 .assembly extern eh_common {}
-.assembly test
+.assembly 'tryfinallyincatchtry'
 {
   .ver 0:0:0:0
 }
-.module test.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512
 .corflags 0x00000001
 
+.class public auto ansi Test_tryfinallyincatchtry extends [mscorlib] System.Object {
 .method public static int32 main() {
     .entrypoint
     .maxstack  400
@@ -102,4 +102,5 @@
 		ldloc.s    testLog
 		callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 	    ret
+}
 }

@@ -6,6 +6,8 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in .NET Framework.")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
     public class RegexReductionTests
     {
         // These tests depend on using reflection to access internals of Regex in order to validate
@@ -18,18 +20,26 @@ namespace System.Text.RegularExpressions.Tests
         private static readonly FieldInfo s_regexCode;
         private static readonly FieldInfo s_regexCodeCodes;
         private static readonly FieldInfo s_regexCodeTree;
+        private static readonly FieldInfo s_regexCodeFindOptimizations;
+        private static readonly PropertyInfo s_regexCodeFindOptimizationsMaxPossibleLength;
         private static readonly FieldInfo s_regexCodeTreeMinRequiredLength;
 
         static RegexReductionTests()
         {
-            if (PlatformDetection.IsNetFramework)
+            if (PlatformDetection.IsNetFramework || PlatformDetection.IsBuiltWithAggressiveTrimming)
             {
-                // These members may not exist, and the tests won't run.
+                // These members may not exist or may have been trimmed away, and the tests won't run.
                 return;
             }
 
             s_regexCode = typeof(Regex).GetField("_code", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(s_regexCode);
+
+            s_regexCodeFindOptimizations = s_regexCode.FieldType.GetField("FindOptimizations", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(s_regexCodeFindOptimizations);
+
+            s_regexCodeFindOptimizationsMaxPossibleLength = s_regexCodeFindOptimizations.FieldType.GetProperty("MaxPossibleLength", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(s_regexCodeFindOptimizationsMaxPossibleLength);
 
             s_regexCodeCodes = s_regexCode.FieldType.GetField("Codes", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(s_regexCodeCodes);
@@ -71,8 +81,21 @@ namespace System.Text.RegularExpressions.Tests
             return (int)minRequiredLength;
         }
 
+        private static int? GetMaxPossibleLength(Regex r)
+        {
+            object code = s_regexCode.GetValue(r);
+            Assert.NotNull(code);
+
+            object findOpts = s_regexCodeFindOptimizations.GetValue(code);
+            Assert.NotNull(findOpts);
+
+            object maxPossibleLength = s_regexCodeFindOptimizationsMaxPossibleLength.GetValue(findOpts);
+            Assert.True(maxPossibleLength is null || maxPossibleLength is int);
+
+            return (int?)maxPossibleLength;
+        }
+
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in .NET Framework.")]
         // Two greedy one loops
         [InlineData("a*a*", "a*")]
         [InlineData("(a*a*)", "(a*)")]
@@ -452,7 +475,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in .NET Framework.")]
         // Not coalescing loops
         [InlineData("aa", "a{2}")]
         [InlineData("a[^a]", "a{2}")]
@@ -534,71 +556,99 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not computed in netfx")]
-        [InlineData(@"a", 1)]
-        [InlineData(@"[^a]", 1)]
-        [InlineData(@"[abcdefg]", 1)]
-        [InlineData(@"abcd", 4)]
-        [InlineData(@"a*", 0)]
-        [InlineData(@"a*?", 0)]
-        [InlineData(@"a?", 0)]
-        [InlineData(@"a??", 0)]
-        [InlineData(@"a+", 1)]
-        [InlineData(@"a+?", 1)]
-        [InlineData(@"a{2}", 2)]
-        [InlineData(@"a{2}?", 2)]
-        [InlineData(@"a{3,17}", 3)]
-        [InlineData(@"a{3,17}?", 3)]
-        [InlineData(@"(abcd){5}", 20)]
-        [InlineData(@"(abcd|ef){2,6}", 4)]
-        [InlineData(@"abcef|de", 2)]
-        [InlineData(@"abc(def|ghij)k", 7)]
-        [InlineData(@"\d{1,2}-\d{1,2}-\d{2,4}", 6)]
-        [InlineData(@"1(?=9)\d", 2)]
-        [InlineData(@"1(?!\d)\w", 2)]
-        [InlineData(@"a*a*a*a*a*a*a*b*", 0)]
-        [InlineData(@"((a{1,2}){4}){3,7}", 12)]
-        [InlineData(@"\b\w{4}\b", 4)]
-        [InlineData(@"abcd(?=efgh)efgh", 8)]
-        [InlineData(@"abcd(?<=cd)efgh", 8)]
-        [InlineData(@"abcd(?!ab)efgh", 8)]
-        [InlineData(@"abcd(?<!ef)efgh", 8)]
-        [InlineData(@"(a{1073741824}){2}", 2147483647)]
-        [InlineData(@"a{1073741824}b{1073741824}", 2147483647)]
-        [InlineData(@"((((((((((((((((((((((((((((((ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ)", 2)]
-        [InlineData(@"(YZ+|(WX+|(UV+|(ST+|(QR+|(OP+|(MN+|(KL+|(IJ+|(GH+|(EF+|(CD+|(AB+|(89+|(67+|(45+|(23+|(01+|(yz+|(wx+|(uv+|(st+|(qr+|(op+|(mn+|(kl+|(ij+|(gh+|(ef+|(de+|(a|bc+)))))))))))))))))))))))))))))))", 1)]
-        [InlineData(@"a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ+)", 3)]
-        [InlineData(@"(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((a)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))", 1)]
-        [InlineData(@"(?(\d)\d{3}|\d)", 1)]
-        [InlineData(@"(?(\d{7})\d{3}|\d{2})", 2)]
-        [InlineData(@"(?(\d{7})\d{2}|\d{3})", 2)]
-        [InlineData(@"(?(\d)\d{3}|\d{2})", 2)]
-        [InlineData(@"(?(\d)|\d{2})", 0)]
-        [InlineData(@"(?(\d)\d{3})", 0)]
-        [InlineData(@"(abc)(?(1)\d{3}|\d{2})", 5)]
-        [InlineData(@"(abc)(?(1)\d{2}|\d{3})", 5)]
-        [InlineData(@"(abc)(?(1)|\d{2})", 3)]
-        [InlineData(@"(abc)(?(1)\d{3})", 3)]
-        [InlineData(@"(abc|)", 0)]
-        [InlineData(@"(|abc)", 0)]
-        [InlineData(@"(?(x)abc|)", 0)]
-        [InlineData(@"(?(x)|abc)", 0)]
-        public void MinRequiredLengthIsCorrect(string pattern, int expectedLength)
+        [InlineData(@"a", RegexOptions.None, 1, 1)]
+        [InlineData(@"[^a]", RegexOptions.None, 1, 1)]
+        [InlineData(@"[abcdefg]", RegexOptions.None, 1, 1)]
+        [InlineData(@"abcd", RegexOptions.None, 4, 4)]
+        [InlineData(@"a*", RegexOptions.None, 0, null)]
+        [InlineData(@"a*?", RegexOptions.None, 0, null)]
+        [InlineData(@"a?", RegexOptions.None, 0, 1)]
+        [InlineData(@"a??", RegexOptions.None, 0, 1)]
+        [InlineData(@"a+", RegexOptions.None, 1, null)]
+        [InlineData(@"a+?", RegexOptions.None, 1, null)]
+        [InlineData(@"a{2}", RegexOptions.None, 2, 2)]
+        [InlineData(@"a{2}?", RegexOptions.None, 2, 2)]
+        [InlineData(@"a{3,17}", RegexOptions.None, 3, 17)]
+        [InlineData(@"a{3,17}?", RegexOptions.None, 3, 17)]
+        [InlineData(@"[^a]{3,17}", RegexOptions.None, 3, 17)]
+        [InlineData(@"[^a]{3,17}?", RegexOptions.None, 3, 17)]
+        [InlineData(@"(abcd){5}", RegexOptions.None, 20, 20)]
+        [InlineData(@"(abcd|ef){2,6}", RegexOptions.None, 4, 24)]
+        [InlineData(@"abcef|de", RegexOptions.None, 2, 5)]
+        [InlineData(@"abc(def|ghij)k", RegexOptions.None, 7, 8)]
+        [InlineData(@"abc(def|ghij|k||lmnopqrs|t)u", RegexOptions.None, 4, 12)]
+        [InlineData(@"(ab)c(def|ghij|k|l|\1|m)n", RegexOptions.None, 4, null)]
+        [InlineData(@"abc|de*f|ghi", RegexOptions.None, 2, null)]
+        [InlineData(@"abc|de+f|ghi", RegexOptions.None, 3, null)]
+        [InlineData(@"abc|(def)+|ghi", RegexOptions.None, 3, null)]
+        [InlineData(@"(abc)+|def", RegexOptions.None, 3, null)]
+        [InlineData(@"\d{1,2}-\d{1,2}-\d{2,4}", RegexOptions.None, 6, 10)]
+        [InlineData(@"\d{1,2}-(?>\d{1,2})-\d{2,4}", RegexOptions.None, 6, 10)]
+        [InlineData(@"1(?=9)\d", RegexOptions.None, 2, 2)]
+        [InlineData(@"1(?!\d)\w", RegexOptions.None, 2, 2)]
+        [InlineData(@"a*a*a*a*a*a*a*b*", RegexOptions.None, 0, null)]
+        [InlineData(@"((a{1,2}){4}){3,7}", RegexOptions.None, 12, 56)]
+        [InlineData(@"((a{1,2}){4}?){3,7}", RegexOptions.None, 12, 56)]
+        [InlineData(@"\b\w{4}\b", RegexOptions.None, 4, 4)]
+        [InlineData(@"\b\w{4}\b", RegexOptions.ECMAScript,  4, 4)]
+        [InlineData(@"abcd(?=efgh)efgh", RegexOptions.None, 8, 8)]
+        [InlineData(@"abcd(?<=cd)efgh", RegexOptions.None, 8, 8)]
+        [InlineData(@"abcd(?!ab)efgh", RegexOptions.None, 8, 8)]
+        [InlineData(@"abcd(?<!ef)efgh", RegexOptions.None, 8, 8)]
+        [InlineData(@"(a{1073741824}){2}", RegexOptions.None, 2147483646, null)] // min length max is bound to int.MaxValue - 1 for convenience in other places where we need to be able to add 1 without risk of overflow
+        [InlineData(@"a{1073741824}b{1073741824}", RegexOptions.None, 2147483646, null)]
+        [InlineData(@"((((((((((((((((((((((((((((((ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ)", RegexOptions.None, 2, null)]
+        [InlineData(@"(YZ+|(WX+|(UV+|(ST+|(QR+|(OP+|(MN+|(KL+|(IJ+|(GH+|(EF+|(CD+|(AB+|(89+|(67+|(45+|(23+|(01+|(yz+|(wx+|(uv+|(st+|(qr+|(op+|(mn+|(kl+|(ij+|(gh+|(ef+|(de+|(a|bc+)))))))))))))))))))))))))))))))", RegexOptions.None, 1, null)]
+        [InlineData(@"a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ+)", RegexOptions.None, 3, null)]
+        [InlineData(@"(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((a)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))", RegexOptions.None, 1, 1)]
+        [InlineData(@"(?(\d)\d{3}|\d)", RegexOptions.None, 1, 3)]
+        [InlineData(@"(?(\d{7})\d{3}|\d{2})", RegexOptions.None, 2, 3)]
+        [InlineData(@"(?(\d{7})\d{2}|\d{3})", RegexOptions.None, 2, 3)]
+        [InlineData(@"(?(\d)\d{3}|\d{2})", RegexOptions.None, 2, 3)]
+        [InlineData(@"(?(\d)|\d{2})", RegexOptions.None, 0, 2)]
+        [InlineData(@"(?(\d)\d{3})", RegexOptions.None, 0, 3)]
+        [InlineData(@"(abc)(?(1)\d{3}|\d{2})", RegexOptions.None, 5, 6)]
+        [InlineData(@"(abc)(?(1)\d{2}|\d{3})", RegexOptions.None, 5, 6)]
+        [InlineData(@"(abc)(?(1)|\d{2})", RegexOptions.None, 3, 5)]
+        [InlineData(@"(abc)(?(1)\d{3})", RegexOptions.None, 3, 6)]
+        [InlineData(@"(abc|)", RegexOptions.None, 0, 3)]
+        [InlineData(@"(|abc)", RegexOptions.None, 0, 3)]
+        [InlineData(@"(?(x)abc|)", RegexOptions.None, 0, 3)]
+        [InlineData(@"(?(x)|abc)", RegexOptions.None, 0, 3)]
+        [InlineData(@"(?(x)|abc)^\A\G\z\Z$", RegexOptions.None, 0, 3)]
+        [InlineData(@"(?(x)|abc)^\A\G\z$\Z", RegexOptions.Multiline, 0, 3)]
+        [InlineData(@"^\A\Gabc", RegexOptions.None, 3, null)] // leading anchor currently prevents ComputeMaxLength from being invoked, as it's not needed
+        [InlineData(@"^\A\Gabc", RegexOptions.Multiline, 3, null)]
+        [InlineData(@"abc            def", RegexOptions.IgnorePatternWhitespace, 6, 6)]
+        [InlineData(@"abcdef", RegexOptions.RightToLeft, 6, null)]
+        public void MinMaxLengthIsCorrect(string pattern, RegexOptions options, int expectedMin, int? expectedMax)
         {
-            var r = new Regex(pattern);
-            Assert.Equal(expectedLength, GetMinRequiredLength(r));
+            var r = new Regex(pattern, options);
+            Assert.Equal(expectedMin, GetMinRequiredLength(r));
+            if (!pattern.EndsWith("$", StringComparison.Ordinal) &&
+                !pattern.EndsWith(@"\Z", StringComparison.OrdinalIgnoreCase))
+            {
+                // MaxPossibleLength is currently only computed/stored if there's a trailing End{Z} anchor as the max length is otherwise unused
+                r = new Regex($"(?:{pattern})$", options);
+            }
+            Assert.Equal(expectedMax, GetMaxPossibleLength(r));
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not computed in netfx")]
-        public void MinRequiredLengthIsCorrect_HugeDepth()
+        public void MinMaxLengthIsCorrect_HugeDepth()
         {
             const int Depth = 10_000;
-            var r = new Regex($"{new string('(', Depth)}a{new string(')', Depth)}"); // too deep for analysis on some platform default stack sizes
+            var r = new Regex($"{new string('(', Depth)}a{new string(')', Depth)}$"); // too deep for analysis on some platform default stack sizes
+
             int minRequiredLength = GetMinRequiredLength(r);
             Assert.True(
                 minRequiredLength == 1 /* successfully analyzed */ || minRequiredLength == 0 /* ran out of stack space to complete analysis */,
                 $"Expected 1 or 0, got {minRequiredLength}");
+
+            int? maxPossibleLength = GetMaxPossibleLength(r);
+            Assert.True(
+                maxPossibleLength == 1 /* successfully analyzed */ || maxPossibleLength is null /* ran out of stack space to complete analysis */,
+                $"Expected 1 or null, got {maxPossibleLength}");
         }
     }
 }
