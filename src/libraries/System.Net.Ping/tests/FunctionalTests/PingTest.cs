@@ -72,11 +72,15 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Contains(pingReply.Address, localIpAddresses); ///, "Reply address {pingReply.Address} is not expected local address.");
         }
 
-        private static byte[] GetPingPayloadForUnix(AddressFamily addressFamily)
+        private static byte[] GetPingPayload(AddressFamily addressFamily)
             // On Unix, Non-root processes cannot send arbitrary data in the ping packet payload
             => Capability.CanUseRawSockets(addressFamily) || PlatformDetection.IsOSXLike
                 ? TestSettings.PayloadAsBytes
                 : Array.Empty<byte>();
+
+        public static bool DoesNotUsePingUtility => !UsesPingUtility;
+
+        public static bool UsesPingUtility => OperatingSystem.IsLinux() && !(Capability.CanUseRawSockets(TestSettings.GetLocalIPAddress().AddressFamily) || PlatformDetection.IsOSXLike);
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsync_InvalidArgs()
@@ -224,12 +228,11 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void SendPingWithIPAddressAndTimeoutAndBuffer()
         {
-            byte[] buffer = TestSettings.PayloadAsBytes;
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
+            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
 
             SendBatchPing(
                 (ping) => ping.Send(localIpAddress, TestSettings.PingTimeout, buffer),
@@ -240,46 +243,11 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer()
         {
-            byte[] buffer = TestSettings.PayloadAsBytes;
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
-
-            await SendBatchPingAsync(
-                (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer),
-                (pingReply) =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
-        public void SendPingWithIPAddressAndTimeoutAndBuffer_Unix()
-        {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
-
-            byte[] buffer = GetPingPayloadForUnix(localIpAddress.AddressFamily);
-
-            SendBatchPing(
-                (ping) => ping.Send(localIpAddress, TestSettings.PingTimeout, buffer),
-                (pingReply) =>
-                {
-                    PingResultValidator(pingReply, localIpAddress);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer_Unix()
-        {
-            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
-
-            byte[] buffer = GetPingPayloadForUnix(localIpAddress.AddressFamily);
+            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
 
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer),
@@ -339,7 +307,7 @@ namespace System.Net.NetworkInformation.Tests
                 return;
             }
 
-            byte[] buffer = GetPingPayloadForUnix(localIpAddress.AddressFamily);
+            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
 
             SendBatchPing(
                 (ping) => ping.Send(localIpAddress, TestSettings.PingTimeout, buffer, new PingOptions()),
@@ -363,7 +331,7 @@ namespace System.Net.NetworkInformation.Tests
                 return;
             }
 
-            byte[] buffer = GetPingPayloadForUnix(localIpAddress.AddressFamily);
+            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
 
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer, new PingOptions()),
@@ -426,13 +394,12 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void SendPingWithHostAndTimeoutAndBuffer()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
+            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
 
-            byte[] buffer = TestSettings.PayloadAsBytes;
             SendBatchPing(
                 (ping) => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer),
                 (pingReply) =>
@@ -442,13 +409,12 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
+            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
 
-            byte[] buffer = TestSettings.PayloadAsBytes;
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer),
                 (pingReply) =>
@@ -458,64 +424,27 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
-        public void SendPingWithHostAndTimeoutAndBuffer_Unix()
-        {
-            IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
-
-            byte[] buffer = GetPingPayloadForUnix(localIpAddresses[0].AddressFamily);
-
-            SendBatchPing(
-                (ping) => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer),
-                (pingReply) =>
-                {
-                    PingResultValidator(pingReply, localIpAddresses);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task SendPingAsyncWithHostAndTimeoutAndBuffer_Unix()
-        {
-            IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
-
-            byte[] buffer = GetPingPayloadForUnix(localIpAddresses[0].AddressFamily);
-
-            await SendBatchPingAsync(
-                (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer),
-                (pingReply) =>
-                {
-                    PingResultValidator(pingReply, localIpAddresses);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void SendPingWithHostAndTimeoutAndBufferAndPingOptions()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
+            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
 
-            byte[] buffer = TestSettings.PayloadAsBytes;
             SendBatchPing(
                 (ping) => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, new PingOptions()),
                 (pingReply) =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
-
                     Assert.Equal(buffer, pingReply.Buffer);
                 });
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
+            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
 
-            byte[] buffer = TestSettings.PayloadAsBytes;
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, new PingOptions()),
                 (pingReply) =>
@@ -526,49 +455,10 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
-        public void SendPingWithHostAndTimeoutAndBufferAndPingOptions_Unix()
-        {
-            IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
-
-            byte[] buffer = GetPingPayloadForUnix(localIpAddresses[0].AddressFamily);
-
-            SendBatchPing(
-                (ping) => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, new PingOptions()),
-                (pingReply) =>
-                {
-                    PingResultValidator(pingReply, localIpAddresses);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions_Unix()
-        {
-            IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
-
-            byte[] buffer = GetPingPayloadForUnix(localIpAddresses[0].AddressFamily);
-
-            await SendBatchPingAsync(
-                (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, new PingOptions()),
-                (pingReply) =>
-                {
-                    PingResultValidator(pingReply, localIpAddresses);
-                    Assert.Equal(buffer, pingReply.Buffer);
-                });
-        }
-
-        [Fact]
+        [ConditionalFact(nameof(DoesNotUsePingUtility))]
         public async Task SendPingWithIPAddressAndBigSize()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
-
-            if (!(Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike))
-            {
-                throw new SkipTestException("Underprivileged process cannot specify ping payload.");
-            }
 
             using (Ping p = new Ping())
             {
@@ -757,7 +647,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
 
-            byte[] buffer = GetPingPayloadForUnix(localIpAddresses[0].AddressFamily);
+            byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
 
             PingOptions  options = new PingOptions();
             options.Ttl = 32;
@@ -948,34 +838,20 @@ namespace System.Net.NetworkInformation.Tests
             }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
+        [ConditionalFact(nameof(UsesPingUtility))]
         public void SendPing_CustomPayload_InsufficientPrivileges_Throws()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
-
-            if (!(Capability.CanUseRawSockets(localIpAddresses[0].AddressFamily) || PlatformDetection.IsOSXLike))
-            {
-                // running on sufficiently privileged process
-                return;
-            }
 
             byte[] buffer = TestSettings.PayloadAsBytes;
             Ping ping = new Ping();
             Assert.Throws<PlatformNotSupportedException>(() => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer));
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
+        [ConditionalFact(nameof(UsesPingUtility))]
         public async Task SendPingAsync_CustomPayload_InsufficientPrivileges_Throws()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
-
-            if (!(Capability.CanUseRawSockets(localIpAddresses[0].AddressFamily) || PlatformDetection.IsOSXLike))
-            {
-                // running on sufficiently privileged process
-                return;
-            }
 
             byte[] buffer = TestSettings.PayloadAsBytes;
             Ping ping = new Ping();
