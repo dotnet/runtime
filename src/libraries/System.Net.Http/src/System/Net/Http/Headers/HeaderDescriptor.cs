@@ -132,7 +132,7 @@ namespace System.Net.Http.Headers
                 {
                     for (int i = 0; i < knownValues.Length; i++)
                     {
-                        if (ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(knownValues[i], headerValue))
+                        if (ByteArrayHelpers.EqualsOrdinalAscii(knownValues[i], headerValue))
                         {
                             return knownValues[i];
                         }
@@ -166,45 +166,45 @@ namespace System.Net.Http.Headers
             switch (contentTypeValue.Length)
             {
                 case 8:
-                    switch (contentTypeValue[7] | 0x20)
+                    switch (contentTypeValue[7])
                     {
-                        case 'l': candidate = "text/xml"; break; // text/xm[l]
-                        case 's': candidate = "text/css"; break; // text/cs[s]
-                        case 'v': candidate = "text/csv"; break; // text/cs[v]
+                        case (byte)'l': candidate = "text/xml"; break; // text/xm[l]
+                        case (byte)'s': candidate = "text/css"; break; // text/cs[s]
+                        case (byte)'v': candidate = "text/csv"; break; // text/cs[v]
                     }
                     break;
 
                 case 9:
-                    switch (contentTypeValue[6] | 0x20)
+                    switch (contentTypeValue[6])
                     {
-                        case 'g': candidate = "image/gif"; break; // image/[g]if
-                        case 'p': candidate = "image/png"; break; // image/[p]ng
-                        case 't': candidate = "text/html"; break; // text/h[t]ml
+                        case (byte)'g': candidate = "image/gif"; break; // image/[g]if
+                        case (byte)'p': candidate = "image/png"; break; // image/[p]ng
+                        case (byte)'t': candidate = "text/html"; break; // text/h[t]ml
                     }
                     break;
 
                 case 10:
-                    switch (contentTypeValue[0] | 0x20)
+                    switch (contentTypeValue[0])
                     {
-                        case 't': candidate = "text/plain"; break; // [t]ext/plain
-                        case 'i': candidate = "image/jpeg"; break; // [i]mage/jpeg
+                        case (byte)'t': candidate = "text/plain"; break; // [t]ext/plain
+                        case (byte)'i': candidate = "image/jpeg"; break; // [i]mage/jpeg
                     }
                     break;
 
                 case 15:
-                    switch (contentTypeValue[12] | 0x20)
+                    switch (contentTypeValue[12])
                     {
-                        case 'p': candidate = "application/pdf"; break; // application/[p]df
-                        case 'x': candidate = "application/xml"; break; // application/[x]ml
-                        case 'z': candidate = "application/zip"; break; // application/[z]ip
+                        case (byte)'p': candidate = "application/pdf"; break; // application/[p]df
+                        case (byte)'x': candidate = "application/xml"; break; // application/[x]ml
+                        case (byte)'z': candidate = "application/zip"; break; // application/[z]ip
                     }
                     break;
 
                 case 16:
-                    switch (contentTypeValue[12] | 0x20)
+                    switch (contentTypeValue[12])
                     {
-                        case 'g': candidate = "application/grpc"; break; // application/[g]rpc
-                        case 'j': candidate = "application/json"; break; // application/[j]son
+                        case (byte)'g': candidate = "application/grpc"; break; // application/[g]rpc
+                        case (byte)'j': candidate = "application/json"; break; // application/[j]son
                     }
                     break;
 
@@ -217,10 +217,10 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 24:
-                    switch (contentTypeValue[0] | 0x20)
+                    switch (contentTypeValue[0])
                     {
-                        case 'a': candidate = "application/octet-stream"; break; // application/octet-stream
-                        case 't': candidate = "text/html; charset=utf-8"; break; // text/html; charset=utf-8
+                        case (byte)'a': candidate = "application/octet-stream"; break; // application/octet-stream
+                        case (byte)'t': candidate = "text/html; charset=utf-8"; break; // text/html; charset=utf-8
                     }
                     break;
 
@@ -239,7 +239,7 @@ namespace System.Net.Http.Headers
 
             Debug.Assert(candidate is null || candidate.Length == contentTypeValue.Length);
 
-            return candidate != null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate, contentTypeValue) ?
+            return candidate != null && ByteArrayHelpers.EqualsOrdinalAscii(candidate, contentTypeValue) ?
                 candidate :
                 null;
         }
