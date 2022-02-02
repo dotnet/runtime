@@ -672,18 +672,11 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
     {
         ASSEMBLYREF   assemblyObj = NULL;
         MethodTable * pMT;
-        if (GetPEAssembly()->IsDynamic())
-        {
-            // This is unnecessary because the managed InternalAssemblyBuilder object
-            // should have already been created at the time of DefineDynamicAssembly
-            OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-            pMT = CoreLibBinder::GetClass(CLASS__INTERNAL_ASSEMBLY_BUILDER);
-        }
-        else
-        {
-            OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-            pMT = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
-        }
+
+        // This is unnecessary because the managed RuntimeAssembly object
+        // should have already been created at the time of DefineDynamicAssembly
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+        pMT = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
 
         // Will be TRUE only if LoaderAllocator managed object was already collected and therefore we should
         // return NULL

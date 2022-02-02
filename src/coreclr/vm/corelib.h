@@ -113,13 +113,6 @@ DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_OFFSET,               m_offset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_COUNT,                m_count)
 
-
-DEFINE_CLASS(ASSEMBLY_BUILDER,      ReflectionEmit,         AssemblyBuilder)
-DEFINE_CLASS(INTERNAL_ASSEMBLY_BUILDER,      ReflectionEmit,         InternalAssemblyBuilder)
-#if FOR_ILLINK
-DEFINE_METHOD(INTERNAL_ASSEMBLY_BUILDER,     CTOR,          .ctor,                      IM_RetVoid)
-#endif
-
 DEFINE_CLASS(ASSEMBLY_HASH_ALGORITHM,   Assemblies,         AssemblyHashAlgorithm)
 DEFINE_CLASS(PORTABLE_EXECUTABLE_KINDS, Reflection,         PortableExecutableKinds)
 DEFINE_CLASS(IMAGE_FILE_MACHINE,        Reflection,         ImageFileMachine)
