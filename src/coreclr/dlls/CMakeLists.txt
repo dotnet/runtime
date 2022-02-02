@@ -1,3 +1,4 @@
+add_compile_options(-DPAL_STDCPP_COMPAT)
 if(CLR_CMAKE_TARGET_WIN32)
     add_subdirectory(clretwrc)
 endif(CLR_CMAKE_TARGET_WIN32)
