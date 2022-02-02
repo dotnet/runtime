@@ -103,11 +103,11 @@ namespace System.Tests
                 T? nullable = before;
                 ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(nullable);
 
-                Assert.Equal(nullable!.Value, before);
+                Assert.Equal(before, nullable!.Value);
 
                 Unsafe.AsRef<T>(reference) = after;
 
-                Assert.Equal(nullable.Value, after);
+                Assert.Equal(after, nullable.Value);
             }
 
             Test((byte)0, (byte)42);
@@ -134,6 +134,31 @@ namespace System.Tests
             Test<float>();
             Test<double>();
             Test<Guid>();
+        }
+
+        [Fact]
+        public static void GetValueRefOrDefaultRef_UnsafeWriteToNullMaintainsExpectedBehavior()
+        {
+            static void Test<T>(T after)
+               where T : struct
+            {
+                T? nullable = null;
+                ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(nullable);
+
+                Unsafe.AsRef<T>(reference) = after;
+
+                Assert.Equal(after, nullable.GetValueOrDefault()); // GetValueOrDefault() unconditionally returns the field
+                Assert.False(nullable.HasValue);
+                Assert.Equal(0, nullable.GetHashCode()); // GetHashCode() returns 0 if HasValue is false, without reading the field
+                Assert.Throws<InvalidOperationException>(() => nullable.Value); // Accessing the value should still throw despite the write
+                Assert.Throws<InvalidOperationException>(() => (T)nullable);
+            }
+
+            Test((byte)42);
+            Test(42);
+            Test(3.14f);
+            Test(8.49);
+            Test(Guid.NewGuid());
         }
 
         public static IEnumerable<object[]> Compare_Equals_TestData()
