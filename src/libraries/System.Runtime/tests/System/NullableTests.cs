@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
@@ -91,6 +92,48 @@ namespace System.Tests
         public static void GetUnderlyingType_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("nullableType", () => Nullable.GetUnderlyingType((Type)null));
+        }
+
+        [Fact]
+        public static void GetValueRefOrDefaultRef_WithValue()
+        {
+            static void Test<T>(T before, T after)
+                where T : struct
+            {
+                T? nullable = before;
+                ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(nullable);
+
+                Assert.Equal(nullable!.Value, before);
+
+                Unsafe.AsRef<T>(reference) = after;
+
+                Assert.Equal(nullable.Value, after);
+            }
+
+            Test((byte)0, (byte)42);
+            Test(0, 42);
+            Test(1.3f, 3.14f);
+            Test(0.555, 8.49);
+            Test(Guid.NewGuid(), Guid.NewGuid());
+        }
+
+        [Fact]
+        public static void GetValueRefOrDefaultRef_WithDefault()
+        {
+            static void Test<T>()
+                where T : struct
+            {
+                T? nullable = null;
+                ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(nullable);
+
+                Assert.Equal(nullable!.GetValueOrDefault(), reference);
+            }
+
+            Test<byte>();
+            Test<int>();
+            Test<float>();
+            Test<double>();
+            Test<Guid>();
         }
 
         public static IEnumerable<object[]> Compare_Equals_TestData()
