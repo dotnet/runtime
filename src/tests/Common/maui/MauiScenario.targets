@@ -1,9 +1,9 @@
 <Project>
-  <!--<Target Name="PrintRuntimePackLocation" AfterTargets="UpdateTargetingAndRuntimePack">
+  <Target Name="PrintRuntimePackLocation" AfterTargets="UpdateTargetingAndRuntimePack">
     <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  --><!-- Use local targeting pack for NetCoreAppCurrent. --><!--
+   <!--Use local targeting pack for NetCoreAppCurrent.--> 
   <Target Name="UpdateTargetingAndRuntimePack"
           AfterTargets="ResolveFrameworkReferences">
     <PropertyGroup>
@@ -27,5 +27,5 @@
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)/Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64"
                              Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'iossimulator-x64'" />
     </ItemGroup>
-  </Target>-->
+  </Target>
 </Project>
