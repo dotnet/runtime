@@ -37,7 +37,7 @@ private:
     template<typename T>
     static void WriteToBuffer(BYTE *pBuffer, size_t bufferLength, size_t *pOffset, T value)
     {
-        assert(bufferLength >= (*pOffset + sizeof(T)));
+        _ASSERTE(bufferLength >= (*pOffset + sizeof(T)));
 
         *(T*)(pBuffer + *pOffset) = value;
         *pOffset += sizeof(T);

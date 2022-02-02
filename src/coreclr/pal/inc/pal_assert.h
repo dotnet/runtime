@@ -31,6 +31,7 @@ extern "C" {
 
 #endif // __cplusplus
 
+#ifndef _ASSERTE
 #if defined(_DEBUG)
 #define _ASSERTE(e) do {                                        \
         if (!(e)) {                                             \
@@ -48,6 +49,7 @@ extern "C" {
 #else // !DEBUG
 #define _ASSERTE(e) ((void)0)
 #endif
+#endif // _ASSERTE
 
 #ifndef assert
 #define assert(e) _ASSERTE(e)

@@ -4,7 +4,7 @@
 #include <cstring>
 
 // Workaround to not link PAL to this test.
-#define _ASSERTE assert
+#define _ASSERTE(e) static_assert(e, #e)
 #include <corhlpr.cpp>
 #include "ilrewriter.h"
 #include "sigparse.h"
