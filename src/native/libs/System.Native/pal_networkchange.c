@@ -73,7 +73,7 @@ static NetworkChangeKind ReadNewLinkMessage(struct nlmsghdr* hdr)
     return None;
 }
 
-int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
+Error SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
 {
     char buffer[4096];
     struct iovec iov = {buffer, sizeof(buffer)};
@@ -84,11 +84,11 @@ int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChang
     while (CheckInterrupted(len = recvmsg(fd, &msg, 0)));
     if (len == 0)
     {
-        return -1; // EOF.
+        return Error_ECONNABORTED; // EOF.
     }
     if (len == -1)
     {
-        return errno == EAGAIN ? 0 : -1;
+        return (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
     }
 
     assert(len >= 0);
@@ -97,9 +97,9 @@ int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChang
         switch (hdr->nlmsg_type)
         {
             case NLMSG_DONE:
-                return 1; // End of a multi-part message; stop reading.
+                return Error_SUCCESS; // End of a multi-part message; stop reading.
             case NLMSG_ERROR:
-                return 1;
+                return Error_SUCCESS;
             case RTM_NEWADDR:
                 onNetworkChange(sock, AddressAdded);
                 break;
@@ -116,7 +116,7 @@ int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChang
                 if (dataAsRtMsg->rtm_table == RT_TABLE_MAIN)
                 {
                     onNetworkChange(sock, AvailabilityChanged);
-                    return 1;
+                    return Error_SUCCESS;
                 }
                 break;
             }
@@ -124,21 +124,21 @@ int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChang
                 break;
         }
     }
-    return 1;
+    return Error_SUCCESS;
 }
 #elif HAVE_RT_MSGHDR
-int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
+Error SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
 {
     char buffer[4096];
     int fd = ToFileDescriptor(sock);
     ssize_t count = CheckInterrupted(read(fd, buffer, sizeof(buffer)));
     if (count == 0)
     {
-        return -1; // EOF.
+        return Error_ECONNABORTED; // EOF.
     }
     if (count == -1)
     {
-        return errno == EAGAIN ? 0 : -1;
+        return (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
     }
 
     struct rt_msghdr msghdr;
@@ -148,7 +148,7 @@ int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChang
         if (msghdr.rtm_version != RTM_VERSION)
         {
             // version mismatch
-            return 1;
+            return Error_SUCCESS;
         }
 
         switch (msghdr.rtm_type)
@@ -163,20 +163,20 @@ int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChang
             case RTM_DELETE:
             case RTM_REDIRECT:
                 onNetworkChange(sock, AvailabilityChanged);
-                return 1;
+                return Error_SUCCESS;
             default:
                 break;
         }
     }
-    return 1;
+    return Error_SUCCESS;
 }
 #else
-int32_t SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
+Error SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
 {
     (void)sock;
     (void)onNetworkChange;
     // unreachable
     abort();
-    return 1;
+    return Error_SUCCESS;
 }
 #endif

@@ -20,6 +20,6 @@ internal static partial class Interop
         public static unsafe partial Error CreateNetworkChangeListenerSocket(IntPtr* socket);
 
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadEvents")]
-        public static unsafe partial int ReadEvents(SafeHandle socket, delegate* unmanaged<IntPtr, NetworkChangeKind, void> onNetworkChange);
+        public static unsafe partial Error ReadEvents(SafeHandle socket, delegate* unmanaged<IntPtr, NetworkChangeKind, void> onNetworkChange);
     }
 }

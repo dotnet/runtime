@@ -153,8 +153,8 @@ namespace System.Net.NetworkInformation
             s_socket = new Socket(new SafeSocketHandle(newSocket, ownsHandle: true));
 
             // Don't capture ExecutionContext.
-            ThreadPool.UnsafeQueueUserWorkItem(static socket =>
-                _ = ReadEventsAsync(socket),
+            ThreadPool.UnsafeQueueUserWorkItem(
+                static socket => ReadEventsAsync(socket),
                 s_socket, preferLocal: false);
         }
 
@@ -165,21 +165,33 @@ namespace System.Net.NetworkInformation
             s_socket = null;
         }
 
-        private static async Task ReadEventsAsync(Socket socket)
+        private static async void ReadEventsAsync(Socket socket)
         {
-            while (s_socket == socket)
+            try
             {
-                // Wait for data to become available.
-                await socket.ReceiveAsync(Array.Empty<byte>(), SocketFlags.None).ConfigureAwait(false);
-
-                if (!TryReadEvents(socket))
+                while (true)
                 {
-                    return; // Stop reading on error/EOF.
+                    // Wait for data to become available.
+                    await socket.ReceiveAsync(Array.Empty<byte>(), SocketFlags.None).ConfigureAwait(false);
+
+                    Interop.Error result = ReadEvents(socket);
+
+                    if (result != Interop.Error.SUCCESS ||
+                        result != Interop.Error.EAGAIN)
+                    {
+                        return;
+                    }
                 }
             }
+            catch (ObjectDisposedException)
+            { } // Socket disposed.
+            catch (SocketException se) when (se.SocketErrorCode == SocketError.OperationAborted)
+            { } // ReceiveAsync aborted by disposing Socket.
+            catch
+            { } // Unexpected error.
 
-            static unsafe bool TryReadEvents(Socket socket)
-                => Interop.Sys.ReadEvents(socket.SafeHandle, &ProcessEvent) >= 0;
+            static unsafe Interop.Error ReadEvents(Socket socket)
+                => Interop.Sys.ReadEvents(socket.SafeHandle, &ProcessEvent);
         }
 
         [UnmanagedCallersOnly]
