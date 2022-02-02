@@ -486,12 +486,8 @@ clock_init_for_profiler (MonoProfilerSampleMode mode)
 		 */
 		int ret = clock_nanosleep (CLOCK_PROCESS_CPUTIME_ID, TIMER_ABSTIME, &ts, NULL);
 #if HOST_ANDROID
-		/*
-		 * Although clock_nanosleep should never return a negative value according
-		 * to the POSIX specification, older versions of Android libc return -1
-		 * and set errno on failure instead of returning the errno directly.
-		 * See https://github.com/xamarin/xamarin-android/issues/6600
-		 */
+		// Workaround for incorrect implementation of clock_nanosleep return value on old Android (<=5.1)
+		// See https://github.com/xamarin/xamarin-android/issues/6600
 		if (ret == -1)
 			ret = errno;
 #endif
@@ -521,12 +517,8 @@ clock_sleep_ns_abs (guint64 ns_abs)
 	do {
 		ret = clock_nanosleep (sampling_clock, TIMER_ABSTIME, &then, NULL);
 #if HOST_ANDROID
-		/*
-		 * Although clock_nanosleep should never return a negative value according
-		 * to the POSIX specification, older versions of Android libc return -1
-		 * and set errno on failure instead of returning the errno directly.
-		 * See https://github.com/xamarin/xamarin-android/issues/6600
-		 */
+		// Workaround for incorrect implementation of clock_nanosleep return value on old Android (<=5.1)
+		// See https://github.com/xamarin/xamarin-android/issues/6600
 		if (ret == -1)
 			ret = errno;
 #endif
