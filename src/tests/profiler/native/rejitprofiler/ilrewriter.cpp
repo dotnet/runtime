@@ -124,7 +124,7 @@ HRESULT ILRewriter::ImportIL(LPCBYTE pIL)
         {
             if (offset >= m_CodeSize)
             {
-                _ASSERTE(false);
+                assert(false);
                 return COR_E_INVALIDPROGRAM;
             }
             opcode = 0x100 + pIL[offset++];
@@ -133,13 +133,13 @@ HRESULT ILRewriter::ImportIL(LPCBYTE pIL)
         if ((CEE_PREFIX7 <= opcode) && (opcode <= CEE_PREFIX2))
         {
             // NOTE: CEE_PREFIX2-7 are currently not supported
-            _ASSERTE(false);
+            assert(false);
             return COR_E_INVALIDPROGRAM;
         }
 
         if (opcode >= CEE_COUNT)
         {
-            _ASSERTE(false);
+            assert(false);
             return COR_E_INVALIDPROGRAM;
         }
 
@@ -148,7 +148,7 @@ HRESULT ILRewriter::ImportIL(LPCBYTE pIL)
         int size = (flags & OPCODEFLAGS_SizeMask);
         if (offset + size > m_CodeSize)
         {
-            _ASSERTE(false);
+            assert(false);
             return COR_E_INVALIDPROGRAM;
         }
 
@@ -189,7 +189,7 @@ HRESULT ILRewriter::ImportIL(LPCBYTE pIL)
         {
             if (offset + sizeof(INT32) > m_CodeSize)
             {
-                _ASSERTE(false);
+                assert(false);
                 return COR_E_INVALIDPROGRAM;
             }
 
@@ -203,7 +203,7 @@ HRESULT ILRewriter::ImportIL(LPCBYTE pIL)
             {
                 if (offset + sizeof(INT32) > m_CodeSize)
                 {
-                    _ASSERTE(false);
+                    assert(false);
                     return COR_E_INVALIDPROGRAM;
                 }
 
@@ -221,12 +221,12 @@ HRESULT ILRewriter::ImportIL(LPCBYTE pIL)
             break;
         }
         default:
-            _ASSERTE(false);
+            assert(false);
             break;
         }
         offset += size;
     }
-    _ASSERTE(offset == m_CodeSize);
+    assert(offset == m_CodeSize);
 
     if (fBranch)
     {
@@ -243,7 +243,7 @@ HRESULT ILRewriter::ImportIL(LPCBYTE pIL)
 
 HRESULT ILRewriter::ImportEH(const COR_ILMETHOD_SECT_EH* pILEH, unsigned nEH)
 {
-    _ASSERTE(m_pEH == NULL);
+    assert(m_pEH == NULL);
 
     m_nEH = nEH;
 
@@ -289,7 +289,7 @@ ILInstr* ILRewriter::GetInstrFromOffset(unsigned offset)
     if (offset <= m_CodeSize)
         pInstr = m_pOffsetToInstr[offset];
 
-    _ASSERTE(pInstr != NULL);
+    assert(pInstr != NULL);
     return pInstr;
 }
 
@@ -370,7 +370,7 @@ again:
             m_pOutputBuffer[offset++] = (opcode & 0xFF);
         }
 
-        _ASSERTE(pInstr->m_opcode < dimensionof(s_OpCodeFlags));
+        assert(pInstr->m_opcode < dimensionof(s_OpCodeFlags));
         BYTE flags = s_OpCodeFlags[pInstr->m_opcode];
         switch (flags)
         {
@@ -399,7 +399,7 @@ again:
             offset += sizeof(INT32);
             break;
         default:
-            _ASSERTE(false);
+            assert(false);
             break;
         }
         offset += (flags & OPCODEFLAGS_SizeMask);
@@ -448,9 +448,9 @@ again:
                         }
                         else
                         {
-                            _ASSERTE(opcode >= CEE_BR_S && opcode <= CEE_BLT_UN_S);
+                            assert(opcode >= CEE_BR_S && opcode <= CEE_BLT_UN_S);
                             pInstr->m_opcode = opcode - CEE_BR_S + CEE_BR;
-                            _ASSERTE(pInstr->m_opcode >= CEE_BR && pInstr->m_opcode <= CEE_BLT_UN);
+                            assert(pInstr->m_opcode >= CEE_BR && pInstr->m_opcode <= CEE_BLT_UN);
                         }
                         fTryAgain = true;
                         continue;
@@ -461,7 +461,7 @@ again:
                     *(UNALIGNED INT32 *)&(pIL[pInstr->m_pNext->m_offset - sizeof(INT32)]) = delta;
                     break;
                 default:
-                    _ASSERTE(false);
+                    assert(false);
                     break;
                 }
             }
@@ -641,7 +641,7 @@ UINT ILRewriter::AddNewInt32Local()
     if (cbOrigSig > 0)
     {
         // First byte of signature must identify that it's a locals signature!
-        _ASSERTE(rgbOrigSig[iOrigSig] == SIG_LOCAL_SIG);
+        assert(rgbOrigSig[iOrigSig] == SIG_LOCAL_SIG);
         iOrigSig++;
     }
 
@@ -721,7 +721,7 @@ UINT ILRewriter::AddNewInt32Local()
 
     // We're done building up the new signature blob.  We now need to add it to
     // the metadata for this module, so we can get a token back for it.
-    _ASSERTE(iNewSig <= sizeof(rgbNewSig));
+    assert(iNewSig <= sizeof(rgbNewSig));
     hr = m_pMetaDataEmit->GetTokenFromSig(&rgbNewSig[0],      // [IN] Signature to define.
                                           iNewSig,            // [IN] Size of signature data.
                                           &m_tkLocalVarSig);  // [OUT] returned signature token.
@@ -759,7 +759,7 @@ again:
             NULL, NULL);
         break;
     default:
-        _ASSERTE(false);
+        assert(false);
         break;
     }
 
