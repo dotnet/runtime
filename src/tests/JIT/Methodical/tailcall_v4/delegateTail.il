@@ -4,7 +4,7 @@
 
 
 .assembly extern mscorlib { auto }
-.assembly extern System.Runtime { .publickeytoken (B0 3F 5F 7F 11 D5 0A 3A ) }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly 'delegateTail'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
