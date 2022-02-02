@@ -73,6 +73,12 @@ namespace DebuggerTests
             }
         }
 
+        public void ClearWaiterFor(string what)
+        {
+            if (notifications.ContainsKey(what))
+                notifications.Remove(what);
+        }
+
         void NotifyOf(string what, JObject args)
         {
             if (notifications.TryGetValue(what, out TaskCompletionSource<JObject>? tcs))
