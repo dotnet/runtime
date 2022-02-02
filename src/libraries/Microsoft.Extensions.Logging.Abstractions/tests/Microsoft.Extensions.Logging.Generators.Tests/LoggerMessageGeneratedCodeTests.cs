@@ -3,8 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Generators.Tests.TestClasses;
+using Microsoft.Extensions.Logging.Generators.Tests.TestClasses.UsesConstraintInAnotherNamespace;
 using Xunit;
+using NamespaceForABC;
+using ConstraintInAnotherNamespace;
 
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
@@ -409,6 +413,71 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
             Assert.Equal("LoggerMethodWithTrueSkipEnabledCheck", logger.LastEventId.Name);
+        }
+        private struct MyStruct { }
+
+        [Fact]
+        public void ConstraintsTests()
+        {
+            var logger = new MockLogger();
+
+            var printer = new MessagePrinter<Message>();
+            logger.Reset();
+            printer.Print(logger, new Message() { Text = "Hello" });
+            Assert.Equal(LogLevel.Information, logger.LastLogLevel);
+            Assert.Null(logger.LastException);
+            Assert.Equal("The message is Hello.", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
+
+            var printer2 = new MessagePrinterHasConstraintOnLogClassAndLogMethod<Message>();
+            logger.Reset();
+            printer2.Print(logger, new Message() { Text = "Hello" });
+            Assert.Equal(LogLevel.Information, logger.LastLogLevel);
+            Assert.Null(logger.LastException);
+            Assert.Equal("The message is `Hello`.", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            ConstraintsTestExtensions<Object>.M0(logger, 12);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M012", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            ConstraintsTestExtensions1<MyStruct>.M0(logger, 12);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M012", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            ConstraintsTestExtensions2<MyStruct>.M0(logger, 12);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M012", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            ConstraintsTestExtensions3<MyStruct>.M0(logger, 12);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M012", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            ConstraintsTestExtensions4<Attribute>.M0(logger, 12);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M012", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            ConstraintsTestExtensions5<MyStruct>.M0(logger, 12);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M012", logger.LastFormattedString);
+            Assert.Equal(1, logger.CallCount);
         }
 
         [Fact]
