@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);DRAWING_NAMESPACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -198,12 +198,15 @@ Since .NET 7, non-Windows platforms are not supported. See https://aka.ms/system
     <Compile Include="System\Drawing\BufferedGraphicsManager.cs" />
     <Compile Include="System\Drawing\Drawing2D\GraphicsPath.cs" />
     <Compile Include="System\Drawing\DrawingCom.cs" />
+    <Compile Include="System\Drawing\DrawingCom.ComWrappers.cs" />
     <Compile Include="System\Drawing\GraphicsContext.cs" />
     <Compile Include="System\Drawing\Icon.cs" />
+    <Compile Include="System\Drawing\Icon.ComWrappers.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileHeader.cs" />
     <Compile Include="System\Drawing\Imaging\MetaHeader.cs" />
     <Compile Include="System\Drawing\Internal\GpPathData.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
+    <Compile Include="System\Drawing\Internal\GPStream.ComWrappers.cs" />
     <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
     <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
     <Compile Include="System\Drawing\Printing\DefaultPrintController.cs" />
@@ -263,6 +266,8 @@ Since .NET 7, non-Windows platforms are not supported. See https://aka.ms/system
              Link="Common\Interop\Windows\Gdi32\Interop.GetRgnBox.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.GetStockObject.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.GetStockObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs"
+             Link="Common\Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.ObjectType.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.ObjectType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.OffsetViewportOrgEx.cs"
@@ -311,26 +316,12 @@ Since .NET 7, non-Windows platforms are not supported. See https://aka.ms/system
       <LogicalName>System.Drawing.ShieldIcon.ico</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs" />
-    <Compile Include="System\Drawing\DrawingCom.COMWrappers.cs" />
-    <Compile Include="System\Drawing\Icon.COMWrappers.cs" />
-    <Compile Include="System\Drawing\Internal\GPStream.COMWrappers.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.NoCOMWrappers.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.IStream.NoCOMWrappers.cs" />
-    <Compile Include="System\Drawing\DrawingCom.NoCOMWrappers.cs" />
-    <Compile Include="System\Drawing\Icon.NoCOMWrappers.cs" />
-    <Compile Include="System\Drawing\Internal\GPStream.NoCOMWrappers.cs" />
-  </ItemGroup>
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and '$(TargetsAnyOS)' != 'true'">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\HandleRefMarshaller.cs"
              Link="Common\System\Runtime\InteropServices\HandleRefMarshaller.cs" />
   </ItemGroup>
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\HandleRefMarshaller.cs"
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\src\Microsoft.Win32.SystemEvents.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
