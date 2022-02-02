@@ -16,7 +16,7 @@ using System.Threading;
 
 namespace System.Reflection
 {
-    internal partial class RuntimeAssembly : Assembly
+    internal sealed partial class RuntimeAssembly : Assembly
     {
         internal RuntimeAssembly() { throw new NotSupportedException(); }
 
