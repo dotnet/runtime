@@ -62,12 +62,18 @@ namespace System.IO
                 {
                     CopyFile(enumeratedFile, enumeratedFile.Replace(sourcePath, destinationPath), true);
                 }
-                catch (IOException ex) when (success)
+                catch (IOException ex)
                 {
-                    // Return false for read failures
-                    success = ex.HResult == Interop.Errors.ERROR_ACCESS_DENIED ? false :
-                        // Otherwise rethrow
-                        throw ex;
+                    switch (ex.HResult)
+                    {
+                        // success = false for read failures,
+                        // throw for everything else
+                        case Interop.Errors.ERROR_ACCESS_DENIED:
+                            success = false;
+                            break;
+                        default:
+                            throw;
+                    }
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();

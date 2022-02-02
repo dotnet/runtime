@@ -55,7 +55,7 @@ namespace System.IO.FileSystem.Tests
             Directory.Copy(sourceDirName, destDirName, false, false, cancellationToken);
 
             // Validate cancellation
-            Assert.True(cancellationToken.IsCancellationRequested);
+            Assert.False(cancellationToken.IsCancellationRequested);
         }
 
         [Fact]
