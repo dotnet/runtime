@@ -1,5 +1,10 @@
 Compat issues with assembly mscorlib:
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.RequiresPreviewFeaturesAttribute' exists on 'System.String System.Runtime.CompilerServices.RuntimeFeature.VirtualStaticsInInterfaces' in the contract but not the implementation.
+CannotMakeTypeAbstract : Type 'System.Reflection.Emit.AssemblyBuilder' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public System.Reflection.Emit.ModuleBuilder System.Reflection.Emit.AssemblyBuilder.DefineDynamicModule(System.String)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public System.Reflection.Emit.ModuleBuilder System.Reflection.Emit.AssemblyBuilder.GetDynamicModule(System.String)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.AssemblyBuilder.SetCustomAttribute(System.Reflection.ConstructorInfo, System.Byte[])' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.AssemblyBuilder.SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)' is abstract in the implementation but is not abstract in the contract.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.Aes' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeDeformatter' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeFormatter' in the contract but not the implementation.
@@ -47,7 +52,15 @@ CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAtt
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.ToString(System.String, System.IFormatProvider)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<System.Byte>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<T>)' in the contract but not the implementation.
+<<<<<<< HEAD
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.RequiresPreviewFeaturesAttribute' exists on 'System.String System.Runtime.CompilerServices.RuntimeFeature.VirtualStaticsInInterfaces' in the contract but not the implementation.
+=======
+CannotMakeTypeAbstract : Type 'System.Reflection.Emit.AssemblyBuilder' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public System.Reflection.Emit.ModuleBuilder System.Reflection.Emit.AssemblyBuilder.DefineDynamicModule(System.String)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public System.Reflection.Emit.ModuleBuilder System.Reflection.Emit.AssemblyBuilder.GetDynamicModule(System.String)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.AssemblyBuilder.SetCustomAttribute(System.Reflection.ConstructorInfo, System.Byte[])' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.AssemblyBuilder.SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)' is abstract in the implementation but is not abstract in the contract.
+>>>>>>> 86381da18a7... Add abstract AssemblyBuilder
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.Aes' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeDeformatter' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeFormatter' in the contract but not the implementation.
@@ -117,10 +130,19 @@ CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAtt
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.ToString(System.String, System.IFormatProvider)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<System.Byte>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<T>)' in the contract but not the implementation.
+<<<<<<< HEAD
 Compat issues with assembly System.Runtime:
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.RequiresPreviewFeaturesAttribute' exists on 'System.String System.Runtime.CompilerServices.RuntimeFeature.VirtualStaticsInInterfaces' in the contract but not the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.IO.FileStream.Lock(System.Int64, System.Int64)' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("freebsd")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.IO.FileStream.Unlock(System.Int64, System.Int64)' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("freebsd")]' in the implementation.
+=======
+Compat issues with assembly System.Reflection.Emit:
+CannotMakeTypeAbstract : Type 'System.Reflection.Emit.AssemblyBuilder' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public System.Reflection.Emit.ModuleBuilder System.Reflection.Emit.AssemblyBuilder.DefineDynamicModule(System.String)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public System.Reflection.Emit.ModuleBuilder System.Reflection.Emit.AssemblyBuilder.GetDynamicModule(System.String)' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.AssemblyBuilder.SetCustomAttribute(System.Reflection.ConstructorInfo, System.Byte[])' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.AssemblyBuilder.SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)' is abstract in the implementation but is not abstract in the contract.
+>>>>>>> 86381da18a7... Add abstract AssemblyBuilder
 Compat issues with assembly System.Runtime.Intrinsics:
 MembersMustExist : Member 'public System.Runtime.Intrinsics.Vector128<U> System.Runtime.Intrinsics.Vector128.As<T, U>(System.Runtime.Intrinsics.Vector128<T>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'public System.Runtime.Intrinsics.Vector256<U> System.Runtime.Intrinsics.Vector256.As<T, U>(System.Runtime.Intrinsics.Vector256<T>)' does not exist in the implementation but it does exist in the contract.
@@ -160,4 +182,4 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.TripleDES' in the contract but not the implementation.
 Compat issues with assembly System.Security.Cryptography.X509Certificates:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Security.Cryptography.X509Certificates.PublicKey.GetDSAPublicKey()' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
-Total Issues: 149
+Total Issues: 150

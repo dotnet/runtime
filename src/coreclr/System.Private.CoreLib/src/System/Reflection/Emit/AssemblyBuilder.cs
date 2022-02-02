@@ -17,7 +17,35 @@ using System.Threading;
 
 namespace System.Reflection.Emit
 {
-    public sealed partial class AssemblyBuilder : Assembly
+    public partial class AssemblyBuilder
+    {
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
+        [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
+        public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
+        {
+            return RuntimeAssemblyBuilder.InternalDefineDynamicAssembly(name,
+                                                 access,
+                                                 Assembly.GetCallingAssembly(),
+                                                 AssemblyLoadContext.CurrentContextualReflectionContext,
+                                                 null);
+        }
+
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
+        [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
+        public static AssemblyBuilder DefineDynamicAssembly(
+            AssemblyName name,
+            AssemblyBuilderAccess access,
+            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+        {
+            return RuntimeAssemblyBuilder.InternalDefineDynamicAssembly(name,
+                                                 access,
+                                                 Assembly.GetCallingAssembly(),
+                                                 AssemblyLoadContext.CurrentContextualReflectionContext,
+                                                 assemblyAttributes);
+        }
+    }
+
+    internal sealed partial class RuntimeAssemblyBuilder : AssemblyBuilder
     {
         #region Internal Data Members
 
@@ -147,7 +175,7 @@ namespace System.Reflection.Emit
 
         private static readonly object s_assemblyBuilderLock = new object();
 
-        internal static AssemblyBuilder InternalDefineDynamicAssembly(
+        internal static RuntimeAssemblyBuilder InternalDefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access,
             Assembly? callingAssembly,
@@ -157,7 +185,7 @@ namespace System.Reflection.Emit
             lock (s_assemblyBuilderLock)
             {
                 // We can only create dynamic assemblies in the current domain
-                return new AssemblyBuilder(name,
+                return new RuntimeAssemblyBuilder(name,
                                            access,
                                            callingAssembly,
                                            assemblyLoadContext,
@@ -173,7 +201,7 @@ namespace System.Reflection.Emit
         /// modules within an Assembly with the same name. This dynamic module is
         /// a transient module.
         /// </summary>
-        public ModuleBuilder DefineDynamicModule(string name)
+        public override ModuleBuilder DefineDynamicModule(string name)
         {
             lock (SyncRoot)
             {
@@ -234,7 +262,7 @@ namespace System.Reflection.Emit
 
         public override AssemblyName GetName(bool copiedName) => InternalAssembly.GetName(copiedName);
 
-        public override string? FullName => InternalAssembly.FullName;
+        public override string FullName => InternalAssembly.FullName!;
 
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase) =>
@@ -273,7 +301,7 @@ namespace System.Reflection.Emit
 
         /// <param name="name">The name of module for the look up.</param>
         /// <returns>Dynamic module with the specified name.</returns>
-        public ModuleBuilder? GetDynamicModule(string name)
+        public override ModuleBuilder? GetDynamicModule(string name)
         {
             lock (SyncRoot)
             {
@@ -299,7 +327,7 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client decides to form the custom attribute blob themselves.
         /// </summary>
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
@@ -317,7 +345,7 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder.
         /// </summary>
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 

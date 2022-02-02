@@ -483,7 +483,7 @@ namespace System.Reflection.Emit
             int i;
             m_module = module;
             m_DeclaringType = enclosingType;
-            AssemblyBuilder containingAssem = m_module.ContainingAssemblyBuilder;
+            RuntimeAssemblyBuilder containingAssem = m_module.ContainingAssemblyBuilder;
 
             // cannot have two types within the same assembly of the same name
             containingAssem.CheckTypeNameConflict(fullname, enclosingType);

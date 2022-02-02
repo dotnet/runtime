@@ -804,6 +804,7 @@ FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 FCClassElement("RegisteredWaitHandle", "System.Threading", gRegisteredWaitHandleFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
+FCClassElement("RuntimeAssemblyBuilder", "System.Reflection.Emit", gAssemblyBuilderFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gRuntimeHelpers)
 FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)

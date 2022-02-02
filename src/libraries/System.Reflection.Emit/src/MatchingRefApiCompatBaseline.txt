@@ -1,3 +1,7 @@
 Compat issues with assembly System.Reflection.Emit:
+CannotMakeMemberAbstract : Member 'public System.Reflection.Emit.ModuleBuilder System.Reflection.Emit.AssemblyBuilder.DefineDynamicModule(System.String)' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMemberAbstract : Member 'public System.Reflection.Emit.ModuleBuilder System.Reflection.Emit.AssemblyBuilder.GetDynamicModule(System.String)' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.AssemblyBuilder.SetCustomAttribute(System.Reflection.ConstructorInfo, System.Byte[])' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.AssemblyBuilder.SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)' is abstract in the reference but is not abstract in the implementation.
 MembersMustExist : Member 'protected System.ModuleHandle System.Reflection.Emit.ModuleBuilder.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
-Total Issues: 1
+Total Issues: 5

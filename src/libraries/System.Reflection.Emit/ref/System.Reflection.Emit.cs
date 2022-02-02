@@ -6,9 +6,9 @@
 
 namespace System.Reflection.Emit
 {
-    public sealed partial class AssemblyBuilder : System.Reflection.Assembly
+    public abstract partial class AssemblyBuilder : System.Reflection.Assembly
     {
-        internal AssemblyBuilder() { }
+        protected AssemblyBuilder() { }
         [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("This member throws an exception for assemblies embedded in a single-file app")]
         public override string? CodeBase { get { throw null; } }
@@ -24,12 +24,12 @@ namespace System.Reflection.Emit
         public static System.Reflection.Emit.AssemblyBuilder DefineDynamicAssembly(System.Reflection.AssemblyName name, System.Reflection.Emit.AssemblyBuilderAccess access) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static System.Reflection.Emit.AssemblyBuilder DefineDynamicAssembly(System.Reflection.AssemblyName name, System.Reflection.Emit.AssemblyBuilderAccess access, System.Collections.Generic.IEnumerable<System.Reflection.Emit.CustomAttributeBuilder>? assemblyAttributes) { throw null; }
-        public System.Reflection.Emit.ModuleBuilder DefineDynamicModule(string name) { throw null; }
+        public abstract System.Reflection.Emit.ModuleBuilder DefineDynamicModule(string name);
         public override bool Equals(object? obj) { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
         public override System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributesData() { throw null; }
-        public System.Reflection.Emit.ModuleBuilder? GetDynamicModule(string name) { throw null; }
+        public abstract System.Reflection.Emit.ModuleBuilder? GetDynamicModule(string name);
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public override System.Type[] GetExportedTypes() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("This member throws an exception for assemblies embedded in a single-file app")]
@@ -52,8 +52,8 @@ namespace System.Reflection.Emit
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public override System.Type? GetType(string name, bool throwOnError, bool ignoreCase) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
-        public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
-        public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
+        public abstract void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
+        public abstract void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
     }
     [System.FlagsAttribute]
     public enum AssemblyBuilderAccess

@@ -54,8 +54,8 @@ namespace System.Reflection.Emit
         internal readonly RuntimeModule _internalModule;
         // This is the "external" AssemblyBuilder
         // only the "external" ModuleBuilder has this set
-        private readonly AssemblyBuilder _assemblyBuilder;
-        internal AssemblyBuilder ContainingAssemblyBuilder => _assemblyBuilder;
+        private readonly RuntimeAssemblyBuilder _assemblyBuilder;
+        internal RuntimeAssemblyBuilder ContainingAssemblyBuilder => _assemblyBuilder;
 
         internal const string ManifestModuleName = "RefEmit_InMemoryManifestModule";
 
@@ -63,7 +63,7 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        internal ModuleBuilder(AssemblyBuilder assemblyBuilder, RuntimeModule internalModule)
+        internal ModuleBuilder(RuntimeAssemblyBuilder assemblyBuilder, RuntimeModule internalModule)
         {
             _internalModule = internalModule;
             _assemblyBuilder = assemblyBuilder;
