@@ -78,11 +78,6 @@
     <!-- We can't generate an apphost without restoring the targeting pack. -->
     <UseAppHost>false</UseAppHost>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <!--
-      Microsoft.NET.TargetFrameworkInference.targets appends the TargetFramework.
-      We do this manually and use the Configuration instead.
-    -->
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
   <!-- Language configuration -->
