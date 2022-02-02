@@ -565,6 +565,11 @@ namespace System.Net.NetworkInformation.Tests
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
 
+            if (!(Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike))
+            {
+                throw new SkipTestException("Underprivileged process cannot specify ping payload.");
+            }
+
             using (Ping p = new Ping())
             {
                 // Assert.DoesNotThrow
@@ -575,8 +580,7 @@ namespace System.Net.NetworkInformation.Tests
                 //
                 // On Windows 10 the maximum ping size seems essentially limited to 65500 bytes and thus any buffer
                 // size on the loopback ping succeeds. On macOS anything bigger than 8184 will report packet too
-                // big error. On Linux/Unix the result differs for privileged and unprivileged processes and may
-                // change with different platform versions.
+                // big error.
                 if (OperatingSystem.IsMacOS())
                 {
                     Assert.Equal(IPStatus.PacketTooBig, pingReply.Status);
@@ -753,7 +757,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
 
-            byte[] buffer = TestSettings.PayloadAsBytes;
+            byte[] buffer = GetPingPayloadForUnix(localIpAddresses[0].AddressFamily);
 
             PingOptions  options = new PingOptions();
             options.Ttl = 32;
