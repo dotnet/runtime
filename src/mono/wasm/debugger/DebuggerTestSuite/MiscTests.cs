@@ -944,7 +944,7 @@ namespace DebuggerTests
             var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
             Assert.True(
                 bp.Value["breakpointId"].Value<string>().EndsWith(expectedLocationSufix), 
-                "Failed to set a breakpoint in project with special characters in path."
+                $"Failed to set a breakpoint in project with special characters in path. Actual path: {bp.Value["breakpointId"]}."
                 );
             await EvaluateAndCheck(
                 $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
