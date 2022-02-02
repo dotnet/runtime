@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <cstring>
+#include <assert.h>
 
 // Workaround to not link PAL to this test.
-#define _ASSERTE(e) static_assert(e, #e)
+#define _ASSERTE assert
 #include <corhlpr.cpp>
 #include "ilrewriter.h"
 #include "sigparse.h"
