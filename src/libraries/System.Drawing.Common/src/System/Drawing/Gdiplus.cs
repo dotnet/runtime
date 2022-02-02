@@ -5,6 +5,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
@@ -24,7 +25,8 @@ namespace System.Drawing
             {
                 if (!OperatingSystem.IsWindows())
                 {
-                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_Unix);
+                    NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), static (_, _, _) =>
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_Unix));
                 }
 
                 Debug.Assert(s_initToken == IntPtr.Zero, "GdiplusInitialization: Initialize should not be called more than once in the same domain!");
