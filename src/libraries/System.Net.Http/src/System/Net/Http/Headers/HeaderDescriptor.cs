@@ -15,32 +15,44 @@ namespace System.Net.Http.Headers
     // Use HeaderDescriptor.TryGet to resolve an arbitrary header name to a HeaderDescriptor.
     internal readonly struct HeaderDescriptor : IEquatable<HeaderDescriptor>
     {
-        private readonly string _headerName;
-        private readonly KnownHeader? _knownHeader;
+        /// <summary>
+        /// Either a <see cref="KnownHeader"/> or <see cref="string"/>.
+        /// </summary>
+        private readonly object _descriptor;
 
         public HeaderDescriptor(KnownHeader knownHeader)
         {
-            _knownHeader = knownHeader;
-            _headerName = knownHeader.Name;
+            _descriptor = knownHeader;
         }
 
         // This should not be used directly; use static TryGet below
-        internal HeaderDescriptor(string headerName)
+        internal HeaderDescriptor(string headerName, bool customHeader = false)
         {
-            _headerName = headerName;
-            _knownHeader = null;
+            Debug.Assert(customHeader || KnownHeaders.TryGetKnownHeader(headerName) is null, $"The {nameof(KnownHeader)} overload should be used for {headerName}");
+            _descriptor = headerName;
         }
 
-        public string Name => _headerName;
-        public HttpHeaderParser? Parser => _knownHeader?.Parser;
-        public HttpHeaderType HeaderType => _knownHeader == null ? HttpHeaderType.Custom : _knownHeader.HeaderType;
-        public KnownHeader? KnownHeader => _knownHeader;
+        public string Name => _descriptor is KnownHeader header ? header.Name : (_descriptor as string)!;
+        public HttpHeaderParser? Parser => (_descriptor as KnownHeader)?.Parser;
+        public HttpHeaderType HeaderType => _descriptor is KnownHeader knownHeader ? knownHeader.HeaderType : HttpHeaderType.Custom;
+        public KnownHeader? KnownHeader => _descriptor as KnownHeader;
 
-        public bool Equals(HeaderDescriptor other) =>
-            _knownHeader == null ?
-                string.Equals(_headerName, other._headerName, StringComparison.OrdinalIgnoreCase) :
-                _knownHeader == other._knownHeader;
-        public override int GetHashCode() => _knownHeader?.GetHashCode() ?? StringComparer.OrdinalIgnoreCase.GetHashCode(_headerName);
+        public bool Equals(KnownHeader other) => ReferenceEquals(_descriptor, other);
+
+        public bool Equals(HeaderDescriptor other)
+        {
+            if (_descriptor is string headerName)
+            {
+                return string.Equals(headerName, other._descriptor as string, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                return ReferenceEquals(_descriptor, other._descriptor);
+            }
+        }
+
+        public override int GetHashCode() => _descriptor is KnownHeader knownHeader ? knownHeader.GetHashCode() : StringComparer.OrdinalIgnoreCase.GetHashCode(_descriptor);
+
         public override bool Equals(object? obj) => throw new InvalidOperationException();   // Ensure this is never called, to avoid boxing
 
         // Returns false for invalid header name.
@@ -112,9 +124,9 @@ namespace System.Net.Http.Headers
 
         public HeaderDescriptor AsCustomHeader()
         {
-            Debug.Assert(_knownHeader != null);
-            Debug.Assert(_knownHeader.HeaderType != HttpHeaderType.Custom);
-            return new HeaderDescriptor(_knownHeader.Name);
+            Debug.Assert(_descriptor is KnownHeader);
+            Debug.Assert(HeaderType != HttpHeaderType.Custom);
+            return new HeaderDescriptor(Name, customHeader: true);
         }
 
         public string GetHeaderValue(ReadOnlySpan<byte> headerValue, Encoding? valueEncoding)
@@ -125,10 +137,9 @@ namespace System.Net.Http.Headers
             }
 
             // If it's a known header value, use the known value instead of allocating a new string.
-            if (_knownHeader != null)
+            if (_descriptor is KnownHeader knownHeader)
             {
-                string[]? knownValues = _knownHeader.KnownValues;
-                if (knownValues != null)
+                if (knownHeader.KnownValues is string[] knownValues)
                 {
                     for (int i = 0; i < knownValues.Length; i++)
                     {
@@ -139,7 +150,7 @@ namespace System.Net.Http.Headers
                     }
                 }
 
-                if (_knownHeader == KnownHeaders.ContentType)
+                if (knownHeader == KnownHeaders.ContentType)
                 {
                     string? contentType = GetKnownContentType(headerValue);
                     if (contentType != null)
@@ -147,7 +158,7 @@ namespace System.Net.Http.Headers
                         return contentType;
                     }
                 }
-                else if (_knownHeader == KnownHeaders.Location)
+                else if (knownHeader == KnownHeaders.Location)
                 {
                     // Normally Location should be in ISO-8859-1 but occasionally some servers respond with UTF-8.
                     if (TryDecodeUtf8(headerValue, out string? decoded))

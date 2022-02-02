@@ -616,6 +616,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(DiagnosticDescriptors.LoggingMethodIsGeneric.Id, diagnostics[0].Id);
         }
 
+        [Theory]
+        [InlineData("ref")]
+        [InlineData("in")]
+        public async Task SupportsRefKindsInAndRef(string modifier)
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@$"
+                partial class C
+                {{
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {{P1}}"")]
+                    static partial void M(ILogger logger, {modifier} int p1);
+                }}");
+
+            Assert.Empty(diagnostics);
+        }
+
         [Fact]
         public async Task Templates()
         {

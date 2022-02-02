@@ -1117,6 +1117,17 @@ namespace System.Security.Cryptography
                 _ => throw new ArgumentException(SR.Argument_InvalidValue, nameof(hashAlg)),
             };
 
+        internal static HashAlgorithmName AlgIdToHashAlgorithmName(int hashAlg) =>
+            hashAlg switch
+            {
+                CapiHelper.CALG_MD5 => HashAlgorithmName.MD5,
+                CapiHelper.CALG_SHA1 => HashAlgorithmName.SHA1,
+                CapiHelper.CALG_SHA_256 => HashAlgorithmName.SHA256,
+                CapiHelper.CALG_SHA_384 => HashAlgorithmName.SHA384,
+                CapiHelper.CALG_SHA_512 => HashAlgorithmName.SHA512,
+                _ => throw new ArgumentException(SR.Argument_InvalidValue, nameof(hashAlg)),
+            };
+
         /// <summary>
         /// Convert an OID into a CAPI-1 CALG ID.
         /// </summary>
