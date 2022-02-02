@@ -518,6 +518,26 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
         }
 
+        [Fact]
+        public void OverloadTests()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+            OverloadTestExtensions.M0(logger, 1);
+            Assert.Null(logger.LastException);
+            Assert.Equal($"{nameof(OverloadTestExtensions.M0)}1", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal("M0", logger.LastEventId.Name);
+
+            logger.Reset();
+            OverloadTestExtensions.M0(logger, "string");
+            Assert.Null(logger.LastException);
+            Assert.Equal($"{nameof(OverloadTestExtensions.M0)}string", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal("M0", logger.LastEventId.Name);
+        }
+
         private static void AssertLastState(MockLogger logger, params KeyValuePair<string, object?>[] expected)
         {
             var rol = (IReadOnlyList<KeyValuePair<string, object?>>)logger.LastState!;
