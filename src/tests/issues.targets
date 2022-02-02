@@ -590,6 +590,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlstack/*">
             <Issue>Release only crash</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Unix arm32 specific -->
@@ -602,6 +605,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/multiple/multiple/*">
             <Issue>https://github.com/dotnet/runtime/issues/57875</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256/**">
+            <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -893,12 +899,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: AssemblyLoadContext.LoadFromAssemblyPath</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/SameNameDifferentAssembly/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/160</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/Primitives/ICustomMarshaler_TargetWindows/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/160</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/**/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: C++/CLI</Issue>
         </ExcludeList>
@@ -945,7 +945,7 @@
             <Issue>https://github.com/dotnet/runtimelab/issues/173</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/CustomMarshalers/CustomMarshalersTest/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/160</Issue>
+            <Issue>Specific to CoreCLR: Built-in COM Interop</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Decimal/DecimalTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/175</Issue>

@@ -162,6 +162,19 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
         // to be to use server preference (as of June 2020), so just always assert that.
         SSL_CTX_set_options(ctx, SSL_OP_NO_COMPRESSION | SSL_OP_CIPHER_SERVER_PREFERENCE);
 
+#ifdef NEED_OPENSSL_3_0
+        if (CryptoNative_OpenSslVersionNumber() >= OPENSSL_VERSION_3_0_RTM)
+        {
+            // OpenSSL 3.0 forbids client-initiated renegotiation by default. To avoid platform
+            // differences, we explicitly enable it and handle AllowRenegotiation flag in managed
+            // code as in previous versions
+#ifndef SSL_OP_ALLOW_CLIENT_RENEGOTIATION
+#define SSL_OP_ALLOW_CLIENT_RENEGOTIATION ((uint64_t)1 << (uint64_t)8)
+#endif
+            SSL_CTX_set_options(ctx, SSL_OP_ALLOW_CLIENT_RENEGOTIATION);
+        }
+#endif
+
         // If openssl.cnf doesn't have an opinion for CipherString, then use this value instead
         if (!g_config_specified_ciphersuites)
         {

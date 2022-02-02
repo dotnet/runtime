@@ -31,7 +31,7 @@ namespace System
 
         private bool InvocationListEquals(MulticastDelegate d)
         {
-            Delegate[] invocationList = m_helperObject as Delegate[];
+            Delegate[] invocationList = (Delegate[])m_helperObject;
             if (d.m_extraFunctionPointerOrData != m_extraFunctionPointerOrData)
                 return false;
 
@@ -39,7 +39,7 @@ namespace System
             for (int i = 0; i < invocationCount; i++)
             {
                 Delegate dd = invocationList[i];
-                Delegate[] dInvocationList = d.m_helperObject as Delegate[];
+                Delegate[] dInvocationList = (Delegate[])d.m_helperObject;
                 if (!dd.Equals(dInvocationList[i]))
                     return false;
             }
@@ -280,7 +280,7 @@ namespace System
 
         private Delegate[] DeleteFromInvocationList(Delegate[] invocationList, int invocationCount, int deleteIndex, int deleteCount)
         {
-            Delegate[] thisInvocationList = m_helperObject as Delegate[];
+            Delegate[] thisInvocationList = (Delegate[])m_helperObject;
             int allocCount = thisInvocationList.Length;
             while (allocCount / 2 >= invocationCount - deleteCount)
                 allocCount /= 2;

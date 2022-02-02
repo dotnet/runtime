@@ -9012,7 +9012,6 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_long (buf, (guint64)thread->tid);
 		break;
 	case CMD_THREAD_SET_IP: {
-		DebuggerTlsData *tls;
 		MonoMethod *method;
 		MonoDomain *domain;
 		MonoSeqPointInfo *seq_points;
@@ -9030,9 +9029,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				wait_for_suspend ();
 		}
 
-		mono_loader_lock ();
-		tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls, thread);
-		mono_loader_unlock ();
+		GET_TLS_DATA_FROM_THREAD (thread);
 		g_assert (tls);
 
 		compute_frame_info (thread, tls, FALSE);
