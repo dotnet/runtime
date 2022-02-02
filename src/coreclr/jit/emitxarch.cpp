@@ -7702,26 +7702,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
     // a sanity test.
     assert((unsigned)abs((signed)argSize) <= codeGen->genStackLevel);
 
-    bool delayGCReport =
-        (callType == EC_FUNC_TOKEN) && (Compiler::eeGetHelperNum(methHnd) == CORINFO_HELP_VALIDATE_INDIRECT_CALL);
-    if (delayGCReport)
-    {
-        // The JIT usually publishes GC register kills only after calls, even
-        // for fully interruptible code. We currently rely on this behavior
-        // because we consider locals to be dead at their last use, even if
-        // that local is a GC pointer in an argument register that will be
-        // later used by a call. For some cases we need to delay the reporting
-        // of these GC regs, and accomplish this by using the last reported set
-        // here.
-        //
-        // TODO: It would be more ideal if we tracked GC pointers in argument
-        // registers separately from TYP_REF locals so that we knew not to kill
-        // them "too early".
-        //
-        gcrefRegs = emitThisGCrefRegs;
-        byrefRegs = emitThisByrefRegs;
-    }
-
     // Trim out any callee-trashed registers from the live set.
     regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
     gcrefRegs &= savedSet;

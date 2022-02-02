@@ -2507,8 +2507,6 @@ bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
 
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
-
-        case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             return true;
 
         default:
@@ -9324,10 +9322,6 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             result = RBM_INIT_PINVOKE_FRAME_TRASH;
             break;
 #endif // defined(TARGET_X86)
-
-        case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
-            result = RBM_VALIDATE_INDIRECT_CALL_TRASH;
-            break;
 
         default:
             result = RBM_CALLEE_TRASH_NOGC;
