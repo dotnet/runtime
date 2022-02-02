@@ -125,5 +125,22 @@ namespace System
             }
             return null;
         }
+
+        /// <summary>
+        /// Retrieves a readonly reference to the value of the current <see cref="Nullable{T}"/> object, or to the default value of the underlying type.
+        /// </summary>
+        /// <typeparam name="T">The underlying value type of the <see cref="Nullable{T}"/> generic type.</typeparam>
+        /// <param name="nullable">The readonly reference to the input <see cref="Nullable{T}"/> value.</param>
+        /// <returns>A readonly reference to the value of <paramref name="nullable"/>, or to its containing default <typeparamref name="T"/> value.</returns>
+        /// <remarks>
+        /// As the returned readonly reference refers to data that is stored in the input <paramref name="nullable"/> value, this method should only ever be
+        /// called when the input reference points to a value with an actual location and not an rvalue. That is, if this API is called and the input reference
+        /// points to a value that is produced by the compiler as a defensive copy or a temporary copy, the behavior might not match the desired one.
+        /// </remarks>
+        public static ref readonly T GetValueRefOrDefaultRef<T>(in T? nullable)
+            where T : struct
+        {
+            return ref nullable.value;
+        }
     }
 }
