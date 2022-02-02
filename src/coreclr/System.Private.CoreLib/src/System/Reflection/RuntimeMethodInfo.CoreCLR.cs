@@ -27,19 +27,29 @@ namespace System.Reflection
         private Signature? m_signature;
         private RuntimeType m_declaringType;
         private object? m_keepalive;
-        private InvocationFlags m_invocationFlags;
+        private MethodInvoker? m_reflectionInvoker;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                InvocationFlags flags = m_invocationFlags;
+                InvocationFlags flags = Invoker._invocationFlags;
                 if ((flags & InvocationFlags.Initialized) == 0)
                 {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref m_invocationFlags);
+                    flags = ComputeAndUpdateInvocationFlags(this, ref Invoker._invocationFlags);
                 }
                 return flags;
+            }
+        }
+
+        private MethodInvoker Invoker
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                m_reflectionInvoker ??= new MethodInvoker(InvokeNonEmit, ArgumentTypes);
+                return m_reflectionInvoker;
             }
         }
         #endregion
@@ -309,11 +319,27 @@ namespace System.Reflection
         #endregion
 
         #region Invocation Logic(On MemberBase)
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        private object? InvokeNonEmit(object? obj, Span<object?> arguments, BindingFlags invokeAttr)
         {
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, false, wrapExceptions);
+            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+            {
+                bool rethrow = false;
+
+                try
+                {
+                    return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, constructor: false, out rethrow);
+                }
+                catch (Exception e) when (!rethrow)
+                {
+                    throw new TargetInvocationException(e);
+                }
+            }
+            else
+            {
+                return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, constructor: false, out _);
+            }
         }
 
         [DebuggerStepThroughAttribute]
@@ -337,11 +363,14 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
+            Span<object?> parameters = new Span<object?>(ref parameter, 1);
             StackAllocedArguments stackArgs = default;
-            Span<object?> arguments = CheckArguments(ref stackArgs, new ReadOnlySpan<object?>(ref parameter, 1), binder, invokeAttr, culture, sig.Arguments);
+            bool _ = false;
+            Span<object?> arguments = CheckArguments(ref stackArgs, parameters, ref _, ArgumentTypes, binder, culture, invokeAttr);
 
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, constructor: false, wrapExceptions);
+            object? retValue = Invoker.Invoke(obj, arguments, invokeAttr);
+
+            return retValue;
         }
 
         #endregion

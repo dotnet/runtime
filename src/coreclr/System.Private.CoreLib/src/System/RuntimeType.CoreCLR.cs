@@ -3473,9 +3473,18 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object AllocateValueType(RuntimeType type, object? value, bool fForceTypeChange);
 
-        internal object? CheckValue(object? value, Binder? binder, CultureInfo? culture, BindingFlags invokeAttr)
+        /// <summary>
+        /// Verify <paramref name="value"/> and optionally change it for special cases.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void CheckValue(
+            ref object? value,
+            ref bool copyBack,
+            Binder? binder,
+            CultureInfo? culture,
+            BindingFlags invokeAttr)
         {
-            // this method is used by invocation in reflection to check whether a value can be assigned to type.
+            // This method is used by invocation in reflection to check whether a value can be assigned to type.
             if (IsInstanceOfType(value))
             {
                 // Since this cannot be a generic parameter, we use RuntimeTypeHandle.IsValueType here
@@ -3486,93 +3495,123 @@ namespace System
 
                 if (!ReferenceEquals(type, this) && RuntimeTypeHandle.IsValueType(this))
                 {
-                    // must be an equivalent type, re-box to the target type
-                    return AllocateValueType(this, value, true);
+                    // Must be an equivalent type, re-box to the target type
+                    value = AllocateValueType(this, value, fForceTypeChange: true);
+                    copyBack = true;
                 }
-                else
-                {
-                    return value;
-                }
+
+                return;
             }
 
-            // if this is a ByRef get the element type and check if it's compatible
+            TryChangeType(ref value, ref copyBack, binder, culture, invokeAttr);
+        }
+
+        private void TryChangeType(
+            ref object? value,
+            ref bool copyBack,
+            Binder? binder,
+            CultureInfo? culture,
+            BindingFlags invokeAttr)
+        {
+            // If this is a ByRef get the element type and check if it's compatible
             bool isByRef = IsByRef;
             if (isByRef)
             {
                 RuntimeType elementType = RuntimeTypeHandle.GetElementType(this);
                 if (elementType.IsInstanceOfType(value) || value == null)
                 {
-                    // need to create an instance of the ByRef if null was provided, but only if primitive, enum or value type
-                    return AllocateValueType(elementType, value, false);
+                    // Need to create an instance of the ByRef if null was provided, but only if primitive, enum or value type
+                    value = AllocateValueType(elementType, value, fForceTypeChange: false);
+                    copyBack = true;
+                    return;
                 }
             }
             else if (value == null)
-                return value;
+            {
+                return;
+            }
             else if (this == s_typedRef)
-                // everything works for a typedref
-                return value;
+            {
+                // Everything works for a typedref
+                return;
+            }
 
-            // check the strange ones courtesy of reflection:
+            // Check the strange ones courtesy of reflection:
             // - implicit cast between primitives
             // - enum treated as underlying type
             // - IntPtr and System.Reflection.Pointer to pointer types
             bool needsSpecialCast = IsPointer || IsEnum || IsPrimitive;
             if (needsSpecialCast)
             {
-                RuntimeType valueType;
                 Pointer? pointer = value as Pointer;
-                if (pointer != null)
-                    valueType = pointer.GetPointerType();
-                else
-                    valueType = (RuntimeType)value.GetType();
+                RuntimeType valueType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
 
                 if (CanValueSpecialCast(valueType, this))
                 {
                     if (pointer != null)
-                        return pointer.GetPointerValue();
+                    {
+                        value = pointer.GetPointerValue();
+                        copyBack = true;
+                        return;
+                    }
                     else
-                        return value;
+                    {
+                        return;
+                    }
                 }
             }
 
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
+            {
                 throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value.GetType(), this));
+            }
 
-            return TryChangeType(value, binder, culture, needsSpecialCast);
-        }
-
-        // Factored out of CheckValue to reduce code complexity.
-        private object? TryChangeType(object value, Binder? binder, CultureInfo? culture, bool needsSpecialCast)
-        {
+            // Use the binder
             if (binder != null && binder != Type.DefaultBinder)
             {
+                copyBack = true;
+
                 value = binder.ChangeType(value, this, culture);
                 if (IsInstanceOfType(value))
-                    return value;
+                {
+                    return;
+                }
+
                 // if this is a ByRef get the element type and check if it's compatible
                 if (IsByRef)
                 {
                     RuntimeType elementType = RuntimeTypeHandle.GetElementType(this);
                     if (elementType.IsInstanceOfType(value) || value == null)
-                        return AllocateValueType(elementType, value, false);
+                    {
+                        value = AllocateValueType(elementType, value, fForceTypeChange: false);
+                        return;
+                    }
                 }
                 else if (value == null)
-                    return value;
+                {
+                    return;
+                }
                 if (needsSpecialCast)
                 {
                     RuntimeType valueType;
                     Pointer? pointer = value as Pointer;
                     if (pointer != null)
+                    {
                         valueType = pointer.GetPointerType();
+                    }
                     else
+                    {
                         valueType = (RuntimeType)value.GetType();
+                    }
 
                     if (CanValueSpecialCast(valueType, this))
                     {
                         if (pointer != null)
-                            return pointer.GetPointerValue();
-                        else
-                            return value;
+                        {
+                            value = pointer.GetPointerValue();
+                        }
+
+                        return;
                     }
                 }
             }

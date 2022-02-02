@@ -435,7 +435,6 @@ namespace System.Reflection.Emit
             Signature sig = new Signature(
                 this.m_methodHandle!, m_parameterTypes, m_returnType, CallingConvention);
 
-
             // verify arguments
             int formalCount = sig.Arguments.Length;
             int actualCount = (parameters != null) ? parameters.Length : 0;
@@ -443,21 +442,58 @@ namespace System.Reflection.Emit
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
             // if we are here we passed all the previous checks. Time to look at the arguments
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-
             StackAllocedArguments stackArgs = default;
             Span<object?> arguments = default;
+            bool copyBack = false;
             if (actualCount != 0)
             {
-                arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig.Arguments);
+                // Adopt the MethodInvoker pattern here instead if the IL Emit perf gain is necessary.
+                bool HasRefs()
+                {
+                    for (int i = 0; i < sig.Arguments.Length; i++)
+                    {
+                        if (sig.Arguments[i].IsByRef)
+                        {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                copyBack = HasRefs();
+                arguments = CheckArguments(ref stackArgs, parameters!, ref copyBack, sig.Arguments, binder, culture, invokeAttr);
             }
 
-            object? retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, false, wrapExceptions);
+            object? retValue;
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
+            if (wrapExceptions)
+            {
+                bool rethrow = false;
 
-            // copy out. This should be made only if ByRef are present.
+                try
+                {
+                    retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, constructor: false, out rethrow);
+                }
+                catch (Exception ex) when (rethrow == false)
+                {
+                    throw new TargetInvocationException(ex);
+                }
+            }
+            else
+            {
+                retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, constructor: false, out _);
+            }
+
+            // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
             // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
-            for (int index = 0; index < arguments.Length; index++)
-                parameters![index] = arguments[index];
+            if (copyBack)
+            {
+                for (int index = 0; index < arguments.Length; index++)
+                {
+                    parameters![index] = arguments[index];
+                }
+            }
 
             GC.KeepAlive(this);
             return retValue;

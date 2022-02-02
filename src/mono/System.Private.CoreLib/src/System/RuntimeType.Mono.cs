@@ -1641,7 +1641,8 @@ namespace System
                 if (ReferenceEquals(elementType, typeof(TypedReference)) || ReferenceEquals(elementType, typeof(RuntimeArgumentHandle)))
                     throw new NotSupportedException("NotSupported_ContainsStackPtr");
 
-                if (IsValueType) {
+                if (IsValueType)
+                {
                     var this_type = this;
                     return CreateInstanceInternal(new QCallTypeHandle(ref this_type));
                 }
@@ -1655,74 +1656,95 @@ namespace System
                 throw new MissingMethodException("Cannot create an abstract class '{0}'.", FullName);
             }
 
-            return ctor.InvokeWorker(null, wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions, Span<object?>.Empty);
+            return ctor.Invoker.Invoke(
+                obj: null,
+                Span<object?>.Empty,
+                wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions);
         }
 
-        internal object? CheckValue(object? value, Binder? binder, CultureInfo? culture, BindingFlags invokeAttr)
+        internal void CheckValue(
+            ref object? value,
+            ref bool copyBack,
+            Binder? binder,
+            CultureInfo? culture,
+            BindingFlags invokeAttr)
         {
-            bool failed = false;
-            object? res = TryConvertToType(value, ref failed);
-            if (!failed)
-                return res;
+            if (TryConvertToType(ref value, ref copyBack))
+                return;
 
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
                 throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
 
             if (binder != null && binder != DefaultBinder)
-                return binder.ChangeType(value!, this, culture);
+            {
+                value = binder.ChangeType(value!, this, culture);
+                copyBack = true;
+                return;
+            }
 
             throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
         }
 
-        private object? TryConvertToType(object? value, ref bool failed)
+        private bool TryConvertToType(ref object? value, ref bool copyBack)
         {
             if (IsInstanceOfType(value))
-            {
-                return value;
-            }
+                return true;
 
             if (IsByRef)
             {
                 Type? elementType = GetElementType();
                 if (value == null || elementType.IsInstanceOfType(value))
                 {
-                    return value;
+                    copyBack = true;
+                    return true;
                 }
             }
 
             if (value == null)
-                return value;
+                return true;
 
             if (IsEnum)
             {
                 Type? type = Enum.GetUnderlyingType(this);
                 if (type == value.GetType())
-                    return value;
+                    return true;
+
                 object? res = IsConvertibleToPrimitiveType(value, type);
                 if (res != null)
-                    return res;
+                {
+                    value = res;
+                    copyBack = true;
+                    return true;
+                }
             }
             else if (IsPrimitive)
             {
                 object? res = IsConvertibleToPrimitiveType(value, this);
                 if (res != null)
-                    return res;
+                {
+                    value = res;
+                    copyBack = true;
+                    return true;
+                }
             }
             else if (IsPointer)
             {
                 Type? vtype = value.GetType();
                 if (vtype == typeof(IntPtr) || vtype == typeof(UIntPtr))
-                    return value;
+                    return true;
                 if (value is Pointer pointer)
                 {
                     Type pointerType = pointer.GetPointerType();
                     if (pointerType == this)
-                        return pointer.GetPointerValue();
+                    {
+                        value = pointer.GetPointerValue();
+                        copyBack = true;
+                        return true;
+                    }
                 }
             }
 
-            failed = true;
-            return null;
+            return false;
         }
 
         // Binder uses some incompatible conversion rules. For example
@@ -1983,7 +2005,7 @@ namespace System
             if (ctor is null || !ctor.IsPublic)
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt!));
 
-            return ctor.InvokeCtorWorker(BindingFlags.Default, Span<object?>.Empty)!;
+            return ctor.Invoker.Invoke(obj: null, Span<object?>.Empty, BindingFlags.Default)!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

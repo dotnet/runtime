@@ -93,9 +93,14 @@ namespace System.Reflection
             throw new TargetException();
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
-        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        public override object? Invoke(
+            object? obj,
+            BindingFlags invokeAttr,
+            Binder? binder,
+            object?[]? parameters,
+            CultureInfo? culture)
         {
             // ContainsStackPointers means that the struct (either the declaring type or the return type)
             // contains pointers that point to the stack. This is either a ByRef or a TypedReference. These structs cannot
@@ -114,20 +119,25 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
-            StackAllocedArguments stackArgs = default; // try to avoid intermediate array allocation if possible
             Span<object?> arguments = default;
+            StackAllocedArguments stackArgs = default; // try to avoid intermediate array allocation if possible
+            bool copyBack = false;
             if (actualCount != 0)
             {
-                arguments = CheckArguments(ref stackArgs, parameters!, binder, invokeAttr, culture, ArgumentTypes);
+                copyBack = Invoker.HasRefs;
+                arguments = CheckArguments(ref stackArgs, parameters!, ref copyBack, ArgumentTypes, binder, culture, invokeAttr);
             }
 
-            object? retValue = InvokeWorker(obj, invokeAttr, arguments);
+            object? retValue = Invoker.Invoke(obj, arguments, invokeAttr);
 
-            // copy out. This should be made only if ByRef are present.
+            // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
             // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
-            for (int index = 0; index < arguments.Length; index++)
+            if (copyBack)
             {
-                parameters![index] = arguments[index];
+                for (int i = 0; i < arguments.Length; i++)
+                {
+                    parameters![i] = arguments[i];
+                }
             }
 
             return retValue;

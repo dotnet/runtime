@@ -28,19 +28,29 @@ namespace System.Reflection
         private MethodAttributes m_methodAttributes;
         private BindingFlags m_bindingFlags;
         private Signature? m_signature;
-        private InvocationFlags m_invocationFlags;
+        private ConstructorInvoker? m_reflectionInvoker;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                InvocationFlags flags = m_invocationFlags;
+                InvocationFlags flags = Invoker._invocationFlags;
                 if ((flags & InvocationFlags.Initialized) == 0)
                 {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref m_invocationFlags);
+                    flags = ComputeAndUpdateInvocationFlags(this, ref Invoker._invocationFlags);
                 }
                 return flags;
+            }
+        }
+
+        private ConstructorInvoker Invoker
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                m_reflectionInvoker ??= new ConstructorInvoker(InvokeNonEmit, ArgumentTypes);
+                return m_reflectionInvoker;
             }
         }
         #endregion
@@ -205,18 +215,31 @@ namespace System.Reflection
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        private object InvokeNonEmit(object? obj, Span<object?> arguments, BindingFlags invokeAttr)
         {
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, false, wrapExceptions);
-        }
+            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+            {
+                bool rethrow = false;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object InvokeCtorWorker(BindingFlags invokeAttr, Span<object?> arguments)
-        {
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(null, in arguments, Signature, true, wrapExceptions)!;
+                try
+                {
+                    return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, constructor: obj is null, out rethrow)!;
+                }
+                catch (OutOfMemoryException)
+                {
+                    throw; // Re-throw for backward compatibility.
+                }
+                catch (Exception ex) when (rethrow == false)
+                {
+                    throw new TargetInvocationException(ex);
+                }
+            }
+            else
+            {
+                return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, constructor: obj is null, out _)!;
+            }
         }
 
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]

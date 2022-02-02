@@ -140,8 +140,15 @@ namespace System.Reflection
             }
         }
 
-        private protected Span<object?> CheckArguments(ref StackAllocedArguments stackArgs, ReadOnlySpan<object?> parameters, Binder? binder,
-            BindingFlags invokeAttr, CultureInfo? culture, RuntimeType[] sigTypes)
+        private protected Span<object?> CheckArguments(
+            ref StackAllocedArguments stackArgs,
+            ReadOnlySpan<object?> parameters,
+            ref bool copyBack,
+            RuntimeType[] sigTypes,
+            Binder? binder,
+            CultureInfo? culture,
+            BindingFlags invokeAttr
+        )
         {
             Debug.Assert(Unsafe.SizeOf<StackAllocedArguments>() == StackAllocedArguments.MaxStackAllocArgCount * Unsafe.SizeOf<object>(),
                 "MaxStackAllocArgCount not properly defined.");
@@ -153,7 +160,6 @@ namespace System.Reflection
             // the method. The solution is to copy the arguments to a different, not-user-visible buffer
             // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
             // considered user-visible to threads which may still be holding on to returned instances.
-
             Span<object?> copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
                     ? MemoryMarshal.CreateSpan(ref stackArgs._arg0, parameters.Length)
                     : new Span<object?>(new object?[parameters.Length]);
@@ -162,16 +168,20 @@ namespace System.Reflection
             for (int i = 0; i < parameters.Length; i++)
             {
                 object? arg = parameters[i];
-                RuntimeType argRT = sigTypes[i];
-
                 if (arg == Type.Missing)
                 {
                     p ??= GetParametersNoCopy();
-                    if (p[i].DefaultValue == System.DBNull.Value)
+                    if (p[i].DefaultValue == DBNull.Value)
+                    {
                         throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
+                    }
+
+                    copyBack = true;
                     arg = p[i].DefaultValue!;
                 }
-                copyOfParameters[i] = argRT.CheckValue(arg, binder, culture, invokeAttr);
+
+                sigTypes[i].CheckValue(ref arg, ref copyBack, binder, culture, invokeAttr);
+                copyOfParameters[i] = arg;
             }
 
             return copyOfParameters;

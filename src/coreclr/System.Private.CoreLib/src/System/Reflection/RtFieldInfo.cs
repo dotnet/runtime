@@ -17,13 +17,23 @@ namespace System.Reflection
         // lazy caching
         private string? m_name;
         private RuntimeType? m_fieldType;
-        private InvocationFlags m_invocationFlags;
+        internal FieldAccessor? m_reflectionInvoker;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (m_invocationFlags & InvocationFlags.Initialized) != 0 ?
-                    m_invocationFlags : InitializeInvocationFlags();
+            get => (Invoker._invocationFlags & InvocationFlags.Initialized) != 0 ?
+                    Invoker._invocationFlags : InitializeInvocationFlags();
+        }
+
+        private FieldAccessor Invoker
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                m_reflectionInvoker ??= new FieldAccessor(InvokeGetterNonEmit, InvokeSetterNonEmit);
+                return m_reflectionInvoker;
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -43,10 +53,10 @@ namespace System.Reflection
             // this should be an usable field, determine the other flags
             if (invocationFlags == 0)
             {
-                if ((m_fieldAttributes & FieldAttributes.InitOnly) != (FieldAttributes)0)
+                if ((m_fieldAttributes & FieldAttributes.InitOnly) != 0)
                     invocationFlags |= InvocationFlags.SpecialField;
 
-                if ((m_fieldAttributes & FieldAttributes.HasFieldRVA) != (FieldAttributes)0)
+                if ((m_fieldAttributes & FieldAttributes.HasFieldRVA) != 0)
                     invocationFlags |= InvocationFlags.SpecialField;
 
                 // find out if the field type is one of the following: Primitive, Enum or Pointer
@@ -56,7 +66,7 @@ namespace System.Reflection
             }
 
             // must be last to avoid threading problems
-            return m_invocationFlags = invocationFlags | InvocationFlags.Initialized;
+            return Invoker._invocationFlags = invocationFlags | InvocationFlags.Initialized;
         }
         #endregion
 
@@ -72,6 +82,45 @@ namespace System.Reflection
 
         #region Private Members
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => new RuntimeFieldHandleInternal(m_fieldHandle);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal object? InvokeGetterNonEmit(object? obj)
+        {
+            RuntimeType? declaringType = DeclaringType as RuntimeType;
+            RuntimeType fieldType = (RuntimeType)FieldType;
+            bool domainInitialized = false;
+
+            if (declaringType == null)
+            {
+                return RuntimeFieldHandle.GetValue(this, obj, fieldType, null, ref domainInitialized);
+            }
+            else
+            {
+                domainInitialized = declaringType.DomainInitialized;
+                object? retVal = RuntimeFieldHandle.GetValue(this, obj, fieldType, declaringType, ref domainInitialized);
+                declaringType.DomainInitialized = domainInitialized;
+                return retVal;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void InvokeSetterNonEmit(object? obj, object? value)
+        {
+            RuntimeType? declaringType = DeclaringType as RuntimeType;
+            RuntimeType fieldType = (RuntimeType)FieldType;
+            bool domainInitialized = false;
+
+            if (declaringType == null)
+            {
+                RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, null, ref domainInitialized);
+            }
+            else
+            {
+                domainInitialized = declaringType.DomainInitialized;
+                RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, declaringType, ref domainInitialized);
+                declaringType.DomainInitialized = domainInitialized;
+            }
+        }
 
         #endregion
 
@@ -137,20 +186,7 @@ namespace System.Reflection
 
             CheckConsistency(obj);
 
-            RuntimeType fieldType = (RuntimeType)FieldType;
-
-            bool domainInitialized = false;
-            if (declaringType == null)
-            {
-                return RuntimeFieldHandle.GetValue(this, obj, fieldType, null, ref domainInitialized);
-            }
-            else
-            {
-                domainInitialized = declaringType.DomainInitialized;
-                object? retVal = RuntimeFieldHandle.GetValue(this, obj, fieldType, declaringType, ref domainInitialized);
-                declaringType.DomainInitialized = domainInitialized;
-                return retVal;
-            }
+            return Invoker.InvokeGetter(obj);
         }
 
         public override object GetRawConstantValue() { throw new InvalidOperationException(); }
@@ -184,19 +220,10 @@ namespace System.Reflection
             CheckConsistency(obj);
 
             RuntimeType fieldType = (RuntimeType)FieldType;
-            value = fieldType.CheckValue(value, binder, culture, invokeAttr);
+            bool _ = false;
+            fieldType.CheckValue(ref value, ref _, binder, culture, invokeAttr);
 
-            bool domainInitialized = false;
-            if (declaringType == null)
-            {
-                RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, null, ref domainInitialized);
-            }
-            else
-            {
-                domainInitialized = declaringType.DomainInitialized;
-                RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, declaringType, ref domainInitialized);
-                declaringType.DomainInitialized = domainInitialized;
-            }
+            Invoker.InvokeSetter(obj, value);
         }
 
         [DebuggerStepThroughAttribute]

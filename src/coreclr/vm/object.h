@@ -1092,7 +1092,7 @@ public:
 };
 
 // This is the Method version of the Reflection object.
-//  A Method has adddition information.
+//  A Method has additional information:
 //   m_pMD - A pointer to the actual MethodDesc of the method.
 //   m_object - a field that has a reference type in it. Used only for RuntimeMethodInfoStub to keep the real type alive.
 // This structure matches the structure up to the m_pMD for several different managed types.
@@ -1112,6 +1112,7 @@ protected:
     OBJECTREF           m_empty5;
     OBJECTREF           m_empty6;
     OBJECTREF           m_empty7;
+    OBJECTREF           m_empty8;
     MethodDesc *        m_pMD;
 
 public:
@@ -1135,7 +1136,7 @@ public:
 };
 
 // This is the Field version of the Reflection object.
-//  A Method has adddition information.
+//  A Method has additional information:
 //   m_pFD - A pointer to the actual MethodDesc of the method.
 //   m_object - a field that has a reference type in it. Used only for RuntimeFieldInfoStub to keep the real type alive.
 // This structure matches the structure up to the m_pFD for several different managed types.
@@ -1152,6 +1153,7 @@ protected:
     INT32               m_empty2;
     OBJECTREF           m_empty3;
     OBJECTREF           m_empty4;
+    OBJECTREF           m_empty5;
     FieldDesc *         m_pFD;
 
 public:

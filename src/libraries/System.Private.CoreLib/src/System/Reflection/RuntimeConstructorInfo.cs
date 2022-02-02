@@ -95,7 +95,11 @@ namespace System.Reflection
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         public override object? Invoke(
-            object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
+            object? obj,
+            BindingFlags invokeAttr,
+            Binder? binder,
+            object?[]? parameters,
+            CultureInfo? culture)
         {
             if ((InvocationFlags & InvocationFlags.NoInvoke) != 0)
                 ThrowNoInvokeException();
@@ -117,23 +121,29 @@ namespace System.Reflection
                 return null;
             }
 
-            StackAllocedArguments stackArgs = default;
+            Debug.Assert(obj != null);
             Span<object?> arguments = default;
+            StackAllocedArguments stackArgs = default; // try to avoid intermediate array allocation if possible
+            bool copyBack = false;
             if (actualCount != 0)
             {
-                arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, ArgumentTypes);
+                copyBack = Invoker.HasRefs;
+                arguments = CheckArguments(ref stackArgs, parameters!, ref copyBack, ArgumentTypes, binder, culture, invokeAttr);
             }
 
-            object? retValue = InvokeWorker(obj, invokeAttr, arguments);
+            Invoker.Invoke(obj, arguments, invokeAttr);
 
-            // copy out. This should be made only if ByRef are present.
-            // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
-            for (int index = 0; index < arguments.Length; index++)
+            if (copyBack)
             {
-                parameters![index] = arguments[index];
+                // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
+                // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
+                for (int index = 0; index < arguments.Length; index++)
+                {
+                    parameters![index] = arguments[index];
+                }
             }
 
-            return retValue;
+            return null;
         }
 
         [DebuggerStepThroughAttribute]
@@ -157,17 +167,24 @@ namespace System.Reflection
 
             StackAllocedArguments stackArgs = default;
             Span<object?> arguments = default;
+            bool copyBack = false;
             if (actualCount != 0)
             {
-                arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, ArgumentTypes);
+                copyBack = Invoker.HasRefs;
+                arguments = CheckArguments(ref stackArgs, parameters!, ref copyBack, ArgumentTypes, binder, culture, invokeAttr);
             }
 
-            object retValue = InvokeCtorWorker(invokeAttr, arguments);
+            object retValue = Invoker.Invoke(obj: null, arguments, invokeAttr)!;
 
-            // copy out. This should be made only if ByRef are present.
-            // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
-            for (int index = 0; index < arguments.Length; index++)
-                parameters![index] = arguments[index];
+            if (copyBack)
+            {
+                // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
+                // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
+                for (int index = 0; index < arguments.Length; index++)
+                {
+                    parameters![index] = arguments[index];
+                }
+            }
 
             return retValue;
         }

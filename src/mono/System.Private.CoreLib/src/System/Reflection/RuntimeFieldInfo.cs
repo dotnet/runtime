@@ -248,7 +248,8 @@ namespace System.Reflection
             if (val != null)
             {
                 RuntimeType fieldType = (RuntimeType)FieldType;
-                val = fieldType.CheckValue(val, binder, culture, invokeAttr);
+                bool _ = false;
+                fieldType.CheckValue(ref val, ref _, binder, culture, invokeAttr);
             }
             SetValueInternal(this, obj, val);
         }
