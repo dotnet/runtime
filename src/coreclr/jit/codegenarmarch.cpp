@@ -1508,7 +1508,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     genConsumeRegs(op1);
     regNumber targetReg = REG_ZR;
 
-    GetEmitter()->emitInsLoadStoreOp(INS_ldr, EA_4BYTE, targetReg, tree);
+    GetEmitter()->emitInsLoadStoreOp(ins_Load(tree->TypeGet()), emitActualTypeSize(tree), targetReg, tree);
 #endif
 }
 
