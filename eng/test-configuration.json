@@ -3,8 +3,6 @@
   "defaultOnFailure": "fail",
   "localRerunCount": 2,
   "retryOnRules": [
-    { "testAssembly": { "wildcard": "System.Net.*" } },
-    { "testName": { "wildcard": "iOS.Simulator.*" } },
-    { "testAssembly": { "wildcard": "iOS.Simulator.*" } }
+    { "testAssembly": { "wildcard": "System.Net.*" } }
   ]
 }
