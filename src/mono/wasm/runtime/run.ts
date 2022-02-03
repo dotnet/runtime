@@ -8,6 +8,9 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args: s
         const result = await mono_run_main(main_assembly_name, args);
         set_exit_code(result);
     } catch (error) {
+        if (error instanceof ExitStatus) {
+            return;
+        }
         set_exit_code(1, error);
     }
 }
