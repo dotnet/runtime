@@ -42,6 +42,9 @@
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
 
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit/bin:$PATH" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="mkdir -p $HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit &amp;&amp; tar -xf $HELIX_CORRELATION_PAYLOAD/build/emsdk/node-tar/node.tar -C $HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit" />
+
+    <Exec Condition="'$(NeedsEMSDKNode)' == 'true'" Command="mkdir -p $(EmSdkDirForHelixPayload)node-tar &amp;&amp; tar -cf $(EmSdkDirForHelixPayload)node-tar/node.tar -C $(EmSdkDirForHelixPayload)node/14.15.5_64bit ." />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
@@ -133,7 +136,11 @@
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true'">
+    <ItemGroup Condition="'$(WindowsShell)' != 'true' and '$(NeedsEMSDKNode)' == 'true'">
+      <!-- If we need node on linux, it's bundled as tar -->
+      <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)node-tar"          Destination="build/emsdk/node-tar" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(WindowsShell)' == 'true' and '$(NeedsEMSDKNode)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)node"          Destination="build/emsdk/node" />
     </ItemGroup>
 
