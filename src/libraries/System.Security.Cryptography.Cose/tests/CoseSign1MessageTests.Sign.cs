@@ -296,7 +296,6 @@ namespace System.Security.Cryptography.Cose.Tests
         [MemberData(nameof(AllCborTypes_TestData))]
         public void SignWithAllCborTypesAsHeaderValue(bool useProtectedMap, byte[] encodedValue)
         {
-            //Diagnostics.Debugger.Launch();
             CoseHeaderMap @protected = GetHeaderMapWithAlgorithm((int)ECDsaAlgorithm.ES256);
             CoseHeaderMap unprotected = GetEmptyHeaderMap();
             var myLabel = new CoseHeaderLabel(42);
