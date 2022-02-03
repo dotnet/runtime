@@ -587,7 +587,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't yet support receiving data with AcceptAsync.
         public void AcceptAsync_WithTooSmallReceiveBuffer_Failure()
