@@ -55,16 +55,21 @@ namespace System.Net.Http
 
         private static Activity? CreateActivity(HttpRequestMessage requestMessage)
         {
+            Activity? activity = null;
             if (s_activitySource.HasListeners())
             {
-                return s_activitySource.CreateActivity(DiagnosticsHandlerLoggingStrings.ActivityName, ActivityKind.Client);
-            }
-            if (Activity.Current != null || s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, requestMessage))
-            {
-                return new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
+                activity = s_activitySource.CreateActivity(DiagnosticsHandlerLoggingStrings.ActivityName, ActivityKind.Client);
             }
 
-            return null;
+            if (activity is null)
+            {
+                if (Activity.Current is not null || s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, requestMessage))
+                {
+                    activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
+                }
+            }
+
+            return activity;
         }
 
         internal static bool IsGloballyEnabled() => GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;

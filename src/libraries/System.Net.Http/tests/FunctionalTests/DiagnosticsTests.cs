@@ -803,43 +803,6 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { false, ActivityIdFormat.W3C };
         }
 
-        /*[ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [MemberData(nameof(UseSocketsHttpHandler_WithIdFormat_MemberData))]
-        public async Task SendAsync_ExpectedActivityPropagationWithoutListener(bool useSocketsHttpHandler, ActivityIdFormat idFormat)
-        {
-            Activity parent = new Activity("parent");
-            parent.SetIdFormat(idFormat);
-            parent.Start();
-
-            await GetFactoryForVersion(UseVersion).CreateClientAndServerAsync(
-                async uri =>
-                {
-                    await GetAsync(UseVersion.ToString(), TestAsync.ToString(), uri, useSocketsHttpHandler: useSocketsHttpHandler);
-                },
-                async server =>
-                {
-                    HttpRequestData requestData = await server.HandleRequestAsync();
-                    AssertHeadersAreInjected(requestData, parent);
-                });
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task SendAsync_ExpectedActivityPropagationWithoutListenerOrParentActivity(bool useSocketsHttpHandler)
-        {
-            await GetFactoryForVersion(UseVersion).CreateClientAndServerAsync(
-                async uri =>
-                {
-                    await GetAsync(UseVersion.ToString(), TestAsync.ToString(), uri, useSocketsHttpHandler: useSocketsHttpHandler);
-                },
-                async server =>
-                {
-                    HttpRequestData requestData = await server.HandleRequestAsync();
-                    AssertNoHeadersAreInjected(requestData);
-                });
-        }*/
-
         [ConditionalTheory(nameof(EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported))]
         [InlineData("true")]
         [InlineData("1")]
@@ -1054,7 +1017,8 @@ namespace System.Net.Http.Functional.Tests
                     listenerSubscription = DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver);
                 }
 
-                Activity activity = currentActivitySet ? new Activity("parent").Start() : null;
+                Activity parent = currentActivitySet ? new Activity("parent").Start() : null;
+                Activity activity = parent;
 
                 if (!currentActivitySet)
                 {
@@ -1065,7 +1029,7 @@ namespace System.Net.Http.Functional.Tests
                         ShouldListenTo = _ => true,
                         ActivityStarted = created =>
                         {
-                            Assert.Null(activity);
+                            Assert.Null(parent);
                             activity = created;
                         }
                     });
@@ -1085,7 +1049,7 @@ namespace System.Net.Http.Functional.Tests
                             if (currentActivitySet || diagnosticListenerActivityEnabled == true || activitySourceCreatesActivity == true)
                             {
                                 Assert.NotNull(activity);
-                                AssertHeadersAreInjected(requestData, activity);
+                                AssertHeadersAreInjected(requestData, activity, parent is null);
                             }
                             else
                             {
