@@ -359,13 +359,12 @@ internal static partial class Interop
 
         internal static SecurityStatusPal SslRenegotiate(SafeSslHandle sslContext, out byte[]? outputBuffer)
         {
-            int ret = Interop.Ssl.SslRenegotiate(sslContext);
+            int ret = Interop.Ssl.SslRenegotiate(sslContext, out Ssl.SslErrorCode errorCode);
 
             outputBuffer = Array.Empty<byte>();
             if (ret != 1)
             {
-                GetSslError(sslContext, ret, out Exception? exception);
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exception);
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, GetSslError(ret, errorCode));
             }
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
@@ -385,21 +384,21 @@ internal static partial class Interop
                 }
             }
 
-            int retVal = Ssl.SslDoHandshake(context, out Ssl.SslErrorCode error);
+            int retVal = Ssl.SslDoHandshake(context, out Ssl.SslErrorCode errorCode);
             if (retVal != 1)
             {
-                if (error == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
+                if (errorCode == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
                 {
                     return SecurityStatusPalErrorCode.CredentialsNeeded;
                 }
 
-                if ((retVal != -1) || (error != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
+                if ((retVal != -1) || (errorCode != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
                 {
-                    GetSslError(context, retVal, error, Sys.GetLastErrorInfo(), out Exception? innerError );
+                    Exception? innerError = GetSslError(retVal, errorCode);
 
                     // Handshake failed, but even if the handshake does not need to read, there may be an Alert going out.
                     // To handle that we will fall-through the block below to pull it out, and we will fail after.
-                    handshakeException = new SslException(SR.Format(SR.net_ssl_handshake_failed_error, error), innerError);
+                    handshakeException = new SslException(SR.Format(SR.net_ssl_handshake_failed_error, errorCode), innerError);
                 }
             }
 
@@ -448,17 +447,7 @@ internal static partial class Interop
             ulong assertNoError = Crypto.ErrPeekError();
             Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
 #endif
-            errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
-
-            int retVal;
-            Exception? innerError = null;
-
-            retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length);
-
-            if (retVal != input.Length)
-            {
-                errorCode = GetSslError(context, retVal, out innerError);
-            }
+            int retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length, out errorCode);
 
             if (retVal != input.Length)
             {
@@ -472,7 +461,7 @@ internal static partial class Interop
                         break;
 
                     default:
-                        throw new SslException(SR.Format(SR.net_ssl_encrypt_failed, errorCode), innerError);
+                        throw new SslException(SR.Format(SR.net_ssl_encrypt_failed, errorCode), GetSslError(retVal, errorCode));
                 }
             }
             else
@@ -502,17 +491,14 @@ internal static partial class Interop
             ulong assertNoError = Crypto.ErrPeekError();
             Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
 #endif
-            errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
-
             BioWrite(context.InputBio!, buffer);
 
-            int retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(buffer), buffer.Length);
+            int retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(buffer), buffer.Length, out errorCode);
             if (retVal > 0)
             {
                 return retVal;
             }
 
-            errorCode = GetSslError(context, retVal, out Exception? innerError);
             switch (errorCode)
             {
                 // indicate end-of-file
@@ -527,7 +513,7 @@ internal static partial class Interop
                     break;
 
                 default:
-                    throw new SslException(SR.Format(SR.net_ssl_decrypt_failed, errorCode), innerError);
+                    throw new SslException(SR.Format(SR.net_ssl_decrypt_failed, errorCode), GetSslError(retVal, errorCode));
             }
 
             return 0;
@@ -648,17 +634,13 @@ internal static partial class Interop
             }
         }
 
-        private static Ssl.SslErrorCode GetSslError(SafeSslHandle context, int result, out Exception? innerError)
+        private static Exception? GetSslError(int result, Ssl.SslErrorCode retVal)
         {
-            ErrorInfo lastErrno = Sys.GetLastErrorInfo(); // cache it before we make more P/Invoke calls, just in case we need it
-            return GetSslError(context, result, Ssl.SslGetError(context, result), lastErrno, out innerError);
-        }
-
-        private static Ssl.SslErrorCode GetSslError(SafeSslHandle context, int result, Ssl.SslErrorCode retVal, ErrorInfo lastErrno, out Exception? innerError)
-        {
+            Exception? innerError;
             switch (retVal)
             {
                 case Ssl.SslErrorCode.SSL_ERROR_SYSCALL:
+                    ErrorInfo lastErrno = Sys.GetLastErrorInfo();
                     // Some I/O error occurred
                     innerError =
                         Crypto.ErrPeekError() != 0 ? Crypto.CreateOpenSslCryptographicException() : // crypto error queue not empty
@@ -677,7 +659,8 @@ internal static partial class Interop
                     innerError = null;
                     break;
             }
-            return retVal;
+
+            return innerError;
         }
 
         private static void SetSslCertificate(SafeSslContextHandle contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)

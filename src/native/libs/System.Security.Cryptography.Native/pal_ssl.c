@@ -358,14 +358,34 @@ int32_t CryptoNative_SslSessionReused(SSL* ssl)
     return SSL_session_reused(ssl) == 1;
 }
 
-int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num)
+int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num, int32_t* error)
 {
-    return SSL_write(ssl, buf, num);
+    int32_t result = SSL_write(ssl, buf, num);
+    if (result > 0)
+    {
+        *error = SSL_ERROR_NONE;
+    }
+    else
+    {
+        *error = CryptoNative_SslGetError(ssl, result);
+    }
+
+    return result;
 }
 
-int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num)
+int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
 {
-    return SSL_read(ssl, buf, num);
+    int32_t result = SSL_read(ssl, buf, num);
+    if (result > 0)
+    {
+        *error = SSL_ERROR_NONE;
+    }
+    else
+    {
+        *error = CryptoNative_SslGetError(ssl, result);
+    }
+
+    return result;
 }
 
 static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
@@ -376,7 +396,7 @@ static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
     return 1;
 }
 
-int32_t CryptoNative_SslRenegotiate(SSL* ssl)
+int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
     // The openssl context is destroyed so we can't use ticket or session resumption.
     SSL_set_options(ssl, SSL_OP_NO_TICKET | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
@@ -387,11 +407,15 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl)
         SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
         int ret = SSL_renegotiate(ssl);
         if(ret != 1)
+        {
+            *error = CryptoNative_SslGetError(ssl, ret);
             return ret;
+        }
 
-        return SSL_do_handshake(ssl);
+        return CryptoNative_SslDoHandshake(ssl, error);
     }
 
+    *error = SSL_ERROR_NONE;
     return 0;
 }
 

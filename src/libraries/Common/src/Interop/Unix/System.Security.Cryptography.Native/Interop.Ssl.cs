@@ -75,13 +75,13 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite", SetLastError = true)]
-        internal static partial int SslWrite(SafeSslHandle ssl, ref byte buf, int num);
+        internal static partial int SslWrite(SafeSslHandle ssl, ref byte buf, int num, out SslErrorCode error);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead", SetLastError = true)]
-        internal static partial int SslRead(SafeSslHandle ssl, ref byte buf, int num);
+        internal static partial int SslRead(SafeSslHandle ssl, ref byte buf, int num, out SslErrorCode error);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRenegotiate")]
-        internal static partial int SslRenegotiate(SafeSslHandle ssl);
+        internal static partial int SslRenegotiate(SafeSslHandle ssl, out SslErrorCode error);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslRenegotiatePending")]
         [return: MarshalAs(UnmanagedType.Bool)]
