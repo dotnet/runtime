@@ -5,7 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-public class Runtime_64657
+public unsafe class Runtime_64657
 {
     [DllImport("kernel32")]
     public static extern byte* VirtualAlloc(IntPtr lpAddress, nuint dwSize, uint flAllocationType, uint flProtect);
