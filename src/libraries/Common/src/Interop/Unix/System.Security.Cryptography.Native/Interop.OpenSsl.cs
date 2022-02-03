@@ -60,6 +60,14 @@ internal static partial class Interop
                      return disableTlsResume != 0;
                  }
 
+                 // Resume does not work properly on older OpenSSL versions.
+                 // This may be revisited but for now enable it only on 1.1.1 and above.
+                 if (Interop.OpenSsl.OpenSslVersionNumber() < 0x10101000)
+                 {
+                     s_disableTlsResume = 1;
+                     return true;
+                 }
+
                  // First check for the AppContext switch, giving it priority over the environment variable.
                  if (AppContext.TryGetSwitch(DisableTlsResumeCtxSwitch, out bool value))
                  {
