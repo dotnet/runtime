@@ -142,27 +142,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		}
 
 		public override TValue VisitInvocation (IInvocationOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
-		{
-			TValue instanceValue = Visit (operation.Instance, state);
-
-			var argumentsBuilder = ImmutableArray.CreateBuilder<TValue> ();
-			foreach (var argument in operation.Arguments) {
-				// For __arglist argument there might not be any parameter
-				// __arglist is only legal as the last argument to a method and there's also no supported
-				// way for it to carry annotations or participate in data flow in any way, so it's OK to ignore it.
-				// Since it's always last, it's also OK to simply pass a shorter arguments array to the call.
-				if (argument?.Parameter == null)
-					break;
-
-				argumentsBuilder.Add (VisitArgument (argument, state));
-			}
-
-			return HandleMethodCall (
-				operation.TargetMethod,
-				instanceValue,
-				argumentsBuilder.ToImmutableArray (),
-				operation);
-		}
+			=> ProcessMethodCall (operation, operation.TargetMethod, operation.Instance, operation.Arguments, state);
 
 		public static IMethodSymbol GetPropertyMethod (IPropertyReferenceOperation operation)
 		{
@@ -220,6 +200,42 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			var operandValue = Visit (operation.Operand, state);
 			return operation.OperatorMethod == null ? operandValue : TopValue;
+		}
+
+		public override TValue VisitObjectCreation (IObjectCreationOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			if (operation.Constructor == null)
+				return TopValue;
+
+			return ProcessMethodCall (operation, operation.Constructor, null, operation.Arguments, state);
+		}
+
+		TValue ProcessMethodCall (
+			IOperation operation,
+			IMethodSymbol method,
+			IOperation? instance,
+			ImmutableArray<IArgumentOperation> arguments,
+			LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			TValue instanceValue = Visit (instance, state);
+
+			var argumentsBuilder = ImmutableArray.CreateBuilder<TValue> ();
+			foreach (var argument in arguments) {
+				// For __arglist argument there might not be any parameter
+				// __arglist is only legal as the last argument to a method and there's also no supported
+				// way for it to carry annotations or participate in data flow in any way, so it's OK to ignore it.
+				// Since it's always last, it's also OK to simply pass a shorter arguments array to the call.
+				if (argument?.Parameter == null)
+					break;
+
+				argumentsBuilder.Add (VisitArgument (argument, state));
+			}
+
+			return HandleMethodCall (
+				method,
+				instanceValue,
+				argumentsBuilder.ToImmutableArray (),
+				operation);
 		}
 	}
 }
