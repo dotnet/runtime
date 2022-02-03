@@ -30,7 +30,8 @@ namespace System.Diagnostics
             // Performance optimization for the local machine:
             // First try to OpenProcess by id, if valid handle is returned verify that process is running
             // Otherwise enumerate all processes and compare ids
-            if (!IsRemoteMachine(machineName))
+            // Attempt to open handle for Idle process (processId == 0) fails with ERROR_INVALID_PARAMETER
+            if (processId != 0 && !IsRemoteMachine(machineName))
             {
                 using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION | ProcessOptions.SYNCHRONIZE, false, processId))
                 {
