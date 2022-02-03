@@ -119,46 +119,6 @@ jobs:
 #### MONO LEGS
 
 #
-# Build the whole product using Mono and run libraries tests, for Wasm.Build.Tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-    # BuildWasmApps should only happen on the extra platforms build as we already have coverage for this build on PRs.
-    - Browser_wasm
-    - Browser_wasm_win
-    variables:
-      # map dependencies variables to local variables
-      - name: wasmbuildtestsContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'] ]
-    jobParameters:
-      isExtraPlatforms: ${{ variables.isExtraPlatformsBuild }}
-      testGroup: innerloop
-      nameSuffix: WasmBuildTests
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
-      timeoutInMinutes: 180
-      condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs)
-        scenarios:
-        - buildwasmapps
-        condition: >-
-          or(
-            eq(variables['wasmbuildtestsContainsChange'], true),
-            eq(variables['isRollingBuild'], true))
-
-#
 # Build Browser_wasm, on windows, run console and browser tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
