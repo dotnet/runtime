@@ -36433,11 +36433,11 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
         {
             if (foundp && (cg_pointers_found == 0))
             {
-                    dprintf(3,(" Clearing cards [%Ix, %Ix[ ", (size_t)card_address(card),
-                               (size_t)card_address(end_card)));
-                    clear_cards (card, end_card);
-                    n_card_set -= (end_card - card);
-                    total_cards_cleared += (end_card - card);
+                dprintf(3,(" Clearing cards [%Ix, %Ix[ ", (size_t)card_address(card),
+                            (size_t)card_address(end_card)));
+                clear_cards (card, end_card);
+                n_card_set -= (end_card - card);
+                total_cards_cleared += (end_card - card);
             }
             n_eph += cg_pointers_found;
             cg_pointers_found = 0;
