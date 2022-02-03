@@ -3,7 +3,7 @@
     <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  <!-- Use local targeting pack for NetCoreAppCurrent. -->
+   <!--Use local targeting pack for NetCoreAppCurrent.--> 
   <Target Name="UpdateTargetingAndRuntimePack"
           AfterTargets="ResolveFrameworkReferences">
     <PropertyGroup>
