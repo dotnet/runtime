@@ -604,7 +604,7 @@ namespace System.Net.Sockets.Tests
                 byte[] buffer = new byte[1];
                 acceptArgs.SetBuffer(buffer, 0, buffer.Length);
 
-                AssertExtensions.Throws<ArgumentException>(null, () => server.AcceptAsync(acceptArgs));
+                AssertExtensions.Throws<ArgumentException>("Count", () => server.AcceptAsync(acceptArgs));
             }
         }
 
