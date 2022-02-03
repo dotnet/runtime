@@ -812,6 +812,11 @@ namespace System.Net.Security
             // This may be updated at some point based on size of existing chunk, rented buffer and size of 'buffer'.
             //ResetReadBuffer();
 
+            // make sure there is enough space at the end of the buffer, if not, move contents to the beginning of the buffer
+            // note that frameSize may be int.MaxValue if not we didn't receive the TLS header yet.
+            // TODO: check how this behaves when stressed
+            _buffer.EnsureAvailableSpace(Math.Min(frameSize, _buffer.Capacity - _buffer.ActiveBytes));
+
             // _internalOffset is 0 after ResetReadBuffer and we use _internalBufferCount to determined where to read.
             //while (_internalBufferCount < frameSize)
             while (_buffer.EncryptedBytes < frameSize)

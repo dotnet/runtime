@@ -67,20 +67,20 @@ namespace System.Net.Security
         // FrameOverhead = 5 byte header + HMAC trailer + padding (if block cipher)
         // HMAC: 32 bytes for SHA-256 or 20 bytes for SHA-1 or 16 bytes for the MD5
         private const int FrameOverhead = 64;
-        private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
+        private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
 
-        private SslBuffer _buffer = new SslBuffer(InitialHandshakeBufferSize);
+        private SslBuffer _buffer = new SslBuffer(ReadBufferSize);
         private struct SslBuffer
         {
             private ArrayBuffer _buffer;
             private int _decryptedBytes;
-            private int _encryptedOffset;
+            private int _decryptedPadding; // padding after decrypted part of the active memory
 
             public SslBuffer(int initialSize)
             {
                 _buffer = new ArrayBuffer(initialSize, true);
                 _decryptedBytes = 0;
-                _encryptedOffset = 0;
+                _decryptedPadding = 0;
             }
 
             public Span<byte> DecryptedSpan => _buffer.ActiveSpan.Slice(0, _decryptedBytes);
@@ -91,11 +91,11 @@ namespace System.Net.Security
 
             public int ActiveBytes => _buffer.ActiveLength;
 
-            public Span<byte> EncryptedSpan => _buffer.ActiveSpan.Slice(_encryptedOffset);
+            public Span<byte> EncryptedSpan => _buffer.ActiveSpan.Slice(_decryptedBytes + _decryptedPadding);
 
-            public Memory<byte> EncryptedMemory => _buffer.ActiveMemory.Slice(_encryptedOffset);
+            public Memory<byte> EncryptedMemory => _buffer.ActiveMemory.Slice(_decryptedBytes + _decryptedPadding);
 
-            public int EncryptedBytes => _buffer.ActiveLength - _encryptedOffset;
+            public int EncryptedBytes => _buffer.ActiveLength - _decryptedPadding - _decryptedBytes;
 
             public Span<byte> AvailableSpan => _buffer.AvailableSpan;
 
@@ -112,13 +112,14 @@ namespace System.Net.Security
                 Debug.Assert(byteCount <= _decryptedBytes, "byteCount <= _decryptedBytes");
 
                 _buffer.Discard(byteCount);
-                _encryptedOffset -= byteCount;
                 _decryptedBytes -= byteCount;
 
+                // if drained all decrypted data, discard also the tail of the frame so that only
+                // encrypted part of the active memory of the _buffer remains
                 if (_decryptedBytes == 0)
                 {
-                    _buffer.Discard(_encryptedOffset);
-                    _encryptedOffset = 0;
+                    _buffer.Discard(_decryptedPadding);
+                    _decryptedPadding = 0;
                 }
             }
 
@@ -126,27 +127,36 @@ namespace System.Net.Security
             {
                 // should be called only during handshake -> no pending decrypted data
                 Debug.Assert(_decryptedBytes == 0, "_decryptedBytes == 0");
-                Debug.Assert(_encryptedOffset == 0, "_encryptedOffset == 0");
+                Debug.Assert(_decryptedPadding == 0, "_encryptedOffset == 0");
 
                 _buffer.Discard(byteCount);
             }
 
             public void OnDecrypted(int decryptedOffset, int decryptedCount, int frameSize)
             {
-                Debug.Assert(DecryptedBytes == 0, "DecryptedBytes == 0");
+                Debug.Assert(_decryptedBytes == 0, "_decryptedBytes == 0");
+                Debug.Assert(_decryptedPadding == 0, "_encryptedOffset == 0");
 
-                // discard padding before decrypted contents
-                _buffer.Discard(_encryptedOffset + decryptedOffset);
+                if (decryptedCount > 0)
+                {
+                    // discard padding before decrypted contents
+                    _buffer.Discard(decryptedOffset);
 
-                _encryptedOffset += frameSize;
-                _decryptedBytes = decryptedCount;
+                    _decryptedPadding = frameSize - decryptedOffset - decryptedCount;
+                    _decryptedBytes = decryptedCount;
+                }
+                else
+                {
+                    // No user data available, discard entire frame
+                    _buffer.Discard(frameSize);
+                }
             }
 
             public void Dispose()
             {
                 _buffer.Dispose();
                 _decryptedBytes = 0;
-                _encryptedOffset = 0;
+                _decryptedPadding = 0;
             }
         }
 
@@ -830,7 +840,7 @@ namespace System.Net.Security
                     //_decryptedBytesCount--;
                     //ReturnReadBufferIfEmpty();
                     int b = _buffer.DecryptedSpan[0];
-                    _buffer.Discard(0);
+                    _buffer.Discard(1);
                     return b;
                 }
             }
