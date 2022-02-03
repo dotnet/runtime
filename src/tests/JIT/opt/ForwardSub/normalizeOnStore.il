@@ -44,7 +44,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit ForwardSubTests
+.class private auto ansi beforefieldinit ForwardSubNormalizeOnStore
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static int32 

@@ -88,6 +88,11 @@
 //   and in the same EH region.
 // * Rerun this later, after we have built SSA, and handle single-def single-use
 //   from SSA perspective.
+// * Fix issue in morph that can unsoundly reorder call args, and remove
+//   extra effects computation from ForwardSubVisitor.
+// * We can be more aggressive with GTF_IND_INVARIANT / GTF_IND_NONFAULTING
+//   nodes--even though they may be marked GTF_GLOB_REF, they can be freely
+//   reordered. See if this offers any benefit.
 //
 //------------------------------------------------------------------------
 
@@ -174,6 +179,9 @@ bool Compiler::fgForwardSubBlock(BasicBlock* block)
 // Also computes the set of side effects that happen "before" the use,
 // and counts the size of the tree.
 //
+// Effects accounting is complicated by missing flags and by the need
+// to avoid introducing interfering call args.
+//
 class ForwardSubVisitor final : public GenTreeVisitor<ForwardSubVisitor>
 {
 public:
@@ -189,6 +197,7 @@ public:
         , m_use(nullptr)
         , m_node(nullptr)
         , m_parentNode(nullptr)
+        , m_callAncestor(nullptr)
         , m_lclNum(lclNum)
         , m_useCount(0)
         , m_useFlags(GTF_EMPTY)
@@ -234,6 +243,19 @@ public:
                     m_use        = use;
                     m_useFlags   = m_accumulatedFlags;
                     m_parentNode = parent;
+
+                    // If this use contributes to a call arg we need to
+                    // remember the call and handle it specially when we
+                    // see it later in the postorder walk.
+                    //
+                    for (int i = 1; i < m_ancestors.Height(); i++)
+                    {
+                        if (m_ancestors.Top(i)->IsCall())
+                        {
+                            m_callAncestor = m_ancestors.Top(i)->AsCall();
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -244,6 +266,34 @@ public:
             if (varDsc->IsAddressExposed())
             {
                 m_accumulatedFlags |= GTF_GLOB_REF;
+            }
+        }
+
+        // Is this the use's call ancestor?
+        //
+        if ((m_callAncestor != nullptr) && (node == m_callAncestor))
+        {
+            // To be conservative and avoid issues with morph
+            // reordering call args, we merge in effects of all args
+            // to this call.
+            //
+            // Remove this if/when morph's arg sorting is fixed.
+            //
+            GenTreeFlags oldUseFlags = m_useFlags;
+
+            if (m_callAncestor->gtCallThisArg != nullptr)
+            {
+                m_useFlags |= (m_callAncestor->gtCallThisArg->GetNode()->gtFlags & GTF_GLOB_EFFECT);
+            }
+
+            for (GenTreeCall::Use& use : m_callAncestor->Args())
+            {
+                m_useFlags |= (use.GetNode()->gtFlags & GTF_GLOB_EFFECT);
+            }
+
+            if (oldUseFlags != m_useFlags)
+            {
+                JITDUMP(" [added other call arg use flags: 0x%x]", m_useFlags & ~oldUseFlags);
             }
         }
 
@@ -291,6 +341,7 @@ private:
     GenTree**    m_use;
     GenTree*     m_node;
     GenTree*     m_parentNode;
+    GenTreeCall* m_callAncestor;
     unsigned     m_lclNum;
     unsigned     m_useCount;
     GenTreeFlags m_useFlags;
@@ -710,16 +761,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     if (fsv.GetNode()->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
     {
         JITDUMP(" would change multi-reg (substitution)\n");
-        return false;
-    }
-
-    // If we're substituting a call into a call arg use, we may run afoul of
-    // call operand reordering in morph, where a call can move past an
-    // (unmarked) aliased local ref.
-    //
-    if (fwdSubNode->IsCall() && fsv.IsCallArg())
-    {
-        JITDUMP(" tree to sub is call, use is call arg\n");
         return false;
     }
 

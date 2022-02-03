@@ -9,7 +9,7 @@ using System;
 using System.Runtime.CompilerServices;
 using InlineIL;
 
-class ForwardSubTests
+class ForwardSubNormalizeOnStore
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Problem(int a)
