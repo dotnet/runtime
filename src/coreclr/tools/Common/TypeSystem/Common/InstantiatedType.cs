@@ -49,9 +49,9 @@ namespace Internal.TypeSystem
             }
         }
 
-        private MetadataType _baseType /* = this */;
+        private MetadataType? _baseType /* = this */;
 
-        private MetadataType InitializeBaseType()
+        private MetadataType? InitializeBaseType()
         {
             var uninst = _typeDef.MetadataBaseType;
 

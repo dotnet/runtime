@@ -349,7 +349,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Current _modules element that should be returned by Current (updated in MoveNext).
         /// </summary>
-        private NativeFormatModuleInfo _currentModule;
+        private NativeFormatModuleInfo? _currentModule;
 
         /// <summary>
         /// Initialize the module enumerator state machine and locate the preferred module index.

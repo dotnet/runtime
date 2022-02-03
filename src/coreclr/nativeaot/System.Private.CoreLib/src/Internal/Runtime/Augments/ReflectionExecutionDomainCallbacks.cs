@@ -26,7 +26,7 @@ namespace Internal.Runtime.Augments
     public abstract class ReflectionExecutionDomainCallbacks
     {
         // Api's that are exposed in System.Runtime but are really reflection apis.
-        public abstract Type GetType(string typeName, Func<AssemblyName, Assembly>? assemblyResolver, Func<Assembly, string, bool, Type>? typeResolver, bool throwOnError, bool ignoreCase, string defaultAssembly);
+        public abstract Type GetType(string typeName, Func<AssemblyName, Assembly?>? assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase, string defaultAssembly);
 
         public abstract IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle);
 

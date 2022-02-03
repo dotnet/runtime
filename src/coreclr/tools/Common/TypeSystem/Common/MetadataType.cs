@@ -58,7 +58,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Same as <see cref="TypeDesc.BaseType"/>, but the result is a MetadataType (avoids casting).
         /// </summary>
-        public abstract MetadataType MetadataBaseType { get; }
+        public abstract MetadataType? MetadataBaseType { get; }
 
         // Make sure children remember to override both MetadataBaseType and BaseType.
         public abstract override DefType BaseType { get; }

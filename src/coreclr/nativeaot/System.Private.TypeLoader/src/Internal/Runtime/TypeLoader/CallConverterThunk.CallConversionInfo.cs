@@ -93,13 +93,13 @@ namespace Internal.Runtime.TypeLoader
             if (this == obj) return true;
 
             CallConversionInfo other = obj as CallConversionInfo;
-            if (other == null) return false;
-
             return Equals(other);
         }
 
-        public bool Equals(CallConversionInfo other)
+        public bool Equals(CallConversionInfo? other)
         {
+            if (other == null) return false;
+
             if (_registrationKind != other._registrationKind) return false;
             if (_thunkKind != other._thunkKind) return false;
             if (_targetFunctionPointer != other._targetFunctionPointer) return false;

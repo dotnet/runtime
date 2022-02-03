@@ -88,7 +88,7 @@ namespace Internal.TypeSystem
         /// If Offsets is non-null, then all field based layout is complete.
         /// Otherwise, only the non-field based data is considered to be complete
         /// </summary>
-        public FieldAndOffset[] Offsets;
+        public FieldAndOffset[]? Offsets;
     }
 
     public struct StaticsBlock

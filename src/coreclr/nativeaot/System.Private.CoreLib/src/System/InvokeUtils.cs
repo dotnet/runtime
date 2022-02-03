@@ -352,7 +352,7 @@ namespace System
             IntPtr dynamicInvokeHelperMethod,
             IntPtr dynamicInvokeHelperGenericDictionary,
             object targetMethodOrDelegate,
-            object[]? parameters,
+            object?[]? parameters,
             BinderBundle? binderBundle,
             bool wrapInTargetInvocationException,
             bool methodToCallIsThisCall = true)
@@ -509,7 +509,7 @@ namespace System
             }
         }
 
-        internal static object DynamicInvokeBoxedValuetypeReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedValuetype, object[]? parameters, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType, ref object[] nullableCopyBackObjects)
+        internal static object DynamicInvokeBoxedValuetypeReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedValuetype, object?[]? parameters, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType, ref object[] nullableCopyBackObjects)
         {
             object finalObjectToReturn = boxedValuetype;
             EETypePtr eeType = type.ToEETypePtr();
