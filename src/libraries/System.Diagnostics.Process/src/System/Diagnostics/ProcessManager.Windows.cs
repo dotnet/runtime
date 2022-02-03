@@ -28,15 +28,16 @@ namespace System.Diagnostics
         public static bool IsProcessRunning(int processId, string machineName)
         {
             // Performance optimization for the local machine:
-            // First try to OpenProcess by id, if valid handle is returned, the process is definitely running
+            // First try to OpenProcess by id, if valid handle is returned verify that process is running
             // Otherwise enumerate all processes and compare ids
             if (!IsRemoteMachine(machineName))
             {
-                using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_INFORMATION, false, processId))
+                using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION | ProcessOptions.SYNCHRONIZE, false, processId))
                 {
                     if (!processHandle.IsInvalid)
                     {
-                        return true;
+                        bool signaled = false;
+                        return !HasExited(processHandle, ref signaled, out _);
                     }
                 }
             }
@@ -246,6 +247,43 @@ namespace System.Diagnostics
                 throw new Win32Exception(result);
             }
             return threadHandle;
+        }
+
+        // Handle should be valid and have PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE access
+        public static bool HasExited(SafeProcessHandle handle, ref bool signaled, out int exitCode)
+        {
+            // Although this is the wrong way to check whether the process has exited,
+            // it was historically the way we checked for it, and a lot of code then took a dependency on
+            // the fact that this would always be set before the pipes were closed, so they would read
+            // the exit code out after calling ReadToEnd() or standard output or standard error. In order
+            // to allow 259 to function as a valid exit code and to break as few people as possible that
+            // took the ReadToEnd dependency, we check for an exit code before doing the more correct
+            // check to see if we have been signaled.
+            if (Interop.Kernel32.GetExitCodeProcess(handle, out exitCode) && exitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)
+            {
+                return true;
+            }
+
+            // The best check for exit is that the kernel process object handle is invalid,
+            // or that it is valid and signaled.  Checking if the exit code != STILL_ACTIVE
+            // does not guarantee the process is closed,
+            // since some process could return an actual STILL_ACTIVE exit code (259).
+            if (!signaled) // if we just came from Process.WaitForExit, don't repeat
+            {
+                using (var wh = new Interop.Kernel32.ProcessWaitHandle(handle))
+                {
+                    signaled = wh.WaitOne(0);
+                }
+            }
+            if (signaled)
+            {
+                if (!Interop.Kernel32.GetExitCodeProcess(handle, out exitCode))
+                    throw new Win32Exception();
+
+                return true;
+            }
+
+            return false;
         }
     }
 
