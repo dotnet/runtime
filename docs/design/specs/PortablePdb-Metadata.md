@@ -64,6 +64,8 @@ There shall be no duplicate rows in the _Document_ table, based upon document na
 
 _Name_ shall not be nil. It can however encode an empty name string.
 
+_Hash_ is the file content hashed using the specified _HashAlgorithm_. It is used to validate that a source file matches the one used by the compiler when compiling the source code.
+
 The values for which field _Language_ has a defined meaning are listed in the following tables along with the corresponding interpretation:
 
 | _Language_ field value               | language     |

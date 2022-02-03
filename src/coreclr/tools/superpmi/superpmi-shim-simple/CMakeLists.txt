@@ -62,4 +62,4 @@ else()
     )
 endif(CLR_CMAKE_HOST_UNIX)
 
-install_clr(TARGETS superpmi-shim-simple DESTINATIONS .)
+install_clr(TARGETS superpmi-shim-simple DESTINATIONS . COMPONENT spmi)

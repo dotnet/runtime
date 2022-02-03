@@ -242,7 +242,7 @@ globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.
 
 function set_exit_code(exit_code, reason) {
     if (reason) {
-        console.error(reason.toString());
+        console.error(`${JSON.stringify(reason)}`);
         if (reason.stack) {
             console.error(reason.stack);
         }
@@ -272,6 +272,8 @@ function set_exit_code(exit_code, reason) {
         };
         stop_when_ws_buffer_empty();
 
+    } else if (is_node) {
+        process.exit(exit_code);
     } else if (App && App.INTERNAL) {
         App.INTERNAL.mono_wasm_exit(exit_code);
     }
@@ -353,6 +355,27 @@ try {
 } catch (e) {
     console.error(e);
 }
+
+if (is_node) {
+    const modulesToLoad = processedArguments.setenv["NPM_MODULES"];
+    if (modulesToLoad) {
+        modulesToLoad.split(',').forEach(module => {
+            const parts = module.split(':');
+
+            let message = `Loading npm '${parts[0]}'`;
+            const moduleExport = require(parts[0]);
+            if (parts.length == 2) {
+                message += ` and attaching to global as '${parts[1]}'.`;
+                globalThis[parts[1]] = moduleExport;
+            }
+
+            console.log(message);
+        });
+    }
+}
+
+// Must be after loading npm modules.
+processedArguments.setenv["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
 
 async function loadDotnet(file) {
     let loadScript = undefined;

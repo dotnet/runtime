@@ -237,9 +237,6 @@
   <data name="Serialization_NoMemberInfo" xml:space="preserve">
     <value>No MemberInfo for Object {0}.</value>
   </data>
-  <data name="Serialization_DuplicateSelector" xml:space="preserve">
-    <value>Type {0} and the types derived from it (such as {1}) are not permitted to be deserialized at this security level.</value>
-  </data>
   <data name="Serialization_SurrogateCycleInArgument" xml:space="preserve">
     <value>Selector contained a cycle.</value>
   </data>

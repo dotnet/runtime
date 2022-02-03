@@ -30,7 +30,7 @@ namespace ILCompiler
 
         public override void AddDependeciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (method.IsPInvoke)
+            if (method.IsPInvoke && method.OwningType is MetadataType type && MarshalHelpers.IsRuntimeMarshallingEnabled(type.Module))
             {
                 dependencies = dependencies ?? new DependencyList();
 
@@ -73,12 +73,7 @@ namespace ILCompiler
                     reportedMethod = delegateThunkMethod.InvokeMethod;
                 }
 
-                var message = new DiagnosticString(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(method));
-                _logger.LogWarning(
-                    message,
-                    (int)DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed,
-                    reportedMethod,
-                    MessageSubCategory.AotAnalysis);
+                _logger.LogWarning(reportedMethod, DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed, DiagnosticUtilities.GetMethodSignatureDisplayName(method));
             }
 
             // struct may contain delegate fields, hence we need to add dependencies for it

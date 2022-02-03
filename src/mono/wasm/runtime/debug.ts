@@ -95,6 +95,10 @@ export function mono_wasm_detach_debugger(): void {
     cwraps.mono_wasm_set_is_debugger_attached(false);
 }
 
+export function mono_wasm_change_debugger_log_level(level: number): void {
+    cwraps.mono_wasm_change_debugger_log_level(level);
+}
+
 /**
  * Raises an event for the debug proxy
  */
@@ -179,7 +183,7 @@ export function mono_wasm_call_function_on(request: CallRequest): CFOResponse {
 
     const fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
 
-    const fn_body_template = `var fn = ${request.functionDeclaration}; return fn.apply(proxy, [${fn_args}]);`;
+    const fn_body_template = `const fn = ${request.functionDeclaration}; return fn.apply(proxy, [${fn_args}]);`;
     const fn_defn = new Function("proxy", fn_body_template);
     const fn_res = fn_defn(proxy);
 

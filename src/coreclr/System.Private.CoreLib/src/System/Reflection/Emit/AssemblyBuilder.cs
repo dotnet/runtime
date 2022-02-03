@@ -32,94 +32,6 @@ using System.Threading;
 
 namespace System.Reflection.Emit
 {
-    // When the user calls AppDomain.DefineDynamicAssembly the loader creates a new InternalAssemblyBuilder.
-    // This InternalAssemblyBuilder can be retrieved via a call to Assembly.GetAssemblies() by untrusted code.
-    // In the past, when InternalAssemblyBuilder was AssemblyBuilder, the untrusted user could down cast the
-    // Assembly to an AssemblyBuilder and emit code with the elevated permissions of the trusted code which
-    // originally created the AssemblyBuilder via DefineDynamicAssembly. Today, this can no longer happen
-    // because the Assembly returned via AssemblyGetAssemblies() will be an InternalAssemblyBuilder.
-
-    // Only the caller of DefineDynamicAssembly will get an AssemblyBuilder.
-    // There is a 1-1 relationship between InternalAssemblyBuilder and AssemblyBuilder.
-    // AssemblyBuilder is composed of its InternalAssemblyBuilder.
-    // The AssemblyBuilder data members (e.g. m_foo) were changed to properties which then delegate
-    // the access to the composed InternalAssemblyBuilder. This way, AssemblyBuilder simply wraps
-    // InternalAssemblyBuilder and still operates on InternalAssemblyBuilder members.
-    // This also makes the change transparent to the loader. This is good because most of the complexity
-    // of Assembly building is in the loader code so not touching that code reduces the chance of
-    // introducing new bugs.
-    internal sealed class InternalAssemblyBuilder : RuntimeAssembly
-    {
-        private InternalAssemblyBuilder() { }
-
-        public override bool Equals(object? obj)
-        {
-            if (obj == null)
-            {
-                return false;
-            }
-
-            if (obj is InternalAssemblyBuilder)
-            {
-                return (object)this == obj;
-            }
-
-            return obj.Equals(this);
-        }
-
-        public override int GetHashCode() => base.GetHashCode();
-
-        // Assembly methods that are overridden by AssemblyBuilder should be overridden by InternalAssemblyBuilder too
-        #region Methods inherited from Assembly
-
-        public override string[] GetManifestResourceNames()
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
-        public override FileStream GetFile(string name)
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
-        public override FileStream[] GetFiles(bool getResourceModules)
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        public override Stream? GetManifestResourceStream(Type type, string name)
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        public override Stream? GetManifestResourceStream(string name)
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        public override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        public override string Location => string.Empty;
-
-        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
-        public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-
-        [RequiresUnreferencedCode("Types might be removed")]
-        public override Type[] GetExportedTypes()
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        public override string ImageRuntimeVersion => Assembly.GetExecutingAssembly().ImageRuntimeVersion;
-
-        #endregion
-    }
-
     public sealed partial class AssemblyBuilder : Assembly
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -129,14 +41,14 @@ namespace System.Reflection.Emit
 
         // This is only valid in the "external" AssemblyBuilder
         internal AssemblyBuilderData _assemblyData;
-        private readonly InternalAssemblyBuilder _internalAssemblyBuilder;
+        private readonly RuntimeAssembly _internalAssembly;
         private ModuleBuilder _manifestModuleBuilder;
         // Set to true if the manifest module was returned by code:DefineDynamicModule to the user
         private bool _isManifestModuleUsedAsDefinedModule;
 
         private const string ManifestModuleName = "RefEmit_InMemoryManifestModule";
 
-        internal ModuleBuilder GetModuleBuilder(InternalModuleBuilder module)
+        internal ModuleBuilder GetModuleBuilder(RuntimeModule module)
         {
             Debug.Assert(module != null);
             Debug.Assert(InternalAssembly == module.Assembly);
@@ -155,7 +67,7 @@ namespace System.Reflection.Emit
 
         internal object SyncRoot => InternalAssembly.SyncRoot;
 
-        internal InternalAssemblyBuilder InternalAssembly => _internalAssemblyBuilder;
+        internal RuntimeAssembly InternalAssembly => _internalAssembly;
 
         #endregion
 
@@ -190,13 +102,13 @@ namespace System.Reflection.Emit
                 assemblyAttributes = new List<CustomAttributeBuilder>(unsafeAssemblyAttributes);
             }
 
-            Assembly? retAssembly = null;
+            RuntimeAssembly? retAssembly = null;
             CreateDynamicAssembly(ObjectHandleOnStack.Create(ref name),
                                   new StackCrawlMarkHandle(ref stackMark),
                                   (int)access,
                                   ObjectHandleOnStack.Create(ref assemblyLoadContext),
                                   ObjectHandleOnStack.Create(ref retAssembly));
-            _internalAssemblyBuilder = (InternalAssemblyBuilder)retAssembly!;
+            _internalAssembly = retAssembly!;
 
             _assemblyData = new AssemblyBuilderData(access);
 
@@ -216,7 +128,7 @@ namespace System.Reflection.Emit
         [MemberNotNull(nameof(_manifestModuleBuilder))]
         private void InitManifestModule()
         {
-            InternalModuleBuilder modBuilder = (InternalModuleBuilder)GetInMemoryAssemblyModule(InternalAssembly);
+            RuntimeModule modBuilder = (RuntimeModule)GetInMemoryAssemblyModule(InternalAssembly);
 
             // Note that this ModuleBuilder cannot be used for RefEmit yet
             // because it hasn't been initialized.
@@ -314,14 +226,7 @@ namespace System.Reflection.Emit
 
         private ModuleBuilder DefineDynamicModuleInternalNoLock(string name)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
             if (name[0] == '\0')
             {
                 throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
@@ -393,10 +298,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override bool Equals(object? obj) => InternalAssembly.Equals(obj);
+        public override bool Equals(object? obj) => base.Equals(obj);
 
-        // Need a dummy GetHashCode to pair with Equals
-        public override int GetHashCode() => InternalAssembly.GetHashCode();
+        public override int GetHashCode() => base.GetHashCode();
 
         #region ICustomAttributeProvider Members
         public override object[] GetCustomAttributes(bool inherit) =>
@@ -467,14 +371,7 @@ namespace System.Reflection.Emit
         /// <param name="name">The name of module for the look up.</param>
         private ModuleBuilder? GetDynamicModuleNoLock(string name)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             for (int i = 0; i < _assemblyData._moduleBuilderList.Count; i++)
             {

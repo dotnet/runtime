@@ -45,6 +45,9 @@ if(CLR_CMAKE_HOST_ARCH_AMD64)
   set(PAL_ARCH_SOURCES_DIR amd64)
 elseif(CLR_CMAKE_HOST_ARCH_ARM)
   set(PAL_ARCH_SOURCES_DIR arm)
+elseif(CLR_CMAKE_HOST_ARCH_ARMV6)
+  set(PAL_ARCH_SOURCES_DIR arm)
+  add_definitions(-D__armv6__)
 elseif(CLR_CMAKE_HOST_ARCH_ARM64)
   set(PAL_ARCH_SOURCES_DIR arm64)
 elseif(CLR_CMAKE_HOST_ARCH_I386)
@@ -143,14 +146,12 @@ set(SOURCES
   init/pal.cpp
   init/sxs.cpp
   loader/module.cpp
-  loader/modulename.cpp
   locale/unicode.cpp
   locale/unicodedata.cpp
   locale/utf8.cpp
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
-  memory/local.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp
   misc/environ.cpp

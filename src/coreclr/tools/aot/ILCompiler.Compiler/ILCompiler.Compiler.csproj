@@ -373,6 +373,7 @@
     <Compile Include="Compiler\EventPseudoDesc.cs" />
     <Compile Include="Compiler\ExpectedIsaFeaturesRootProvider.cs" />
     <Compile Include="Compiler\ExternSymbolMappedField.cs" />
+    <Compile Include="Compiler\FeatureSettings.cs" />
     <Compile Include="Compiler\FeatureSwitchManager.cs" />
     <Compile Include="Compiler\GeneratingMetadataManager.cs" />
     <Compile Include="Compiler\GenericRootProvider.cs" />
@@ -527,6 +528,7 @@
     <Compile Include="Compiler\ObjectDumper.cs" />
     <Compile Include="Compiler\ExportsFileWriter.cs" />
     <Compile Include="Compiler\ProcessLinkerXmlBase.cs" />
+    <Compile Include="Compiler\ProcessXmlBase.cs" />
     <Compile Include="Compiler\PropertyPseudoDesc.cs" />
     <Compile Include="Compiler\RootingHelpers.cs" />
     <Compile Include="Compiler\RootingServiceProvider.cs" />
