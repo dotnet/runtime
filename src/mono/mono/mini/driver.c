@@ -2067,9 +2067,12 @@ mono_main (int argc, char* argv[])
 	MonoDomain *domain;
 	MonoImageOpenStatus open_status;
 	const char* aname, *mname = NULL;
-	int i, count = 1;
-	guint32 opt, action = DO_EXEC, recompilation_times = 1;
+	int i;
+#ifndef DISABLE_JIT
+	int count = 1;
 	MonoGraphOptions mono_graph_options = (MonoGraphOptions)0;
+#endif
+	guint32 opt, action = DO_EXEC, recompilation_times = 1;
 	int mini_verbose_level = 0;
 	char *trace_options = NULL;
 	char *aot_options = NULL;
@@ -2222,6 +2225,7 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--mixed-mode") == 0) {
 			mixed_mode = TRUE;
 #endif
+#ifndef DISABLE_JIT
 		} else if (strcmp (argv [i], "--ncompile") == 0) {
 			if (i + 1 >= argc){
 				fprintf (stderr, "error: --ncompile requires an argument\n");
@@ -2229,6 +2233,7 @@ mono_main (int argc, char* argv[])
 			}
 			count = atoi (argv [++i]);
 			action = DO_BENCH;
+#endif
 		} else if (strcmp (argv [i], "--trace") == 0) {
 			trace_options = (char*)"";
 		} else if (strncmp (argv [i], "--trace=", 8) == 0) {
@@ -2346,6 +2351,7 @@ mono_main (int argc, char* argv[])
 
 			mname = argv [++i];
 			action = DO_BENCH;
+#ifndef DISABLE_JIT
 		} else if (strncmp (argv [i], "--graph=", 8) == 0) {
 			if (i + 1 >= argc){
 				fprintf (stderr, "error: --graph option requires a method name argument\n");
@@ -2364,6 +2370,7 @@ mono_main (int argc, char* argv[])
 			mname = argv [++i];
 			mono_graph_options = MONO_GRAPH_CFG;
 			action = DO_DRAW;
+#endif
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			enable_debugging = TRUE;
 		} else if (strncmp (argv [i], "--debug=", 8) == 0) {
