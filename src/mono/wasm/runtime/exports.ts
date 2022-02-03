@@ -26,7 +26,7 @@ import {
     mono_wasm_add_dbg_command_received,
     mono_wasm_change_debugger_log_level,
 } from "./debug";
-import { ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
+import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
 import { DotnetModuleConfigImports, DotnetModule } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
@@ -167,6 +167,9 @@ function initializeImportsAndExports(
     }
     if (!module.printErr) {
         module.printErr = console.error.bind(console);
+    }
+    if (module.noExitRuntime === undefined) {
+        module.noExitRuntime = ENVIRONMENT_IS_WEB;
     }
     module.imports = module.imports || <DotnetModuleConfigImports>{};
     if (!module.imports.require) {

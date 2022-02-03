@@ -24,7 +24,7 @@ export function mono_on_abort(error: any): void {
 }
 
 function set_exit_code(exit_code: number, reason?: any) {
-    if (reason) {
+    if (reason && !(reason instanceof ExitStatus)) {
         Module.printErr(reason.toString());
         if (reason.stack) {
             Module.printErr(reason.stack);

@@ -45,6 +45,7 @@ declare interface EmscriptenModule {
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
+    noExitRuntime: boolean;
     ready: Promise<unknown>;
     preInit?: (() => any)[];
     preRun?: (() => any)[];
