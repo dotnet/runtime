@@ -84,7 +84,6 @@ ret
     IL_0049:  br.s       IL_004b
 
     IL_004b:  ldloc.0
-exit:
     IL_004c:  ret
   }
 
