@@ -414,7 +414,7 @@ static gboolean buffer_replies;
 	DebuggerTlsData *tls; \
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 #else
-#define GET_TLS_DATA_FROM_THREAD(thread) \
+#define GET_TLS_DATA_FROM_THREAD(...) \
 	DebuggerTlsData *tls; \
 	tls = &debugger_wasm_thread;
 #define GET_DEBUGGER_TLS() \
@@ -9145,7 +9145,9 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	int objid;
 	ErrorCode err;
 	MonoThread *thread_obj;
+#ifndef TARGET_WASM
 	MonoInternalThread *thread;
+#endif
 	int pos, i, len, frame_idx;
 	StackFrame *frame;
 	MonoDebugMethodJitInfo *jit;
@@ -9159,11 +9161,16 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	if (err != ERR_NONE)
 		return err;
 
+#ifndef TARGET_WASM
 	thread = THREAD_TO_INTERNAL (thread_obj);
-
+#endif
 	id = decode_id (p, &p, end);
 
+#ifndef TARGET_WASM
 	GET_TLS_DATA_FROM_THREAD (thread);
+#else
+	GET_TLS_DATA_FROM_THREAD ();
+#endif
 	g_assert (tls);
 
 	for (i = 0; i < tls->frame_count; ++i) {
