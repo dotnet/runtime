@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -1048,6 +1049,14 @@ namespace System
             // 10000 * (100 * (10*b1+b2) + 10*b3+b4) + 100*(10*b5+b6) + 10*b7+b8
             // this is achieved by masking and shifting values
             ulong val = Unsafe.ReadUnaligned<ulong>(chars);
+
+            // With BigEndian system an endianness swap has to be performed
+            // before the following operations as if it has been read with LittleEndian system
+            if (!BitConverter.IsLittleEndian)
+            {
+                val = BinaryPrimitives.ReverseEndianness(val);
+            }
+
             const ulong mask = 0x000000FF000000FF;
             const ulong mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
             const ulong mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
