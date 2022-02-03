@@ -113,6 +113,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			case IDiscardOperation:
 				// Assignments like "_ = SomeMethod();" don't need dataflow tracking.
 				break;
+			case IInvalidOperation:
+				// This can happen for a field assignment in an attribute instance.
+				// TODO: validate against the field attributes.
+				break;
 			default:
 				throw new NotImplementedException (operation.Target.GetType ().ToString ());
 			}

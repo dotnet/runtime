@@ -22,6 +22,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		private readonly IReadOnlyList<Diagnostic> _diagnostics;
 		private readonly List<Diagnostic> _unmatched;
 		private readonly List<(AttributeSyntax Attribute, string Message)> _missing;
+		private readonly List<AttributeSyntax> _expectedNoWarnings;
 
 		public TestChecker (
 			CSharpSyntaxTree tree,
@@ -37,25 +38,30 @@ namespace ILLink.RoslynAnalyzer.Tests
 			// Filled in later
 			_unmatched = new List<Diagnostic> ();
 			_missing = new List<(AttributeSyntax Attribute, string Message)> ();
+			_expectedNoWarnings = new List<AttributeSyntax> ();
 		}
 
-		public void Check ()
+		public void Check (bool allowMissingWarnings)
 		{
 			_unmatched.Clear ();
 			_unmatched.AddRange (_diagnostics);
 			_missing.Clear ();
+			_expectedNoWarnings.Clear ();
 
 			Visit (_tree.GetRoot ());
 
 			string message = "";
-			if (_missing.Any ()) {
+			if (!allowMissingWarnings && _missing.Any ()) {
 				var missingLines = string.Join (
 					Environment.NewLine,
 					_missing.Select (md => $"({md.Attribute.Parent?.Parent?.GetLocation ().GetLineSpan ()}) {md.Message}"));
 				message += $@"Expected warnings were not generated:{Environment.NewLine}{missingLines}{Environment.NewLine}";
 			}
-			if (_unmatched.Any ()) {
-				message += $"Unexpected warnings were generated:{Environment.NewLine}{string.Join (Environment.NewLine, _unmatched)}";
+			var unexpected = _unmatched.Where (diag =>
+				diag.Location.SourceTree == null ||
+				_expectedNoWarnings.Any (attr => attr.Parent?.Parent?.Span.Contains (diag.Location.SourceSpan) == true));
+			if (unexpected.Any ()) {
+				message += $"Unexpected warnings were generated:{Environment.NewLine}{string.Join (Environment.NewLine, unexpected)}";
 			}
 
 			if (message.Length > 0) {
@@ -143,8 +149,14 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			foreach (var attrList in attrLists) {
 				foreach (var attribute in attrList.Attributes) {
-					if (attribute.Name.ToString () == "LogDoesNotContain")
+					switch (attribute.Name.ToString ()) {
+					case "LogDoesNotContain":
 						ValidateLogDoesNotContainAttribute (attribute, memberDiagnostics);
+						break;
+					case "ExpectedNoWarnings":
+						_expectedNoWarnings.Add (attribute);
+						break;
+					}
 
 					if (!IsExpectedDiagnostic (attribute))
 						continue;
@@ -220,7 +232,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			missingDiagnosticMessage = null;
 			matchIndex = null;
 			var args = LinkerTestBase.GetAttributeArguments (attribute);
-			string expectedWarningCode = LinkerTestBase.GetStringFromExpression (args["#0"]);
+			string expectedWarningCode = LinkerTestBase.GetStringFromExpression (args["#0"], _semanticModel);
 
 			if (!expectedWarningCode.StartsWith ("IL"))
 				throw new InvalidOperationException ($"Expected warning code should start with \"IL\" prefix.");
@@ -243,6 +255,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			bool Matches (Diagnostic diagnostic)
 			{
+				if (!attribute.Parent?.Parent?.Span.Contains (diagnostic.Location.SourceSpan) == true)
+					return false;
+
 				if (diagnostic.Id != expectedWarningCode)
 					return false;
 
@@ -259,7 +274,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			missingDiagnosticMessage = null;
 			matchIndex = null;
 			var args = LinkerTestBase.GetAttributeArguments (attribute);
-			var text = LinkerTestBase.GetStringFromExpression (args["#0"]);
+			var text = LinkerTestBase.GetStringFromExpression (args["#0"], _semanticModel);
 
 			// If the text starts with `warning IL...` then it probably follows the pattern
 			//	'warning <diagId>: <location>:'
@@ -287,10 +302,10 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return false;
 		}
 
-		private static void ValidateLogDoesNotContainAttribute (AttributeSyntax attribute, IReadOnlyList<Diagnostic> diagnosticMessages)
+		private void ValidateLogDoesNotContainAttribute (AttributeSyntax attribute, IReadOnlyList<Diagnostic> diagnosticMessages)
 		{
 			var arg = Assert.Single (LinkerTestBase.GetAttributeArguments (attribute));
-			var text = LinkerTestBase.GetStringFromExpression (arg.Value);
+			var text = LinkerTestBase.GetStringFromExpression (arg.Value, _semanticModel);
 			foreach (var diagnostic in diagnosticMessages)
 				Assert.DoesNotContain (text, diagnostic.GetMessage ());
 		}

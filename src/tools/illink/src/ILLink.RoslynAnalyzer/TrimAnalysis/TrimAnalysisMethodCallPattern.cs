@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -23,9 +23,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public TrimAnalysisMethodCallPattern Merge (ValueSetLattice<SingleValue> lattice, TrimAnalysisMethodCallPattern other)
 		{
 			Debug.Assert (Operation == other.Operation);
-#pragma warning disable RS1024 // Compare symbols correctly
-			Debug.Assert (CalledMethod == other.CalledMethod);
-#pragma warning restore RS1024 // Compare symbols correctly
+			Debug.Assert (SymbolEqualityComparer.Default.Equals (CalledMethod, other.CalledMethod));
 			Debug.Assert (Arguments.Length == other.Arguments.Length);
 
 			var argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue> ();

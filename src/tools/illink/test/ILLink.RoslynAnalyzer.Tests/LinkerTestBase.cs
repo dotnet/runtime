@@ -13,9 +13,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 			MSBuildPropertyOptionNames.EnableSingleFileAnalyzer,
 			MSBuildPropertyOptionNames.EnableAOTAnalyzer);
 
-		protected Task RunTest ([CallerMemberName] string testName = "")
+		protected Task RunTest ([CallerMemberName] string testName = "", bool allowMissingWarnings = false)
 		{
-			return RunTestFile (TestSuiteName, testName, MSBuildProperties);
+			return RunTestFile (TestSuiteName, testName, allowMissingWarnings, MSBuildProperties);
 		}
 	}
 }
