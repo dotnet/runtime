@@ -9735,7 +9735,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
-    if (!varTypeIsIntegralOrI(tree) || genTypeSize(tree) >= sizeof(int))
+    if (!varTypeIsIntegralOrI(tree))
     {
         tree->ChangeType(TYP_INT);
     }

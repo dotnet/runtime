@@ -6855,7 +6855,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
-    if (!varTypeIsIntegralOrI(ind) || genTypeSize(ind) >= sizeof(int))
+    if (!varTypeIsIntegralOrI(ind))
     {
         ind->gtType = TYP_INT;
     }
