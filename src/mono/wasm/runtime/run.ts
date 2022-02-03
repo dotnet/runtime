@@ -1,4 +1,4 @@
-import { Module, quit } from "./imports";
+import { ExitStatus, Module, quit } from "./imports";
 import { mono_call_assembly_entry_point } from "./method-calls";
 import { mono_wasm_set_main_args, runtime_is_initialized_reject } from "./startup";
 
@@ -29,6 +29,9 @@ function set_exit_code(exit_code: number, reason?: any) {
         if (reason.stack) {
             Module.printErr(reason.stack);
         }
+    }
+    else {
+        reason = new ExitStatus(exit_code);
     }
     quit(exit_code, reason);
 }

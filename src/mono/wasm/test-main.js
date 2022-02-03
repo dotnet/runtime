@@ -127,7 +127,7 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
         onConfigLoaded: (config) => {
             if (!Module.config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");
-                set_exit_code(1,);
+                set_exit_code(1);
                 throw err;
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
@@ -272,8 +272,6 @@ function set_exit_code(exit_code, reason) {
         };
         stop_when_ws_buffer_empty();
 
-    } else if (is_node) {
-        process.exit(exit_code);
     } else if (App && App.INTERNAL) {
         App.INTERNAL.mono_wasm_exit(exit_code);
     }
