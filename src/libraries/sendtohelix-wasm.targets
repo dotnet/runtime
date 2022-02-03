@@ -43,8 +43,6 @@
 
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit/bin:$PATH" />
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="mkdir -p $HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit &amp;&amp; tar -xf $HELIX_CORRELATION_PAYLOAD/build/emsdk/node-tar/node.tar -C $HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit" />
-
-    <Exec Condition="'$(NeedsEMSDKNode)' == 'true'" Command="mkdir -p $(EmSdkDirForHelixPayload)node-tar &amp;&amp; tar -cf $(EmSdkDirForHelixPayload)node-tar/node.tar -C $(EmSdkDirForHelixPayload)node/14.15.5_64bit ." />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
@@ -100,6 +98,8 @@
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true'">EMSDK-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
     </PropertyGroup>
+    
+    <Exec Condition="'$(WindowsShell)' != 'true' and '$(NeedsEMSDKNode)' == 'true'" Command="mkdir -p $(EmSdkDirForHelixPayload)node-tar &amp;&amp; tar -cf $(EmSdkDirForHelixPayload)node-tar/node.tar -C $(EmSdkDirForHelixPayload)node/14.15.5_64bit ." />
 
     <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ and find the closest one in
          https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Linux_x64/
