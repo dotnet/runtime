@@ -101,6 +101,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override MultiValue HandleMethodCall (IMethodSymbol calledMethod, MultiValue instance, ImmutableArray<MultiValue> arguments, IOperation operation)
 		{
+			// For .ctors:
+			// - The instance value is empty (TopValue) and that's a bit wrong.
+			//   Technically this is an instance call and the instance is some valid value, we just don't know which
+			//   but for example it does have a static type. For now this is OK since we don't need the information
+			//   for anything yet.
+			// - The return here is also technically problematic, the return value is an instance of a known type,
+			//   but currently we return empty (since the .ctor is declared as returning void).
+			//   Especially with DAM on type, this can lead to incorrectly analyzed code (as in unknown type which leads
+			//   to noise). Linker has the same problem currently: https://github.com/dotnet/linker/issues/1952
+
 			var handleCallAction = new HandleCallAction (Context.OwningSymbol, operation);
 			if (!handleCallAction.Invoke (new MethodProxy (calledMethod), instance, arguments, out MultiValue methodReturnValue)) {
 				methodReturnValue = calledMethod.ReturnsVoid ? TopValue : new MethodReturnValue (calledMethod);

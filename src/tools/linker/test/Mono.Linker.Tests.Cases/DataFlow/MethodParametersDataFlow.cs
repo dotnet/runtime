@@ -39,6 +39,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.LongWriteToParameterOnInstanceMethod (0, 0, 0, 0, null);
 			instance.UnsupportedParameterType (null);
 
+			ParametersPassedToInstanceCtor (typeof (TestType), typeof (TestType));
+
 			TestParameterOverwrite (typeof (TestType));
 		}
 
@@ -198,6 +200,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2098", "p1", nameof (UnsupportedParameterType), ProducedBy = ProducedBy.Trimmer)]
 		private void UnsupportedParameterType ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] object p1)
 		{
+		}
+
+		private class InstanceCtor
+		{
+			[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
+			public InstanceCtor ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
+			{
+				type.RequiresNonPublicConstructors ();
+				type.RequiresPublicConstructors ();
+			}
+		}
+
+		[ExpectedWarning ("IL2067", "'type'")]
+		static void ParametersPassedToInstanceCtor ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type typeWithCtors, Type typeWithNothing)
+		{
+			var a1 = new InstanceCtor (typeWithCtors); // no warn
+			var a2 = new InstanceCtor (typeof (TestType)); // no warn
+			var a3 = new InstanceCtor (typeWithNothing); // warn
 		}
 
 		private static void RequirePublicParameterlessConstructorAndNothing (
