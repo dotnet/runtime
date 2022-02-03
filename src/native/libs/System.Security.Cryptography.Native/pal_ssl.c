@@ -412,10 +412,20 @@ void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
     SSL_set_bio(ssl, rbio, wbio);
 }
 
-int32_t CryptoNative_SslDoHandshake(SSL* ssl)
+int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error)
 {
     ERR_clear_error();
-    return SSL_do_handshake(ssl);
+    int32_t result = SSL_do_handshake(ssl);
+    if (result == 1)
+    {
+        *error = SSL_ERROR_NONE;
+    }
+    else
+    {
+        *error = CryptoNative_SslGetError(ssl, result);
+    }
+
+    return result;
 }
 
 int32_t CryptoNative_IsSslStateOK(SSL* ssl)

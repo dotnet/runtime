@@ -372,10 +372,6 @@ internal static partial class Interop
 
         internal static SecurityStatusPalErrorCode DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, out byte[]? sendBuf, out int sendCount)
         {
-#if DEBUG
-            ulong assertNoError = Crypto.ErrPeekError();
-            Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
-#endif
             sendBuf = null;
             sendCount = 0;
             Exception? handshakeException = null;
@@ -391,12 +387,9 @@ internal static partial class Interop
 
             try
             {
-                int retVal = Ssl.SslDoHandshake(context);
+                int retVal = Ssl.SslDoHandshake(context, out Ssl.SslErrorCode error);
                 if (retVal != 1)
                 {
-                    Exception? innerError = null;
-                    Ssl.SslErrorCode error = GetSslError(context, retVal, out innerError);
-
                     if (error == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
                     {
                         return SecurityStatusPalErrorCode.CredentialsNeeded;
@@ -404,6 +397,8 @@ internal static partial class Interop
 
                     if ((retVal != -1) || (error != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
                     {
+                        GetSslError(context, retVal, error, Sys.GetLastErrorInfo(), out Exception? innerError );
+
                         // Handshake failed, but even if the handshake does not need to read, there may be an Alert going out.
                         // To handle that we will fall-through the block below to pull it out, and we will fail after.
                         handshakeException = new SslException(SR.Format(SR.net_ssl_handshake_failed_error, error), innerError);
@@ -663,8 +658,11 @@ internal static partial class Interop
         private static Ssl.SslErrorCode GetSslError(SafeSslHandle context, int result, out Exception? innerError)
         {
             ErrorInfo lastErrno = Sys.GetLastErrorInfo(); // cache it before we make more P/Invoke calls, just in case we need it
+            return GetSslError(context, result, Ssl.SslGetError(context, result), lastErrno, out innerError);
+        }
 
-            Ssl.SslErrorCode retVal = Ssl.SslGetError(context, result);
+        private static Ssl.SslErrorCode GetSslError(SafeSslHandle context, int result, Ssl.SslErrorCode retVal, ErrorInfo lastErrno, out Exception? innerError)
+        {
             switch (retVal)
             {
                 case Ssl.SslErrorCode.SSL_ERROR_SYSCALL:

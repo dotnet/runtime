@@ -259,7 +259,7 @@ Returns:
 and by the specifications of the TLS/SSL protocol;
 <0 if the handshake was not successful because of a fatal error.
 */
-PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl);
+PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error);
 
 /*
 Gets a value indicating whether the SSL_state is SSL_ST_OK.
