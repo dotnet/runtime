@@ -129,13 +129,13 @@ jobs:
         # libraries on mono outerloop
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.81.Amd64.Open
-          - Windows.10.Amd64.Server19H1.Open
+          - Windows.10.Amd64.Server20H2.Open
         # libraries on coreclr (outerloop and innerloop), or libraries on mono innerloop
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.10.Amd64.ServerRS5.Open
             - ${{ if ne(parameters.jobParameters.testScope, 'outerloop') }}:
-              - Windows.10.Amd64.Server19H1.Open
+              - Windows.10.Amd64.Server20H2.Open
               - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.81.Amd64.Open
@@ -162,7 +162,7 @@ jobs:
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.10.Amd64.ServerRS5.Open
-            - Windows.10.Amd64.Server19H1.Open
+            - Windows.10.Amd64.Server20H2.Open
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.10.Amd64.Server19H1.ES.Open
             - Windows.7.Amd64.Open
