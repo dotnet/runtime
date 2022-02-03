@@ -7580,7 +7580,6 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                 {
                     canonicalEquivalentFound = true;
                     break;
-                    return NULL;
                 }
             }
         }
@@ -7643,6 +7642,12 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                     }
                 }
             }
+        }
+
+        // Default implementation logic, which only kicks in for default implementations when lookin up on an exact interface target
+        if (!pInterfaceMD->IsAbstract() && !(this == g_pCanonMethodTableClass) && !IsSharedByGenericInstantiations())
+        {
+            return pInterfaceMD->FindOrCreateAssociatedMethodDesc(pInterfaceMD, pInterfaceType, FALSE, pInterfaceMD->GetMethodInstantiation(), FALSE);
         }
     }
 
@@ -7818,7 +7823,7 @@ MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
                 MethodDesc *pMD = it.GetMethodDesc();
                 if (pMD->IsVirtual() &&
                     pMD->IsStatic() &&
-                    !ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE, /* allowVariantMatches */ FALSE))
+                    (pMD->IsAbstract() && !ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE, /* allowVariantMatches */ FALSE)))
                 {
                     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
                     GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), pMD->GetName(), IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL);

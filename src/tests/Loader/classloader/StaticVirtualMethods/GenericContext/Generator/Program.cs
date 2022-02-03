@@ -182,7 +182,7 @@ namespace VirtualStaticInterfaceMethodTestGen
             tw.WriteLine(@"    }");
             tw.WriteLine(@"}");
             tw.WriteLine(@"");
-            tw.WriteLine(@".class interface public abstract auto ansi IFaceCuriouslyRecurringGenericDefaultImp`1<(class IFaceCuriouslyRecurringGeneric`1<!0>) T> ");
+            tw.WriteLine(@".class interface public abstract auto ansi IFaceCuriouslyRecurringGenericDefaultImp`1<(class IFaceCuriouslyRecurringGenericDefaultImp`1<!0>) T> ");
             tw.WriteLine(@"{");
             tw.WriteLine(@"    .method public newslot virtual static void NormalMethod()");
             tw.WriteLine(@"    {");
@@ -631,7 +631,15 @@ namespace VirtualStaticInterfaceMethodTestGen
                     expectedString = expectedString.Replace(ImplPrefix, "");
 
                     if (testDefaultImplementations)
-                        expectedString = interfaceTypeSansImplPrefix + "." + interfaceMethodRoot + interfaceMethodInstantiation;
+                        expectedString = (interfaceTypeSansImplPrefix + "." + interfaceMethodRoot + interfaceMethodInstantiation).Replace(ImplPrefix, "");
+
+                    if (i == 1 && scenarioName == "Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod")
+                    {
+                        Console.WriteLine(GetConstrainedTypeName(scenario.ConstrainedTypeDefinition));
+                        Console.WriteLine(expectedString);
+//                        System.Diagnostics.Debugger.Break();
+                    }
+
 
                     if (scenario.CallerScenario == CallerMethodScenario.NonGeneric)
                     {

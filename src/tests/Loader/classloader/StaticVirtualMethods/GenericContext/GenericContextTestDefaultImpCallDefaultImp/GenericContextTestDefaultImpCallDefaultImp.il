@@ -736,7 +736,7 @@
     constrained. class [GenericContextCommonAndImplementation]NonGenericClass
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>::NormalMethod()
     ldstr "Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -750,7 +750,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -767,7 +767,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -776,7 +776,7 @@
     constrained. valuetype [GenericContextCommonAndImplementation]NonGenericValuetype
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>::NormalMethod()
     ldstr "Call_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -790,7 +790,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -807,7 +807,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -816,7 +816,7 @@
     constrained. class [GenericContextCommonAndImplementation]NonGenericClass
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>::GenericMethod<int32>()
     ldstr "Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -830,7 +830,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -847,7 +847,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -856,7 +856,7 @@
     constrained. valuetype [GenericContextCommonAndImplementation]NonGenericValuetype
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>::GenericMethod<int32>()
     ldstr "Call_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -870,7 +870,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -887,7 +887,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -896,7 +896,7 @@
     constrained. class [GenericContextCommonAndImplementation]NonGenericClass
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>::GenericMethod<string>()
     ldstr "Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -910,7 +910,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -927,7 +927,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -936,7 +936,7 @@
     constrained. valuetype [GenericContextCommonAndImplementation]NonGenericValuetype
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>::GenericMethod<string>()
     ldstr "Call_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -950,7 +950,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -967,7 +967,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -5680,7 +5680,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<int32>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>::NormalMethod()
     ldstr "Call_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -5694,7 +5694,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -5711,7 +5711,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -5720,7 +5720,7 @@
     constrained. valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>::NormalMethod()
     ldstr "Call_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -5734,7 +5734,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -5751,7 +5751,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -5760,7 +5760,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<int32>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>::GenericMethod<int32>()
     ldstr "Call_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -5774,7 +5774,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -5791,7 +5791,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -5800,7 +5800,7 @@
     constrained. valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>::GenericMethod<int32>()
     ldstr "Call_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -5814,7 +5814,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -5831,7 +5831,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -5840,7 +5840,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<int32>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>::GenericMethod<string>()
     ldstr "Call_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -5854,7 +5854,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -5871,7 +5871,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -5880,7 +5880,7 @@
     constrained. valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>::GenericMethod<string>()
     ldstr "Call_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -5894,7 +5894,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -5911,7 +5911,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -13184,7 +13184,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<object>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>::NormalMethod()
     ldstr "Call_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -13198,7 +13198,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -13215,7 +13215,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -13224,7 +13224,7 @@
     constrained. valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>::NormalMethod()
     ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -13238,7 +13238,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -13255,7 +13255,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.NormalMethod"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.NormalMethod"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
@@ -13264,7 +13264,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<object>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>::GenericMethod<int32>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -13278,7 +13278,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -13295,7 +13295,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -13304,7 +13304,7 @@
     constrained. valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>::GenericMethod<int32>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -13318,7 +13318,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -13335,7 +13335,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.GenericMethod<int32>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.GenericMethod<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt
@@ -13344,7 +13344,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<object>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>::GenericMethod<string>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -13358,7 +13358,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -13375,7 +13375,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -13384,7 +13384,7 @@
     constrained. valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>::GenericMethod<string>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -13398,7 +13398,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -13415,7 +13415,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.GenericMethod<string>"
+    ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.GenericMethod<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString
@@ -20675,7 +20675,7 @@ CreateDelegate_NonGenericNonGenericValuetype_NonGeneric_GenericOverObject_Generi
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20688,7 +20688,7 @@ Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20701,7 +20701,7 @@ Ldftn_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMetho
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20714,7 +20714,7 @@ CreateDelegate_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_No
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20727,7 +20727,7 @@ Call_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20740,7 +20740,7 @@ Ldftn_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalM
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20753,7 +20753,7 @@ CreateDelegate_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneri
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20766,7 +20766,7 @@ Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMetho
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20779,7 +20779,7 @@ Ldftn_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMeth
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20792,7 +20792,7 @@ CreateDelegate_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_Ge
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20805,7 +20805,7 @@ Call_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericM
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20818,7 +20818,7 @@ Ldftn_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_Generic
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20831,7 +20831,7 @@ CreateDelegate_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneri
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20844,7 +20844,7 @@ Call_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMetho
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20857,7 +20857,7 @@ Ldftn_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMeth
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]NonGenericClass>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20870,7 +20870,7 @@ CreateDelegate_NonGenericNonGenericClass_NonGeneric_CuriouslyRecurringGeneric_Ge
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20883,7 +20883,7 @@ Call_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericM
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -20896,7 +20896,7 @@ Ldftn_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_Generic
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_NonGenericNonGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25523,7 +25523,7 @@ CreateDelegate_GenericOverStructGenericValuetype_NonGeneric_GenericOverObject_Ge
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25536,7 +25536,7 @@ Call_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25549,7 +25549,7 @@ Ldftn_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalM
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25562,7 +25562,7 @@ CreateDelegate_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneri
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25575,7 +25575,7 @@ Call_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_Norm
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25588,7 +25588,7 @@ Ldftn_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_Nor
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25601,7 +25601,7 @@ CreateDelegate_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25614,7 +25614,7 @@ Call_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericM
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25627,7 +25627,7 @@ Ldftn_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_Generic
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25640,7 +25640,7 @@ CreateDelegate_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneri
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25653,7 +25653,7 @@ Call_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_Gene
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25666,7 +25666,7 @@ Ldftn_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_Gen
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25679,7 +25679,7 @@ CreateDelegate_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25692,7 +25692,7 @@ Call_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericM
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25705,7 +25705,7 @@ Ldftn_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_Generic
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<int32>>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<int32>>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25718,7 +25718,7 @@ CreateDelegate_GenericOverStructGenericClass_NonGeneric_CuriouslyRecurringGeneri
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25731,7 +25731,7 @@ Call_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_Gene
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -25744,7 +25744,7 @@ Ldftn_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_Gen
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverStructGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<int32>>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -32867,7 +32867,7 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_Generi
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -32880,7 +32880,7 @@ Call_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -32893,7 +32893,7 @@ Ldftn_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringG
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -32906,7 +32906,7 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyR
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -32919,7 +32919,7 @@ Call_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurri
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -32932,7 +32932,7 @@ Ldftn_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurr
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.NormalMethod"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.NormalMethod"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -32945,7 +32945,7 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_Curiou
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -32958,7 +32958,7 @@ Call_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -32971,7 +32971,7 @@ Ldftn_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringG
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -32984,7 +32984,7 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyR
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -32997,7 +32997,7 @@ Call_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurri
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -33010,7 +33010,7 @@ Ldftn_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurr
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.GenericMethod<int32>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.GenericMethod<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -33023,7 +33023,7 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_Curiou
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -33036,7 +33036,7 @@ Call_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -33049,7 +33049,7 @@ Ldftn_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringG
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class [GenericContextCommonAndImplementation]GenericClass`1<object>>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<object>>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -33062,7 +33062,7 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericClass_NonGeneric_CuriouslyR
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -33075,7 +33075,7 @@ Call_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurri
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -33088,7 +33088,7 @@ Ldftn_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurr
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_NonGeneric_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>>.GenericMethod<string>"
+        ldstr "IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<object>>.GenericMethod<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)

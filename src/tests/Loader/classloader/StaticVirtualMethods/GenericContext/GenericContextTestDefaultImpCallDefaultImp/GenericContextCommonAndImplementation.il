@@ -73,7 +73,7 @@
     }
 }
 
-.class interface public abstract auto ansi IFaceCuriouslyRecurringGenericDefaultImp`1<(class IFaceCuriouslyRecurringGeneric`1<!0>) T> 
+.class interface public abstract auto ansi IFaceCuriouslyRecurringGenericDefaultImp`1<(class IFaceCuriouslyRecurringGenericDefaultImp`1<!0>) T> 
 {
     .method public newslot virtual static void NormalMethod()
     {
