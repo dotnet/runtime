@@ -139,7 +139,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
-            return LowerBinaryArithmeticCommon(node->AsOp());
+            return LowerBinaryArithmetic(node->AsOp());
 
         case GT_MUL:
         case GT_MULHI:
@@ -5131,53 +5131,6 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         ContainCheckBinary(node);
     }
     return nullptr;
-}
-
-//------------------------------------------------------------------------
-// LowerBinaryArithmeticCommon: lowers the given binary arithmetic node.
-//
-// Recognizes opportunities for using target-independent "combined" nodes
-// (currently AND_NOT on ARMArch). Performs containment checks.
-//
-// Arguments:
-//    node - the arithmetic node to lower
-//
-// Returns:
-//    The next node to lower.
-//
-GenTree* Lowering::LowerBinaryArithmeticCommon(GenTreeOp* binOp)
-{
-    // TODO-CQ-XArch: support BMI2 "andn" in codegen and condition
-    // this logic on the support for the instruction set on XArch.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef TARGET_ARMARCH
-    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND))
-    {
-        GenTree* opNode  = nullptr;
-        GenTree* notNode = nullptr;
-        if (binOp->gtGetOp1()->OperIs(GT_NOT))
-        {
-            notNode = binOp->gtGetOp1();
-            opNode  = binOp->gtGetOp2();
-        }
-        else if (binOp->gtGetOp2()->OperIs(GT_NOT))
-        {
-            notNode = binOp->gtGetOp2();
-            opNode  = binOp->gtGetOp1();
-        }
-
-        if (notNode != nullptr)
-        {
-            binOp->gtOp1 = opNode;
-            binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
-            binOp->ChangeOper(GT_AND_NOT);
-            BlockRange().Remove(notNode);
-        }
-    }
-#endif
-
-    return LowerBinaryArithmetic(binOp);
 }
 
 //------------------------------------------------------------------------

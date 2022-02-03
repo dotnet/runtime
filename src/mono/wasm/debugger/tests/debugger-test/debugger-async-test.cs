@@ -88,6 +88,8 @@ namespace DebuggerTests.AsyncTests
                     var dt1 = new DateTime(4513, 4, 5, 6, 7, 8);
                     Console.WriteLine ($"t2: {t2.Status}, str: {str}, {dt1}, {dt0}");//this, t2, dt1, str, dt0
                 });
+                Console.WriteLine("done with this continueWith");
+                await Task.Delay(300).ContinueWith(t2 => Console.WriteLine ($"t2: {t2.Status}, str: {str}, {dt0}"));
             });
             Console.WriteLine ($"done with this method");
         }
