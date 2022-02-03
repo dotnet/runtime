@@ -47,12 +47,18 @@ namespace System.Linq
             long sum = 0;
             int i = 0;
 
-            if (Vector.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated && span.Length >= Vector<int>.Count)
             {
-                for (; i <= span.Length - Vector<int>.Count; i += Vector<int>.Count)
+                Vector<long> sums = default;
+                do
                 {
-                    sum += Vector.Sum(new Vector<int>(span.Slice(i)));
+                    Vector.Widen(new Vector<int>(span.Slice(i)), out Vector<long> low, out Vector<long> high);
+                    sums += low;
+                    sums += high;
+                    i += Vector<int>.Count;
                 }
+                while (i <= span.Length - Vector<int>.Count);
+                sum += Vector.Sum(sums);
             }
 
             for (; (uint)i < (uint)span.Length; i++)

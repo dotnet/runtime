@@ -113,17 +113,8 @@ namespace System.Linq
         private static double Sum(ReadOnlySpan<float> span)
         {
             double sum = 0;
-            int i = 0;
 
-            if (Vector.IsHardwareAccelerated)
-            {
-                for (; i <= span.Length - Vector<float>.Count; i += Vector<float>.Count)
-                {
-                    sum += Vector.Sum(new Vector<float>(span.Slice(i)));
-                }
-            }
-
-            for (; (uint)i < (uint)span.Length; i++)
+            for (int i = 0; i < span.Length; i++)
             {
                 sum += span[i];
             }
@@ -169,17 +160,8 @@ namespace System.Linq
         private static double Sum(ReadOnlySpan<double> span)
         {
             double sum = 0;
-            int i = 0;
 
-            if (Vector.IsHardwareAccelerated)
-            {
-                for (; i <= span.Length - Vector<double>.Count; i += Vector<double>.Count)
-                {
-                    sum += Vector.Sum(new Vector<double>(span.Slice(i)));
-                }
-            }
-
-            for (; (uint)i < (uint)span.Length; i++)
+            for (int i = 0; i < span.Length; i++)
             {
                 sum += span[i];
             }
