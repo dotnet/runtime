@@ -191,6 +191,7 @@ namespace System
 
         // Custom string compares for early application use by config switches, etc
         //
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
         {
             return value.Length == 4 &&
@@ -200,6 +201,7 @@ namespace System
                     (value[3] == 'e' || value[3] == 'E');
         }
 
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
         {
             return value.Length == 5 &&
@@ -218,11 +220,13 @@ namespace System
             return Parse(value.AsSpan());
         }
 
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static bool Parse(ReadOnlySpan<char> value) =>
             TryParse(value, out bool result) ? result : throw new FormatException(SR.Format(SR.Format_BadBoolean, new string(value)));
 
         // Determines whether a String represents true or false.
         //
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static bool TryParse([NotNullWhen(true)] string? value, out bool result)
         {
             if (value == null)
@@ -234,6 +238,7 @@ namespace System
             return TryParse(value.AsSpan(), out result);
         }
 
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static bool TryParse(ReadOnlySpan<char> value, out bool result)
         {
             if (IsTrueStringIgnoreCase(value))
@@ -267,6 +272,7 @@ namespace System
             return false;
         }
 
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static ReadOnlySpan<char> TrimWhiteSpaceAndNull(ReadOnlySpan<char> value)
         {
             const char nullChar = (char)0x0000;
