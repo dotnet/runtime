@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -235,7 +236,6 @@ namespace System.IO.Compression
 
                 return bytes[0..totalCodePoints];
             }
-
 
             bytes = encoding.GetBytes(text);
             return maxBytes < bytes.Length ? bytes[0..maxBytes] : bytes;

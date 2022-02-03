@@ -11,33 +11,33 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(Utf8Comment_Data))]
         public static void Create_Comment_AsciiEntryName_NullEncoding(string originalComment, string expectedComment) =>
-            Create_Comment_EntryName_Encoding_Internal("file.txt", originalComment, expectedComment, null);
+            Create_Comment_EntryName_Encoding_Internal(AsciiFileName, originalComment, expectedComment, null);
 
         [Theory]
         [MemberData(nameof(Utf8Comment_Data))]
         public static void Create_Comment_AsciiEntryName_Utf8Encoding(string originalComment, string expectedComment) =>
-            Create_Comment_EntryName_Encoding_Internal("file.txt", originalComment, expectedComment, Encoding.UTF8);
+            Create_Comment_EntryName_Encoding_Internal(AsciiFileName, originalComment, expectedComment, Encoding.UTF8);
 
         [Theory]
         [MemberData(nameof(Latin1Comment_Data))]
         public static void Create_Comment_AsciiEntryName_Latin1Encoding(string originalComment, string expectedComment) =>
-            Create_Comment_EntryName_Encoding_Internal("file.txt", originalComment, expectedComment, Encoding.Latin1);
+            Create_Comment_EntryName_Encoding_Internal(AsciiFileName, originalComment, expectedComment, Encoding.Latin1);
 
         [Theory]
         [MemberData(nameof(Utf8Comment_Data))]
         public static void Create_Comment_Utf8EntryName_NullEncoding(string originalComment, string expectedComment) =>
-            Create_Comment_EntryName_Encoding_Internal($"{SmileyEmoji}.txt", originalComment, expectedComment, null);
+            Create_Comment_EntryName_Encoding_Internal(Utf8FileName, originalComment, expectedComment, null);
 
         [Theory]
         [MemberData(nameof(Utf8Comment_Data))]
         public static void Create_Comment_Utf8EntryName_Utf8Encoding(string originalComment, string expectedComment) =>
-            Create_Comment_EntryName_Encoding_Internal($"{SmileyEmoji}.txt", originalComment, expectedComment, Encoding.UTF8);
+            Create_Comment_EntryName_Encoding_Internal(Utf8FileName, originalComment, expectedComment, Encoding.UTF8);
 
         [Theory]
         [MemberData(nameof(Latin1Comment_Data))]
         public static void Create_Comment_Utf8EntryName_Latin1Encoding(string originalComment, string expectedComment) =>
             // Emoji not supported by latin1
-            Create_Comment_EntryName_Encoding_Internal($"{LowerCaseOUmlautChar}.txt", originalComment, expectedComment, Encoding.Latin1);
+            Create_Comment_EntryName_Encoding_Internal(Utf8AndLatin1FileName, originalComment, expectedComment, Encoding.Latin1);
 
         private static void Create_Comment_EntryName_Encoding_Internal(string entryName, string originalComment, string expectedComment, Encoding encoding)
         {
