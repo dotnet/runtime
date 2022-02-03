@@ -4,7 +4,6 @@
 #pragma warning disable IDE0060 // implementations provided by the JIT
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 //
@@ -13,15 +12,10 @@ using System.Runtime.Versioning;
 // In CoreRT, see Internal.IL.Stubs.UnsafeIntrinsics for details.
 //
 
-namespace Internal.Runtime.CompilerServices
+namespace System.Runtime.CompilerServices
 {
-    //
-    // Subsetted clone of System.Runtime.CompilerServices.Unsafe for internal runtime use.
-    // Keep in sync with https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.CompilerServices.Unsafe.
-    //
-
     /// <summary>
-    /// For internal use only. Contains generic, low-level functionality for manipulating pointers.
+    /// Contains generic, low-level functionality for manipulating pointers.
     /// </summary>
     [CLSCompliant(false)]
     public static unsafe partial class Unsafe
@@ -30,6 +24,9 @@ namespace Internal.Runtime.CompilerServices
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__AS_POINTER
+        // CG2:AsPointer
+        // Mono:AsPointer
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void* AsPointer<T>(ref T value)
@@ -45,6 +42,9 @@ namespace Internal.Runtime.CompilerServices
         /// Returns the size of an object of the given type parameter.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__SIZEOF
+        // CG2:SizeOf
+        // Mono:SizeOf
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int SizeOf<T>()
@@ -62,6 +62,9 @@ namespace Internal.Runtime.CompilerServices
         /// Casts the given object to the specified type, performs no dynamic type checking.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__OBJECT_AS
+        // CG2:As
+        // Mono:As
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NotNullIfNotNull("value")]
@@ -77,6 +80,9 @@ namespace Internal.Runtime.CompilerServices
         /// Reinterprets the given reference as a reference to a value of type <typeparamref name="TTo"/>.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_AS
+        // CG2:As
+        // Mono:As
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref TTo As<TFrom, TTo>(ref TFrom source)
@@ -91,6 +97,9 @@ namespace Internal.Runtime.CompilerServices
         /// Adds an element offset to the given reference.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_ADD
+        // CG2:Add
+        // Mono:Add
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Add<T>(ref T source, int elementOffset)
@@ -101,12 +110,23 @@ namespace Internal.Runtime.CompilerServices
 #else
             return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
 #endif
+
+            // ldarg .0
+            // ldarg .1
+            // sizeof T
+            // conv.i
+            // mul
+            // add
+            // ret
         }
 
         /// <summary>
         /// Adds an element offset to the given reference.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_ADD
+        // CG2:Add
+        // Mono:Add
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Add<T>(ref T source, IntPtr elementOffset)
@@ -117,12 +137,22 @@ namespace Internal.Runtime.CompilerServices
 #else
             return ref AddByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)SizeOf<T>()));
 #endif
+
+            // ldarg .0
+            // ldarg .1
+            // sizeof T
+            // mul
+            // add
+            // ret
         }
 
         /// <summary>
         /// Adds an element offset to the given pointer.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_ADD
+        // CG2:Add
+        // Mono:Add
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void* Add<T>(void* source, int elementOffset)
@@ -133,23 +163,41 @@ namespace Internal.Runtime.CompilerServices
 #else
             return (byte*)source + (elementOffset * (nint)SizeOf<T>());
 #endif
+
+            // ldarg .0
+            // ldarg .1
+            // sizeof T
+            // conv.i
+            // mul
+            // add
+            // ret
         }
 
         /// <summary>
         /// Adds an byte offset to the given reference.
         /// </summary>
         [Intrinsic]
+        // CG2:AddByteOffset
+        // Mono:AddByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
         {
             return ref AddByteOffset(ref source, (IntPtr)(void*)byteOffset);
+
+            // ldarg .0
+            // ldarg .1
+            // add
+            // ret
         }
 
         /// <summary>
         /// Determines whether the specified references point to the same location.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_ARE_SAME
+        // CG2:AreSame
+        // Mono:AreSame
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool AreSame<T>([AllowNull] ref T left, [AllowNull] ref T right)
@@ -170,6 +218,9 @@ namespace Internal.Runtime.CompilerServices
         /// This check is conceptually similar to "(void*)(&amp;left) &gt; (void*)(&amp;right)".
         /// </remarks>
         [Intrinsic]
+        // CoreCLR:CoreCLR:METHOD__UNSAFE__BYREF_IS_ADDRESS_GREATER_THAN
+        // CG2:IsAddressGreaterThan
+        // Mono:IsAddressGreaterThan
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsAddressGreaterThan<T>([AllowNull] ref T left, [AllowNull] ref T right)
@@ -190,6 +241,9 @@ namespace Internal.Runtime.CompilerServices
         /// This check is conceptually similar to "(void*)(&amp;left) &lt; (void*)(&amp;right)".
         /// </remarks>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN
+        // CG2:IsAddressLessThan
+        // Mono:IsAddressLessThan
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsAddressLessThan<T>([AllowNull] ref T left, [AllowNull] ref T right)
@@ -207,18 +261,33 @@ namespace Internal.Runtime.CompilerServices
         /// without assuming architecture dependent alignment of the address.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_INIT_BLOCK_UNALIGNED
+        // CG2:InitBlockUnaligned
+        // Mono:InitBlockUnaligned
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount)
         {
             for (uint i = 0; i < byteCount; i++)
+            {
                 AddByteOffset(ref startAddress, i) = value;
+            }
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // unaligned. 0x1
+            // initblk
+            // ret
         }
 
         /// <summary>
         /// Reads a value of type <typeparamref name="T"/> from the given location.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_READ_UNALIGNED
+        // CG2:ReadUnaligned
+        // Mono:ReadUnaligned
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ReadUnaligned<T>(void* source)
@@ -229,12 +298,20 @@ namespace Internal.Runtime.CompilerServices
 #else
             return Unsafe.As<byte, T>(ref *(byte*)source);
 #endif
+
+            // ldarg.0
+            // unaligned. 0x1
+            // ldobj T
+            // ret
         }
 
         /// <summary>
         /// Reads a value of type <typeparamref name="T"/> from the given location.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_READ_UNALIGNED
+        // CG2:ReadUnaligned
+        // Mono:ReadUnaligned
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ReadUnaligned<T>(ref byte source)
@@ -245,12 +322,20 @@ namespace Internal.Runtime.CompilerServices
 #else
             return Unsafe.As<byte, T>(ref source);
 #endif
+
+            // ldarg.0
+            // unaligned. 0x1
+            // ldobj!!T
+            // ret
         }
 
         /// <summary>
         /// Writes a value of type <typeparamref name="T"/> to the given location.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_WRITE_UNALIGNED
+        // CG2:WriteUnaligned
+        // Mono:WriteUnaligned
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUnaligned<T>(void* destination, T value)
@@ -261,12 +346,21 @@ namespace Internal.Runtime.CompilerServices
 #else
             Unsafe.As<byte, T>(ref *(byte*)destination) = value;
 #endif
+
+            // ldarg .0
+            // ldarg .1
+            // unaligned. 0x01
+            // stobjT
+            // ret
         }
 
         /// <summary>
         /// Writes a value of type <typeparamref name="T"/> to the given location.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_WRITE_UNALIGNED
+        // CG2:WriteUnaligned
+        // Mono:WriteUnaligned
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUnaligned<T>(ref byte destination, T value)
@@ -277,12 +371,21 @@ namespace Internal.Runtime.CompilerServices
 #else
             Unsafe.As<byte, T>(ref destination) = value;
 #endif
+
+            // ldarg .0
+            // ldarg .1
+            // unaligned. 0x01
+            // stobjT
+            // ret
         }
 
         /// <summary>
         /// Adds an byte offset to the given reference.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET
+        // CG2:AddByteOffset
+        // Mono:AddByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AddByteOffset<T>(ref T source, IntPtr byteOffset)
@@ -299,84 +402,95 @@ namespace Internal.Runtime.CompilerServices
         /// <summary>
         /// Reads a value of type <typeparamref name="T"/> from the given location.
         /// </summary>
-        [Intrinsic]
+        //[Intrinsic]
+        // CG2:Read
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(void* source)
         {
             return Unsafe.As<byte, T>(ref *(byte*)source);
-        }
 
-        /// <summary>
-        /// Reads a value of type <typeparamref name="T"/> from the given location.
-        /// </summary>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Read<T>(ref byte source)
-        {
-            return Unsafe.As<byte, T>(ref source);
+            // ldarg.0
+            // ldobj T
+            // ret
         }
 
         /// <summary>
         /// Writes a value of type <typeparamref name="T"/> to the given location.
         /// </summary>
-        [Intrinsic]
+        //[Intrinsic]
+        // CG2:Write
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Write<T>(void* destination, T value)
         {
             Unsafe.As<byte, T>(ref *(byte*)destination) = value;
-        }
 
-        /// <summary>
-        /// Writes a value of type <typeparamref name="T"/> to the given location.
-        /// </summary>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Write<T>(ref byte destination, T value)
-        {
-            Unsafe.As<byte, T>(ref destination) = value;
+            // ldarg .0
+            // ldarg .1
+            // stobjT
+            // ret
         }
 
         /// <summary>
         /// Reinterprets the given location as a reference to a value of type <typeparamref name="T"/>.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__AS_REF_POINTER
+        // CG2:AsRef
+        // Mono:AsRef
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AsRef<T>(void* source)
         {
             return ref Unsafe.As<byte, T>(ref *(byte*)source);
+
+            // ldarg .0
+            // ret
         }
 
         /// <summary>
         /// Reinterprets the given location as a reference to a value of type <typeparamref name="T"/>.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__AS_REF_IN
+        // CG2:AsRef
+        // Mono:AsRef
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AsRef<T>(in T source)
         {
             throw new PlatformNotSupportedException();
+
+            //ldarg .0
+            //ret
         }
 
         /// <summary>
         /// Determines the byte offset from origin to target from the given references.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_BYTE_OFFSET
+        // CG2:ByteOffset
+        // Mono:ByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr ByteOffset<T>([AllowNull] ref T origin, [AllowNull] ref T target)
         {
             throw new PlatformNotSupportedException();
+
+            // ldarg .1
+            // ldarg .0
+            // sub
+            // ret
         }
 
         /// <summary>
         /// Returns a by-ref to type <typeparamref name="T"/> that is a null reference.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_NULLREF
+        // CG2:NullRef
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T NullRef<T>()
@@ -395,6 +509,8 @@ namespace Internal.Runtime.CompilerServices
         /// This check is conceptually similar to "(void*)(&amp;source) == nullptr".
         /// </remarks>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_IS_NULL
+        // CG2: IsNullRef
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNullRef<T>(ref T source)
@@ -412,6 +528,9 @@ namespace Internal.Runtime.CompilerServices
         /// Bypasses definite assignment rules by taking advantage of <c>out</c> semantics.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__SKIPINIT
+        // CG2:SkipInit
+        // Mono:SkipInit
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SkipInit<T>(out T value)

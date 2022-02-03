@@ -77,13 +77,6 @@
     <PropertyGroup>
         <DllImportGenerator_UseMarshalType>true</DllImportGenerator_UseMarshalType>
     </PropertyGroup>
-    <!-- Projects that directly reference System.Private.CoreLib are typically low level enough that they don't reference
-         System.Runtime.CompilerServices.Unsafe, so we use the Unsafe type defined in CoreLib (Internal.Runtime.CompilerServices.Unsafe) for these projects. -->
-    <PropertyGroup Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib' or
-                              ('@(ProjectReference)' != '' and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)')))">
-        <DllImportGenerator_UseInternalUnsafeType>true</DllImportGenerator_UseInternalUnsafeType>
-        <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_INTERNALUNSAFE</DefineConstants>
-    </PropertyGroup>
   </Target>
 
   <Import Project="$(LibrariesProjectRoot)System.Runtime.InteropServices/gen/DllImportGenerator/Microsoft.Interop.DllImportGenerator.props" />
