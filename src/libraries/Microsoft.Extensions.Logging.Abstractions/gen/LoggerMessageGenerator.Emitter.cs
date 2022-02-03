@@ -86,7 +86,7 @@ namespace {lc.Namespace}
                 // loop until you find top level nested class
                 while (parent != null)
                 {
-                    parentClasses.Add($"partial {parent.Keyword} {parent.Name} ");
+                    parentClasses.Add($"partial {parent.Keyword} {parent.Name}");
                     parent = parent.ParentClass;
                 }
 
@@ -100,7 +100,7 @@ namespace {lc.Namespace}
                 }
 
                 _builder.Append($@"
-    {nestedIndentation}partial {lc.Keyword} {lc.Name} 
+    {nestedIndentation}partial {lc.Keyword} {lc.Name}
     {nestedIndentation}{{");
 
                 foreach (LoggerMethod lm in lc.Methods)
