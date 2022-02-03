@@ -5,32 +5,41 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Cbor;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.Cose
 {
-    public class CoseHeaderMap : IEnumerable<(CoseHeaderLabel, ReadOnlyMemory<byte>)>
+    [RequiresPreviewFeatures(CoseMessage.PreviewFeatureMessage)]
+    public sealed class CoseHeaderMap : IEnumerable<(CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue)>
     {
         private static readonly byte[] s_emptyBstrEncoded = new byte[] { 0x40 };
-        private bool _isReadOnly;
-        public bool IsReadOnly { get => _isReadOnly; internal set => _isReadOnly = value; }
+        public bool IsReadOnly { get; internal set; }
+
         private readonly Dictionary<CoseHeaderLabel, ReadOnlyMemory<byte>> _headerParameters = new Dictionary<CoseHeaderLabel, ReadOnlyMemory<byte>>();
 
         public CoseHeaderMap() : this (isReadOnly: false) { }
 
         internal CoseHeaderMap(bool isReadOnly)
         {
-            _isReadOnly = isReadOnly;
+            IsReadOnly = isReadOnly;
         }
 
         public bool TryGetEncodedValue(CoseHeaderLabel label, out ReadOnlyMemory<byte> encodedValue)
             => _headerParameters.TryGetValue(label, out encodedValue);
 
         public ReadOnlyMemory<byte> GetEncodedValue(CoseHeaderLabel label)
-            => _headerParameters[label];
+        {
+            if (TryGetEncodedValue(label, out ReadOnlyMemory<byte> encodedValue))
+            {
+                return encodedValue;
+            }
+
+            throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapLabelDoeNotExist, label.LabelName));
+        }
 
         public int GetValueAsInt32(CoseHeaderLabel label)
         {
-            var reader = new CborReader(_headerParameters[label]);
+            var reader = new CborReader(GetEncodedValue(label));
             int retVal = reader.ReadInt32();
             Debug.Assert(reader.BytesRemaining == 0);
             return retVal;
@@ -38,7 +47,7 @@ namespace System.Security.Cryptography.Cose
 
         public string GetValueAsString(CoseHeaderLabel label)
         {
-            var reader = new CborReader(_headerParameters[label]);
+            var reader = new CborReader(GetEncodedValue(label));
             string retVal = reader.ReadTextString();
             Debug.Assert(reader.BytesRemaining == 0);
             return retVal;
@@ -46,13 +55,16 @@ namespace System.Security.Cryptography.Cose
 
         public ReadOnlySpan<byte> GetValueAsBytes(CoseHeaderLabel label)
         {
-            var reader = new CborReader(_headerParameters[label]);
+            var reader = new CborReader(GetEncodedValue(label));
             ReadOnlySpan<byte> retVal = reader.ReadByteString();
             Debug.Assert(reader.BytesRemaining == 0);
             return retVal;
         }
 
-        public void SetEncodedValue(CoseHeaderLabel label, ReadOnlyMemory<byte> encodedValue)
+        public void SetEncodedValue(CoseHeaderLabel label, ReadOnlySpan<byte> encodedValue)
+            => SetEncodedValue(label, new ReadOnlyMemory<byte>(encodedValue.ToArray()));
+
+        internal void SetEncodedValue(CoseHeaderLabel label, ReadOnlyMemory<byte> encodedValue)
         {
             ValidateIsReadOnly();
             ValidateHeaderValue(label, null, encodedValue);
@@ -98,7 +110,7 @@ namespace System.Security.Cryptography.Cose
 
         private void ValidateIsReadOnly()
         {
-            if (_isReadOnly)
+            if (IsReadOnly)
             {
                 throw new InvalidOperationException(SR.CoseHeaderMapDecodedMapIsReadOnlyCannotSetValue);
             }
@@ -135,7 +147,7 @@ namespace System.Security.Cryptography.Cose
 
                 if (reader.BytesRemaining != 0)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, label));
+                    throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapCborEncodedValueNotValid, label));
                 }
             }
 
@@ -153,33 +165,11 @@ namespace System.Security.Cryptography.Cose
                         reader?.SkipValue();
                         break;
                     case KnownHeaders.Crit:
-                        throw new NotSupportedException(); // TODO
-                        //if (reader == null)
-                        //{
-                        //    throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, label));
-                        //}
-
-                        //int? length = reader.ReadStartArray();
-                        //if (length.GetValueOrDefault() < 1)
-                        //{
-                        //    throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, label));
-                        //}
-
-                        //for (int i = 0; i < length; i++)
-                        //{
-                        //    CborReaderState state = reader.PeekState();
-                        //    if (state != CborReaderState.NegativeInteger &&
-                        //        state != CborReaderState.UnsignedInteger &&
-                        //        state != CborReaderState.TextString)
-                        //    {
-                        //        throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, label));
-                        //    }
-                        //    reader.SkipValue();
-                        //}
-                        //reader.ReadEndArray();
-                        //break;
+                        reader?.SkipValue(); // TODO
+                        break;
                     case KnownHeaders.CounterSignature:
-                        throw new NotSupportedException(); // TODO
+                        reader?.SkipValue(); // TODO
+                        break;
                     case KnownHeaders.ContentType:
                         if (initialState != CborReaderState.TextString &&
                             initialState != CborReaderState.UnsignedInteger)
@@ -231,11 +221,11 @@ namespace System.Security.Cryptography.Cose
             return writer.Encode();
         }
 
-        public IEnumerator<(CoseHeaderLabel, ReadOnlyMemory<byte>)> GetEnumerator() => new Enumerator(_headerParameters.GetEnumerator());
-
+        public Enumerator GetEnumerator() => new Enumerator(_headerParameters.GetEnumerator());
+        IEnumerator<(CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue)> IEnumerable<(CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue)>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        internal struct Enumerator : IEnumerator<(CoseHeaderLabel, ReadOnlyMemory<byte>)>
+        public struct Enumerator : IEnumerator<(CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue)>
         {
             private Dictionary<CoseHeaderLabel, ReadOnlyMemory<byte>>.Enumerator _dictionaryEnumerator;
 
@@ -244,7 +234,7 @@ namespace System.Security.Cryptography.Cose
                 _dictionaryEnumerator = dictionaryEnumerator;
             }
 
-            public (CoseHeaderLabel, ReadOnlyMemory<byte>) Current => (_dictionaryEnumerator.Current.Key, _dictionaryEnumerator.Current.Value);
+            public readonly (CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue) Current => (_dictionaryEnumerator.Current.Key, _dictionaryEnumerator.Current.Value);
 
             object IEnumerator.Current => Current;
 

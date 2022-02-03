@@ -45,12 +45,12 @@ namespace System.Security.Cryptography.Cose.Tests
                 }
 
                 Assert.True(verified);
-                Assert.True(msg.Content.GetValueOrDefault().Span.SequenceEqual(s_SampleContent));
+                AssertExtensions.SequenceEqual(s_sampleContent, msg.Content.GetValueOrDefault().Span);
 
                 Assert.True(
-                    msg.ProtectedHeader.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg) ||
-                    msg.UnprotectedHeader.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out encodedAlg),
-                    "Algorithm header should be part of at least one of the buckets");
+                    msg.ProtectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg) ||
+                    msg.UnprotectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out encodedAlg),
+                    "Algorithm header should be part of at least one of the maps");
 
                 Assert.Equal(algorithm, new CborReader(encodedAlg).ReadInt32());
             }
@@ -69,6 +69,30 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.False(msg.Verify(ECDsaKeys[ECDsaAlgorithm.ES256]));
         }
 
+        [Fact]
+        public void VerifyReturnsFalseWithDataNotMatchingSignature()
+        {
+            string encodedMsg = "D28445A201260300A10442313154546869732069732074686520636F6E74656E742E58406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B";
+            CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(encodedMsg));
+            Assert.True(msg.Verify(ECDsaKeys[ECDsaAlgorithm.ES256]));
+
+            // Corrupt protected header (replace one byte).
+            encodedMsg = ReplaceFirst(encodedMsg, "45A201260300", "45A201260301");
+            msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(encodedMsg));
+            Assert.False(msg.Verify(ECDsaKeys[ECDsaAlgorithm.ES256]));
+
+            // Corrupt content (replace one byte).
+            encodedMsg = ReplaceFirst(encodedMsg, "546869732069732074686520636F6E74656E742E", "546869732069732074686520636F6E74656E743E");
+            msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(encodedMsg));
+            Assert.False(msg.Verify(ECDsaKeys[ECDsaAlgorithm.ES256]));
+
+            static string ReplaceFirst(string text, string search, string replace)
+            {
+                int pos = text.IndexOf(search);
+                return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
+            }
+        }
+
         [Theory]
         // https://github.com/cose-wg/Examples/blob/master/sign1-tests/sign-fail-03.json
         [InlineData("D28445A1013903E6A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36")]
@@ -85,7 +109,7 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray("D28445A201260300A104423131F658406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B"));
             Assert.Null(msg.Content);
-            Assert.True(msg.Verify(ECDsaKeys[ECDsaAlgorithm.ES256], s_SampleContent));
+            Assert.True(msg.Verify(ECDsaKeys[ECDsaAlgorithm.ES256], s_sampleContent));
         }
 
         [Fact]
@@ -101,7 +125,46 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray("D28443A10126A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36"));
             Assert.NotNull(msg.Content);
-            Assert.Throws<CryptographicException>(() => msg.Verify(ECDsaKeys[ECDsaAlgorithm.ES256], s_SampleContent));
+            Assert.Throws<CryptographicException>(() => msg.Verify(ECDsaKeys[ECDsaAlgorithm.ES256], s_sampleContent));
+        }
+
+        [Fact]
+        public void VerifyThrowsIfCriticalHeaderWasIncluded()
+        {
+            ECDsa key = ECDsaKeys[ECDsaAlgorithm.ES256];
+            var protectedHeaders = GetHeaderMapWithAlgorithm((int)ECDsaAlgorithm.ES256);
+            protectedHeaders.SetValue(CoseHeaderLabel.Critical, ReadOnlySpan<byte>.Empty);
+            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, protectedHeaders, GetEmptyHeaderMap(), key);
+
+            CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
+            Assert.Throws<NotSupportedException>(() => msg.Verify(key));
+
+            var unprotectedHeaders = GetEmptyHeaderMap();
+            unprotectedHeaders.SetValue(CoseHeaderLabel.Critical, ReadOnlySpan<byte>.Empty);
+            encodedMsg = CoseSign1Message.Sign(s_sampleContent, GetHeaderMapWithAlgorithm((int)ECDsaAlgorithm.ES256), unprotectedHeaders, key);
+
+            msg = CoseMessage.DecodeSign1(encodedMsg);
+            Assert.Throws<NotSupportedException>(() => msg.Verify(key));
+        }
+
+        [Fact]
+        public void VerifyThrowsIfCounterSignatureHeaderWasIncluded()
+        {
+            ECDsa key = ECDsaKeys[ECDsaAlgorithm.ES256];
+            var protectedHeaders = GetHeaderMapWithAlgorithm((int)ECDsaAlgorithm.ES256);
+            protectedHeaders.SetValue(CoseHeaderLabel.CounterSignature, ReadOnlySpan<byte>.Empty);
+
+            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, protectedHeaders, GetEmptyHeaderMap(), key);
+            CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
+
+            Assert.Throws<NotSupportedException>(() => msg.Verify(key));
+
+            var unprotectedHeaders = GetEmptyHeaderMap();
+            unprotectedHeaders.SetValue(CoseHeaderLabel.CounterSignature, ReadOnlySpan<byte>.Empty);
+            encodedMsg = CoseSign1Message.Sign(s_sampleContent, GetHeaderMapWithAlgorithm((int)ECDsaAlgorithm.ES256), unprotectedHeaders, key);
+
+            msg = CoseMessage.DecodeSign1(encodedMsg);
+            Assert.Throws<NotSupportedException>(() => msg.Verify(key));
         }
     }
 }

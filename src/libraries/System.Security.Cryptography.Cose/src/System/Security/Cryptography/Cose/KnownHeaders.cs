@@ -6,12 +6,12 @@ namespace System.Security.Cryptography.Cose
     // https://datatracker.ietf.org/doc/html/rfc8152#section-3.1 Table 2.
     internal static class KnownHeaders
     {
-        public const int Alg = 1;
-        public const int Crit = 2;
-        public const int ContentType = 3;
-        public const int Kid = 4;
-        public const int IV = 5;
-        public const int PartialIV = 6;
-        public const int CounterSignature = 7;
+        internal const int Alg = 1;
+        internal const int Crit = 2;
+        internal const int ContentType = 3;
+        internal const int Kid = 4;
+        internal const int IV = 5;
+        internal const int PartialIV = 6;
+        internal const int CounterSignature = 7;
     }
 }

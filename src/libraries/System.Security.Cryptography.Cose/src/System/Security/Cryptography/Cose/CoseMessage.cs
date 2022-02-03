@@ -1,15 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Formats.Cbor;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.Cose
 {
+    [RequiresPreviewFeatures(PreviewFeatureMessage)]
     public abstract class CoseMessage
     {
+        internal const string PreviewFeatureMessage = "COSE is in preview.";
         private const byte EmptyStringByte = 0xa0;
         // COSE tags https://datatracker.ietf.org/doc/html/rfc8152#page-8 Table 1.
         internal const CborTag Sign1Tag = (CborTag)18;
@@ -20,8 +20,8 @@ namespace System.Security.Cryptography.Cose
 
         private CoseHeaderMap _protectedHeaders;
         private CoseHeaderMap _unprotectedHeaders;
-        public CoseHeaderMap ProtectedHeader => _protectedHeaders;
-        public CoseHeaderMap UnprotectedHeader => _unprotectedHeaders;
+        public CoseHeaderMap ProtectedHeaders => _protectedHeaders;
+        public CoseHeaderMap UnprotectedHeaders => _unprotectedHeaders;
 
         internal CoseMessage(CoseHeaderMap protectedHeader, CoseHeaderMap unprotectedHeader, byte[]? content, byte[] signature, byte[] encodedProtectedHeader)
         {
@@ -91,7 +91,7 @@ namespace System.Security.Cryptography.Cose
             var unprotectedHeader = new CoseHeaderMap();
             DecodeUnprotectedBucket(reader, unprotectedHeader);
 
-            CoseSign1Message.ThrowIfDuplicateLabels(protectedHeader, unprotectedHeader);
+            ThrowIfDuplicateLabels(protectedHeader, unprotectedHeader);
 
             byte[]? payload = DecodePayload(reader);
             byte[] signature = DecodeSignature(reader);
@@ -173,6 +173,18 @@ namespace System.Security.Cryptography.Cose
             writer.WriteByteString(content); //payload or content
             writer.WriteEndArray();
             return writer.Encode();
+        }
+
+        // Validate duplicate labels https://datatracker.ietf.org/doc/html/rfc8152#section-3.
+        internal static void ThrowIfDuplicateLabels(CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders)
+        {
+            foreach ((CoseHeaderLabel Label, ReadOnlyMemory<byte>) header in protectedHeaders)
+            {
+                if (unprotectedHeaders.TryGetEncodedValue(header.Label, out _))
+                {
+                    throw new CryptographicException(SR.Sign1SignHeaderDuplicateLabels);
+                }
+            }
         }
 
         internal enum KeyType

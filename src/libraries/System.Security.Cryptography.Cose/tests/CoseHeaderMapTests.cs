@@ -8,35 +8,32 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
 {
-
     public class CoseHeaderMapTests
     {
         [Fact]
-        public void SetValue_GetValue_KnownHeader()
+        public void SetValue_GetValue_KnownCoseHeaderLabel()
         {
-            var alg = new CoseHeaderLabel(KnownHeaders.Alg);
-            var contentType = new CoseHeaderLabel(KnownHeaders.ContentType);
-            var kid = new CoseHeaderLabel(KnownHeaders.Kid);
-            var iV = new CoseHeaderLabel(KnownHeaders.IV);
-            var partialIV = new CoseHeaderLabel(KnownHeaders.PartialIV);
-
             var map = new CoseHeaderMap();
-            map.SetValue(alg, (int)ECDsaAlgorithm.ES256);
-            map.SetValue(contentType, ContentTypeDummyValue);
-            map.SetValue(kid, s_SampleContent);
-            map.SetValue(iV, ReadOnlySpan<byte>.Empty);
-            map.SetValue(partialIV, ReadOnlySpan<byte>.Empty);
+            map.SetValue(CoseHeaderLabel.Algorithm, (int)ECDsaAlgorithm.ES256);
+            map.SetValue(CoseHeaderLabel.Critical, GetDummyCritHeaderValue());
+            map.SetValue(CoseHeaderLabel.ContentType, ContentTypeDummyValue);
+            map.SetValue(CoseHeaderLabel.KeyIdentifier, s_sampleContent);
+            map.SetValue(CoseHeaderLabel.IV, ReadOnlySpan<byte>.Empty);
+            map.SetValue(CoseHeaderLabel.PartialIV, ReadOnlySpan<byte>.Empty);
+            map.SetValue(CoseHeaderLabel.CounterSignature, ReadOnlySpan<byte>.Empty);
 
-            Assert.Equal((int)ECDsaAlgorithm.ES256, map.GetValueAsInt32(alg));
-            Assert.Equal(ContentTypeDummyValue, map.GetValueAsString(contentType));
-            Assert.True(map.GetValueAsBytes(kid).SequenceEqual(s_SampleContent));
-            Assert.True(map.GetValueAsBytes(iV).SequenceEqual(ReadOnlySpan<byte>.Empty));
-            Assert.True(map.GetValueAsBytes(partialIV).SequenceEqual(ReadOnlySpan<byte>.Empty));
+            Assert.Equal((int)ECDsaAlgorithm.ES256, map.GetValueAsInt32(CoseHeaderLabel.Algorithm));
+            AssertExtensions.SequenceEqual(GetDummyCritHeaderValue(), map.GetValueAsBytes(CoseHeaderLabel.Critical));
+            Assert.Equal(ContentTypeDummyValue, map.GetValueAsString(CoseHeaderLabel.ContentType));
+            AssertExtensions.SequenceEqual(s_sampleContent, map.GetValueAsBytes(CoseHeaderLabel.KeyIdentifier));
+            AssertExtensions.SequenceEqual(ReadOnlySpan<byte>.Empty, map.GetValueAsBytes(CoseHeaderLabel.IV));
+            AssertExtensions.SequenceEqual(ReadOnlySpan<byte>.Empty, map.GetValueAsBytes(CoseHeaderLabel.PartialIV));
+            AssertExtensions.SequenceEqual(ReadOnlySpan<byte>.Empty, map.GetValueAsBytes(CoseHeaderLabel.CounterSignature));
         }
 
         [Theory]
         [MemberData(nameof(KnownHeadersEncodedValues_TestData))]
-        public void SetEncodedValue_GetEncodedValue_KnownHeader(int knownHeader, ReadOnlyMemory<byte> encodedValue)
+        public void SetEncodedValue_GetEncodedValue_KnownCoseHeaderLabel(int knownHeader, byte[] encodedValue)
         {
             var map = new CoseHeaderMap();
             var label = new CoseHeaderLabel(knownHeader);
@@ -44,10 +41,10 @@ namespace System.Security.Cryptography.Cose.Tests
             map.SetEncodedValue(label, encodedValue);
 
             ReadOnlyMemory<byte> returnedEncocedValue = map.GetEncodedValue(label);
-            Assert.True(returnedEncocedValue.Span.SequenceEqual(encodedValue.Span));
+            AssertExtensions.SequenceEqual(encodedValue, returnedEncocedValue.Span);
 
             map.TryGetEncodedValue(label, out returnedEncocedValue);
-            Assert.True(returnedEncocedValue.Span.SequenceEqual(encodedValue.Span));
+            AssertExtensions.SequenceEqual(encodedValue, returnedEncocedValue.Span);
         }
 
         [Fact]
@@ -55,17 +52,17 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             var map = new CoseHeaderMap();
             // only accepts int or tstr
-            Assert.Throws<InvalidOperationException>(() => map.SetValue(new CoseHeaderLabel(KnownHeaders.Alg), ReadOnlySpan<byte>.Empty));
-            // [ +label ] (non-empty array)
-            Assert.Throws<NotSupportedException>(() => map.SetValue(new CoseHeaderLabel(KnownHeaders.Crit), ReadOnlySpan<byte>.Empty));
+            Assert.Throws<InvalidOperationException>(() => map.SetValue(CoseHeaderLabel.Algorithm, ReadOnlySpan<byte>.Empty));
+            // [ +label ] (non-empty array) Not yet properly supported.
+            //Assert.Throws<NotSupportedException>(() => map.SetValue(CoseHeaderLabel.Critical, ReadOnlySpan<byte>.Empty));
             // tstr / uint
-            Assert.Throws<InvalidOperationException>(() => map.SetValue(new CoseHeaderLabel(KnownHeaders.ContentType), -1));
+            Assert.Throws<InvalidOperationException>(() => map.SetValue(CoseHeaderLabel.ContentType, -1));
             // bstr
-            Assert.Throws<InvalidOperationException>(() => map.SetValue(new CoseHeaderLabel(KnownHeaders.Kid), "foo"));
+            Assert.Throws<InvalidOperationException>(() => map.SetValue(CoseHeaderLabel.KeyIdentifier, "foo"));
             // bstr
-            Assert.Throws<InvalidOperationException>(() => map.SetValue(new CoseHeaderLabel(KnownHeaders.IV), "foo"));
+            Assert.Throws<InvalidOperationException>(() => map.SetValue(CoseHeaderLabel.IV, "foo"));
             // bstr
-            Assert.Throws<InvalidOperationException>(() => map.SetValue(new CoseHeaderLabel(KnownHeaders.PartialIV), "foo"));
+            Assert.Throws<InvalidOperationException>(() => map.SetValue(CoseHeaderLabel.PartialIV, "foo"));
         }
 
         [Fact]
@@ -73,64 +70,53 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             var writer = new CborWriter();
             writer.WriteNull();
-            ReadOnlyMemory<byte> encodedNullValue = writer.Encode();
+            byte[] encodedNullValue = writer.Encode();
 
             var map = new CoseHeaderMap();
             // only accepts int or tstr
-            Assert.Throws<InvalidOperationException>(() => map.SetEncodedValue(new CoseHeaderLabel(KnownHeaders.Alg), encodedNullValue));
-            // [ +label ] (non-empty array)
-            Assert.Throws<NotSupportedException>(() => map.SetEncodedValue(new CoseHeaderLabel(KnownHeaders.Crit), encodedNullValue));
+            Assert.Throws<InvalidOperationException>(() => map.SetEncodedValue(CoseHeaderLabel.Algorithm, encodedNullValue));
+            // [ +label ] (non-empty array) Not yet properly supported.
+            //Assert.Throws<NotSupportedException>(() => map.SetEncodedValue(CoseHeaderLabel.Critical, encodedNullValue));
             // tstr / uint
-            Assert.Throws<InvalidOperationException>(() => map.SetEncodedValue(new CoseHeaderLabel(KnownHeaders.ContentType), encodedNullValue));
+            Assert.Throws<InvalidOperationException>(() => map.SetEncodedValue(CoseHeaderLabel.ContentType, encodedNullValue));
             // bstr
-            Assert.Throws<InvalidOperationException>(() => map.SetEncodedValue(new CoseHeaderLabel(KnownHeaders.Kid), encodedNullValue));
+            Assert.Throws<InvalidOperationException>(() => map.SetEncodedValue(CoseHeaderLabel.KeyIdentifier, encodedNullValue));
             // bstr
-            Assert.Throws<InvalidOperationException>(() => map.SetEncodedValue(new CoseHeaderLabel(KnownHeaders.IV), encodedNullValue));
+            Assert.Throws<InvalidOperationException>(() => map.SetEncodedValue(CoseHeaderLabel.IV, encodedNullValue));
             // bstr
-            Assert.Throws<InvalidOperationException>(() => map.SetEncodedValue(new CoseHeaderLabel(KnownHeaders.PartialIV), encodedNullValue));
+            Assert.Throws<InvalidOperationException>(() => map.SetEncodedValue(CoseHeaderLabel.PartialIV, encodedNullValue));
         }
 
         [Fact]
         public void Enumerate()
         {
-            var alg = new CoseHeaderLabel(KnownHeaders.Alg);
-            var crit = new CoseHeaderLabel(KnownHeaders.Crit);
-            var contentType = new CoseHeaderLabel(KnownHeaders.ContentType);
-            var kid = new CoseHeaderLabel(KnownHeaders.Kid);
-            var iV = new CoseHeaderLabel(KnownHeaders.IV);
-            var partialIV = new CoseHeaderLabel(KnownHeaders.PartialIV);
-
             var map = new CoseHeaderMap();
-            map.SetValue(alg, (int)ECDsaAlgorithm.ES256);
-            //map.SetEncodedValue(crit, GetDummyCritHeaderValue());
-            map.SetValue(contentType, ContentTypeDummyValue);
-            map.SetValue(kid, s_SampleContent);
-            map.SetValue(iV, ReadOnlySpan<byte>.Empty);
-            map.SetValue(partialIV, ReadOnlySpan<byte>.Empty);
+            map.SetValue(CoseHeaderLabel.Algorithm, (int)ECDsaAlgorithm.ES256);
+            map.SetEncodedValue(CoseHeaderLabel.Critical, GetDummyCritHeaderValue());
+            map.SetValue(CoseHeaderLabel.ContentType, ContentTypeDummyValue);
+            map.SetValue(CoseHeaderLabel.KeyIdentifier, s_sampleContent);
+            map.SetValue(CoseHeaderLabel.IV, ReadOnlySpan<byte>.Empty);
+            map.SetValue(CoseHeaderLabel.PartialIV, ReadOnlySpan<byte>.Empty);
+            map.SetValue(CoseHeaderLabel.CounterSignature, ReadOnlySpan<byte>.Empty);
 
             var writer = new CborWriter();
-            int currentHeader = KnownHeaders.Alg;
-            foreach ((CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue) in map)
+            int currentHeader = KnownHeaderAlg;
+            foreach ((CoseHeaderLabel label, ReadOnlyMemory<byte> encodedValue) in map)
             {
-                if (currentHeader == KnownHeaders.Crit) // TODO remove when Crit gets supported
+                Assert.Equal(new CoseHeaderLabel(currentHeader), label);
+                ReadOnlyMemory<byte> expectedValue = currentHeader switch
                 {
-                    currentHeader++;
-                }
-
-                Assert.Equal(new CoseHeaderLabel(currentHeader), Label);
-                ReadOnlyMemory<byte> ExpectedValue = currentHeader switch
-                {
-                    KnownHeaders.Alg => EncodeInt32((int)ECDsaAlgorithm.ES256, writer),
-                    KnownHeaders.Crit => GetDummyCritHeaderValue(),
-                    KnownHeaders.ContentType => EncodeString(ContentTypeDummyValue, writer),
-                    KnownHeaders.Kid => EncodeBytes(s_SampleContent, writer),
-                    KnownHeaders.IV or KnownHeaders.PartialIV => EncodeBytes(ReadOnlySpan<byte>.Empty, writer),
+                    KnownHeaderAlg => EncodeInt32((int)ECDsaAlgorithm.ES256, writer),
+                    KnownHeaderCrit => GetDummyCritHeaderValue(),
+                    KnownHeaderContentType => EncodeString(ContentTypeDummyValue, writer),
+                    KnownHeaderKid => EncodeBytes(s_sampleContent, writer),
+                    KnownHeaderIV or KnownHeaderPartialIV or KnownHeaderCounterSignature => EncodeBytes(ReadOnlySpan<byte>.Empty, writer),
                     _ => throw new InvalidOperationException()
                 };
-                Assert.True(ExpectedValue.Span.SequenceEqual(EncodedValue.Span));
+                AssertExtensions.SequenceEqual(expectedValue.Span, encodedValue.Span);
                 currentHeader++;
             }
-            Assert.Equal(KnownHeaders.PartialIV + 1, currentHeader);
+            Assert.Equal(KnownHeaderCounterSignature + 1, currentHeader);
 
             static ReadOnlyMemory<byte> EncodeInt32(int value, CborWriter writer)
             {
@@ -161,44 +147,53 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void DecodedProtectedMapShouldBeReadOnly()
         {
-            byte[] encodedMessage = CoseSign1Message.Sign(s_SampleContent, ECDsaKeys[ECDsaAlgorithm.ES256], HashAlgorithmName.SHA256);
+            byte[] encodedMessage = CoseSign1Message.Sign(s_sampleContent, ECDsaKeys[ECDsaAlgorithm.ES256], HashAlgorithmName.SHA256);
             CoseSign1Message message = CoseMessage.DecodeSign1(encodedMessage);
-            Assert.True(message.ProtectedHeader.IsReadOnly);
+            Assert.True(message.ProtectedHeaders.IsReadOnly);
         }
 
         [Fact]
         public void GetValueFromReadOnlyProtectedMap()
         {
-            byte[] encodedMessage = CoseSign1Message.Sign(s_SampleContent, ECDsaKeys[ECDsaAlgorithm.ES256], HashAlgorithmName.SHA256);
+            byte[] encodedMessage = CoseSign1Message.Sign(s_sampleContent, ECDsaKeys[ECDsaAlgorithm.ES256], HashAlgorithmName.SHA256);
             CoseSign1Message message = CoseMessage.DecodeSign1(encodedMessage);
-            Assert.True(message.ProtectedHeader.IsReadOnly);
+            Assert.True(message.ProtectedHeaders.IsReadOnly);
 
             int expectedAlgorithm = (int)ECDsaAlgorithm.ES256;
 
-            int algorithm = message.ProtectedHeader.GetValueAsInt32(CoseHeaderLabel.Algorithm);
+            int algorithm = message.ProtectedHeaders.GetValueAsInt32(CoseHeaderLabel.Algorithm);
             Assert.Equal(expectedAlgorithm, algorithm);
 
-            ReadOnlyMemory<byte> encodedAlgorithm = message.ProtectedHeader.GetEncodedValue(CoseHeaderLabel.Algorithm);
+            ReadOnlyMemory<byte> encodedAlgorithm = message.ProtectedHeaders.GetEncodedValue(CoseHeaderLabel.Algorithm);
             Assert.Equal(expectedAlgorithm, new CborReader(encodedAlgorithm).ReadInt32());
 
-            message.ProtectedHeader.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out encodedAlgorithm);
+            message.ProtectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out encodedAlgorithm);
             Assert.Equal(expectedAlgorithm, new CborReader(encodedAlgorithm).ReadInt32());
         }
 
         [Fact]
         public void SetValueAndRemoveThrowIfProtectedMapIsReadOnly()
         {
-            byte[] encodedMessage = CoseSign1Message.Sign(s_SampleContent, ECDsaKeys[ECDsaAlgorithm.ES256], HashAlgorithmName.SHA256);
+            byte[] encodedMessage = CoseSign1Message.Sign(s_sampleContent, ECDsaKeys[ECDsaAlgorithm.ES256], HashAlgorithmName.SHA256);
             CoseSign1Message message = CoseMessage.DecodeSign1(encodedMessage);
-            Assert.True(message.ProtectedHeader.IsReadOnly);
+            Assert.True(message.ProtectedHeaders.IsReadOnly);
 
+            // New value.
             var barLabel = new CoseHeaderLabel("bar");
-            Assert.Throws<InvalidOperationException>(() => message.ProtectedHeader.SetValue(barLabel, 42));
-            Assert.Throws<InvalidOperationException>(() => message.ProtectedHeader.Remove(barLabel));
+            Assert.Throws<InvalidOperationException>(() => message.ProtectedHeaders.SetValue(barLabel, 42));
+            Assert.Throws<InvalidOperationException>(() => message.ProtectedHeaders.Remove(barLabel));
 
+            // Existing value.
+            Assert.Throws<InvalidOperationException>(() => message.ProtectedHeaders.SetValue(CoseHeaderLabel.Algorithm, 42));
+            Assert.Throws<InvalidOperationException>(() => message.ProtectedHeaders.Remove(CoseHeaderLabel.Algorithm));
+
+            // Verify existing value was not overwritten even after throwing.
+            Assert.Equal((int)ECDsaAlgorithm.ES256, message.ProtectedHeaders.GetValueAsInt32(CoseHeaderLabel.Algorithm));
+
+            // Non-readonly header works correctly.
             var fooLabel = new CoseHeaderLabel("foo");
-            message.UnprotectedHeader.SetValue(fooLabel, 42);
-            message.UnprotectedHeader.Remove(fooLabel);
+            message.UnprotectedHeaders.SetValue(fooLabel, 42);
+            message.UnprotectedHeaders.Remove(fooLabel);
         }
 
         public static IEnumerable<object[]> KnownHeadersEncodedValues_TestData()
@@ -206,26 +201,29 @@ namespace System.Security.Cryptography.Cose.Tests
             var writer = new CborWriter();
 
             writer.WriteInt32((int)ECDsaAlgorithm.ES256);
-            yield return ReturnDataAndReset(KnownHeaders.Alg, writer);
+            yield return ReturnDataAndReset(KnownHeaderAlg, writer);
 
-            //WriteDummyCritHeaderValue(writer);
-            //yield return ReturnDataAndReset(KnownHeaders.Crit, writer);
+            WriteDummyCritHeaderValue(writer);
+            yield return ReturnDataAndReset(KnownHeaderCrit, writer);
 
             writer.WriteTextString(ContentTypeDummyValue);
-            yield return ReturnDataAndReset(KnownHeaders.ContentType, writer);
+            yield return ReturnDataAndReset(KnownHeaderContentType, writer);
 
             writer.WriteByteString(new byte[] { 0x42, 0x31, 0x31 });
-            yield return ReturnDataAndReset(KnownHeaders.Kid, writer);
+            yield return ReturnDataAndReset(KnownHeaderKid, writer);
 
             writer.WriteByteString(ReadOnlySpan<byte>.Empty);
-            yield return ReturnDataAndReset(KnownHeaders.IV, writer);
+            yield return ReturnDataAndReset(KnownHeaderIV, writer);
 
             writer.WriteByteString(ReadOnlySpan<byte>.Empty);
-            yield return ReturnDataAndReset(KnownHeaders.PartialIV, writer);
+            yield return ReturnDataAndReset(KnownHeaderPartialIV, writer);
+
+            writer.WriteByteString(ReadOnlySpan<byte>.Empty);
+            yield return ReturnDataAndReset(KnownHeaderCounterSignature, writer);
 
             static object[] ReturnDataAndReset(int knownHeader, CborWriter w)
             {
-                ReadOnlyMemory<byte> encodedValue = w.Encode();
+                byte[] encodedValue = w.Encode();
                 w.Reset();
                 return new object[] { knownHeader, encodedValue };
             }
@@ -238,7 +236,7 @@ namespace System.Security.Cryptography.Cose.Tests
             writer.WriteEndArray();
         }
 
-        private static ReadOnlyMemory<byte> GetDummyCritHeaderValue()
+        private static byte[] GetDummyCritHeaderValue()
         {
             var writer = new CborWriter();
             WriteDummyCritHeaderValue(writer);

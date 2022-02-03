@@ -1,13 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Cbor;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.Cose
 {
+    [RequiresPreviewFeatures(PreviewFeatureMessage)]
     public sealed class CoseSign1Message : CoseMessage
     {
         private const string SigStructureCoxtextSign1 = "Signature1";
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Cose
 
             ThrowIfDuplicateLabels(protectedHeaders, unprotectedHeaders);
 
-            ReadOnlyMemory<byte> encodedAlg = GetCoseAlgorithmFromBuckets(protectedHeaders, unprotectedHeaders);
+            ReadOnlyMemory<byte> encodedAlg = GetCoseAlgorithmFromProtectedHeaders(protectedHeaders);
 
             int? algorithmHeader = DecodeCoseAlgorithmHeader(encodedAlg);
             Debug.Assert(algorithmHeader.HasValue, "Algorithm (alg) is a known header and should have been validated in Set[Encoded]Value()");
@@ -103,25 +103,19 @@ namespace System.Security.Cryptography.Cose
             return SignCore(encodedProtetedHeaders, unprotectedHeaders.Encode(), signature, content, isDetached);
         }
 
-        // Validate duplicate labels https://datatracker.ietf.org/doc/html/rfc8152#section-3.
-        internal static void ThrowIfDuplicateLabels(CoseHeaderMap @protected, CoseHeaderMap unprotected)
-        {
-            foreach ((CoseHeaderLabel Label, ReadOnlyMemory<byte>) header in @protected)
-            {
-                if (unprotected.TryGetEncodedValue(header.Label, out _))
-                {
-                    throw new CryptographicException(SR.Sign1SignHeaderDuplicateLabels);
-                }
-            }
-        }
-
-        private static byte[] SignCore(ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> encodedUnprotectedHeader, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> content, bool isDetached)
+        private static byte[] SignCore(
+            ReadOnlySpan<byte> encodedProtectedHeader,
+            ReadOnlySpan<byte> encodedUnprotectedHeader,
+            ReadOnlySpan<byte> signature,
+            ReadOnlySpan<byte> content,
+            bool isDetached)
         {
             var writer = new CborWriter();
             writer.WriteTag(Sign1Tag);
             writer.WriteStartArray(Sign1ArrayLegth);
             writer.WriteByteString(encodedProtectedHeader);
             writer.WriteEncodedValue(encodedUnprotectedHeader);
+
             if (isDetached)
             {
                 writer.WriteNull();
@@ -130,6 +124,7 @@ namespace System.Security.Cryptography.Cose
             {
                 writer.WriteByteString(content);
             }
+
             writer.WriteByteString(signature);
             writer.WriteEndArray();
 
@@ -192,24 +187,28 @@ namespace System.Security.Cryptography.Cose
 
         private void PrepareForVerify(ReadOnlySpan<byte> content, out int alg, out byte[] toBeSigned)
         {
-            ReadOnlyMemory<byte> encodedAlg = GetCoseAlgorithmFromBuckets(ProtectedHeader, UnprotectedHeader);
-            alg = DecodeCoseAlgorithmHeader(encodedAlg) ?? throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
+            ThrowIfUnsupportedHeaders();
+
+            ReadOnlyMemory<byte> encodedAlg = GetCoseAlgorithmFromProtectedHeaders(ProtectedHeaders);
+
+            int? nullableAlg = DecodeCoseAlgorithmHeader(encodedAlg);
+            if (nullableAlg == null)
+            {
+                throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
+            }
+
+            alg = nullableAlg.Value;
             toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content);
         }
 
-        private static ReadOnlyMemory<byte> GetCoseAlgorithmFromBuckets(CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders)
+        private static ReadOnlyMemory<byte> GetCoseAlgorithmFromProtectedHeaders(CoseHeaderMap protectedHeaders)
         {
             // https://datatracker.ietf.org/doc/html/rfc8152#section-3.1 alg:
             // This parameter MUST be authenticated where the ability to do so exists.
             // This authentication can be done either by placing the header in the protected header bucket or as part of the externally supplied data.
-            // Example of an Algorithm header placed in the unprotected bucket https://github.com/cose-wg/Examples/blob/master/sign1-tests/sign-pass-01.json
-            CoseHeaderLabel label = CoseHeaderLabel.Algorithm;
-            if (!protectedHeaders.TryGetEncodedValue(label, out ReadOnlyMemory<byte> encodedAlg))
+            if (!protectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg))
             {
-                if (!unprotectedHeaders.TryGetEncodedValue(label, out encodedAlg))
-                {
-                    throw new CryptographicException(SR.Sign1SignAlgIsRequired);
-                }
+                throw new CryptographicException(SR.Sign1SignAlgIsRequired);
             }
 
             return encodedAlg;
@@ -224,13 +223,25 @@ namespace System.Security.Cryptography.Cose
             {
                 int alg = reader.ReadInt32();
                 KnownCoseAlgorithms.ThrowIfNotSupported(alg);
-                return reader.BytesRemaining == 0 ? alg : throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
+
+                if (reader.BytesRemaining != 0)
+                {
+                    throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
+                }
+
+                return alg;
             }
 
             if (state == CborReaderState.TextString)
             {
                 int alg = KnownCoseAlgorithms.FromString(reader.ReadTextString());
-                return reader.BytesRemaining == 0 ? alg : throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
+
+                if (reader.BytesRemaining != 0)
+                {
+                    throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
+                }
+
+                return alg;
             }
 
             return null;
@@ -266,18 +277,33 @@ namespace System.Security.Cryptography.Cose
             {
                 KeyType.ECDsa => hashAlgorithm.Name switch
                 {
-                    KnownHashAlgorithms.SHA256 => KnownCoseAlgorithms.ES256,
-                    KnownHashAlgorithms.SHA384 => KnownCoseAlgorithms.ES384,
-                    KnownHashAlgorithms.SHA512 => KnownCoseAlgorithms.ES512,
+                    nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.ES256,
+                    nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.ES384,
+                    nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.ES512,
                     _ => throw new CryptographicException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithm.Name))
                 },
                 _ => hashAlgorithm.Name switch // KeyType.RSA
                 {
-                    KnownHashAlgorithms.SHA256 => KnownCoseAlgorithms.PS256,
-                    KnownHashAlgorithms.SHA384 => KnownCoseAlgorithms.PS384,
-                    KnownHashAlgorithms.SHA512 => KnownCoseAlgorithms.PS512,
+                    nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.PS256,
+                    nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.PS384,
+                    nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.PS512,
                     _ => throw new CryptographicException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithm.Name))
                 },
             };
+
+        private void ThrowIfUnsupportedHeaders()
+        {
+            if (ProtectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Critical, out _) ||
+                ProtectedHeaders.TryGetEncodedValue(CoseHeaderLabel.CounterSignature, out _))
+            {
+                throw new NotSupportedException(SR.Sign1VerifyCriticalAndCounterSignNotSupported);
+            }
+
+            if (UnprotectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Critical, out _) ||
+                UnprotectedHeaders.TryGetEncodedValue(CoseHeaderLabel.CounterSignature, out _))
+            {
+                throw new NotSupportedException(SR.Sign1VerifyCriticalAndCounterSignNotSupported);
+            }
+        }
     }
 }

@@ -3,26 +3,20 @@
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
     <Nullable>enable</Nullable>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <GenerateRequiresPreviewFeaturesAttribute>true</GenerateRequiresPreviewFeaturesAttribute>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
+    <Compile Include="CoseHeaderLabelTests.cs" />
     <Compile Include="CoseHeaderMapTests.cs" />
     <Compile Include="CoseMessageTests.DecoseSign1.cs" />
     <Compile Include="CoseSign1MessageTests.Verify.cs" />
     <Compile Include="CoseSign1MessageTests.Sign.cs" />
     <Compile Include="CoseTestHelpers.cs" />
-    <Compile Include="..\src\System\Security\Cryptography\Cose\KnownHeaders.cs">
-      <Link>System\Security\Cryptography\Cose\KnownHeaders.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Security\Cryptography\Cose\KnownCoseAlgorithms.cs">
-      <Link>System\Security\Cryptography\Cose\KnownCoseAlgorithms.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Security\Cryptography\Cose\KnownHashAlgorithms.cs">
-      <Link>System\Security\Cryptography\Cose\KnownHashAlgorithms.cs</Link>
-    </Compile>
   </ItemGroup>
 
   <ItemGroup>

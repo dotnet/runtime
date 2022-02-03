@@ -117,11 +117,17 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="CoseHeaderMapCborEncodedValueNotValid" xml:space="preserve">
+    <value>Not a valid CBOR encoded value, it must be a single value with no trailing data.</value>
+  </data>
   <data name="CoseHeaderMapDecodedMapIsReadOnlyCannotSetValue" xml:space="preserve">
     <value>Decoded map is read only, headers cannot be added nor deleted.</value>
   </data>
   <data name="CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue" xml:space="preserve">
     <value>Header '{0}' does not accept the specified value.</value>
+  </data>
+  <data name="CoseHeaderMapLabelDoeNotExist" xml:space="preserve">
+    <value>Label '{0}' does not exist is the map.</value>
   </data>
   <data name="DecodeSign1ArrayLengthMustBeFour" xml:space="preserve">
     <value>Array length for COSE_Sign1 must be four.</value>
@@ -151,7 +157,7 @@
     <value>COSE algorithm '{0}' doesn't match with the supported algorithms of '{1}'.</value>
   </data>
   <data name="Sign1SignAlgIsRequired" xml:space="preserve">
-    <value>Algorithm (alg) header is required for signing.</value>
+    <value>Algorithm (alg) header is required and it must be a protected header.</value>
   </data>
   <data name="Sign1SignHeaderDuplicateLabels" xml:space="preserve">
     <value>Protected and Unprotected buckets must not contain duplicate labels.</value>
@@ -176,5 +182,8 @@
   </data>
   <data name="Sign1VerifyContentWasEmbedded" xml:space="preserve">
     <value>Content was included in the message (embedded message) and yet another content was provided for verification.</value>
+  </data>
+  <data name="Sign1VerifyCriticalAndCounterSignNotSupported" xml:space="preserve">
+    <value>Critical and Counter Signature headers are currently not supported.</value>
   </data>
 </root>

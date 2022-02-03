@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray("D28445A201260300A104423131F658406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B"));
             Assert.Null(msg.Content);
-            Assert.True(msg.Verify(ECDsaKeys[ECDsaAlgorithm.ES256], s_SampleContent));
+            Assert.True(msg.Verify(ECDsaKeys[ECDsaAlgorithm.ES256], s_sampleContent));
         }
 
         [Theory]
