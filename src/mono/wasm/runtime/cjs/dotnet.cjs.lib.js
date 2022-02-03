@@ -18,6 +18,7 @@ let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
 readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;
+var noExitRuntime = __dotnet_replacements.noExitRuntime;
 `,
 };
 

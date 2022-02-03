@@ -134,7 +134,7 @@ let exportedAPI: DotnetPublicAPI;
 function initializeImportsAndExports(
     imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any },
-    replacements: { fetch: any, readAsync: any, require: any, requireOut: any },
+    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -168,9 +168,6 @@ function initializeImportsAndExports(
     if (!module.printErr) {
         module.printErr = console.error.bind(console);
     }
-    if (module.noExitRuntime === undefined) {
-        module.noExitRuntime = ENVIRONMENT_IS_WEB;
-    }
     module.imports = module.imports || <DotnetModuleConfigImports>{};
     if (!module.imports.require) {
         module.imports.require = (name) => {
@@ -194,6 +191,9 @@ function initializeImportsAndExports(
     replacements.fetch = runtimeHelpers.fetch;
     replacements.readAsync = readAsync_like;
     replacements.requireOut = module.imports.require;
+    replacements.noExitRuntime = module.noExitRuntime === undefined
+        ? ENVIRONMENT_IS_WEB
+        : module.noExitRuntime;
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
         module.disableDotnet6Compatibility = imports.isESM;
