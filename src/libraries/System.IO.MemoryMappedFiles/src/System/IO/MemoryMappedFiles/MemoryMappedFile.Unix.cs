@@ -191,10 +191,11 @@ namespace System.IO.MemoryMappedFiles
 
             string mapName;
             SafeFileHandle fd;
+            int maxNameLength = 32;
 
             do
             {
-                mapName = GenerateMapName();
+                mapName = GenerateMapName().Substring(0, maxNameLength);
                 fd = Interop.Sys.ShmOpen(mapName, flags, (int)perms); // Create the shared memory object.
 
                 if (fd.IsInvalid)
@@ -209,10 +210,21 @@ namespace System.IO.MemoryMappedFiles
                         // the result of native shm_open does not work well with our subsequent call to mmap.
                         return null;
                     }
+                    else if (errorInfo.Error == Interop.Error.ENAMETOOLONG)
+                    {
+                        --maxNameLength;
+                    }
                     else if (errorInfo.Error != Interop.Error.EEXIST) // map with same name already existed
                     {
                         throw Interop.GetExceptionForIoErrno(errorInfo);
                     }
+                }
+
+                if (!fd.IsInvalid && maxNameLength != 32)
+                {
+                    fd.Dispose();
+
+                    throw new Exception($"The magic number is {maxNameLength}");
                 }
             } while (fd.IsInvalid);
 
