@@ -348,7 +348,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 Name = paramName,
                                                 Type = typeName,
                                                 Qualifier = qualifier,
-                                                NeedsAtSign = needsAtSign,
+                                                CodeName = needsAtSign ? "@" + paramName : paramName,
                                                 IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol!, loggerSymbol),
                                                 IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol!, exceptionSymbol),
                                                 IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol!, logLevelSymbol),
@@ -749,9 +749,8 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             public string Name = string.Empty;
             public string Type = string.Empty;
-            public string CodeName => NeedsAtSign ? "@" + Name : Name;
+            public string CodeName = string.Empty;
             public string? Qualifier;
-            public bool NeedsAtSign;
             public bool IsLogger;
             public bool IsException;
             public bool IsLogLevel;
