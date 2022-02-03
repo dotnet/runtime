@@ -102,6 +102,18 @@ namespace DebuggerTests
             eventListeners[evtName] = cb;
         }
 
+        public Task<JObject> WaitForEvent(string evtName)
+        {
+            var eventReceived = new TaskCompletionSource<JObject>();
+            On(evtName, async (args, token) =>
+            {
+                eventReceived.SetResult(args);
+                await Task.CompletedTask;
+            });
+
+            return eventReceived.Task.WaitAsync(Token);
+        }
+
         void FailAllWaiters(Exception? exception = null)
         {
             // Because we can create already completed tasks,
