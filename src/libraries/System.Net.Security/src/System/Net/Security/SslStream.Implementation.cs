@@ -54,10 +54,7 @@ namespace System.Net.Security
                 throw new InvalidOperationException(SR.net_auth_client_server);
             }
 
-            if (sslClientAuthenticationOptions.TargetHost == null)
-            {
-                throw new ArgumentNullException(nameof(sslClientAuthenticationOptions.TargetHost));
-            }
+            ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions.TargetHost, nameof(sslClientAuthenticationOptions.TargetHost));
 
             _exception = null;
             try

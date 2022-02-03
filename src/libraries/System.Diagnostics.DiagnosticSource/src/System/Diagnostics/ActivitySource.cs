@@ -18,13 +18,8 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
-        public ActivitySource(string name, string? version = "")
+        public ActivitySource(string name!!, string? version = "")
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             Name = name;
             Version = version;
 
@@ -301,13 +296,8 @@ namespace System.Diagnostics
         /// Add a listener to the <see cref="Activity"/> starting and stopping events.
         /// </summary>
         /// <param name="listener"> The <see cref="ActivityListener"/> object to use for listening to the <see cref="Activity"/> events.</param>
-        public static void AddActivityListener(ActivityListener listener)
+        public static void AddActivityListener(ActivityListener listener!!)
         {
-            if (listener == null)
-            {
-                throw new ArgumentNullException(nameof(listener));
-            }
-
             if (s_allListeners.AddIfNotExist(listener))
             {
                 s_activeSources.EnumWithAction((source, obj) => {

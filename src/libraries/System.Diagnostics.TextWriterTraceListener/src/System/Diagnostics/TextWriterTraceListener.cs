@@ -38,10 +38,9 @@ namespace System.Diagnostics
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the
         ///    specified name and using the stream as the recipient of the debugging and tracing output.</para>
         /// </devdoc>
-        public TextWriterTraceListener(Stream stream, string? name)
+        public TextWriterTraceListener(Stream stream!!, string? name)
             : base(name)
         {
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
             _writer = new StreamWriter(stream);
         }
 
@@ -60,10 +59,9 @@ namespace System.Diagnostics
         ///    debugging
         ///    output.</para>
         /// </devdoc>
-        public TextWriterTraceListener(TextWriter writer, string? name)
+        public TextWriterTraceListener(TextWriter writer!!, string? name)
             : base(name)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
             _writer = writer;
         }
 

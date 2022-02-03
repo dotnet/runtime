@@ -216,13 +216,8 @@ namespace System.Net
         }
 
         // This method will construct a faked URI: the Domain property is required for param.
-        public void Add(Cookie cookie)
+        public void Add(Cookie cookie!!)
         {
-            if (cookie == null)
-            {
-                throw new ArgumentNullException(nameof(cookie));
-            }
-
             if (cookie.Domain.Length == 0)
             {
                 throw new ArgumentException(
@@ -580,12 +575,8 @@ namespace System.Net
             }
         }
 
-        public void Add(CookieCollection cookies)
+        public void Add(CookieCollection cookies!!)
         {
-            if (cookies == null)
-            {
-                throw new ArgumentNullException(nameof(cookies));
-            }
             foreach (Cookie c in (ICollection<Cookie>)cookies)
             {
                 Add(c);
@@ -660,33 +651,17 @@ namespace System.Net
             return false;
         }
 
-        public void Add(Uri uri, Cookie cookie)
+        public void Add(Uri uri!!, Cookie cookie!!)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-            if (cookie == null)
-            {
-                throw new ArgumentNullException(nameof(cookie));
-            }
+
             Cookie new_cookie = cookie.Clone();
             new_cookie.VerifySetDefaults(new_cookie.Variant, uri, IsLocalDomain(uri.Host), m_fqdnMyDomain, true, true);
 
             Add(new_cookie, true);
         }
 
-        public void Add(Uri uri, CookieCollection cookies)
+        public void Add(Uri uri!!, CookieCollection cookies!!)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-            if (cookies == null)
-            {
-                throw new ArgumentNullException(nameof(cookies));
-            }
-
             bool isLocalDomain = IsLocalDomain(uri.Host);
             foreach (Cookie c in cookies)
             {
@@ -778,12 +753,8 @@ namespace System.Net
             return cookies;
         }
 
-        public CookieCollection GetCookies(Uri uri)
+        public CookieCollection GetCookies(Uri uri!!)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
             return InternalGetCookies(uri) ?? new CookieCollection();
         }
 
@@ -1014,13 +985,8 @@ namespace System.Net
             }
         }
 
-        public string GetCookieHeader(Uri uri)
+        public string GetCookieHeader(Uri uri!!)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-
             return GetCookieHeader(uri, out _);
         }
 
@@ -1053,16 +1019,9 @@ namespace System.Net
             return StringBuilderCache.GetStringAndRelease(builder);
         }
 
-        public void SetCookies(Uri uri, string cookieHeader)
+        public void SetCookies(Uri uri!!, string cookieHeader!!)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-            if (cookieHeader == null)
-            {
-                throw new ArgumentNullException(nameof(cookieHeader));
-            }
+
             CookieCutter(uri, null, cookieHeader, true); // Will throw on error
         }
     }

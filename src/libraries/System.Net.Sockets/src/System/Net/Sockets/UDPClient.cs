@@ -84,14 +84,8 @@ namespace System.Net.Sockets
 
         // Creates a new instance of the UdpClient class that communicates on the
         // specified end point.
-        public UdpClient(IPEndPoint localEP)
+        public UdpClient(IPEndPoint localEP!!)
         {
-            // Validate input parameters.
-            if (localEP == null)
-            {
-                throw new ArgumentNullException(nameof(localEP));
-            }
-
             // IPv6 Changes: Set the AddressFamily of this object before
             //               creating the client socket.
             _family = localEP.AddressFamily;
@@ -318,10 +312,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (datagram == null)
-            {
-                throw new ArgumentNullException(nameof(datagram));
-            }
+            ArgumentNullException.ThrowIfNull(datagram);
 
             if (bytes > datagram.Length || bytes < 0)
             {
@@ -420,11 +411,7 @@ namespace System.Net.Sockets
         {
             // Validate input parameters.
             ThrowIfDisposed();
-
-            if (multicastAddr == null)
-            {
-                throw new ArgumentNullException(nameof(multicastAddr));
-            }
+            ArgumentNullException.ThrowIfNull(multicastAddr);
 
             // IPv6 Changes: we need to create the correct MulticastOption and
             //               must also check for address family compatibility.
@@ -479,10 +466,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             // Validate input parameters.
-            if (multicastAddr == null)
-            {
-                throw new ArgumentNullException(nameof(multicastAddr));
-            }
+            ArgumentNullException.ThrowIfNull(multicastAddr);
 
             if (ifindex < 0)
             {
@@ -510,10 +494,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             // parameter validation;
-            if (multicastAddr == null)
-            {
-                throw new ArgumentNullException(nameof(multicastAddr));
-            }
+            ArgumentNullException.ThrowIfNull(multicastAddr);
             if (!RangeValidationHelpers.ValidateRange(timeToLive, 0, 255))
             {
                 throw new ArgumentOutOfRangeException(nameof(timeToLive));
@@ -535,10 +516,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             // Validate input parameters.
-            if (multicastAddr == null)
-            {
-                throw new ArgumentNullException(nameof(multicastAddr));
-            }
+            ArgumentNullException.ThrowIfNull(multicastAddr);
 
             // IPv6 Changes: we need to create the correct MulticastOption and
             //               must also check for address family compatibility.
@@ -573,10 +551,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             // Validate input parameters.
-            if (multicastAddr == null)
-            {
-                throw new ArgumentNullException(nameof(multicastAddr));
-            }
+            ArgumentNullException.ThrowIfNull(multicastAddr);
 
             if (ifindex < 0)
             {
@@ -750,10 +725,7 @@ namespace System.Net.Sockets
 
         public UdpClient(string hostname, int port)
         {
-            if (hostname == null)
-            {
-                throw new ArgumentNullException(nameof(hostname));
-            }
+            ArgumentNullException.ThrowIfNull(hostname);
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
@@ -775,10 +747,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (hostname == null)
-            {
-                throw new ArgumentNullException(nameof(hostname));
-            }
+            ArgumentNullException.ThrowIfNull(hostname);
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
@@ -904,10 +873,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (addr == null)
-            {
-                throw new ArgumentNullException(nameof(addr));
-            }
+            ArgumentNullException.ThrowIfNull(addr);
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
@@ -922,10 +888,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (endPoint == null)
-            {
-                throw new ArgumentNullException(nameof(endPoint));
-            }
+            ArgumentNullException.ThrowIfNull(endPoint);
 
             CheckForBroadcast(endPoint.Address);
             Client.Connect(endPoint);
@@ -973,10 +936,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (dgram == null)
-            {
-                throw new ArgumentNullException(nameof(dgram));
-            }
+            ArgumentNullException.ThrowIfNull(dgram);
             if (_active && endPoint != null)
             {
                 // Do not allow sending packets to arbitrary host when connected
@@ -1052,10 +1012,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (dgram == null)
-            {
-                throw new ArgumentNullException(nameof(dgram));
-            }
+            ArgumentNullException.ThrowIfNull(dgram);
             if (!_active)
             {
                 // only allowed on connected socket

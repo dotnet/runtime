@@ -39,11 +39,8 @@ namespace System.Security.Cryptography.Xml
             AddCertificate(cert);
         }
 
-        public KeyInfoX509Data(X509Certificate cert, X509IncludeOption includeOption)
+        public KeyInfoX509Data(X509Certificate cert!!, X509IncludeOption includeOption)
         {
-            if (cert == null)
-                throw new ArgumentNullException(nameof(cert));
-
             X509Certificate2 certificate = new X509Certificate2(cert);
             X509ChainElementCollection elements;
             X509Chain chain;
@@ -100,11 +97,8 @@ namespace System.Security.Cryptography.Xml
             get { return _certificates; }
         }
 
-        public void AddCertificate(X509Certificate certificate)
+        public void AddCertificate(X509Certificate certificate!!)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
-
             if (_certificates == null)
                 _certificates = new ArrayList();
 
@@ -262,11 +256,8 @@ namespace System.Security.Cryptography.Xml
             return x509DataElement;
         }
 
-        public override void LoadXml(XmlElement element)
+        public override void LoadXml(XmlElement element!!)
         {
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
             XmlNamespaceManager nsm = new XmlNamespaceManager(element.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
 

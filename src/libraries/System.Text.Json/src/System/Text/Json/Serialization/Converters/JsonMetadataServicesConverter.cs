@@ -41,9 +41,9 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;
 
-        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy)
+        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator!!, ConverterStrategy converterStrategy)
         {
-            _converterCreator = converterCreator ?? throw new ArgumentNullException(nameof(converterCreator));
+            _converterCreator = converterCreator;
             _converterStrategy = converterStrategy;
         }
 

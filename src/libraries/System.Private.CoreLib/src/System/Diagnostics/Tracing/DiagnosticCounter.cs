@@ -29,22 +29,12 @@ namespace System.Diagnostics.Tracing
         /// All Counters live as long as the EventSource that they are attached to unless they are
         /// explicitly Disposed.
         /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="eventSource">The event source.</param>
-        internal DiagnosticCounter(string name, EventSource eventSource)
+        /// <param name="Name">The name.</param>
+        /// <param name="EventSource">The event source.</param>
+        internal DiagnosticCounter(string Name!!, EventSource EventSource!!)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(Name));
-            }
-
-            if (eventSource == null)
-            {
-                throw new ArgumentNullException(nameof(EventSource));
-            }
-
-            Name = name;
-            EventSource = eventSource;
+            this.Name = Name;
+            this.EventSource = EventSource;
         }
 
         /// <summary>Adds the counter to the set that the EventSource will report on.</summary>

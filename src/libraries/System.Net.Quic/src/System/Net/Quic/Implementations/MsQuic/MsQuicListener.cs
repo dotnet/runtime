@@ -81,10 +81,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal MsQuicListener(QuicListenerOptions options)
         {
-            if (options.ListenEndPoint == null)
-            {
-                throw new ArgumentNullException(nameof(options.ListenEndPoint));
-            }
+            ArgumentNullException.ThrowIfNull(options.ListenEndPoint, nameof(options.ListenEndPoint));
 
             _state = new State(options);
             _stateHandle = GCHandle.Alloc(_state);

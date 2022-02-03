@@ -228,18 +228,9 @@ namespace System.ComponentModel
         /// table for the editor type, if one can be found.
         /// </summary>
         [RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static construtors trimmed.")]
-        internal static void AddEditorTable(Type editorBaseType, Hashtable table)
+        internal static void AddEditorTable(Type editorBaseType!!, Hashtable table)
         {
-            if (editorBaseType == null)
-            {
-                throw new ArgumentNullException(nameof(editorBaseType));
-            }
-
-            if (table == null)
-            {
-                Debug.Fail("COMPAT: Editor table should not be null");
-                // don't throw; RTM didn't so we can't do it either.
-            }
+            Debug.Assert(table != null, "COMPAT: Editor table should not be null"); // don't throw; RTM didn't so we can't do it either.
 
             lock (s_internalSyncObject)
             {
@@ -628,13 +619,8 @@ namespace System.ComponentModel
             return properties;
         }
 
-        protected internal override IExtenderProvider[] GetExtenderProviders(object instance)
+        protected internal override IExtenderProvider[] GetExtenderProviders(object instance!!)
         {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
-
             IComponent? component = instance as IComponent;
             if (component != null && component.Site != null)
             {

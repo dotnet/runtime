@@ -142,12 +142,8 @@ namespace System.Net.Http
             throw new PlatformNotSupportedException();
         }
 
-        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
             CancellationTokenRegistration? abortRegistration = null;
             try
             {
@@ -352,10 +348,10 @@ namespace System.Net.Http
             private readonly CancellationTokenRegistration _abortRegistration;
             private bool _isDisposed;
 
-            public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenRegistration abortRegistration)
+            public WasmFetchResponse(JSObject fetchResponse!!, JSObject abortController!!, CancellationTokenRegistration abortRegistration)
             {
-                _fetchResponse = fetchResponse ?? throw new ArgumentNullException(nameof(fetchResponse));
-                _abortController = abortController ?? throw new ArgumentNullException(nameof(abortController));
+                _fetchResponse = fetchResponse;
+                _abortController = abortController;
                 _abortRegistration = abortRegistration;
             }
 
@@ -396,9 +392,9 @@ namespace System.Net.Http
             private byte[]? _data;
             private readonly WasmFetchResponse _status;
 
-            public BrowserHttpContent(WasmFetchResponse status)
+            public BrowserHttpContent(WasmFetchResponse status!!)
             {
-                _status = status ?? throw new ArgumentNullException(nameof(status));
+                _status = status;
             }
 
             private async Task<byte[]> GetResponseData(CancellationToken cancellationToken)

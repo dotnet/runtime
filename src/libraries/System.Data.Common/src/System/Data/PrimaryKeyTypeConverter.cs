@@ -19,13 +19,8 @@ namespace System.Data
             destinationType == typeof(string) ||
             base.CanConvertTo(context, destinationType);
 
-        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
-
             return destinationType == typeof(string) ?
                 Array.Empty<DataColumn>().GetType().Name :
                 base.ConvertTo(context, culture, value, destinationType);

@@ -17,13 +17,8 @@ namespace System.Security.Cryptography
         // https://docs.microsoft.com/en-us/windows/desktop/api/bcrypt/ns-bcrypt-_bcrypt_dsa_key_blob_v2
         private const int WindowsMaxQSize = 32;
 
-        public override byte[] CreateSignature(byte[] rgbHash)
+        public override byte[] CreateSignature(byte[] rgbHash!!)
         {
-            if (rgbHash == null)
-            {
-                throw new ArgumentNullException(nameof(rgbHash));
-            }
-
             Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
             ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(rgbHash, stackBuf);
 
@@ -73,17 +68,8 @@ namespace System.Security.Cryptography
                 out bytesWritten);
         }
 
-        public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
+        public override bool VerifySignature(byte[] rgbHash!!, byte[] rgbSignature!!)
         {
-            if (rgbHash == null)
-            {
-                throw new ArgumentNullException(nameof(rgbHash));
-            }
-            if (rgbSignature == null)
-            {
-                throw new ArgumentNullException(nameof(rgbSignature));
-            }
-
             return VerifySignatureCore(rgbHash, rgbSignature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
