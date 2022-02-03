@@ -308,6 +308,15 @@ namespace Microsoft.Extensions.Logging.Generators
                                         foreach (IParameterSymbol paramSymbol in methodSymbol.Parameters)
                                         {
                                             string paramName = paramSymbol.Name;
+                                            bool needsAtSign = false;
+                                            if (paramSymbol.DeclaringSyntaxReferences.Length > 0)
+                                            {
+                                                ParameterSyntax paramSyntax = paramSymbol.DeclaringSyntaxReferences[0].GetSyntax(_cancellationToken) as ParameterSyntax;
+                                                if (paramSyntax != null && !string.IsNullOrEmpty(paramSyntax.Identifier.Text))
+                                                {
+                                                    needsAtSign = paramSyntax.Identifier.Text[0] == '@';
+                                                }
+                                            }
                                             if (string.IsNullOrWhiteSpace(paramName))
                                             {
                                                 // semantic problem, just bail quietly
@@ -341,6 +350,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 Name = paramName,
                                                 Type = typeName,
                                                 Qualifier = qualifier,
+                                                CodeName = needsAtSign ? "@" + paramName : paramName,
                                                 IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol!, loggerSymbol),
                                                 IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol!, exceptionSymbol),
                                                 IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol!, logLevelSymbol),
@@ -719,6 +729,7 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             public string Name = string.Empty;
             public string Type = string.Empty;
+            public string CodeName = string.Empty;
             public string? Qualifier;
             public bool IsLogger;
             public bool IsException;
