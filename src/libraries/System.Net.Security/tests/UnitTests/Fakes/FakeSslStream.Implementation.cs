@@ -28,9 +28,9 @@ namespace System.Net.Security
             }
             _context = null;
             _exception = null;
-            _internalBuffer = null;
-            _internalBufferCount = 0;
-            _internalOffset = 0;
+            //_internalBuffer = null;
+            //_internalBufferCount = 0;
+            //_internalOffset = 0;
             _nestedWrite = 0;
             _handshakeCompleted = false;
         }

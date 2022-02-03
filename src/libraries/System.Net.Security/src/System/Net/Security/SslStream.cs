@@ -58,11 +58,99 @@ namespace System.Net.Security
         private bool _handshakeCompleted;
 
         // Never updated directly, special properties are used.  This is the read buffer.
-        internal byte[]? _internalBuffer;
-        internal int _internalOffset;
-        internal int _internalBufferCount;
-        internal int _decryptedBytesOffset;
-        internal int _decryptedBytesCount;
+        //internal byte[]? _internalBuffer;
+        //internal int _internalOffset;
+        //internal int _internalBufferCount;
+        //internal int _decryptedBytesOffset;
+        //internal int _decryptedBytesCount;
+
+        // FrameOverhead = 5 byte header + HMAC trailer + padding (if block cipher)
+        // HMAC: 32 bytes for SHA-256 or 20 bytes for SHA-1 or 16 bytes for the MD5
+        private const int FrameOverhead = 64;
+        private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
+
+        private SslBuffer _buffer = new SslBuffer(InitialHandshakeBufferSize);
+        private struct SslBuffer
+        {
+            private ArrayBuffer _buffer;
+            private int _decryptedBytes;
+            private int _encryptedOffset;
+
+            public SslBuffer(int initialSize)
+            {
+                _buffer = new ArrayBuffer(initialSize, true);
+                _decryptedBytes = 0;
+                _encryptedOffset = 0;
+            }
+
+            public Span<byte> DecryptedSpan => _buffer.ActiveSpan.Slice(0, _decryptedBytes);
+
+            public Memory<byte> DecryptedMemory => _buffer.ActiveMemory.Slice(0, _decryptedBytes);
+
+            public int DecryptedBytes => _decryptedBytes;
+
+            public int ActiveBytes => _buffer.ActiveLength;
+
+            public Span<byte> EncryptedSpan => _buffer.ActiveSpan.Slice(_encryptedOffset);
+
+            public Memory<byte> EncryptedMemory => _buffer.ActiveMemory.Slice(_encryptedOffset);
+
+            public int EncryptedBytes => _buffer.ActiveLength - _encryptedOffset;
+
+            public Span<byte> AvailableSpan => _buffer.AvailableSpan;
+
+            public Memory<byte> AvailableMemory => _buffer.AvailableMemory;
+
+            public int Capacity => _buffer.Capacity;
+
+            public void Commit(int byteCount) => _buffer.Commit(byteCount);
+
+            public void EnsureAvailableSpace(int byteCount) => _buffer.EnsureAvailableSpace(byteCount);
+
+            public void Discard(int byteCount)
+            {
+                Debug.Assert(byteCount <= _decryptedBytes, "byteCount <= _decryptedBytes");
+
+                _buffer.Discard(byteCount);
+                _encryptedOffset -= byteCount;
+                _decryptedBytes -= byteCount;
+
+                if (_decryptedBytes == 0)
+                {
+                    _buffer.Discard(_encryptedOffset);
+                    _encryptedOffset = 0;
+                }
+            }
+
+            public void DiscardEncrypted(int byteCount)
+            {
+                // should be called only during handshake -> no pending decrypted data
+                Debug.Assert(_decryptedBytes == 0, "_decryptedBytes == 0");
+                Debug.Assert(_encryptedOffset == 0, "_encryptedOffset == 0");
+
+                _buffer.Discard(byteCount);
+            }
+
+            public void OnDecrypted(int decryptedOffset, int decryptedCount, int frameSize)
+            {
+                Debug.Assert(DecryptedBytes == 0, "DecryptedBytes == 0");
+
+                // discard padding before decrypted contents
+                _buffer.Discard(_encryptedOffset + decryptedOffset);
+
+                _encryptedOffset += frameSize;
+                _decryptedBytes = decryptedCount;
+            }
+
+            public void Dispose()
+            {
+                _buffer.Dispose();
+                _decryptedBytes = 0;
+                _encryptedOffset = 0;
+            }
+        }
+
+
 
         private int _nestedWrite;
         private int _nestedRead;
@@ -735,11 +823,14 @@ namespace System.Net.Security
             // If there's any data in the buffer, take one byte, and we're done.
             try
             {
-                if (_decryptedBytesCount > 0)
+                //if (_decryptedBytesCount > 0)
+                if (_buffer.DecryptedBytes > 0)
                 {
-                    int b = _internalBuffer![_decryptedBytesOffset++];
-                    _decryptedBytesCount--;
-                    ReturnReadBufferIfEmpty();
+                    //int b = _internalBuffer![_decryptedBytesOffset++];
+                    //_decryptedBytesCount--;
+                    //ReturnReadBufferIfEmpty();
+                    int b = _buffer.DecryptedSpan[0];
+                    _buffer.Discard(0);
                     return b;
                 }
             }
