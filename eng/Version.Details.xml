@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="7.0.0-preview.2.22081.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="7.0.0-preview.2.22101.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>4f251e7593b1150af58bba4f461698d6d4a1eb95</Sha>
+      <Sha>cd095b0fb4c6f8adca9e44ef17346b3e13a73a7c</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="7.0.0-alpha.1.21529.3">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -102,7 +102,7 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>86a931a4ebfa4d65630f0ff6cedf787d2e48a3b9</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Version="7.0.0-beta.22075.6">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="7.0.0-beta.22102.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>86a931a4ebfa4d65630f0ff6cedf787d2e48a3b9</Sha>
     </Dependency>
