@@ -772,7 +772,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (string rawValue in rawValues)
                 {
-                    if (!ContainsNewLine(rawValue, descriptor.Name))
+                    if (!ContainsNewLine(rawValue, descriptor))
                     {
                         AddParsedValue(info, rawValue);
                     }
@@ -797,7 +797,7 @@ namespace System.Net.Http.Headers
 
             if (descriptor.Parser == null)
             {
-                if (!ContainsNewLine(rawValue, descriptor.Name))
+                if (!ContainsNewLine(rawValue, descriptor))
                 {
                     AddParsedValue(info, rawValue);
                 }
@@ -887,7 +887,7 @@ namespace System.Net.Http.Headers
                     }
                     else
                     {
-                        if (!ContainsNewLine(value, descriptor.Name) && addWhenInvalid)
+                        if (!ContainsNewLine(value, descriptor) && addWhenInvalid)
                         {
                             AddInvalidValue(info, value);
                         }
@@ -904,7 +904,7 @@ namespace System.Net.Http.Headers
             }
 
             Debug.Assert(value != null);
-            if (!ContainsNewLine(value, descriptor.Name) && addWhenInvalid)
+            if (!ContainsNewLine(value, descriptor) && addWhenInvalid)
             {
                 AddInvalidValue(info, value ?? string.Empty);
             }
@@ -1111,11 +1111,11 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private static bool ContainsNewLine(string value, string name)
+        private static bool ContainsNewLine(string value, HeaderDescriptor descriptor)
         {
             if (HttpRuleParser.ContainsNewLine(value))
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_no_newlines, name, value));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_no_newlines, descriptor.Name, value));
                 return true;
             }
             return false;
