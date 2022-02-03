@@ -214,7 +214,9 @@ const App = {
                 const result = await MONO.mono_run_main(main_assembly_name, app_args);
                 set_exit_code(result);
             } catch (error) {
-                set_exit_code(1, error);
+                if (error.name != "ExitStatus") {
+                    set_exit_code(1, error);
+                }
             }
         } else {
             set_exit_code(1, "Unhandled argument: " + processedArguments.applicationArgs[0]);
