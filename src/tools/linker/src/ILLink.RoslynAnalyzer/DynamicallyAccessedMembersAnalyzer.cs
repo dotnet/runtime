@@ -101,6 +101,10 @@ namespace ILLink.RoslynAnalyzer
 				Debug.Assert (typeParams.Length == typeArgs.Length);
 
 				for (int i = 0; i < typeParams.Length; i++) {
+					// Syntax like typeof (Foo<>) will have an ErrorType as the type argument.
+					// These uninstantiated generics should not produce warnings.
+					if (typeArgs[i].Kind == SymbolKind.ErrorType)
+						continue;
 					var sourceValue = GetTypeValueNodeFromGenericArgument (context, typeArgs[i]);
 					var targetValue = new GenericParameterValue (typeParams[i]);
 					foreach (var diagnostic in GetDynamicallyAccessedMembersDiagnostics (sourceValue, targetValue, context.Node.GetLocation ()))

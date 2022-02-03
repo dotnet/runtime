@@ -41,17 +41,34 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return s_net6Refs;
 		}
 
-		public static async Task RunTestFile (string suiteName, string testName, params (string, string)[] msbuildProperties)
+		public static string FindTestDir (string rootDir, string suiteName)
+		{
+			string[] suiteParts = suiteName.Split ('.');
+			string currentDir = rootDir;
+			foreach (var suitePart in suiteParts) {
+				string dirCandidate = Path.Combine (currentDir, suitePart);
+				if (currentDir == rootDir || Directory.Exists (dirCandidate))
+					currentDir = dirCandidate;
+				else
+					currentDir += $".{suitePart}";
+			}
+
+			return currentDir;
+		}
+
+		public static async Task RunTestFile (string suiteName, string testName, bool allowMissingWarnings, params (string, string)[] msbuildProperties)
 		{
 			GetDirectoryPaths (out string rootSourceDir, out string testAssemblyPath);
 			Debug.Assert (Path.GetFileName (rootSourceDir) == MonoLinkerTestsCases);
-			var testPath = Path.Combine (rootSourceDir, suiteName, $"{testName}.cs");
+			var testDir = FindTestDir (rootSourceDir, suiteName);
+			var testPath = Path.Combine (testDir, $"{testName}.cs");
 			Assert.True (File.Exists (testPath));
 			var tree = SyntaxFactory.ParseSyntaxTree (
 				SourceText.From (File.OpenRead (testPath), Encoding.UTF8),
 				path: testPath);
 
-			var testDependenciesSource = GetTestDependencies (rootSourceDir, tree)
+			var testDependenciesSource = GetTestDependencies (testDir, tree)
+				.Where (f => Path.GetExtension (f) == ".cs")
 				.Select (f => SyntaxFactory.ParseSyntaxTree (SourceText.From (File.OpenRead (f))));
 			var additionalFiles = GetAdditionalFiles (rootSourceDir, tree);
 
@@ -66,30 +83,42 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var diags = (await comp.GetAnalyzerDiagnosticsAsync ()).AddRange (exceptionDiagnostics);
 
 			var testChecker = new TestChecker ((CSharpSyntaxTree) tree, model, diags);
-			testChecker.Check ();
+			testChecker.Check (allowMissingWarnings);
 		}
 
-		private static IEnumerable<string> GetTestDependencies (string rootSourceDir, SyntaxTree testSyntaxTree)
+		private static IEnumerable<string> GetTestDependencies (string testDir, SyntaxTree testSyntaxTree)
 		{
 			foreach (var attribute in testSyntaxTree.GetRoot ().DescendantNodes ().OfType<AttributeSyntax> ()) {
 				var attributeName = attribute.Name.ToString ();
 				if (attributeName != "SetupCompileBefore" && attributeName != "SandboxDependency")
 					continue;
-				var testNamespace = testSyntaxTree.GetRoot ().DescendantNodes ().OfType<NamespaceDeclarationSyntax> ().First ().Name.ToString ();
-				var testSuiteName = testNamespace.Substring (testNamespace.LastIndexOf ('.') + 1);
 				var args = LinkerTestBase.GetAttributeArguments (attribute);
 
 				switch (attributeName) {
 				case "SetupCompileBefore": {
-						foreach (var sourceFile in ((ImplicitArrayCreationExpressionSyntax) args["#1"]).DescendantNodes ().OfType<LiteralExpressionSyntax> ())
-							yield return Path.Combine (rootSourceDir, testSuiteName, LinkerTestBase.GetStringFromExpression (sourceFile));
+						var arrayExpression = args["#1"];
+						if (arrayExpression is not (ArrayCreationExpressionSyntax or ImplicitArrayCreationExpressionSyntax))
+							throw new InvalidOperationException ();
+						foreach (var sourceFile in ((ExpressionSyntax) args["#1"]).DescendantNodes ().OfType<LiteralExpressionSyntax> ())
+							yield return Path.Combine (testDir, LinkerTestBase.GetStringFromExpression (sourceFile));
 						break;
 					}
 				case "SandboxDependency": {
-						var sourceFile = LinkerTestBase.GetStringFromExpression (args["#0"]);
+						var argExpression = args["#0"];
+						string sourceFile;
+						if (argExpression is TypeOfExpressionSyntax typeOfSyntax) {
+							// If the argument is a Type, assume the dependency is located in a file with the
+							// outermost declaring type's name in the Dependencies subdirectory.
+							var typeNameSyntax = typeOfSyntax.Type;
+							while (typeNameSyntax is QualifiedNameSyntax qualifiedNameSyntax)
+								typeNameSyntax = qualifiedNameSyntax.Left;
+							sourceFile = Path.Combine ("Dependencies", $"{typeNameSyntax.ToString ()}.cs");
+						} else {
+							sourceFile = LinkerTestBase.GetStringFromExpression (args["#0"]);
+						}
 						if (!sourceFile.EndsWith (".cs"))
 							throw new NotSupportedException ();
-						yield return Path.Combine (rootSourceDir, testSuiteName, sourceFile);
+						yield return Path.Combine (testDir, sourceFile);
 						break;
 					}
 				default:
@@ -102,16 +131,24 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			var resolver = new XmlFileResolver (rootSourceDir);
 			foreach (var attribute in tree.GetRoot ().DescendantNodes ().OfType<AttributeSyntax> ()) {
-				if (attribute.Name.ToString () == nameof (SetupLinkAttributesFile)
-					|| (attribute.Name.ToString ().Contains ("SetupCompileResource")
-						&& (attribute.ArgumentList?.Arguments[1].ToString ()) == "\"ILLink.LinkAttributes.xml\"")) {
-					var xmlFileName = attribute.ArgumentList?.Arguments[0].ToString ().Trim ('"') ?? "";
-					var resolvedPath = resolver.ResolveReference (xmlFileName, rootSourceDir);
-					if (resolvedPath != null) {
-						var stream = resolver.OpenRead (resolvedPath);
-						XmlText text = new ("ILLink.LinkAttributes.xml", stream);
-						yield return text;
-					}
+				switch (attribute.Name.ToString ()) {
+				case nameof (SetupLinkAttributesFile):
+					break;
+				case nameof (SetupCompileResourceAttribute):
+					var args = attribute.ArgumentList?.Arguments;
+					if (args?.Count == 2 && args?[1].ToString () == "\"ILLink.LinkAttributes.xml\"")
+						break;
+					continue;
+				default:
+					continue;
+				}
+
+				var xmlFileName = attribute.ArgumentList?.Arguments[0].ToString ().Trim ('"') ?? "";
+				var resolvedPath = resolver.ResolveReference (xmlFileName, rootSourceDir);
+				if (resolvedPath != null) {
+					var stream = resolver.OpenRead (resolvedPath);
+					XmlText text = new ("ILLink.LinkAttributes.xml", stream);
+					yield return text;
 				}
 			}
 		}
