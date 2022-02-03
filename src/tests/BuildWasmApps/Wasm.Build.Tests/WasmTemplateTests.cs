@@ -92,10 +92,11 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
             Console.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
+            bool expectRelinking = config == "Release";
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: true,
+                            DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
                             HasV8Script: false,
                             MainJS: "main.cjs",
