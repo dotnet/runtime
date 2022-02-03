@@ -57,13 +57,6 @@ namespace System.Net.Security
         private bool _shutdown;
         private bool _handshakeCompleted;
 
-        // Never updated directly, special properties are used.  This is the read buffer.
-        //internal byte[]? _internalBuffer;
-        //internal int _internalOffset;
-        //internal int _internalBufferCount;
-        //internal int _decryptedBytesOffset;
-        //internal int _decryptedBytesCount;
-
         // FrameOverhead = 5 byte header + HMAC trailer + padding (if block cipher)
         // HMAC: 32 bytes for SHA-256 or 20 bytes for SHA-1 or 16 bytes for the MD5
         private const int FrameOverhead = 64;
@@ -100,6 +93,8 @@ namespace System.Net.Security
             public Span<byte> AvailableSpan => _buffer.AvailableSpan;
 
             public Memory<byte> AvailableMemory => _buffer.AvailableMemory;
+
+            public int AvailableBytes => _buffer.AvailableLength;
 
             public int Capacity => _buffer.Capacity;
 
@@ -836,9 +831,6 @@ namespace System.Net.Security
                 //if (_decryptedBytesCount > 0)
                 if (_buffer.DecryptedBytes > 0)
                 {
-                    //int b = _internalBuffer![_decryptedBytesOffset++];
-                    //_decryptedBytesCount--;
-                    //ReturnReadBufferIfEmpty();
                     int b = _buffer.DecryptedSpan[0];
                     _buffer.Discard(1);
                     return b;

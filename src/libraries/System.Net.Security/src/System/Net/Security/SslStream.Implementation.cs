@@ -26,12 +26,6 @@ namespace System.Net.Security
         private object _handshakeLock => _sslAuthenticationOptions!;
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
 
-        // FrameOverhead = 5 byte header + HMAC trailer + padding (if block cipher)
-        // HMAC: 32 bytes for SHA-256 or 20 bytes for SHA-1 or 16 bytes for the MD5
-        //private const int FrameOverhead = 64;
-        //private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
-        //private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
-        //private ArrayBuffer _handshakeBuffer;
         private bool _receivedEOF;
 
         // Used by Telemetry to ensure we log connection close exactly once
@@ -130,22 +124,11 @@ namespace System.Net.Security
             // subsequent Reads first check if the context is still available.
             if (Interlocked.CompareExchange(ref _nestedRead, 1, 0) == 0)
             {
-                //byte[]? buffer = _internalBuffer;
-                //if (buffer != null)
-                //{
-                //    _internalBuffer = null;
-                //    _internalBufferCount = 0;
-                //    _internalOffset = 0;
-                //    ArrayPool<byte>.Shared.Return(buffer);
-                //}
                 _buffer.Dispose();
-            }
 
-            //if (_internalBuffer == null)
-            //{
-            //    // Suppress finalizer if the read buffer was returned.
-            //    GC.SuppressFinalize(this);
-            //}
+                // Suppress finalizer since the read buffer was returned.
+                GC.SuppressFinalize(this);
+            }
 
             if (NetSecurityTelemetry.Log.IsEnabled())
             {
@@ -260,7 +243,6 @@ namespace System.Net.Security
             try
             {
                 if (_buffer.ActiveBytes > 0)
-                //if ((_decryptedBytesCount | _internalBufferCount) != 0)
                 {
                     throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
                 }
@@ -288,7 +270,6 @@ namespace System.Net.Security
                     throw SslStreamPal.GetException(status);
                 }
 
-                //_handshakeBuffer = new ArrayBuffer(InitialHandshakeBufferSize);
                 ProtocolToken message = null!;
                 do {
                     message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
@@ -298,14 +279,6 @@ namespace System.Net.Security
                         await adapter.FlushAsync().ConfigureAwait(false);
                     }
                 } while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
-
-                //if (_handshakeBuffer.ActiveLength > 0)
-                //{
-                //    // If we read more than we needed for handshake, move it to input buffer for further processing.
-                //    ResetReadBuffer();
-                //    _handshakeBuffer.ActiveSpan.CopyTo(_internalBuffer);
-                //    _internalBufferCount = _handshakeBuffer.ActiveLength;
-                //}
 
                 CompleteHandshake(_sslAuthenticationOptions!);
             }
@@ -360,12 +333,6 @@ namespace System.Net.Security
                     }
                 }
 
-                if (!handshakeCompleted)
-                {
-                    // get ready to receive first frame
-                    //_handshakeBuffer = new ArrayBuffer(InitialHandshakeBufferSize);
-                }
-
                 while (!handshakeCompleted)
                 {
                     message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
@@ -414,19 +381,10 @@ namespace System.Net.Security
                     }
                 }
 
-                //if (_handshakeBuffer.ActiveLength > 0)
-                //{
-                //    // If we read more than we needed for handshake, move it to input buffer for further processing.
-                //    ResetReadBuffer();
-                //    _handshakeBuffer.ActiveSpan.CopyTo(_internalBuffer);
-                //    _internalBufferCount = _handshakeBuffer.ActiveLength;
-                //}
-
                 CompleteHandshake(_sslAuthenticationOptions!);
             }
             finally
             {
-                //_handshakeBuffer.Dispose();
                 if (reAuthenticationData == null)
                 {
                     _nestedAuth = 0;
@@ -450,7 +408,6 @@ namespace System.Net.Security
                  where TIOAdapter : IReadWriteAdapter
         {
             await FillHandshakeBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
-            //TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame.Header);
             TlsFrameHelper.TryGetFrameHeader(_buffer.EncryptedSpan, ref _lastFrame.Header);
 
             if (_lastFrame.Header.Length < 0)
@@ -462,7 +419,6 @@ namespace System.Net.Security
             // Header length is content only so we must add header size as well.
             int frameSize = _lastFrame.Header.Length + TlsFrameHelper.HeaderSize;
 
-            //if (_handshakeBuffer.ActiveLength < frameSize)
             if (_buffer.EncryptedBytes < frameSize)
             {
                 await FillHandshakeBufferAsync(adapter, frameSize).ConfigureAwait(false);
@@ -472,14 +428,12 @@ namespace System.Net.Security
             switch (_lastFrame.Header.Type)
             {
                 case TlsContentType.Alert:
-                    //if (TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame))
                     if (TlsFrameHelper.TryGetFrameInfo(_buffer.EncryptedSpan, ref _lastFrame))
                     {
                         if (NetEventSource.Log.IsEnabled() && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Error(this, $"Received TLS alert {_lastFrame.AlertDescription}");
                     }
                     break;
                 case TlsContentType.Handshake:
-                    //if (!_isRenego && _handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
                     if (!_isRenego && _buffer.EncryptedSpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
                         _sslAuthenticationOptions!.IsServer) // guard against malicious endpoints. We should not see ClientHello on client.
                      {
@@ -488,7 +442,6 @@ namespace System.Net.Security
                                                                     TlsFrameHelper.ProcessingOptions.ServerName;
 
                         // Process SNI from Client Hello message
-                        //if (!TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame, options))
                         if (!TlsFrameHelper.TryGetFrameInfo(_buffer.EncryptedSpan, ref _lastFrame, options))
                         {
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Failed to parse TLS hello.");
@@ -535,20 +488,16 @@ namespace System.Net.Security
         {
             int chunkSize = frameSize;
 
-            //ReadOnlySpan<byte> availableData = _handshakeBuffer.ActiveReadOnlySpan;
             ReadOnlySpan<byte> availableData = _buffer.EncryptedSpan;
-            // Discard() does not touch data, it just increases start index so next
-            // ActiveSpan will exclude the "discarded" data.
-            //_handshakeBuffer.Discard(frameSize);
+            // DiscardEncrypted() does not touch data, it just increases start index so next
+            // EncryptedSpan will exclude the "discarded" data.
             _buffer.DiscardEncrypted(frameSize);
 
             // Often more TLS messages fit into same packet. Get as many complete frames as we can.
-            //while (_handshakeBuffer.ActiveLength > TlsFrameHelper.HeaderSize)
             while (_buffer.EncryptedBytes > TlsFrameHelper.HeaderSize)
             {
                 TlsFrameHeader nextHeader = default;
 
-                //if (!TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref nextHeader))
                 if (!TlsFrameHelper.TryGetFrameHeader(_buffer.EncryptedSpan, ref nextHeader))
                 {
                     break;
@@ -556,7 +505,6 @@ namespace System.Net.Security
 
                 frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
                 // Can process more handshake frames in single step, but we should avoid processing too much so as to preserve API boundary between handshake and I/O.
-                //if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) || frameSize > _handshakeBuffer.ActiveLength)
                 if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) || frameSize > _buffer.EncryptedBytes)
                 {
                     // We don't have full frame left or we already have app data which needs to be processed by decrypt.
@@ -564,7 +512,6 @@ namespace System.Net.Security
                 }
 
                 chunkSize += frameSize;
-                //_handshakeBuffer.Discard(frameSize);
                 _buffer.DiscardEncrypted(frameSize);
             }
 
@@ -764,35 +711,14 @@ namespace System.Net.Security
             Dispose(disposing: false);
         }
 
-        // We will only free the read buffer if it
-        // actually contains no decrypted or encrypted bytes
-        //private void ReturnReadBufferIfEmpty()
-        //{
-        //    if (_internalBuffer is byte[] internalBuffer && _decryptedBytesCount == 0 && _internalBufferCount == 0)
-        //    {
-        //        _internalBuffer = null;
-        //        _internalOffset = 0;
-        //        _decryptedBytesOffset = 0;
-        //        ArrayPool<byte>.Shared.Return(internalBuffer);
-        //    }
-        //    else if (_decryptedBytesCount == 0)
-        //    {
-        //        _decryptedBytesOffset = 0;
-        //    }
-        //}
-
-
         private bool HaveFullTlsFrame(out int frameSize)
         {
-            //if (_internalBufferCount < SecureChannel.ReadHeaderSize)
             if (_buffer.EncryptedBytes < SecureChannel.ReadHeaderSize)
             {
                 frameSize = int.MaxValue;
                 return false;
             }
 
-            //frameSize = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
-            //return _internalBufferCount >= frameSize;
             frameSize = GetFrameSize(_buffer.EncryptedSpan);
             return _buffer.EncryptedBytes >= frameSize;
         }
@@ -810,24 +736,17 @@ namespace System.Net.Security
             // We may have enough space to complete frame, but we may still do extra IO if the frame is small.
             // So we will attempt larger read - that is trade of with extra copy.
             // This may be updated at some point based on size of existing chunk, rented buffer and size of 'buffer'.
-            //ResetReadBuffer();
+            ResetReadBuffer();
 
-            // make sure there is enough space at the end of the buffer, if not, move contents to the beginning of the buffer
-            // note that frameSize may be int.MaxValue if not we didn't receive the TLS header yet.
-            // TODO: check how this behaves when stressed
-            _buffer.EnsureAvailableSpace(Math.Min(frameSize, _buffer.Capacity - _buffer.ActiveBytes));
-
-            // _internalOffset is 0 after ResetReadBuffer and we use _internalBufferCount to determined where to read.
-            //while (_internalBufferCount < frameSize)
             while (_buffer.EncryptedBytes < frameSize)
             {
-                // We either don't have full frame or we don't have enough data to even determine the size.
+                // there should be space left to read into
+                Debug.Assert(_buffer.AvailableBytes > 0, "_buffer.AvailableBytes > 0");
 
-                //int bytesRead = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
+                // We either don't have full frame or we don't have enough data to even determine the size.
                 int bytesRead = await adapter.ReadAsync(_buffer.AvailableMemory).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
-                    //if (_internalBufferCount != 0)
                     if (_buffer.EncryptedBytes != 0)
                     {
                         // we got EOF in middle of TLS frame. Treat that as error.
@@ -837,13 +756,10 @@ namespace System.Net.Security
                     return 0;
                 }
 
-                //_internalBufferCount += bytesRead;
                 _buffer.Commit(bytesRead);
-                //if (frameSize == int.MaxValue && _internalBufferCount > SecureChannel.ReadHeaderSize)
                 if (frameSize == int.MaxValue && _buffer.EncryptedBytes > SecureChannel.ReadHeaderSize)
                 {
                     // recalculate frame size if needed e.g. we could not get it before.
-                    //frameSize = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
                     frameSize = GetFrameSize(_buffer.EncryptedSpan);
                 }
             }
@@ -853,25 +769,15 @@ namespace System.Net.Security
 
         private SecurityStatusPal DecryptData(int frameSize)
         {
-            //Debug.Assert(_decryptedBytesCount == 0);
-
-            // Set _decryptedBytesOffset/Count to the current frame we have (including header)
-            // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
-            //_decryptedBytesOffset = _internalOffset;
-            //_decryptedBytesCount = frameSize;
             SecurityStatusPal status;
 
             lock (_handshakeLock)
             {
                 ThrowIfExceptionalOrNotAuthenticated();
-                //status = _context!.Decrypt(new Span<byte>(_internalBuffer, _internalOffset, frameSize), out int decryptedOffset, out int decryptedCount);
+
+                // Decrypt will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
                 status = _context!.Decrypt(_buffer.EncryptedSpan.Slice(0, frameSize), out int decryptedOffset, out int decryptedCount);
                 _buffer.OnDecrypted(decryptedOffset, decryptedCount, frameSize);
-                //_decryptedBytesCount = decryptedCount;
-                //if (decryptedCount > 0)
-                //{
-                //    _decryptedBytesOffset = _internalOffset + decryptedOffset;
-                //}
 
                 if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                 {
@@ -887,7 +793,6 @@ namespace System.Net.Security
                     // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
                     // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
 
-
                     if (_sslAuthenticationOptions!.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != 0)
                     {
                         // create TCS only if we plan to proceed. If not, we will throw later outside of the lock.
@@ -898,9 +803,6 @@ namespace System.Net.Security
                     }
                 }
             }
-
-            // Treat the bytes we just decrypted as consumed
-            //ConsumeBufferedBytes(frameSize);
 
             return status;
         }
@@ -915,13 +817,11 @@ namespace System.Net.Security
 
             ThrowIfExceptionalOrNotAuthenticated();
 
-            //Debug.Assert(_internalBuffer is null || _internalBufferCount > 0 || _decryptedBytesCount > 0, "_internalBuffer allocated when no data is buffered.");
             int processedLength = 0;
             int payloadBytes = 0;
 
             try
             {
-                //if (_decryptedBytesCount != 0)
                 if (_buffer.DecryptedBytes != 0)
                 {
                     processedLength = CopyDecryptedData(buffer);
@@ -936,13 +836,11 @@ namespace System.Net.Security
 
                 if (_receivedEOF)
                 {
-                    //Debug.Assert(_internalBufferCount == 0);
                     Debug.Assert(_buffer.EncryptedBytes == 0);
                     // We received EOF during previous read but had buffered data to return.
                     return 0;
                 }
 
-                //if (buffer.Length == 0 && _internalBuffer is null)
                 if (buffer.Length == 0 && _buffer.ActiveBytes == 0)
                 {
                     // User requested a zero-byte read, and we have no data available in the buffer for processing.
@@ -955,8 +853,6 @@ namespace System.Net.Security
                     await adapter.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
                 }
 
-                //Debug.Assert(_decryptedBytesCount == 0);
-                //Debug.Assert(_decryptedBytesOffset == 0);
                 Debug.Assert(_buffer.DecryptedBytes == 0);
 
                 while (true)
@@ -972,15 +868,11 @@ namespace System.Net.Security
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
                         byte[]? extraBuffer = null;
-                        //if (_decryptedBytesCount != 0)
                         if (_buffer.DecryptedBytes != 0)
                         {
-                            //extraBuffer = new byte[_decryptedBytesCount];
                             extraBuffer = new byte[_buffer.DecryptedBytes];
-                            //Buffer.BlockCopy(_internalBuffer!, _decryptedBytesOffset, extraBuffer, 0, _decryptedBytesCount);
                             _buffer.DecryptedSpan.CopyTo(extraBuffer);
 
-                            //_decryptedBytesCount = 0;
                             _buffer.Discard(_buffer.DecryptedBytes);
                         }
 
@@ -1008,7 +900,6 @@ namespace System.Net.Security
                         throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
                     }
 
-                    //if (_decryptedBytesCount > 0)
                     if (_buffer.DecryptedBytes > 0)
                     {
                         // This will either copy data from rented buffer or adjust final buffer as needed.
@@ -1036,7 +927,6 @@ namespace System.Net.Security
                         break;
                     }
 
-                    //TlsFrameHelper.TryGetFrameHeader(_internalBuffer.AsSpan(_internalOffset), ref _lastFrame.Header);
                     TlsFrameHelper.TryGetFrameHeader(_buffer.EncryptedSpan, ref _lastFrame.Header);
                     if (_lastFrame.Header.Type != TlsContentType.AppData)
                     {
@@ -1059,7 +949,6 @@ namespace System.Net.Security
             }
             finally
             {
-                //ReturnReadBufferIfEmpty();
                 _nestedRead = 0;
             }
         }
@@ -1070,21 +959,16 @@ namespace System.Net.Security
         private ValueTask FillHandshakeBufferAsync<TIOAdapter>(TIOAdapter adapter, int minSize)
              where TIOAdapter : IReadWriteAdapter
         {
-            //if (_handshakeBuffer.ActiveLength >= minSize)
             if (_buffer.EncryptedBytes >= minSize)
             {
                 return ValueTask.CompletedTask;
             }
 
-            //int bytesNeeded = minSize - _handshakeBuffer.ActiveLength;
-            //_handshakeBuffer.EnsureAvailableSpace(bytesNeeded);
             int bytesNeeded = minSize - _buffer.EncryptedBytes;
             _buffer.EnsureAvailableSpace(bytesNeeded);
 
-            //while (_handshakeBuffer.ActiveLength < minSize)
             while (_buffer.EncryptedBytes < minSize)
             {
-                //ValueTask<int> t = adapter.ReadAsync(_handshakeBuffer.AvailableMemory);
                 ValueTask<int> t = adapter.ReadAsync(_buffer.AvailableMemory);
                 if (!t.IsCompletedSuccessfully)
                 {
@@ -1096,7 +980,6 @@ namespace System.Net.Security
                     throw new IOException(SR.net_io_eof);
                 }
 
-                //_handshakeBuffer.Commit(bytesRead);
                 _buffer.Commit(bytesRead);
             }
 
@@ -1112,15 +995,12 @@ namespace System.Net.Security
                         throw new IOException(SR.net_io_eof);
                     }
 
-                    //_handshakeBuffer.Commit(bytesRead);
                     _buffer.Commit(bytesRead);
-                    //if (_handshakeBuffer.ActiveLength >= minSize)
                     if (_buffer.EncryptedBytes >= minSize)
                     {
                         return;
                     }
 
-                    //task = adap.ReadAsync(_handshakeBuffer.AvailableMemory);
                     task = adap.ReadAsync(_buffer.AvailableMemory);
                 }
             }
@@ -1164,63 +1044,29 @@ namespace System.Net.Security
             }
         }
 
-        //private void ConsumeBufferedBytes(int byteCount)
-        //{
-        //    Debug.Assert(byteCount >= 0);
-        //    Debug.Assert(byteCount <= _internalBufferCount);
-
-        //    _internalOffset += byteCount;
-        //    _internalBufferCount -= byteCount;
-        //    if (_internalBufferCount == 0)
-        //    {
-        //        _internalOffset = 0;
-        //    }
-        //}
-
         private int CopyDecryptedData(Memory<byte> buffer)
         {
-            //Debug.Assert(_decryptedBytesCount > 0);
             Debug.Assert(_buffer.DecryptedBytes > 0);
 
-            //int copyBytes = Math.Min(_decryptedBytesCount, buffer.Length);
             int copyBytes = Math.Min(_buffer.DecryptedBytes, buffer.Length);
             if (copyBytes != 0)
             {
-                //new ReadOnlySpan<byte>(_internalBuffer, _decryptedBytesOffset, copyBytes).CopyTo(buffer.Span);
-
-                //_decryptedBytesOffset += copyBytes;
-                //_decryptedBytesCount -= copyBytes;
                 _buffer.DecryptedSpan.Slice(0, copyBytes).CopyTo(buffer.Span);
                 _buffer.Discard(copyBytes);
             }
 
-            //if (_decryptedBytesCount == 0)
-            //{
-            //    _decryptedBytesOffset = 0;
-            //}
-
             return copyBytes;
         }
 
-        //private void ResetReadBuffer()
-        //{
-        //    Debug.Assert(_decryptedBytesCount == 0);
+        private void ResetReadBuffer()
+        {
+           Debug.Assert(_buffer.DecryptedBytes == 0);
 
-        //    if (_internalBuffer == null)
-        //    {
-        //        _internalBuffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
-        //        Debug.Assert(_internalOffset == 0);
-        //        Debug.Assert(_internalBufferCount == 0);
-        //    }
-        //    else if (_internalOffset > 0)
-        //    {
-        //        // We have buffered data at a non-zero offset.
-        //        // To maximize the buffer space available for the next read,
-        //        // copy the existing data down to the beginning of the buffer.
-        //        Buffer.BlockCopy(_internalBuffer, _internalOffset, _internalBuffer, 0, _internalBufferCount);
-        //        _internalOffset = 0;
-        //    }
-        //}
+            // We may have buffered data at a non-zero offset.
+            // To maximize the buffer space available for the next read,
+            // copy the existing data down to the beginning of the buffer.
+           _buffer.EnsureAvailableSpace(_buffer.Capacity - _buffer.ActiveBytes);
+        }
 
         // Returns TLS Frame size including header size.
         private int GetFrameSize(ReadOnlySpan<byte> buffer)
