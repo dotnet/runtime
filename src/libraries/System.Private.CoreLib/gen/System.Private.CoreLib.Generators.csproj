@@ -6,16 +6,16 @@
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
     <NoWarn>$(NoWarn);CS3001</NoWarn>
   </PropertyGroup>
-  
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
+    <Compile Include="EventSourceGenerator.cs" />
+    <Compile Include="EventSourceGenerator.Emitter.cs" />
+    <Compile Include="EventSourceGenerator.Parser.cs" />
+    <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.Emitter.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.Parser.cs" />
-    <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
   </ItemGroup>
 </Project>
