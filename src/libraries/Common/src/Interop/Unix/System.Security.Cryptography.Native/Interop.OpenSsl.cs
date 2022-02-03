@@ -385,29 +385,22 @@ internal static partial class Interop
                 }
             }
 
-            try
+            int retVal = Ssl.SslDoHandshake(context, out Ssl.SslErrorCode error);
+            if (retVal != 1)
             {
-                int retVal = Ssl.SslDoHandshake(context, out Ssl.SslErrorCode error);
-                if (retVal != 1)
+                if (error == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
                 {
-                    if (error == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
-                    {
-                        return SecurityStatusPalErrorCode.CredentialsNeeded;
-                    }
-
-                    if ((retVal != -1) || (error != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
-                    {
-                        GetSslError(context, retVal, error, Sys.GetLastErrorInfo(), out Exception? innerError );
-
-                        // Handshake failed, but even if the handshake does not need to read, there may be an Alert going out.
-                        // To handle that we will fall-through the block below to pull it out, and we will fail after.
-                        handshakeException = new SslException(SR.Format(SR.net_ssl_handshake_failed_error, error), innerError);
-                    }
+                    return SecurityStatusPalErrorCode.CredentialsNeeded;
                 }
-            }
-            finally
-            {
-                Crypto.ErrClearError();
+
+                if ((retVal != -1) || (error != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
+                {
+                    GetSslError(context, retVal, error, Sys.GetLastErrorInfo(), out Exception? innerError );
+
+                    // Handshake failed, but even if the handshake does not need to read, there may be an Alert going out.
+                    // To handle that we will fall-through the block below to pull it out, and we will fail after.
+                    handshakeException = new SslException(SR.Format(SR.net_ssl_handshake_failed_error, error), innerError);
+                }
             }
 
             sendCount = Crypto.BioCtrlPending(context.OutputBio!);
