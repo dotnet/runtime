@@ -62,6 +62,7 @@ namespace ILCompiler
         private string _guard;
         private int _maxGenericCycle = CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint;
         private bool _useDwarf5;
+        private string _jitPath;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -230,6 +231,7 @@ namespace ILCompiler
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
+                syntax.DefineOption("jitpath", ref _jitPath, "Path to JIT compiler library");
 
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: assembly-qualified name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
@@ -642,6 +644,8 @@ namespace ILCompiler
 
             if (_mibcFilePaths.Count > 0)
                 ((RyuJitCompilationBuilder)builder).UseProfileData(_mibcFilePaths);
+            if (!String.IsNullOrEmpty(_jitPath))
+                ((RyuJitCompilationBuilder)builder).UseJitPath(_jitPath);
 
             PInvokeILEmitterConfiguration pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target, _directPInvokes, _directPInvokeLists);
 

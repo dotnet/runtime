@@ -102,7 +102,7 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>4d6406fa2e84c8516a338694be3a4097e6e1f104</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Version="7.0.0-beta.22080.1">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="7.0.0-beta.22102.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>4d6406fa2e84c8516a338694be3a4097e6e1f104</Sha>
     </Dependency>

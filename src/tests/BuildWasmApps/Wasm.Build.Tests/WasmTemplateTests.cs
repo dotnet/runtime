@@ -18,7 +18,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BrowserBuildThenPublish(string config)
@@ -61,7 +61,7 @@ namespace Wasm.Build.Tests
                             UseCache: false));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void ConsoleBuildThenPublish(string config)
@@ -76,10 +76,10 @@ namespace Wasm.Build.Tests
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                        DotnetWasmFromRuntimePack: false,
+                        DotnetWasmFromRuntimePack: true,
                         CreateProject: false,
                         HasV8Script: false,
-                        MainJS: "main.mjs",
+                        MainJS: "main.cjs",
                         Publish: false,
                         TargetFramework: "net7.0"
                         ));
@@ -92,13 +92,14 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
             Console.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
+            bool expectRelinking = config == "Release";
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: false,
+                            DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
                             HasV8Script: false,
-                            MainJS: "main.mjs",
+                            MainJS: "main.cjs",
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));

@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    internal partial class RuntimeModule : Module
+    internal sealed partial class RuntimeModule : Module
     {
         internal RuntimeModule() { throw new NotSupportedException(); }
 

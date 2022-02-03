@@ -64,6 +64,7 @@
     <MicrosoftDotNetBuildTasksArchivesVersion>7.0.0-beta.22080.1</MicrosoftDotNetBuildTasksArchivesVersion>
     <MicrosoftDotNetBuildTasksInstallersVersion>7.0.0-beta.22080.1</MicrosoftDotNetBuildTasksInstallersVersion>
     <MicrosoftDotNetBuildTasksPackagingVersion>7.0.0-beta.22080.1</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>7.0.0-beta.22102.1</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
     <MicrosoftDotNetBuildTasksTemplatingVersion>7.0.0-beta.22080.1</MicrosoftDotNetBuildTasksTemplatingVersion>
     <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>7.0.0-beta.22080.1</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
     <MicrosoftDotNetRemoteExecutorVersion>7.0.0-beta.22080.1</MicrosoftDotNetRemoteExecutorVersion>
