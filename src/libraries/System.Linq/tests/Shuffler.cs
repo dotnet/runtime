@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -9,6 +8,17 @@ namespace System.Linq.Tests
 {
     public static class Shuffler
     {
+        public static T[] Shuffle<T>(T[] array)
+        {
+            int i = array.Length;
+            while (i > 1)
+            {
+                int j = Random.Shared.Next(i--);
+                (array[i], array[j]) = (array[j], array[i]);
+            }
+            return array;
+        }
+
         public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source, int seed)
         {
             return new ShuffledEnumerable<T>(source, seed);

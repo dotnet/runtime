@@ -37,7 +37,7 @@
     <DefaultSubsets Condition="('$(DotNetBuildFromSource)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono') or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64')">clr+libs+host+packs</DefaultSubsets>
   </PropertyGroup>
 
-  <!-- Init _subset here in to allow RuntimeFlavor to be set as early as possible -->
+  <!-- Init _subset here to allow RuntimeFlavor to be set as early as possible -->
   <PropertyGroup>
     <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
     <_subset Condition="'$(Subset)' == ''">+$(DefaultSubsets)+</_subset>
@@ -58,7 +58,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.spmi</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(PrimaryRuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
@@ -101,11 +101,11 @@
 
   <ItemGroup>
     <!-- CoreClr -->
-    <SubsetName Include="Clr" Description="The CoreCLR runtime, LinuxDac, CoreLib (+ native), tools and packages." />
+    <SubsetName Include="Clr" Description="The full CoreCLR runtime. Equivalent to: $(DefaultCoreClrSubsets)" />
     <SubsetName Include="Clr.NativePrereqs" Description="Managed tools that support building the native components of the runtime (such as DacTableGen)." />
-    <SubsetName Include="Clr.ILTools" Description="The CoreCLR IL tools." />
-    <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime." />
-    <SubsetName Include="Clr.Native" Description="All CoreCLR native non-test components, including the runtime, jits, and other native tools." />
+    <SubsetName Include="Clr.ILTools" Description="The CoreCLR IL tools (ilasm/ildasm)." />
+    <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime. Includes clr.jit, clr.iltools, clr.hosts." />
+    <SubsetName Include="Clr.Native" Description="All CoreCLR native non-test components, including the runtime, jits, and other native tools. Includes clr.hosts, clr.runtime, clr.jit, clr.alljits, clr.paltests, clr.iltools, clr.nativeaotruntime, clr.spmi." />
     <SubsetName Include="Clr.NativeAotLibs" Description="The CoreCLR native AOT CoreLib and other low level class libraries." />
     <SubsetName Include="Clr.NativeAotRuntime" Description="The stripped-down CoreCLR native AOT runtime." />
     <SubsetName Include="Clr.PalTests" OnDemand="true" Description="The CoreCLR PAL tests." />
@@ -124,7 +124,7 @@
             Description="Packaging of cross OS DAC. Requires all assets needed to be present at a folder specified by $(CrossDacArtifactsDir). See 'Microsoft.CrossOsDiag.Private.CoreCLR.proj' for details." />
 
     <!-- Mono -->
-    <SubsetName Include="Mono" Description="The Mono runtime and CoreLib." />
+    <SubsetName Include="Mono" Description="The Mono runtime and CoreLib. Equivalent to: $(DefaultMonoSubsets)" />
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
     <SubsetName Include="Mono.AotCross" Description="The cross-compiler runtime for Mono AOT." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
@@ -134,14 +134,14 @@
     <SubsetName Include="Mono.Workloads" OnDemand="true" Description="Builds the installers and the insertion metadata for Blazor workloads." />
 
     <!-- Host -->
-    <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests." />
+    <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests. Equivalent to: $(DefaultHostSubsets)" />
     <SubsetName Include="Host.Native" Description="The .NET hosts." />
     <SubsetName Include="Host.Pkg" Description="The .NET host packages." />
     <SubsetName Include="Host.Tools" Description="The .NET hosting libraries." />
     <SubsetName Include="Host.Tests" Description="The .NET hosting tests." />
 
     <!-- Libs -->
-    <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly)" />
+    <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly). Equivalent to: $(DefaultLibrariesSubsets)" />
     <SubsetName Include="Libs.Native" Description="The native libraries used in the shared framework." />
     <SubsetName Include="Libs.Ref" Description="The managed reference libraries." />
     <SubsetName Include="Libs.Src" Description="The managed implementation libraries." />
@@ -150,7 +150,7 @@
     <SubsetName Include="Libs.Tests" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
 
     <!-- Packs -->
-    <SubsetName Include="Packs" Description="Builds the shared framework packs, archives, bundles, installers, and the framework pack tests." />
+    <SubsetName Include="Packs" Description="Builds the shared framework packs, archives, bundles, installers, and the framework pack tests. Equivalent to: $(DefaultPacksSubsets)" />
     <SubsetName Include="Packs.Product" Description="Builds the shared framework packs, archives, bundles, and installers." />
     <SubsetName Include="Packs.Installers" Description="Builds the shared framework bundles and installers." />
     <SubsetName Include="Packs.Tests" Description="The framework pack tests." />
