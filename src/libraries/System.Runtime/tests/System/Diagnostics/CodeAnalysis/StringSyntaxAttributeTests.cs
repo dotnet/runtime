@@ -9,6 +9,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
     {
         [Theory]
         [InlineData(StringSyntaxAttribute.DateTimeFormat)]
+        [InlineData(StringSyntaxAttribute.Json)]
         [InlineData(StringSyntaxAttribute.Regex)]
         public void Ctor_Roundtrips(string syntax)
         {

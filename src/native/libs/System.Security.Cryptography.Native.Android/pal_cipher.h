@@ -31,7 +31,7 @@ PALEXPORT int32_t AndroidCryptoNative_CipherSetTagLength(CipherCtx* ctx, int32_t
 PALEXPORT int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint8_t* iv, int32_t enc);
 PALEXPORT int32_t AndroidCryptoNative_CipherSetNonceLength(CipherCtx* ctx, int32_t ivLength);
 PALEXPORT void AndroidCryptoNative_CipherDestroy(CipherCtx* ctx);
-PALEXPORT int32_t AndroidCryptoNative_CipherReset(CipherCtx* ctx);
+PALEXPORT int32_t AndroidCryptoNative_CipherReset(CipherCtx* ctx, uint8_t* pIv, int32_t cIv);
 PALEXPORT int32_t AndroidCryptoNative_CipherCtxSetPadding(CipherCtx* ctx, int32_t padding);
 PALEXPORT int32_t AndroidCryptoNative_CipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t inl);
 PALEXPORT int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* out, int32_t* outl, uint8_t* in, int32_t inl);

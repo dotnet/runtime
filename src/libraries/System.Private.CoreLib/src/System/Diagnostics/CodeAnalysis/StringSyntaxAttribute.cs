@@ -40,6 +40,9 @@ namespace System.Diagnostics.CodeAnalysis
         /// <summary>The syntax identifier for strings containing date and time format specifiers.</summary>
         public const string DateTimeFormat = nameof(DateTimeFormat);
 
+        /// <summary>The syntax identifier for strings containing JavaScript Object Notation (JSON).</summary>
+        public const string Json = nameof(Json);
+
         /// <summary>The syntax identifier for strings containing regular expressions.</summary>
         public const string Regex = nameof(Regex);
     }

@@ -4,7 +4,10 @@
 #ifndef _NAMEDINTRINSICLIST_H_
 #define _NAMEDINTRINSICLIST_H_
 
-// Named jit intrinsics
+// Named jit intrinsics.
+
+// When adding a new intrinsic that will use the GT_INTRINSIC node and can throw, make sure
+// to update the "OperMayThrow" and "fgValueNumberAddExceptionSet" methods to account for that.
 
 enum NamedIntrinsic : unsigned short
 {

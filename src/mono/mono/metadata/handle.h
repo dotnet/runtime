@@ -32,7 +32,7 @@ The handle stack is designed so it's efficient to pop a large amount of entries 
 The stack is made out of a series of fixed size segments.
 
 To do bulk operations you use a stack mark.
-	
+
 */
 
 /*

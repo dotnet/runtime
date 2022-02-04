@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace System.Linq
 {
@@ -9,9 +10,9 @@ namespace System.Linq
     {
         public static double Average(this IEnumerable<int> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<int> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                return Average(span);
             }
 
             using (IEnumerator<int> e = source.GetEnumerator())
@@ -34,6 +35,38 @@ namespace System.Linq
 
                 return (double)sum / count;
             }
+        }
+
+        private static double Average(ReadOnlySpan<int> span)
+        {
+            if (span.IsEmpty)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            long sum = 0;
+            int i = 0;
+
+            if (Vector.IsHardwareAccelerated && span.Length >= Vector<int>.Count)
+            {
+                Vector<long> sums = default;
+                do
+                {
+                    Vector.Widen(new Vector<int>(span.Slice(i)), out Vector<long> low, out Vector<long> high);
+                    sums += low;
+                    sums += high;
+                    i += Vector<int>.Count;
+                }
+                while (i <= span.Length - Vector<int>.Count);
+                sum += Vector.Sum(sums);
+            }
+
+            for (; (uint)i < (uint)span.Length; i++)
+            {
+                sum += span[i];
+            }
+
+            return (double)sum / span.Length;
         }
 
         public static double? Average(this IEnumerable<int?> source)
@@ -75,9 +108,9 @@ namespace System.Linq
 
         public static double Average(this IEnumerable<long> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<long> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                return Average(span);
             }
 
             using (IEnumerator<long> e = source.GetEnumerator())
@@ -100,6 +133,22 @@ namespace System.Linq
 
                 return (double)sum / count;
             }
+        }
+
+        private static double Average(ReadOnlySpan<long> span)
+        {
+            if (span.IsEmpty)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            long sum = span[0];
+            for (int i = 1; i < span.Length; i++)
+            {
+                checked { sum += span[i]; }
+            }
+
+            return (double)sum / span.Length;
         }
 
         public static double? Average(this IEnumerable<long?> source)
@@ -141,9 +190,14 @@ namespace System.Linq
 
         public static float Average(this IEnumerable<float> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<float> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                if (span.IsEmpty)
+                {
+                    ThrowHelper.ThrowNoElementsException();
+                }
+
+                return (float)(Sum(span) / span.Length);
             }
 
             using (IEnumerator<float> e = source.GetEnumerator())
@@ -204,9 +258,14 @@ namespace System.Linq
 
         public static double Average(this IEnumerable<double> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<double> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                if (span.IsEmpty)
+                {
+                    ThrowHelper.ThrowNoElementsException();
+                }
+
+                return Sum(span) / span.Length;
             }
 
             using (IEnumerator<double> e = source.GetEnumerator())
@@ -270,9 +329,14 @@ namespace System.Linq
 
         public static decimal Average(this IEnumerable<decimal> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<decimal> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                if (span.IsEmpty)
+                {
+                    ThrowHelper.ThrowNoElementsException();
+                }
+
+                return Sum(span) / span.Length;
             }
 
             using (IEnumerator<decimal> e = source.GetEnumerator())

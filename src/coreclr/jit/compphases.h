@@ -5,7 +5,7 @@
 //
 
 //
-// Names of x86 JIT phases, in order.  Assumes that the caller defines CompPhaseNameMacro
+// Names of JIT phases, in order.  Assumes that the caller defines CompPhaseNameMacro
 // in a useful way before including this file, e.g., to define the phase enumeration and the
 // corresponding array of string names of those phases.  This include file undefines CompPhaseNameMacro
 // after the last use.
@@ -43,6 +43,7 @@ CompPhaseNameMacro(PHASE_UPDATE_FINALLY_FLAGS,   "Update finally target flags", 
 CompPhaseNameMacro(PHASE_COMPUTE_PREDS,          "Compute preds",                  "PREDS",    false, -1, false)
 CompPhaseNameMacro(PHASE_EARLY_UPDATE_FLOW_GRAPH,"Update flow graph early pass",   "UPD-FG-E", false, -1, false)
 CompPhaseNameMacro(PHASE_STR_ADRLCL,             "Morph - Structs/AddrExp",        "MOR-STRAL",false, -1, false)
+CompPhaseNameMacro(PHASE_FWD_SUB,                "Forward Substitution",           "FWD-SUB",  false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_IMPBYREF,         "Morph - ByRefs",                 "MOR-BYREF",false, -1, false)
 CompPhaseNameMacro(PHASE_PROMOTE_STRUCTS,        "Morph - Promote Structs",        "PROMOTER" ,false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_GLOBAL,           "Morph - Global",                 "MOR-GLOB", false, -1, false)
@@ -61,6 +62,7 @@ CompPhaseNameMacro(PHASE_ZERO_INITS,             "Redundant zero Inits",        
 CompPhaseNameMacro(PHASE_FIND_LOOPS,             "Find loops",                     "LOOP-FND", false, -1, false)
 CompPhaseNameMacro(PHASE_CLONE_LOOPS,            "Clone loops",                    "LP-CLONE", false, -1, false)
 CompPhaseNameMacro(PHASE_UNROLL_LOOPS,           "Unroll loops",                   "UNROLL",   false, -1, false)
+CompPhaseNameMacro(PHASE_CLEAR_LOOP_INFO,        "Clear loop info",                "LP-CLEAR", false, -1, false)
 CompPhaseNameMacro(PHASE_HOIST_LOOP_CODE,        "Hoist loop code",                "LP-HOIST", false, -1, false)
 CompPhaseNameMacro(PHASE_MARK_LOCAL_VARS,        "Mark local vars",                "MARK-LCL", false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_BOOLS,         "Optimize bools",                 "OPT-BOOL", false, -1, false)
@@ -86,7 +88,6 @@ CompPhaseNameMacro(PHASE_INSERT_GC_POLLS,        "Insert GC Polls",             
 CompPhaseNameMacro(PHASE_DETERMINE_FIRST_COLD_BLOCK, "Determine first cold block", "COLD-BLK", false, -1, true)
 CompPhaseNameMacro(PHASE_RATIONALIZE,            "Rationalize IR",                 "RAT",      false, -1, false)
 CompPhaseNameMacro(PHASE_SIMPLE_LOWERING,        "Do 'simple' lowering",           "SMP-LWR",  false, -1, false)
-CompPhaseNameMacro(PHASE_ALIGN_LOOPS,            "Place 'align' instructions",     "LOOP-ALIGN",  false, -1, false)
 
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS,         "Local var liveness",             "LIVENESS", true, -1, false)
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS_INIT,    "Local var liveness init",        "LIV-INIT", false, PHASE_LCLVARLIVENESS, false)
@@ -100,6 +101,7 @@ CompPhaseNameMacro(PHASE_LINEAR_SCAN,            "Linear scan register alloc",  
 CompPhaseNameMacro(PHASE_LINEAR_SCAN_BUILD,      "LSRA build intervals",           "LSRA-BLD", false, PHASE_LINEAR_SCAN, false)
 CompPhaseNameMacro(PHASE_LINEAR_SCAN_ALLOC,      "LSRA allocate",                  "LSRA-ALL", false, PHASE_LINEAR_SCAN, false)
 CompPhaseNameMacro(PHASE_LINEAR_SCAN_RESOLVE,    "LSRA resolve",                   "LSRA-RES", false, PHASE_LINEAR_SCAN, false)
+CompPhaseNameMacro(PHASE_ALIGN_LOOPS,            "Place 'align' instructions",     "LOOP-ALIGN",  false, -1, false)
 CompPhaseNameMacro(PHASE_GENERATE_CODE,          "Generate code",                  "CODEGEN",  false, -1, false)
 CompPhaseNameMacro(PHASE_EMIT_CODE,              "Emit code",                      "EMIT",     false, -1, false)
 CompPhaseNameMacro(PHASE_EMIT_GCEH,              "Emit GC+EH tables",              "EMT-GCEH", false, -1, false)
