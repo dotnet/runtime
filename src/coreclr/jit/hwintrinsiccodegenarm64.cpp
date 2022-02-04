@@ -368,9 +368,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             // This handles optimizations for instructions that have
             // an implicit 'zero' vector of what would be the second operand.
-            if ((intrin.op2->IsVectorZero() && intrin.op2->isContained()) ||
+            if ((numOperands == 2) &&
+                ((intrin.op2->IsVectorZero() && intrin.op2->isContained()) ||
                 (intrin.op1->IsVectorZero() && intrin.op1->isContained() &&
-                 HWIntrinsicInfo::IsCommutative(intrin.id)))
+                    HWIntrinsicInfo::IsCommutative(intrin.id))))
             {
                 assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
 
@@ -378,7 +379,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     HWIntrinsicInfo::IsCommutative(intrin.id))
                 {
                     // The intrinsic is commutative, swap the registers.
+                    assert(op1Reg == REG_NA);
                     op1Reg = op2Reg;
+                    op2Reg = REG_NA;
                 }
 
                 switch (ins)
@@ -396,6 +399,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         assert(numOperands == 2);
                         numOperands -= 1;
+                        break;
                     }
 
                     default:
