@@ -7,8 +7,9 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	// Note: this test's goal is to validate that the product correctly reports unrecognized patterns
-	//   - so the main validation is done by the UnrecognizedReflectionAccessPattern attributes.
+	//   - so the main validation is done by the ExpectedWarning attributes.
 	[SkipKeptItemsValidation]
+	[ExpectedNoWarnings]
 	class AssemblyQualifiedNameDataflow
 	{
 		static void Main ()
@@ -19,8 +20,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestUnqualifiedTypeNameWarns ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicConstructors), new Type[] { typeof (string) }, messageCode: "IL2072")]
-		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequireNonPublicConstructors), new Type[] { typeof (string) }, messageCode: "IL2072")]
+		[ExpectedWarning ("IL2072", nameof (RequirePublicConstructors))]
+		[ExpectedWarning ("IL2072", nameof (RequireNonPublicConstructors))]
 		static void TestPublicParameterlessConstructor ()
 		{
 			string type = GetTypeWithPublicParameterlessConstructor ().AssemblyQualifiedName;
@@ -30,7 +31,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequireNonPublicConstructors), new Type[] { typeof (string) }, messageCode: "IL2072")]
+		[ExpectedWarning ("IL2072", nameof (RequireNonPublicConstructors))]
 		static void TestPublicConstructors ()
 		{
 			string type = GetTypeWithPublicConstructors ().AssemblyQualifiedName;
@@ -40,8 +41,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicParameterlessConstructor), new Type[] { typeof (string) }, messageCode: "IL2072")]
-		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicConstructors), new Type[] { typeof (string) }, messageCode: "IL2072")]
+		[ExpectedWarning ("IL2072", nameof (RequirePublicParameterlessConstructor))]
+		[ExpectedWarning ("IL2072", nameof (RequirePublicConstructors))]
 		static void TestConstructors ()
 		{
 			string type = GetTypeWithNonPublicConstructors ().AssemblyQualifiedName;

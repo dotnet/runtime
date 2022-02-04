@@ -76,6 +76,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				type.GetInterface ("ITestInterface").RequiresInterfaces ();
 			}
 
+			class GetInterfaceInCtor
+			{
+				public GetInterfaceInCtor ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type type)
+				{
+					type.GetInterface ("ITestInterface").RequiresInterfaces ();
+				}
+			}
+
 			public static void Test ()
 			{
 				TestNoAnnotation (typeof (TestType));
@@ -85,6 +93,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestKnownType ();
 				TestMultipleValues (0, typeof (TestType));
 				TestMergedValues (0, typeof (TestType));
+				var _ = new GetInterfaceInCtor (typeof (TestType));
 			}
 		}
 

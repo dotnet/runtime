@@ -21,18 +21,31 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[ExpectedNoWarnings]
 	class RequiresAttributeMismatch
 	{
-		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualMethod()", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualMethod()", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualMethod()", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "IBaseWithRequires.PropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "IBaseWithRequires.Method()", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "PropertyAnnotationInPropertyAndAccessor.set", ProducedBy = ProducedBy.Trimmer)]
+		// Base/Derived and Implementation/Interface differs between linker and analyzer https://github.com/dotnet/linker/issues/2533
+		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
+		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
+		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
+		[ExpectedWarning ("IL2026", "DerivedClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2026", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.set", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2026", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInProperty.get", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2026", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInProperty.set", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualMethod()")]
+		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualMethod()")]
+		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualMethod()")]
+		[ExpectedWarning ("IL2026", "DerivedClassWithRequires.VirtualMethod()", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2026", "IBaseWithRequires.PropertyAnnotationInAccesor.get")]
+		[ExpectedWarning ("IL2026", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.set", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2026", "IBaseWithRequires.Method()")]
+		[ExpectedWarning ("IL2026", "ImplementationClassWithRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2026", "ImplementationClassWithRequires.PropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2026", "ImplementationClassWithRequires.PropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2026", "ImplementationClassWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2026", "ImplementationClassWithRequiresInSource.Method()", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2026", "ImplementationClassWithRequiresInSource.PropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
+		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
+		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
+		[ExpectedWarning ("IL2026", "PropertyAnnotationInPropertyAndAccessor.set")]
 
 		public static void Main ()
 		{
@@ -285,9 +298,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresUnreferencedCode ("Message")]
 			[RequiresAssemblyFiles ("Message")]
 			[RequiresDynamicCode ("Message")]
-			[ExpectedWarning ("IL2046", "ExplicitImplementationClassWithRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()")]
-			[ExpectedWarning ("IL3003", "ExplicitImplementationClassWithRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL3051", "ExplicitImplementationClassWithRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
+			// Linker member string format includes namespace of explicit interface method.
+			[ExpectedWarning ("IL2046", "ExplicitImplementationClassWithRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2046", "ExplicitImplementationClassWithRequires.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3003", "ExplicitImplementationClassWithRequires.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3051", "IBaseWithoutRequires.Method()", "ExplicitImplementationClassWithRequires.IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
 			void IBaseWithoutRequires.Method ()
 			{
 			}
@@ -356,9 +371,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class ExplicitImplementationClassWithoutRequires : IBaseWithRequires
 		{
-			[ExpectedWarning ("IL2046", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.Method()")]
-			[ExpectedWarning ("IL3003", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL3051", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
+			// Linker member string format includes namespace of explicit interface method.
+			[ExpectedWarning ("IL2046", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.Method()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2046", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.IBaseWithRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3003", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.IBaseWithRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3051", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.IBaseWithRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
 			void IBaseWithRequires.Method ()
 			{
 			}

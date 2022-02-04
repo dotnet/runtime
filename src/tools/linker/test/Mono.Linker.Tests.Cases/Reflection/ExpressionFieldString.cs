@@ -7,10 +7,10 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[Reference ("System.Core.dll")]
+	[ExpectedNoWarnings]
 	public class ExpressionFieldString
 	{
-		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.Field),
-			new Type[] { typeof (Expression), typeof (Type), typeof (string) }, messageCode: "IL2072")]
+		[ExpectedWarning ("IL2072", nameof (Expression) + "." + nameof (Expression.Field))]
 		public static void Main ()
 		{
 			Expression.Field (Expression.Parameter (typeof (int), ""), typeof (ExpressionFieldString), "Field");
@@ -18,8 +18,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Expression.Field (null, typeof (Derived), "_protectedFieldOnBase");
 			Expression.Field (null, typeof (Derived), "_publicFieldOnBase");
 			UnknownType.Test ();
+			UnknownTypeNoAnnotation.Test ();
 			UnknownString.Test ();
-			Expression.Field (null, GetType (), "This string will not be reached"); // UnrecognizedReflectionAccessPattern
+			Expression.Field (null, GetType (), "This string will not be reached"); // IL2072
 		}
 
 		[Kept]
@@ -54,6 +55,26 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[return: KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+			static Type GetType ()
+			{
+				return typeof (UnknownType);
+			}
+		}
+
+		[Kept]
+		class UnknownTypeNoAnnotation
+		{
+			public static int Field1;
+			private int Field2;
+
+			[ExpectedWarning ("IL2072", "'type'")]
+			[Kept]
+			public static void Test ()
+			{
+				Expression.Field (null, GetType (), "This string will not be reached");
+			}
+
+			[Kept]
 			static Type GetType ()
 			{
 				return typeof (UnknownType);
