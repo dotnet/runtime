@@ -501,24 +501,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     FindStartPosition(input, i, i_q0_A1); // Walk in reverse to locate the start position of the match
             }
 
-            int i_end;
-            if (_capsize == 1)
-            {
-                if (watchdog >= 0)
-                {
-                    i_end = i;
-                }
-                else
-                {
-                    i_end = FindEndPosition(input, end, i_start);
-                }
-                return new SymbolicMatch(i_start, i_end + 1 - i_start);
-            }
-            else
-            {
-                i_end = FindEndPositionCapturing(input, end, i_start, out Registers endRegisters);
-                return new SymbolicMatch(i_start, i_end + 1 - i_start, endRegisters.captureStarts, endRegisters.captureEnds);
-            }
+            int i_end = FindEndPositionCapturing(input, end, i_start, out Registers endRegisters);
+            return new SymbolicMatch(i_start, i_end + 1 - i_start, endRegisters.captureStarts, endRegisters.captureEnds);
         }
 
         /// <summary>Find match end position using the original pattern, end position is known to exist.</summary>
