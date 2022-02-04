@@ -397,7 +397,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     case INS_fcmle:
                     case INS_fcmlt:
                     {
-                        assert(numOperands == 2);
                         numOperands -= 1;
                         break;
                     }
