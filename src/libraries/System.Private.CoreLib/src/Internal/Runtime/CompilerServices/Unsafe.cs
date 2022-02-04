@@ -211,6 +211,116 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Copies a value of type T to the given location.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_BYREF_COPY
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Copy<T>(void* destination, ref T source)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldobj !!T
+            // stobj !!T
+            // ret
+        }
+
+        /// <summary>
+        /// Copies a value of type T to the given location.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_PTR_COPY
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Copy<T>(ref T destination, void* source)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldobj !!T
+            // stobj !!T
+            // ret
+        }
+
+        /// <summary>
+        /// Copies bytes from the source address to the destination address.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_COPY_BLOCK
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyBlock(void* destination, void* source, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // cpblk
+            // ret
+        }
+
+        /// <summary>
+        /// Copies bytes from the source address to the destination address.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_COPY_BLOCK
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyBlock(ref byte destination, ref byte source, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // cpblk
+            // ret
+        }
+
+        /// <summary>
+        /// Copies bytes from the source address to the destination address without assuming architecture dependent alignment of the addresses.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_COPY_BLOCK_UNALIGNED
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyBlockUnaligned(void* destination, void* source, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // unaligned. 0x1
+            // cpblk
+            // ret
+        }
+
+        /// <summary>
+        /// Copies bytes from the source address to the destination address without assuming architecture dependent alignment of the addresses.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_COPY_BLOCK_UNALIGNED
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyBlockUnaligned(ref byte destination, ref byte source, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // unaligned. 0x1
+            // cpblk
+            // ret
+        }
+
+        /// <summary>
         /// Determines whether the memory address referenced by <paramref name="left"/> is greater than
         /// the memory address referenced by <paramref name="right"/>.
         /// </summary>
