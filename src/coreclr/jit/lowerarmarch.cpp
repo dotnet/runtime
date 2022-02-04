@@ -1965,20 +1965,33 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_AdvSimd_CompareEqual:
-            case NI_AdvSimd_CompareGreaterThan:
-            case NI_AdvSimd_CompareGreaterThanOrEqual:
             case NI_AdvSimd_Arm64_CompareEqual:
             case NI_AdvSimd_Arm64_CompareEqualScalar:
+            {
+                if (intrin.op1->IsVectorZero())
+                {
+                    assert(HWIntrinsicInfo::IsCommutative(intrin.id));
+                    MakeSrcContained(node, intrin.op1);
+                }
+                else if (intrin.op2->IsVectorZero())
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+            }
+
+            case NI_AdvSimd_CompareGreaterThan:
+            case NI_AdvSimd_CompareGreaterThanOrEqual:
             case NI_AdvSimd_Arm64_CompareGreaterThan:
             case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
             case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
             case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
             {
-                if (intrin.op1->IsVectorZero() && HWIntrinsicInfo::IsCommutative(intrin.id))
-                {
-                    MakeSrcContained(node, intrin.op1);
-                }
-                else if (intrin.op2->IsVectorZero())
+                // Containment is not supported for unsigned base types as the corresponding instructions:
+                //    - cmhi
+                //    - cmhs
+                // require both operands; they do not have a 'with zero'.
+                if (intrin.op2->IsVectorZero() && !varTypeIsUnsigned(intrin.baseType))
                 {
                     MakeSrcContained(node, intrin.op2);
                 }
