@@ -48,6 +48,7 @@ namespace Internal.TypeSystem.Interop
         FailedTypeLoad,
         ComInterface,
         BlittableValueClassWithCopyCtor,
+        CustomMarshaler,
         Invalid
     }
 

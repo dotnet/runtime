@@ -42,6 +42,12 @@ namespace System.Linq.Tests
             yield return new object[] { new int[] { 6, 9, 10, 7, 8 }, 6 };
             yield return new object[] { new int[] { 6, 9, 10, 0, -5 }, -5 };
             yield return new object[] { new int[] { 6, 0, 9, 0, 10, 0 }, 0 };
+
+            for (int length = 2; length < 33; length++)
+            {
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length)), length };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).ToArray()), length };
+            }
         }
 
         [Theory]
@@ -64,6 +70,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Min());
+            Assert.Throws<InvalidOperationException>(() => new List<int>().Min());
         }
 
         public static IEnumerable<object[]> Min_Long_TestData()
@@ -79,6 +87,12 @@ namespace System.Linq.Tests
             yield return new object[] { new long[] { -250, 49, 130, 47, 28 }, -250L };
             yield return new object[] { new long[] { 6, 9, 10, 0, -int.MaxValue - 50L }, -int.MaxValue - 50L };
             yield return new object[] { new long[] { 6, -5, 9, -5, 10, -5 }, -5 };
+
+            for (int length = 2; length < 33; length++)
+            {
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (long)i)), (long)length };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (long)i).ToArray()), (long)length };
+            }
         }
 
         [Theory]
@@ -101,6 +115,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<long>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<long>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => Array.Empty<long>().Min());
+            Assert.Throws<InvalidOperationException>(() => new List<long>().Min());
         }
 
         public static IEnumerable<object[]> Min_Float_TestData()
@@ -160,6 +176,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => Array.Empty<float>().Min());
+            Assert.Throws<InvalidOperationException>(() => new List<float>().Min());
         }
 
         public static IEnumerable<object[]> Min_Double_TestData()
@@ -218,6 +236,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => Array.Empty<double>().Min());
+            Assert.Throws<InvalidOperationException>(() => new List<double>().Min());
         }
 
         public static IEnumerable<object[]> Min_Decimal_TestData()
@@ -248,6 +268,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => Array.Empty<decimal>().Min());
+            Assert.Throws<InvalidOperationException>(() => new List<decimal>().Min());
         }
 
         [Fact]
@@ -486,6 +508,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => Array.Empty<DateTime>().Min());
+            Assert.Throws<InvalidOperationException>(() => new List<DateTime>().Min());
         }
 
         public static IEnumerable<object[]> Min_String_TestData()

@@ -104,6 +104,7 @@ set( JIT_SOURCES
   fgprofile.cpp
   fgstmt.cpp
   flowgraph.cpp
+  forwardsub.cpp
   gcdecode.cpp
   gcencode.cpp
   gcinfo.cpp

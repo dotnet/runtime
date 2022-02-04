@@ -44,7 +44,7 @@ class EditAndContinueModule;
 class PEAssembly;
 class SimpleRWLock;
 
-typedef VPTR(PEAssembly) PTR_PEAssembly;
+typedef DPTR(PEAssembly) PTR_PEAssembly;
 
 // --------------------------------------------------------------------------------
 // Types
