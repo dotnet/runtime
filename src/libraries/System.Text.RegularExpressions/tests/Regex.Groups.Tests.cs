@@ -948,13 +948,6 @@ namespace System.Text.RegularExpressions.Tests
                 cultureName = culture.Equals(CultureInfo.InvariantCulture) ? "en-US" : culture.Name;
             }
 
-            if (engine == RegexEngine.NonBacktracking && pattern.Contains("?(cat)"))
-            {
-                // General if-then-else construct is not supported and uses the ?(cat) condition in the tests
-                // TODO-NONBACKTRACKING: The constructor will throw NotSupportedException so this check will become obsolete
-                return;
-            }
-
             using var _ = new ThreadCultureChange(cultureName);
 
             Regex regex;

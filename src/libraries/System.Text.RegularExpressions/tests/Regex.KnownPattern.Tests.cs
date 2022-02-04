@@ -518,7 +518,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                // muultiple captures not supported
+                // multiple captures not supported
                 return;
             }
 
@@ -1189,11 +1189,8 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"/providers/(.+?)\?");
             Match m = r.Match(url);
             Assert.True(m.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal(2, m.Groups.Count);
-                Assert.Equal(expected, m.Groups[1].Value);
-            }
+            Assert.Equal(2, m.Groups.Count);
+            Assert.Equal(expected, m.Groups[1].Value);
         }
 
         public static IEnumerable<object[]> RealWorld_IsValidCSharpName_MemberData()
@@ -1299,10 +1296,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"(?<value>-?\d+(\.\d+)?)");
             Match m = r.Match(value);
             Assert.True(m.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine)) // named capture groups unsupported
-            {
-                Assert.Equal(expected, m.Groups["value"].Value);
-            }
+            Assert.Equal(expected, m.Groups["value"].Value);
         }
 
         public static IEnumerable<object[]> RealWorld_FirebirdVersionString_MemberData()
@@ -1321,10 +1315,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"\w{2}-\w(\d+\.\d+\.\d+\.\d+)");
             Match m = r.Match(value);
             Assert.True(m.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal(expected, m.Groups[1].Value);
-            }
+            Assert.Equal(expected, m.Groups[1].Value);
         }
 
         public static IEnumerable<object[]> RealWorld_ExternalEntryPoint_MemberData()
@@ -1345,12 +1336,9 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"^(.+)!(.+)\.([^.]+)$");
             Match m = r.Match(value);
             Assert.True(m.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine)) // subcaptures aren't supported
-            {
-                Assert.Equal(a, m.Groups[1].Value);
-                Assert.Equal(b, m.Groups[2].Value);
-                Assert.Equal(c, m.Groups[3].Value);
-            }
+            Assert.Equal(a, m.Groups[1].Value);
+            Assert.Equal(b, m.Groups[2].Value);
+            Assert.Equal(c, m.Groups[3].Value);
         }
 
         /// <summary>

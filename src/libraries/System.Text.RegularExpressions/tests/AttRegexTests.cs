@@ -419,7 +419,6 @@ namespace System.Text.RegularExpressions.Tests
                 .Cast<Group>()
                 .Select(g => (start: g.Index, end: g.Index + g.Length)));
 
-            // NonBacktracking mode only provides the top-level match.
             // The .NET implementation sometimes has extra captures beyond what the original data specifies, so we assert a subset.
             if (!expectedSet.IsSubsetOf(actualSet))
             {
