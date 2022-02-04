@@ -17,7 +17,7 @@ namespace NativeExports
             public static extern int GetLastError();
         }
 
-        private class Libc
+        private class @libc
         {
             [DllImport("libc")]
             internal static unsafe extern int* __errno_location();

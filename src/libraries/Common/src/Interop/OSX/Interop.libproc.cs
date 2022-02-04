@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libproc
+    internal static partial class @libproc
     {
         // Constants from sys\param.h
         private const int MAXPATHLEN = 1024;
@@ -350,9 +350,9 @@ internal static partial class Interop
         }
 
         /// <summary>
-        /// Gets the rusage information for the process identified by the PID
+        /// Gets the @rusage information for the process identified by the PID
         /// </summary>
-        /// <param name="pid">The process to retrieve the rusage for</param>
+        /// <param name="pid">The process to retrieve the @rusage for</param>
         /// <param name="flavor">Specifies the type of struct that is passed in to <paramref>buffer</paramref>. Should be RUSAGE_INFO_V3 to specify a rusage_info_v3 struct.</param>
         /// <param name="buffer">A buffer to be filled with rusage_info data</param>
         /// <returns>Returns 0 on success; on fail, -1 and errno is set with the error code</returns>
@@ -363,9 +363,9 @@ internal static partial class Interop
             rusage_info_v3* buffer);
 
         /// <summary>
-        /// Gets the rusage information for the process identified by the PID
+        /// Gets the @rusage information for the process identified by the PID
         /// </summary>
-        /// <param name="pid">The process to retrieve the rusage for</param>
+        /// <param name="pid">The process to retrieve the @rusage for</param>
         /// <returns>On success, returns a struct containing info about the process; on
         /// failure or when the caller doesn't have permissions to the process, throws a Win32Exception
         /// </returns>
@@ -379,7 +379,7 @@ internal static partial class Interop
 
             rusage_info_v3 info = default;
 
-            // Get the PIDs rusage info
+            // Get the PIDs @rusage info
             int result = proc_pid_rusage(pid, RUSAGE_INFO_V3, &info);
             if (result < 0)
             {

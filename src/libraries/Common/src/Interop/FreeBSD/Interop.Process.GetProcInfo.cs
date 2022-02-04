@@ -50,14 +50,14 @@ internal static partial class Interop
             public uint id;
         }
         [StructLayout(LayoutKind.Sequential)]
-        public struct timeval
+        public struct @timeval
         {
             public IntPtr tv_sec;
             public IntPtr tv_usec;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct vnode
+        private struct @vnode
         {
             public long tv_sec;
             public long tv_usec;
@@ -65,7 +65,7 @@ internal static partial class Interop
 
         // sys/resource.h
         [StructLayout(LayoutKind.Sequential)]
-        internal struct rusage
+        internal struct @rusage
         {
             public timeval ru_utime;        /* user time used */
             public timeval ru_stime;        /* system time used */
@@ -164,9 +164,9 @@ internal static partial class Interop
             public int ki_numthreads;                   /* XXXKSE number of threads in total */
             public int ki_tid;                          /* XXXKSE thread id */
             private fixed byte ki_pri[4];               /* process priority */
-            public rusage ki_rusage;                    /* process rusage statistics */
+            public rusage ki_rusage;                    /* process @rusage statistics */
             /* XXX - most fields in ki_rusage_ch are not (yet) filled in */
-            private rusage ki_rusage_ch;                /* rusage of children processes */
+            private rusage ki_rusage_ch;                /* @rusage of children processes */
             private void* ki_pcb;                       /* kernel virtual addr of pcb */
             private void* ki_kstack;                    /* kernel virtual addr of stack */
             private void* ki_udata;                     /* User convenience pointer */
