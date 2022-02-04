@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
 
@@ -736,6 +737,7 @@ namespace DebuggerTests
         [Fact]
         public async Task DebugLazyLoadedAssemblyWithPdb()
         {
+            Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             int line = 9;
             await SetBreakpoint(".*/lazy-debugger-test.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
@@ -744,7 +746,9 @@ namespace DebuggerTests
 
             var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
             Assert.Contains(source_location, scripts.Values);
-            System.Threading.Thread.Sleep(1000);
+
+            await bpResolved;
+
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
@@ -755,9 +759,9 @@ namespace DebuggerTests
         }
 
         [Fact]
-        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/62667
         public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb()
         {
+            Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             int line = 9;
             await SetBreakpoint(".*/lazy-debugger-test-embedded.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
@@ -766,6 +770,8 @@ namespace DebuggerTests
 
             var source_location = "dotnet://lazy-debugger-test-embedded.dll/lazy-debugger-test-embedded.cs";
             Assert.Contains(source_location, scripts.Values);
+
+            await bpResolved;
 
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test-embedded] LazyMath:IntAdd', 5, 10); }, 1);",

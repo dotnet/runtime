@@ -1328,6 +1328,20 @@ namespace DebuggerTests
             return await insp.WaitFor(Inspector.PAUSE);
         }
 
+        public async Task<JObject> WaitForBreakpointResolvedEvent()
+        {
+            try
+            {
+                var res = await insp.WaitForEvent("Debugger.breakpointResolved");
+                Console.WriteLine ($"breakpoint resolved to {res}");
+                return res;
+            }
+            catch (TaskCanceledException)
+            {
+                throw new XunitException($"Timed out waiting for Debugger.breakpointResolved event");
+            }
+        }
+
         internal async Task SetJustMyCode(bool enabled)
         {
             var req = JObject.FromObject(new { enabled = enabled });
