@@ -383,5 +383,69 @@ namespace System.IO.Compression.Tests
                 w.WriteLine(contents);
             }
         }
+
+        protected const string Utf8SmileyEmoji = "\ud83d\ude04";
+        protected const string Utf8LowerCaseOUmlautChar = "\u00F6";
+        protected const string Utf8CopyrightChar = "\u00A9";
+        protected const string AsciiFileName = "file.txt";
+        // The o with umlaut is a character that exists in both latin1 and utf8
+        protected const string Utf8AndLatin1FileName = $"{Utf8LowerCaseOUmlautChar}.txt";
+        // emojis only make sense in utf8
+        protected const string Utf8FileName = $"{Utf8SmileyEmoji}.txt";
+        protected static readonly string ALettersUShortMaxValueMinusOne = new string('a', ushort.MaxValue - 1);
+        protected static readonly string ALettersUShortMaxValue = ALettersUShortMaxValueMinusOne + 'a';
+        protected static readonly string ALettersUShortMaxValueMinusOneAndCopyRightChar = ALettersUShortMaxValueMinusOne + Utf8CopyrightChar;
+        protected static readonly string ALettersUShortMaxValueMinusOneAndTwoCopyRightChars = ALettersUShortMaxValueMinusOneAndCopyRightChar + Utf8CopyrightChar;
+
+        // Returns pairs that are returned the same way by Utf8 and Latin1
+        // Returns: originalComment, expectedComment
+        private static IEnumerable<object[]> SharedComment_Data()
+        {
+            yield return new object[] { null, string.Empty };
+            yield return new object[] { string.Empty, string.Empty };
+            yield return new object[] { "a", "a" };
+            yield return new object[] { Utf8LowerCaseOUmlautChar, Utf8LowerCaseOUmlautChar };
+        }
+
+        // Returns pairs as expected by Utf8
+        // Returns: originalComment, expectedComment
+        public static IEnumerable<object[]> Utf8Comment_Data()
+        {
+            string asciiOriginalOverMaxLength = ALettersUShortMaxValue + "aaa";
+
+            // A smiley emoji code point consists of two characters,
+            // meaning the whole emoji should be fully truncated
+            string utf8OriginalALettersAndOneEmojiDoesNotFit = ALettersUShortMaxValueMinusOne + Utf8SmileyEmoji;
+
+            // A smiley emoji code point consists of two characters,
+            // so it should not be truncated if it's the last character and the total length is not over the limit.
+            string utf8OriginalALettersAndOneEmojiFits = "aaaaa" + Utf8SmileyEmoji;
+
+            yield return new object[] { asciiOriginalOverMaxLength, ALettersUShortMaxValue };
+            yield return new object[] { utf8OriginalALettersAndOneEmojiDoesNotFit, ALettersUShortMaxValueMinusOne };
+            yield return new object[] { utf8OriginalALettersAndOneEmojiFits, utf8OriginalALettersAndOneEmojiFits };
+
+            foreach (object[] e in SharedComment_Data())
+            {
+                yield return e;
+            }
+        }
+
+        // Returns pairs as expected by Latin1
+        // Returns: originalComment, expectedComment
+        public static IEnumerable<object[]> Latin1Comment_Data()
+        {
+            // In Latin1, all characters are exactly 1 byte
+
+            string latin1ExpectedALettersAndOneOUmlaut = ALettersUShortMaxValueMinusOne + Utf8LowerCaseOUmlautChar;
+            string latin1OriginalALettersAndTwoOUmlauts = latin1ExpectedALettersAndOneOUmlaut + Utf8LowerCaseOUmlautChar;
+
+            yield return new object[] { latin1OriginalALettersAndTwoOUmlauts, latin1ExpectedALettersAndOneOUmlaut };
+
+            foreach (object[] e in SharedComment_Data())
+            {
+                yield return e;
+            }
+        }
     }
 }
