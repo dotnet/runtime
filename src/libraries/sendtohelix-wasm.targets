@@ -165,7 +165,7 @@
 
     <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
     
-    <ItemGroup Condition="'$(EnableDefaultBuildHelixWorkItems)' == 'true'">
+    <ItemGroup Condition="'$(IsRunningLibraryTests)' == 'true'">
       <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"                          Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
       <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip"                      Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
       <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip"                      Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" />
