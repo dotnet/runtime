@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -24,11 +23,8 @@ namespace System.Text.Json
         // The global list of built-in converters that override CanConvert().
         private static JsonConverter[]? s_defaultFactoryConverters;
 
-        // The cached converters (custom or built-in).
-        private readonly ConcurrentDictionary<Type, JsonConverter?> _converters = new ConcurrentDictionary<Type, JsonConverter?>();
-
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        private void RootBuiltInConverters()
+        private static void RootBuiltInConverters()
         {
             s_defaultSimpleConverters = GetDefaultSimpleConverters();
             s_defaultFactoryConverters = new JsonConverter[]
@@ -97,7 +93,7 @@ namespace System.Text.Json
         /// </remarks>
         public IList<JsonConverter> Converters { get; }
 
-        internal JsonConverter DetermineConverter(Type? parentClassType, Type runtimePropertyType, MemberInfo? memberInfo)
+        internal JsonConverter GetConverterForMember(Type? parentClassType, Type runtimePropertyType, MemberInfo? memberInfo)
         {
             JsonConverter converter = null!;
 
@@ -174,16 +170,21 @@ namespace System.Text.Json
 
         internal JsonConverter GetConverterInternal(Type typeToConvert)
         {
-            Debug.Assert(typeToConvert != null);
-
-            if (_converters.TryGetValue(typeToConvert, out JsonConverter? converter))
+            // Only cache the value once (de)serialization has occurred since new converters can be added that may change the result.
+            if (_cachingContext != null)
             {
-                Debug.Assert(converter != null);
-                return converter;
+                return _cachingContext.GetOrAddConverter(typeToConvert);
             }
 
+            return GetConverterFromType(typeToConvert);
+        }
+
+        private JsonConverter GetConverterFromType(Type typeToConvert)
+        {
+            Debug.Assert(typeToConvert != null);
+
             // Priority 1: If there is a JsonSerializerContext, fetch the converter from there.
-            converter = _context?.GetTypeInfo(typeToConvert)?.PropertyInfoForTypeInfo?.ConverterBase;
+            JsonConverter? converter = _context?.GetTypeInfo(typeToConvert)?.PropertyInfoForTypeInfo?.ConverterBase;
 
             // Priority 2: Attempt to get custom converter added at runtime.
             // Currently there is not a way at runtime to override the [JsonConverter] when applied to a property.
@@ -257,15 +258,6 @@ namespace System.Text.Json
                 && !typeToConvert.IsAssignableFromInternal(converterTypeToConvert))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
-            }
-
-            // Only cache the value once (de)serialization has occurred since new converters can be added that may change the result.
-            if (_haveTypesBeenCreated)
-            {
-                // A null converter is allowed here and cached.
-
-                // Ignore failure case here in multi-threaded cases since the cached item will be equivalent.
-                _converters.TryAdd(typeToConvert, converter);
             }
 
             return converter;

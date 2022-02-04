@@ -18,7 +18,7 @@ namespace System.Text.Json
             // Ignore the types, and just clear out all reflection caches from serializer options.
             foreach (KeyValuePair<JsonSerializerOptions, object?> options in JsonSerializerOptions.TrackedOptionsInstances.All)
             {
-                options.Key.ClearClasses();
+                options.Key.ClearCaches();
             }
 
             // Flush the dynamic method cache

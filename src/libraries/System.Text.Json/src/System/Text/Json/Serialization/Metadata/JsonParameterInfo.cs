@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Metadata
                 if (_runtimeTypeInfo == null)
                 {
                     Debug.Assert(Options != null);
-                    _runtimeTypeInfo = Options!.GetOrAddClass(RuntimePropertyType);
+                    _runtimeTypeInfo = Options!.GetOrAddJsonTypeInfo(RuntimePropertyType);
                 }
 
                 return _runtimeTypeInfo;
@@ -102,7 +102,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Type parameterType = parameterInfo.ParameterType;
 
                 DefaultValueHolder holder;
-                if (matchingProperty.Options.TryGetClass(parameterType, out JsonTypeInfo? typeInfo))
+                if (matchingProperty.Options.TryGetJsonTypeInfo(parameterType, out JsonTypeInfo? typeInfo))
                 {
                     holder = typeInfo.DefaultValueHolder;
                 }
