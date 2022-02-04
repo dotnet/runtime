@@ -21,6 +21,7 @@ internal static partial class Interop
     {
         private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
         private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
+        private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
         private static readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> s_clientSslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
 
@@ -89,7 +90,7 @@ internal static partial class Interop
         private static SslProtocols CalculateEffectiveProtocols(SslAuthenticationOptions sslAuthenticationOptions)
         {
             // make sure low bit is not set since we use it in context dictionary to distinguish use with ALPN
-            Debug.Assert(((int)sslAuthenticationOptions.EnabledSslProtocols & 1) == 0);
+            Debug.Assert((sslAuthenticationOptions.EnabledSslProtocols & FakeAlpnSslProtocol) == 0);
             SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols & ~((SslProtocols)1);
 
             if (!Interop.Ssl.Capabilities.Tls13Supported)
@@ -198,7 +199,8 @@ internal static partial class Interop
                     }
                     else
                     {
-                        Ssl.SslCtxSetCaching(sslCtx, 1, &NewSessionCallback, &RemoveSessionCallback);
+                        int result = Ssl.SslCtxSetCaching(sslCtx, 1, &NewSessionCallback, &RemoveSessionCallback);
+                        Debug.Assert(result == 1);
                         sslCtx.EnableSessionCache();
                     }
                 }
@@ -285,22 +287,39 @@ internal static partial class Interop
             SafeSslContextHandle? newCtxHandle = null;
             SslProtocols protocols = CalculateEffectiveProtocols(sslAuthenticationOptions);
             bool hasAlpn = sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0;
-            bool cacheSslContext = !DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null &&
-                     ((sslAuthenticationOptions.IsServer &&
-                       sslAuthenticationOptions.CertificateContext != null &&
-                       sslAuthenticationOptions.CertificateContext.SslContexts != null) ||
-                      (sslAuthenticationOptions.IsClient &&
-                      // since SNI us our key, we don't wont to resume sessions without it.
-                      !string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) &&
-                       // on client avoid resume with certificates
-                       sslAuthenticationOptions.CertificateContext == null &&
-                       sslAuthenticationOptions.CertSelectionDelegate == null));
+            bool cacheSslContext = !DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
+
+            if (cacheSslContext)
+            {
+                if (sslAuthenticationOptions.IsClient)
+                {
+                    // we don't want to try on emtpy TargetName since that is our key.
+                    // And we don't want to mess up with client authentication. It may be possible
+                    // but it seems safe to get full new session.
+                    if (string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ||
+                       sslAuthenticationOptions.CertificateContext != null ||
+                        sslAuthenticationOptions.CertSelectionDelegate != null)
+                    {
+                        cacheSslContext = false;
+                    }
+                }
+                else
+                {
+                    // Server should always have certificate
+                    Debug.Assert(sslAuthenticationOptions.CertificateContext != null);
+                    if (sslAuthenticationOptions.CertificateContext == null ||
+                       sslAuthenticationOptions.CertificateContext.SslContexts == null)
+                    {
+                        cacheSslContext = false;
+                    }
+                }
+            }
 
             if (cacheSslContext)
             {
                 if (sslAuthenticationOptions.IsServer)
                 {
-                    sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(protocols | (SslProtocols)(hasAlpn ? 1 : 0), out sslCtxHandle);
+                    sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(protocols | (hasAlpn ? FakeAlpnSslProtocol : SslProtocols.None), out sslCtxHandle);
                 }
                 else
                 {
@@ -317,8 +336,8 @@ internal static partial class Interop
                 if (cacheSslContext)
                 {
                     bool added = sslAuthenticationOptions.IsServer ?
-                                                        sslAuthenticationOptions.CertificateContext!.SslContexts!.TryAdd(protocols | (SslProtocols)(hasAlpn ? 1 : 0), newCtxHandle) :
-                                                        s_clientSslContexts.TryAdd(protocols, newCtxHandle);
+                                    sslAuthenticationOptions.CertificateContext!.SslContexts!.TryAdd(protocols | (SslProtocols)(hasAlpn ? 1 : 0), newCtxHandle) :
+                                    s_clientSslContexts.TryAdd(protocols, newCtxHandle);
                     if (added)
                     {
                         newCtxHandle = null;
@@ -341,6 +360,7 @@ internal static partial class Interop
                 {
                     if (sslAuthenticationOptions.IsServer)
                     {
+                        Debug.Assert(Interop.Ssl.SslGetData(sslHandle) == IntPtr.Zero);
                         alpnHandle = GCHandle.Alloc(sslAuthenticationOptions.ApplicationProtocols);
                         Interop.Ssl.SslSetData(sslHandle, GCHandle.ToIntPtr(alpnHandle));
                         sslHandle.AlpnHandle = alpnHandle;
@@ -675,13 +695,16 @@ internal static partial class Interop
         // If we return 1, the ownership is transfered to us and we will need to call SessionFree().
         private static unsafe int NewSessionCallback(IntPtr ssl, IntPtr session)
         {
+            Debug.Assert(ssl != IntPtr.Zero);
+            Debug.Assert(session != IntPtr.Zero);
+
             IntPtr ptr = Ssl.SslGetData(ssl);
             Debug.Assert(ptr != IntPtr.Zero);
-            GCHandle gch = (GCHandle)ptr;
+            GCHandle gch = GCHandle.FromIntPtr(ptr);
 
             SafeSslContextHandle? ctxHandle = gch.Target as SafeSslContextHandle;
-            Debug.Assert(ctxHandle != null);
-
+            // There is no relation between SafeSslContextHandle and SafeSslHandle so the handle
+            // may be released while the ssl session is still active.
             if (ctxHandle != null && ctxHandle.TryAddSession(Ssl.SslGetServerName(ssl), session))
             {
                 // offered session was stored in our cache.
@@ -698,25 +721,23 @@ internal static partial class Interop
             Debug.Assert(ctx != IntPtr.Zero && session != IntPtr.Zero);
 
             IntPtr ptr = Ssl.SslCtxGetData(ctx);
-            Debug.Assert(ptr != IntPtr.Zero);
-            GCHandle gch = (GCHandle)ptr;
-            if (!gch.IsAllocated)
+            if (ptr == IntPtr.Zero)
             {
+                // Same as above, SafeSslContextHandle could be released while OpenSSL still holds refferecne.
                 return;
             }
 
+            GCHandle gch = GCHandle.FromIntPtr(ptr);
             SafeSslContextHandle? ctxHandle = gch.Target as SafeSslContextHandle;
-            Debug.Assert(ctxHandle != null);
             if (ctxHandle == null)
             {
                 return;
             }
 
-            string? name = Marshal.PtrToStringAnsi(Ssl.SessionGetHostname(session));
-            if (!string.IsNullOrEmpty(name))
-            {
-                ctxHandle.Remove(name, session);
-            }
+            //string? name = Marshal.PtrToStringAnsi(Ssl.SessionGetHostname(session));a
+            IntPtr name = Ssl.SessionGetHostname(session);
+            Debug.Assert(name != IntPtr.Zero);
+            ctxHandle.RemoveSession(name, session);
         }
 
         private static int BioRead(SafeBioHandle bio, byte[] buffer, int count)

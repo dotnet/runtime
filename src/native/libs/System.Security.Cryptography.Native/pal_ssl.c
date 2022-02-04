@@ -478,8 +478,22 @@ void CryptoNative_SslSetVerifyPeer(SSL* ssl)
     SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
 }
 
-void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
+int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
 {
+    int retValue = 1;
+    if (mode && !API_EXISTS(SSL_SESSION_get0_hostname))
+    {
+        // Disable caching on old OpenSSL.
+        // While TLS resume is optional, none of this is critical.
+        mode = 0;
+
+        if (newSessionCb != NULL || removeSessionCb != NULL)
+        {
+            // Indicate unwillingness to restore sessions
+            retValue = 0;
+        }
+    }
+
     // We never reuse same CTX for both client and server
     SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_MODE,  mode ? SSL_SESS_CACHE_BOTH : SSL_SESS_CACHE_OFF, NULL);
     if (mode == 0)
@@ -487,15 +501,18 @@ void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, SslCtxNewSessionCallb
         SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
     }
 
-    if (newSessionCb)
+    if (newSessionCb != NULL || removeSessionCb != NULL)
+    if (newSessionCb != NULL)
     {
         SSL_CTX_sess_set_new_cb(ctx, newSessionCb);
     }
 
-    if (removeSessionCb)
+    if (removeSessionCb != NULL)
     {
         SSL_CTX_sess_set_remove_cb(ctx, removeSessionCb);
     }
+
+    return retValue;
 }
 
 const char* CryptoNative_SslGetServerName(SSL * ssl)
@@ -515,11 +532,21 @@ void CryptoNative_SslSessionFree(SSL_SESSION *session)
 
 const char* CryptoNative_SslSessionGetHostname(SSL_SESSION *session)
 {
+    if (!API_EXISTS(SSL_SESSION_get0_hostname))
+    {
+        return NULL;
+    }
+
     return SSL_SESSION_get0_hostname(session);
 }
 
 int CryptoNative_SslSessionSetHostname(SSL_SESSION *session, const char *hostname)
 {
+    if (!API_EXISTS(SSL_SESSION_set1_hostname))
+    {
+        return 0;
+    }
+
     return SSL_SESSION_set1_hostname(session, hostname);
 }
 
