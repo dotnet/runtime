@@ -962,25 +962,30 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        public static IEnumerable<object[]> SocketsHttpHandler_ActivityCreation_MemberData()
+        {
+            foreach (var currentActivitySet in new bool[] {
+                true,    // Activity was set
+                false }) // No Activity is set
+            {
+                foreach (var diagnosticListenerActivityEnabled in new bool?[] {
+                    true,   // DiagnosticListener requested an Activity
+                    false,  // DiagnosticListener does not want an Activity
+                    null }) // There is no DiagnosticListener
+                {
+                    foreach (var activitySourceCreatesActivity in new bool?[] {
+                        true,   // ActivitySource created an Activity
+                        false,  // ActivitySource chose not to create an Activity
+                        null }) // ActivitySource had no listeners
+                    {
+                        yield return new object[] { currentActivitySet, diagnosticListenerActivityEnabled, activitySourceCreatesActivity };
+                    }
+                }
+            }
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true, true, true)]      // Activity was set and ActivitySource created an Activity
-        [InlineData(true, false, true)]     // Activity was set and ActivitySource created an Activity
-        [InlineData(true, null, true)]      // Activity was set and ActivitySource created an Activity
-        [InlineData(true, true, false)]     // Activity was set, ActivitySource chose not to create an Activity, so one was manually created
-        [InlineData(true, false, false)]    // Activity was set, ActivitySource chose not to create an Activity, so one was manually created
-        [InlineData(true, null, false)]     // Activity was set, ActivitySource chose not to create an Activity, so one was manually created
-        [InlineData(true, true, null)]      // Activity was set, ActivitySource had no listeners, so an Activity was manually created
-        [InlineData(true, false, null)]     // Activity was set, ActivitySource had no listeners, so an Activity was manually created
-        [InlineData(true, null, null)]      // Activity was set, ActivitySource had no listeners, so an Activity was manually created
-        [InlineData(false, true, true)]     // DiagnosticListener requested an Activity and ActivitySource created an Activity
-        [InlineData(false, true, false)]    // DiagnosticListener requested an Activity, ActivitySource chose not to create an Activity, so one was manually created
-        [InlineData(false, true, null)]     // DiagnosticListener requested an Activity, ActivitySource had no listeners, so an Activity was manually created
-        [InlineData(false, false, true)]    // No Activity is set, DiagnosticListener does not want one, but ActivitySource created an Activity
-        [InlineData(false, false, false)]   // No Activity is set, DiagnosticListener does not want one and ActivitySource chose not to create an Activity
-        [InlineData(false, false, null)]    // No Activity is set, DiagnosticListener does not want one and ActivitySource has no listeners
-        [InlineData(false, null, true)]     // No Activity is set, there is no DiagnosticListener, but ActivitySource created an Activity
-        [InlineData(false, null, false)]    // No Activity is set, there is no DiagnosticListener and ActivitySource chose not to create an Activity
-        [InlineData(false, null, null)]     // No Activity is set, there is no DiagnosticListener and ActivitySource has no listeners
+        [MemberData(nameof(SocketsHttpHandler_ActivityCreation_MemberData))]
         public void SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity)
         {
             string parameters = $"{currentActivitySet},{diagnosticListenerActivityEnabled},{activitySourceCreatesActivity}";
