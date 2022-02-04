@@ -11,8 +11,10 @@
 **
 ===========================================================*/
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System
@@ -99,10 +101,7 @@ namespace System
             {
                 if ((uint)destination.Length > 3) // uint cast, per https://github.com/dotnet/runtime/issues/10596
                 {
-                    destination[0] = 'T';
-                    destination[1] = 'r';
-                    destination[2] = 'u';
-                    destination[3] = 'e';
+                    BinaryPrimitives.WriteUInt64LittleEndian(MemoryMarshal.AsBytes(destination), 0x65007500720054); // "True"
                     charsWritten = 4;
                     return true;
                 }
@@ -111,10 +110,7 @@ namespace System
             {
                 if ((uint)destination.Length > 4)
                 {
-                    destination[0] = 'F';
-                    destination[1] = 'a';
-                    destination[2] = 'l';
-                    destination[3] = 's';
+                    BinaryPrimitives.WriteUInt64LittleEndian(MemoryMarshal.AsBytes(destination), 0x73006C00610046); // "Fals"
                     destination[4] = 'e';
                     charsWritten = 5;
                     return true;
@@ -191,24 +187,14 @@ namespace System
 
         // Custom string compares for early application use by config switches, etc
         //
-        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
-        {
-            return value.Length == 4 &&
-                    (value[0] == 't' || value[0] == 'T') &&
-                    (value[1] == 'r' || value[1] == 'R') &&
-                    (value[2] == 'u' || value[2] == 'U') &&
-                    (value[3] == 'e' || value[3] == 'E');
-        }
+        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value) =>
+            value.Length == 4 &&
+            (BinaryPrimitives.ReadUInt64LittleEndian(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == 0x65007500720074; // "true" as a ulong, each char |'d with 0x0020 for case-insensitivity
 
-        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
-        {
-            return value.Length == 5 &&
-                    (value[0] == 'f' || value[0] == 'F') &&
-                    (value[1] == 'a' || value[1] == 'A') &&
-                    (value[2] == 'l' || value[2] == 'L') &&
-                    (value[3] == 's' || value[3] == 'S') &&
-                    (value[4] == 'e' || value[4] == 'E');
-        }
+        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value) =>
+            value.Length == 5 &&
+            (((BinaryPrimitives.ReadUInt64LittleEndian(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == 0x73006C00610066) & // "fals" as a ulong, each char |'d with 0x0020 for case-insensitivity
+             ((value[4] | 0x20) == 'e'));
 
         // Determines whether a String represents true or false.
         //
@@ -257,14 +243,8 @@ namespace System
                 return true;
             }
 
-            if (IsFalseStringIgnoreCase(value))
-            {
-                result = false;
-                return true;
-            }
-
             result = false;
-            return false;
+            return IsFalseStringIgnoreCase(value);
         }
 
         private static ReadOnlySpan<char> TrimWhiteSpaceAndNull(ReadOnlySpan<char> value)
