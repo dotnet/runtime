@@ -62,6 +62,23 @@ namespace System.Security.Cryptography.Cose.Tests
 
         internal static CoseHeaderMap GetEmptyHeaderMap() => new CoseHeaderMap();
 
+        internal static List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> GetExpectedProtectedHeaders(int algorithm = (int)ECDsaAlgorithm.ES256)
+        {
+            var l = new List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>();
+            AddEncoded(l, CoseHeaderLabel.Algorithm, algorithm);
+
+            return l;
+        }
+
+        internal static List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> GetEmptyExpectedHeaders() => new();
+
+        internal static void AddEncoded(List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> list, CoseHeaderLabel label, int value)
+        {
+            var writer = new CborWriter();
+            writer.WriteInt32(value);
+            list.Add((label, writer.Encode()));
+        }
+
         internal static byte[] GetDummyContent(ContentTestCase @case)
         {
             return @case switch
@@ -75,11 +92,10 @@ namespace System.Security.Cryptography.Cose.Tests
 
         internal static void AssertSign1Message(
             byte[] encodedMsg,
-            int expectedAlg,
             byte[]? expectedContent,
             AsymmetricAlgorithm signingKey,
-            int expectedProtectedHeaders = 1,
-            int expectedUnprotectedHeaders = 0)
+            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedProtectedHeaders = null,
+            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedUnprotectedHeaders = null)
         {
             Assert.NotNull(encodedMsg);
             var reader = new CborReader(encodedMsg);
@@ -89,10 +105,10 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Equal(4, reader.ReadStartArray());
 
             // Protected headers
-            AssertSign1ProtectedHeaders(reader.ReadByteString(), expectedAlg, expectedProtectedHeaders);
+            AssertSign1ProtectedHeaders(reader.ReadByteString(), expectedProtectedHeaders ?? GetExpectedProtectedHeaders());
 
             // Unprotected headers
-            AssertSign1Headers(reader, expectedUnprotectedHeaders);
+            AssertSign1Headers(reader, expectedUnprotectedHeaders ?? GetEmptyExpectedHeaders());
 
             // Content
             if (expectedContent != null)
@@ -140,20 +156,21 @@ namespace System.Security.Cryptography.Cose.Tests
             return size;
         }
 
-        private static void AssertSign1ProtectedHeaders(byte[] protectedHeadersBytes, int expectedAlg, int expectedProtectedHeaders)
+        private static void AssertSign1ProtectedHeaders(byte[] protectedHeadersBytes, List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedProtectedHeaders)
         {
             var reader = new CborReader(protectedHeadersBytes);
-            CoseHeaderMap protectedHeaders = AssertSign1Headers(reader, expectedProtectedHeaders);
+            AssertSign1Headers(reader, expectedProtectedHeaders);
 
-            Assert.Equal(expectedAlg, protectedHeaders.GetValueAsInt32(CoseHeaderLabel.Algorithm));
             Assert.Equal(0, reader.BytesRemaining);
         }
 
-        private static CoseHeaderMap AssertSign1Headers(CborReader reader, int expectedHeaders)
+        private static void AssertSign1Headers(CborReader reader, List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedHeaders)
         {
-            Assert.Equal(expectedHeaders, reader.ReadStartMap());
+            Assert.Equal(expectedHeaders.Count, reader.ReadStartMap());
             CoseHeaderMap headers = new();
-            for (int i = 0; i < expectedHeaders; i++)
+
+            int headerCount = 0;
+            while(reader.PeekState() != CborReaderState.EndMap)
             {
                 CoseHeaderLabel label = reader.PeekState() switch
                 {
@@ -163,9 +180,17 @@ namespace System.Security.Cryptography.Cose.Tests
                 };
 
                 headers.SetEncodedValue(label, reader.ReadEncodedValue().Span);
+                headerCount++;
             }
+
             reader.ReadEndMap();
-            return headers;
+            Assert.Equal(expectedHeaders.Count, headerCount);
+
+            foreach ((CoseHeaderLabel expectedLabel, ReadOnlyMemory<byte> expectedEncodedValue) in expectedHeaders)
+            {
+                Assert.True(headers.TryGetEncodedValue(expectedLabel, out ReadOnlyMemory<byte> encodedValue), "headers.TryGetEncodedValue(expectedLabel, out ReadOnlyMemory<byte> encodedValue)");
+                AssertExtensions.SequenceEqual(expectedEncodedValue.Span, encodedValue.Span);
+            }
         }
 
         private static ECParameters _ec256Parameters = CreateECParameters("nistP256", "usWxHK2PmfnHKwXPS54m0kTcGJ90UiglWiGahtagnv8", "IBOL-C3BttVivg-lSreASjpkttcsz-1rb7btKLv8EX4", "V8kgd2ZBRuh2dgyVINBUqpPDr7BOMGcF22CQMIUHtNM");
