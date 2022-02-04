@@ -309,26 +309,6 @@ namespace System.Text.RegularExpressions.Generator
 
         private static void EmitScan(IndentedTextWriter writer, RegexMethod rm, string id)
         {
-            RegexOptions options = (RegexOptions)rm.Options;
-
-            // Emit locals initialization
-            //writer.WriteLine("this.quick = quick;");
-            //writer.WriteLine("base.runtextpos = textstart;");
-            //writer.WriteLine("base.runregex = regex;");
-            //writer.WriteLine("base.runtextstart = textstart;");
-            //writer.WriteLine("base.runtextbeg = textbeg;");
-            //writer.WriteLine("base.runtextend = textend;");
-            //writer.WriteLine("bool initialized = false;");
-            //writer.WriteLine();
-
-            //EmitTimeoutHandling();
-            //writer.WriteLine();
-
-            // Source generator doesn't support Right-To-Left so there is no need to add the sepcial bump logic.
-            // If Right-to-left is ever added to the source generator, then we would need to the logic to define
-            // bump, as well as stoppos
-            Debug.Assert((options & RegexOptions.RightToLeft) == 0);
-
             EmitPrevLenCheck();
             writer.WriteLine();
 
@@ -336,26 +316,6 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine();
 
             return;
-
-#pragma warning disable CS8321 // Local function is declared but never used
-            void EmitTimeoutHandling()
-            {
-                writer.WriteLine("// Handle timeout argument");
-                writer.WriteLine("_timeout = -1;");
-                writer.WriteLine("bool ignoreTimeout = global::System.Text.RegularExpressions.Regex.InfiniteMatchTimeout == timeout;");
-                using (EmitBlock(writer, "if (!ignoreTimeout)"))
-                {
-                    writer.WriteLine("// We are using Environment.TickCount and not Stopwatch for performance reasons.");
-                    writer.WriteLine("// Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt");
-                    writer.WriteLine("// overflow it will still stay ahead of Environment.TickCount for comparisons made");
-                    writer.WriteLine("// in DoCheckTimeout().");
-                    writer.WriteLine("global::System.Text.RegularExpressions.Regex.ValidateMatchTimeout(timeout); // validate timeout as this could be called from user code due to being protected");
-                    writer.WriteLine("_timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;");
-                    writer.WriteLine("_timeoutOccursAt = global::System.Environment.TickCount + _timeout;");
-                    writer.WriteLine("_timeoutChecksToSkip = TimeoutCheckFrequency;");
-                }
-            }
-#pragma warning restore CS8321 // Local function is declared but never used
 
             void EmitPrevLenCheck()
             {
@@ -387,11 +347,9 @@ namespace System.Text.RegularExpressions.Generator
                             using (EmitBlock(writer, "if (quick)"))
                             {
                                 writer.WriteLine("base.runmatch = null;");
-                                writer.WriteLine("return;");
                             }
                             writer.WriteLine();
 
-                            writer.WriteLine("// base.runmatch!.Tidy(base.runtextpos);");
                             writer.WriteLine("return;");
                         }
                         writer.WriteLine();

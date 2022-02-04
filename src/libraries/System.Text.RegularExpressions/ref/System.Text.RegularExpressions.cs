@@ -338,9 +338,9 @@ namespace System.Text.RegularExpressions
         protected virtual void Go() { throw null; }
         protected virtual void InitTrackCount() { throw null; }
         protected bool IsBoundary(int index, int startpos, int endpos) { throw null; }
-        protected bool IsBoundary(System.ReadOnlySpan<char> inputSpan, int index, int startpos, int endpos) { throw null; }
+        protected bool IsBoundary(System.ReadOnlySpan<char> inputSpan, int index, int startpos, int endpos) { throw null; } // -> This is just temporary on the prototype. Method will be emitted by the generator engines
         protected bool IsECMABoundary(int index, int startpos, int endpos) { throw null; }
-        protected bool IsECMABoundary(System.ReadOnlySpan<char> inputSpan, int index, int startpos, int endpos) { throw null; }
+        protected bool IsECMABoundary(System.ReadOnlySpan<char> inputSpan, int index, int startpos, int endpos) { throw null; } // -> This is just temporary on the prototype. Method will be emitted by the generator engines
         protected bool IsMatched(int cap) { throw null; }
         protected int MatchIndex(int cap) { throw null; }
         protected int MatchLength(int cap) { throw null; }
