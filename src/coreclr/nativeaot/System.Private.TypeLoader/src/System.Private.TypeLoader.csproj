@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>$(NoWarn),CS1574</NoWarn>
+    <Nullable>disable</Nullable>
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(TYPE_LOADER_TRACE)' != ''">TYPE_LOADER_TRACE;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(GVM_RESOLUTION_TRACE)' != ''">GVM_RESOLUTION_TRACE;$(DefineConstants)</DefineConstants>
