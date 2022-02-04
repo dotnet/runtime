@@ -10,6 +10,6 @@
     <DefineConstants Condition="'$(FeatureNFloat)' == 'true'">$(DefineConstants);FEATURE_NFLOAT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Runtime\InteropServices\NFloatTests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\tests\System\Runtime\InteropServices\NFloatTests.cs" />
   </ItemGroup>
 </Project>
