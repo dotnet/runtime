@@ -191,9 +191,8 @@ function initializeImportsAndExports(
     replacements.fetch = runtimeHelpers.fetch;
     replacements.readAsync = readAsync_like;
     replacements.requireOut = module.imports.require;
-    replacements.noExitRuntime = module.noExitRuntime === undefined
-        ? ENVIRONMENT_IS_WEB
-        : module.noExitRuntime;
+
+    replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
         module.disableDotnet6Compatibility = imports.isESM;
