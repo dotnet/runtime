@@ -1968,7 +1968,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Arm64_CompareEqual:
             case NI_AdvSimd_Arm64_CompareEqualScalar:
             {
-                if (intrin.op1->IsVectorZero() && intrin.op1->isCommutativeHWIntrinsic())
+                if (intrin.op1->IsVectorZero() && HWIntrinsicInfo::IsCommutative(intrin.id))
                 {
                     MakeSrcContained(node, intrin.op1);
                 }

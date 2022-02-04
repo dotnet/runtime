@@ -12995,7 +12995,7 @@ void emitter::emitDispIns(
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
-            if (ins == INS_cmeq)
+            if (ins == INS_cmeq || ins == INS_cmge || ins == INS_cmgt || ins == INS_cmle || ins == INS_cmlt)
             {
                 printf(", ");
                 emitDispImm(0, false);
