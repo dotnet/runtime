@@ -64,41 +64,51 @@ namespace System.Net.Security
 
         private SslBuffer _buffer;
 
+        // internal buffer for storing incoming data. Wrapper around ArrayBuffer which adds
+        // separation between decrypted and still encrypted part of the active region.
+        //   - Encrypted: Contains incoming TLS frames, the last such frame may be incomplete
+        //   - Decrypted: Contains decrypted data from *one* TLS frame which have not been read by the user yet.
         private struct SslBuffer
         {
             private ArrayBuffer _buffer;
-            private int _decryptedBytes;
-            private int _decryptedPadding; // padding after decrypted part of the active memory
+            private int _decryptedLength;
+
+            // padding between decrypted part of the active memory and following undecrypted TLS frame.
+            private int _decryptedPadding;
+
             private bool _valid;
 
             public SslBuffer(int initialSize)
             {
                 _buffer = new ArrayBuffer(initialSize, true);
-                _decryptedBytes = 0;
+                _decryptedLength = 0;
                 _decryptedPadding = 0;
                 _valid = true;
             }
+
             public bool Valid => _valid;
 
-            public Span<byte> DecryptedSpan => _buffer.ActiveSpan.Slice(0, _decryptedBytes);
+            public Span<byte> DecryptedSpan => _buffer.ActiveSpan.Slice(0, _decryptedLength);
 
-            public Memory<byte> DecryptedMemory => _buffer.ActiveMemory.Slice(0, _decryptedBytes);
+            public ReadOnlySpan<byte> DecryptedReadOnlySpanSliced(int length)
+            {
+                Debug.Assert(length <= DecryptedLength, "length <= DecryptedLength");
+                return _buffer.ActiveSpan.Slice(0, length);
+            }
 
-            public int DecryptedBytes => _decryptedBytes;
+            public int DecryptedLength => _decryptedLength;
 
-            public int ActiveBytes => _buffer.ActiveLength;
+            public int ActiveLength => _buffer.ActiveLength;
 
-            public Span<byte> EncryptedSpan => _buffer.ActiveSpan.Slice(_decryptedBytes + _decryptedPadding);
+            public Span<byte> EncryptedSpanSliced(int length) => _buffer.ActiveSpan.Slice(_decryptedLength + _decryptedPadding, length);
 
-            public Memory<byte> EncryptedMemory => _buffer.ActiveMemory.Slice(_decryptedBytes + _decryptedPadding);
+            public ReadOnlySpan<byte> EncryptedReadOnlySpan => _buffer.ActiveSpan.Slice(_decryptedLength + _decryptedPadding);
 
-            public int EncryptedBytes => _buffer.ActiveLength - _decryptedPadding - _decryptedBytes;
-
-            public Span<byte> AvailableSpan => _buffer.AvailableSpan;
+            public int EncryptedLength => _buffer.ActiveLength - _decryptedPadding - _decryptedLength;
 
             public Memory<byte> AvailableMemory => _buffer.AvailableMemory;
 
-            public int AvailableBytes => _buffer.AvailableLength;
+            public int AvailableLength => _buffer.AvailableLength;
 
             public int Capacity => _buffer.Capacity;
 
@@ -108,14 +118,14 @@ namespace System.Net.Security
 
             public void Discard(int byteCount)
             {
-                Debug.Assert(byteCount <= _decryptedBytes, "byteCount <= _decryptedBytes");
+                Debug.Assert(byteCount <= _decryptedLength, "byteCount <= _decryptedBytes");
 
                 _buffer.Discard(byteCount);
-                _decryptedBytes -= byteCount;
+                _decryptedLength -= byteCount;
 
                 // if drained all decrypted data, discard also the tail of the frame so that only
                 // encrypted part of the active memory of the _buffer remains
-                if (_decryptedBytes == 0)
+                if (_decryptedLength == 0)
                 {
                     _buffer.Discard(_decryptedPadding);
                     _decryptedPadding = 0;
@@ -125,7 +135,7 @@ namespace System.Net.Security
             public void DiscardEncrypted(int byteCount)
             {
                 // should be called only during handshake -> no pending decrypted data
-                Debug.Assert(_decryptedBytes == 0, "_decryptedBytes == 0");
+                Debug.Assert(_decryptedLength == 0, "_decryptedBytes == 0");
                 Debug.Assert(_decryptedPadding == 0, "_encryptedOffset == 0");
 
                 _buffer.Discard(byteCount);
@@ -133,7 +143,7 @@ namespace System.Net.Security
 
             public void OnDecrypted(int decryptedOffset, int decryptedCount, int frameSize)
             {
-                Debug.Assert(_decryptedBytes == 0, "_decryptedBytes == 0");
+                Debug.Assert(_decryptedLength == 0, "_decryptedBytes == 0");
                 Debug.Assert(_decryptedPadding == 0, "_encryptedOffset == 0");
 
                 if (decryptedCount > 0)
@@ -142,7 +152,7 @@ namespace System.Net.Security
                     _buffer.Discard(decryptedOffset);
 
                     _decryptedPadding = frameSize - decryptedOffset - decryptedCount;
-                    _decryptedBytes = decryptedCount;
+                    _decryptedLength = decryptedCount;
                 }
                 else
                 {
@@ -154,7 +164,7 @@ namespace System.Net.Security
             public void Dispose()
             {
                 _buffer.Dispose();
-                _decryptedBytes = 0;
+                _decryptedLength = 0;
                 _decryptedPadding = 0;
                 _valid = false;
             }
@@ -833,8 +843,7 @@ namespace System.Net.Security
             // If there's any data in the buffer, take one byte, and we're done.
             try
             {
-                //if (_decryptedBytesCount > 0)
-                if (_buffer.DecryptedBytes > 0)
+                if (_buffer.DecryptedLength > 0)
                 {
                     int b = _buffer.DecryptedSpan[0];
                     _buffer.Discard(1);
