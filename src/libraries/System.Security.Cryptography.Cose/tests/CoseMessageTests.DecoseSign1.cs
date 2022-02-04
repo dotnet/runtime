@@ -8,13 +8,14 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Sign and Verify are not supported in browser")]
     public class CoseMessageTests
     {
         [Fact]
         public void DecodeVerifyUntagged()
         {
             CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray("8445A201260300A10442313154546869732069732074686520636F6E74656E742E58406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B"));
-            Assert.True(msg.Verify(ECDsaKeys[ECDsaAlgorithm.ES256]));
+            Assert.True(msg.Verify(DefaultKey));
         }
 
         [Fact]
@@ -22,7 +23,7 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray("D28445A201260300A104423131F658406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B"));
             Assert.Null(msg.Content);
-            Assert.True(msg.Verify(ECDsaKeys[ECDsaAlgorithm.ES256], s_sampleContent));
+            Assert.True(msg.Verify(DefaultKey, s_sampleContent));
         }
 
         [Theory]

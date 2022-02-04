@@ -32,43 +32,43 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void CoseHeaderLabel_Equals()
         {
-            Assert.True(default(CoseHeaderLabel).Equals(default));
-            Assert.True(default(CoseHeaderLabel).Equals(new CoseHeaderLabel(0)));
-            Assert.True(new CoseHeaderLabel(1).Equals(new CoseHeaderLabel(1)));
-            Assert.True(new CoseHeaderLabel("").Equals(new CoseHeaderLabel("")));
+            Assert.True(default(CoseHeaderLabel).Equals(default), "default(CoseHeaderLabel).Equals(default)");
+            Assert.True(default(CoseHeaderLabel).Equals(new CoseHeaderLabel(0)), "default(CoseHeaderLabel).Equals(new CoseHeaderLabel(0))");
+            Assert.True(new CoseHeaderLabel(1).Equals(new CoseHeaderLabel(1)), "new CoseHeaderLabel(1).Equals(new CoseHeaderLabel(1))");
+            Assert.True(new CoseHeaderLabel("").Equals(new CoseHeaderLabel("")), "new CoseHeaderLabel(\"\").Equals(new CoseHeaderLabel(\"\"))");
 
-            Assert.False(default(CoseHeaderLabel).Equals(new CoseHeaderLabel(1)));
-            Assert.False(default(CoseHeaderLabel).Equals(new CoseHeaderLabel("")));
-            Assert.False(new CoseHeaderLabel(0).Equals(new CoseHeaderLabel(1)));
-            Assert.False(new CoseHeaderLabel("foo").Equals(new CoseHeaderLabel("bar")));
+            Assert.False(default(CoseHeaderLabel).Equals(new CoseHeaderLabel(1)), "default(CoseHeaderLabel).Equals(new CoseHeaderLabel(1))");
+            Assert.False(default(CoseHeaderLabel).Equals(new CoseHeaderLabel("")), "default(CoseHeaderLabel).Equals(new CoseHeaderLabel(\"\"))");
+            Assert.False(new CoseHeaderLabel(0).Equals(new CoseHeaderLabel(1)), "new CoseHeaderLabel(0).Equals(new CoseHeaderLabel(1))");
+            Assert.False(new CoseHeaderLabel("foo").Equals(new CoseHeaderLabel("bar")), "new CoseHeaderLabel(\"foo\").Equals(new CoseHeaderLabel(\"bar\"))");
         }
 
         [Fact]
         public void CoseHeaderLabel_op_Equality()
         {
-            Assert.True(default(CoseHeaderLabel) == default);
-            Assert.True(default(CoseHeaderLabel) == new CoseHeaderLabel(0));
-            Assert.True(new CoseHeaderLabel(1) == new CoseHeaderLabel(1));
-            Assert.True(new CoseHeaderLabel("") == new CoseHeaderLabel(""));
+            Assert.True(default(CoseHeaderLabel) == default, "default(CoseHeaderLabel) == default");
+            Assert.True(default(CoseHeaderLabel) == new CoseHeaderLabel(0), "default(CoseHeaderLabel) == new CoseHeaderLabel(0)");
+            Assert.True(new CoseHeaderLabel(1) == new CoseHeaderLabel(1), "new CoseHeaderLabel(1) == new CoseHeaderLabel(1)");
+            Assert.True(new CoseHeaderLabel("") == new CoseHeaderLabel(""), "new CoseHeaderLabel(\"\") == new CoseHeaderLabel(\"\")");
 
-            Assert.False(default(CoseHeaderLabel) == new CoseHeaderLabel(1));
-            Assert.False(default(CoseHeaderLabel) == new CoseHeaderLabel(""));
-            Assert.False(new CoseHeaderLabel(0) == new CoseHeaderLabel(1));
-            Assert.False(new CoseHeaderLabel("foo") == new CoseHeaderLabel("bar"));
+            Assert.False(default(CoseHeaderLabel) == new CoseHeaderLabel(1), "default(CoseHeaderLabel) == new CoseHeaderLabel(1)");
+            Assert.False(default(CoseHeaderLabel) == new CoseHeaderLabel(""), "default(CoseHeaderLabel) == new CoseHeaderLabel(\"\")");
+            Assert.False(new CoseHeaderLabel(0) == new CoseHeaderLabel(1), "new CoseHeaderLabel(0) == new CoseHeaderLabel(1)");
+            Assert.False(new CoseHeaderLabel("foo") == new CoseHeaderLabel("bar"), "new CoseHeaderLabel(\"foo\") == new CoseHeaderLabel(\"bar\")");
         }
 
         [Fact]
         public void CoseHeaderLabel_op_Inequality()
         {
-            Assert.False(default(CoseHeaderLabel) != default);
-            Assert.False(default(CoseHeaderLabel) != new CoseHeaderLabel(0));
-            Assert.False(new CoseHeaderLabel(1) != new CoseHeaderLabel(1));
-            Assert.False(new CoseHeaderLabel("") != new CoseHeaderLabel(""));
+            Assert.False(default(CoseHeaderLabel) != default, "default(CoseHeaderLabel) != default");
+            Assert.False(default(CoseHeaderLabel) != new CoseHeaderLabel(0), "default(CoseHeaderLabel) != new CoseHeaderLabel(0)");
+            Assert.False(new CoseHeaderLabel(1) != new CoseHeaderLabel(1), "new CoseHeaderLabel(1) != new CoseHeaderLabel(1)");
+            Assert.False(new CoseHeaderLabel("") != new CoseHeaderLabel(""), "new CoseHeaderLabel(\"\") != new CoseHeaderLabel(\"\")");
 
-            Assert.True(default(CoseHeaderLabel) != new CoseHeaderLabel(1));
-            Assert.True(default(CoseHeaderLabel) != new CoseHeaderLabel(""));
-            Assert.True(new CoseHeaderLabel(0) != new CoseHeaderLabel(1));
-            Assert.True(new CoseHeaderLabel("foo") != new CoseHeaderLabel("bar"));
+            Assert.True(default(CoseHeaderLabel) != new CoseHeaderLabel(1), "default(CoseHeaderLabel) != new CoseHeaderLabel(1)");
+            Assert.True(default(CoseHeaderLabel) != new CoseHeaderLabel(""), "default(CoseHeaderLabel) != new CoseHeaderLabel(\"\")");
+            Assert.True(new CoseHeaderLabel(0) != new CoseHeaderLabel(1), "new CoseHeaderLabel(0) != new CoseHeaderLabel(1)");
+            Assert.True(new CoseHeaderLabel("foo") != new CoseHeaderLabel("bar"), "new CoseHeaderLabel(\"foo\") != new CoseHeaderLabel(\"bar\")");
         }
     }
 }

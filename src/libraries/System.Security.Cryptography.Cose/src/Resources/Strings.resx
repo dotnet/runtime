@@ -159,6 +159,9 @@
   <data name="Sign1SignAlgIsRequired" xml:space="preserve">
     <value>Algorithm (alg) header is required and it must be a protected header.</value>
   </data>
+  <data name="Sign1SignHashAlgorithmDoesNotMatchSpecifiedAlg" xml:space="preserve">
+    <value>Hash Algorithm {0} doesn't match with the specified COSE Algorithm {1}.</value>
+  </data>
   <data name="Sign1SignHeaderDuplicateLabels" xml:space="preserve">
     <value>Protected and Unprotected buckets must not contain duplicate labels.</value>
   </data>

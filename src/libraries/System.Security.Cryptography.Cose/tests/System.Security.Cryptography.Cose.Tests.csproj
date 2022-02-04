@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <GenerateRequiresPreviewFeaturesAttribute>true</GenerateRequiresPreviewFeaturesAttribute>
   </PropertyGroup>

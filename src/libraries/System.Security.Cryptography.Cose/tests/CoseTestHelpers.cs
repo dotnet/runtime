@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Cose.Tests
             ES512 = -36
         }
 
-        internal enum RSAAlgorithm
+        public enum RSAAlgorithm
         {
             PS256 = -37,
             PS384 = -38,
@@ -44,7 +44,16 @@ namespace System.Security.Cryptography.Cose.Tests
             Large
         }
 
-        internal static CoseHeaderMap GetHeaderMapWithAlgorithm(int algorithm)
+        internal static HashAlgorithmName GetHashAlgorithmNameFromCoseAlgorithm(int algorithm)
+            => algorithm switch
+            {
+                (int)ECDsaAlgorithm.ES256 or (int)RSAAlgorithm.PS256 => HashAlgorithmName.SHA256,
+                (int)ECDsaAlgorithm.ES384 or (int)RSAAlgorithm.PS384 => HashAlgorithmName.SHA384,
+                (int)ECDsaAlgorithm.ES512 or (int)RSAAlgorithm.PS512 => HashAlgorithmName.SHA512,
+                _ => throw new InvalidOperationException()
+            };
+
+        internal static CoseHeaderMap GetHeaderMapWithAlgorithm(int algorithm = (int)ECDsaAlgorithm.ES256)
         {
             var protectedHeaders = new CoseHeaderMap();
             protectedHeaders.SetValue(CoseHeaderLabel.Algorithm, algorithm);
@@ -68,7 +77,7 @@ namespace System.Security.Cryptography.Cose.Tests
             byte[] encodedMsg,
             int expectedAlg,
             byte[]? expectedContent,
-            AsymmetricAlgorithm key,
+            AsymmetricAlgorithm signingKey,
             int expectedProtectedHeaders = 1,
             int expectedUnprotectedHeaders = 0)
         {
@@ -97,11 +106,26 @@ namespace System.Security.Cryptography.Cose.Tests
 
             // Signature
             byte[] signatureBytes = reader.ReadByteString();
-            Assert.Equal(GetSignatureSize(key), signatureBytes.Length);
+            Assert.Equal(GetSignatureSize(signingKey), signatureBytes.Length);
 
             // End
             reader.ReadEndArray();
             Assert.Equal(0, reader.BytesRemaining);
+
+            // Verify
+            CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
+            if (signingKey is ECDsa ecdsa)
+            {
+                Assert.True(msg.Verify(ecdsa), "msg.Verify(ecdsa)");
+            }
+            else if (signingKey is RSA rsa)
+            {
+                Assert.True(msg.Verify(rsa), "msg.Verify(rsa)");
+            }
+            else
+            {
+                throw new InvalidOperationException();
+            }
         }
 
         internal static int GetSignatureSize(AsymmetricAlgorithm key)
@@ -144,54 +168,79 @@ namespace System.Security.Cryptography.Cose.Tests
             return headers;
         }
 
-        internal static readonly Dictionary<ECDsaAlgorithm, ECDsa> ECDsaKeys = CreateECDsaKeys(true);
+        private static ECParameters _ec256Parameters = CreateECParameters("nistP256", "usWxHK2PmfnHKwXPS54m0kTcGJ90UiglWiGahtagnv8", "IBOL-C3BttVivg-lSreASjpkttcsz-1rb7btKLv8EX4", "V8kgd2ZBRuh2dgyVINBUqpPDr7BOMGcF22CQMIUHtNM");
+        private static ECParameters _ec384Parameters = CreateECParameters("nistP384", "kTJyP2KSsBBhnb4kjWmMF7WHVsY55xUPgb7k64rDcjatChoZ1nvjKmYmPh5STRKc", "mM0weMVU2DKsYDxDJkEP9hZiRZtB8fPfXbzINZj_fF7YQRynNWedHEyzAJOX2e8s", "ok3Nq97AXlpEusO7jIy1FZATlBP9PNReMU7DWbkLQ5dU90snHuuHVDjEPmtV0fTo");
+        private static ECParameters _ec512Parameters = CreateECParameters("nistP521", "AHKZLLOsCOzz5cY97ewNUajB957y-C-U88c3v13nmGZx6sYl_oJXu9A5RkTKqjqvjyekWF-7ytDyRXYgCF5cj0Kt", "AdymlHvOiLxXkEhayXQnNCvDX4h9htZaCJN34kfmC6pV5OhQHiraVySsUdaQkAgDPrwQrJmbnX9cwlGfP-HqHZR1", "AAhRON2r9cqXX1hg-RoI6R1tX5p2rUAYdmpHZoC1XNM56KtscrX6zbKipQrCW9CGZH3T4ubpnoTKLDYJ_fF3_rJt");
 
-        internal static readonly Dictionary<ECDsaAlgorithm, ECDsa> ECDsaKeysWithoutPrivateKey = CreateECDsaKeys(false);
+        [ThreadStatic]
+        private static ECDsa _es256 = CreateECDsa(_ec256Parameters, true);
+        [ThreadStatic]
+        private static ECDsa _es384 = CreateECDsa(_ec384Parameters, true);
+        [ThreadStatic]
+        private static ECDsa _es512 = CreateECDsa(_ec512Parameters, true);
 
+        [ThreadStatic]
+        private static ECDsa _es256WithoutPrivateKey = CreateECDsa(_ec256Parameters, false);
+        [ThreadStatic]
+        private static ECDsa _es384WithoutPrivateKey = CreateECDsa(_ec384Parameters, false);
+        [ThreadStatic]
+        private static ECDsa _es512WithoutPrivateKey = CreateECDsa(_ec512Parameters, false);
+
+        internal static ECDsa DefaultKey { get; } = _es256;
+        internal static HashAlgorithmName DefaultHash { get; } = GetHashAlgorithmNameFromCoseAlgorithm((int)ECDsaAlgorithm.ES256);
+
+        internal static readonly Dictionary<ECDsaAlgorithm, ECDsa> ECDsaKeys = CreateECDsaDictionary(true);
+        internal static readonly Dictionary<ECDsaAlgorithm, ECDsa> ECDsaKeysWithoutPrivateKey = CreateECDsaDictionary(false);
+
+        [ThreadStatic]
         internal static readonly RSA RSAKey = CreateRSA(true);
-
+        [ThreadStatic]
         internal static readonly RSA RSAKeyWithoutPrivateKey = CreateRSA(false);
 
-        internal static Dictionary<ECDsaAlgorithm, ECDsa> CreateECDsaKeys(bool includePrivateKey)
+        private static ECParameters CreateECParameters(string curveFriendlyName, string base64UrlQx, string base64UrlQy, string base64UrlPrivateKey)
         {
-            var dictionary = new Dictionary<ECDsaAlgorithm, ECDsa>();
-
-            dictionary.Add(ECDsaAlgorithm.ES256,
-                CreateECDsaKey("nistP256",
-                "usWxHK2PmfnHKwXPS54m0kTcGJ90UiglWiGahtagnv8",
-                "IBOL-C3BttVivg-lSreASjpkttcsz-1rb7btKLv8EX4",
-                "V8kgd2ZBRuh2dgyVINBUqpPDr7BOMGcF22CQMIUHtNM",
-                includePrivateKey));
-
-            dictionary.Add(ECDsaAlgorithm.ES384,
-                CreateECDsaKey("nistP384",
-                "kTJyP2KSsBBhnb4kjWmMF7WHVsY55xUPgb7k64rDcjatChoZ1nvjKmYmPh5STRKc",
-                "mM0weMVU2DKsYDxDJkEP9hZiRZtB8fPfXbzINZj_fF7YQRynNWedHEyzAJOX2e8s",
-                "ok3Nq97AXlpEusO7jIy1FZATlBP9PNReMU7DWbkLQ5dU90snHuuHVDjEPmtV0fTo",
-                includePrivateKey));
-
-            dictionary.Add(ECDsaAlgorithm.ES512,
-                CreateECDsaKey("nistP521",
-                "AHKZLLOsCOzz5cY97ewNUajB957y-C-U88c3v13nmGZx6sYl_oJXu9A5RkTKqjqvjyekWF-7ytDyRXYgCF5cj0Kt",
-                "AdymlHvOiLxXkEhayXQnNCvDX4h9htZaCJN34kfmC6pV5OhQHiraVySsUdaQkAgDPrwQrJmbnX9cwlGfP-HqHZR1",
-                "AAhRON2r9cqXX1hg-RoI6R1tX5p2rUAYdmpHZoC1XNM56KtscrX6zbKipQrCW9CGZH3T4ubpnoTKLDYJ_fF3_rJt",
-                includePrivateKey));
-
-            return dictionary;
-
-            static ECDsa CreateECDsaKey(string curveFriendlyName, string base64UrlQx, string base64UrlQy, string base64UrlPrivateKey, bool includePrivateKey)
+            return new()
             {
-                ECParameters ecParams = new()
+                Curve = ECCurve.CreateFromFriendlyName(curveFriendlyName),
+                Q = new ECPoint
                 {
-                    Curve = ECCurve.CreateFromFriendlyName(curveFriendlyName),
-                    Q = new ECPoint
-                    {
-                        X = Base64UrlEncoder.DecodeBytes(base64UrlQx),
-                        Y = Base64UrlEncoder.DecodeBytes(base64UrlQy),
-                    },
-                    D = includePrivateKey ? Base64UrlEncoder.DecodeBytes(base64UrlPrivateKey) : null,
+                    X = Base64UrlEncoder.DecodeBytes(base64UrlQx),
+                    Y = Base64UrlEncoder.DecodeBytes(base64UrlQy),
+                },
+                D = Base64UrlEncoder.DecodeBytes(base64UrlPrivateKey),
+            };
+        }
+
+        private static ECDsa CreateECDsa(ECParameters parameters, bool includePrivateKey)
+        {
+            ECParameters parametersLocalCopy = parameters;
+            if (!includePrivateKey)
+            {
+                parametersLocalCopy.D = null;
+            }
+
+            return ECDsa.Create(parametersLocalCopy);
+        }
+
+        internal static Dictionary<ECDsaAlgorithm, ECDsa> CreateECDsaDictionary(bool includePrivateKey)
+        {
+            if (includePrivateKey)
+            {
+                return new Dictionary<ECDsaAlgorithm, ECDsa>(3)
+                {
+                    { ECDsaAlgorithm.ES256, _es256 },
+                    { ECDsaAlgorithm.ES384, _es384 },
+                    { ECDsaAlgorithm.ES512, _es512 },
                 };
-                return ECDsa.Create(ecParams);
+            }
+            else
+            {
+                return new Dictionary<ECDsaAlgorithm, ECDsa>(3)
+                {
+                    { ECDsaAlgorithm.ES256, _es256WithoutPrivateKey },
+                    { ECDsaAlgorithm.ES384, _es384WithoutPrivateKey },
+                    { ECDsaAlgorithm.ES512, _es512WithoutPrivateKey },
+                };
             }
         }
 

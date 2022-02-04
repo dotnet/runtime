@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content, CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, AsymmetricAlgorithm key, bool isDetached = false)
+        public static byte[] Sign(byte[] content, CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, bool isDetached = false)
         {
             if (content == null)
             {
@@ -86,19 +86,20 @@ namespace System.Security.Cryptography.Cose
 
             ThrowIfDuplicateLabels(protectedHeaders, unprotectedHeaders);
 
-            ReadOnlyMemory<byte> encodedAlg = GetCoseAlgorithmFromProtectedHeaders(protectedHeaders);
-
-            int? algorithmHeader = DecodeCoseAlgorithmHeader(encodedAlg);
-            Debug.Assert(algorithmHeader.HasValue, "Algorithm (alg) is a known header and should have been validated in Set[Encoded]Value()");
-
-            HashAlgorithmName hashAlgorithm = GetHashAlgorithmFromCoseAlgorithmAndKeyType(algorithmHeader.Value, keyType);
+            ValidateOrAddAlgorithmHeader(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm);
 
             byte[] encodedProtetedHeaders = protectedHeaders.Encode(mustReturnEmptyBstrIfEmpty: true);
             byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtetedHeaders, content);
 
-            byte[] signature = keyType == KeyType.ECDsa ?
-                SignWithECDsa((ECDsa)key, toBeSigned, hashAlgorithm) :
-                SignWithRSA((RSA)key, toBeSigned, hashAlgorithm);
+            byte[] signature;
+            if (keyType == KeyType.ECDsa)
+            {
+                signature = SignWithECDsa((ECDsa)key, toBeSigned, hashAlgorithm);
+            }
+            else
+            {
+                signature = SignWithRSA((RSA)key, toBeSigned, hashAlgorithm);
+            }
 
             return SignCore(encodedProtetedHeaders, unprotectedHeaders.Encode(), signature, content, isDetached);
         }
@@ -212,6 +213,35 @@ namespace System.Security.Cryptography.Cose
             }
 
             return encodedAlg;
+        }
+
+        // If we Validate: The caller did specify a COSE Algorithm, we will make sure it matches the specified key and hash algorithm.
+        // If we Add: The caller did not specify a COSE Algorithm, we will add the header for them, rather than throw. protectedHeaders will be altered in this case.
+        private static void ValidateOrAddAlgorithmHeader(CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, KeyType keyType, HashAlgorithmName hashAlgorithm)
+        {
+            int algHeaderValue;
+
+            if (protectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg))
+            {
+                int? algHeaderValueNullable = DecodeCoseAlgorithmHeader(encodedAlg);
+                Debug.Assert(algHeaderValueNullable.HasValue, "Algorithm (alg) is a known header and should have been validated in Set[Encoded]Value()");
+                algHeaderValue = algHeaderValueNullable.Value;
+
+                HashAlgorithmName expectedHashAlgorithm = GetHashAlgorithmFromCoseAlgorithmAndKeyType(algHeaderValue, keyType);
+
+                if (expectedHashAlgorithm != hashAlgorithm)
+                {
+                    throw new CryptographicException(SR.Format(SR.Sign1SignHashAlgorithmDoesNotMatchSpecifiedAlg, hashAlgorithm.Name, algHeaderValue));
+                }
+            }
+
+            if (unprotectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out _))
+            {
+                throw new CryptographicException(SR.Sign1SignAlgIsRequired);
+            }
+
+            algHeaderValue = GetCoseAlgorithmHeaderFromKeyTypeAndHashAlgorithm(keyType, hashAlgorithm);
+            protectedHeaders.SetValue(CoseHeaderLabel.Algorithm, algHeaderValue);
         }
 
         private static int? DecodeCoseAlgorithmHeader(ReadOnlyMemory<byte> encodedAlg)

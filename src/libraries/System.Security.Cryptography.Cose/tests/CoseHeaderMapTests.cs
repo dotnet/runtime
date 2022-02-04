@@ -147,17 +147,17 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void DecodedProtectedMapShouldBeReadOnly()
         {
-            byte[] encodedMessage = CoseSign1Message.Sign(s_sampleContent, ECDsaKeys[ECDsaAlgorithm.ES256], HashAlgorithmName.SHA256);
+            byte[] encodedMessage = CoseSign1Message.Sign(s_sampleContent, DefaultKey, HashAlgorithmName.SHA256);
             CoseSign1Message message = CoseMessage.DecodeSign1(encodedMessage);
-            Assert.True(message.ProtectedHeaders.IsReadOnly);
+            Assert.True(message.ProtectedHeaders.IsReadOnly, "message.ProtectedHeaders.IsReadOnly");
         }
 
         [Fact]
         public void GetValueFromReadOnlyProtectedMap()
         {
-            byte[] encodedMessage = CoseSign1Message.Sign(s_sampleContent, ECDsaKeys[ECDsaAlgorithm.ES256], HashAlgorithmName.SHA256);
+            byte[] encodedMessage = CoseSign1Message.Sign(s_sampleContent, DefaultKey, HashAlgorithmName.SHA256);
             CoseSign1Message message = CoseMessage.DecodeSign1(encodedMessage);
-            Assert.True(message.ProtectedHeaders.IsReadOnly);
+            Assert.True(message.ProtectedHeaders.IsReadOnly, "message.ProtectedHeaders.IsReadOnly");
 
             int expectedAlgorithm = (int)ECDsaAlgorithm.ES256;
 
@@ -174,9 +174,9 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SetValueAndRemoveThrowIfProtectedMapIsReadOnly()
         {
-            byte[] encodedMessage = CoseSign1Message.Sign(s_sampleContent, ECDsaKeys[ECDsaAlgorithm.ES256], HashAlgorithmName.SHA256);
+            byte[] encodedMessage = CoseSign1Message.Sign(s_sampleContent, DefaultKey, HashAlgorithmName.SHA256);
             CoseSign1Message message = CoseMessage.DecodeSign1(encodedMessage);
-            Assert.True(message.ProtectedHeaders.IsReadOnly);
+            Assert.True(message.ProtectedHeaders.IsReadOnly, "message.ProtectedHeaders.IsReadOnly");
 
             // New value.
             var barLabel = new CoseHeaderLabel("bar");
