@@ -367,6 +367,62 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Initializes a block of memory at the given location with a given initial value.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_INIT_BLOCK
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InitBlock(void* startAddress, byte value, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // initblk
+            // ret
+        }
+
+        /// <summary>
+        /// Initializes a block of memory at the given location with a given initial value.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_INIT_BLOCK
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InitBlock(ref byte startAddress, byte value, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // initblk
+            // ret
+        }
+
+        /// <summary>
+        /// Initializes a block of memory at the given location with a given initial value
+        /// without assuming architecture dependent alignment of the address.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_INIT_BLOCK_UNALIGNED
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // unaligned. 0x1
+            // initblk
+            // ret
+        }
+
+        /// <summary>
         /// Initializes a block of memory at the given location with a given initial value
         /// without assuming architecture dependent alignment of the address.
         /// </summary>
