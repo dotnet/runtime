@@ -705,5 +705,21 @@ namespace System.Runtime.CompilerServices
 
             // ret
         }
+
+        /// <summary>
+        /// Returns a mutable ref to a boxed value
+        /// </summary>
+        //[Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Unbox<T>(object box)
+            where T : struct
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // unboxT
+            // ret
+        }
     }
 }

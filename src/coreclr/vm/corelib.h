@@ -757,6 +757,7 @@ DEFINE_METHOD(UNSAFE,               PTR_WRITE_UNALIGNED,    WriteUnaligned, GM_P
 DEFINE_METHOD(UNSAFE,               READ,                   Read, NoSig)
 DEFINE_METHOD(UNSAFE,               SKIPINIT,               SkipInit, GM_RefT_RetVoid)
 DEFINE_METHOD(UNSAFE,               WRITE,                  Write, NoSig)
+DEFINE_METHOD(UNSAFE,               UNBOX,                  Unbox, NoSig)
 
 DEFINE_CLASS(MEMORY_MARSHAL,        Interop,                MemoryMarshal)
 DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_SZARRAY, GetArrayDataReference, GM_ArrT_RetRefT)
