@@ -191,7 +191,10 @@ namespace System.ComponentModel.DataAnnotations
             [RequiresUnreferencedCode("The Types of _type's properties cannot be statically discovered.")]
             internal bool TryGetPropertyStoreItem(string propertyName, [NotNullWhen(true)] out PropertyStoreItem? item)
             {
-                ArgumentException.ThrowIfNullOrEmpty(propertyName);
+                if (string.IsNullOrEmpty(propertyName))
+                {
+                    throw new ArgumentNullException(nameof(propertyName));
+                }
 
                 if (_propertyStoreItems == null)
                 {

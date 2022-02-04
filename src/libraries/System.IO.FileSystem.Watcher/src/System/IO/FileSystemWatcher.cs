@@ -92,9 +92,11 @@ namespace System.IO
         ///    Initializes a new instance of the <see cref='System.IO.FileSystemWatcher'/> class,
         ///    given the specified directory and type of files to monitor.
         /// </devdoc>
-        public FileSystemWatcher(string path, string filter!!)
+        public FileSystemWatcher(string path, string filter)
         {
             CheckPathValidity(path);
+            ArgumentNullException.ThrowIfNull(filter);
+
             _directory = path;
             Filter = filter;
         }

@@ -309,7 +309,7 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(algorithm);
             if (!algorithm.IsVisible)
                 throw new ArgumentException(SR.Cryptography_AlgorithmTypesMustBeVisible, nameof(algorithm));
-            ArgumentNullException.ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(names);
 
             string[] algorithmNames = new string[names.Length];
             Array.Copy(names, algorithmNames, algorithmNames.Length);

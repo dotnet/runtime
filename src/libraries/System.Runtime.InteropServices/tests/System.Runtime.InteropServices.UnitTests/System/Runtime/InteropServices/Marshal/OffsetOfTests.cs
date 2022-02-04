@@ -194,8 +194,8 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void OffsetOf_NullFieldName_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>(null, () => Marshal.OffsetOf(new object().GetType(), null));
-            AssertExtensions.Throws<ArgumentNullException>(null, () => Marshal.OffsetOf<object>(null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => Marshal.OffsetOf(new object().GetType(), null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => Marshal.OffsetOf<object>(null));
         }
 
         [Fact]

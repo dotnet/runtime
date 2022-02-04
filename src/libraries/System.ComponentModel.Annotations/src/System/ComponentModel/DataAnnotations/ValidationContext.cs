@@ -142,7 +142,10 @@ namespace System.ComponentModel.DataAnnotations
             }
             set
             {
-                ArgumentException.ThrowIfNullOrEmpty(value);
+                if (string.IsNullOrEmpty(value))
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
                 _displayName = value;
             }
         }

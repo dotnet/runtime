@@ -196,7 +196,7 @@ namespace System.Threading
                     WaitHandle waitHandle = waitHandles[i];
                     if (waitHandle == null)
                     {
-                        throw new ArgumentNullException($"waitHandles{i}", SR.ArgumentNull_ArrayElement);
+                        throw new ArgumentNullException($"waitHandles[{i}]", SR.ArgumentNull_ArrayElement);
                     }
 
                     SafeWaitHandle safeWaitHandle = waitHandle._waitHandle ??
