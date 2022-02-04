@@ -37,7 +37,7 @@ namespace Mono.Linker
 
 		public bool TryGetEmbeddedXmlInfo (ICustomAttributeProvider provider, [NotNullWhen (true)] out AttributeInfo? xmlInfo)
 		{
-			var assembly = GetAssemblyFromCustomAttributeProvider (provider);
+			AssemblyDefinition assembly = GetAssemblyFromCustomAttributeProvider (provider);
 
 			if (!_embeddedXmlInfos.TryGetValue (assembly, out xmlInfo)) {
 				// Add an empty record - this prevents reentrancy

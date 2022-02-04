@@ -853,21 +853,12 @@ namespace Mono.Linker.Steps
 
 			return false;
 
-			static bool HasMatchingArguments (CustomAttributeArgument[] argsA, Collection<CustomAttributeArgument> argsB)
+			static bool HasMatchingArguments (CustomAttributeArgument[] removeAttrInstancesArgs, Collection<CustomAttributeArgument> attributeInstanceArgs)
 			{
-				for (int i = 0; i < argsA.Length; ++i) {
-					object argB = argsB[i].Value;
-
-					// The internal attribute has only object overloads which does not allow
-					// to distinguish between boxed/converted and exact candidates. This
-					// allows simpler data entering and for now it does not like problem.
-					if (argB is CustomAttributeArgument caa)
-						argB = caa.Value;
-
-					if (!argsA[i].Value.Equals (argB))
+				for (int i = 0; i < removeAttrInstancesArgs.Length; ++i) {
+					if (!removeAttrInstancesArgs[i].IsEqualTo (attributeInstanceArgs[i]))
 						return false;
 				}
-
 				return true;
 			}
 		}
