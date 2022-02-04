@@ -493,6 +493,7 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
         estimatedSize = tmpEstimatedSize;
     }
     int32_t count = (int32_t)(estimatedSize / sizeof(struct xinpcb));
+
     if (count > *infoCount)
     {
         // Not enough space in caller-supplied buffer.
@@ -500,20 +501,28 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
         *infoCount = count;
         return -1;
     }
-    *infoCount = count;
 
     struct xinpgen* xHeadPtr;
-    int32_t connectionIndex = -1;
+    int32_t connectionIndex = 0;
     xHeadPtr = (struct xinpgen*)buffer;
     for (xHeadPtr = (struct xinpgen*)((uint8_t*)xHeadPtr + xHeadPtr->xig_len);
          xHeadPtr->xig_len >= sizeof(struct xinpcb);
          xHeadPtr = (struct xinpgen*)((uint8_t*)xHeadPtr + xHeadPtr->xig_len))
     {
-        connectionIndex++;
         IPEndPointInfo* iepi = &infos[connectionIndex];
 
         struct xinpcb* head_xinpcb = (struct xinpcb*)xHeadPtr;
+        // We get all UDP sockets from Kernel. Unlike TCP, there is no state and true listening.
+        // To filter down, we look for sockets with port e.g. bind() was called.
+        // We also exclude sockets where remote info exist e.g. connect() was called to get
+        // behavior similar to TCP.
+
 #if defined(__FreeBSD__)
+        if (head_xinpcb->inp_inc.inc_ie.ie_lport == 0 || head_xinpcb->inp_inc.inc_ie.ie_fport != 0)
+        {
+            continue;
+        }
+
         if ((head_xinpcb->inp_vflag & INP_IPV6) == INP_IPV6)
         {
             memcpy_s(iepi->AddressBytes, sizeof_member(IPEndPointInfo, AddressBytes), &head_xinpcb->inp_inc.inc_ie.ie6_laddr.s6_addr, 16);
@@ -527,6 +536,11 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
         iepi->Port = ntohs(head_xinpcb->inp_inc.inc_ie.ie_lport);
 #else
         struct inpcb in_pcb = head_xinpcb->xi_inp;
+
+        if (in_pcb.inp_lport == 0 || in_pcb.inp_fport != 0)
+        {
+            continue;
+        }
 
         uint8_t vflag = in_pcb.inp_vflag; // INP_IPV4 or INP_IPV6
         if ((vflag & INP_IPV4) == INP_IPV4)
@@ -542,7 +556,10 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
 
         iepi->Port = ntohs(in_pcb.inp_lport);
 #endif
+        connectionIndex++;
     }
+
+    *infoCount = connectionIndex;
 
     free(buffer);
     return 0;

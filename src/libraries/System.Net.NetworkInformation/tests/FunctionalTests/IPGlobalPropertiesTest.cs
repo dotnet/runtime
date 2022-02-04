@@ -139,6 +139,31 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Theory]
+        [MemberData(nameof(Loopbacks))]
+        [SkipOnPlatform(TestPlatforms.Android, "Unsupported on Android")]
+        public void IPGlobalProperties_UdpListeners_Succeed(IPAddress address)
+        {
+            using (var server = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp))
+            {
+                server.Bind(new IPEndPoint(address, 0));
+                _log.WriteLine($"listening on {server.LocalEndPoint}");
+
+                IPEndPoint[] udpListeners = IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners();
+                bool found = false;
+                foreach (IPEndPoint ep in udpListeners)
+                {
+                    if (ep.Equals(server.LocalEndPoint))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                Assert.True(found);
+            }
+        }
+
+        [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android))]
         [MemberData(nameof(Loopbacks))]
