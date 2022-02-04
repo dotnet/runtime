@@ -125,7 +125,10 @@ namespace System.Net.Security
             if (Interlocked.CompareExchange(ref _nestedRead, 1, 0) == 0)
             {
                 _buffer.Dispose();
+            }
 
+            if (!_buffer.Valid)
+            {
                 // Suppress finalizer since the read buffer was returned.
                 GC.SuppressFinalize(this);
             }
@@ -270,6 +273,8 @@ namespace System.Net.Security
                     throw SslStreamPal.GetException(status);
                 }
 
+                _buffer = new SslBuffer(ReadBufferSize);
+
                 ProtocolToken message = null!;
                 do {
                     message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
@@ -284,6 +289,11 @@ namespace System.Net.Security
             }
             finally
             {
+                if (_buffer.ActiveBytes == 0)
+                {
+                    _buffer.Dispose();
+                }
+
                 _nestedRead = 0;
                 _nestedWrite = 0;
                 _isRenego = false;
@@ -331,6 +341,11 @@ namespace System.Net.Security
                         // We can finish renegotiation without doing any read.
                         handshakeCompleted = true;
                     }
+                }
+
+                if (!handshakeCompleted)
+                {
+                    _buffer = new SslBuffer(ReadBufferSize);
                 }
 
                 while (!handshakeCompleted)
@@ -711,6 +726,14 @@ namespace System.Net.Security
             Dispose(disposing: false);
         }
 
+        private void ReturnReadBufferIfEmpty()
+        {
+            if (_buffer.ActiveBytes == 0)
+            {
+                _buffer.Dispose();
+            }
+        }
+
         private bool HaveFullTlsFrame(out int frameSize)
         {
             if (_buffer.EncryptedBytes < SecureChannel.ReadHeaderSize)
@@ -949,6 +972,7 @@ namespace System.Net.Security
             }
             finally
             {
+                ReturnReadBufferIfEmpty();
                 _nestedRead = 0;
             }
         }
@@ -1062,10 +1086,18 @@ namespace System.Net.Security
         {
            Debug.Assert(_buffer.DecryptedBytes == 0);
 
-            // We may have buffered data at a non-zero offset.
-            // To maximize the buffer space available for the next read,
-            // copy the existing data down to the beginning of the buffer.
-           _buffer.EnsureAvailableSpace(_buffer.Capacity - _buffer.ActiveBytes);
+            if (_buffer.Valid)
+            {
+                // We may have buffered data at a non-zero offset.
+                // To maximize the buffer space available for the next read,
+                // copy the existing data down to the beginning of the buffer.
+               _buffer.EnsureAvailableSpace(_buffer.Capacity - _buffer.ActiveBytes);
+            }
+            else
+            {
+                // buffer has been disposed, reset it
+                _buffer = new SslBuffer(ReadBufferSize);
+            }
         }
 
         // Returns TLS Frame size including header size.

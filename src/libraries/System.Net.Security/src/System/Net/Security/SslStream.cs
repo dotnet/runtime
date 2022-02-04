@@ -62,19 +62,23 @@ namespace System.Net.Security
         private const int FrameOverhead = 64;
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
 
-        private SslBuffer _buffer = new SslBuffer(ReadBufferSize);
+        private SslBuffer _buffer;
+
         private struct SslBuffer
         {
             private ArrayBuffer _buffer;
             private int _decryptedBytes;
             private int _decryptedPadding; // padding after decrypted part of the active memory
+            private bool _valid;
 
             public SslBuffer(int initialSize)
             {
                 _buffer = new ArrayBuffer(initialSize, true);
                 _decryptedBytes = 0;
                 _decryptedPadding = 0;
+                _valid = true;
             }
+            public bool Valid => _valid;
 
             public Span<byte> DecryptedSpan => _buffer.ActiveSpan.Slice(0, _decryptedBytes);
 
@@ -152,6 +156,7 @@ namespace System.Net.Security
                 _buffer.Dispose();
                 _decryptedBytes = 0;
                 _decryptedPadding = 0;
+                _valid = false;
             }
         }
 
@@ -833,6 +838,7 @@ namespace System.Net.Security
                 {
                     int b = _buffer.DecryptedSpan[0];
                     _buffer.Discard(1);
+                    ReturnReadBufferIfEmpty();
                     return b;
                 }
             }
