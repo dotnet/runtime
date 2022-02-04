@@ -2415,8 +2415,9 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             costEx = IND_COST_EX;
             costSz = 2;
 
-            GenTree* addr = hwTree->Op(1)->gtEffectiveVal();
-            level         = gtSetEvalOrder(addr);
+            GenTree* const addrNode = hwTree->Op(1);
+            level                   = gtSetEvalOrder(addrNode);
+            GenTree* const addr     = addrNode->gtEffectiveVal();
 
             // See if we can form a complex addressing mode.
             if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, hwTree->TypeGet()))
@@ -11691,11 +11692,34 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
         return tree;
     }
 
-    /* Currently we can only fold when the two subtrees exactly match */
-
-    if ((tree->gtFlags & GTF_SIDE_EFFECT) || GenTree::Compare(op1, op2, true) == false)
+    // Currently we can only fold when the two subtrees exactly match
+    // and everything is side effect free.
+    //
+    if (((tree->gtFlags & GTF_SIDE_EFFECT) != 0) || !GenTree::Compare(op1, op2, true))
     {
-        return tree; /* return unfolded tree */
+        // No folding.
+        //
+        return tree;
+    }
+
+    // GTF_ORDER_SIDEEFF here may indicate volatile subtrees.
+    // Or it may indicate a non-null assertion prop into an indir subtree.
+    //
+    // Check the operands.
+    //
+    if ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+    {
+        // If op1 is "volatle" and op2 is not, we can still fold.
+        //
+        const bool op1MayBeVolatile = (op1->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+        const bool op2MayBeVolatile = (op2->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+
+        if (!op1MayBeVolatile || op2MayBeVolatile)
+        {
+            // No folding.
+            //
+            return tree;
+        }
     }
 
     GenTree* cons;
