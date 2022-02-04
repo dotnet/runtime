@@ -18,54 +18,35 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.imagebase 0x00400000
-.subsystem 0x00000003
-.file alignment 512
-.corflags 0x00000001
-.namespace hello
-{
-  .class private auto ansi beforefieldinit Class1
-         extends [mscorlib]System.Object
-  {
-		.field private static class [eh_common]TestUtil.TestLog testLog
-  		.method private hidebysig specialname rtspecialname static void  .cctor() cil managed
-    	{
-      		.maxstack  2
-      		.locals init (class [mscorlib]System.IO.StringWriter expectedOut)
-      		newobj     instance void [mscorlib]System.IO.StringWriter::.ctor()
-      		stloc.s    expectedOut
-      		ldloc.s    expectedOut
-      		ldstr      "1234"
-      		callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
-      		ldloc.s    expectedOut
-      		ldstr      "test2"
-      		callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
-      		ldloc.s    expectedOut
-      		ldstr      "1234"
-      		callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
-      		ldloc.s    expectedOut
-      		newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
-      		stsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
-      		ret
-		} 
-  } 
-
-} 
-
-
-
-
-
-
-
-
 
 .namespace hello
 {
   .class private auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
-    .method public hidebysig static int32 
+    .field private static class [eh_common]TestUtil.TestLog testLog
+    .method private hidebysig specialname rtspecialname static void  .cctor() cil managed
+    {
+        .maxstack  2
+        .locals init (class [mscorlib]System.IO.StringWriter expectedOut)
+        newobj     instance void [mscorlib]System.IO.StringWriter::.ctor()
+        stloc.s    expectedOut
+        ldloc.s    expectedOut
+        ldstr      "1234"
+        callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
+        ldloc.s    expectedOut
+        ldstr      "test2"
+        callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
+        ldloc.s    expectedOut
+        ldstr      "1234"
+        callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
+        ldloc.s    expectedOut
+        newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
+        stsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+        ret
+    }
+
+    .method public hidebysig static int32
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -76,9 +57,9 @@
       .locals init (int32 V_0,
                string V_1,
                int32 V_2)
-               
-				ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
-				callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()         
+
+                ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+                callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
       IL_0000:  ldc.i4   1234
       IL_0002:  stloc.0
       IL_0003:  ldloc.0
@@ -96,8 +77,8 @@
         IL_001d:  newobj     instance void [mscorlib]System.Exception::.ctor()
         IL_0022:  throw
 
-      }  
-      catch [mscorlib]System.Object 
+      }
+      catch [mscorlib]System.Object
       {
         IL_0023:  pop
         leave.s  IL_0066
@@ -124,8 +105,8 @@
 
           IL_0036:  leave.s    IL_004a
 
-        }  
-        catch [mscorlib]System.Object 
+        }
+        catch [mscorlib]System.Object
         {
           IL_0038:  pop
           IL_0039:  ldloc.0
@@ -137,7 +118,7 @@
           IL_0043:  call       void [System.Console]System.Console::WriteLine(string)
           IL_0048:  leave.s    IL_004a
 
-        }  
+        }
         IL_004a:  ldstr      "unreached"
         IL_004f:  call       void [System.Console]System.Console::WriteLine(string)
         IL_0054:  ldstr      "end outer catch "
@@ -147,33 +128,29 @@
         IL_005f:  call       void [System.Console]System.Console::WriteLine(string)
         IL_0064:  leave.s    IL_0066
 
-      }  
+      }
       IL_0066:  ldloc.0
       IL_0067:  stloc.2
       IL_0068:  br.s       IL_006a
 
       IL_006a:  ldloc.2
-				call  void [System.Console]System.Console::WriteLine(int32)
-				ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
-      			callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
-      
-      			ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
-      			callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
-        
-      IL_006b:  ret
-    } 
+                call  void [System.Console]System.Console::WriteLine(int32)
+                ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+                callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
 
-    .method public hidebysig specialname rtspecialname 
+                ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+                callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
+
+      IL_006b:  ret
+    }
+
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       .maxstack  1
       IL_0000:  ldarg.0
       IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
-	  IL_0006:  ret
-    } 
-
-  } 
-
-
-
-} 
+      IL_0006:  ret
+    }
+  }
+}

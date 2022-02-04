@@ -38,6 +38,8 @@ ret
 }
 }
 
+.class public Test_deadlock extends[mscorlib]System.Object
+{
 .method public static int32 Main()
 {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -48,5 +50,6 @@ ldsfld class Test_deadlock.B Test_deadlock.A::b
 pop
 ldc.i4 100
 ret
+}
 }
 }

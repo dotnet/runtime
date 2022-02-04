@@ -5,8 +5,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
-class ExplicitLayout
+public class ExplicitLayout
 {
 #pragma warning disable 618
     [StructLayout(LayoutKind.Explicit, Size = SIZE)]
@@ -25,9 +26,10 @@ class ExplicitLayout
     }
 #pragma warning restore 618
 
-    internal class Program
+    public class Program
     {
-        private static int Main()
+        [Fact]
+        public static int TestEntrypoint()
         {
             int returnVal = 100;
 
