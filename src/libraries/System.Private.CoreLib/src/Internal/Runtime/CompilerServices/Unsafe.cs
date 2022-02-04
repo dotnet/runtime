@@ -174,6 +174,30 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Adds an element offset to the given reference.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Add<T>(ref T source, UIntPtr elementOffset)
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return ref AddByteOffset(ref source, (nuint)(elementOffset * (nuint)SizeOf<T>()));
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // sizeof T
+            // mul
+            // add
+            // ret
+        }
+
+        /// <summary>
         /// Adds an byte offset to the given reference.
         /// </summary>
         [Intrinsic]
