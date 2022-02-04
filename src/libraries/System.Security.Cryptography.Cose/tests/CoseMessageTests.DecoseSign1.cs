@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData(false, "D28443A10126A201260442313154546869732069732074686520636F6E74656E742E584087DB0D2E5571843B78AC33ECB2830DF7B6E0A4D5B7376DE336B23C591C90C425317E56127FBE04370097CE347087B233BF722B64072BEB4486BDA4031D27244F")]
         public void DecodeThrowsWithDuplicateHeaders(bool shouldContainInnerException, string hexCborMessage)
         {
-            var ex = Assert.Throws<CryptographicException>(() => CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(hexCborMessage)));
+            CryptographicException ex = Assert.Throws<CryptographicException>(() => CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(hexCborMessage)));
             if (shouldContainInnerException) // if the duplicate headers were in one bucket the exception comes from CborReader because we use CborConformanceMode.Strict.
             {
                 Assert.IsType<CborContentException>(ex.InnerException);
