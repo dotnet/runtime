@@ -194,15 +194,31 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        internal byte[] Encode(bool mustReturnEmptyBstrIfEmpty = false)
+        internal byte[] Encode(bool mustReturnEmptyBstrIfEmpty = false, int? algHeaderValueToSlip = null)
         {
-            if (_headerParameters.Count == 0 && mustReturnEmptyBstrIfEmpty)
+            bool shouldSlipAlgHeader = algHeaderValueToSlip.HasValue;
+
+            if (_headerParameters.Count == 0 && mustReturnEmptyBstrIfEmpty && !shouldSlipAlgHeader)
             {
                 return s_emptyBstrEncoded;
             }
 
+            int mapLength = _headerParameters.Count;
+            if (shouldSlipAlgHeader)
+            {
+                mapLength++;
+            }
+
             var writer = new CborWriter();
-            writer.WriteStartMap(_headerParameters.Count);
+            writer.WriteStartMap(mapLength);
+
+            if (shouldSlipAlgHeader)
+            {
+                Debug.Assert(!TryGetEncodedValue(CoseHeaderLabel.Algorithm, out _));
+                writer.WriteInt32(KnownHeaders.Alg);
+                writer.WriteInt32(algHeaderValueToSlip!.Value);
+            }
+
             foreach ((CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue) header in this)
             {
                 CoseHeaderLabel label = header.Label;

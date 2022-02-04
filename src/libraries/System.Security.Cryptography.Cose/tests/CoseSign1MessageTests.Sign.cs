@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Formats.Cbor;
+using System.Linq;
 using Xunit;
 using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
@@ -197,8 +198,10 @@ namespace System.Security.Cryptography.Cose.Tests
         public void SignWithEmptyHeaderMaps()
         {
             byte[] content = GetDummyContent(ContentTestCase.Small);
+            CoseHeaderMap protectedHeaders = GetEmptyHeaderMap();
 
-            AssertSign1Message(CoseSign1Message.Sign(GetDummyContent(ContentTestCase.Small), GetEmptyHeaderMap(), GetEmptyHeaderMap(), DefaultKey, DefaultHash), content, DefaultKey);
+            AssertSign1Message(CoseSign1Message.Sign(GetDummyContent(ContentTestCase.Small), protectedHeaders, GetEmptyHeaderMap(), DefaultKey, DefaultHash), content, DefaultKey);
+            Assert.Equal(0, protectedHeaders.Count());
         }
 
         [Fact]
