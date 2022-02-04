@@ -392,7 +392,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     case INS_fcmge:
                     case INS_fcmgt:
                     {
-                        numOperands -= 1;
+                        numOperands = 1;
                         break;
                     }
 
