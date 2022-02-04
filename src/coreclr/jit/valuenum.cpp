@@ -9270,6 +9270,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             printf("\n");
         }
     }
+
+    fgDebugCheckValueNumberedTree(tree);
 #endif // DEBUG
 }
 
@@ -10961,6 +10963,72 @@ void Compiler::fgDebugCheckExceptionSets()
             }
 
             ExceptionSetsChecker::CheckTree(stmt->GetRootNode(), vnStore);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckValueNumberedTree: Verify proper numbering for "tree".
+//
+// Currently only checks that we have not forgotten to add a zero-offset
+// field sequence to "tree"'s value number.
+//
+// Arguments:
+//    tree - The tree, that has just been numbered, to check
+//
+void Compiler::fgDebugCheckValueNumberedTree(GenTree* tree)
+{
+    FieldSeqNode* zeroOffsetFldSeq;
+    if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFldSeq))
+    {
+        // Empty field sequences should never be recorded in the map.
+        assert(zeroOffsetFldSeq != nullptr);
+
+        ValueNum vns[] = {tree->GetVN(VNK_Liberal), tree->GetVN(VNK_Conservative)};
+        for (ValueNum vn : vns)
+        {
+            VNFuncApp vnFunc;
+            if (vnStore->GetVNFunc(vn, &vnFunc))
+            {
+                FieldSeqNode* fullFldSeq;
+                switch (vnFunc.m_func)
+                {
+                    case VNF_PtrToLoc:
+                    case VNF_PtrToStatic:
+                        fullFldSeq = vnStore->FieldSeqVNToFieldSeq(vnFunc.m_args[1]);
+                        break;
+
+                    case VNF_PtrToArrElem:
+                        fullFldSeq = vnStore->FieldSeqVNToFieldSeq(vnFunc.m_args[3]);
+                        break;
+
+                    default:
+                        continue;
+                }
+
+                // Verify that the "fullFldSeq" we have just collected is of the
+                // form "[outer fields, zeroOffsetFldSeq]", or is "NotAField".
+                if (fullFldSeq == FieldSeqStore::NotAField())
+                {
+                    continue;
+                }
+
+                // This check relies on the canonicality of field sequences.
+                FieldSeqNode* fldSeq                = fullFldSeq;
+                bool          zeroOffsetFldSeqFound = false;
+                while (fldSeq != nullptr)
+                {
+                    if (fldSeq == zeroOffsetFldSeq)
+                    {
+                        zeroOffsetFldSeqFound = true;
+                        break;
+                    }
+
+                    fldSeq = fldSeq->m_next;
+                }
+
+                assert(zeroOffsetFldSeqFound);
+            }
         }
     }
 }
