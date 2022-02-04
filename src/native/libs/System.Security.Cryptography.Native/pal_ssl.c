@@ -532,22 +532,29 @@ void CryptoNative_SslSessionFree(SSL_SESSION *session)
 
 const char* CryptoNative_SslSessionGetHostname(SSL_SESSION *session)
 {
-    if (!API_EXISTS(SSL_SESSION_get0_hostname))
+#ifdef SSL_SESSION_get0_hostname
+    if (API_EXISTS(SSL_SESSION_get0_hostname))
     {
-        return NULL;
+        return SSL_SESSION_get0_hostname(session);
     }
-
-    return SSL_SESSION_get0_hostname(session);
+#else
+    (void*)session;
+#endif
+    return NULL;
 }
 
 int CryptoNative_SslSessionSetHostname(SSL_SESSION *session, const char *hostname)
 {
-    if (!API_EXISTS(SSL_SESSION_set1_hostname))
+#ifdef SSL_SESSION_set1_hostname
+    if (API_EXISTS(SSL_SESSION_set1_hostname))
     {
-        return 0;
+        SSL_SESSION_set1_hostname(session, hostname);
     }
-
-    return SSL_SESSION_set1_hostname(session, hostname);
+#else
+    (void*)session;
+    (const void*)hostname;
+#endif
+    return 0;
 }
 
 int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
