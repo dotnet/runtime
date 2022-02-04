@@ -209,7 +209,7 @@ namespace System.Security.Cryptography.Cose
             // This authentication can be done either by placing the header in the protected header bucket or as part of the externally supplied data.
             if (!protectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg))
             {
-                throw new CryptographicException(SR.Sign1SignAlgIsRequired);
+                throw new CryptographicException(SR.Sign1VerifyAlgIsRequired);
             }
 
             return encodedAlg;
@@ -224,29 +224,42 @@ namespace System.Security.Cryptography.Cose
             HashAlgorithmName hashAlgorithm,
             out int? headerValueToSlip)
         {
+            int algHeaderValue = GetCoseAlgorithmHeaderFromKeyTypeAndHashAlgorithm(keyType, hashAlgorithm);
+
             if (protectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg))
             {
-                int? algHeaderValueNullable = DecodeCoseAlgorithmHeader(encodedAlg);
-                Debug.Assert(algHeaderValueNullable.HasValue, "Algorithm (alg) is a known header and should have been validated in Set[Encoded]Value()");
-
-                HashAlgorithmName expectedHashAlgorithm = GetHashAlgorithmFromCoseAlgorithmAndKeyType(algHeaderValueNullable.Value, keyType);
-
-                if (expectedHashAlgorithm != hashAlgorithm)
-                {
-                    throw new CryptographicException(SR.Format(SR.Sign1SignHashAlgorithmDoesNotMatchSpecifiedAlg, hashAlgorithm.Name, algHeaderValueNullable.Value));
-                }
-
+                ValidateAlgorithmHeader(encodedAlg, algHeaderValue, keyType, hashAlgorithm);
                 headerValueToSlip = null;
                 return;
             }
 
             if (unprotectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out _))
             {
-                throw new CryptographicException(SR.Sign1SignAlgIsRequired);
+                throw new CryptographicException(SR.Sign1SignAlgMustBeProtected);
             }
 
-            headerValueToSlip = GetCoseAlgorithmHeaderFromKeyTypeAndHashAlgorithm(keyType, hashAlgorithm);
-            //protectedHeaders.SetValue(CoseHeaderLabel.Algorithm, algHeaderValue);
+            headerValueToSlip = algHeaderValue;
+
+            static void ValidateAlgorithmHeader(ReadOnlyMemory<byte> encodedAlg, int expectedAlg, KeyType keyType, HashAlgorithmName hashAlgorithm)
+            {
+                int? alg = DecodeCoseAlgorithmHeader(encodedAlg);
+                Debug.Assert(alg.HasValue, "Algorithm (alg) is a known header and should have been validated in Set[Encoded]Value()");
+
+                if (expectedAlg != alg.Value)
+                {
+                    Type typeOfKey;
+                    if (keyType == KeyType.ECDsa)
+                    {
+                        typeOfKey = typeof(ECDsa);
+                    }
+                    else
+                    {
+                        typeOfKey = typeof(RSA);
+                    }
+
+                    throw new CryptographicException(SR.Format(SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, typeOfKey, hashAlgorithm.Name));
+                }
+            }
         }
 
         private static int? DecodeCoseAlgorithmHeader(ReadOnlyMemory<byte> encodedAlg)
