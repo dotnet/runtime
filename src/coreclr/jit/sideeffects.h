@@ -114,7 +114,18 @@ public:
 
         inline bool WritesAnyLocation() const
         {
-            return (m_flags & (ALIAS_WRITES_ADDRESSABLE_LOCATION | ALIAS_WRITES_LCL_VAR)) != 0;
+            if ((m_flags & ALIAS_WRITES_ADDRESSABLE_LOCATION) != 0)
+            {
+                return true;
+            }
+
+            if ((m_flags & ALIAS_WRITES_LCL_VAR) != 0)
+            {
+                LclVarDsc* const varDsc = m_compiler->lvaGetDesc(LclNum());
+                return varDsc->IsAlwaysAliveInMemory();
+            }
+
+            return false;
         }
     };
 

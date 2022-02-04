@@ -97,6 +97,40 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
 }
 
 //------------------------------------------------------------------------
+// IsSafeToContainMem: Checks for conflicts between childNode and grandParentNode
+// and returns 'true' iff memory operand childNode can be contained in ancestorNode
+//
+// Arguments:
+//    grandParentNode - any non-leaf node
+//    parentNode - parent of `childNode` and an input to `grandParentNode`
+//    childNode  - some node that is an input to `parentNode`
+//
+// Return value:
+//    true if it is safe to make childNode a contained memory operand.
+//
+bool Lowering::IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode)
+{
+    m_scratchSideEffects.Clear();
+    m_scratchSideEffects.AddNode(comp, childNode);
+
+    for (GenTree* node = childNode->gtNext; node != grandparentNode; node = node->gtNext)
+    {
+        if (node == parentNode)
+        {
+            continue;
+        }
+
+        const bool strict = true;
+        if (m_scratchSideEffects.InterferesWith(comp, node, strict))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // LowerNode: this is the main entry point for Lowering.
 //
 // Arguments:
