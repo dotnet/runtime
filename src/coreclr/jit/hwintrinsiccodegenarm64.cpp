@@ -364,7 +364,46 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(!hasImmediateOperand);
 
-            switch (intrin.numOperands)
+            size_t numOperands = intrin.numOperands;
+
+            // This handles optimizations for instructions that have
+            // an implicit 'zero' vector of what would be the second operand.
+            if ((intrin.op2->IsVectorZero() && intrin.op2->isContained()) ||
+                (intrin.op1->IsVectorZero() && intrin.op1->isContained() &&
+                 HWIntrinsicInfo::IsCommutative(intrin.id)))
+            {
+                assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
+
+                if (intrin.op1->IsVectorZero() && intrin.op1->isContained() &&
+                    HWIntrinsicInfo::IsCommutative(intrin.id))
+                {
+                    // The intrinsic is commutative, swap the registers.
+                    op1Reg = op2Reg;
+                }
+
+                switch (ins)
+                {
+                    case INS_cmeq:
+                    case INS_cmge:
+                    case INS_cmgt:
+                    case INS_cmle:
+                    case INS_cmlt:
+                    case INS_fcmeq:
+                    case INS_fcmge:
+                    case INS_fcmgt:
+                    case INS_fcmle:
+                    case INS_fcmlt:
+                    {
+                        assert(numOperands == 2);
+                        numOperands -= 1;
+                    }
+
+                    default:
+                        unreached();
+                }
+            }
+
+            switch (numOperands)
             {
                 case 1:
                     GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
@@ -497,29 +536,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Crc32_Arm64_ComputeCrc32:
             case NI_Crc32_Arm64_ComputeCrc32C:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
-                break;
-
-            case NI_AdvSimd_CompareEqual:
-            case NI_AdvSimd_Arm64_CompareEqual:
-            case NI_AdvSimd_Arm64_CompareEqualScalar:
-                if (intrin.op1->isContained())
-                {
-                    assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
-                    assert(intrin.op1->IsVectorZero());
-
-                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
-                }
-                else if (intrin.op2->isContained())
-                {
-                    assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
-                    assert(intrin.op2->IsVectorZero());
-
-                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
-                }
-                else
-                {
-                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
-                }
                 break;
 
             case NI_AdvSimd_AbsoluteCompareLessThan:
