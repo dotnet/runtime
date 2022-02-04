@@ -8592,12 +8592,21 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         newVN = vnStore->VNForExpr(compCurBB, TYP_BYREF);
                     }
                 }
+
                 if (newVN == ValueNumStore::NoVN)
                 {
+                    // We may have a zero-offset field sequence on this ADDR.
+                    FieldSeqNode* zeroOffsetFieldSeq = nullptr;
+                    if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFieldSeq))
+                    {
+                        fieldSeq = GetFieldSeqStore()->Append(fieldSeq, zeroOffsetFieldSeq);
+                    }
+
                     newVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc,
                                                vnStore->VNForIntCon(arg->AsLclVarCommon()->GetLclNum()),
                                                vnStore->VNForFieldSeq(fieldSeq));
                 }
+
                 tree->gtVNPair.SetBoth(newVN);
             }
             else if ((arg->gtOper == GT_IND) || arg->OperIsBlk())
