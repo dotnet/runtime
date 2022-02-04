@@ -88,15 +88,16 @@ namespace System.Text.RegularExpressions
         protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
             Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
 
-        protected internal virtual void Scan(Regex regex, ReadOnlySpan<char> text, int textstart, int prevlen, bool quick, TimeSpan timeout)
+        protected internal virtual void Scan(Regex regex, ReadOnlySpan<char> text, int textstart, int prevlen, bool quick)
         {
             string? s = runtext;
             if (text != s)
             {
                 s = text.ToString();
+                runtext = s;
             }
 
-            Match? match = Scan(regex, s, 0, text.Length, textstart, prevlen, quick, timeout);
+            Match? match = Scan(regex, s, 0, text.Length, textstart, prevlen, quick, regex.internalMatchTimeout);
             runmatch = match;
         }
 
@@ -378,7 +379,9 @@ namespace System.Text.RegularExpressions
             if (0 > _timeoutOccursAt && 0 < currentMillis)
                 return;
 
-            throw new RegexMatchTimeoutException(runtext!, runregex!.pattern!, TimeSpan.FromMilliseconds(_timeout));
+            string input = runtext ?? string.Empty;
+
+            throw new RegexMatchTimeoutException(input, runregex!.pattern!, TimeSpan.FromMilliseconds(_timeout));
         }
 
         /// <summary>
@@ -412,12 +415,12 @@ namespace System.Text.RegularExpressions
             {
                 // Use a hashtabled Match object if the capture numbers are sparse
                 runmatch = runregex!.caps is null ?
-                    new Match(runregex, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart) :
-                    new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart);
+                    new Match(runregex, runregex.capsize, runtext ?? string.Empty, runtextbeg, runtextend - runtextbeg, runtextstart) :
+                    new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext, runtextbeg, runtextend - runtextbeg, runtextstart);
             }
             else
             {
-                runmatch.Reset(runregex!, runtext!, runtextbeg, runtextend, runtextstart);
+                runmatch.Reset(runregex!, runtext, runtextbeg, runtextend, runtextstart);
             }
 
             // Note we test runcrawl, because it is the last one to be allocated
@@ -480,8 +483,15 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected bool IsBoundary(int index, int startpos, int endpos)
         {
-            return (index > startpos && RegexCharClass.IsBoundaryWordChar(runtext![index - 1])) !=
-                   (index < endpos && RegexCharClass.IsBoundaryWordChar(runtext![index]));
+            Debug.Assert(runtext != null, "runtext should not be null since this method is only callable by old codegen.");
+            return (index > startpos && RegexCharClass.IsBoundaryWordChar(runtext[index - 1])) !=
+                   (index < endpos && RegexCharClass.IsBoundaryWordChar(runtext[index]));
+        }
+
+        protected bool IsBoundary(ReadOnlySpan<char> inputSpan, int index, int startpos, int endpos)
+        {
+            return (index > startpos && RegexCharClass.IsBoundaryWordChar(inputSpan[index - 1])) !=
+                   (index < endpos && RegexCharClass.IsBoundaryWordChar(inputSpan[index]));
         }
 
         /// <summary>Called to determine a char's inclusion in the \w set.</summary>
@@ -489,8 +499,15 @@ namespace System.Text.RegularExpressions
 
         protected bool IsECMABoundary(int index, int startpos, int endpos)
         {
-            return (index > startpos && RegexCharClass.IsECMAWordChar(runtext![index - 1])) !=
-                   (index < endpos && RegexCharClass.IsECMAWordChar(runtext![index]));
+            Debug.Assert(runtext != null, "runtext should not be null since this method is only callable by old codegen.");
+            return (index > startpos && RegexCharClass.IsECMAWordChar(runtext[index - 1])) !=
+                   (index < endpos && RegexCharClass.IsECMAWordChar(runtext[index]));
+        }
+
+        protected bool IsECMABoundary(ReadOnlySpan<char> inputSpan, int index, int startpos, int endpos)
+        {
+            return (index > startpos && RegexCharClass.IsECMAWordChar(inputSpan[index - 1])) !=
+                   (index < endpos && RegexCharClass.IsECMAWordChar(inputSpan[index]));
         }
 
         protected static bool CharInSet(char ch, string set, string category)
@@ -692,7 +709,10 @@ namespace System.Text.RegularExpressions
 
                 if (runtextpos > runtextbeg)
                 {
-                    sb.Append(RegexCharClass.DescribeChar(runtext![runtextpos - 1]));
+                    if (runtext != null)
+                    {
+                        sb.Append(RegexCharClass.DescribeChar(runtext[runtextpos - 1]));
+                    }
                 }
                 else
                 {
@@ -703,7 +723,10 @@ namespace System.Text.RegularExpressions
 
                 for (int i = runtextpos; i < runtextend; i++)
                 {
-                    sb.Append(RegexCharClass.DescribeChar(runtext![i]));
+                    if (runtext != null)
+                    {
+                        sb.Append(RegexCharClass.DescribeChar(runtext[i]));
+                    }
                 }
                 if (sb.Length >= 64)
                 {

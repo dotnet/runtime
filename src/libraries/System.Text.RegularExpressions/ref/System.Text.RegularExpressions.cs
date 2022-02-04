@@ -338,14 +338,16 @@ namespace System.Text.RegularExpressions
         protected virtual void Go() { throw null; }
         protected virtual void InitTrackCount() { throw null; }
         protected bool IsBoundary(int index, int startpos, int endpos) { throw null; }
+        protected bool IsBoundary(System.ReadOnlySpan<char> inputSpan, int index, int startpos, int endpos) { throw null; }
         protected bool IsECMABoundary(int index, int startpos, int endpos) { throw null; }
+        protected bool IsECMABoundary(System.ReadOnlySpan<char> inputSpan, int index, int startpos, int endpos) { throw null; }
         protected bool IsMatched(int cap) { throw null; }
         protected int MatchIndex(int cap) { throw null; }
         protected int MatchLength(int cap) { throw null; }
         protected int Popcrawl() { throw null; }
         protected internal System.Text.RegularExpressions.Match? Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) { throw null; }
         protected internal System.Text.RegularExpressions.Match? Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, System.TimeSpan timeout) { throw null; }
-        protected internal virtual void Scan(System.Text.RegularExpressions.Regex regex, System.ReadOnlySpan<char> text, int textstart, int prevlen, bool quick, System.TimeSpan timeout) { throw null; }
+        protected internal virtual void Scan(System.Text.RegularExpressions.Regex regex, System.ReadOnlySpan<char> text, int textstart, int prevlen, bool quick) { throw null; }
         protected void TransferCapture(int capnum, int uncapnum, int start, int end) { }
         protected void Uncapture() { }
     }

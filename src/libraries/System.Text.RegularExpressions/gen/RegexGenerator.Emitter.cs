@@ -222,7 +222,7 @@ namespace System.Text.RegularExpressions.Generator
             DescribeExpression(writer, rm.Code.Tree.Root.Child(0), "            // ", rm.Code); // skip implicit root capture
             writer.WriteLine();
 
-            writer.WriteLine($"            protected override void Scan(global::System.Text.RegularExpressions.Regex regex, global::System.ReadOnlySpan<char> text, int textstart, int prevlen, bool quick, global::System.TimeSpan timeout)");
+            writer.WriteLine($"            protected override void Scan(global::System.Text.RegularExpressions.Regex regex, global::System.ReadOnlySpan<char> text, int textstart, int prevlen, bool quick)");
             writer.WriteLine($"            {{");
             writer.Indent += 4;
             EmitScan(writer, rm, id);
@@ -2261,7 +2261,7 @@ namespace System.Text.RegularExpressions.Generator
                     _ => "base.IsECMABoundary",
                 };
 
-                using (EmitBlock(writer, $"if ({call}(pos{(sliceStaticPos > 0 ? $" + {sliceStaticPos}" : "")}, base.runtextbeg, end))"))
+                using (EmitBlock(writer, $"if ({call}(inputSpan, pos{(sliceStaticPos > 0 ? $" + {sliceStaticPos}" : "")}, base.runtextbeg, end))"))
                 {
                     writer.WriteLine($"goto {doneLabel};");
                 }

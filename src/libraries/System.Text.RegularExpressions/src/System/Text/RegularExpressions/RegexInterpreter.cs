@@ -324,7 +324,7 @@ namespace System.Text.RegularExpressions
 
         private void Backwardnext() => runtextpos += _rightToLeft ? 1 : -1;
 
-        protected internal override void Scan(Regex regex, ReadOnlySpan<char> text, int textstart, int prevlen, bool quick, TimeSpan timeout)
+        protected internal override void Scan(Regex regex, ReadOnlySpan<char> text, int textstart, int prevlen, bool quick)
         {
             // Configure the additional value to "bump" the position along each time we loop around
             // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
@@ -346,7 +346,7 @@ namespace System.Text.RegularExpressions
                     return;
                 }
 
-                runtextpos++;
+                runtextpos += bump;
             }
 
             while (true)
@@ -770,7 +770,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.Boundary:
-                        if (!IsBoundary(runtextpos, runtextbeg, runtextend))
+                        if (!IsBoundary(inputSpan, runtextpos, runtextbeg, runtextend))
                         {
                             break;
                         }
@@ -778,7 +778,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.NonBoundary:
-                        if (IsBoundary(runtextpos, runtextbeg, runtextend))
+                        if (IsBoundary(inputSpan, runtextpos, runtextbeg, runtextend))
                         {
                             break;
                         }
@@ -786,7 +786,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.ECMABoundary:
-                        if (!IsECMABoundary(runtextpos, runtextbeg, runtextend))
+                        if (!IsECMABoundary(inputSpan, runtextpos, runtextbeg, runtextend))
                         {
                             break;
                         }
@@ -794,7 +794,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.NonECMABoundary:
-                        if (IsECMABoundary(runtextpos, runtextbeg, runtextend))
+                        if (IsECMABoundary(inputSpan, runtextpos, runtextbeg, runtextend))
                         {
                             break;
                         }

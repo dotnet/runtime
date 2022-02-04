@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -36,9 +37,9 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_isMatchedMethod = RegexRunnerMethod("IsMatched");
         private static readonly MethodInfo s_matchLengthMethod = RegexRunnerMethod("MatchLength");
         private static readonly MethodInfo s_matchIndexMethod = RegexRunnerMethod("MatchIndex");
-        private static readonly MethodInfo s_isBoundaryMethod = RegexRunnerMethod("IsBoundary");
+        private static readonly MethodInfo s_isBoundaryMethod = typeof(RegexRunner).GetMethod("IsBoundary", BindingFlags.NonPublic | BindingFlags.Instance, new[] { typeof(ReadOnlySpan<char>), typeof(int), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_isWordCharMethod = RegexRunnerMethod("IsWordChar");
-        private static readonly MethodInfo s_isECMABoundaryMethod = RegexRunnerMethod("IsECMABoundary");
+        private static readonly MethodInfo s_isECMABoundaryMethod = typeof(RegexRunner).GetMethod("IsECMABoundary", BindingFlags.NonPublic | BindingFlags.Instance, new[] { typeof(ReadOnlySpan<char>), typeof(int), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_crawlposMethod = RegexRunnerMethod("Crawlpos");
         private static readonly MethodInfo s_charInClassMethod = RegexRunnerMethod("CharInClass");
         private static readonly MethodInfo s_checkTimeoutMethod = RegexRunnerMethod("CheckTimeout");
@@ -2311,8 +2312,9 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary, $"Unexpected type: {node.Kind}");
 
-                // if (!IsBoundary(pos + sliceStaticPos, base.runtextbeg, end)) goto doneLabel;
+                // if (!IsBoundary(inputSpan, pos + sliceStaticPos, base.runtextbeg, end)) goto doneLabel;
                 Ldthis();
+                Ldloc(inputSpan);
                 Ldloc(pos);
                 if (sliceStaticPos > 0)
                 {
@@ -3970,33 +3972,33 @@ namespace System.Text.RegularExpressions
 
             // if (prevlen == 0)
             // {
-            _ilg!.Emit(OpCodes.Ldarga_S, 4);
+            Label prevelenIsNotZero = DefineLabel();
+            _ilg!.Emit(OpCodes.Ldarg_S, 4);
             Ldc(0);
             Ceq();
-            Label prevelenIsNotZero = DefineLabel();
             BrfalseFar(prevelenIsNotZero);
 
             // if (textstart == stoppos)
             // {
+            Label textstartNotEqualToStoppos = DefineLabel();
             _ilg!.Emit(OpCodes.Ldarg_3);
             Ldloc(stoppos);
             Ceq();
-            Label textstartNotEqualToStoppos = DefineLabel();
             BrfalseFar(textstartNotEqualToStoppos);
 
             // runmatch = Match.Empty;
             // return;
+            Label returnLabel = DefineLabel();
             Ldthis();
             Call(s_matchGetEmptyMethod);
             Stfld(s_runmatchField);
-            Label returnLabel = DefineLabel();
             BrFar(returnLabel);
             MarkLabel(textstartNotEqualToStoppos);
 
-            // runtextpos++;
+            // runtextpos += bump;
             Ldthis();
             Ldthisfld(s_runtextposField);
-            Ldc(1);
+            Ldloc(bump);
             Add();
             Stfld(s_runtextposField);
             MarkLabel(prevelenIsNotZero);
