@@ -4,7 +4,7 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	public sealed class LinkAttributesTests : LinkerTestBase
+	public sealed partial class LinkAttributesTests : LinkerTestBase
 	{
 		protected override string TestSuiteName => "LinkAttributes";
 

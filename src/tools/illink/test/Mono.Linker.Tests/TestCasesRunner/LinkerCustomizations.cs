@@ -10,8 +10,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	{
 		public TestDependencyRecorder DependencyRecorder { get; set; }
 
-		public TestReflectionPatternRecorder ReflectionPatternRecorder { get; set; }
-
 		public event Action<LinkContext> CustomizeContext;
 
 		public void CustomizeLinkContext (LinkContext context)

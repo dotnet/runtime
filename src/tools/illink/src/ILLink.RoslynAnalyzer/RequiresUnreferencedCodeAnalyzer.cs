@@ -12,7 +12,7 @@ namespace ILLink.RoslynAnalyzer
 	[DiagnosticAnalyzer (LanguageNames.CSharp)]
 	public sealed class RequiresUnreferencedCodeAnalyzer : RequiresAnalyzerBase
 	{
-		const string RequiresUnreferencedCodeAttribute = nameof (RequiresUnreferencedCodeAttribute);
+		public const string RequiresUnreferencedCodeAttribute = nameof (RequiresUnreferencedCodeAttribute);
 		public const string FullyQualifiedRequiresUnreferencedCodeAttribute = "System.Diagnostics.CodeAnalysis." + RequiresUnreferencedCodeAttribute;
 
 		static readonly DiagnosticDescriptor s_requiresUnreferencedCodeRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresUnreferencedCode);
@@ -110,10 +110,7 @@ namespace ILLink.RoslynAnalyzer
 		protected override bool VerifyAttributeArguments (AttributeData attribute) =>
 			RequiresUnreferencedCodeUtils.VerifyRequiresUnreferencedCodeAttributeArguments (attribute);
 
-		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute)
-		{
-			var message = (string) requiresAttribute!.ConstructorArguments[0].Value!;
-			return MessageFormat.FormatRequiresAttributeMessageArg (message);
-		}
+		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute) =>
+			RequiresUnreferencedCodeUtils.GetMessageFromAttribute (requiresAttribute);
 	}
 }
