@@ -34,7 +34,17 @@ namespace System.IO
 
             try
             {
-                directoryEnumeration = Directory.EnumerateDirectories(sourcePath, "*", searchOption);
+                EnumerationOptions enumerationOptions = EnumerationOptions.Compatible;
+
+                // Compatible uses `IgnoreInaccessible = false`
+                enumerationOptions.IgnoreInaccessible = true;
+
+                if (recursive)
+                {
+                    enumerationOptions.RecurseSubdirectories = true;
+                }
+
+                directoryEnumeration = Directory.EnumerateDirectories(sourcePath, "*", enumerationOptions);
             }
             catch (IOException)
             {
