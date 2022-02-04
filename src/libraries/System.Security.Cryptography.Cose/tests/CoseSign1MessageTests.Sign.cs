@@ -9,7 +9,6 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Sign and Verify are not supported in browser")]
     public partial class CoseSign1MessageTests
     {
         [Theory]

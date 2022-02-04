@@ -198,29 +198,40 @@ namespace System.Security.Cryptography.Cose.Tests
         private static ECParameters _ec512Parameters = CreateECParameters("nistP521", "AHKZLLOsCOzz5cY97ewNUajB957y-C-U88c3v13nmGZx6sYl_oJXu9A5RkTKqjqvjyekWF-7ytDyRXYgCF5cj0Kt", "AdymlHvOiLxXkEhayXQnNCvDX4h9htZaCJN34kfmC6pV5OhQHiraVySsUdaQkAgDPrwQrJmbnX9cwlGfP-HqHZR1", "AAhRON2r9cqXX1hg-RoI6R1tX5p2rUAYdmpHZoC1XNM56KtscrX6zbKipQrCW9CGZH3T4ubpnoTKLDYJ_fF3_rJt");
 
         [ThreadStatic]
-        private static ECDsa _es256 = CreateECDsa(_ec256Parameters, true);
+        private static ECDsa? t_es256;
         [ThreadStatic]
-        private static ECDsa _es384 = CreateECDsa(_ec384Parameters, true);
+        private static ECDsa? t_es384;
         [ThreadStatic]
-        private static ECDsa _es512 = CreateECDsa(_ec512Parameters, true);
+        private static ECDsa? t_es512;
+
+        private static ECDsa ES256 => t_es256 ??= CreateECDsa(_ec256Parameters, true);
+        private static ECDsa ES384 => t_es384 ??= CreateECDsa(_ec384Parameters, true);
+        private static ECDsa ES512 => t_es512 ??= CreateECDsa(_ec512Parameters, true);
 
         [ThreadStatic]
-        private static ECDsa _es256WithoutPrivateKey = CreateECDsa(_ec256Parameters, false);
+        private static ECDsa? t_es256WithoutPrivateKey;
         [ThreadStatic]
-        private static ECDsa _es384WithoutPrivateKey = CreateECDsa(_ec384Parameters, false);
+        private static ECDsa? t_es384WithoutPrivateKey;
         [ThreadStatic]
-        private static ECDsa _es512WithoutPrivateKey = CreateECDsa(_ec512Parameters, false);
+        private static ECDsa? t_es512WithoutPrivateKey;
 
-        internal static ECDsa DefaultKey { get; } = _es256;
+        private static ECDsa ES256WithoutPrivateKey => t_es256WithoutPrivateKey ??= CreateECDsa(_ec256Parameters, false);
+        private static ECDsa ES384WithoutPrivateKey => t_es384WithoutPrivateKey ??= CreateECDsa(_ec384Parameters, false);
+        private static ECDsa ES512WithoutPrivateKey => t_es512WithoutPrivateKey ??= CreateECDsa(_ec512Parameters, false);
+
+        internal static ECDsa DefaultKey => ES256;
         internal static HashAlgorithmName DefaultHash { get; } = GetHashAlgorithmNameFromCoseAlgorithm((int)ECDsaAlgorithm.ES256);
 
-        internal static readonly Dictionary<ECDsaAlgorithm, ECDsa> ECDsaKeys = CreateECDsaDictionary(true);
-        internal static readonly Dictionary<ECDsaAlgorithm, ECDsa> ECDsaKeysWithoutPrivateKey = CreateECDsaDictionary(false);
+        internal static readonly ThreadStaticECDsaDictionary ECDsaKeys = new(true);
+        internal static readonly ThreadStaticECDsaDictionary ECDsaKeysWithoutPrivateKey = new(false);
 
         [ThreadStatic]
-        internal static readonly RSA RSAKey = CreateRSA(true);
+        internal static RSA? t_rsaKey;
         [ThreadStatic]
-        internal static readonly RSA RSAKeyWithoutPrivateKey = CreateRSA(false);
+        internal static RSA? t_rsaKeyWithoutPrivateKey;
+
+        internal static RSA RSAKey => t_rsaKey ??= CreateRSA(true);
+        internal static RSA RSAKeyWithoutPrivateKey => t_rsaKeyWithoutPrivateKey ??= CreateRSA(false);
 
         private static ECParameters CreateECParameters(string curveFriendlyName, string base64UrlQx, string base64UrlQy, string base64UrlPrivateKey)
         {
@@ -247,28 +258,6 @@ namespace System.Security.Cryptography.Cose.Tests
             return ECDsa.Create(parametersLocalCopy);
         }
 
-        internal static Dictionary<ECDsaAlgorithm, ECDsa> CreateECDsaDictionary(bool includePrivateKey)
-        {
-            if (includePrivateKey)
-            {
-                return new Dictionary<ECDsaAlgorithm, ECDsa>(3)
-                {
-                    { ECDsaAlgorithm.ES256, _es256 },
-                    { ECDsaAlgorithm.ES384, _es384 },
-                    { ECDsaAlgorithm.ES512, _es512 },
-                };
-            }
-            else
-            {
-                return new Dictionary<ECDsaAlgorithm, ECDsa>(3)
-                {
-                    { ECDsaAlgorithm.ES256, _es256WithoutPrivateKey },
-                    { ECDsaAlgorithm.ES384, _es384WithoutPrivateKey },
-                    { ECDsaAlgorithm.ES512, _es512WithoutPrivateKey },
-                };
-            }
-        }
-
         private static RSA CreateRSA(bool includePrivateKey)
         {
             var rsaParameters = new RSAParameters
@@ -289,6 +278,25 @@ namespace System.Security.Cryptography.Cose.Tests
             }
 
             return RSA.Create(rsaParameters);
+        }
+
+        internal class ThreadStaticECDsaDictionary: Dictionary<ECDsaAlgorithm, ECDsa>
+        {
+            private bool _includePrivateKeys;
+            public ThreadStaticECDsaDictionary(bool includePrivateKeys)
+            {
+                _includePrivateKeys = includePrivateKeys;
+            }
+            public new ECDsa this[ECDsaAlgorithm key]
+            {
+                get => key switch
+                {
+                    ECDsaAlgorithm.ES256 => _includePrivateKeys ? ES256 : ES256WithoutPrivateKey,
+                    ECDsaAlgorithm.ES384 => _includePrivateKeys ? ES384 : ES384WithoutPrivateKey,
+                    ECDsaAlgorithm.ES512 => _includePrivateKeys ? ES512 : ES512WithoutPrivateKey,
+                    _ => throw new InvalidOperationException()
+                };
+            }
         }
     }
 }
