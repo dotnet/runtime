@@ -141,12 +141,12 @@ jobs:
       nameSuffix: LibraryTests_EAT
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=false
       timeoutInMinutes: 180
-      condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+      #condition: >-
+        #or(
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          #eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -180,12 +180,12 @@ jobs:
       nameSuffix: LibraryTests_AOT
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true /p:BrowserHost=$(_hostedOs)
       timeoutInMinutes: 180
-      condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+      #condition: >-
+        #or(
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          #eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -334,12 +334,12 @@ jobs:
       nameSuffix: LibraryTests
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs)
       timeoutInMinutes: 180
-      condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+      #condition: >-
+        #or(
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          #eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
