@@ -10,6 +10,8 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
+using System.Net.WebSockets;
+using System.Reflection.Metadata;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -419,7 +421,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                         commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
                     if (method.ArgumentList != null)
                     {
-                        commandParamsObjWriter.Write((int)method.ArgumentList.Arguments.Count + isTryingLinq);
+                        var methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
+                        var defaultParamsInfo = methodInfo?.Info?.GetDefaultParams();
+                        var defaultParamsCnt = defaultParamsInfo == null ? 0 : defaultParamsInfo.Count;
+                        commandParamsObjWriter.Write((int)method.ArgumentList.Arguments.Count + defaultParamsCnt + isTryingLinq);
                         if (isTryingLinq == 1)
                             commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
                         foreach (var arg in method.ArgumentList.Arguments)
@@ -436,15 +441,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     return null;
                             }
                         }
+                        foreach (var paramInfo in defaultParamsInfo)
+                        {
+                            if (!await commandParamsObjWriter.WriteConst(paramInfo.Item1, paramInfo.Item2, context.SdbAgent, token))
+                                return null;
+                        }
                         var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);
                         return await GetValueFromObject(retMethod, token);
                     }
                 }
                 return null;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new Exception($"Unable to evaluate method '{methodName}'");
+                throw new Exception($"Unable to evaluate method '{methodName}. {ex.Message}'");
             }
         }
     }

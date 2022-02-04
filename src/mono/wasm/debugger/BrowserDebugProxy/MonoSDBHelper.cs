@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Text;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -525,6 +526,62 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             Write(bytes.Length);
             Write(bytes);
+        }
+
+        public async Task<bool> WriteConst(ConstantTypeCode type, byte[] bytes, MonoSDBHelper SdbHelper, CancellationToken token)
+        {
+            switch (type)
+            {
+                case ConstantTypeCode.Invalid:
+                    return false;
+                case ConstantTypeCode.Boolean:
+                    Write(ElementType.Boolean, BitConverter.ToBoolean(bytes));
+                    return true;
+                case ConstantTypeCode.Char:
+                    Write(ElementType.Char, BitConverter.ToChar(bytes));
+                    return true;
+                case ConstantTypeCode.SByte:
+                    Write(ElementType.I1, bytes[0]);
+                    return true;
+                case ConstantTypeCode.Byte:
+                    Write(ElementType.U1, bytes[0]);
+                    return true;
+                case ConstantTypeCode.Int16:
+                    Write(ElementType.I2, BitConverter.ToInt16(bytes, 0));
+                    return true;
+                case ConstantTypeCode.UInt16:
+                    Write(ElementType.U2, BitConverter.ToUInt16(bytes, 0));
+                    return true;
+                case ConstantTypeCode.Int32:
+                    Write(ElementType.I4, BitConverter.ToInt32(bytes, 0));
+                    return true;
+                case ConstantTypeCode.UInt32:
+                    Write(ElementType.U4, BitConverter.ToUInt32(bytes, 0));
+                    return true;
+                case ConstantTypeCode.Int64:
+                    Write(ElementType.I8, BitConverter.ToInt64(bytes, 0));
+                    return true;
+                case ConstantTypeCode.UInt64:
+                    Write(ElementType.U8, BitConverter.ToUInt64(bytes, 0));
+                    return true;
+                case ConstantTypeCode.Single:
+                    Write(ElementType.R4, BitConverter.ToSingle(bytes, 0));
+                    return true;
+                case ConstantTypeCode.Double:
+                    Write(ElementType.R8, BitConverter.ToDouble(bytes, 0));
+                    return true;
+                case ConstantTypeCode.String:
+                    var stringVal = BitConverter.ToString(bytes, 0);
+                    int stringId = await SdbHelper.CreateString(stringVal, token);
+                    Write(ElementType.String, stringId);
+                    return true;
+                case ConstantTypeCode.NullReference:
+                    Write((byte)ValueTypeId.Null);
+                    Write((byte)0); //not used
+                    Write((int)0);  //not used
+                    return true;
+            }
+            return false;
         }
 
         public async Task<bool> WriteConst(LiteralExpressionSyntax constValue, MonoSDBHelper SdbHelper, CancellationToken token)

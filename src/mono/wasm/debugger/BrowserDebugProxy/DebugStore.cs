@@ -406,6 +406,20 @@ namespace Microsoft.WebAssembly.Diagnostics
             localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
         }
 
+        public List<(ConstantTypeCode, byte[])> GetDefaultParams()
+        {
+            var defParamInfo = new List<(ConstantTypeCode, byte[])>();
+            foreach (var parameterHandle in methodDef.GetParameters())
+            {
+                var parameter = Assembly.asmMetadataReader.GetParameter(parameterHandle);
+                var constantHandle = parameter.GetDefaultValue();
+                var blobHandle = Assembly.asmMetadataReader.GetConstant(constantHandle);
+                var paramBytes = Assembly.asmMetadataReader.GetBlobBytes(blobHandle.Value);
+                defParamInfo.Add((blobHandle.TypeCode, paramBytes));
+            }
+            return defParamInfo;
+        }
+
         public void UpdateEnC(MetadataReader asmMetadataReader, MetadataReader pdbMetadataReaderParm, int method_idx)
         {
             this.DebugInformation = pdbMetadataReaderParm.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(method_idx));
