@@ -382,6 +382,28 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
+        public override async Task CancelUpdatesQueueLimit()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,
+                TimeSpan.Zero, 1, autoReplenishment: false));
+            var lease = limiter.Acquire(1);
+            Assert.True(lease.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            var wait = limiter.WaitAsync(1, cts.Token);
+
+            cts.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(() => wait.AsTask());
+
+            wait = limiter.WaitAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            limiter.TryReplenish();
+            lease = await wait;
+            Assert.True(lease.IsAcquired);
+        }
+
+        [Fact]
         public override void NoMetadataOnAcquiredLease()
         {
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,

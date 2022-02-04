@@ -118,13 +118,13 @@ namespace System.Threading.RateLimiting
                     }
                 }
 
-                TaskCompletionSource<RateLimitLease> tcs = new TaskCompletionSource<RateLimitLease>(TaskCreationOptions.RunContinuationsAsynchronously);
+                WrappedTCS tcs = new WrappedTCS(permitCount, this);
                 CancellationTokenRegistration ctr = default;
                 if (cancellationToken.CanBeCanceled)
                 {
                     ctr = cancellationToken.Register(static obj =>
                     {
-                        ((TaskCompletionSource<RateLimitLease>)obj!).TrySetException(new OperationCanceledException());
+                        ((WrappedTCS)obj!).TryCancel();
                     }, tcs);
                 }
 
@@ -194,7 +194,6 @@ namespace System.Threading.RateLimiting
 
                         _permitCount -= nextPendingRequest.Count;
                         _queueCount -= nextPendingRequest.Count;
-                        Debug.Assert(_queueCount >= 0);
                         Debug.Assert(_permitCount >= 0);
 
                         ConcurrencyLease lease = nextPendingRequest.Count == 0 ? SuccessfulLease : new ConcurrencyLease(true, this, nextPendingRequest.Count);
@@ -203,8 +202,11 @@ namespace System.Threading.RateLimiting
                         {
                             // Queued item was canceled so add count back
                             _permitCount += nextPendingRequest.Count;
+                            // Updating queue count is handled by the cancellation code
+                            _queueCount += nextPendingRequest.Count;
                         }
                         nextPendingRequest.CancellationTokenRegistration.Dispose();
+                        Debug.Assert(_queueCount >= 0);
                     }
                     else
                     {
@@ -318,6 +320,29 @@ namespace System.Threading.RateLimiting
             public TaskCompletionSource<RateLimitLease> Tcs { get; }
 
             public CancellationTokenRegistration CancellationTokenRegistration { get; }
+        }
+
+        private class WrappedTCS : TaskCompletionSource<RateLimitLease>
+        {
+            private readonly int PermitCount;
+            private readonly ConcurrencyLimiter Limiter;
+
+            public WrappedTCS(int permitCount, ConcurrencyLimiter limiter) : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            {
+                PermitCount = permitCount;
+                Limiter = limiter;
+            }
+
+            public void TryCancel()
+            {
+                if (TrySetException(new OperationCanceledException()))
+                {
+                    lock (Limiter.Lock)
+                    {
+                        Limiter._queueCount -= PermitCount;
+                    }
+                }
+            }
         }
     }
 }
