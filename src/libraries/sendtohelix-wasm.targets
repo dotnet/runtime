@@ -156,7 +156,6 @@
       <_WasmWorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" Condition="'$(Scenario)' == 'BuildWasmApps'" />
 
       <_WasmWorkItem Include="$(TestArchiveTestsRoot)**/Wasm.Debugger.Tests.zip"               Condition="'$(IsWasmDebuggerTests)' == 'true'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"                          Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -165,6 +164,19 @@
     </PropertyGroup>
 
     <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
+    
+    <ItemGroup Condition="'$(EnableDefaultBuildHelixWorkItems)' == 'true'">
+      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"                          Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip"                      Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip"                      Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)nodejsonly/**/*.zip"                           Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" />
+
+      <HelixWorkItem Include="@(_WasmWorkItem -> '$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
 
     <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
       <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Extension)')">
