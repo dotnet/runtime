@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -82,13 +81,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 		}
 
-		private static IEnumerable<AdditionalText> GetAdditionalFiles(string rootSourceDir, SyntaxTree tree)
+		private static IEnumerable<AdditionalText> GetAdditionalFiles (string rootSourceDir, SyntaxTree tree)
 		{
 			var resolver = new XmlFileResolver (rootSourceDir);
 			foreach (var attribute in tree.GetRoot ().DescendantNodes ().OfType<AttributeSyntax> ()) {
 				if (attribute.Name.ToString () == nameof (SetupLinkAttributesFile)
 					|| (attribute.Name.ToString ().Contains ("SetupCompileResource")
-						&& (string?) attribute.ArgumentList?.Arguments[1].ToString () == "\"ILLink.LinkAttributes.xml\"")) {
+						&& (attribute.ArgumentList?.Arguments[1].ToString ()) == "\"ILLink.LinkAttributes.xml\"")) {
 					var xmlFileName = attribute.ArgumentList?.Arguments[0].ToString ().Trim ('"') ?? "";
 					var resolvedPath = resolver.ResolveReference (xmlFileName, rootSourceDir);
 					if (resolvedPath != null) {

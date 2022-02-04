@@ -4,7 +4,6 @@
 using System;
 using System.Threading.Tasks;
 using ILLink.Shared;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
@@ -16,8 +15,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 {
 	public class RequiresDynamicCodeAnalyzerTests
 	{
-		static readonly DiagnosticDescriptor dynamicInvocationDiagnosticDescriptor = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresUnreferencedCode, new DiagnosticString ("DynamicTypeInvocation"));
-
 		static readonly string dynamicCodeAttribute = @"
 #nullable enable
 
