@@ -1965,8 +1965,14 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_AdvSimd_CompareEqual:
+            case NI_AdvSimd_CompareGreaterThan:
+            case NI_AdvSimd_CompareGreaterThanOrEqual:
             case NI_AdvSimd_Arm64_CompareEqual:
             case NI_AdvSimd_Arm64_CompareEqualScalar:
+            case NI_AdvSimd_Arm64_CompareGreaterThan:
+            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
+            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
             {
                 if (intrin.op1->IsVectorZero() && HWIntrinsicInfo::IsCommutative(intrin.id))
                 {

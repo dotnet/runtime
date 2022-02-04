@@ -389,13 +389,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     case INS_cmeq:
                     case INS_cmge:
                     case INS_cmgt:
-                    case INS_cmle:
-                    case INS_cmlt:
                     case INS_fcmeq:
                     case INS_fcmge:
                     case INS_fcmgt:
-                    case INS_fcmle:
-                    case INS_fcmlt:
                     {
                         numOperands -= 1;
                         break;
