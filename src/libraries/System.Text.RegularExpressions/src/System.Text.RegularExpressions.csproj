@@ -18,6 +18,7 @@
     <Compile Include="System\Text\RegularExpressions\MatchCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Cache.cs" />
+    <Compile Include="System\Text\RegularExpressions\Regex.Count.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Debug.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Match.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Replace.cs" />
@@ -33,6 +34,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexMatchTimeoutException.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexNode.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexNodeKind.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexOpcode.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexOptions.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexParseError.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexParseException.cs" />

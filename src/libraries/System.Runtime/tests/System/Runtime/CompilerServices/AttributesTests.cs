@@ -320,5 +320,11 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(firstParameterName, attr2.Arguments[0]);
             Assert.Equal("param2", attr2.Arguments[1]);
         }
+
+        [Fact]
+        public static void RequiredMemberAttributeTests()
+        {
+            new RequiredMemberAttribute();
+        }
     }
 }

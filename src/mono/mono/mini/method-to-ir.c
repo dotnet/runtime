@@ -7214,17 +7214,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					g_assert (!fsig->hasthis && !fsig->pinvoke);
 
-					gboolean inline_wrapper = cfg->opt & MONO_OPT_INLINE || cfg->compile_aot;
-					if (inline_wrapper) {
-						int costs = inline_method (cfg, wrapper, fsig, sp, ip, cfg->real_offset, TRUE, NULL);
-						CHECK_CFG_EXCEPTION;
-						g_assert (costs > 0);
-						cfg->real_offset += 5;
-						inline_costs += costs;
-						ins = sp[0];
-					} else {
-						ins = mono_emit_method_call (cfg, wrapper, /*args*/sp, NULL);
-					}
+					ins = mono_emit_method_call (cfg, wrapper, /*args*/sp, NULL);
 					goto calli_end;
 				}
 			}

@@ -445,8 +445,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
         else if (block == genReturnBB)
         {
             // Don't remove statements for the genReturnBB block, as we might have special hookups there.
-            // For example, <BUGNUM> in VSW 364383, </BUGNUM>
-            // the profiler hookup needs to have the "void GT_RETURN" statement
+            // For example, the profiler hookup needs to have the "void GT_RETURN" statement
             // to properly set the info.compProfilerCallback flag.
             continue;
         }
@@ -478,10 +477,9 @@ bool Compiler::fgRemoveUnreachableBlocks()
 
         if (block->bbFlags & BBF_DONT_REMOVE)
         {
-            bool bIsBBCallAlwaysPair = block->isBBCallAlwaysPair();
+            const bool bIsBBCallAlwaysPair = block->isBBCallAlwaysPair();
 
-            /* Unmark the block as removed, */
-            /* clear BBF_INTERNAL as well and set BBJ_IMPORTED */
+            // Unmark the block as removed, clear BBF_INTERNAL, and set BBJ_IMPORTED
 
             // The successors may be unreachable after this change.
             changed |= block->NumSucc() > 0;
@@ -518,7 +516,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
 
             if (block->bbFlags & BBF_REMOVED)
             {
-                fgRemoveBlock(block, true);
+                fgRemoveBlock(block, /* unreachable */ true);
 
                 // TODO: couldn't we have fgRemoveBlock() return the block after the (last)one removed
                 // so we don't need the code below?
@@ -2285,8 +2283,7 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 {
     // genReturnBB should never be removed, as we might have special hookups there.
     // Therefore, we should never come here to remove the statements in the genReturnBB block.
-    // For example, <BUGNUM> in VSW 364383, </BUGNUM>
-    // the profiler hookup needs to have the "void GT_RETURN" statement
+    // For example, the profiler hookup needs to have the "void GT_RETURN" statement
     // to properly set the info.compProfilerCallback flag.
     noway_assert(block != genReturnBB);
 
@@ -2308,10 +2305,7 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
     assert(!block->isBBCallAlwaysPairTail()); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
 #endif
 
-    /* First walk the statement trees in this basic block and delete each stmt */
-
-    /* Make the block publicly available */
-    compCurBB = block;
+    // First, delete all the code in the block.
 
     if (block->IsLIR())
     {
@@ -2343,13 +2337,13 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
         noway_assert(block->bbStmtList == nullptr);
     }
 
-    /* Next update the loop table and bbWeights */
+    // Next update the loop table and bbWeights
     optUpdateLoopsBeforeRemoveBlock(block);
 
-    /* Mark the block as removed */
+    // Mark the block as removed
     block->bbFlags |= BBF_REMOVED;
 
-    /* update bbRefs and bbPreds for the blocks reached by this block */
+    // Update bbRefs and bbPreds for the blocks reached by this block
     fgRemoveBlockAsPred(block);
 }
 
@@ -2825,7 +2819,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
 
             /* Remove the block */
             compCurBB = block;
-            fgRemoveBlock(block, false);
+            fgRemoveBlock(block, /* unreachable */ false);
             return true;
 
         default:
@@ -6108,7 +6102,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                 /* no references -> unreachable - remove it */
                 /* For now do not update the bbNum, do it at the end */
 
-                fgRemoveBlock(block, true);
+                fgRemoveBlock(block, /* unreachable */ true);
 
                 change   = true;
                 modified = true;
@@ -6126,7 +6120,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                     case BBJ_ALWAYS:
                         if (block->bbJumpDest == block)
                         {
-                            fgRemoveBlock(block, true);
+                            fgRemoveBlock(block, /* unreachable */ true);
 
                             change   = true;
                             modified = true;

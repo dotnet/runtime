@@ -71,11 +71,6 @@ namespace System.Runtime.InteropServices.Tests
                 var (msgSend, func) = msgSendOverrides[0];
                 ObjectiveCMarshal.SetMessageSendCallback(msgSend, func);
                 Assert.Throws<InvalidOperationException>(() => ObjectiveCMarshal.SetMessageSendCallback(msgSend, func));
-
-                // TODO: Remove once https://github.com/dotnet/arcade/issues/5865 is resolved
-                // RemoteExecutor currently only checks the expected exit code if the invoked function returns an int.
-                // Check the exit code to ensure the test will fail if there was a crash that could not be caught by the executor.
-                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -102,11 +97,6 @@ namespace System.Runtime.InteropServices.Tests
                 }
 
                 SetMessageSendCallbackImpl(msgSendArray);
-
-                // TODO: Remove once https://github.com/dotnet/arcade/issues/5865 is resolved
-                // RemoteExecutor currently only checks the expected exit code if the invoked function returns an int.
-                // Check the exit code to ensure the test will fail if there was a crash that could not be caught by the executor.
-                return RemoteExecutor.SuccessExitCode;
             }, string.Join(';', funcsToOverride)).Dispose();
         }
 

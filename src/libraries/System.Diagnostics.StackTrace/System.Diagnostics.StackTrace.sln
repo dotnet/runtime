@@ -21,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.StackTra
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.Tracing", "..\System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj", "{96501106-36D0-4093-8FEE-AF90713D09ED}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib.Generators", "..\System.Private.CoreLib\generators\System.Private.CoreLib.Generators.csproj", "{0269FFAF-E680-4BC8-A1B4-0333D77911BC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib.Generators", "..\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj", "{0269FFAF-E680-4BC8-A1B4-0333D77911BC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Uri", "..\System.Private.Uri\src\System.Private.Uri.csproj", "{E6DD9860-2824-43D3-BD9D-87ED396B4E46}"
 EndProject

@@ -414,7 +414,7 @@ static gboolean buffer_replies;
 	DebuggerTlsData *tls; \
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 #else
-#define GET_TLS_DATA_FROM_THREAD(thread) \
+#define GET_TLS_DATA_FROM_THREAD(...) \
 	DebuggerTlsData *tls; \
 	tls = &debugger_wasm_thread;
 #define GET_DEBUGGER_TLS() \
@@ -1613,6 +1613,12 @@ mono_init_debugger_agent_for_wasm (int log_level_parm, MonoProfilerHandle *prof)
 	agent_config.enabled = TRUE;
 
 	mono_profiler_set_jit_done_callback (*prof, jit_done);
+}
+
+void 
+mono_change_log_level (int new_log_level)
+{
+	log_level = new_log_level;
 }
 #endif
 
@@ -3686,6 +3692,10 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			/* This will keep this object alive */
 			get_objref (keepalive_obj);
 	}
+
+#ifdef TARGET_WASM
+	PRINT_DEBUG_MSG (1, "[%p] Sent %d events %s(%d), suspend=%d.\n", (gpointer) (gsize) mono_native_thread_id_get (), nevents, event_to_string (event), ecount, suspend_policy);
+#endif
 
 	send_success = send_packet (CMD_SET_EVENT, CMD_COMPOSITE, &buf);
 
@@ -9002,7 +9012,6 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_long (buf, (guint64)thread->tid);
 		break;
 	case CMD_THREAD_SET_IP: {
-		DebuggerTlsData *tls;
 		MonoMethod *method;
 		MonoDomain *domain;
 		MonoSeqPointInfo *seq_points;
@@ -9020,9 +9029,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				wait_for_suspend ();
 		}
 
-		mono_loader_lock ();
-		tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls, thread);
-		mono_loader_unlock ();
+		GET_TLS_DATA_FROM_THREAD (thread);
 		g_assert (tls);
 
 		compute_frame_info (thread, tls, FALSE);
@@ -9138,7 +9145,9 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	int objid;
 	ErrorCode err;
 	MonoThread *thread_obj;
+#ifndef TARGET_WASM
 	MonoInternalThread *thread;
+#endif
 	int pos, i, len, frame_idx;
 	StackFrame *frame;
 	MonoDebugMethodJitInfo *jit;
@@ -9152,11 +9161,16 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	if (err != ERR_NONE)
 		return err;
 
+#ifndef TARGET_WASM
 	thread = THREAD_TO_INTERNAL (thread_obj);
-
+#endif
 	id = decode_id (p, &p, end);
 
+#ifndef TARGET_WASM
 	GET_TLS_DATA_FROM_THREAD (thread);
+#else
+	GET_TLS_DATA_FROM_THREAD ();
+#endif
 	g_assert (tls);
 
 	for (i = 0; i < tls->frame_count; ++i) {
