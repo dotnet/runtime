@@ -2653,6 +2653,42 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Waits for the <see cref="Task"/> to complete execution.
         /// </summary>
+        /// <param name="timeout">
+        /// A <see cref="TimeSpan"/> that represents the number of milliseconds to wait, or a <see
+        /// cref="TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// A <see cref="CancellationToken"/> to observe while waiting for the task to complete.
+        /// </param>
+        /// <returns>
+        /// true if the <see cref="Task"/> completed execution within the allotted time; otherwise, false.
+        /// </returns>
+        /// <exception cref="AggregateException">
+        /// The <see cref="Task"/> was canceled -or- an exception was thrown during the execution of the <see
+        /// cref="Task"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents an
+        /// infinite time-out -or- timeout is greater than
+        /// <see cref="int.MaxValue"/>.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The <paramref name="cancellationToken"/> was canceled.
+        /// </exception>
+        public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds is < (-1) or > int.MaxValue)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
+            }
+
+            return Wait((int)totalMilliseconds, cancellationToken);
+        }
+
+        /// <summary>
+        /// Waits for the <see cref="Task"/> to complete execution.
+        /// </summary>
         /// <param name="cancellationToken">
         /// A <see cref="CancellationToken"/> to observe while waiting for the task to complete.
         /// </param>
