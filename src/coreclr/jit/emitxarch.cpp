@@ -581,7 +581,8 @@ static bool IsDstSrcImmAvxInstruction(instruction ins)
 // in use, since that encoding does not require an additional byte.
 bool emitter::Is4ByteSSEInstruction(instruction ins)
 {
-    return !UseVEXEncoding() && EncodedBySSE38orSSE3A(ins);
+    // `SHA` instructions do not support the VEC encoding and are always `SSE38` or `SSE3A`
+    return (!UseVEXEncoding() && EncodedBySSE38orSSE3A(ins)) || IsSHAInstruction(ins);
 }
 
 // Returns true if this instruction requires a VEX prefix
@@ -590,6 +591,7 @@ bool emitter::TakesVexPrefix(instruction ins) const
 {
     // special case vzeroupper as it requires 2-byte VEX prefix
     // special case the fencing, movnti and the prefetch instructions as they never take a VEX prefix
+    // CRC32 and SHA instructions never take a VEX prefix
     switch (ins)
     {
         case INS_lfence:
@@ -601,6 +603,13 @@ bool emitter::TakesVexPrefix(instruction ins) const
         case INS_prefetcht2:
         case INS_sfence:
         case INS_vzeroupper:
+        case INS_crc32:
+        case INS_sha1msg1:
+        case INS_sha1msg2:
+        case INS_sha1nexte:
+        case INS_sha1rnds4:
+        case INS_sha256msg2:
+        case INS_sha256rnds2:
             return false;
         default:
             break;
@@ -10385,7 +10394,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
-        if (UseVEXEncoding() && (ins != INS_crc32))
+        if (UseVEXEncoding() && TakesVexPrefix(ins))
         {
             // Emit last opcode byte
             // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
@@ -11169,7 +11178,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
-        if (UseVEXEncoding() && (ins != INS_crc32))
+        if (UseVEXEncoding() && TakesVexPrefix(ins))
         {
             // Emit last opcode byte
             // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
@@ -11637,7 +11646,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
-        if (UseVEXEncoding() && (ins != INS_crc32))
+        if (UseVEXEncoding() && TakesVexPrefix(ins))
         {
             // Emit last opcode byte
             // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
