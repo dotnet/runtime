@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
+using System.Buffers.Binary;
 
 using Internal.Runtime.CompilerServices;
 
@@ -681,31 +682,85 @@ namespace System
         }
 
         // Determines whether two Strings match.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Equals(string? a, string? b)
         {
-            // Transform 'str == ""' to 'str != null && str.Length == 0' if either a or b are jit-time
-            // constants. Otherwise, these two blocks are eliminated
-            if (RuntimeHelpers.IsKnownConstant(a) && a != null && a.Length == 0)
+#if TARGET_64BIT && !MONO && !BIGENDIAN
+            if (RuntimeHelpers.IsKnownConstant(b) && b != null && b.Length <= 4)
             {
-                return b != null && b.Length == 0;
+                return EqualsUnrolled(a, b);
             }
 
-            if (RuntimeHelpers.IsKnownConstant(b) && b != null && b.Length == 0)
+            if (RuntimeHelpers.IsKnownConstant(a) && a != null && a.Length <= 4)
             {
-                return a != null && a.Length == 0;
+                return EqualsUnrolled(b, a);
             }
 
-            if (object.ReferenceEquals(a, b))
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static bool EqualsUnrolled(string? a, string b)
             {
-                return true;
-            }
+                // if both are constants - EqualsInternal will handle it just fine
+                if (RuntimeHelpers.IsKnownConstant(a))
+                {
+                    return EqualsInternal(a, b);
+                }
 
-            if (a is null || b is null || a.Length != b.Length)
+                if (b.Length == 0)
+                {
+                    return a != null && a.Length == 0;
+                }
+
+                if (b.Length == 1)
+                {
+                    return a != null &&
+                        // Length: [ 0 ][ 1 ], ch1: [ X ][ \0 ] - we can compare Length and firstChar using a single
+                        // cmp operation, it's safe because there is also '\0' char we can rely on
+                        Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, -2))) ==
+                            (((ulong)b[0] << 32) | 1UL);
+                }
+
+                if (b.Length == 2)
+                {
+                    // Same here, compare Length and two chars in a single cmp
+                    return a != null &&
+                        Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, -2))) ==
+                            (((ulong)b[1] << 48) | ((ulong)b[0] << 32) | 2UL);
+                }
+
+                if (b.Length == 3)
+                {
+                    // it's safe to load 64bit here because of '\0' but we need to mask the last char out
+                    return a != null && a.Length == 3 &&
+                        Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
+                            (((ulong)b[2] << 32) | ((ulong)b[1] << 16) | (ulong)b[0]);
+                }
+
+                if (b.Length == 4)
+                {
+                    return a != null && a.Length == 4 &&
+                        Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
+                            (((ulong)b[3] << 48) | ((ulong)b[2] << 32) | ((ulong)b[1] << 16) | b[0]);
+                }
+
+                return EqualsInternal(a, b);
+            }
+#endif
+            return EqualsInternal(a, b);
+
+            static bool EqualsInternal(string? a, string? b)
             {
-                return false;
-            }
+                if (object.ReferenceEquals(a, b))
+                {
+                    return true;
+                }
 
-            return EqualsHelper(a, b);
+                if (a is null || b is null || a.Length != b.Length)
+                {
+                    return false;
+                }
+
+                return EqualsHelper(a, b);
+            }
         }
 
         public static bool Equals(string? a, string? b, StringComparison comparisonType)
@@ -953,9 +1008,11 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            return StartsWith(value, StringComparison.CurrentCulture);
+            return CultureInfo.CurrentCulture.CompareInfo.IsPrefix(this, value, GetCaseCompareOfComparisonCulture(StringComparison.CurrentCulture));
         }
 
+        // A hint for the inliner to always prescan this method
+        // and take the constant input path
         public bool StartsWith(string value, StringComparison comparisonType)
         {
             if (value is null)
@@ -963,49 +1020,92 @@ namespace System
                 throw new ArgumentNullException(nameof(value));
             }
 
-            if ((object)this == (object)value)
+#if TARGET_64BIT && !MONO && !BIGENDIAN
+            if (RuntimeHelpers.IsKnownConstant(value) && RuntimeHelpers.IsKnownConstant((int)comparisonType) &&
+                comparisonType == StringComparison.Ordinal && value.Length <= 4)
             {
-                CheckStringComparison(comparisonType);
-                return true;
+                return StartsWithUnrolledOrdinal(value);
             }
 
-            if (value.Length == 0)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            bool StartsWithUnrolledOrdinal(string value)
             {
-                CheckStringComparison(comparisonType);
-                return true;
+                if (value.Length == 0)
+                {
+                    return true;
+                }
+                if (value.Length == 1)
+                {
+                    return _stringLength >= 1 && _firstChar == value[0];
+                }
+                if (value.Length == 2)
+                {
+                    return _stringLength >= 2 && Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref _firstChar)) ==
+                        (((uint)value[1] << 16) | value[0]);
+                }
+                if (value.Length == 3)
+                {
+                    // it's safe to load 64bit here because of '\0' but we need to mask the last char out
+                    return _stringLength >= 3 && Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref _firstChar)) << 16 ==
+                        (((ulong)value[2] << 48) | ((ulong)value[1] << 32) | (ulong)value[0] << 16);
+                }
+                if (value.Length == 4)
+                {
+                    return _stringLength >= 4 && Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref _firstChar)) ==
+                        (((ulong)value[3] << 48) | ((ulong)value[2] << 32) | ((ulong)value[1] << 16) | value[0]);
+                }
+                return StartsWithInternal(value, StringComparison.Ordinal);
             }
+#endif
 
-            switch (comparisonType)
+            return StartsWithInternal(value, comparisonType);
+
+            bool StartsWithInternal(string value, StringComparison comparisonType)
             {
-                case StringComparison.CurrentCulture:
-                case StringComparison.CurrentCultureIgnoreCase:
-                    return CultureInfo.CurrentCulture.CompareInfo.IsPrefix(this, value, GetCaseCompareOfComparisonCulture(comparisonType));
+                if ((object)this == (object)value)
+                {
+                    CheckStringComparison(comparisonType);
+                    return true;
+                }
 
-                case StringComparison.InvariantCulture:
-                case StringComparison.InvariantCultureIgnoreCase:
-                    return CompareInfo.Invariant.IsPrefix(this, value, GetCaseCompareOfComparisonCulture(comparisonType));
+                if (value.Length == 0)
+                {
+                    CheckStringComparison(comparisonType);
+                    return true;
+                }
 
-                case StringComparison.Ordinal:
-                    if (this.Length < value.Length || _firstChar != value._firstChar)
-                    {
-                        return false;
-                    }
-                    return (value.Length == 1) ?
-                            true :                 // First char is the same and thats all there is to compare
-                            SpanHelpers.SequenceEqual(
-                                ref Unsafe.As<char, byte>(ref this.GetRawStringData()),
-                                ref Unsafe.As<char, byte>(ref value.GetRawStringData()),
-                                ((nuint)value.Length) * 2);
+                switch (comparisonType)
+                {
+                    case StringComparison.CurrentCulture:
+                    case StringComparison.CurrentCultureIgnoreCase:
+                        return CultureInfo.CurrentCulture.CompareInfo.IsPrefix(this, value, GetCaseCompareOfComparisonCulture(comparisonType));
 
-                case StringComparison.OrdinalIgnoreCase:
-                    if (this.Length < value.Length)
-                    {
-                        return false;
-                    }
-                    return Ordinal.EqualsIgnoreCase(ref this.GetRawStringData(), ref value.GetRawStringData(), value.Length);
+                    case StringComparison.InvariantCulture:
+                    case StringComparison.InvariantCultureIgnoreCase:
+                        return CompareInfo.Invariant.IsPrefix(this, value, GetCaseCompareOfComparisonCulture(comparisonType));
 
-                default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
+                    case StringComparison.Ordinal:
+                        if (this.Length < value.Length || _firstChar != value._firstChar)
+                        {
+                            return false;
+                        }
+                        return (value.Length == 1) ?
+                                true :                 // First char is the same and thats all there is to compare
+                                SpanHelpers.SequenceEqual(
+                                    ref Unsafe.As<char, byte>(ref this.GetRawStringData()),
+                                    ref Unsafe.As<char, byte>(ref value.GetRawStringData()),
+                                    ((nuint)value.Length) * 2);
+
+                    case StringComparison.OrdinalIgnoreCase:
+                        if (this.Length < value.Length)
+                        {
+                            return false;
+                        }
+                        return Ordinal.EqualsIgnoreCase(ref this.GetRawStringData(), ref value.GetRawStringData(), value.Length);
+
+                    default:
+                        throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
+                }
             }
         }
 
