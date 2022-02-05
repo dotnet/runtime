@@ -696,7 +696,7 @@ namespace System.Reflection.Tests
             AssertExtensions.Throws<ArgumentException>("assemblyName", () => Assembly.Load(string.Empty));
 
             string emptyCName = new string('\0', 1);
-            AssertExtensions.Throws<ArgumentException>("assemblyName", () => Assembly.Load(emptyCName));
+            Assert.Throws<ArgumentException>(() => Assembly.Load(emptyCName));
 
             Assert.Throws<FileNotFoundException>(() => Assembly.Load("no such assembly")); // No such assembly
         }
