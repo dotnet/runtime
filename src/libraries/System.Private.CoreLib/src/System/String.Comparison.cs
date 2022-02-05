@@ -682,28 +682,39 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong ReadUInt64(string str) =>
+            Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref str._firstChar));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong ReadUInt64(string str, nint offset) =>
+            Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref str._firstChar, offset)));
+
         // Determines whether two Strings match.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Equals(string? a, string? b)
         {
 #if TARGET_64BIT && !MONO && !BIGENDIAN
-            if (RuntimeHelpers.IsKnownConstant(b) && !RuntimeHelpers.IsKnownConstant(a) &&
-                b != null && b.Length <= 4)
+            // Try to unroll Equals in case of constant 'b' for b.Length in [0..16] range
+            if (RuntimeHelpers.IsKnownConstant(b) && !RuntimeHelpers.IsKnownConstant(a) && b != null)
             {
-                return EqualsUnrolled(a, b);
+                // Unroll using SWAR
+                if (b.Length <= 8)
+                {
+                    return EqualsUnrolled_0_to_8(a, b);
+                }
+                // Unroll using Vector128 (SSE or AdvSimd)
+                if (b.Length >= 9 && b.Length <= 16 && Vector128.IsHardwareAccelerated)
+                {
+                    return EqualsUnrolled_9_to_16(a, b);
+                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool EqualsUnrolled(string? a, string b)
+            static bool EqualsUnrolled_0_to_8(string? a, string b)
             {
                 if (a != null)
                 {
-                    if (b.Length == 0)
-                    {
-                        // Fold Equals(a, "") to 'a != null && a.Length == 0'
-                        return a.Length == 0;
-                    }
-
                     // String's layout:
                     //
                     // bytes: [ ][ ][ ][ ][ ][ ][ ][ ] ... [ ][ ][ ][ ]
@@ -711,59 +722,47 @@ namespace System
                     //
                     // We can always rely on 2 bytes representing '\0' at the end
 
+                    // Fold Equals(a, "") to 'a != null && a.Length == 0'
+                    if (b.Length == 0)
+                    {
+                        return a.Length == 0;
+                    }
                     if (b.Length == 1)
                     {
                         // Compare Length, firstChar and '\0' using a single 64bit cmp
-                        return
-                            Unsafe.ReadUnaligned<ulong>(
-                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, -2))) ==
-                                    (((ulong)b[0] << 32) | 1UL);
+                        return ReadUInt64(a, -2) == (((ulong)b[0] << 32) | 1UL);
                     }
-
                     if (b.Length == 2)
                     {
                         // Compare Length, firstChar, secondChar using a single 64bit cmp
-                        return
-                            Unsafe.ReadUnaligned<ulong>(
-                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, -2))) ==
-                                    (((ulong)b[1] << 48) | ((ulong)b[0] << 32) | 2UL);
+                        return ReadUInt64(a, -2) == (((ulong)b[1] << 48) | ((ulong)b[0] << 32) | 2UL);
                     }
-
                     if (b.Length == 3)
                     {
                         // it's safe to load 64bit here because of '\0'
-                        return a.Length == 3 &&
-                            Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
-                                (((ulong)b[2] << 32) | ((ulong)b[1] << 16) | (ulong)b[0]);
+                        return a.Length == 3 && ReadUInt64(a) == (((ulong)b[2] << 32) | ((ulong)b[1] << 16) | b[0]);
                     }
 
-                    //Debug.Assert(b.Length == 4);
-
-                    return a.Length == 4 &&
-                        Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
-                            (((ulong)b[3] << 48) | ((ulong)b[2] << 32) | ((ulong)b[1] << 16) | b[0]);
+                    ulong v1 = ReadUInt64(a);
+                    ulong cns1 = ((ulong)b[3] << 48) | ((ulong)b[2] << 32) | ((ulong)b[1] << 16) | b[0];
+                    if (b.Length == 4)
+                    {
+                        return a.Length == 4 && v1 == cns1;
+                    }
+                    // Handle Length [5..8] via two ulong (overlapped)
+                    return v1 == cns1 && ReadUInt64(a, a.Length - 4) ==
+                        (((ulong)b[b.Length - 1] << 48) | ((ulong)b[b.Length - 2] << 32) | ((ulong)b[b.Length - 3] << 16) | b[b.Length - 4]);
                 }
 
                 // a is null when b is a known non-null
                 return false;
             }
 
-            // Vectorized unrolling demo:
-
-            if (RuntimeHelpers.IsKnownConstant(b) && b != null && b.Length >= 8 && b.Length <= 16) // TODO: 16
-            {
-                return EqualsUnrolled_8_to_16_Vector128(a, b);
-            }
-
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool EqualsUnrolled_8_to_16_Vector128(string? a, string b)
+            static bool EqualsUnrolled_9_to_16(string? a, string b)
             {
                 if (a != null)
                 {
-                    // if both are constants - EqualsInternal will handle it just fine
-                    if (RuntimeHelpers.IsKnownConstant(a))
-                        return EqualsInternal(a, b);
-
                     // Load 'a' into two vectors with overlapping.
                     // TODO: special case len == 7, 8 (single V128 operation) and len == 15, 16 (single V256 operation)
                     // for len = 7 and len 15 we can rely on '\0'
@@ -786,11 +785,10 @@ namespace System
                 // a is null when b is a known non-null
                 return false;
             }
-
 #endif
-            return EqualsInternal(a, b);
+            return EqualsFallback(a, b);
 
-            static bool EqualsInternal(string? a, string? b)
+            static bool EqualsFallback(string? a, string? b)
             {
                 if (object.ReferenceEquals(a, b))
                 {
