@@ -829,6 +829,12 @@ namespace System.Diagnostics
             return WaitForInputIdleCore(milliseconds);
         }
 
+        public bool WaitForInputIdle(TimeSpan timeout)
+        {
+            int milliseconds = (int)timeout.TotalMilliseconds;
+            return WaitForInputIdleCore(milliseconds);
+        }
+
         public ISynchronizeInvoke? SynchronizingObject { get; set; }
 
         /// <devdoc>
@@ -1423,6 +1429,16 @@ namespace System.Diagnostics
                 RaiseOnExited();
             }
             return exited;
+        }
+
+        /// <summary>
+        /// Instructs the Process component to wait the specified number of milliseconds for
+        /// the associated process to exit.
+        /// </summary>
+        public bool WaitForExit(TimeSpan timeout)
+        {
+            int milliseconds = (int)timeout.TotalMilliseconds;
+            return WaitForExit(milliseconds);
         }
 
         /// <summary>
