@@ -5183,7 +5183,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 
     noway_assert(elemTyp != TYP_STRUCT || elemStructType != nullptr);
 
-    if (opts.OptimizationEnabled())
+    if (opts.OptimizationEnabled() && fgGlobalMorph)
     {
         // Fold possible constant expressions
         asIndex->Index() = gtFoldExpr(asIndex->Index());
