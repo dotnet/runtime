@@ -20,7 +20,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="System.Formats.Cbor" Version="$(SystemFormatsCborVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Cbor\src\System.Formats.Cbor.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
