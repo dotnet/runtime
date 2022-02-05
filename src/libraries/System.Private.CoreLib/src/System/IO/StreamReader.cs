@@ -210,12 +210,9 @@ namespace System.IO
 
         private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
         {
-            ValidateArgs(path, encoding);
-
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
+            ArgumentNullException.ThrowIfNull(options);
             if ((options.Access & FileAccess.Read) == 0)
             {
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(options));
@@ -226,21 +223,14 @@ namespace System.IO
 
         private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize)
         {
-            ValidateArgs(path, encoding);
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
             if (bufferSize <= 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            }
 
             return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize);
-        }
-
-        private static void ValidateArgs(string path, Encoding encoding)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath);
         }
 
         public override void Close()
@@ -1386,7 +1376,7 @@ namespace System.IO
 
         // No data, class doesn't need to be serializable.
         // Note this class is threadsafe.
-        private sealed class NullStreamReader : StreamReader
+        internal sealed class NullStreamReader : StreamReader
         {
             public override Encoding CurrentEncoding => Encoding.Unicode;
 
@@ -1395,35 +1385,46 @@ namespace System.IO
                 // Do nothing - this is essentially unclosable.
             }
 
-            public override int Peek()
-            {
-                return -1;
-            }
+            public override int Peek() => -1;
 
-            public override int Read()
-            {
-                return -1;
-            }
+            public override int Read() => -1;
 
-            public override int Read(char[] buffer, int index, int count)
-            {
-                return 0;
-            }
+            public override int Read(char[] buffer, int index, int count) => 0;
 
-            public override string? ReadLine()
-            {
-                return null;
-            }
+            public override int Read(Span<char> buffer) => 0;
 
-            public override string ReadToEnd()
-            {
-                return string.Empty;
-            }
+            public override Task<int> ReadAsync(char[] buffer, int index, int count) => Task.FromResult(0);
 
-            internal override int ReadBuffer()
-            {
-                return 0;
-            }
+            public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) : default;
+
+            public override int ReadBlock(char[] buffer, int index, int count) => 0;
+
+            public override int ReadBlock(Span<char> buffer) => 0;
+
+            public override Task<int> ReadBlockAsync(char[] buffer, int index, int count) => Task.FromResult(0);
+
+            public override ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) : default;
+
+            public override string? ReadLine() => null;
+
+            public override Task<string?> ReadLineAsync() => Task.FromResult<string?>(null);
+
+            public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<string?>(cancellationToken) : default;
+
+            public override string ReadToEnd() => "";
+
+            public override Task<string> ReadToEndAsync() => Task.FromResult("");
+
+            public override Task<string> ReadToEndAsync(CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? Task.FromCanceled<string>(cancellationToken) : Task.FromResult("");
+
+            internal override ValueTask<int> ReadAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) : default;
+
+            internal override int ReadBuffer() => 0;
         }
     }
 }

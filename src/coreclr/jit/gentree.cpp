@@ -2415,8 +2415,9 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             costEx = IND_COST_EX;
             costSz = 2;
 
-            GenTree* addr = hwTree->Op(1)->gtEffectiveVal();
-            level         = gtSetEvalOrder(addr);
+            GenTree* const addrNode = hwTree->Op(1);
+            level                   = gtSetEvalOrder(addrNode);
+            GenTree* const addr     = addrNode->gtEffectiveVal();
 
             // See if we can form a complex addressing mode.
             if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, hwTree->TypeGet()))
@@ -4176,6 +4177,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 case GT_LCL_VAR:
                 case GT_LCL_FLD:
+                case GT_CLS_VAR:
 
                     // We evaluate op2 before op1
                     bReverseInAssignment = true;
@@ -5792,6 +5794,12 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 //
 GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
 {
+    if (node->IsStringEmptyField())
+    {
+        JITDUMP("Folded String.Empty.Length to 0\n");
+        return gtNewIconNode(0);
+    }
+
     int             length = -1;
     const char16_t* str    = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, &length);
     if (length >= 0)
@@ -5801,11 +5809,11 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
         // str can be NULL for dynamic context
         if (str != nullptr)
         {
-            JITDUMP("String '\"%ws\".Length' is '%d'\n", str, length)
+            JITDUMP("Folded '\"%ws\".Length' to '%d'\n", str, length)
         }
         else
         {
-            JITDUMP("String 'CNS_STR.Length' is '%d'\n", length)
+            JITDUMP("Folded 'CNS_STR.Length' to '%d'\n", length)
         }
         return iconNode;
     }
@@ -11684,11 +11692,34 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
         return tree;
     }
 
-    /* Currently we can only fold when the two subtrees exactly match */
-
-    if ((tree->gtFlags & GTF_SIDE_EFFECT) || GenTree::Compare(op1, op2, true) == false)
+    // Currently we can only fold when the two subtrees exactly match
+    // and everything is side effect free.
+    //
+    if (((tree->gtFlags & GTF_SIDE_EFFECT) != 0) || !GenTree::Compare(op1, op2, true))
     {
-        return tree; /* return unfolded tree */
+        // No folding.
+        //
+        return tree;
+    }
+
+    // GTF_ORDER_SIDEEFF here may indicate volatile subtrees.
+    // Or it may indicate a non-null assertion prop into an indir subtree.
+    //
+    // Check the operands.
+    //
+    if ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+    {
+        // If op1 is "volatle" and op2 is not, we can still fold.
+        //
+        const bool op1MayBeVolatile = (op1->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+        const bool op2MayBeVolatile = (op2->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+
+        if (!op1MayBeVolatile || op2MayBeVolatile)
+        {
+            // No folding.
+            //
+            return tree;
+        }
     }
 
     GenTree* cons;
@@ -15916,6 +15947,9 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     // will effectively treat such cases ("possible" in unsafe code) as undefined behavior.
     if (comp->eeIsFieldStatic(fldSeq->GetFieldHandle()))
     {
+        // TODO-VNTypes: this code is out of sync w.r.t. boxed statics that are numbered with
+        // VNF_PtrToStatic and treated as "simple" while here we treat them as "complex".
+
         // TODO-VNTypes: we will always return the "baseAddr" here for now, but strictly speaking,
         // we only need to do that if we have a shared field, to encode the logical "instantiation"
         // argument. In all other cases, this serves no purpose and just leads to redundant maps.
@@ -22024,8 +22058,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    GenTree* lclVarTree = nullptr;
-    return OperIsConst() || Compiler::impIsAddressInLocal(this, &lclVarTree);
+    return OperIsConst() || Compiler::impIsAddressInLocal(this);
 }
 
 //------------------------------------------------------------------------

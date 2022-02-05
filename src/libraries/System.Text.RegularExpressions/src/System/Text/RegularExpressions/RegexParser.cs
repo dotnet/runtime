@@ -1783,7 +1783,7 @@ namespace System.Text.RegularExpressions
             return capname;
         }
 
-        /// <summary>Returns ReNode type for zero-length assertions with a \ code.</summary>
+        /// <summary>Returns the node kind for zero-length assertions with a \ code.</summary>
         private RegexNodeKind TypeFromCode(char ch) =>
             ch switch
             {
@@ -1796,28 +1796,17 @@ namespace System.Text.RegularExpressions
                 _ => RegexNodeKind.Nothing,
             };
 
-        /// <summary>Returns option bit from single-char (?cimsx) code.</summary>
-        private static RegexOptions OptionFromCode(char ch)
-        {
-            // case-insensitive
-            if ((uint)(ch - 'A') <= 'Z' - 'A')
-            {
-                ch += (char)('a' - 'A');
-            }
-
-            return ch switch
+        /// <summary>Returns option bit from single-char (?imnsx) code.</summary>
+        private static RegexOptions OptionFromCode(char ch) =>
+            (char)(ch | 0x20) switch
             {
                 'i' => RegexOptions.IgnoreCase,
                 'm' => RegexOptions.Multiline,
                 'n' => RegexOptions.ExplicitCapture,
                 's' => RegexOptions.Singleline,
                 'x' => RegexOptions.IgnorePatternWhitespace,
-#if DEBUG
-                'd' => RegexOptions.Debug,
-#endif
-                _ => 0,
+                _ => RegexOptions.None,
             };
-        }
 
         /// <summary>
         /// A prescanner for deducing the slots used for captures by doing a partial tokenization of the pattern.

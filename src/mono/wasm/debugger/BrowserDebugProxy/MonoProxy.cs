@@ -499,6 +499,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                 // Protocol extensions
+                case "DotnetDebugger.setNextIP":
+                    {
+                        var loc = SourceLocation.Parse(args?["location"] as JObject);
+                        if (loc == null)
+                            return false;
+                        var ret = await OnSetNextIP(id, loc, token);
+                        if (ret == true)
+                            SendResponse(id, Result.OkFromObject(new { }), token);
+                        else
+                            SendResponse(id, Result.Err("Set next instruction pointer failed."), token);
+                        return true;
+                    }
                 case "DotnetDebugger.applyUpdates":
                     {
                         if (await ApplyUpdates(id, args, token))
@@ -874,14 +886,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (shouldReturn)
                     return true;
 
-                if (j == 0 &&
-                    (method?.Info.DebuggerAttrInfo.HasStepThrough == true ||
-                    method?.Info.DebuggerAttrInfo.HasDebuggerHidden == true ||
-                    method?.Info.DebuggerAttrInfo.HasStepperBoundary == true ||
-                    (method?.Info.DebuggerAttrInfo.HasNonUserCode == true && JustMyCode)))
+                if (j == 0 && method?.Info.DebuggerAttrInfo.DoAttributesAffectCallStack(JustMyCode) == true)
                 {
-                    if (method.Info.DebuggerAttrInfo.HasDebuggerHidden ||
-                        (method.Info.DebuggerAttrInfo.HasStepperBoundary && event_kind == EventKind.Step))
+                    if (method.Info.DebuggerAttrInfo.ShouldStepOut(event_kind))
                     {
                         if (event_kind == EventKind.Step)
                             context.IsSkippingHiddenMethod = true;
@@ -1051,6 +1058,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case EventKind.Breakpoint:
                     {
                         Breakpoint bp = context.BreakpointRequests.Values.SelectMany(v => v.Locations).FirstOrDefault(b => b.RemoteId == request_id);
+                        if (request_id == context.TempBreakpointForSetNextIP)
+                        {
+                            context.TempBreakpointForSetNextIP = -1;
+                            await context.SdbAgent.RemoveBreakpoint(request_id, token);
+                        }
                         string reason = "other";//other means breakpoint
                         int methodId = 0;
                         if (event_kind != EventKind.UserBreak)
@@ -1515,6 +1527,54 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendResponse(msg_id, Result.OkFromObject(new { }), token);
         }
 
+        private static bool IsNestedMethod(DebugStore store, Frame scope, SourceLocation foundLocation, SourceLocation targetLocation)
+        {
+            if (foundLocation.Line != targetLocation.Line || foundLocation.Column != targetLocation.Column)
+            {
+                SourceFile doc = store.GetFileById(scope.Method.Info.SourceId);
+                foreach (var method in doc.Methods)
+                {
+                    if (method.Token == scope.Method.Info.Token)
+                        continue;
+                    if (method.IsLexicallyContainedInMethod(scope.Method.Info))
+                        continue;
+                    SourceLocation newFoundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
+                                                .FirstOrDefault();
+                    if (!(newFoundLocation is null))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private async Task<bool> OnSetNextIP(MessageId sessionId, SourceLocation targetLocation, CancellationToken token)
+        {
+            DebugStore store = await RuntimeReady(sessionId, token);
+            ExecutionContext context = GetContext(sessionId);
+            Frame scope = context.CallStack.First<Frame>();
+
+            SourceLocation foundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
+                                                    .FirstOrDefault();
+
+            if (foundLocation is null)
+                 return false;
+
+            //search if it's a nested method and it's return false because we cannot move to another method
+            if (IsNestedMethod(store, scope, foundLocation, targetLocation))
+                return false;
+
+            var ilOffset = foundLocation.IlLocation;
+            var ret = await context.SdbAgent.SetNextIP(scope.Method, context.ThreadId, ilOffset, token);
+
+            if (!ret)
+                return false;
+
+            var breakpointId = await context.SdbAgent.SetBreakpoint(scope.Method.DebugId, ilOffset.Offset, token);
+            context.TempBreakpointForSetNextIP = breakpointId;
+            await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+            return true;
+        }
+
         private async Task<bool> OnGetScriptSource(MessageId msg_id, string script_id, CancellationToken token)
         {
             if (!SourceId.TryParse(script_id, out SourceId id))
@@ -1529,7 +1589,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 using (Stream data = await src_file.GetSourceAsync(checkHash: false, token: token))
                 {
-                    if (data.Length == 0)
+                    if (data is MemoryStream && data.Length == 0)
                         return false;
 
                     using (var reader = new StreamReader(data))

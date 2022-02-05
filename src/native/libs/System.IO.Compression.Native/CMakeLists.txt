@@ -21,17 +21,19 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
     append_extra_compression_libs(NATIVE_LIBS_EXTRA)
 
     if (CLR_CMAKE_TARGET_BROWSER)
-        add_definitions(-s USE_ZLIB)
-    else ()
-        # Disable implicit fallthrough warning for Brotli
-        set(FLAGS -Wno-implicit-fallthrough)
+        include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
+        add_definitions(-DINTERNAL_ZLIB)
+        set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})
+    endif()
 
-        # Delete this supression once brotli is upgraded to vNext (current latest v1.0.9
-        # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
-        set(FLAGS "${FLAGS} -Wno-vla-parameter")
+    # Disable implicit fallthrough warning for Brotli
+    set(FLAGS -Wno-implicit-fallthrough)
 
-        set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS ${FLAGS})
-    endif ()
+    # Delete this supression once brotli is upgraded to vNext (current latest v1.0.9
+    # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
+    set(FLAGS "${FLAGS} -Wno-vla-parameter")
+
+    set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS ${FLAGS})
 
     if (GEN_SHARED_LIB)
         add_definitions(-DBROTLI_SHARED_COMPILATION)
@@ -88,6 +90,7 @@ else ()
         include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
     endif ()
 
+    add_definitions(-DINTERNAL_ZLIB)
     set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})
 
     if (GEN_SHARED_LIB)

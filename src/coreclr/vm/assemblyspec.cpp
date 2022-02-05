@@ -250,8 +250,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
 
 
 // This uses thread storage to allocate space. Please use Checkpoint and release it.
-HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pName,
-                                  BOOL fParse /*=TRUE*/)
+void AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pName)
 {
     CONTRACTL
     {
@@ -271,11 +270,6 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
         WCHAR* pString;
         int    iString;
         ((STRINGREF) (*pName)->GetSimpleName())->RefInterpretGetStringValuesDangerousForGC(&pString, &iString);
-
-        // we will not parse names that contain nulls
-        if (fParse && (wcslen(pString) != (size_t)iString))
-            ThrowHR(FUSION_E_INVALID_NAME);
-
         DWORD lgth = WszWideCharToMultiByte(CP_UTF8, 0, pString, iString, NULL, 0, NULL, NULL);
         if (lgth + 1 < lgth)
             ThrowHR(E_INVALIDARG);
@@ -295,108 +289,86 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
         SetName(lpName);
     }
 
-    if (fParse)
-    {
-        HRESULT hr = ParseName();
-        // Sometimes Fusion flags invalid characters in the name, sometimes it doesn't
-        // depending on where the invalid characters are
-        // We want to Raise the assembly resolve event on all invalid characters
-        // but calling ParseName before checking for invalid characters gives Fusion a chance to
-        // parse the rest of the name (to get a public key token, etc.)
-        if ((hr == FUSION_E_INVALID_NAME) || (!IsValidAssemblyName())) {
-            // This is the only case where we do not throw on an error
-            // We don't want to throw so as to give the caller a chance to call RaiseAssemblyResolveEvent
-            // The only caller that cares is System.Reflection.Assembly.InternalLoad which calls us through
-            // AssemblyNameNative::Init
-            return FUSION_E_INVALID_NAME;
-        }
-        else
-            IfFailThrow(hr);
+    AssemblyMetaDataInternal asmInfo;
+    // Flags
+    DWORD dwFlags = (*pName)->GetFlags();
+
+    // Version
+    VERSIONREF version = (VERSIONREF) (*pName)->GetVersion();
+    if(version == NULL) {
+        asmInfo.usMajorVersion = (USHORT)-1;
+        asmInfo.usMinorVersion = (USHORT)-1;
+        asmInfo.usBuildNumber = (USHORT)-1;
+        asmInfo.usRevisionNumber = (USHORT)-1;
     }
     else {
-        AssemblyMetaDataInternal asmInfo;
-        // Flags
-        DWORD dwFlags = (*pName)->GetFlags();
-
-        // Version
-        VERSIONREF version = (VERSIONREF) (*pName)->GetVersion();
-        if(version == NULL) {
-            asmInfo.usMajorVersion = (USHORT)-1;
-            asmInfo.usMinorVersion = (USHORT)-1;
-            asmInfo.usBuildNumber = (USHORT)-1;
-            asmInfo.usRevisionNumber = (USHORT)-1;
-        }
-        else {
-            asmInfo.usMajorVersion = (USHORT)version->GetMajor();
-            asmInfo.usMinorVersion = (USHORT)version->GetMinor();
-            asmInfo.usBuildNumber = (USHORT)version->GetBuild();
-            asmInfo.usRevisionNumber = (USHORT)version->GetRevision();
-        }
-
-        asmInfo.szLocale = 0;
-
-        if ((*pName)->GetCultureInfo() != NULL)
-        {
-            struct _gc {
-                OBJECTREF   cultureinfo;
-                STRINGREF   pString;
-            } gc;
-
-            gc.cultureinfo = (*pName)->GetCultureInfo();
-            gc.pString = NULL;
-
-            GCPROTECT_BEGIN(gc);
-
-            MethodDescCallSite getName(METHOD__CULTURE_INFO__GET_NAME, &gc.cultureinfo);
-
-            ARG_SLOT args[] = {
-                ObjToArgSlot(gc.cultureinfo)
-            };
-            gc.pString = getName.Call_RetSTRINGREF(args);
-            if (gc.pString != NULL) {
-                WCHAR* pString;
-                int    iString;
-                gc.pString->RefInterpretGetStringValuesDangerousForGC(&pString, &iString);
-                DWORD lgth = WszWideCharToMultiByte(CP_UTF8, 0, pString, iString, NULL, 0, NULL, NULL);
-                S_UINT32 lengthWillNull = S_UINT32(lgth) + S_UINT32(1);
-                LPSTR lpLocale = (LPSTR) alloc->Alloc(lengthWillNull);
-                if (lengthWillNull.IsOverflow())
-                {
-                    COMPlusThrowHR(COR_E_OVERFLOW);
-                }
-                WszWideCharToMultiByte(CP_UTF8, 0, pString, iString,
-                                       lpLocale, lengthWillNull.Value(), NULL, NULL);
-                lpLocale[lgth] = '\0';
-                asmInfo.szLocale = lpLocale;
-            }
-            GCPROTECT_END();
-        }
-
-        // Strong name
-        DWORD cbPublicKeyOrToken=0;
-        BYTE* pbPublicKeyOrToken=NULL;
-        // Note that we prefer to take a public key token if present,
-        // even if flags indicate a full public key
-        if ((*pName)->GetPublicKeyToken() != NULL) {
-            dwFlags &= ~afPublicKey;
-            PBYTE  pArray = NULL;
-            pArray = (*pName)->GetPublicKeyToken()->GetDirectPointerToNonObjectElements();
-            cbPublicKeyOrToken = (*pName)->GetPublicKeyToken()->GetNumComponents();
-            pbPublicKeyOrToken = pArray;
-        }
-        else if ((*pName)->GetPublicKey() != NULL) {
-            dwFlags |= afPublicKey;
-            PBYTE  pArray = NULL;
-            pArray = (*pName)->GetPublicKey()->GetDirectPointerToNonObjectElements();
-            cbPublicKeyOrToken = (*pName)->GetPublicKey()->GetNumComponents();
-            pbPublicKeyOrToken = pArray;
-        }
-        BaseAssemblySpec::Init(GetName(),&asmInfo,pbPublicKeyOrToken,cbPublicKeyOrToken,dwFlags);
+        asmInfo.usMajorVersion = (USHORT)version->GetMajor();
+        asmInfo.usMinorVersion = (USHORT)version->GetMinor();
+        asmInfo.usBuildNumber = (USHORT)version->GetBuild();
+        asmInfo.usRevisionNumber = (USHORT)version->GetRevision();
     }
 
-    CloneFieldsToStackingAllocator(alloc);
+    asmInfo.szLocale = 0;
 
-    return S_OK;
+    if ((*pName)->GetCultureInfo() != NULL)
+    {
+        struct _gc {
+            OBJECTREF   cultureinfo;
+            STRINGREF   pString;
+        } gc;
+
+        gc.cultureinfo = (*pName)->GetCultureInfo();
+        gc.pString = NULL;
+
+        GCPROTECT_BEGIN(gc);
+
+        MethodDescCallSite getName(METHOD__CULTURE_INFO__GET_NAME, &gc.cultureinfo);
+
+        ARG_SLOT args[] = {
+            ObjToArgSlot(gc.cultureinfo)
+        };
+        gc.pString = getName.Call_RetSTRINGREF(args);
+        if (gc.pString != NULL) {
+            WCHAR* pString;
+            int    iString;
+            gc.pString->RefInterpretGetStringValuesDangerousForGC(&pString, &iString);
+            DWORD lgth = WszWideCharToMultiByte(CP_UTF8, 0, pString, iString, NULL, 0, NULL, NULL);
+            S_UINT32 lengthWillNull = S_UINT32(lgth) + S_UINT32(1);
+            LPSTR lpLocale = (LPSTR) alloc->Alloc(lengthWillNull);
+            if (lengthWillNull.IsOverflow())
+            {
+                COMPlusThrowHR(COR_E_OVERFLOW);
+            }
+            WszWideCharToMultiByte(CP_UTF8, 0, pString, iString,
+                                   lpLocale, lengthWillNull.Value(), NULL, NULL);
+            lpLocale[lgth] = '\0';
+            asmInfo.szLocale = lpLocale;
+        }
+        GCPROTECT_END();
+    }
+
+    // Strong name
+    DWORD cbPublicKeyOrToken=0;
+    BYTE* pbPublicKeyOrToken=NULL;
+    // Note that we prefer to take a public key token if present,
+    // even if flags indicate a full public key
+    if ((*pName)->GetPublicKeyToken() != NULL) {
+        dwFlags &= ~afPublicKey;
+        PBYTE  pArray = NULL;
+        pArray = (*pName)->GetPublicKeyToken()->GetDirectPointerToNonObjectElements();
+        cbPublicKeyOrToken = (*pName)->GetPublicKeyToken()->GetNumComponents();
+        pbPublicKeyOrToken = pArray;
+    }
+    else if ((*pName)->GetPublicKey() != NULL) {
+        dwFlags |= afPublicKey;
+        PBYTE  pArray = NULL;
+        pArray = (*pName)->GetPublicKey()->GetDirectPointerToNonObjectElements();
+        cbPublicKeyOrToken = (*pName)->GetPublicKey()->GetNumComponents();
+        pbPublicKeyOrToken = pArray;
+    }
+    BaseAssemblySpec::Init(GetName(),&asmInfo,pbPublicKeyOrToken,cbPublicKeyOrToken,dwFlags);
+
+    CloneFieldsToStackingAllocator(alloc);
 }
 
 void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageInfo)
@@ -762,7 +734,7 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
         BinderTracing::AssemblyBindOperation bindOperation(this);
         bindOperation.SetResult(pAssembly->GetPEAssembly(), true /*cached*/);
 
-        pDomain->LoadDomainFile(pAssembly, targetLevel);
+        pDomain->LoadDomainAssembly(pAssembly, targetLevel);
         RETURN pAssembly;
     }
 

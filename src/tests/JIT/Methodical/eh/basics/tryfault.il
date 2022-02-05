@@ -10,9 +10,9 @@
 }
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly test {}
-.module test.exe
+.assembly 'tryfault' {}
 
+.class public auto ansi Test_tryfault extends [mscorlib] System.Object {
 .method public static int32 main() {
     .entrypoint
     .maxstack  2
@@ -56,4 +56,5 @@
       callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
       
 	  ret
+}
 }
