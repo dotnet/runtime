@@ -356,6 +356,22 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void Select_NullOrEmptyLists_Throws_ArgumentNull_TimeSpan()
+        {
+            TimeSpan infinity = TimeSpan.FromMilliseconds(-1);
+            var emptyList = new List<Socket>();
+
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, null, null, infinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, null, null, infinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, emptyList, null, infinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, emptyList, null, infinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, null, emptyList, infinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, null, emptyList, infinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, emptyList, emptyList, infinity));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(emptyList, emptyList, emptyList, infinity));
+        }
+
+        [Fact]
         public void Select_LargeList_Throws_ArgumentOutOfRange()
         {
             var largeList = new LargeList();
@@ -363,6 +379,17 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(largeList, null, null, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(null, largeList, null, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(null, null, largeList, -1));
+        }
+
+        [Fact]
+        public void Select_LargeList_Throws_ArgumentOutOfRange_TimeSpan()
+        {
+            TimeSpan infinity = TimeSpan.FromMilliseconds(-1);
+            var largeList = new LargeList();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(largeList, null, null, infinity));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(null, largeList, null, infinity));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(null, null, largeList, infinity));
         }
 
         [Fact]
