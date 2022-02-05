@@ -298,7 +298,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LEGACY_FUNCTION(EVP_CIPHER_CTX_cleanup) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_ctrl) \
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_free) \
-    LIGHTUP_FUNCTION(EVP_CIPHER_CTX_get_original_iv) \
     LEGACY_FUNCTION(EVP_CIPHER_CTX_init) \
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_new) \
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_reset) \
@@ -757,7 +756,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_CIPHER_CTX_cleanup EVP_CIPHER_CTX_cleanup_ptr
 #define EVP_CIPHER_CTX_ctrl EVP_CIPHER_CTX_ctrl_ptr
 #define EVP_CIPHER_CTX_free EVP_CIPHER_CTX_free_ptr
-#define EVP_CIPHER_CTX_get_original_iv EVP_CIPHER_CTX_get_original_iv_ptr
 #define EVP_CIPHER_CTX_init EVP_CIPHER_CTX_init_ptr
 #define EVP_CIPHER_CTX_new EVP_CIPHER_CTX_new_ptr
 #define EVP_CIPHER_CTX_reset EVP_CIPHER_CTX_reset_ptr

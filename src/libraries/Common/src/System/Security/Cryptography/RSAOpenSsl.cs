@@ -5,32 +5,34 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
 using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    public partial class RSA : AsymmetricAlgorithm
-    {
-        public static new partial RSA Create() => new RSAImplementation.RSAOpenSsl();
-    }
-
-    internal static partial class RSAImplementation
-    {
-#endif
     public sealed partial class RSAOpenSsl : RSA
     {
         private const int BitsPerByte = 8;
 
         private Lazy<SafeEvpPKeyHandle> _key;
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
         public RSAOpenSsl()
             : this(2048)
         {
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
         public RSAOpenSsl(int keySize)
         {
             ThrowIfNotSupported();
@@ -710,13 +712,7 @@ namespace System.Security.Cryptography
         {
             if (_key == null)
             {
-                throw new ObjectDisposedException(
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-                    nameof(RSA)
-#else
-                    nameof(RSAOpenSsl)
-#endif
-                );
+                throw new ObjectDisposedException(nameof(RSAOpenSsl));
             }
         }
 
@@ -939,7 +935,4 @@ namespace System.Security.Cryptography
         private static Exception PaddingModeNotSupported() =>
             new CryptographicException(SR.Cryptography_InvalidPaddingMode);
     }
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    }
-#endif
 }

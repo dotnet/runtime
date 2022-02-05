@@ -3991,7 +3991,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             {
                 Module * pTokenModule;
                 dwByValueClassToken = fsig.GetArgProps().PeekValueTypeTokenClosed(GetModule(), &bmtGenerics->typeContext, &pTokenModule);
-                fIsByValue = TRUE;
 
                 // By-value class
                 BAD_FORMAT_NOTHROW_ASSERT(dwByValueClassToken != 0);
@@ -4067,6 +4066,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             // TypedReference shares the rest of the code here
 IS_VALUETYPE:
             {
+                fIsByValue = TRUE;
+
                 // It's not self-referential so try to load it
                 if (pByValueClass == NULL)
                 {
@@ -8390,7 +8391,6 @@ MethodTableBuilder::HandleExplicitLayout(
 {
     STANDARD_VM_CONTRACT;
 
-
     // Instance slice size is the total size of an instance, and is calculated as
     // the field whose offset and size add to the greatest number.
     UINT instanceSliceSize = 0;
@@ -8425,13 +8425,13 @@ MethodTableBuilder::HandleExplicitLayout(
         pFieldLayout[i] = empty;
     }
 
-    // go through each field and look for invalid layout
+    // Go through each field and look for invalid layout.
     // (note that we are more permissive than what Ecma allows. We only disallow the minimum set necessary to
     // close security holes.)
     //
-    // This is what we implment:
+    // This is what we implement:
     //
-    // 1. Verify that every OREF is on a valid alignment
+    // 1. Verify that every OREF or BYREF is on a valid alignment.
     // 2. Verify that OREFs only overlap with other OREFs.
     // 3. If an OREF does overlap with another OREF, the class is marked unverifiable.
     // 4. If an overlap of any kind occurs, the class will be marked NotTightlyPacked (affects ValueType.Equals()).
@@ -8443,7 +8443,6 @@ MethodTableBuilder::HandleExplicitLayout(
         emptyObject[i] = empty;
         isObject[i]    = oref;
     }
-
 
     ExplicitClassTrust explicitClassTrust;
 
@@ -8480,7 +8479,8 @@ MethodTableBuilder::HandleExplicitLayout(
         // "i" indexes all fields, valueClassCacheIndex indexes non-static fields only. Don't get them confused!
         valueClassCacheIndex++;
 
-        if (CorTypeInfo::IsObjRef(pFD->GetFieldType()))
+        CorElementType type = pFD->GetFieldType();
+        if (CorTypeInfo::IsObjRef(type) || CorTypeInfo::IsByRef(type))
         {
             // Check that the ref offset is pointer aligned
             if ((pFD->GetOffset_NoLogging() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0)
@@ -8488,9 +8488,13 @@ MethodTableBuilder::HandleExplicitLayout(
                 badOffset = pFD->GetOffset_NoLogging();
                 fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
 
-                // If we got here, OREF field was not pointer aligned. THROW.
+                // If we got here, OREF or BYREF field was not pointer aligned. THROW.
                 break;
             }
+        }
+
+        if (CorTypeInfo::IsObjRef(type))
+        {
             // check if overlaps another object
             if (memcmp((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], (void *)isObject, sizeof(isObject)) == 0)
             {

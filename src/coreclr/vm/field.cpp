@@ -97,6 +97,14 @@ BOOL FieldDesc::IsObjRef()
     return CorTypeInfo::IsObjRef_NoThrow(GetFieldType());
 }
 
+// Return whether the field is a GC ref type
+BOOL FieldDesc::IsByRef()
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+    return CorTypeInfo::IsByRef_NoThrow(GetFieldType());
+}
+
 BOOL FieldDesc::MightHaveName(ULONG nameHashValue)
 {
     LIMITED_METHOD_CONTRACT;

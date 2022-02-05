@@ -5506,7 +5506,7 @@ public:
     // Does value-numbering for a block assignment.
     void fgValueNumberBlockAssignment(GenTree* tree);
 
-    bool fgValueNumberIsStructReinterpretation(GenTreeLclVarCommon* lhsLclVarTree, GenTreeLclVarCommon* rhsLclVarTree);
+    bool fgValueNumberBlockAssignmentTypeCheck(LclVarDsc* dstVarDsc, FieldSeqNode* dstFldSeq, GenTree* src);
 
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
@@ -6423,7 +6423,7 @@ private:
 
     bool fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2);
 
-    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
+    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroyNodes = true);
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
     GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
@@ -6561,6 +6561,10 @@ private:
 
     void fgMarkAddressExposedLocals();
     void fgMarkAddressExposedLocals(Statement* stmt);
+
+    PhaseStatus fgForwardSub();
+    bool fgForwardSubBlock(BasicBlock* block);
+    bool fgForwardSubStatement(Statement* statement);
 
     static fgWalkPreFn  fgUpdateSideEffectsPre;
     static fgWalkPostFn fgUpdateSideEffectsPost;

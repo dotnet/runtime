@@ -79,6 +79,11 @@ namespace System.Security.Cryptography
                 return _ecc.ExportParameters(includePrivateParameters, KeySize);
             }
 
+            internal bool TryExportDataKeyParameters(bool includePrivateParameters, ref ECParameters ecParameters)
+            {
+                return _ecc.TryExportDataKeyParameters(includePrivateParameters, KeySize, ref ecParameters);
+            }
+
             public override void ImportParameters(ECParameters parameters)
             {
                 KeySizeValue = _ecc.ImportParameters(parameters);
