@@ -76,7 +76,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (typeOfOperation.TypeOperand is ITypeParameterSymbol typeParameter)
 				return new GenericParameterValue (typeParameter);
 			else if (typeOfOperation.TypeOperand is INamedTypeSymbol namedType)
-				return new SystemTypeValue (namedType);
+				return new SystemTypeValue (new TypeProxy (namedType));
 
 			return TopValue;
 		}
@@ -111,7 +111,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			//   Especially with DAM on type, this can lead to incorrectly analyzed code (as in unknown type which leads
 			//   to noise). Linker has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
-			var handleCallAction = new HandleCallAction (Context.OwningSymbol, operation);
+			var diagnosticContext = DiagnosticContext.CreateDisabled ();
+			var handleCallAction = new HandleCallAction (diagnosticContext, Context.OwningSymbol, operation);
 			if (!handleCallAction.Invoke (new MethodProxy (calledMethod), instance, arguments, out MultiValue methodReturnValue)) {
 				methodReturnValue = calledMethod.ReturnsVoid ? TopValue : new MethodReturnValue (calledMethod);
 			}

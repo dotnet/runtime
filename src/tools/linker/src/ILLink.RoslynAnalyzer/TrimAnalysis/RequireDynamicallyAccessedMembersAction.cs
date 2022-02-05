@@ -24,6 +24,11 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial bool TryResolveTypeNameAndMark (string typeName, out TypeProxy type)
 		{
 			// TODO: Implement type name resolution to type symbol
+
+			// Important corner cases:
+			//   IL2105 (see it's occurences in the tests) - non-assembly qualified type name which doesn't resolve warns
+			//     - will need to figure out what analyzer should do around this.
+
 			type = default;
 			return false;
 		}

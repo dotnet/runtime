@@ -12,8 +12,6 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		public readonly ITypeSymbol Type;
 
-		internal partial bool IsVoid () => Type.SpecialType == SpecialType.System_Void;
-
 		public string Name { get => Type.Name; }
 
 		public string GetDisplayName () => Type.GetDisplayName ();

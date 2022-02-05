@@ -29,7 +29,7 @@ namespace ILLink.Shared.TrimAnalysis
 						_diagnosticContext.AddDiagnostic (diagnosticId, diagnosticArguments);
 					}
 				} else if (uniqueValue is SystemTypeValue systemTypeValue) {
-					MarkTypeForDynamicallyAccessedMembers (systemTypeValue.GetRepresentedType (), targetValue.DynamicallyAccessedMemberTypes);
+					MarkTypeForDynamicallyAccessedMembers (systemTypeValue.RepresentedType, targetValue.DynamicallyAccessedMemberTypes);
 				} else if (uniqueValue is KnownStringValue knownStringValue) {
 					if (!TryResolveTypeNameAndMark (knownStringValue.Contents, out TypeProxy foundType)) {
 						// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.

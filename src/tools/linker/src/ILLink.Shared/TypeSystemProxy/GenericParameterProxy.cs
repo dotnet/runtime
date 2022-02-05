@@ -3,7 +3,7 @@
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	internal readonly partial struct TypeProxy : IMemberProxy
+	internal readonly partial struct GenericParameterProxy
 	{
 	}
 }

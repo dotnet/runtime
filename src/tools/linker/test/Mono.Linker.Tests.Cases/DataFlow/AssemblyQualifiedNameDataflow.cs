@@ -18,6 +18,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestPublicConstructors ();
 			TestConstructors ();
 			TestUnqualifiedTypeNameWarns ();
+			TestNull ();
+			TestMultipleValues ();
 		}
 
 		[ExpectedWarning ("IL2072", nameof (RequirePublicConstructors))]
@@ -54,10 +56,34 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2105",
 			"Type 'System.Invalid.TypeName' was not found in the caller assembly nor in the base library. " +
-			"Type name strings used for dynamically accessing a type should be assembly qualified.")]
+			"Type name strings used for dynamically accessing a type should be assembly qualified.",
+			ProducedBy = ProducedBy.Trimmer)]
 		static void TestUnqualifiedTypeNameWarns ()
 		{
 			RequirePublicConstructors ("System.Invalid.TypeName");
+		}
+
+		// https://github.com/dotnet/linker/issues/2528
+		[ExpectedWarning ("IL2072", nameof (RequirePublicConstructors), ProducedBy = ProducedBy.Analyzer)]
+		static void TestNull ()
+		{
+			Type type = null;
+			RequirePublicConstructors (type.AssemblyQualifiedName); // Null should not warn - we know it's going to fail at runtime
+		}
+
+		[ExpectedWarning ("IL2072", nameof (RequirePublicConstructors), nameof (GetTypeWithNonPublicConstructors))]
+		// https://github.com/dotnet/linker/issues/2273
+		[ExpectedWarning ("IL2062", nameof (RequirePublicConstructors), ProducedBy = ProducedBy.Trimmer)]
+		static void TestMultipleValues (int p = 0, object[] o = null)
+		{
+			Type type = p switch {
+				0 => GetTypeWithPublicConstructors (),
+				1 => GetTypeWithNonPublicConstructors (), // Should produce warning IL2072 due to mismatch annotation
+				2 => null, // Should be ignored
+				_ => (Type) o[0] // This creates an unknown value - should produce warning IL2062
+			};
+
+			RequirePublicConstructors (type.AssemblyQualifiedName);
 		}
 
 		private static void RequirePublicParameterlessConstructor (
