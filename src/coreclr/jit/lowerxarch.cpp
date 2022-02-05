@@ -4723,7 +4723,7 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 #endif
 
     // divisor can be an r/m, but the memory indirection must be of the same size as the divide
-    if (IsContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()))
+    if (IsContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()) && IsSafeToContainMem(node, divisor))
     {
         MakeSrcContained(node, divisor);
     }
@@ -4853,7 +4853,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
         // U8 -> R8 conversion requires that the operand be in a register.
         if (srcType != TYP_ULONG)
         {
-            if (IsContainableMemoryOp(castOp) || castOp->IsCnsNonZeroFltOrDbl())
+            if ((IsContainableMemoryOp(castOp) && IsSafeToContainMem(node, castOp)) || castOp->IsCnsNonZeroFltOrDbl())
             {
                 MakeSrcContained(node, castOp);
             }
@@ -5250,7 +5250,7 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 
     if (node->GetIndex()->TypeGet() == node->GetArrayLength()->TypeGet())
     {
-        if (IsContainableMemoryOp(other))
+        if (IsContainableMemoryOp(other) && IsSafeToContainMem(node, other))
         {
             MakeSrcContained(node, other);
         }
@@ -5279,7 +5279,7 @@ void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
     {
         GenTree* op1 = node->gtGetOp1();
 
-        if (IsContainableMemoryOp(op1) || op1->IsCnsNonZeroFltOrDbl())
+        if ((IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1)) || op1->IsCnsNonZeroFltOrDbl())
         {
             MakeSrcContained(node, op1);
         }
@@ -6314,7 +6314,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 MakeSrcContained(node, op2);
                             }
 
-                            if (IsContainableMemoryOp(op1))
+                            if (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))
                             {
                                 MakeSrcContained(node, op1);
 

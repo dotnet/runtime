@@ -42,6 +42,22 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
     assert(childNode->canBeContained());
     childNode->SetContained();
     assert(childNode->isContained());
+
+#ifdef DEBUG
+    if (IsContainableMemoryOp(childNode))
+    {
+        // Verify caller of this method checked safety.
+        //
+        const bool isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
+
+        if (!isSafeToContainMem)
+        {
+            JITDUMP("** Unsafe mem containment of [%06u] in [%06u}, comp->dspTreeID(childNode), "
+                    "comp->dspTreeID(parentNode)\n");
+            assert(isSafeToContainMem);
+        }
+    }
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -79,8 +95,15 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 // Return value:
 //    true if it is safe to make childNode a contained memory operand.
 //
-bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
+bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const
 {
+    // Quick early-out for unary cases
+    //
+    if (childNode->gtNext == parentNode)
+    {
+        return true;
+    }
+
     m_scratchSideEffects.Clear();
     m_scratchSideEffects.AddNode(comp, childNode);
 
@@ -108,7 +131,7 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
 // Return value:
 //    true if it is safe to make childNode a contained memory operand.
 //
-bool Lowering::IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode)
+bool Lowering::IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const
 {
     m_scratchSideEffects.Clear();
     m_scratchSideEffects.AddNode(comp, childNode);
