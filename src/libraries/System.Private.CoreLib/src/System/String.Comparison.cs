@@ -723,17 +723,20 @@ namespace System
                         // Fold Equals(a, "") to 'a != null && a.Length == 0'
                         return a.Length == 0;
                     }
+
+                    // For Length 1 and 2 we rely on fact that even an empty string is 8 bytes long (on 64bit)
+                    // [ 4b Length ][ 2b _firstChar ][ 2b padding ]
+                    // so we can check Length and first 2 chars in a single operation
                     if (b.Length == 1)
                     {
-                        // Load Length, ch1, \0 into ulong (so we can skip the Length check)
                         return ReadUInt64(a, -2) == (((ulong)b[0] << 32) | 1UL);
                     }
                     if (b.Length == 2)
                     {
-                        // Load Length, ch1, ch2 into ulong (so we can skip the Length check)
-                        return a.Length == 2 && ReadUInt64(a, -2) == (((ulong)b[1] << 48) |
-                                                                      ((ulong)b[0] << 32) | 2UL);
+                        return ReadUInt64(a, -2) == (((ulong)b[1] << 48) |
+                                                     ((ulong)b[0] << 32) | 2UL);
                     }
+
                     if (b.Length == 3)
                     {
                         // Load ch1, ch2, ch3 and \0 into ulong
