@@ -40,7 +40,7 @@ jobs:
     isExtraPlatformsBuild: {{ variables.isExtraPlatformsBuild }}
 
 # Any jobs that are not specific to any platform
-- ${{ if or(eq(variables.isNotSpecificPlatformOnlyBuild, true), eq(variables.isRollingBuild, true)) }}:
+- ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
   - template: /eng/pipelines/runtime-extra-platforms-other.yml
     parameters:
       isExtraPlatformsBuild: {{ variables.isExtraPlatformsBuild }}
