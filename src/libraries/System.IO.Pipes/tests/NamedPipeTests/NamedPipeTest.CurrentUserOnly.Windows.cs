@@ -167,7 +167,7 @@ namespace System.IO.Pipes.Tests
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
             using (var server = new NamedPipeServerStream(
-                name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+                       name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             {
                 Task serverTask = server.WaitForConnectionAsync(CancellationToken.None);
 
@@ -176,6 +176,29 @@ namespace System.IO.Pipes.Tests
                     using (var client = new NamedPipeClientStream(".", name, PipeDirection.In))
                     {
                         client.Connect(10_000);
+                    }
+                });
+
+                Assert.True(serverTask.Wait(10_000));
+            }
+        }
+
+        [OuterLoop]
+        [ConditionalFact(nameof(IsAdminOnSupportedWindowsVersions))]
+        public void Allow_Connection_UnderDifferentUsers_ForClientReading_TimeSpan()
+        {
+            string name = PipeStreamConformanceTests.GetUniquePipeName();
+            using (var server = new NamedPipeServerStream(
+                       name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            {
+                Task serverTask = server.WaitForConnectionAsync(CancellationToken.None);
+
+                _testAccountImpersonator.RunImpersonated(() =>
+                {
+                    using (var client = new NamedPipeClientStream(".", name, PipeDirection.In))
+                    {
+                        TimeSpan timeout = TimeSpan.FromMilliseconds(10_000);
+                        client.Connect(timeout);
                     }
                 });
 

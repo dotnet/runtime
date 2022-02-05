@@ -25,6 +25,16 @@ namespace System.IO.Pipes.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(-111); });
             }
         }
+        [Fact]
+        public void InvalidConnectTimeout_Throws_ArgumentOutOfRangeException_TimeSpan()
+        {
+            using (NamedPipeClientStream client = new NamedPipeClientStream("client1"))
+            {
+                TimeSpan negativeTimeout = TimeSpan.FromMilliseconds(-111);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(negativeTimeout));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(negativeTimeout); });
+            }
+        }
 
         [Fact]
         public async Task ConnectToNonExistentServer_Throws_TimeoutException()
@@ -616,6 +626,17 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [Fact]
+        public void ClientConnect_Throws_Timeout_When_Pipe_Not_Found_TimeSpan()
+        {
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+            using (NamedPipeClientStream client = new NamedPipeClientStream(pipeName))
+            {
+                TimeSpan timeout = TimeSpan.FromMilliseconds(91);
+                Assert.Throws<TimeoutException>(() => client.Connect(timeout));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(GetCancellationTokens))]
         public async Task ClientConnectAsync_Throws_Timeout_When_Pipe_Not_Found(CancellationToken cancellationToken)
@@ -623,7 +644,8 @@ namespace System.IO.Pipes.Tests
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             using (NamedPipeClientStream client = new NamedPipeClientStream(pipeName))
             {
-                Task waitingClient = client.ConnectAsync(92, cancellationToken);
+                TimeSpan timeout = TimeSpan.FromMilliseconds(92);
+                Task waitingClient = client.ConnectAsync(timeout, cancellationToken);
                 await Assert.ThrowsAsync<TimeoutException>(() => { return waitingClient; });
             }
         }
@@ -638,7 +660,7 @@ namespace System.IO.Pipes.Tests
             using (NamedPipeClientStream firstClient = new NamedPipeClientStream(pipeName))
             using (NamedPipeClientStream secondClient = new NamedPipeClientStream(pipeName))
             {
-                const int timeout = 10_000;
+                TimeSpan timeout = TimeSpan.FromMilliseconds(10_000);
                 Task[] clientAndServerTasks = new[]
                     {
                         firstClient.ConnectAsync(timeout),
@@ -647,7 +669,8 @@ namespace System.IO.Pipes.Tests
 
                 Assert.True(Task.WaitAll(clientAndServerTasks, timeout));
 
-                Assert.Throws<TimeoutException>(() => secondClient.Connect(93));
+                TimeSpan connectionTimeout = TimeSpan.FromMilliseconds(93);
+                Assert.Throws<TimeoutException>(() => secondClient.Connect(connectionTimeout));
             }
         }
 
@@ -662,7 +685,7 @@ namespace System.IO.Pipes.Tests
             using (NamedPipeClientStream firstClient = new NamedPipeClientStream(pipeName))
             using (NamedPipeClientStream secondClient = new NamedPipeClientStream(pipeName))
             {
-                const int timeout = 10_000;
+                TimeSpan timeout = TimeSpan.FromMilliseconds(10_000);
                 Task[] clientAndServerTasks = new[]
                     {
                         firstClient.ConnectAsync(timeout),
@@ -671,7 +694,8 @@ namespace System.IO.Pipes.Tests
 
                 Assert.True(Task.WaitAll(clientAndServerTasks, timeout));
 
-                Task waitingClient = secondClient.ConnectAsync(94, cancellationToken);
+                TimeSpan connectionTimeout = TimeSpan.FromMilliseconds(94);
+                Task waitingClient = secondClient.ConnectAsync(connectionTimeout, cancellationToken);
                 await Assert.ThrowsAsync<TimeoutException>(() => { return waitingClient; });
             }
         }
