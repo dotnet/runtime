@@ -56,6 +56,7 @@ namespace System.Threading.Tests
             new Timer(_ => { }, null, Timeout, Timeout).Dispose();
             new Timer(_ => { }, null, (long)Timeout, (long)Timeout).Dispose();
             new Timer(_ => { }, null, (uint)Timeout, (uint)Timeout).Dispose();
+            new Timer(TimeSpan.FromMilliseconds(Timeout)).Dispose();
             new Timer(_ => { }, null, TimeSpan.FromMilliseconds(Timeout), TimeSpan.FromMilliseconds(Timeout)).Dispose();
         }
     }

@@ -881,6 +881,14 @@ namespace System.Threading
             TimerSetup(callback, this, DueTime, Period);
         }
 
+        public Timer(TimeSpan interval)
+        {
+            unchecked
+            {
+                TimerSetup(_ => { }, this, (uint)-1, (uint)(int)interval.TotalMilliseconds);
+            }
+        }
+
         [MemberNotNull(nameof(_timer))]
         private void TimerSetup(TimerCallback callback,
                                 object? state,
