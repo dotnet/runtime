@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
 using System.Buffers.Binary;
+using System.Runtime.Intrinsics;
 
 using Internal.Runtime.CompilerServices;
 
@@ -699,6 +700,11 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static bool EqualsUnrolled(string? a, string b)
             {
+                if (a == null)
+                {
+                    return false; // b is not null
+                }
+
                 // if both are constants - EqualsInternal will handle it just fine
                 if (RuntimeHelpers.IsKnownConstant(a))
                 {
@@ -707,43 +713,87 @@ namespace System
 
                 if (b.Length == 0)
                 {
-                    return a != null && a.Length == 0;
+                    return a.Length == 0;
                 }
 
                 if (b.Length == 1)
                 {
-                    return a != null &&
-                        // Length: [ 0 ][ 1 ], ch1: [ X ][ \0 ] - we can compare Length and firstChar using a single
-                        // cmp operation, it's safe because there is also '\0' char we can rely on
-                        Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, -2))) ==
-                            (((ulong)b[0] << 32) | 1UL);
+                    // Length: [ 0 ][ 1 ], ch1: [ X ][ \0 ] - we can compare Length and firstChar using a single
+                    // cmp operation, it's safe because there is also '\0' char we can rely on
+                    return Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, -2))) ==
+                        (((ulong)b[0] << 32) | 1UL);
                 }
 
                 if (b.Length == 2)
                 {
                     // Same here, compare Length and two chars in a single cmp
-                    return a != null &&
-                        Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, -2))) ==
-                            (((ulong)b[1] << 48) | ((ulong)b[0] << 32) | 2UL);
+                    return Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, -2))) ==
+                        (((ulong)b[1] << 48) | ((ulong)b[0] << 32) | 2UL);
                 }
 
                 if (b.Length == 3)
                 {
                     // it's safe to load 64bit here because of '\0'
-                    return a != null && a.Length == 3 &&
-                        Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
-                            (((ulong)b[2] << 32) | ((ulong)b[1] << 16) | (ulong)b[0]);
+                    return a.Length == 3 && Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
+                        (((ulong)b[2] << 32) | ((ulong)b[1] << 16) | (ulong)b[0]);
                 }
 
                 if (b.Length == 4)
                 {
-                    return a != null && a.Length == 4 &&
-                        Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
-                            (((ulong)b[3] << 48) | ((ulong)b[2] << 32) | ((ulong)b[1] << 16) | b[0]);
+                    return a.Length == 4 && Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
+                        (((ulong)b[3] << 48) | ((ulong)b[2] << 32) | ((ulong)b[1] << 16) | b[0]);
                 }
 
                 return EqualsInternal(a, b);
             }
+
+            /*
+
+            // Vectorized unrolling demo:
+
+            if (RuntimeHelpers.IsKnownConstant(b) && b != null && b.Length >= 8 && b.Length <= 10) // TODO: 16
+            {
+                return EqualsUnrolled_8_to_16_Vector128(a, b);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static bool EqualsUnrolled_8_to_16_Vector128(string? a, string b)
+            {
+                // if both are constants - EqualsInternal will handle it just fine
+                if (a == null)
+                {
+                    return false; // b is not null
+                }
+
+                // if both are constants - EqualsInternal will handle it just fine
+                if (RuntimeHelpers.IsKnownConstant(a))
+                {
+                    return EqualsInternal(a, b);
+                }
+
+                Vector128<ushort> v1 = Unsafe.ReadUnaligned<Vector128<ushort>>(
+                    ref Unsafe.As<char, byte>(ref a._firstChar));
+                Vector128<ushort> v2 = Unsafe.ReadUnaligned<Vector128<ushort>>(
+                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, a.Length - 16)));
+
+                Vector128<ushort> constV1 = Vector128.Create(b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
+                Vector128<ushort> constV2 = default;
+
+                if (b.Length == 8) constV2 = constV1; // TODO: for len=8 we don't need the 2nd vector at all
+                if (b.Length == 9) constV2  = Vector128.Create(b[1],  b[2],  b[3],  b[4],  b[5],  b[6],   b[7],   b[8]);
+                if (b.Length == 10) constV2 = Vector128.Create(b[2],  b[3],  b[4],  b[5],  b[6],  b[7],   b[8],   b[9]);
+                if (b.Length == 11) constV2 = Vector128.Create(b[3],  b[4],  b[5],  b[6],  b[7],  b[8],   b[9],   b[10]);
+                if (b.Length == 12) constV2 = Vector128.Create(b[4],  b[5],  b[6],  b[7],  b[8],  b[9],   b[10],  b[11]);
+                if (b.Length == 13) constV2 = Vector128.Create(b[5],  b[6],  b[7],  b[8],  b[9],  b[10],  b[11],  b[12];
+                if (b.Length == 14) constV2 = Vector128.Create(b[6],  b[7],  b[8],  b[9],  b[10], b[11],  b[10],  b[13]);
+                if (b.Length == 15) constV2 = Vector128.Create(b[7],  b[8],  b[9],  b[10], b[11], b[10],  b[11]), b[14]);
+
+                // 16 can be done via a single Vector256
+                if (b.Length == 16) constV2 = Vector128.Create(b[8],  b[9],  b[10], b[11], b[10], b[11]), b[11]), b[15]);
+
+                return  ((v1 ^ constV1) | (v2 ^ constV2)) == Vector128<ushort>.Zero;
+            }
+            */
 #endif
             return EqualsInternal(a, b);
 
