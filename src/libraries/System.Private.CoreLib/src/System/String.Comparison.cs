@@ -703,11 +703,14 @@ namespace System
                 {
                     return EqualsUnrolled_0_to_8(a, b);
                 }
-                // Unroll using Vector128 (SSE or AdvSimd)
+                // Unroll using two Vector128s
                 if (b.Length >= 9 && b.Length <= 16 && Vector128.IsHardwareAccelerated)
                 {
                     return EqualsUnrolled_9_to_16(a, b);
                 }
+                // NOTE: for some values we can emit a more optimal codegen e.g. for Length 7 and 8
+                // we can use a single Vector128 or add Vector256 path for Length in [16..32] range
+                // but we need to be careful here with inliner's budget
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -715,31 +718,24 @@ namespace System
             {
                 if (a != null)
                 {
-                    // String's layout:
-                    //
-                    // bytes: [ ][ ][ ][ ][ ][ ][ ][ ] ... [ ][ ][ ][ ]
-                    //        [  Length  ][ c1 ][ c2 ] ... [ cN ][ \0 ]
-                    //
-                    // We can always rely on 2 bytes representing '\0' at the end
-
-                    // Fold Equals(a, "") to 'a != null && a.Length == 0'
                     if (b.Length == 0)
                     {
+                        // Fold Equals(a, "") to 'a != null && a.Length == 0'
                         return a.Length == 0;
                     }
                     if (b.Length == 1)
                     {
-                        // Compare Length, firstChar and '\0' using a single 64bit cmp
+                        // Load Length, ch1, \0 into ulong (so we can skip the Length check)
                         return ReadUInt64(a, -2) == (((ulong)b[0] << 32) | 1UL);
                     }
                     if (b.Length == 2)
                     {
-                        // Compare Length, firstChar, secondChar using a single 64bit cmp
+                        // Load Length, ch1, ch2 into ulong (so we can skip the Length check)
                         return ReadUInt64(a, -2) == (((ulong)b[1] << 48) | ((ulong)b[0] << 32) | 2UL);
                     }
                     if (b.Length == 3)
                     {
-                        // it's safe to load 64bit here because of '\0'
+                        // Load ch1, ch2, ch3 and \0 into ulong
                         return a.Length == 3 && ReadUInt64(a) == (((ulong)b[2] << 32) | ((ulong)b[1] << 16) | b[0]);
                     }
 
@@ -747,6 +743,7 @@ namespace System
                     ulong cns1 = ((ulong)b[3] << 48) | ((ulong)b[2] << 32) | ((ulong)b[1] << 16) | b[0];
                     if (b.Length == 4)
                     {
+                        // Load ch1, ch2, ch3 and ch4 into ulong
                         return a.Length == 4 && v1 == cns1;
                     }
                     // Handle Length [5..8] via two ulong (overlapped)
@@ -764,27 +761,21 @@ namespace System
                 if (a != null)
                 {
                     // Load 'a' into two vectors with overlapping.
-                    // TODO: special case len == 7, 8 (single V128 operation) and len == 15, 16 (single V256 operation)
-                    // for len = 7 and len 15 we can rely on '\0'
-                    // However, these special cases might eat inliner's budget so we need to fix that first
-                    Vector128<ushort> v2 = Vector128.LoadUnsafe(
-                        ref Unsafe.As<char, byte>(ref a._firstChar), (nuint)a.Length - 16).AsUInt16();
-                    Vector128<ushort> v1 = Vector128.LoadUnsafe(
-                        ref Unsafe.As<char, byte>(ref a._firstChar)).AsUInt16();
+                    Vector128<ushort> v2 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref a._firstChar), (nuint)a.Length - 8);
+                    Vector128<ushort> v1 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref a._firstChar));
 
                     // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
                     return ((v1 ^ Vector128.Create(b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7])) |
                             (v2 ^ Vector128.Create(
-                                    b[b.Length - 8], b[b.Length - 7],
-                                    b[b.Length - 6], b[b.Length - 5],
-                                    b[b.Length - 4], b[b.Length - 3],
-                                    b[b.Length - 2], b[b.Length - 1]))) ==
-                           Vector128<ushort>.Zero;
+                                    b[b.Length - 8], b[b.Length - 7], b[b.Length - 6], b[b.Length - 5],
+                                    b[b.Length - 4], b[b.Length - 3], b[b.Length - 2], b[b.Length - 1]))) == Vector128<ushort>.Zero;
                 }
-
                 // a is null when b is a known non-null
                 return false;
             }
+
+            // Two-Vector256s-impl can be basically a copy-paste of ^ with wider vectors to handle inputs [17..32]
+            // but we need to tune inliner's budget first
 #endif
             return EqualsFallback(a, b);
 
@@ -1061,92 +1052,49 @@ namespace System
                 throw new ArgumentNullException(nameof(value));
             }
 
-#if TARGET_64BIT && !MONO && !BIGENDIAN
-            if (RuntimeHelpers.IsKnownConstant(value) && RuntimeHelpers.IsKnownConstant((int)comparisonType) &&
-                comparisonType == StringComparison.Ordinal && value.Length <= 4)
+            if ((object)this == (object)value)
             {
-                return StartsWithUnrolledOrdinal(value);
+                CheckStringComparison(comparisonType);
+                return true;
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            bool StartsWithUnrolledOrdinal(string value)
+            if (value.Length == 0)
             {
-                if (value.Length == 0)
-                {
-                    return true;
-                }
-                if (value.Length == 1)
-                {
-                    return _stringLength >= 1 && _firstChar == value[0];
-                }
-                if (value.Length == 2)
-                {
-                    return _stringLength >= 2 && Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref _firstChar)) ==
-                        (((uint)value[1] << 16) | value[0]);
-                }
-                if (value.Length == 3)
-                {
-                    // it's safe to load 64bit here because of '\0' but we need to mask the last char out
-                    return _stringLength >= 3 && Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref _firstChar)) << 16 ==
-                        (((ulong)value[2] << 48) | ((ulong)value[1] << 32) | (ulong)value[0] << 16);
-                }
-                if (value.Length == 4)
-                {
-                    return _stringLength >= 4 && Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref _firstChar)) ==
-                        (((ulong)value[3] << 48) | ((ulong)value[2] << 32) | ((ulong)value[1] << 16) | value[0]);
-                }
-                return StartsWithInternal(value, StringComparison.Ordinal);
+                CheckStringComparison(comparisonType);
+                return true;
             }
-#endif
 
-            return StartsWithInternal(value, comparisonType);
-
-            bool StartsWithInternal(string value, StringComparison comparisonType)
+            switch (comparisonType)
             {
-                if ((object)this == (object)value)
-                {
-                    CheckStringComparison(comparisonType);
-                    return true;
-                }
+                case StringComparison.CurrentCulture:
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return CultureInfo.CurrentCulture.CompareInfo.IsPrefix(this, value, GetCaseCompareOfComparisonCulture(comparisonType));
 
-                if (value.Length == 0)
-                {
-                    CheckStringComparison(comparisonType);
-                    return true;
-                }
+                case StringComparison.InvariantCulture:
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return CompareInfo.Invariant.IsPrefix(this, value, GetCaseCompareOfComparisonCulture(comparisonType));
 
-                switch (comparisonType)
-                {
-                    case StringComparison.CurrentCulture:
-                    case StringComparison.CurrentCultureIgnoreCase:
-                        return CultureInfo.CurrentCulture.CompareInfo.IsPrefix(this, value, GetCaseCompareOfComparisonCulture(comparisonType));
+                case StringComparison.Ordinal:
+                    if (this.Length < value.Length || _firstChar != value._firstChar)
+                    {
+                        return false;
+                    }
+                    return (value.Length == 1) ?
+                            true :                 // First char is the same and thats all there is to compare
+                            SpanHelpers.SequenceEqual(
+                                ref Unsafe.As<char, byte>(ref this.GetRawStringData()),
+                                ref Unsafe.As<char, byte>(ref value.GetRawStringData()),
+                                ((nuint)value.Length) * 2);
 
-                    case StringComparison.InvariantCulture:
-                    case StringComparison.InvariantCultureIgnoreCase:
-                        return CompareInfo.Invariant.IsPrefix(this, value, GetCaseCompareOfComparisonCulture(comparisonType));
+                case StringComparison.OrdinalIgnoreCase:
+                    if (this.Length < value.Length)
+                    {
+                        return false;
+                    }
+                    return Ordinal.EqualsIgnoreCase(ref this.GetRawStringData(), ref value.GetRawStringData(), value.Length);
 
-                    case StringComparison.Ordinal:
-                        if (this.Length < value.Length || _firstChar != value._firstChar)
-                        {
-                            return false;
-                        }
-                        return (value.Length == 1) ?
-                                true :                 // First char is the same and thats all there is to compare
-                                SpanHelpers.SequenceEqual(
-                                    ref Unsafe.As<char, byte>(ref this.GetRawStringData()),
-                                    ref Unsafe.As<char, byte>(ref value.GetRawStringData()),
-                                    ((nuint)value.Length) * 2);
-
-                    case StringComparison.OrdinalIgnoreCase:
-                        if (this.Length < value.Length)
-                        {
-                            return false;
-                        }
-                        return Ordinal.EqualsIgnoreCase(ref this.GetRawStringData(), ref value.GetRawStringData(), value.Length);
-
-                    default:
-                        throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
-                }
+                default:
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
