@@ -700,11 +700,6 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static bool EqualsUnrolled(string? a, string b)
             {
-                if (a == null)
-                {
-                    return false; // b is not null
-                }
-
                 // if both are constants - EqualsInternal will handle it just fine
                 if (RuntimeHelpers.IsKnownConstant(a))
                 {
@@ -713,34 +708,34 @@ namespace System
 
                 if (b.Length == 0)
                 {
-                    return a.Length == 0;
+                    return a != null && a.Length == 0;
                 }
 
                 if (b.Length == 1)
                 {
                     // Length: [ 0 ][ 1 ], ch1: [ X ][ \0 ] - we can compare Length and firstChar using a single
                     // cmp operation, it's safe because there is also '\0' char we can rely on
-                    return Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, -2))) ==
+                    return a != null && Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, -2))) ==
                         (((ulong)b[0] << 32) | 1UL);
                 }
 
                 if (b.Length == 2)
                 {
                     // Same here, compare Length and two chars in a single cmp
-                    return Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, -2))) ==
+                    return a != null && Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, -2))) ==
                         (((ulong)b[1] << 48) | ((ulong)b[0] << 32) | 2UL);
                 }
 
                 if (b.Length == 3)
                 {
                     // it's safe to load 64bit here because of '\0'
-                    return a.Length == 3 && Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
+                    return a?.Length == 3 && Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
                         (((ulong)b[2] << 32) | ((ulong)b[1] << 16) | (ulong)b[0]);
                 }
 
                 if (b.Length == 4)
                 {
-                    return a.Length == 4 && Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
+                    return a?.Length == 4 && Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
                         (((ulong)b[3] << 48) | ((ulong)b[2] << 32) | ((ulong)b[1] << 16) | b[0]);
                 }
 
