@@ -29,6 +29,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<Startup>()
+                .UseSetting(WebHostDefaults.SuppressStatusMessagesKey, "True")
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
                     config.AddCommandLine(args);

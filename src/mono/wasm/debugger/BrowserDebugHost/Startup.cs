@@ -18,6 +18,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -38,6 +39,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         public void Configure(IApplicationBuilder app, IOptionsMonitor<ProxyOptions> optionsAccessor, IWebHostEnvironment env, IHostApplicationLifetime applicationLifetime)
         {
             ProxyOptions options = optionsAccessor.CurrentValue;
+            applicationLifetime.ApplicationStarted.Register(() => {
+                var uri = new Uri(app.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First());
+                Console.WriteLine($"Now listening on: {(uri.Scheme == "http" ? "ws" : "wss")}://{uri.Authority}");
+                Console.WriteLine("Application started. Press Ctrl+C to shut down.");
+            });
 
             if (options.OwnerPid.HasValue)
             {
