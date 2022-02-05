@@ -84,12 +84,22 @@ namespace System.IO.Tests
                 yield return TimeFunction.Create(
                     (path, time) =>
                     {
-                        using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                        using var fileHandle = File.OpenHandle(
+                            path,
+                            FileMode.OpenOrCreate,
+                            FileAccess.ReadWrite,
+                            FileShare.ReadWrite,
+                            FileOptions.DeleteOnClose);
                         File.SetCreationTime(fileHandle, time);
                     },
                     path =>
                     {
-                        using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                        using var fileHandle = File.OpenHandle(
+                            path,
+                            FileMode.OpenOrCreate,
+                            FileAccess.ReadWrite,
+                            FileShare.ReadWrite,
+                            FileOptions.DeleteOnClose);
                         return File.GetCreationTime(fileHandle);
                     },
                     DateTimeKind.Local);
@@ -100,12 +110,22 @@ namespace System.IO.Tests
                 yield return TimeFunction.Create(
                     (path, time) =>
                     {
-                        using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                        using var fileHandle = File.OpenHandle(
+                            path,
+                            FileMode.OpenOrCreate,
+                            FileAccess.ReadWrite,
+                            FileShare.ReadWrite,
+                            FileOptions.DeleteOnClose);
                         File.SetCreationTimeUtc(fileHandle, time);
                     },
                     path =>
                     {
-                        using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                        using var fileHandle = File.OpenHandle(
+                            path,
+                            FileMode.OpenOrCreate,
+                            FileAccess.ReadWrite,
+                            FileShare.ReadWrite,
+                            FileOptions.DeleteOnClose);
                         return File.GetCreationTimeUtc(fileHandle);
                     },
                     DateTimeKind.Unspecified);
@@ -116,12 +136,22 @@ namespace System.IO.Tests
                 yield return TimeFunction.Create(
                     (path, time) =>
                     {
-                        using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                        using var fileHandle = File.OpenHandle(
+                            path,
+                            FileMode.OpenOrCreate,
+                            FileAccess.ReadWrite,
+                            FileShare.ReadWrite,
+                            FileOptions.DeleteOnClose);
                         File.SetCreationTimeUtc(fileHandle, time);
                     },
                     path =>
                     {
-                        using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                        using var fileHandle = File.OpenHandle(
+                            path,
+                            FileMode.OpenOrCreate,
+                            FileAccess.ReadWrite,
+                            FileShare.ReadWrite,
+                            FileOptions.DeleteOnClose);
                         return File.GetCreationTimeUtc(fileHandle);
                     },
                     DateTimeKind.Utc);
@@ -134,12 +164,22 @@ namespace System.IO.Tests
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
-                    using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                    using var fileHandle = File.OpenHandle(
+                        path,
+                        FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite,
+                        FileOptions.DeleteOnClose);
                     File.SetLastAccessTime(fileHandle, time);
                 },
                 path =>
                 {
-                    using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                    using var fileHandle = File.OpenHandle(
+                        path,
+                        FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite,
+                        FileOptions.DeleteOnClose);
                     return File.GetLastAccessTime(fileHandle);
                 },
                 DateTimeKind.Local);
@@ -150,12 +190,22 @@ namespace System.IO.Tests
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
-                    using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                    using var fileHandle = File.OpenHandle(
+                        path,
+                        FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite,
+                        FileOptions.DeleteOnClose);
                     File.SetLastAccessTimeUtc(fileHandle, time);
                 },
                 path =>
                 {
-                    using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                    using var fileHandle = File.OpenHandle(
+                        path,
+                        FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite,
+                        FileOptions.DeleteOnClose);
                     return File.GetLastAccessTimeUtc(fileHandle);
                 },
                 DateTimeKind.Unspecified);
@@ -166,12 +216,22 @@ namespace System.IO.Tests
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
-                    using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                    using var fileHandle = File.OpenHandle(
+                        path,
+                        FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite,
+                        FileOptions.DeleteOnClose);
                     File.SetLastAccessTimeUtc(fileHandle, time);
                 },
                 path =>
                 {
-                    using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                    using var fileHandle = File.OpenHandle(
+                        path,
+                        FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite,
+                        FileOptions.DeleteOnClose);
                     return File.GetLastAccessTimeUtc(fileHandle);
                 },
                 DateTimeKind.Utc);
@@ -182,12 +242,22 @@ namespace System.IO.Tests
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
-                    using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                    using var fileHandle = File.OpenHandle(
+                        path,
+                        FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite,
+                        FileOptions.DeleteOnClose);
                     File.SetLastWriteTime(fileHandle, time);
                 },
                 path =>
                 {
-                    using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                    using var fileHandle = File.OpenHandle(
+                        path,
+                        FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite,
+                        FileOptions.DeleteOnClose);
                     return File.GetLastWriteTime(fileHandle);
                 },
                 DateTimeKind.Local);
@@ -198,12 +268,22 @@ namespace System.IO.Tests
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
-                    using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                    using var fileHandle = File.OpenHandle(
+                        path,
+                        FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite,
+                        FileOptions.DeleteOnClose);
                     File.SetLastWriteTimeUtc(fileHandle, time);
                 },
                 path =>
                 {
-                    using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                    using var fileHandle = File.OpenHandle(
+                        path,
+                        FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite,
+                        FileOptions.DeleteOnClose);
                     return File.GetLastWriteTimeUtc(fileHandle);
                 },
                 DateTimeKind.Unspecified);
@@ -214,12 +294,22 @@ namespace System.IO.Tests
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
-                    using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                    using var fileHandle = File.OpenHandle(
+                        path,
+                        FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite,
+                        FileOptions.DeleteOnClose);
                     File.SetLastWriteTimeUtc(fileHandle, time);
                 },
                 path =>
                 {
-                    using var fileHandle = File.OpenHandle(path, access: FileAccess.ReadWrite);
+                    using var fileHandle = File.OpenHandle(
+                        path,
+                        FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite,
+                        FileShare.ReadWrite,
+                        FileOptions.DeleteOnClose);
                     return File.GetLastWriteTimeUtc(fileHandle);
                 },
                 DateTimeKind.Utc);
