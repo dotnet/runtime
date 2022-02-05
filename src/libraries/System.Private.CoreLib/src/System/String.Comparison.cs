@@ -1043,8 +1043,6 @@ namespace System
             return CultureInfo.CurrentCulture.CompareInfo.IsPrefix(this, value, GetCaseCompareOfComparisonCulture(StringComparison.CurrentCulture));
         }
 
-        // A hint for the inliner to always prescan this method
-        // and take the constant input path
         public bool StartsWith(string value, StringComparison comparisonType)
         {
             if (value is null)
