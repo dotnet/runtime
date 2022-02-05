@@ -329,10 +329,8 @@ namespace System.Security.Cryptography
 
         private static void ValidateHashAlgorithm(HashAlgorithmName hashAlgorithm)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
-
-            string hashAlgorithmName = hashAlgorithm.Name;
+            string? hashAlgorithmName = hashAlgorithm.Name;
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithmName, nameof(hashAlgorithm));
 
             // MD5 intentionally left out.
             if (hashAlgorithmName != HashAlgorithmName.SHA1.Name &&

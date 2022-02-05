@@ -19,7 +19,7 @@ namespace System.IO.Tests
     {
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
-            string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
+            string pipeName = GetNamedPipeServerStreamName();
             string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
 
             var server = new NamedPipeServerStream(pipeName, PipeDirection.In);

@@ -422,15 +422,7 @@ namespace System.Runtime.Loader
         // platform-independent way. The DLL is loaded with default load flags.
         protected IntPtr LoadUnmanagedDllFromPath(string unmanagedDllPath)
         {
-            if (unmanagedDllPath == null)
-            {
-                throw new ArgumentNullException(nameof(unmanagedDllPath));
-            }
-
-            if (unmanagedDllPath.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(unmanagedDllPath));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(unmanagedDllPath);
 
             if (PathInternal.IsPartiallyQualified(unmanagedDllPath))
             {

@@ -541,6 +541,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
     GenTree* op1     = nullptr;
     GenTree* op2     = nullptr;
     GenTree* op3     = nullptr;
+    GenTree* op4     = nullptr;
 
     if (!featureSIMD || !IsBaselineSimdIsaSupported())
     {
@@ -953,6 +954,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_Dot:
         {
             assert(sig->numArgs == 2);
+            var_types simdType = getSIMDTypeForSize(simdSize);
 
             if (varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType))
             {
@@ -979,8 +981,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
-            op2 = impSIMDPopStack(retType);
-            op1 = impSIMDPopStack(retType);
+            op2 = impSIMDPopStack(simdType);
+            op1 = impSIMDPopStack(simdType);
 
             retNode =
                 gtNewSimdDotProdNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
@@ -1028,7 +1030,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            if ((simdSize != 32) || compExactlyDependsOn(InstructionSet_AVX2))
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
@@ -1050,23 +1052,136 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
-                op1 = impSIMDPopStack(simdType);
-
                 NamedIntrinsic moveMaskIntrinsic = NI_Illegal;
+                NamedIntrinsic shuffleIntrinsic  = NI_Illegal;
+                NamedIntrinsic createIntrinsic   = NI_Illegal;
 
-                if (simdBaseType == TYP_FLOAT)
+                switch (simdBaseType)
                 {
-                    moveMaskIntrinsic = (simdSize == 32) ? NI_AVX_MoveMask : NI_SSE_MoveMask;
+                    case TYP_BYTE:
+                    case TYP_UBYTE:
+                    {
+                        op1               = impSIMDPopStack(simdType);
+                        moveMaskIntrinsic = (simdSize == 32) ? NI_AVX2_MoveMask : NI_SSE2_MoveMask;
+                        break;
+                    }
+
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                    {
+                        simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
+
+                        assert((simdSize == 16) || (simdSize == 32));
+                        IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), simdSize);
+
+                        // We want to tightly pack the most significant byte of each short/ushort
+                        // and then zero the tightly packed least significant bytes
+
+                        nodeBuilder.AddOperand(0x00, gtNewIconNode(0x01));
+                        nodeBuilder.AddOperand(0x01, gtNewIconNode(0x03));
+                        nodeBuilder.AddOperand(0x02, gtNewIconNode(0x05));
+                        nodeBuilder.AddOperand(0x03, gtNewIconNode(0x07));
+                        nodeBuilder.AddOperand(0x04, gtNewIconNode(0x09));
+                        nodeBuilder.AddOperand(0x05, gtNewIconNode(0x0B));
+                        nodeBuilder.AddOperand(0x06, gtNewIconNode(0x0D));
+                        nodeBuilder.AddOperand(0x07, gtNewIconNode(0x0F));
+
+                        for (unsigned i = 0x08; i < 0x10; i++)
+                        {
+                            // The most significant bit being set means zero the value
+                            nodeBuilder.AddOperand(i, gtNewIconNode(0x80));
+                        }
+
+                        if (simdSize == 32)
+                        {
+                            // Vector256 works on 2x128-bit lanes, so repeat the same indices for the upper lane
+
+                            nodeBuilder.AddOperand(0x10, gtNewIconNode(0x01));
+                            nodeBuilder.AddOperand(0x11, gtNewIconNode(0x03));
+                            nodeBuilder.AddOperand(0x12, gtNewIconNode(0x05));
+                            nodeBuilder.AddOperand(0x13, gtNewIconNode(0x07));
+                            nodeBuilder.AddOperand(0x14, gtNewIconNode(0x09));
+                            nodeBuilder.AddOperand(0x15, gtNewIconNode(0x0B));
+                            nodeBuilder.AddOperand(0x16, gtNewIconNode(0x0D));
+                            nodeBuilder.AddOperand(0x17, gtNewIconNode(0x0F));
+
+                            for (unsigned i = 0x18; i < 0x20; i++)
+                            {
+                                // The most significant bit being set means zero the value
+                                nodeBuilder.AddOperand(i, gtNewIconNode(0x80));
+                            }
+
+                            createIntrinsic   = NI_Vector256_Create;
+                            shuffleIntrinsic  = NI_AVX2_Shuffle;
+                            moveMaskIntrinsic = NI_AVX2_MoveMask;
+                        }
+                        else if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+                        {
+                            createIntrinsic   = NI_Vector128_Create;
+                            shuffleIntrinsic  = NI_SSSE3_Shuffle;
+                            moveMaskIntrinsic = NI_SSE2_MoveMask;
+                        }
+                        else
+                        {
+                            return nullptr;
+                        }
+
+                        op2 = gtNewSimdHWIntrinsicNode(simdType, std::move(nodeBuilder), createIntrinsic,
+                                                       simdBaseJitType, simdSize);
+
+                        op1 = impSIMDPopStack(simdType);
+                        op1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2, shuffleIntrinsic, simdBaseJitType, simdSize);
+
+                        if (simdSize == 32)
+                        {
+                            CorInfoType simdOtherJitType;
+
+                            // Since Vector256 is 2x128-bit lanes we need a full width permutation so we get the lower
+                            // 64-bits of each lane next to eachother. The upper bits should be zero, but also don't
+                            // matter so we can also then simplify down to a 128-bit move mask.
+
+                            simdOtherJitType = (simdBaseType == TYP_UBYTE) ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG;
+
+                            op1 = gtNewSimdHWIntrinsicNode(simdType, op1, gtNewIconNode(0xD8), NI_AVX2_Permute4x64,
+                                                           simdOtherJitType, simdSize);
+
+                            simdSize = 16;
+                            simdType = TYP_SIMD16;
+
+                            op1 = gtNewSimdHWIntrinsicNode(simdType, op1, NI_Vector256_GetLower, simdBaseJitType,
+                                                           simdSize);
+                        }
+                        break;
+                    }
+
+                    case TYP_INT:
+                    case TYP_UINT:
+                    case TYP_FLOAT:
+                    {
+                        simdBaseJitType   = CORINFO_TYPE_FLOAT;
+                        op1               = impSIMDPopStack(simdType);
+                        moveMaskIntrinsic = (simdSize == 32) ? NI_AVX_MoveMask : NI_SSE_MoveMask;
+                        break;
+                    }
+
+                    case TYP_LONG:
+                    case TYP_ULONG:
+                    case TYP_DOUBLE:
+                    {
+                        simdBaseJitType   = CORINFO_TYPE_DOUBLE;
+                        op1               = impSIMDPopStack(simdType);
+                        moveMaskIntrinsic = (simdSize == 32) ? NI_AVX_MoveMask : NI_SSE2_MoveMask;
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
                 }
-                else if (simdBaseType == TYP_DOUBLE)
-                {
-                    moveMaskIntrinsic = (simdSize == 32) ? NI_AVX_MoveMask : NI_SSE2_MoveMask;
-                }
-                else
-                {
-                    moveMaskIntrinsic = (simdSize == 32) ? NI_AVX2_MoveMask : NI_SSE2_MoveMask;
-                    simdBaseJitType   = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
-                }
+
+                assert(moveMaskIntrinsic != NI_Illegal);
+                assert(op1 != nullptr);
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, moveMaskIntrinsic, simdBaseJitType, simdSize,
                                                    /* isSimdAsHWIntrinsic */ false);
@@ -1178,7 +1293,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            if ((simdSize != 32) || compExactlyDependsOn(InstructionSet_AVX2))
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
@@ -1196,7 +1311,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            if ((simdSize != 32) || compExactlyDependsOn(InstructionSet_AVX2))
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
@@ -1230,7 +1345,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            if ((simdSize != 32) || compExactlyDependsOn(InstructionSet_AVX2))
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
@@ -1248,7 +1363,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            if ((simdSize != 32) || compExactlyDependsOn(InstructionSet_AVX2))
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
@@ -1282,7 +1397,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            if ((simdSize != 32) || compExactlyDependsOn(InstructionSet_AVX2))
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
@@ -1300,7 +1415,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            if ((simdSize != 32) || compExactlyDependsOn(InstructionSet_AVX2))
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
@@ -1334,7 +1449,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            if ((simdSize != 32) || compExactlyDependsOn(InstructionSet_AVX2))
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
@@ -1352,7 +1467,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            if ((simdSize != 32) || compExactlyDependsOn(InstructionSet_AVX2))
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
@@ -1786,9 +1901,10 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_Store:
         {
             assert(sig->numArgs == 2);
+            var_types simdType = getSIMDTypeForSize(simdSize);
 
             op2 = impPopStack().val;
-            op1 = impSIMDPopStack(retType);
+            op1 = impSIMDPopStack(simdType);
 
             NamedIntrinsic storeIntrinsic = NI_Illegal;
 
@@ -1813,9 +1929,10 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_StoreAligned:
         {
             assert(sig->numArgs == 2);
+            var_types simdType = getSIMDTypeForSize(simdSize);
 
             op2 = impPopStack().val;
-            op1 = impSIMDPopStack(retType);
+            op1 = impSIMDPopStack(simdType);
 
             NamedIntrinsic storeIntrinsic = NI_Illegal;
 
@@ -1840,9 +1957,10 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_StoreAlignedNonTemporal:
         {
             assert(sig->numArgs == 2);
+            var_types simdType = getSIMDTypeForSize(simdSize);
 
             op2 = impPopStack().val;
-            op1 = impSIMDPopStack(retType);
+            op1 = impSIMDPopStack(simdType);
 
             NamedIntrinsic storeIntrinsic = NI_Illegal;
 
@@ -1866,6 +1984,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_StoreUnsafe:
         case NI_Vector256_StoreUnsafe:
         {
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
             if (sig->numArgs == 3)
             {
                 op3 = impPopStack().val;
@@ -1876,13 +1996,13 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             op2 = impPopStack().val;
-            op1 = impSIMDPopStack(retType);
+            op1 = impSIMDPopStack(simdType);
 
             if (sig->numArgs == 3)
             {
-                op3 = gtNewIconNode(genTypeSize(simdBaseType), op2->TypeGet());
-                op2 = gtNewOperNode(GT_MUL, op2->TypeGet(), op2, op3);
-                op2 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
+                op4 = gtNewIconNode(genTypeSize(simdBaseType), op3->TypeGet());
+                op3 = gtNewOperNode(GT_MUL, op3->TypeGet(), op3, op4);
+                op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
             }
 
             NamedIntrinsic storeIntrinsic = NI_Illegal;
@@ -1908,8 +2028,14 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_Sum:
         {
             assert(sig->numArgs == 1);
+            var_types simdType = getSIMDTypeForSize(simdSize);
 
-            if (varTypeIsFloating(simdBaseType))
+            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                // Vector256 for integer types requires AVX2
+                break;
+            }
+            else if (varTypeIsFloating(simdBaseType))
             {
                 if (!compOpportunisticallyDependsOn(InstructionSet_SSE3))
                 {
@@ -1928,7 +2054,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            op1     = impSIMDPopStack(retType);
+            op1     = impSIMDPopStack(simdType);
             retNode = gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }

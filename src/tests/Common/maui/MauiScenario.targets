@@ -3,7 +3,7 @@
     <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  <!-- Use local targeting pack for NetCoreAppCurrent. -->
+   <!--Use local targeting pack for NetCoreAppCurrent.--> 
   <Target Name="UpdateTargetingAndRuntimePack"
           AfterTargets="ResolveFrameworkReferences">
     <PropertyGroup>
@@ -18,6 +18,10 @@
                              Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'android-x86'" />
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)/Microsoft.NETCore.App.Runtime.Mono.android-x64"
                              Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'android-x64'" />
+      <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)/Microsoft.NETCore.App.Runtime.Mono.ios-arm"
+                             Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'ios-arm'" />
+      <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)/Microsoft.NETCore.App.Runtime.Mono.ios-arm64"
+                             Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'ios-arm64'" />
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64"
                              Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'maccatalyst-x64'" />
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)/Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64"

@@ -310,16 +310,8 @@ namespace System.IO.Compression
                 finally
                 {
                     _stream = null!;
-
-                    try
-                    {
-                        _inflater?.Dispose();
-                    }
-                    finally
-                    {
-                        _inflater = null!;
-                        base.Dispose(disposing);
-                    }
+                    _inflater = null!;
+                    base.Dispose(disposing);
                 }
             }
         }

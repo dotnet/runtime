@@ -748,8 +748,17 @@ namespace Internal.JitInterface
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
             MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
-            object literal = methodIL.GetObject((int)metaTok);
-            ISymbolNode stringObject = _compilation.NodeFactory.SerializedStringObject((string)literal);
+
+            ISymbolNode stringObject;
+            if (metaTok == (mdToken)CorConstants.CorTokenType.mdtString)
+            {
+                stringObject = _compilation.NodeFactory.SerializedStringObject("");
+            }
+            else
+            {
+                object literal = methodIL.GetObject((int)metaTok);
+                stringObject = _compilation.NodeFactory.SerializedStringObject((string)literal);
+            }
             ppValue = (void*)ObjectToHandle(stringObject);
             return stringObject.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
         }
@@ -1027,7 +1036,7 @@ namespace Internal.JitInterface
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
 
             Debug.Assert(!type.IsString && !type.IsArray && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
-            
+
             pHasSideEffects = type.HasFinalizer;
 
             if (type.RequiresAlign8())
@@ -1520,7 +1529,7 @@ namespace Internal.JitInterface
 
             targetIsFatFunctionPointer |= (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && !(pResult->kind == CORINFO_CALL_KIND.CORINFO_CALL);
 
-            Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig, targetIsFatFunctionPointer);
+            Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig, scope: null, targetIsFatFunctionPointer);
             if (useFatCallTransform)
             {
                 pResult->sig.flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
@@ -1531,7 +1540,7 @@ namespace Internal.JitInterface
                 if (pResult->hMethod != pResolvedToken.hMethod)
                 {
                     pResult->verMethodFlags = getMethodAttribsInternal(targetMethod);
-                    Get_CORINFO_SIG_INFO(targetMethod, &pResult->verSig);
+                    Get_CORINFO_SIG_INFO(targetMethod, &pResult->verSig, scope: null);
                 }
                 else
                 {
@@ -1791,7 +1800,9 @@ namespace Internal.JitInterface
 #if DEBUG
                 MethodSignature methodSignature = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
 
-                MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(methodSignature);
+                MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(
+                    methodSignature,
+                    ((MetadataType)HandleToObject(callSiteSig->scope).OwningMethod.OwningType).Module);
                 Debug.Assert(!IsPInvokeStubRequired(stub));
 #endif
 
@@ -1825,7 +1836,9 @@ namespace Internal.JitInterface
             if ((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == 0)
                 return false;
 
-            MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(signature);
+            MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(
+                signature,
+                ((MetadataType)methodIL.OwningMethod.OwningType).Module);
             if (!mustConvert && !IsPInvokeStubRequired(stub))
                 return false;
 
