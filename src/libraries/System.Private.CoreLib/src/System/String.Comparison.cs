@@ -729,7 +729,7 @@ namespace System
 
                 if (b.Length == 3)
                 {
-                    // it's safe to load 64bit here because of '\0' but we need to mask the last char out
+                    // it's safe to load 64bit here because of '\0'
                     return a != null && a.Length == 3 &&
                         Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref a._firstChar)) ==
                             (((ulong)b[2] << 32) | ((ulong)b[1] << 16) | (ulong)b[0]);
