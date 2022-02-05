@@ -8617,8 +8617,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 ValueNumPair  addrVNP            = ValueNumPair();
                 FieldSeqNode* zeroOffsetFieldSeq = nullptr;
-                if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFieldSeq) &&
-                    (zeroOffsetFieldSeq != FieldSeqStore::NotAField()))
+                if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFieldSeq))
                 {
                     ValueNum addrExtended = vnStore->ExtendPtrVN(arg->AsIndir()->Addr(), zeroOffsetFieldSeq);
                     if (addrExtended != ValueNumStore::NoVN)
