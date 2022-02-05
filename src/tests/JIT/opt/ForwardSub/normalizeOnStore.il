@@ -57,7 +57,7 @@
     IL_0001:  stloc.0
     IL_0002:  ldloc.0
     IL_0003:  ret
-  } // end of method ForwardSubTests::Problem
+  } // end of method ForwardSubNormalizeOnStore::Problem
 
   .method public hidebysig static int32  Main() cil managed
   {
@@ -65,9 +65,9 @@
     // Code size       11 (0xb)
     .maxstack  8
     IL_0000:  ldc.i4     0xf0064
-    IL_0005:  call       int32 ForwardSubTests::Problem(int32)
+    IL_0005:  call       int32 ForwardSubNormalizeOnStore::Problem(int32)
     IL_000a:  ret
-  } // end of method ForwardSubTests::Main
+  } // end of method ForwardSubNormalizeOnStore::Main
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
@@ -77,9 +77,9 @@
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [System.Runtime]System.Object::.ctor()
     IL_0006:  ret
-  } // end of method ForwardSubTests::.ctor
+  } // end of method ForwardSubNormalizeOnStore::.ctor
 
-} // end of class ForwardSubTests
+} // end of class ForwardSubNormalizeOnStore
 
 .class private auto ansi store_ProcessedByFody
        extends [System.Runtime]System.Object
