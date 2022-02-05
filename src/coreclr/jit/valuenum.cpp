@@ -4167,32 +4167,33 @@ ValueNum ValueNumStore::VNForFieldSeq(FieldSeqNode* fieldSeq)
     {
         return VNForNull();
     }
-    else if (fieldSeq == FieldSeqStore::NotAField())
+
+    ValueNum fieldSeqVN;
+    if (fieldSeq == FieldSeqStore::NotAField())
     {
         // We always allocate a new, unique VN in this call.
         Chunk*   c                 = GetAllocChunk(TYP_REF, CEA_NotAField);
         unsigned offsetWithinChunk = c->AllocVN();
-        ValueNum result            = c->m_baseVN + offsetWithinChunk;
-        return result;
+        fieldSeqVN                 = c->m_baseVN + offsetWithinChunk;
     }
     else
     {
         ssize_t  fieldHndVal = ssize_t(fieldSeq->m_fieldHnd);
         ValueNum fieldHndVN  = VNForHandle(fieldHndVal, GTF_ICON_FIELD_HDL);
         ValueNum seqNextVN   = VNForFieldSeq(fieldSeq->m_next);
-        ValueNum fieldSeqVN  = VNForFunc(TYP_REF, VNF_FieldSeq, fieldHndVN, seqNextVN);
+        fieldSeqVN           = VNForFunc(TYP_REF, VNF_FieldSeq, fieldHndVN, seqNextVN);
+    }
 
 #ifdef DEBUG
-        if (m_pComp->verbose)
-        {
-            printf("    FieldSeq");
-            vnDump(m_pComp, fieldSeqVN);
-            printf(" is " FMT_VN "\n", fieldSeqVN);
-        }
+    if (m_pComp->verbose)
+    {
+        printf("    FieldSeq");
+        vnDump(m_pComp, fieldSeqVN);
+        printf(" is " FMT_VN "\n", fieldSeqVN);
+    }
 #endif
 
-        return fieldSeqVN;
-    }
+    return fieldSeqVN;
 }
 
 FieldSeqNode* ValueNumStore::FieldSeqVNToFieldSeq(ValueNum vn)
@@ -5961,6 +5962,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
         switch (funcApp.m_func)
         {
             case VNF_FieldSeq:
+            case VNF_NotAField:
                 vnDumpFieldSeq(comp, &funcApp, true);
                 break;
             case VNF_MapSelect:
@@ -6068,6 +6070,12 @@ void ValueNumStore::vnDumpExcSeq(Compiler* comp, VNFuncApp* excSeq, bool isHead)
 
 void ValueNumStore::vnDumpFieldSeq(Compiler* comp, VNFuncApp* fieldSeq, bool isHead)
 {
+    if (fieldSeq->m_func == VNF_NotAField)
+    {
+        printf("<NotAField>");
+        return;
+    }
+
     assert(fieldSeq->m_func == VNF_FieldSeq); // Precondition.
     // First arg is the field handle VN.
     assert(IsVNConstant(fieldSeq->m_args[0]) && TypeOfVN(fieldSeq->m_args[0]) == TYP_I_IMPL);
