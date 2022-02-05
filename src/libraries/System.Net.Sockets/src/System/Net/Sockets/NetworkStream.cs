@@ -341,6 +341,12 @@ namespace System.Net.Sockets
             Dispose();
         }
 
+        public void Close(TimeSpan timeout)
+        {
+            int milliseconds = (int)timeout.TotalMilliseconds;
+            Close(milliseconds);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
