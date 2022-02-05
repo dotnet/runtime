@@ -428,6 +428,12 @@ namespace System
             return (GCNotificationStatus)_WaitForFullGCApproach(millisecondsTimeout);
         }
 
+        public static GCNotificationStatus WaitForFullGCApproach(TimeSpan timeout)
+        {
+            int millisecondsTimeout = (int)timeout.TotalMilliseconds;
+            return (GCNotificationStatus)_WaitForFullGCApproach(millisecondsTimeout);
+        }
+
         public static GCNotificationStatus WaitForFullGCComplete()
         {
             return (GCNotificationStatus)_WaitForFullGCComplete(-1);
@@ -437,6 +443,12 @@ namespace System
         {
             if (millisecondsTimeout < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            return (GCNotificationStatus)_WaitForFullGCComplete(millisecondsTimeout);
+        }
+
+        public static GCNotificationStatus WaitForFullGCComplete(TimeSpan timeout)
+        {
+            int millisecondsTimeout = (int)timeout.TotalMilliseconds;
             return (GCNotificationStatus)_WaitForFullGCComplete(millisecondsTimeout);
         }
 
