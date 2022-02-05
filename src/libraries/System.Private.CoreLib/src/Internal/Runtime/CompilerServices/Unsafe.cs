@@ -68,7 +68,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NotNullIfNotNull("value")]
-        public static T As<T>(object? value) where T : class?
+        public static T As<T>(object? o) where T : class?
         {
             throw new PlatformNotSupportedException();
 
@@ -180,7 +180,7 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T Add<T>(ref T source, UIntPtr elementOffset)
+        public static ref T Add<T>(ref T source, nuint elementOffset)
         {
 #if CORECLR
             typeof(T).ToString();
@@ -206,7 +206,7 @@ namespace System.Runtime.CompilerServices
         // Mono:AddByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
+        public static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
         {
 #if CORECLR
             typeof(T).ToString();
@@ -793,7 +793,7 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T Subtract<T>(ref T source, nint elementOffset)
+        public static ref T Subtract<T>(ref T source, IntPtr elementOffset)
         {
 #if CORECLR
             typeof(T).ToString();
@@ -841,7 +841,7 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T SubtractByteOffset<T>(ref T source, nint byteOffset)
+        public static ref T SubtractByteOffset<T>(ref T source, IntPtr byteOffset)
         {
             throw new PlatformNotSupportedException();
 
