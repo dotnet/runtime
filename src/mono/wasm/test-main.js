@@ -156,7 +156,7 @@ async function main(processedArguments) {
             onConfigLoaded: (config) => {
                 if (!Module.config) {
                     const err = new Error("Could not find ./mono-config.json. Cancelling run");
-                    set_exit_code(1,);
+                    set_exit_code(1);
                     throw err;
                 }
                 // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
@@ -233,7 +233,9 @@ async function main(processedArguments) {
                 const result = await MONO.mono_run_main(main_assembly_name, app_args);
                 set_exit_code(result);
             } catch (error) {
-                set_exit_code(1, error);
+                if (error.name != "ExitStatus") {
+                    set_exit_code(1, error);
+                }
             }
         } else {
             set_exit_code(1, "Unhandled argument: " + processedArguments.applicationArgs[0]);
@@ -278,8 +280,6 @@ function set_exit_code(exit_code, reason) {
         };
         stop_when_ws_buffer_empty();
 
-    } else if (is_node) {
-        process.exit(exit_code);
     } else if (App && App.INTERNAL) {
         App.INTERNAL.mono_wasm_exit(exit_code);
     }

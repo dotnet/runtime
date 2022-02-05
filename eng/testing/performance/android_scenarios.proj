@@ -56,7 +56,7 @@
     <HelixWorkItem Include="Startup - Android Maui">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiAndroidDefault.apk .;$(Python) pre.py</PreCommands>
-      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\MauiAndroidDefault.apk --package-name com.companyname.MauiTesting --scenario-name &quot;%(Identity)&quot;</Command>
+      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\MauiAndroidDefault.apk --package-name com.companyname.mauitesting --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
   </ItemGroup>

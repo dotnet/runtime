@@ -117,6 +117,7 @@
     <SubsetName Include="Clr.CoreLib" Description="The managed System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.NativeCoreLib" Description="Run crossgen on System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.Tools" Description="Managed tools that support CoreCLR development and testing." />
+    <SubsetName Include="Clr.ToolsTests" OnDemand="true" Description="Unit tests for the clr.tools subset." />
     <SubsetName Include="Clr.Packages" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
     <SubsetName Include="LinuxDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" Description="The cross-OS Windows->libc-based Linux DAC. Skipped on x86." />
     <SubsetName Include="AlpineDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" OnDemand="true" Description="The cross-OS Windows->musl-libc-based Linux DAC. Skipped on x86" />
@@ -249,6 +250,9 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
 
     <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+clr.toolstests+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.Tests\ILCompiler.TypeSystem.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Compiler.Tests\ILCompiler.Compiler.Tests.csproj"
