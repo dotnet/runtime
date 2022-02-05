@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Cose
 
             ThrowIfDuplicateLabels(protectedHeaders, unprotectedHeaders);
 
-            ValidateOrSlipAlgorithmHeader(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm, out int? algHeaderValueToSlip);
+            int? algHeaderValueToSlip = ValidateOrSlipAlgorithmHeader(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm);
 
             byte[] encodedProtetedHeaders = protectedHeaders.Encode(mustReturnEmptyBstrIfEmpty: true, algHeaderValueToSlip);
             byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtetedHeaders, content);
@@ -217,20 +217,18 @@ namespace System.Security.Cryptography.Cose
 
         // If we Validate: The caller did specify a COSE Algorithm, we will make sure it matches the specified key and hash algorithm.
         // If we Slip: The caller did not specify a COSE Algorithm, we will write the header for them, rather than throw.
-        private static void ValidateOrSlipAlgorithmHeader(
+        private static int? ValidateOrSlipAlgorithmHeader(
             CoseHeaderMap protectedHeaders,
             CoseHeaderMap unprotectedHeaders,
             KeyType keyType,
-            HashAlgorithmName hashAlgorithm,
-            out int? headerValueToSlip)
+            HashAlgorithmName hashAlgorithm)
         {
             int algHeaderValue = GetCoseAlgorithmHeaderFromKeyTypeAndHashAlgorithm(keyType, hashAlgorithm);
 
             if (protectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg))
             {
                 ValidateAlgorithmHeader(encodedAlg, algHeaderValue, keyType, hashAlgorithm);
-                headerValueToSlip = null;
-                return;
+                return null;
             }
 
             if (unprotectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out _))
@@ -238,7 +236,7 @@ namespace System.Security.Cryptography.Cose
                 throw new CryptographicException(SR.Sign1SignAlgMustBeProtected);
             }
 
-            headerValueToSlip = algHeaderValue;
+            return algHeaderValue;
 
             static void ValidateAlgorithmHeader(ReadOnlyMemory<byte> encodedAlg, int expectedAlg, KeyType keyType, HashAlgorithmName hashAlgorithm)
             {
@@ -247,17 +245,7 @@ namespace System.Security.Cryptography.Cose
 
                 if (expectedAlg != alg.Value)
                 {
-                    Type typeOfKey;
-                    if (keyType == KeyType.ECDsa)
-                    {
-                        typeOfKey = typeof(ECDsa);
-                    }
-                    else
-                    {
-                        typeOfKey = typeof(RSA);
-                    }
-
-                    throw new CryptographicException(SR.Format(SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, typeOfKey, hashAlgorithm.Name));
+                    throw new CryptographicException(SR.Format(SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, keyType.ToString(), hashAlgorithm.Name));
                 }
             }
         }
