@@ -731,16 +731,22 @@ namespace System
                     if (b.Length == 2)
                     {
                         // Load Length, ch1, ch2 into ulong (so we can skip the Length check)
-                        return ReadUInt64(a, -2) == (((ulong)b[1] << 48) | ((ulong)b[0] << 32) | 2UL);
+                        return a.Length == 2 && ReadUInt64(a, -2) == (((ulong)b[1] << 48) |
+                                                                      ((ulong)b[0] << 32) | 2UL);
                     }
                     if (b.Length == 3)
                     {
                         // Load ch1, ch2, ch3 and \0 into ulong
-                        return a.Length == 3 && ReadUInt64(a) == (((ulong)b[2] << 32) | ((ulong)b[1] << 16) | b[0]);
+                        return a.Length == 3 &&
+                            ReadUInt64(a) == (((ulong)b[2] << 32) |
+                                              ((ulong)b[1] << 16) | b[0]);
                     }
 
                     ulong v1 = ReadUInt64(a);
-                    ulong cns1 = ((ulong)b[3] << 48) | ((ulong)b[2] << 32) | ((ulong)b[1] << 16) | b[0];
+                    ulong cns1 = ((ulong)b[3] << 48) |
+                                 ((ulong)b[2] << 32) |
+                                 ((ulong)b[1] << 16) | b[0];
+
                     if (b.Length == 4)
                     {
                         // Load ch1, ch2, ch3 and ch4 into ulong
@@ -748,7 +754,10 @@ namespace System
                     }
                     // Handle Length [5..8] via two ulong (overlapped)
                     return v1 == cns1 && ReadUInt64(a, a.Length - 4) ==
-                        (((ulong)b[b.Length - 1] << 48) | ((ulong)b[b.Length - 2] << 32) | ((ulong)b[b.Length - 3] << 16) | b[b.Length - 4]);
+                        (((ulong)b[b.Length - 1] << 48) |
+                         ((ulong)b[b.Length - 2] << 32) |
+                         ((ulong)b[b.Length - 3] << 16) |
+                         ((ulong)b[b.Length - 4] << 0));
                 }
 
                 // a is null when b is a known non-null
@@ -758,17 +767,24 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static bool EqualsUnrolled_9_to_16(string? a, string b)
             {
-                if (a != null)
+                if (a?.Length >= b.Length)
                 {
                     // Load 'a' into two vectors with overlapping.
-                    Vector128<ushort> v2 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref a._firstChar), (nuint)a.Length - 8);
-                    Vector128<ushort> v1 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref a._firstChar));
+                    Vector128<ushort> v2 = Vector128.LoadUnsafe(
+                        ref Unsafe.As<char, ushort>(ref a._firstChar), (nuint)a.Length - 8);
+                    Vector128<ushort> v1 = Vector128.LoadUnsafe(
+                        ref Unsafe.As<char, ushort>(ref a._firstChar));
 
                     // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
-                    return ((v1 ^ Vector128.Create(b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7])) |
+                    return ((v1 ^ Vector128.Create(
+                                    b[0], b[1], b[2], b[3],
+                                    b[4], b[5], b[6], b[7])) |
                             (v2 ^ Vector128.Create(
-                                    b[b.Length - 8], b[b.Length - 7], b[b.Length - 6], b[b.Length - 5],
-                                    b[b.Length - 4], b[b.Length - 3], b[b.Length - 2], b[b.Length - 1]))) == Vector128<ushort>.Zero;
+                                    // b[b.Length - c] are folded to constants
+                                    b[b.Length - 8], b[b.Length - 7],
+                                    b[b.Length - 6], b[b.Length - 5],
+                                    b[b.Length - 4], b[b.Length - 3],
+                                    b[b.Length - 2], b[b.Length - 1]))) == Vector128<ushort>.Zero;
                 }
                 // a is null when b is a known non-null
                 return false;
