@@ -742,53 +742,48 @@ namespace System
                 return EqualsInternal(a, b);
             }
 
-            /*
+            // // Vectorized unrolling demo:
 
-            // Vectorized unrolling demo:
+            // if (RuntimeHelpers.IsKnownConstant(b) && b != null && b.Length >= 8 && b.Length <= 16) // TODO: 16
+            // {
+            //     return EqualsUnrolled_8_to_16_Vector128(a, b);
+            // }
 
-            if (RuntimeHelpers.IsKnownConstant(b) && b != null && b.Length >= 8 && b.Length <= 10) // TODO: 16
-            {
-                return EqualsUnrolled_8_to_16_Vector128(a, b);
-            }
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            // static bool EqualsUnrolled_8_to_16_Vector128(string? a, string b)
+            // {
+            //     // if both are constants - EqualsInternal will handle it just fine
+            //     if (a == null)
+            //     {
+            //         return false; // b is not null
+            //     }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool EqualsUnrolled_8_to_16_Vector128(string? a, string b)
-            {
-                // if both are constants - EqualsInternal will handle it just fine
-                if (a == null)
-                {
-                    return false; // b is not null
-                }
+            //     // if both are constants - EqualsInternal will handle it just fine
+            //     if (RuntimeHelpers.IsKnownConstant(a))
+            //     {
+            //         return EqualsInternal(a, b);
+            //     }
 
-                // if both are constants - EqualsInternal will handle it just fine
-                if (RuntimeHelpers.IsKnownConstant(a))
-                {
-                    return EqualsInternal(a, b);
-                }
+            //     Vector128<ushort> constV1 = Vector128.Create(b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
+            //     Vector128<ushort> constV2 = default;
 
-                Vector128<ushort> v1 = Unsafe.ReadUnaligned<Vector128<ushort>>(
-                    ref Unsafe.As<char, byte>(ref a._firstChar));
-                Vector128<ushort> v2 = Unsafe.ReadUnaligned<Vector128<ushort>>(
-                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, a.Length - 16)));
+            //     if (b.Length == 8)  constV2 = constV1;
+            //     if (b.Length == 9)  constV2 = Vector128.Create(b[1],  b[2],  b[3],  b[4],  b[5],  b[6],   b[7],   b[8]);
+            //     if (b.Length == 10) constV2 = Vector128.Create(b[2],  b[3],  b[4],  b[5],  b[6],  b[7],   b[8],   b[9]);
+            //     if (b.Length == 11) constV2 = Vector128.Create(b[3],  b[4],  b[5],  b[6],  b[7],  b[8],   b[9],   b[10]);
+            //     if (b.Length == 12) constV2 = Vector128.Create(b[4],  b[5],  b[6],  b[7],  b[8],  b[9],   b[10],  b[11]);
+            //     if (b.Length == 13) constV2 = Vector128.Create(b[5],  b[6],  b[7],  b[8],  b[9],  b[10],  b[11],  b[12];
+            //     if (b.Length == 14) constV2 = Vector128.Create(b[6],  b[7],  b[8],  b[9],  b[10], b[11],  b[10],  b[13]);
+            //     if (b.Length == 15) constV2 = Vector128.Create(b[7],  b[8],  b[9],  b[10], b[11], b[10],  b[11]), b[14]);
+            //     if (b.Length == 16) constV2 = Vector128.Create(b[8],  b[9],  b[10], b[11], b[10], b[11]), b[11]), b[15]);
 
-                Vector128<ushort> constV1 = Vector128.Create(b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
-                Vector128<ushort> constV2 = default;
+            //     // TODO: len == 8 and len == 16 can be special cased
 
-                if (b.Length == 8) constV2 = constV1; // TODO: for len=8 we don't need the 2nd vector at all
-                if (b.Length == 9) constV2  = Vector128.Create(b[1],  b[2],  b[3],  b[4],  b[5],  b[6],   b[7],   b[8]);
-                if (b.Length == 10) constV2 = Vector128.Create(b[2],  b[3],  b[4],  b[5],  b[6],  b[7],   b[8],   b[9]);
-                if (b.Length == 11) constV2 = Vector128.Create(b[3],  b[4],  b[5],  b[6],  b[7],  b[8],   b[9],   b[10]);
-                if (b.Length == 12) constV2 = Vector128.Create(b[4],  b[5],  b[6],  b[7],  b[8],  b[9],   b[10],  b[11]);
-                if (b.Length == 13) constV2 = Vector128.Create(b[5],  b[6],  b[7],  b[8],  b[9],  b[10],  b[11],  b[12];
-                if (b.Length == 14) constV2 = Vector128.Create(b[6],  b[7],  b[8],  b[9],  b[10], b[11],  b[10],  b[13]);
-                if (b.Length == 15) constV2 = Vector128.Create(b[7],  b[8],  b[9],  b[10], b[11], b[10],  b[11]), b[14]);
+            //     return ((Unsafe.ReadUnaligned<Vector128<ushort>>(ref Unsafe.As<char, byte>(ref a._firstChar)) ^ constV1) |
+            //             (Unsafe.ReadUnaligned<Vector128<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref a._firstChar, a.Length - 16))) ^ constV2)) ==
+            //                 Vector128<ushort>.Zero;
+            // }
 
-                // 16 can be done via a single Vector256
-                if (b.Length == 16) constV2 = Vector128.Create(b[8],  b[9],  b[10], b[11], b[10], b[11]), b[11]), b[15]);
-
-                return  ((v1 ^ constV1) | (v2 ^ constV2)) == Vector128<ushort>.Zero;
-            }
-            */
 #endif
             return EqualsInternal(a, b);
 
