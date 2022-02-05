@@ -770,7 +770,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static bool EqualsUnrolled_9_to_16(string? a, string b)
             {
-                if (a?.Length >= b.Length)
+                if (a != null && a.Length >= b.Length)
                 {
                     // Load 'a' into two vectors with overlapping.
                     Vector128<ushort> v2 = Vector128.LoadUnsafe(
