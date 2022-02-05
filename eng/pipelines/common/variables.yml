@@ -19,7 +19,7 @@ variables:
   value: ${{ ne(variables['Build.DefinitionName'], 'runtime-extra-platforms') }}
 - name: isWasmOnlyBuild
   value: ${{ eq(variables['Build.DefinitionName'], 'runtime-wasm') }}
-- name: RunSmokeTestsOnly
+- name: isRunSmokeTestsOnly
   value: ${{ and(ne(variables['Build.DefinitionName'], 'runtime-extra-platforms'), ne(variables['Build.DefinitionName'], 'runtime-wasm')) }}
 - name: isNotSpecificPlatformOnlyBuild
   value: ${{ ne(variables['Build.DefinitionName'], 'runtime-wasm') }}

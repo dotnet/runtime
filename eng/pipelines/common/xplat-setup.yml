@@ -49,7 +49,7 @@ jobs:
         value: $(buildConfigUpper)
 
       - name: _runSmokeTestsOnlyArg
-        value: '/p:RunSmokeTestsOnly=$(RunSmokeTestsOnly)'
+        value: '/p:RunSmokeTestsOnly=$(isRunSmokeTestsOnly)'
 
       - name: _hostedOs
         value: ${{ parameters.jobParameters.hostedOs }}
