@@ -755,12 +755,14 @@ namespace System
                         // Load ch1, ch2, ch3 and ch4 into ulong
                         return a.Length == 4 && v1 == cns1;
                     }
+
                     // Handle Length [5..8] via two ulong (overlapped)
-                    return v1 == cns1 && ReadUInt64(a, a.Length - 4) ==
-                        (((ulong)b[b.Length - 1] << 48) |
-                         ((ulong)b[b.Length - 2] << 32) |
-                         ((ulong)b[b.Length - 3] << 16) |
-                         ((ulong)b[b.Length - 4] << 0));
+                    return a.Length == b.Length && v1 == cns1 && 
+                        ReadUInt64(a, b.Length - 4) ==
+                            (((ulong)b[b.Length - 1] << 48) |
+                             ((ulong)b[b.Length - 2] << 32) |
+                             ((ulong)b[b.Length - 3] << 16) |
+                             ((ulong)b[b.Length - 4] << 0));
                 }
 
                 // a is null when b is a known non-null
@@ -774,7 +776,7 @@ namespace System
                 {
                     // Load 'a' into two vectors with overlapping.
                     Vector128<ushort> v2 = Vector128.LoadUnsafe(
-                        ref Unsafe.As<char, ushort>(ref a._firstChar), (nuint)a.Length - 8);
+                        ref Unsafe.As<char, ushort>(ref a._firstChar), (nuint)b.Length - 8);
                     Vector128<ushort> v1 = Vector128.LoadUnsafe(
                         ref Unsafe.As<char, ushort>(ref a._firstChar));
 
