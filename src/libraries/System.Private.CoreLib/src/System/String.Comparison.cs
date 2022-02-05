@@ -704,7 +704,7 @@ namespace System
                     return EqualsUnrolled_0_to_8(a, b);
                 }
                 // Unroll using two Vector128s
-                if (b.Length >= 9 && b.Length <= 16 && Vector128.IsHardwareAccelerated)
+                if (b.Length <= 16 && Vector128.IsHardwareAccelerated)
                 {
                     return EqualsUnrolled_9_to_16(a, b);
                 }
