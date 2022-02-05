@@ -1,3 +1,10 @@
+# This contains only jobs that are not runnable by a platform specific
+# pipeline, like runtime-wasm
+# These are run as part of runtime-extra-platforms by default.
+
+parameters:
+  isExtraPlatformsBuild: ''
+
 jobs:
 
 #
@@ -57,7 +64,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
-      isExtraPlatforms: ${{ variables.isExtraPlatformsBuild }}
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testScope: innerloop
       liveRuntimeBuildConfig: release
       condition: >-

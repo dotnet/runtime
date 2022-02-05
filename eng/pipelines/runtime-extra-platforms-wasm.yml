@@ -3,6 +3,9 @@
 # But can also be triggered manually via `runtime-wasm` name
 #   /azp run runtime-wasm
 
+parameters:
+  isExtraPlatformsBuild: ''
+
 jobs:
 
 #
@@ -66,7 +69,7 @@ jobs:
       - name: monoContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
-      isExtraPlatforms: ${{ variables.isExtraPlatformsBuild }}
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: LibraryTests_EAT
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=false
@@ -109,7 +112,7 @@ jobs:
       - name: monoContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
-      isExtraPlatforms: ${{ variables.isExtraPlatformsBuild }}
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: LibraryTests_AOT
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true /p:BrowserHost=$(_hostedOs)
