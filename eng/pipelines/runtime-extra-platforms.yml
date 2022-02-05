@@ -37,10 +37,10 @@ jobs:
 # include this unconditionally, because it has per job conditions
 - template: /eng/pipelines/runtime-extra-platforms-wasm.yml
   parameters:
-    isExtraPlatformsBuild: {{ variables.isExtraPlatformsBuild }}
+    isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
 
 # Any jobs that are not specific to any platform
 - ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
   - template: /eng/pipelines/runtime-extra-platforms-other.yml
     parameters:
-      isExtraPlatformsBuild: {{ variables.isExtraPlatformsBuild }}
+      isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
