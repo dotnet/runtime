@@ -38,6 +38,18 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [Fact]
+        public async Task ConnectToNonExistentServer_Throws_TimeoutException_TimeSpan()
+        {
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
+            {
+                var ctx = new CancellationTokenSource();
+                Assert.Throws<TimeoutException>(() => client.Connect(TimeSpan.FromMilliseconds(60)));  // 60 to be over internal 50 interval
+                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(TimeSpan.FromMilliseconds(50)));
+                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(TimeSpan.FromMilliseconds(60), ctx.Token)); // testing Token overload; ctx is not canceled in this test
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelConnectToNonExistentServer_Throws_OperationCanceledException()
         {

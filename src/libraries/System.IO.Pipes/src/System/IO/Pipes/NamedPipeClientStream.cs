@@ -129,6 +129,12 @@ namespace System.IO.Pipes
             ConnectInternal(timeout, CancellationToken.None, Environment.TickCount);
         }
 
+        public void Connect(TimeSpan timeout)
+        {
+            int milliseconds = (int)timeout.TotalMilliseconds;
+            Connect(milliseconds);
+        }
+
         private void ConnectInternal(int timeout, CancellationToken cancellationToken, int startTime)
         {
             // This is the main connection loop. It will loop until the timeout expires.
@@ -195,6 +201,12 @@ namespace System.IO.Pipes
 
             int startTime = Environment.TickCount; // We need to measure time here, not in the lambda
             return Task.Run(() => ConnectInternal(timeout, cancellationToken, startTime), cancellationToken);
+        }
+
+        public Task ConnectAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
+        {
+            int milliseconds = (int)timeout.TotalMilliseconds;
+            return ConnectAsync(milliseconds, cancellationToken);
         }
 
         // override because named pipe clients can't get/set properties when waiting to connect
