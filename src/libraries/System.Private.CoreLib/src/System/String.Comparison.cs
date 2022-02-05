@@ -757,12 +757,11 @@ namespace System
                     }
 
                     // Handle Length [5..8] via two ulong (overlapped)
-                    return a.Length == b.Length && v1 == cns1 && 
-                        ReadUInt64(a, b.Length - 4) ==
-                            (((ulong)b[b.Length - 1] << 48) |
-                             ((ulong)b[b.Length - 2] << 32) |
-                             ((ulong)b[b.Length - 3] << 16) |
-                             ((ulong)b[b.Length - 4] << 0));
+                    return a.Length == b.Length && v1 == cns1 &&
+                        ReadUInt64(a, b.Length - 4) == (((ulong)b[b.Length - 1] << 48) |
+                                                        ((ulong)b[b.Length - 2] << 32) |
+                                                        ((ulong)b[b.Length - 3] << 16) |
+                                                        ((ulong)b[b.Length - 4] << 0));
                 }
 
                 // a is null when b is a known non-null
