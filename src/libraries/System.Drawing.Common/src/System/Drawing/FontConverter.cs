@@ -197,7 +197,7 @@ namespace System.Drawing
                         string styleText = styleTokens[tokenCount];
                         styleText = styleText.Trim();
 
-                        fontStyle |= (FontStyle)Enum.Parse(typeof(FontStyle), styleText, true);
+                        fontStyle |= Enum.Parse<FontStyle>(styleText, true);
 
                         // Enum.IsDefined doesn't do what we want on flags enums...
                         FontStyle validBits = FontStyle.Regular | FontStyle.Bold | FontStyle.Italic | FontStyle.Underline | FontStyle.Strikeout;

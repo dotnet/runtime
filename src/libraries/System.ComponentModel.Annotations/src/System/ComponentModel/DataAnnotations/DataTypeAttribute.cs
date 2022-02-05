@@ -15,7 +15,7 @@ namespace System.ComponentModel.DataAnnotations
         AllowMultiple = false)]
     public class DataTypeAttribute : ValidationAttribute
     {
-        private static readonly string[] _dataTypeStrings = Enum.GetNames(typeof(DataType));
+        private static readonly string[] _dataTypeStrings = Enum.GetNames<DataType>();
 
         /// <summary>
         ///     Constructor that accepts a data type enumeration

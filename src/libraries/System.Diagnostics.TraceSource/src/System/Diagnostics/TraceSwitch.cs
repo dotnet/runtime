@@ -118,7 +118,7 @@ namespace System.Diagnostics
 
         protected override void OnValueChanged()
         {
-            SwitchSetting = (int)Enum.Parse(typeof(TraceLevel), Value, true);
+            SwitchSetting = (int)Enum.Parse<TraceLevel>(Value, true);
         }
     }
 }
