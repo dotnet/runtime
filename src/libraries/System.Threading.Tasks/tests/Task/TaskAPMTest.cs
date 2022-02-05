@@ -93,6 +93,33 @@ namespace System.Threading.Tasks.Tests
         [OuterLoop]
         [InlineData(true)]
         [InlineData(false)]
+        public void PollUntilCompleteTechnique_TimeSpan(bool hasReturnType)
+        {
+            _hasReturnType = hasReturnType;
+
+            LongTask longTask;
+            if (_hasReturnType)
+                longTask = new LongTask<int>(LongTaskMilliseconds);
+            else
+                longTask = new LongTask(LongTaskMilliseconds);
+
+            IAsyncResult asyncResult = longTask.BeginDoTask(null, null);
+            var mres = new ManualResetEventSlim();
+
+            TimeSpan timeout = TimeSpan.FromMilliseconds(1);
+            while (!asyncResult.IsCompleted)
+            {
+                mres.Wait(timeout);
+            }
+
+            AssertTaskCompleted(asyncResult);
+            Assert.False(asyncResult.CompletedSynchronously, "Should not have completed synchronously.");
+        }
+
+        [Theory]
+        [OuterLoop]
+        [InlineData(true)]
+        [InlineData(false)]
         public void WaitOnAsyncWaitHandleTechnique(bool hasReturnType)
         {
             _hasReturnType = hasReturnType;

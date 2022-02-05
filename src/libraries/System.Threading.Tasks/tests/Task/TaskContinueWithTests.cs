@@ -266,9 +266,9 @@ namespace System.Threading.Tasks.Tests
 
             CancellationTokenSource ctsForT2 = new CancellationTokenSource();
             Task t2 = t1.ContinueWith((ContinuedTask) =>
-                        {
-                            Assert.True(false, string.Format("RunContinuationCancelTest: > Failed!  t2 should not have run."));
-                        }, ctsForT2.Token);
+            {
+                Assert.True(false, string.Format("RunContinuationCancelTest: > Failed!  t2 should not have run."));
+            }, ctsForT2.Token);
 
             Task t3 = t2.ContinueWith((ContinuedTask) =>
             {
@@ -283,6 +283,47 @@ namespace System.Threading.Tasks.Tests
 
             t1.Wait(5000); // should be more than enough time for either of these
             t3.Wait(5000);
+
+            if (!t1Ran)
+            {
+                Assert.True(false, string.Format("RunContinuationCancelTest: > Failed!  t1 should have run."));
+            }
+
+            if (!t3Ran)
+            {
+                Assert.True(false, string.Format("RunContinuationCancelTest: > Failed!  t3 should have run."));
+            }
+        }
+
+        // Test what happens when you cancel a task in the middle of a continuation chain.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void RunContinuationCancelTest_TimeSpan()
+        {
+            bool t1Ran = false;
+            bool t3Ran = false;
+
+            Task t1 = new Task(delegate { t1Ran = true; });
+
+            CancellationTokenSource ctsForT2 = new CancellationTokenSource();
+            Task t2 = t1.ContinueWith((ContinuedTask) =>
+            {
+                Assert.True(false, string.Format("RunContinuationCancelTest: > Failed!  t2 should not have run."));
+            }, ctsForT2.Token);
+
+            Task t3 = t2.ContinueWith((ContinuedTask) =>
+            {
+                t3Ran = true;
+            });
+
+            // Cancel the middle task in the chain.  Should fire off t3.
+            ctsForT2.Cancel();
+
+            // Start the first task in the chain.  Should hold off from kicking off (canceled) t2.
+            t1.Start();
+
+            TimeSpan timeout = TimeSpan.FromMilliseconds(5000);
+            t1.Wait(timeout); // should be more than enough time for either of these
+            t3.Wait(timeout);
 
             if (!t1Ran)
             {
