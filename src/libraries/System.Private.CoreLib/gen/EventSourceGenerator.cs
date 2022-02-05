@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -40,7 +41,9 @@ namespace Generators
                 .Where(x => x is not null)
                 .Collect()
                 .Combine(context.CompilationProvider)
-                .SelectMany((x, ct) => Parser.GetEventSourceClasses(x.Left, x.Right, ct));
+                // Use a custom comparer that ignores the compilation.
+                .WithComparer(ClassDeclarationsEqualityComparer.Instance)
+                .SelectMany((x, cancellationToken) => Parser.GetEventSourceClasses(x.Left, x.Right, cancellationToken));
 
             context.RegisterSourceOutput(eventSourceClasses, static (spc, x) => Emitter.Emit(spc, x));
         }
@@ -79,6 +82,45 @@ namespace Generators
             }
 
             return null;
+        }
+
+        private sealed class ClassDeclarationsEqualityComparer : IEqualityComparer<(ImmutableArray<ClassDeclarationSyntax> Left, Compilation Right)>
+        {
+            public static readonly ClassDeclarationsEqualityComparer Instance = new();
+
+            private ClassDeclarationsEqualityComparer() { }
+
+            public bool Equals((ImmutableArray<ClassDeclarationSyntax>, Compilation) x, (ImmutableArray<ClassDeclarationSyntax>, Compilation) y)
+            {
+                var array1 = x.Item1;
+                var array2 = y.Item1;
+
+                if (array1.Length != array2.Length)
+                    return false;
+                for (int i = 0; i < array1.Length; i++)
+                {
+                    if (!array1[i].Equals(array2[i]))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+            public int GetHashCode((ImmutableArray<ClassDeclarationSyntax>, Compilation) obj)
+            {
+                // Numbers taken from the FNV prime and offset basis.
+                int hash = -2128831035;
+                foreach (ClassDeclarationSyntax x in obj.Item1)
+                {
+                    // The implementation is not correct in the strict
+                    // sense, since it needs to process each byte individually.
+                    // But never mind, we are combining reference-based hash codes.
+                    hash ^= x.GetHashCode();
+                    hash *= 16777619;
+                }
+                return hash;
+            }
         }
 
         private sealed class EventSourceClass

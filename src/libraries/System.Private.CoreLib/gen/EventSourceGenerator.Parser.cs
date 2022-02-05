@@ -19,7 +19,7 @@ namespace Generators
     {
         private static class Parser
         {
-            public static ImmutableArray<EventSourceClass> GetEventSourceClasses(ImmutableArray<ClassDeclarationSyntax> classDeclarations, Compilation compilation, CancellationToken ct)
+            public static ImmutableArray<EventSourceClass> GetEventSourceClasses(ImmutableArray<ClassDeclarationSyntax> classDeclarations, Compilation compilation, CancellationToken cancellationToken)
             {
                 INamedTypeSymbol? autogenerateAttribute = compilation.GetBestTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAutoGenerateAttribute");
                 if (autogenerateAttribute is null)
@@ -43,7 +43,7 @@ namespace Generators
                     EventSourceClass? eventSourceClass = null;
                     foreach (ClassDeclarationSyntax classDef in group)
                     {
-                        if (ct.IsCancellationRequested)
+                        if (cancellationToken.IsCancellationRequested)
                         {
                             // be nice and stop if we're asked to
                             return results?.ToImmutable() ?? ImmutableArray<EventSourceClass>.Empty;
@@ -57,7 +57,7 @@ namespace Generators
                                 // need a semantic model for this tree
                                 sm ??= compilation.GetSemanticModel(classDef.SyntaxTree);
 
-                                if (sm.GetSymbolInfo(ca, ct).Symbol is not IMethodSymbol caSymbol)
+                                if (sm.GetSymbolInfo(ca, cancellationToken).Symbol is not IMethodSymbol caSymbol)
                                 {
                                     // badly formed attribute definition, or not the right attribute
                                     continue;
@@ -105,7 +105,7 @@ namespace Generators
                                         foreach (AttributeArgumentSyntax arg in args)
                                         {
                                             string argName = arg.NameEquals!.Name.Identifier.ToString();
-                                            string value = sm.GetConstantValue(arg.Expression, ct).ToString();
+                                            string value = sm.GetConstantValue(arg.Expression, cancellationToken).ToString();
 
                                             switch (argName)
                                             {
