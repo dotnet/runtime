@@ -237,6 +237,7 @@ namespace System.ComponentModel.DataAnnotations
     {
         public RegularExpressionAttribute([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { }
         public int MatchTimeoutInMilliseconds { get { throw null; } set { } }
+        public System.TimeSpan MatchTimeout { get { throw null; } }
         public string Pattern { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
         public override bool IsValid(object? value) { throw null; }

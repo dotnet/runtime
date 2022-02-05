@@ -51,6 +51,7 @@ namespace System.ServiceProcess
         protected virtual void OnStart(string[] args) { }
         protected virtual void OnStop() { }
         public void RequestAdditionalTime(int milliseconds) { }
+        public void RequestAdditionalTime(System.TimeSpan time) { }
         public static void Run(System.ServiceProcess.ServiceBase service) { }
         public static void Run(System.ServiceProcess.ServiceBase[] services) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
