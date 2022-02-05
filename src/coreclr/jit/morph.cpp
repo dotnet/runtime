@@ -5183,6 +5183,12 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 
     noway_assert(elemTyp != TYP_STRUCT || elemStructType != nullptr);
 
+    if (opts.OptimizationEnabled())
+    {
+        // Fold possible constant expressions
+        asIndex->Index() = gtFoldExpr(asIndex->Index());
+    }
+
     // Fold "cns_str"[cns_index] to ushort constant
     // NOTE: don't do it for empty string, the operation will fail anyway
     if (opts.OptimizationEnabled() && asIndex->Arr()->OperIs(GT_CNS_STR) &&
