@@ -42,7 +42,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public IEnumerable<Diagnostic> CollectDiagnostics ()
 		{
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
-			HandleCallAction handleCallAction = new (OwningSymbol, Operation);
+			HandleCallAction handleCallAction = new (diagnosticContext, OwningSymbol, Operation);
 			if (!handleCallAction.Invoke (new MethodProxy (CalledMethod), Instance, Arguments, out _)) {
 				// If the intrinsic handling didn't work we have to:
 				//   Handle the instance value

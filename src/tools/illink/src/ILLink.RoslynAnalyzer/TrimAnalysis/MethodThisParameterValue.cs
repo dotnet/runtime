@@ -10,11 +10,15 @@ namespace ILLink.Shared.TrimAnalysis
 {
 	partial record MethodThisParameterValue
 	{
-		public MethodThisParameterValue (IMethodSymbol methodSymbol) => MethodSymbol = methodSymbol;
+		public MethodThisParameterValue (IMethodSymbol methodSymbol)
+			: this (methodSymbol, methodSymbol.GetDynamicallyAccessedMemberTypes ()) { }
+
+		public MethodThisParameterValue (IMethodSymbol methodSymbol, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			=> (MethodSymbol, DynamicallyAccessedMemberTypes) = (methodSymbol, dynamicallyAccessedMemberTypes);
 
 		public readonly IMethodSymbol MethodSymbol;
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes => MethodSymbol.GetDynamicallyAccessedMemberTypes ();
+		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
 		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
 			=> new string[] { MethodSymbol.GetDisplayName () };

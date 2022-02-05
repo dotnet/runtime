@@ -11,16 +11,21 @@ namespace ILLink.Shared.TrimAnalysis
 	{
 		public List<Diagnostic> Diagnostics { get; } = new ();
 
-		readonly Location _location;
+		readonly Location? Location { get; init; }
 
 		public DiagnosticContext (Location location)
 		{
-			_location = location;
+			Location = location;
 		}
+
+		public static DiagnosticContext CreateDisabled () => new () { Location = null };
 
 		public partial void AddDiagnostic (DiagnosticId id, params string[] args)
 		{
-			Diagnostics.Add (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), _location, args));
+			if (Location == null)
+				return;
+
+			Diagnostics.Add (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), Location, args));
 		}
 	}
 }

@@ -8,11 +8,11 @@ namespace ILLink.Shared.TypeSystemProxy
 {
 	internal readonly partial struct TypeProxy
 	{
-		public TypeProxy (TypeReference type) => Type = type;
+		public TypeProxy (TypeDefinition type) => Type = type;
 
-		public TypeReference Type { get; }
+		public static implicit operator TypeProxy (TypeDefinition type) => new (type);
 
-		internal partial bool IsVoid () => Type.MetadataType == MetadataType.Void;
+		public TypeDefinition Type { get; }
 
 		public string Name { get => Type.Name; }
 

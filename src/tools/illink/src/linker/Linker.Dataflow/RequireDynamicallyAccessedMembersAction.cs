@@ -1,9 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Linker;
@@ -44,9 +42,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial void MarkTypeForDynamicallyAccessedMembers (in TypeProxy type, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
-			// This method should only be called with already resolved types.
-			Debug.Assert (type.Type is TypeDefinition);
-			_reflectionMethodBodyScanner.MarkTypeForDynamicallyAccessedMembers (_analysisContext, (TypeDefinition) type.Type, dynamicallyAccessedMemberTypes, DependencyKind.DynamicallyAccessedMember);
+			_reflectionMethodBodyScanner.MarkTypeForDynamicallyAccessedMembers (_analysisContext, type.Type, dynamicallyAccessedMemberTypes, DependencyKind.DynamicallyAccessedMember);
 		}
 	}
 }

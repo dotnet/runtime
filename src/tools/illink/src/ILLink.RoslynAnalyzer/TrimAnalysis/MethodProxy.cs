@@ -31,7 +31,7 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial bool IsStatic () => Method.IsStatic;
 
-		internal partial TypeProxy GetReturnType () => new (Method.ReturnType);
+		internal partial bool ReturnsVoid () => Method.ReturnType.SpecialType == SpecialType.System_Void;
 
 		static bool IsTypeOf (ITypeSymbol type, string fullTypeName)
 		{
