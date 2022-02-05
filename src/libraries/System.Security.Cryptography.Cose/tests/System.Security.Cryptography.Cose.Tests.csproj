@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
     <Nullable>enable</Nullable>
@@ -17,6 +17,10 @@
     <Compile Include="CoseSign1MessageTests.Verify.cs" />
     <Compile Include="CoseSign1MessageTests.Sign.cs" />
     <Compile Include="CoseTestHelpers.cs" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" Link="System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>
