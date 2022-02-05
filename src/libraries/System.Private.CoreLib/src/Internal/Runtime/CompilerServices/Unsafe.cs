@@ -54,7 +54,7 @@ namespace System.Runtime.CompilerServices
 #endif
             throw new PlatformNotSupportedException();
 
-            // sizeof !!0
+            // sizeof !!T
             // ret
         }
 
@@ -111,11 +111,11 @@ namespace System.Runtime.CompilerServices
             return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
 #endif
 
-            // ldarg .0
             // ldarg .1
-            // sizeof T
+            // sizeof !!T
             // conv.i
             // mul
+            // ldarg .0
             // add
             // ret
         }
@@ -138,10 +138,10 @@ namespace System.Runtime.CompilerServices
             return ref AddByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)SizeOf<T>()));
 #endif
 
-            // ldarg .0
             // ldarg .1
-            // sizeof T
+            // sizeof !!T
             // mul
+            // ldarg .0
             // add
             // ret
         }
@@ -166,7 +166,7 @@ namespace System.Runtime.CompilerServices
 
             // ldarg .0
             // ldarg .1
-            // sizeof T
+            // sizeof !!T
             // conv.i
             // mul
             // add
@@ -191,7 +191,7 @@ namespace System.Runtime.CompilerServices
 
             // ldarg .0
             // ldarg .1
-            // sizeof T
+            // sizeof !!T
             // mul
             // add
             // ret
@@ -201,13 +201,19 @@ namespace System.Runtime.CompilerServices
         /// Adds an byte offset to the given reference.
         /// </summary>
         [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET_UINTPTR
         // CG2:AddByteOffset
         // Mono:AddByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
         {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
             return ref AddByteOffset(ref source, (IntPtr)(void*)byteOffset);
+#endif
 
             // ldarg .0
             // ldarg .1
@@ -491,7 +497,7 @@ namespace System.Runtime.CompilerServices
 
             // ldarg.0
             // unaligned. 0x1
-            // ldobj T
+            // ldobj !!T
             // ret
         }
 
@@ -515,7 +521,7 @@ namespace System.Runtime.CompilerServices
 
             // ldarg.0
             // unaligned. 0x1
-            // ldobj!!T
+            // ldobj !!T
             // ret
         }
 
@@ -540,7 +546,7 @@ namespace System.Runtime.CompilerServices
             // ldarg .0
             // ldarg .1
             // unaligned. 0x01
-            // stobjT
+            // stobj !!T
             // ret
         }
 
@@ -565,7 +571,7 @@ namespace System.Runtime.CompilerServices
             // ldarg .0
             // ldarg .1
             // unaligned. 0x01
-            // stobjT
+            // stobj !!T
             // ret
         }
 
@@ -573,7 +579,7 @@ namespace System.Runtime.CompilerServices
         /// Adds an byte offset to the given reference.
         /// </summary>
         [Intrinsic]
-        // CoreCLR:METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET
+        // CoreCLR:METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET_INTPTR
         // CG2:AddByteOffset
         // Mono:AddByteOffset
         [NonVersionable]
@@ -601,7 +607,7 @@ namespace System.Runtime.CompilerServices
             return Unsafe.As<byte, T>(ref *(byte*)source);
 
             // ldarg.0
-            // ldobj T
+            // ldobj !!T
             // ret
         }
 
@@ -618,7 +624,7 @@ namespace System.Runtime.CompilerServices
 
             // ldarg .0
             // ldarg .1
-            // stobjT
+            // stobj !!T
             // ret
         }
 
@@ -731,9 +737,147 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Subtracts an element offset from the given reference.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_INT_SUBTRACT
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Subtract<T>(ref T source, int elementOffset)
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return ref SubtractByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
+#endif
+
+            // ldarg .1
+            // sizeof !!T
+            // conv.i
+            // mul
+            // ldarg .0
+            // sub
+            // ret
+        }
+
+        /// <summary>
+        /// Subtracts an element offset from the given void pointer.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_INT_SUBTRACT
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void* Subtract<T>(void* source, int elementOffset)
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return (byte*)source - (elementOffset * (nint)Unsafe.SizeOf<T>());
+#endif
+
+            // ldarg .1
+            // sizeof !!T
+            // conv.i
+            // mul
+            // ldarg .0
+            // sub
+            // ret
+        }
+
+        /// <summary>
+        /// Subtracts an element offset from the given reference.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Subtract<T>(ref T source, nint elementOffset)
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return ref SubtractByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)SizeOf<T>()));
+#endif
+
+            // ldarg .1
+            // sizeof !!T
+            // mul
+            // ldarg .0
+            // sub
+            // ret
+        }
+
+        /// <summary>
+        /// Subtracts an element offset from the given reference.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Subtract<T>(ref T source, nuint elementOffset)
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return ref SubtractByteOffset(ref source, (nuint)(elementOffset * (nuint)Unsafe.SizeOf<T>()));
+#endif
+
+            // ldarg .1
+            // sizeof !!T
+            // mul
+            // ldarg .0
+            // sub
+            // ret
+        }
+
+        /// <summary>
+        /// Subtracts a byte offset from the given reference.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T SubtractByteOffset<T>(ref T source, nint byteOffset)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // sub
+            // ret
+        }
+
+        /// <summary>
+        /// Subtracts a byte offset from the given reference.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T SubtractByteOffset<T>(ref T source, nuint byteOffset)
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return ref SubtractByteOffset(ref source, (IntPtr)(void*)byteOffset);
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // sub
+            // ret
+        }
+
+        /// <summary>
         /// Returns a mutable ref to a boxed value
         /// </summary>
-        //[Intrinsic]
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__UNBOX
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Unbox<T>(object box)
@@ -742,7 +886,7 @@ namespace System.Runtime.CompilerServices
             throw new PlatformNotSupportedException();
 
             // ldarg .0
-            // unboxT
+            // unbox !!T
             // ret
         }
     }
