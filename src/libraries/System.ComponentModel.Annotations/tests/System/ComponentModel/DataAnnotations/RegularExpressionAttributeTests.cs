@@ -57,6 +57,15 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Theory]
+        [InlineData(12345)]
+        [InlineData(-1)]
+        public static void MatchTimeout_Get_ReturnsExpected(int newValue)
+        {
+            var attribute = new RegularExpressionAttribute("SomePattern") { MatchTimeoutInMilliseconds = newValue };
+            Assert.Equal(TimeSpan.FromMilliseconds(newValue), attribute.MatchTimeout);
+        }
+
+        [Theory]
         [InlineData(null)]
         [InlineData("")]
         public static void Validate_InvalidPattern_ThrowsInvalidOperationException(string pattern)
