@@ -77,7 +77,7 @@ namespace System
                 Vector256<byte> ch2 = Vector256.Create(ch2Val);
 
                 nint searchSpaceMinusValueTailLengthAndVector =
-                    searchSpaceMinusValueTailLength - (nint)Vector256<ushort>.Count;
+                    searchSpaceMinusValueTailLength - (nint)Vector256<byte>.Count;
 
                 do
                 {
@@ -138,7 +138,7 @@ namespace System
                 Vector128<byte> ch2 = Vector128.Create(ch2Val);
 
                 nint searchSpaceMinusValueTailLengthAndVector =
-                    searchSpaceMinusValueTailLength - (nint)Vector128<ushort>.Count;
+                    searchSpaceMinusValueTailLength - (nint)Vector128<byte>.Count;
 
                 do
                 {
