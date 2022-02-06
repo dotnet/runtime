@@ -10004,7 +10004,7 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             unreached();
     }
 
-    ValueNumPair argVNP  = call->gtCallArgs->GetNode()->gtVNPair;
+    ValueNumPair argVNP  = call->fgArgInfo->GetArgNode(0)->gtVNPair;
     ValueNumPair castVNP = vnStore->VNPairForCast(argVNP, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 
     call->SetVNs(castVNP);
