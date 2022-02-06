@@ -335,7 +335,7 @@ mono_get_rethrow_preserve_exception_addr (void)
 	return &rethrow_preserve_exception_func;
 }
 
-static gboolean 
+static gboolean
 is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 {
 	MonoTryBlockHoleTableJitInfo *table;
@@ -554,11 +554,11 @@ find_jit_info (MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, 
 
 /* mono_find_jit_info:
  *
- * This function is used to gather information from @ctx. It return the 
+ * This function is used to gather information from @ctx. It return the
  * MonoJitInfo of the corresponding function, unwinds one stack frame and
- * stores the resulting context into @new_ctx. It also stores a string 
+ * stores the resulting context into @new_ctx. It also stores a string
  * describing the stack location into @trace (if not NULL), and modifies
- * the @lmf if necessary. @native_offset return the IP offset from the 
+ * the @lmf if necessary. @native_offset return the IP offset from the
  * start of the function or -1 if that info is not available.
  */
 MonoJitInfo *
@@ -849,7 +849,7 @@ mono_get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 	}
 
 	method = jinfo_get_method (ji);
-	if (mono_method_get_context (method)->method_inst) {
+	if (mono_method_get_context (method)->method_inst || mini_method_is_default_method (method)) {
 		/* A MonoMethodRuntimeGenericContext* */
 		return info;
 	} else if ((method->flags & METHOD_ATTRIBUTE_STATIC) || m_class_is_valuetype (method->klass)) {
@@ -883,7 +883,7 @@ mono_get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_inf
 		klass = mrgctx->class_vtable->klass;
 		context.method_inst = mrgctx->method_inst;
 		if (!mini_method_is_default_method (method))
-			g_assert (context.method_inst);		
+			g_assert (context.method_inst);
 	} else {
 		MonoVTable *vtable = (MonoVTable *)generic_info;
 
@@ -926,7 +926,7 @@ get_method_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 	ERROR_DECL (error);
 	MonoGenericContext context;
 	MonoMethod *method;
-	
+
 	if (!ji->has_generic_jit_info || !mono_jit_info_get_generic_jit_info (ji)->has_this)
 		return jinfo_get_method (ji);
 	context = mono_get_generic_context_from_stack_frame (ji, generic_info);
@@ -949,7 +949,7 @@ get_method_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
  * The walk ends when no more stack frames are found or when the callback
  * returns a TRUE value.
  */
- 
+
 gboolean
 mono_exception_walk_trace (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data)
 {
@@ -1225,7 +1225,7 @@ mono_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnw
  * State must be valid (state->valid == TRUE).
  *
  * If you are using this function to unwind another thread, make sure it is suspended.
- * 
+ *
  * If \p state is null, we capture the current context.
  */
 void
@@ -1246,7 +1246,7 @@ mono_walk_stack_with_state (MonoJitStackWalk func, MonoThreadUnwindState *state,
 		return;
 
 	mono_walk_stack_full (func,
-		&state->ctx, 
+		&state->ctx,
 		(MonoJitTlsData *)state->unwind_data [MONO_UNWIND_DATA_JIT_TLS],
 		(MonoLMF *)state->unwind_data [MONO_UNWIND_DATA_LMF],
 		unwind_options, user_data, FALSE);
@@ -1403,14 +1403,14 @@ next:
 				if (new_reg_locations [i])
 					reg_locations [i] = new_reg_locations [i];
 		}
-		
+
 		ctx = new_ctx;
 	}
 }
 
 MonoBoolean
-ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
-			  MonoReflectionMethod **method, 
+ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
+			  MonoReflectionMethod **method,
 			  gint32 *iloffset, gint32 *native_offset,
 			  MonoString **file, gint32 *line, gint32 *column)
 {
@@ -1864,7 +1864,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		guint32 free_stack;
 		int clause_index_start = 0;
 		gboolean unwind_res = TRUE;
-		
+
 		StackFrameInfo frame;
 
 		if (out_prev_ji)
@@ -1944,7 +1944,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 			MonoJitExceptionInfo *ei = &ji->clauses [i];
 			gboolean filtered = FALSE;
 
-			/* 
+			/*
 			 * During stack overflow, wait till the unwinding frees some stack
 			 * space before running handlers/finalizers.
 			 */
@@ -2124,7 +2124,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		mono_error_assert_ok (error);
 		MONO_OBJECT_SETREF_INTERNAL (ex, message, msg);
 		obj = (MonoObject *)ex;
-	} 
+	}
 
 	/*
 	 * Allocate a new exception object instead of the preconstructed ones.
@@ -2157,7 +2157,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 	if (mono_ex->caught_in_unmanaged)
 		is_caught_unmanaged = TRUE;
-	
+
 
 	if (mono_object_isinst_checked (obj, mono_defaults.exception_class, error)) {
 		mono_ex = (MonoException*)obj;
@@ -2305,7 +2305,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		gboolean unwind_res = TRUE;
 		StackFrameInfo frame;
 		gpointer ip;
-		
+
 		if (resume) {
 			resume = FALSE;
 			ji = jit_tls->resume_state.ji;
@@ -2377,7 +2377,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			MonoJitExceptionInfo *ei = &ji->clauses [i];
 			gboolean filtered = FALSE;
 
-			/* 
+			/*
 			 * During stack overflow, wait till the unwinding frees some stack
 			 * space before running handlers/finalizers.
 			 */
@@ -2415,8 +2415,8 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 #endif
 
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-					/* 
-					 * Filter clauses should only be run in the 
+					/*
+					 * Filter clauses should only be run in the
 					 * first pass of exception handling.
 					 */
 					filtered = (filter_idx == first_filter_idx);
@@ -2424,7 +2424,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 				}
 
 				error_init (error);
-				if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
+				if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE &&
 				     mono_object_isinst_checked (ex_obj, catch_class, error)) || filtered) {
 					/*
 					 * This guards against the situation that we abort a thread that is executing a finally clause
@@ -2534,7 +2534,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FAULT || ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 					mono_set_lmf (lmf);
 					if (ji->from_llvm) {
-						/* 
+						/*
 						 * LLVM compiled finally handlers follow the design
 						 * of the c++ ehabi, i.e. they call a resume function
 						 * at the end instead of returning to the caller.
@@ -2978,7 +2978,7 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 
 	/*
 	 * A crash indicates something went very wrong so we can no longer depend
-	 * on anything working. So try to print out lots of diagnostics, starting 
+	 * on anything working. So try to print out lots of diagnostics, starting
 	 * with ones which have a greater chance of working.
 	 */
 
@@ -3047,7 +3047,7 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 	mono_runtime_printf_err ("%s\n", text->str); //to print the native callstack
 #else
 	mono_runtime_printf ("%s", text->str);
-#endif	
+#endif
 
 #if HOST_WIN32 && TARGET_WIN32 && _DEBUG
 	OutputDebugStringA(text->str);
@@ -3256,6 +3256,8 @@ mono_thread_state_init (MonoThreadUnwindState *ctx)
 
 #if defined(MONO_CROSS_COMPILE)
 	ctx->valid = FALSE; //A cross compiler doesn't need to suspend.
+#elif defined(HOST_WASI)
+	// TODO: For WASI, we need to review how thread state is initialized
 #elif MONO_ARCH_HAS_MONO_CONTEXT
 	MONO_CONTEXT_GET_CURRENT (ctx->ctx);
 #else
@@ -3625,7 +3627,7 @@ mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 reg
 			break;
 		} else
 			mono_error_assert_ok (error);
-		
+
 		if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 			g_assert_not_reached ();
 		}

@@ -4,8 +4,73 @@ function(clr_unknown_arch)
     elseif(CLR_CROSS_COMPONENTS_BUILD)
         message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
-        message(FATAL_ERROR "Only AMD64, ARM64, LOONGARCH64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "Only AMD64, ARMV6, ARM64, LOONGARCH64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     endif()
+endfunction()
+
+# C to MASM include file translator
+# This is replacement for the deprecated h2inc tool that used to be part of VS.
+function(h2inc filename output)
+    file(STRINGS ${filename} lines)
+    get_filename_component(path "${filename}" DIRECTORY)
+    file(RELATIVE_PATH relative_filename "${CLR_REPO_ROOT_DIR}" "${filename}")
+
+    file(APPEND "${output}" "// File start: ${relative_filename}\n")
+
+    # Use of NEWLINE_CONSUME is needed for lines with trailing backslash
+    file(STRINGS ${filename} contents NEWLINE_CONSUME)
+    string(REGEX REPLACE "\\\\\n" "\\\\\\\\ \n" contents "${contents}")
+    string(REGEX REPLACE "\n" ";" lines "${contents}")
+
+    foreach(line IN LISTS lines)
+        string(REGEX REPLACE "\\\\\\\\ " "\\\\" line "${line}")
+
+        if(line MATCHES "^ *# pragma")
+            # Ignore pragmas
+            continue()
+        endif()
+
+        if(line MATCHES "^ *# *include *\"(.*)\"")
+            # Expand includes.
+            h2inc("${path}/${CMAKE_MATCH_1}" "${output}")
+            continue()
+        endif()
+
+        if(line MATCHES "^ *#define +([0-9A-Za-z_()]+) *(.*)")
+            # Augment #defines with their MASM equivalent
+            set(name "${CMAKE_MATCH_1}")
+            set(value "${CMAKE_MATCH_2}")
+
+            # Note that we do not handle multiline constants
+
+            # Strip comments from value
+            string(REGEX REPLACE "//.*" "" value "${value}")
+            string(REGEX REPLACE "/\\*.*\\*/" "" value "${value}")
+
+            # Strip whitespaces from value
+            string(REPLACE " +$" "" value "${value}")
+
+            # ignore #defines with arguments
+            if(NOT "${name}" MATCHES "\\(")
+                set(HEX_NUMBER_PATTERN "0x([0-9A-Fa-f]+)")
+                set(DECIMAL_NUMBER_PATTERN "(-?[0-9]+)")
+
+                if("${value}" MATCHES "${HEX_NUMBER_PATTERN}")
+                    string(REGEX REPLACE "${HEX_NUMBER_PATTERN}" "0\\1h" value "${value}")    # Convert hex constants
+                    file(APPEND "${output}" "${name} EQU ${value}\n")
+                elseif("${value}" MATCHES "${DECIMAL_NUMBER_PATTERN}" AND (NOT "${value}" MATCHES "[G-Zg-z]+" OR "${value}" MATCHES "\\("))
+                    string(REGEX REPLACE "${DECIMAL_NUMBER_PATTERN}" "\\1t" value "${value}") # Convert dec constants
+                    file(APPEND "${output}" "${name} EQU ${value}\n")
+                else()
+                    file(APPEND "${output}" "${name} TEXTEQU <${value}>\n")
+                endif()
+            endif()
+        endif()
+
+        file(APPEND "${output}" "${line}\n")
+    endforeach()
+
+    file(APPEND "${output}" "// File end: ${relative_filename}\n")
 endfunction()
 
 # Build a list of compiler definitions by putting -D in front of each define.
@@ -87,6 +152,10 @@ endfunction()
 # Finds and returns unwind libs
 function(find_unwind_libs UnwindLibs)
     if(CLR_CMAKE_HOST_ARCH_ARM)
+      find_library(UNWIND_ARCH NAMES unwind-arm)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_ARMV6)
       find_library(UNWIND_ARCH NAMES unwind-arm)
     endif()
 

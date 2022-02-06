@@ -17,7 +17,7 @@
 
 /*
  * This is a hash table with the following features/restrictions:
- * - Keys are not stored in the table, instead a function must be supplied which 
+ * - Keys are not stored in the table, instead a function must be supplied which
  *   computes them from the value.
  * - Values are assumed to be normal pointers, i.e. their lowest 2-3 bits should be
  *   zero.
@@ -27,7 +27,7 @@
  *   hash tables which store the key (or even the key hash) in the hash nodes. But
  *   it also means that each hash node has a size of one machine word, instead of
  * 4 in GHashTable.
- * - Removal of entries is not supported, as it is not needed by the runtime right 
+ * - Removal of entries is not supported, as it is not needed by the runtime right
  *   now.
  */
 

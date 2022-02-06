@@ -122,8 +122,11 @@ namespace System.Data.Tests.SqlTypes
 
             // Equals
             Assert.False(_test1.Equals(_test2));
+            Assert.False(_test1.Equals((object)_test2));
             Assert.False(_test3.Equals(_test2));
+            Assert.False(_test3.Equals((object)_test2));
             Assert.True(_test3.Equals(_test1));
+            Assert.True(_test3.Equals((object)_test1));
 
             // NotEquals
             Assert.True(SqlBinary.NotEquals(_test1, _test2).Value);

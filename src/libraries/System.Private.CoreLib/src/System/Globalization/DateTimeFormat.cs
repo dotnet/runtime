@@ -62,8 +62,8 @@ namespace System
         "M"     "0"         month w/o leading zero                2
         "MM"    "00"        month with leading zero               02
         "MMM"               short month name (abbreviation)       Feb
-        "MMMM"              full month name                       Febuary
-        "MMMM*"             full month name                       Febuary
+        "MMMM"              full month name                       February
+        "MMMM*"             full month name                       February
 
         "y"     "0"         two digit year (year % 100) w/o leading zero           0
         "yy"    "00"        two digit year (year % 100) with leading zero          00
@@ -734,7 +734,7 @@ namespace System
                         break;
                     case '\\':
                         // Escaped character.  Can be used to insert a character into the format string.
-                        // For exmple, "\d" will insert the character 'd' into the string.
+                        // For example, "\d" will insert the character 'd' into the string.
                         //
                         // NOTENOTE : we can remove this format character if we enforce the enforced quote
                         // character rule.
@@ -966,7 +966,7 @@ namespace System
                         // This format is not supported by DateTimeOffset
                         throw new FormatException(SR.Format_InvalidString);
                     }
-                    // Universal time is always in Greogrian calendar.
+                    // Universal time is always in Gregorian calendar.
                     //
                     // Change the Calendar to be Gregorian Calendar.
                     //

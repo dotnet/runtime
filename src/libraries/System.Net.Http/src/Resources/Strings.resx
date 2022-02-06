@@ -123,9 +123,6 @@
   <data name="net_http_httpmethod_format_error" xml:space="preserve">
     <value>The format of the HTTP method is invalid.</value>
   </data>
-  <data name="net_http_httpmethod_notsupported_error" xml:space="preserve">
-    <value>The HTTP method '{0}' is not supported on this platform.</value>
-  </data>
   <data name="net_http_reasonphrase_format_error" xml:space="preserve">
     <value>The reason phrase must not contain new-line characters.</value>
   </data>
@@ -231,9 +228,6 @@
   <data name="net_http_content_buffersize_limit" xml:space="preserve">
     <value>Buffering more than {0} bytes is not supported.</value>
   </data>
-  <data name="net_http_value_not_supported" xml:space="preserve">
-    <value>The value '{0}' is not supported for property '{1}'.</value>
-  </data>
   <data name="net_http_io_read" xml:space="preserve">
     <value>The read operation failed, see inner exception.</value>
   </data>
@@ -297,9 +291,6 @@
   <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
     <value>Access to the path '{0}' is denied.</value>
   </data>
-  <data name="net_http_content_no_concurrent_reads" xml:space="preserve">
-    <value>The stream does not support concurrent read operations.</value>
-  </data>
   <data name="net_http_username_empty_string" xml:space="preserve">
     <value>The username for a credential object cannot be null or empty.</value>
   </data>
@@ -357,9 +348,6 @@
   <data name="net_http_invalid_response_pseudo_header_in_trailer" xml:space="preserve">
     <value>Received an HTTP/2 pseudo-header as a trailing header.</value>
   </data>
-  <data name="net_http_unix_handler_disposed" xml:space="preserve">
-    <value>The handler was disposed of while active operations were in progress.</value>
-  </data>
   <data name="net_http_buffer_insufficient_length" xml:space="preserve">
     <value>The buffer was not long enough.</value>
   </data>
@@ -380,12 +368,6 @@
   </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Cannot access a closed stream.</value>
-  </data>
-  <data name="net_http_feature_requires_Windows10Version1607" xml:space="preserve">
-    <value>Using this feature requires Windows 10 Version 1607.</value>
-  </data>
-  <data name="net_http_feature_UWPClientCertSupportRequiresCertInPersonalCertificateStore" xml:space="preserve">
-    <value>Client certificate was not found in the personal (\"MY\") certificate store. In UWP, client certificates are only supported if they have been added to that certificate store.</value>
   </data>
   <data name="net_http_invalid_proxy_scheme" xml:space="preserve">
     <value>Only the 'http', 'socks4', 'socks4a' and 'socks5' schemes are allowed for proxies.</value>
@@ -516,9 +498,6 @@
   <data name="net_http_hpack_unexpected_end" xml:space="preserve">
     <value>End of headers reached with incomplete token.</value>
   </data>
-  <data name="net_http_hpack_encode_failure" xml:space="preserve">
-    <value>Failed to HPACK encode the headers.</value>
-  </data>
   <data name="net_http_headers_exceeded_length" xml:space="preserve">
     <value>The HTTP headers length exceeded the set limit of {0} bytes.</value>
   </data>
@@ -527,9 +506,6 @@
   </data>
   <data name="net_http_http3_connection_error" xml:space="preserve">
     <value>The HTTP/3 server sent invalid data on the connection. HTTP/3 error code '{0}' (0x{1}).</value>
-  </data>
-  <data name="net_http_http3_stream_error" xml:space="preserve">
-    <value>The HTTP/3 server sent invalid data on the stream. HTTP/3 error code '{0}' (0x{1}).</value>
   </data>
   <data name="net_http_retry_on_older_version" xml:space="preserve">
     <value>The server is unable to process the request using the current HTTP version and indicates the request should be retried on an older HTTP version.</value>
@@ -549,9 +525,6 @@
   <data name="net_quic_connectionaborted" xml:space="preserve">
     <value>Connection aborted by peer ({0}).</value>
   </data>
-  <data name="net_quic_notsupported" xml:space="preserve">
-    <value>QUIC is not supported on this platform. See https://aka.ms/dotnetquic</value>
-  </data>
   <data name="net_quic_operationaborted" xml:space="preserve">
     <value>Operation aborted.</value>
   </data>
@@ -569,9 +542,6 @@
   </data>
   <data name="net_http_requested_version_cannot_establish" xml:space="preserve">
     <value>Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.</value>
-  </data>
-  <data name="net_http_requested_version_alpn_refused" xml:space="preserve">
-    <value>Requesting HTTP version {0} with version policy {1} while server returned HTTP/1.1 in ALPN.</value>
   </data>
   <data name="net_http_requested_version_server_refused" xml:space="preserve">
     <value>Requesting HTTP version {0} with version policy {1} while server offers only version fallback.</value>
@@ -620,5 +590,8 @@
   </data>
   <data name="net_http_proxy_tunnel_returned_failure_status_code" xml:space="preserve">
     <value>The proxy tunnel request to proxy '{0}' failed with status code '{1}'."</value>
+  </data>
+  <data name="PlatformNotSupported_NetHttp" xml:space="preserve">
+    <value>System.Net.Http is not supported on this platform.</value>
   </data>
 </root>
