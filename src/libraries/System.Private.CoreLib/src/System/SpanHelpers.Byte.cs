@@ -105,6 +105,8 @@ namespace System
                     if (offset > searchSpaceMinusValueTailLengthAndVector)
                         offset = searchSpaceMinusValueTailLengthAndVector;
 
+                    continue;
+
                 CANDIDATE_FOUND:
                     uint mask = cmpAnd.ExtractMostSignificantBits();
                     do
@@ -163,6 +165,8 @@ namespace System
                     // Overlap with the current chunk for trailing elements
                     if (offset > searchSpaceMinusValueTailLengthAndVector)
                         offset = searchSpaceMinusValueTailLengthAndVector;
+
+                    continue;
 
                 CANDIDATE_FOUND:
                     uint mask = cmpAnd.ExtractMostSignificantBits();

@@ -177,6 +177,8 @@ namespace System
                     if (offset > searchSpaceMinusValueTailLengthAndVector)
                         offset = searchSpaceMinusValueTailLengthAndVector;
 
+                    continue;
+
                 CANDIDATE_FOUND:
                     uint mask = cmpAnd.ExtractMostSignificantBits();
                     do
