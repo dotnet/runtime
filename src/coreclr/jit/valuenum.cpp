@@ -10920,9 +10920,8 @@ void Compiler::fgDebugCheckExceptionSets()
                 return GenTree::VisitResult::Continue;
             });
 
-            // Currently, we fail to properly maintain the exception sets for trees with user
-            // calls or assignments.
-            if ((tree->gtFlags & (GTF_ASG | GTF_CALL)) != 0)
+            // Currently, we fail to properly maintain the exception sets for trees with user calls.
+            if ((tree->gtFlags & GTF_CALL) != 0)
             {
                 return;
             }
