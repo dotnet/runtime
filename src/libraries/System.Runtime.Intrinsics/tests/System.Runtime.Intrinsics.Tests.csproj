@@ -24,6 +24,11 @@
     <Compile Include="X86\Bmi1Tests.ExtractLowestSetBit.cs" />
     <Compile Include="X86\Bmi1Tests.GetMaskUpToLowestSetBit.cs" />
     <Compile Include="X86\Bmi1Tests.TrailingZeroCount.cs" />
+    <Compile Include="X86\Bmi2Tests.cs" />
+    <Compile Include="X86\Bmi2Tests.ParallelBitDeposit.cs" />
+    <Compile Include="X86\Bmi2Tests.ParallelBitExtract.cs" />
+    <Compile Include="X86\Bmi2Tests.MultiplyNoFlags.cs" />
+    <Compile Include="X86\Bmi2Tests.ZeroHighBits.cs" />
     <Compile Include="X86\LzcntTests.cs" />
     <Compile Include="X86\LzcntTests.LeadingZeroCount.cs" />
     <Compile Include="X86\PopcntTests.cs" />
