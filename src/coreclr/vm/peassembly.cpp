@@ -868,9 +868,7 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit)
 
 #ifndef DACCESS_COMPILE
 
-// Codebase is the fusion codebase or path for the assembly.  It is in URL format.
-// Note this may be obtained from the parent PEAssembly if we don't have a path or fusion
-// assembly.
+// Supports implementation of the legacy Assembly.CodeBase property.
 // Returns false if the assembly was loaded from a bundle, true otherwise
 BOOL PEAssembly::GetCodeBase(SString &result)
 {
