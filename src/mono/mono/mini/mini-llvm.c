@@ -4942,6 +4942,9 @@ emit_landing_pad (EmitContext *ctx, int group_index, int group_size)
 	LLVMValueRef landing_pad = LLVMBuildLandingPad (lpadBuilder, default_cpp_lpad_exc_signature (), personality, 0, "");
 	g_assert (landing_pad);
 
+	LLVMValueRef cast = LLVMBuildBitCast (lpadBuilder, ctx->module->sentinel_exception, LLVMPointerType (LLVMInt8Type (), 0), "int8TypeInfo");
+	LLVMAddClause (landing_pad, cast);
+
 	if (ctx->cfg->deopt) {
 		/*
 		 * Call mono_llvm_resume_exception_il_state (lmf, il_state)
@@ -5007,9 +5010,6 @@ emit_landing_pad (EmitContext *ctx, int group_index, int group_size)
 
 		return lpad_bb;
 	}
-
-	LLVMValueRef cast = LLVMBuildBitCast (lpadBuilder, ctx->module->sentinel_exception, LLVMPointerType (LLVMInt8Type (), 0), "int8TypeInfo");
-	LLVMAddClause (landing_pad, cast);
 
 	LLVMBasicBlockRef resume_bb = gen_bb (ctx, "RESUME_BB");
 	LLVMBuilderRef resume_builder = create_builder (ctx);
