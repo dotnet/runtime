@@ -1,23 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// For each dynamic assembly there will be two AssemblyBuilder objects: the "internal"
-// AssemblyBuilder object and the "external" AssemblyBuilder object.
-//  1.  The "internal" object is the real assembly object that the VM creates and knows about. However,
-//      you can perform RefEmit operations on it only if you have its granted permission. From the AppDomain
-//      and other "internal" objects like the "internal" ModuleBuilders and runtime types, you can only
-//      get the "internal" objects. This is to prevent low-trust code from getting a hold of the dynamic
-//      AssemblyBuilder/ModuleBuilder/TypeBuilder/MethodBuilder/etc other people have created by simply
-//      enumerating the AppDomain and inject code in it.
-//  2.  The "external" object is merely an wrapper of the "internal" object and all operations on it
-//      are directed to the internal object. This is the one you get by calling DefineDynamicAssembly
-//      on AppDomain and the one you can always perform RefEmit operations on. You can get other "external"
-//      objects from the "external" AssemblyBuilder, ModuleBuilder, TypeBuilder, MethodBuilder, etc. Note
-//      that VM doesn't know about this object. So every time we call into the VM we need to pass in the
-//      "internal" object.
-//
-// "internal" and "external" ModuleBuilders are similar
-
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -150,11 +133,6 @@ namespace System.Reflection.Emit
 
         #region DefineDynamicAssembly
 
-        /// <summary>
-        /// If an AssemblyName has a public key specified, the assembly is assumed
-        /// to have a strong name and a hash will be computed when the assembly
-        /// is saved.
-        /// </summary>
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
@@ -215,7 +193,6 @@ namespace System.Reflection.Emit
         /// modules within an Assembly with the same name. This dynamic module is
         /// a transient module.
         /// </summary>
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public ModuleBuilder DefineDynamicModule(string name)
         {
             lock (SyncRoot)

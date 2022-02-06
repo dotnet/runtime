@@ -620,8 +620,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
             pAssem = Assembly::Create(pDomain, pPEAssembly, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
 
             ReflectionModule* pModule = (ReflectionModule*) pAssem->GetModule();
-            pModule->SetCreatingAssembly( pCallerAssembly );
-
 
             if (createdNewAssemblyLoaderAllocator)
             {
