@@ -4,4 +4,5 @@ CannotMakeMemberAbstract : Member 'public System.Reflection.Emit.ModuleBuilder S
 CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.AssemblyBuilder.SetCustomAttribute(System.Reflection.ConstructorInfo, System.Byte[])' is abstract in the reference but is not abstract in the implementation.
 CannotMakeMemberAbstract : Member 'public void System.Reflection.Emit.AssemblyBuilder.SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)' is abstract in the reference but is not abstract in the implementation.
 MembersMustExist : Member 'protected System.ModuleHandle System.Reflection.Emit.ModuleBuilder.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
-Total Issues: 5
+TypesMustExist : Type 'System.Reflection.Emit.RuntimeAssemblyBuilder' does not exist in the reference but it does exist in the implementation.
+Total Issues: 6
