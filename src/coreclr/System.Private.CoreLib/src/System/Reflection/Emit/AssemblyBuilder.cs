@@ -74,7 +74,7 @@ namespace System.Reflection.Emit
             if (callingAssembly == null)
             {
                 // Called either from interop or async delegate invocation. Rejecting because we don't
-                // know how to set the correct permission on the new dynamic assembly.
+                // know how to set the correct context of the new dynamic assembly.
                 throw new InvalidOperationException();
             }
             if (assemblyLoadContext == null)
