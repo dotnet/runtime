@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
@@ -108,9 +108,6 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
     <Compile Include="AssemblyInfo.netfx.cs" />
     <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Collections" />

@@ -69,10 +69,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Formats.Asn1", "..\S
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Formats.Asn1", "..\System.Formats.Asn1\src\System.Formats.Asn1.csproj", "{F50B881E-8A70-48C3-80B0-2094F6868974}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\ref\System.Runtime.CompilerServices.Unsafe.csproj", "{5D0D6749-312A-4400-89D8-A7252D9A879B}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj", "{75A03875-DC97-42AE-9EFE-78DC736B8BD6}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Pkcs", "..\System.Security.Cryptography.Pkcs\ref\System.Security.Cryptography.Pkcs.csproj", "{8EA7F25A-0748-4EF4-ABE8-67688B646D47}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Pkcs", "..\System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj", "{95FB3CCD-3174-4BAA-8BF6-67E0A16B8965}"
