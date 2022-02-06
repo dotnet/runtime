@@ -5,7 +5,6 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.CompilerServices
 {
-    [ReflectionBlocked]
     public static partial class Unsafe
     {
         /// <summary>
@@ -17,17 +16,6 @@ namespace System.Runtime.CompilerServices
         internal static T Read<T>(ref byte source)
         {
             return Unsafe.As<byte, T>(ref source);
-        }
-
-        /// <summary>
-        /// Writes a value of type <typeparamref name="T"/> to the given location.
-        /// </summary>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void Write<T>(ref byte destination, T value)
-        {
-            Unsafe.As<byte, T>(ref destination) = value;
         }
     }
 }
