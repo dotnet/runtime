@@ -2355,7 +2355,16 @@ void CodeGen::genLclHeap(GenTree* tree)
             // The SP might already be in the guard page, so we must touch it BEFORE
             // the alloc, not after.
 
-            if (emitter::canEncodeLoadOrStorePairOffset(amount, EA_8BYTE))
+            // Note the we check against the lower boundary of the post-index immediate range [-256, 256)
+            // since the offset is -amount.
+            const bool canEncodeLoadRegPostIndexOffset = amount <= 256;
+
+            if (canEncodeLoadRegPostIndexOffset)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, -(ssize_t)amount,
+                                            INS_OPTS_POST_INDEX);
+            }
+            else if (emitter::canEncodeLoadOrStorePairOffset(-(ssize_t)amount, EA_8BYTE))
             {
                 // The following probes the page and allocates the local heap.
                 // ldp tmpReg, xzr, [sp], #-amount
