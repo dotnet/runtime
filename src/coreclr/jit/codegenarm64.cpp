@@ -2336,7 +2336,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
                     // The following zeroes the remaining space in [finalSp+16, initialSp-16) interval
                     // using a sequence of stp instruction with unsigned offset.
-                    for (ssize_t offset = storePairRegsWritesBytes; offset < (ssize_t)amount - storePairRegsWritesBytes;
+                    for (ssize_t offset = storePairRegsWritesBytes; offset < finalSpDelta;
                          offset += storePairRegsWritesBytes)
                     {
                         // stp xzr, xzr, [sp, #offset]
