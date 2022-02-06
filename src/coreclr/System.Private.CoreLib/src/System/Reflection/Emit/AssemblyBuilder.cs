@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -58,7 +59,7 @@ namespace System.Reflection.Emit
 
         internal AssemblyBuilder(AssemblyName name,
                                  AssemblyBuilderAccess access,
-                                 ref StackCrawlMark stackMark,
+                                 Assembly? callingAssembly,
                                  AssemblyLoadContext? assemblyLoadContext,
                                  IEnumerable<CustomAttributeBuilder>? unsafeAssemblyAttributes)
         {
@@ -69,6 +70,16 @@ namespace System.Reflection.Emit
             if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)access), nameof(access));
+            }
+            if (callingAssembly == null)
+            {
+                // Called either from interop or async delegate invocation. Rejecting because we don't
+                // know how to set the correct permission on the new dynamic assembly.
+                throw new InvalidOperationException();
+            }
+            if (assemblyLoadContext == null)
+            {
+                assemblyLoadContext = AssemblyLoadContext.GetLoadContext(callingAssembly);
             }
 
             // Clone the name in case the caller modifies it underneath us.
@@ -87,7 +98,6 @@ namespace System.Reflection.Emit
 
             RuntimeAssembly? retAssembly = null;
             CreateDynamicAssembly(ObjectHandleOnStack.Create(ref name),
-                                  new StackCrawlMarkHandle(ref stackMark),
                                   (int)access,
                                   ObjectHandleOnStack.Create(ref assemblyLoadContext),
                                   ObjectHandleOnStack.Create(ref retAssembly));
@@ -136,10 +146,9 @@ namespace System.Reflection.Emit
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalDefineDynamicAssembly(name,
                                                  access,
-                                                 ref stackMark,
+                                                 Assembly.GetCallingAssembly(),
                                                  AssemblyLoadContext.CurrentContextualReflectionContext,
                                                  null);
         }
@@ -150,17 +159,15 @@ namespace System.Reflection.Emit
             AssemblyBuilderAccess access,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalDefineDynamicAssembly(name,
                                                  access,
-                                                 ref stackMark,
+                                                 Assembly.GetCallingAssembly(),
                                                  AssemblyLoadContext.CurrentContextualReflectionContext,
                                                  assemblyAttributes);
         }
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
         private static partial void CreateDynamicAssembly(ObjectHandleOnStack name,
-                                                         StackCrawlMarkHandle stackMark,
                                                          int access,
                                                          ObjectHandleOnStack assemblyLoadContext,
                                                          ObjectHandleOnStack retAssembly);
@@ -170,7 +177,7 @@ namespace System.Reflection.Emit
         internal static AssemblyBuilder InternalDefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access,
-            ref StackCrawlMark stackMark,
+            Assembly? callingAssembly,
             AssemblyLoadContext? assemblyLoadContext,
             IEnumerable<CustomAttributeBuilder>? unsafeAssemblyAttributes)
         {
@@ -179,7 +186,7 @@ namespace System.Reflection.Emit
                 // We can only create dynamic assemblies in the current domain
                 return new AssemblyBuilder(name,
                                            access,
-                                           ref stackMark,
+                                           callingAssembly,
                                            assemblyLoadContext,
                                            unsafeAssemblyAttributes);
             }
