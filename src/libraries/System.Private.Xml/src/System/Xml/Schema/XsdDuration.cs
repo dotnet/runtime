@@ -394,13 +394,13 @@ namespace System.Xml.Schema
                             vsb.Append('.');
 
                             len = vsb.Length;
-                            vsb.Length += 9;
-                            zeroIdx = vsb.Length - 1;
+                            Span<char> tmpSpan = stackalloc char[9];
+                            zeroIdx = len + 8;
 
                             for (int idx = zeroIdx; idx >= len; idx--)
                             {
                                 digit = nanoseconds % 10;
-                                vsb[idx] = (char)(digit + '0');
+                                tmpSpan[idx - len] = (char)(digit + '0');
 
                                 if (zeroIdx == idx && digit == 0)
                                     zeroIdx--;
@@ -408,7 +408,8 @@ namespace System.Xml.Schema
                                 nanoseconds /= 10;
                             }
 
-                            vsb.Length = zeroIdx + 1;
+                            vsb.EnsureCapacity(zeroIdx + 1);
+                            vsb.Append(tmpSpan.Slice(0, zeroIdx - len + 1));
                         }
                         vsb.Append('S');
                     }
