@@ -339,26 +339,26 @@ namespace System.Xml.Schema
         /// </summary>
         internal string ToString(DurationType durationType)
         {
-            StringBuilder sb = new StringBuilder(20);
+            var vsb = new ValueStringBuilder(stackalloc char[20]);
             int nanoseconds, digit, zeroIdx, len;
 
             if (IsNegative)
-                sb.Append('-');
+                vsb.Append('-');
 
-            sb.Append('P');
+            vsb.Append('P');
 
             if (durationType != DurationType.DayTimeDuration)
             {
                 if (_years != 0)
                 {
-                    sb.Append(XmlConvert.ToString(_years));
-                    sb.Append('Y');
+                    XmlConvert.AppendInt(ref vsb, _years);
+                    vsb.Append('Y');
                 }
 
                 if (_months != 0)
                 {
-                    sb.Append(XmlConvert.ToString(_months));
-                    sb.Append('M');
+                    XmlConvert.AppendInt(ref vsb, _months);
+                    vsb.Append('M');
                 }
             }
 
@@ -366,41 +366,41 @@ namespace System.Xml.Schema
             {
                 if (_days != 0)
                 {
-                    sb.Append(XmlConvert.ToString(_days));
-                    sb.Append('D');
+                    XmlConvert.AppendInt(ref vsb, _days);
+                    vsb.Append('D');
                 }
 
                 if (_hours != 0 || _minutes != 0 || _seconds != 0 || Nanoseconds != 0)
                 {
-                    sb.Append('T');
+                    vsb.Append('T');
                     if (_hours != 0)
                     {
-                        sb.Append(XmlConvert.ToString(_hours));
-                        sb.Append('H');
+                        XmlConvert.AppendInt(ref vsb, _hours);
+                        vsb.Append('H');
                     }
 
                     if (_minutes != 0)
                     {
-                        sb.Append(XmlConvert.ToString(_minutes));
-                        sb.Append('M');
+                        XmlConvert.AppendInt(ref vsb, _minutes);
+                        vsb.Append('M');
                     }
 
                     nanoseconds = Nanoseconds;
                     if (_seconds != 0 || nanoseconds != 0)
                     {
-                        sb.Append(XmlConvert.ToString(_seconds));
+                        XmlConvert.AppendInt(ref vsb, _seconds);
                         if (nanoseconds != 0)
                         {
-                            sb.Append('.');
+                            vsb.Append('.');
 
-                            len = sb.Length;
-                            sb.Length += 9;
-                            zeroIdx = sb.Length - 1;
+                            len = vsb.Length;
+                            vsb.Length += 9;
+                            zeroIdx = vsb.Length - 1;
 
                             for (int idx = zeroIdx; idx >= len; idx--)
                             {
                                 digit = nanoseconds % 10;
-                                sb[idx] = (char)(digit + '0');
+                                vsb[idx] = (char)(digit + '0');
 
                                 if (zeroIdx == idx && digit == 0)
                                     zeroIdx--;
@@ -408,24 +408,24 @@ namespace System.Xml.Schema
                                 nanoseconds /= 10;
                             }
 
-                            sb.Length = zeroIdx + 1;
+                            vsb.Length = zeroIdx + 1;
                         }
-                        sb.Append('S');
+                        vsb.Append('S');
                     }
                 }
 
                 // Zero is represented as "PT0S"
-                if (sb[sb.Length - 1] == 'P')
-                    sb.Append("T0S");
+                if (vsb[vsb.Length - 1] == 'P')
+                    vsb.Append("T0S");
             }
             else
             {
                 // Zero is represented as "T0M"
-                if (sb[sb.Length - 1] == 'P')
-                    sb.Append("0M");
+                if (vsb[vsb.Length - 1] == 'P')
+                    vsb.Append("0M");
             }
 
-            return sb.ToString();
+            return vsb.ToString();
         }
 
         internal static Exception? TryParse(string s, out XsdDuration result)

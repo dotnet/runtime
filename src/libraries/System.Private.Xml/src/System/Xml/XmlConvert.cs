@@ -693,6 +693,18 @@ namespace System.Xml
             return value.ToString(null, s_invariantCultureInfo);
         }
 
+        internal static void AppendInt(ref ValueStringBuilder vsb, int value)
+        {
+            Span<char> tmpSpanDestination = stackalloc char[11];
+            if (value.TryFormat(tmpSpanDestination, out int charsWritten, provider: s_invariantCultureInfo))
+            {
+                var vsbSpan = vsb.AppendSpan(charsWritten);
+                tmpSpanDestination.Slice(0, charsWritten).CopyTo(vsbSpan);
+            }
+            else
+                vsb.Append(value.ToString(null, s_invariantCultureInfo));
+        }
+
         public static string ToString(long value)
         {
             return value.ToString(null, s_invariantCultureInfo);
