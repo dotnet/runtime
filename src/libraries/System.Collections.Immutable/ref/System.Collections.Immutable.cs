@@ -118,6 +118,10 @@ namespace System.Collections.Immutable
         public System.Collections.Immutable.ImmutableArray<T> Add(T item) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> AddRange(System.Collections.Generic.IEnumerable<T> items) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> AddRange(System.Collections.Immutable.ImmutableArray<T> items) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> AddRange(T[] items, int length) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> AddRange<TDerived>(TDerived[] items) where TDerived : T { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> AddRange(ImmutableArray<T> items, int length) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> AddRange<TDerived>(ImmutableArray<TDerived> items) where TDerived : T { throw null; }
         public System.ReadOnlyMemory<T> AsMemory() { throw null; }
         public System.ReadOnlySpan<T> AsSpan() { throw null; }
         public System.Collections.Immutable.ImmutableArray<
