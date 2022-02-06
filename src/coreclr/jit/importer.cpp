@@ -3712,9 +3712,6 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     CORINFO_FIELD_HANDLE pointerFieldHnd = info.compCompHnd->getFieldInClass(spanHnd, 0);
     CORINFO_FIELD_HANDLE lengthFieldHnd  = info.compCompHnd->getFieldInClass(spanHnd, 1);
 
-    INDEBUG(RecordStructFieldInfo(pointerFieldHnd));
-    INDEBUG(RecordStructFieldInfo(lengthFieldHnd));
-
     GenTreeLclFld* pointerField = gtNewLclFldNode(spanTempNum, TYP_BYREF, 0);
     pointerField->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(pointerFieldHnd));
     GenTree* pointerFieldAsg = gtNewAssignNode(pointerField, pointerValue);
@@ -3964,8 +3961,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(byReferenceStruct != nullptr);
                 impPushOnStack(byReferenceStruct, typeInfo(TI_STRUCT, clsHnd));
                 retNode = assign;
-
-                INDEBUG(RecordStructFieldInfo(fldHnd));
                 break;
             }
 
@@ -3976,8 +3971,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_FIELD_HANDLE fldHnd = info.compCompHnd->getFieldInClass(clsHnd, 0);
                 GenTree*             field  = gtNewFieldRef(TYP_BYREF, fldHnd, op1, 0);
                 retNode                     = field;
-
-                INDEBUG(RecordStructFieldInfo(fldHnd));
                 break;
             }
 
@@ -4102,8 +4095,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree*             length       = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
                 GenTree* boundsCheck = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, length, SCK_RNGCHK_FAIL);
 
-                INDEBUG(RecordStructFieldInfo(lengthHnd));
-
                 // Element access
                 index = indexClone;
 
@@ -4128,8 +4119,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 const unsigned       ptrOffset = info.compCompHnd->getFieldOffset(ptrHnd);
                 GenTree*             data      = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
                 GenTree*             result    = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
-
-                INDEBUG(RecordStructFieldInfo(ptrHnd));
 
                 // Prepare result
                 var_types resultType = JITtype2varType(sig->retType);
@@ -7061,8 +7050,6 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         const CORINFO_FIELD_HANDLE hasValueFldHnd =
                                             info.compCompHnd->getFieldInClass(nullableCls, 0);
 
-                                        INDEBUG(RecordStructFieldInfo(hasValueFldHnd));
-
                                         assert(info.compCompHnd->getFieldOffset(hasValueFldHnd) == 0);
                                         assert(!strcmp(info.compCompHnd->getFieldName(hasValueFldHnd, nullptr),
                                                        "hasValue"));
@@ -8184,6 +8171,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         !isBoxedStatic ? GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField) : FieldSeqStore::NotAField();
 
     GenTree* op1;
+
     switch (pFieldInfo->fieldAccessor)
     {
         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
