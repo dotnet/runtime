@@ -2368,7 +2368,8 @@ void CodeGen::genLclHeap(GenTree* tree)
             {
                 // The following probes the page and allocates the local heap.
                 // ldp tmpReg, xzr, [sp], #-amount
-                // Note that behaviour of ldp where two source registers are the same is unpredictable.
+                // Note that we cannot use ldp xzr, xzr since
+                // the behaviour of ldp where two source registers are the same is unpredictable.
                 const regNumber tmpReg = targetReg;
                 GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tmpReg, REG_ZR, REG_SPBASE, -(ssize_t)amount,
                                               INS_OPTS_POST_INDEX);
