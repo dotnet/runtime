@@ -8449,6 +8449,17 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     {
                         ValueNumPair lclVNPair = varDsc->GetPerSsaData(ssaNum)->m_vnPair;
                         tree->gtVNPair = vnStore->VNPairApplySelectors(lclVNPair, lclFld->GetFieldSeq(), indType);
+
+                        // If we have byref field, we may have a zero-offset sequence to add.
+                        FieldSeqNode* zeroOffsetFldSeq = nullptr;
+                        if ((typ == TYP_BYREF) && GetZeroOffsetFieldMap()->Lookup(lclFld, &zeroOffsetFldSeq))
+                        {
+                            ValueNum addrExtended = vnStore->ExtendPtrVN(lclFld, zeroOffsetFldSeq);
+                            if (addrExtended != ValueNumStore::NoVN)
+                            {
+                                lclFld->gtVNPair.SetBoth(addrExtended);
+                            }
+                        }
                     }
                 }
                 else
