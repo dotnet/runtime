@@ -223,6 +223,7 @@ MONO_JIT_ICALL (mono_ldvirtfn_gshared) \
 MONO_JIT_ICALL (mono_llvm_clear_exception) \
 MONO_JIT_ICALL (mono_llvm_load_exception) \
 MONO_JIT_ICALL (mono_llvm_match_exception) \
+MONO_JIT_ICALL (mono_llvm_resume_exception_il_state) \
 MONO_JIT_ICALL (mono_llvm_resume_exception) \
 MONO_JIT_ICALL (mono_llvm_resume_unwind_trampoline) \
 MONO_JIT_ICALL (mono_llvm_rethrow_exception) \

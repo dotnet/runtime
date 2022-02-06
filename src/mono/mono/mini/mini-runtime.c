@@ -4694,6 +4694,7 @@ register_icalls (void)
 	register_icall (mono_llvm_throw_exception, mono_icall_sig_void_object, TRUE);
 	register_icall (mono_llvm_rethrow_exception, mono_icall_sig_void_object, TRUE);
 	register_icall (mono_llvm_resume_exception, mono_icall_sig_void, TRUE);
+	register_icall (mono_llvm_resume_exception_il_state, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_llvm_match_exception, mono_icall_sig_int_ptr_int_int_ptr_object, TRUE);
 	register_icall (mono_llvm_clear_exception, NULL, TRUE);
 	register_icall (mono_llvm_load_exception, mono_icall_sig_object, TRUE);

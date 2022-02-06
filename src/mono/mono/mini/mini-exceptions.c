@@ -1910,7 +1910,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 
 		frame_count ++;
 		method = jinfo_get_method (ji);
-		//printf ("M: %s %d.\n", mono_method_full_name (method, TRUE), frame_count);
+		//printf ("[%d]: %s.\n", frame_count, mono_method_full_name (method, TRUE));
 
 		if (mini_debug_options.reverse_pinvoke_exceptions && method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 			g_error ("A native frame was found while unwinding the stack after an exception.\n"
@@ -2355,7 +2355,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 		method = jinfo_get_method (ji);
 		frame_count ++;
-		//printf ("M: %s %d.\n", mono_method_full_name (method, TRUE), frame_count);
+		//printf ("[%d] %s.\n", frame_count, mono_method_full_name (method, TRUE));
 
 		if (stack_overflow) {
 			free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
@@ -2479,6 +2479,22 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 					mini_set_abort_threshold (&frame);
 
+					if (frame.type == FRAME_TYPE_IL_STATE) {
+						if (mono_trace_is_enabled () && mono_trace_eval (method))
+							g_print ("EXCEPTION: catch clause found in AOTed code.\n");
+						/*
+						 * Save the state needed to execute the catch clause in TLS, then
+						 * throw a c++ exception which is going to be caught by AOTed
+						 * methods, then execute the clause and the rest of the method
+						 * using the interpreter.
+						 */
+						jit_tls->resume_state.ex_obj = obj;
+						jit_tls->resume_state.ji = ji;
+						jit_tls->resume_state.clause_index = i;
+						jit_tls->resume_state.il_state = frame.il_state;
+						mono_llvm_cpp_throw_exception ();
+					}
+
 					if (in_interp) {
 						/*
 						 * ctx->pc points into the interpreter, after the call which transitioned to
@@ -2557,8 +2573,8 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						mini_set_abort_threshold (&frame);
 						if (frame.type == FRAME_TYPE_IL_STATE) {
 							if (mono_trace_is_enabled () && mono_trace_eval (method))
-								g_print ("EXCEPTION: clause found in AOTed code, running clause with interpreter.\n");
-							mini_get_interp_callbacks ()->run_finally_with_il_state (frame.il_state, i, ei->handler_start, ei->data.handler_end);
+								g_print ("EXCEPTION: finally/fault clause found in AOTed code, running it with the interpreter.\n");
+							mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ei->handler_start, ei->data.handler_end, NULL, FALSE);
 						} else if (in_interp) {
 							gboolean has_ex = mini_get_interp_callbacks ()->run_finally (&frame, i, ei->handler_start, ei->data.handler_end);
 							if (has_ex) {
@@ -3439,7 +3455,14 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 #endif
 	}
 
-	mono_llvm_cpp_throw_exception ();
+	if (rethrow) {
+		MonoContext ctx;
+		MonoJitInfo *out_ji;
+		memset (&ctx, 0, sizeof (MonoContext));
+
+		mono_handle_exception_internal (&ctx, ex, FALSE, &out_ji);
+		mono_llvm_cpp_throw_exception ();
+	}
 }
 
 void
@@ -3460,6 +3483,9 @@ mono_llvm_throw_exception (MonoObject *ex)
 	mono_handle_exception (&ctx, (MonoObject*)ex);
 
 	throw_exception (ex, FALSE);
+
+	/* Unwind back to either an AOTed frame or to the interpreter */
+	mono_llvm_cpp_throw_exception ();
 }
 
 void
@@ -3500,6 +3526,73 @@ void
 mono_llvm_resume_exception (void)
 {
 	mono_llvm_cpp_throw_exception ();
+}
+
+static G_GNUC_UNUSED void
+print_lmf_chain (MonoLMF *lmf)
+{
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
+
+	while (lmf && lmf != jit_tls->first_lmf) {
+		printf ("LMF: %p ", lmf);
+
+		if (((gsize)lmf->previous_lmf) & 2) {
+			MonoLMFExt *ext = (MonoLMFExt*)lmf;
+
+			switch (ext->kind) {
+			case MONO_LMFEXT_DEBUGGER_INVOKE:
+				printf ("dbg invoke");
+				break;
+			case MONO_LMFEXT_INTERP_EXIT:
+			case MONO_LMFEXT_INTERP_EXIT_WITH_CTX:
+				printf ("interp exit");
+				break;
+			case MONO_LMFEXT_JIT_ENTRY:
+				printf ("jit entry");
+				break;
+			case MONO_LMFEXT_IL_STATE:
+				printf ("il state ['%s']", mono_method_get_full_name (ext->il_state->method));
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			printf ("\n");
+
+			lmf = (MonoLMF *)(((gsize)lmf->previous_lmf) & ~3);
+		}
+	}
+}
+
+/*
+ * mono_llvm_resume_exception_il_state:
+ *
+ *   Called from AOTed code to execute catch clauses.
+ */
+void
+mono_llvm_resume_exception_il_state (MonoLMF *lmf, gpointer info)
+{
+	MonoMethodILState *il_state = (MonoMethodILState *)info;
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
+
+	//print_lmf_chain (lmf);
+
+	if (jit_tls->resume_state.il_state != il_state) {
+		/* Call from an AOT method which doesn't catch this exception, continue unwinding */
+		mono_llvm_cpp_throw_exception ();
+	}
+	jit_tls->resume_state.il_state = NULL;
+
+	/* Pop the LMF frame so the caller doesn't have to do it */
+	mono_set_lmf ((MonoLMF *)(((gsize)lmf->previous_lmf) & ~3));
+
+	MonoJitInfo *ji = jit_tls->resume_state.ji;
+	int clause_index = jit_tls->resume_state.clause_index;
+	MonoJitExceptionInfo *ei = &ji->clauses [clause_index];
+	gboolean r = mini_get_interp_callbacks ()->run_clause_with_il_state (il_state, clause_index, ei->handler_start, NULL, jit_tls->resume_state.ex_obj, TRUE);
+	if (r)
+		/* Another exception thrown, continue unwinding */
+		mono_llvm_cpp_throw_exception ();
 }
 
 /*

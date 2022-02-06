@@ -2583,6 +2583,7 @@ G_EXTERN_C void mono_llvm_rethrow_exception     (MonoObject *ex);
 G_EXTERN_C void mono_llvm_throw_exception       (MonoObject *ex);
 G_EXTERN_C void mono_llvm_throw_corlib_exception (guint32 ex_token_index);
 G_EXTERN_C void mono_llvm_resume_exception      (void);
+G_EXTERN_C void mono_llvm_resume_exception_il_state (MonoLMF *lmf, gpointer info);
 G_EXTERN_C void mono_llvm_clear_exception       (void);
 G_EXTERN_C MonoObject *mono_llvm_load_exception (void);
 void     mono_llvm_reset_exception              (void);

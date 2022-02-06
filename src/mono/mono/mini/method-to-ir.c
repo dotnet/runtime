@@ -6675,6 +6675,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	start_new_bblock = 0;
 	MonoOpcodeEnum il_op; il_op = MonoOpcodeEnum_Invalid;
 
+	emit_set_deopt_il_offset (cfg, ip - cfg->cil_start);
+
 	for (guchar *next_ip = ip; ip < end; ip = next_ip) {
 		MonoOpcodeEnum previous_il_op = il_op;
 		const guchar *tmp_ip = ip;

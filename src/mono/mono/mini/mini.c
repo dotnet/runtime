@@ -3072,24 +3072,31 @@ static gboolean
 can_deopt (MonoCompile *cfg)
 {
 	MonoMethodHeader *header = cfg->header;
+	gboolean has_catch = FALSE;
+	MonoMethodSignature *sig;
 
 	if (!header->num_clauses)
 		return FALSE;
 
-	/*
-	 * Currently, only finally/fault clauses are supported.
-	 * Catch clauses are hard to support, since even if the
-	 * rest of the method is executed by the interpreter, execution needs to
-	 * return to the caller which is an AOTed method.
-	 * Filter clauses could be supported, but every filter clause has an
-	 * associated catch clause.
-	 */
+	sig = mono_method_signature_internal (cfg->method);
+
 	for (int i = 0; i < header->num_clauses; ++i) {
 		MonoExceptionClause *clause = &header->clauses [i];
 
-		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT)
+		// FIXME: Support filter clauses
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER)
 			return FALSE;
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE)
+			has_catch = TRUE;
 	}
+
+	/*
+	 * FIXME: The code after the call to mono_llvm_resume_exception_il_state doesn't support
+	 * all return conventions.
+	 */
+	MonoType *t = mini_get_underlying_type (sig->ret);
+	if (has_catch && t->type != MONO_TYPE_VOID && !MONO_TYPE_IS_PRIMITIVE (t) && !MONO_TYPE_IS_REFERENCE (t))
+		return FALSE;
 
 	return TRUE;
 }

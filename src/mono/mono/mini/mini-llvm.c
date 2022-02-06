@@ -178,6 +178,7 @@ typedef struct {
 	gboolean is_linkonce;
 	gboolean emit_dummy_arg;
 	gboolean has_safepoints;
+	gboolean has_catch;
 	int this_arg_pindex, rgctx_arg_pindex;
 	LLVMValueRef imt_rgctx_loc;
 	GHashTable *llvm_types;
@@ -196,6 +197,7 @@ typedef struct {
 	int *gc_var_indexes;
 	LLVMValueRef gc_pin_area;
 	LLVMValueRef il_state;
+	LLVMValueRef il_state_ret;
 } EmitContext;
 
 typedef struct {
@@ -2377,9 +2379,10 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 	MonoExceptionClause *clause;
 
 	if (ctx->llvm_only) {
-		clause = get_most_deep_clause (cfg, ctx, bb);
+		clause = bb ? get_most_deep_clause (cfg, ctx, bb) : NULL;
 
-		if (!ctx->cfg->deopt && clause) {
+		// FIXME: Use an invoke only for calls inside try-catch blocks
+		if (clause && (!cfg->deopt || ctx->has_catch)) {
 			g_assert (clause->flags == MONO_EXCEPTION_CLAUSE_NONE || clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY || clause->flags == MONO_EXCEPTION_CLAUSE_FAULT);
 
 			/*
@@ -4044,7 +4047,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	if (cfg->deopt) {
 		LLVMValueRef addr, index [2];
 		MonoMethodHeader *header = cfg->header;
-		int nfields = sig->hasthis + sig->param_count + header->num_locals + 2;
+		int nfields = (sig->ret->type != MONO_TYPE_VOID ? 1 : 0) + sig->hasthis + sig->param_count + header->num_locals + 2;
 		LLVMTypeRef *types = g_alloca (nfields * sizeof (LLVMTypeRef));
 		int findex = 0;
 		/* method */
@@ -4053,6 +4056,8 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		types [findex ++] = LLVMInt32Type ();
 		int data_start = findex;
 		/* data */
+		if (sig->ret->type != MONO_TYPE_VOID)
+			types [findex ++] = IntPtrType ();
 		if (sig->hasthis)
 			types [findex ++] = IntPtrType ();
 		for (int i = 0; i < sig->param_count; ++i)
@@ -4081,6 +4086,16 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		 * clauses are supposed to be volatile, so they have an address.
 		 */
 		findex = data_start;
+		if (sig->ret->type != MONO_TYPE_VOID) {
+			LLVMTypeRef ret_type = type_to_llvm_type (ctx, sig->ret);
+			ctx->il_state_ret = build_alloca_llvm_type_name (ctx, ret_type, 0, "il_state_ret");
+
+			index [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			index [1] = LLVMConstInt (LLVMInt32Type (), findex, FALSE);
+			addr = LLVMBuildGEP (builder, ctx->il_state, index, 2, "");
+			LLVMBuildStore (ctx->builder, ctx->il_state_ret, convert (ctx, addr, LLVMPointerType (LLVMTypeOf (ctx->il_state_ret), 0)));
+			findex ++;
+		}
 		for (int i = 0; i < sig->hasthis + sig->param_count; ++i) {
 			LLVMValueRef var_addr = ctx->addresses [cfg->args [i]->dreg];
 
@@ -4926,6 +4941,72 @@ emit_landing_pad (EmitContext *ctx, int group_index, int group_size)
 	LLVMPositionBuilderAtEnd (lpadBuilder, lpad_bb);
 	LLVMValueRef landing_pad = LLVMBuildLandingPad (lpadBuilder, default_cpp_lpad_exc_signature (), personality, 0, "");
 	g_assert (landing_pad);
+
+	if (ctx->cfg->deopt) {
+		/*
+		 * Call mono_llvm_resume_exception_il_state (lmf, il_state)
+		 *
+		 *   The call will execute the catch clause and the rest of the method and store the return
+		 * value into ctx->il_state_ret.
+		 */
+		if (!ctx->has_catch) {
+			/* Unused */
+			LLVMBuildUnreachable (lpadBuilder);
+			return lpad_bb;
+		}
+
+		const MonoJitICallId icall_id = MONO_JIT_ICALL_mono_llvm_resume_exception_il_state;
+		LLVMValueRef callee;
+		LLVMValueRef args [2];
+
+		LLVMTypeRef fun_sig = LLVMFunctionType2 (LLVMVoidType (), IntPtrType (), IntPtrType (), FALSE);
+
+		callee = get_callee (ctx, fun_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id));
+
+		g_assert (ctx->cfg->lmf_var);
+		g_assert (ctx->addresses [ctx->cfg->lmf_var->dreg]);
+		args [0] = LLVMBuildPtrToInt (ctx->builder, ctx->addresses [ctx->cfg->lmf_var->dreg], IntPtrType (), "");
+		args [1] = LLVMBuildPtrToInt (ctx->builder, ctx->il_state, IntPtrType (), "");
+		emit_call (ctx, NULL, &ctx->builder, callee, args, 2);
+
+		/* Return the value set in ctx->il_state_ret */
+		LLVMBuilderRef builder = ctx->builder;
+		switch (ctx->linfo->ret.storage) {
+		case LLVMArgNone:
+			LLVMBuildRetVoid (builder);
+			break;
+		case LLVMArgNormal: {
+			LLVMValueRef addr, retval, gep, indexes [2];
+
+			if (ctx->sig->ret->type == MONO_TYPE_VOID) {
+				LLVMBuildRetVoid (builder);
+				break;
+			}
+
+			g_assert (cfg->ret);
+			addr = ctx->il_state_ret;
+			g_assert (addr);
+			LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (ctx->lmethod)));
+
+			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			gep = LLVMBuildGEP (builder, addr, indexes, 1, "");
+			retval = convert (ctx, LLVMBuildLoad (builder, gep, ""), ret_type);
+			LLVMBuildRet (builder, retval);
+			break;
+		}
+		case LLVMArgWasmVtypeAsScalar:
+		case LLVMArgVtypeRetAddr:
+			// FIXME:
+			g_assert_not_reached ();
+			break;
+		default:
+			g_assert_not_reached ();
+			break;
+		}
+
+		return lpad_bb;
+	}
 
 	LLVMValueRef cast = LLVMBuildBitCast (lpadBuilder, ctx->module->sentinel_exception, LLVMPointerType (LLVMInt8Type (), 0), "int8TypeInfo");
 	LLVMAddClause (landing_pad, cast);
@@ -11764,6 +11845,12 @@ emit_method_inner (EmitContext *ctx)
 	if (header->num_clauses || (cfg->method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) || cfg->no_inline)
 		/* We can't handle inlined methods with clauses */
 		mono_llvm_add_func_attr (method, LLVM_ATTR_NO_INLINE);
+
+	for (int i = 0; i < cfg->header->num_clauses; i++) {
+		MonoExceptionClause *clause = &cfg->header->clauses [i];
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE)
+			ctx->has_catch = TRUE;
+	}
 
 	if (linfo->rgctx_arg) {
 		ctx->rgctx_arg = LLVMGetParam (method, linfo->rgctx_arg_pindex);
