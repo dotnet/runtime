@@ -80,7 +80,7 @@ namespace System.Net.NetworkInformation.Tests
 
         public static bool DoesNotUsePingUtility => !UsesPingUtility;
 
-        public static bool UsesPingUtility => OperatingSystem.IsLinux() && !Capability.CanUseRawSockets(TestSettings.GetLocalIPAddress().AddressFamily);
+        public static bool UsesPingUtility => (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) && !Capability.CanUseRawSockets(TestSettings.GetLocalIPAddress().AddressFamily);
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsync_InvalidArgs()
