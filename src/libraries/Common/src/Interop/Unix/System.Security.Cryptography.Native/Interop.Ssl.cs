@@ -141,9 +141,13 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool Tls13SupportedImpl();
-        internal static readonly bool Tls13Supported = Tls13SupportedImpl();
+        private static extern int Tls13SupportedImpl();
+
+        internal static class Capabilities
+        {
+            // needs separate type (separate static cctor) to be sure OpenSSL is initialized.
+            internal static readonly bool Tls13Supported = Tls13SupportedImpl() != 0;
+        }
 
         internal static SafeSharedX509NameStackHandle SslGetClientCAList(SafeSslHandle ssl)
         {

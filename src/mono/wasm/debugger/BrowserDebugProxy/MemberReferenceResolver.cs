@@ -124,7 +124,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var type = asm.GetTypeByName(classNameToFind);
                     if (type != null)
                     {
-                        typeId = await sdbHelper.GetTypeIdFromToken(sessionId, asm.DebugId, type.Token, token);
+                        typeId = await sdbHelper.GetTypeIdFromToken(sessionId, await asm.GetDebugId(sessionId, sdbHelper, token), type.Token, token);
                     }
                 }
             }

@@ -13,6 +13,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
+    [Collection(nameof(NoParallelTests))]
     public class SendPacketsAsync
     {
         private readonly ITestOutputHelper _log;

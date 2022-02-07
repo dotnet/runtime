@@ -1274,7 +1274,7 @@ bool AllocByClassHelper(Object * pBO, void * pv)
     _ASSERTE(pv != NULL);
 
     {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAllocations());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
         // Pass along the call
         g_profControlBlock.AllocByClass(
             (ObjectID) pBO,
