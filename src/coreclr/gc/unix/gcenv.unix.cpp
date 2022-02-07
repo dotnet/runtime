@@ -932,7 +932,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 
     // Estimate cache size based on CPU count
     // Assume lower core count are lighter weight parts which are likely to have smaller caches
-    // Assume L3$/CPU grows linearly from 256Kb to 4Mb/CPU as logicalCPUs grows from 2 to 12 CPUs
+    // Assume shared L3 grows linearly from 256Kb to 4Mb as logicalCPUs grows from 2 to 32 CPUs
 
     // As of 2022, in most cases /sys/devices/system/cpu/cpu*/cache/index*/ does present, but only 
     // reports L2 cache size and says nothing about L3 even if it exists. In this case we don't want
