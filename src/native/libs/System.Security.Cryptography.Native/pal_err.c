@@ -18,6 +18,8 @@ uint64_t CryptoNative_ErrGetErrorAlloc(int32_t* isAllocFailure)
         *isAllocFailure = ERR_GET_REASON(err) == ERR_R_MALLOC_FAILURE;
     }
 
+    // We took the first, clear the rest.
+    ERR_clear_error();
     return err;
 }
 

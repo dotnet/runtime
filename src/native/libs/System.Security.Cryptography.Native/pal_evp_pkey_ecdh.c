@@ -8,6 +8,8 @@ EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreate(EVP_PKEY* pkey, EVP_PKEY* peerkey, u
     if (secretLength != NULL)
         *secretLength = 0;
 
+    ERR_clear_error();
+
     if (pkey == NULL || peerkey == NULL || secretLength == NULL)
     {
         return NULL;
@@ -39,6 +41,8 @@ int32_t CryptoNative_EvpPKeyDeriveSecretAgreement(uint8_t* secret, uint32_t secr
 {
     size_t tmpSize = (size_t)secretLength;
     int ret = 0;
+
+    ERR_clear_error();
 
     if (secret != NULL && ctx != NULL)
     {

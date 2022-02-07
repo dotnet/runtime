@@ -10,6 +10,9 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [ThreadStatic]
+        private static byte[]? t_msgBuf;
+
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
         internal static partial ulong ErrClearError();
 
@@ -30,7 +33,13 @@ internal static partial class Interop
 
         private static unsafe string ErrErrorStringN(ulong error)
         {
-            var buffer = new byte[1024];
+            if (t_msgBuf is null)
+            {
+                t_msgBuf = new byte[1024];
+            }
+
+            byte[] buffer = t_msgBuf;
+
             fixed (byte* buf = &buffer[0])
             {
                 ErrErrorStringN(error, buf, buffer.Length);
@@ -49,24 +58,14 @@ internal static partial class Interop
             // them. Nothing enforces that a single call into an OpenSSL
             // function will guarantee at-most one error being set.
             //
-            // In order to maintain parity in how error flows look between the
-            // Windows code and the OpenSSL-calling code, drain the queue
-            // whenever an Exception is desired, and report the exception
-            // related to the last value in the queue.
-            bool isAllocFailure;
-            ulong error = ErrGetErrorAlloc(out isAllocFailure);
-            ulong lastRead = error;
-            bool lastIsAllocFailure = isAllocFailure;
-
-            // 0 (there's no named constant) is only returned when the calls
-            // to ERR_get_error exceed the calls to ERR_set_error.
-            while (lastRead != 0)
-            {
-                error = lastRead;
-                isAllocFailure = lastIsAllocFailure;
-
-                lastRead = ErrGetErrorAlloc(out lastIsAllocFailure);
-            }
+            // In older versions of .NET, we collected the last error in the
+            // queue, and did not habitually clear the error pipeline.
+            // Some of the flows in OpenSSL 3 showed that what we often want
+            // is the first error code that was set during the operation that
+            // failed (and that the preferred API often reports multiple/cascaded
+            // errors). So now we clear habitually, and we take the first error
+            // (and when fetching that error we go ahead and clear out the rest).
+            ulong error = ErrGetErrorAlloc(out bool isAllocFailure);
 
             // If we're in an error flow which results in an Exception, but
             // no calls to ERR_set_error were made, throw the unadorned
