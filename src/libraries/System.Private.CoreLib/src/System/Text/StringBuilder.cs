@@ -1290,17 +1290,24 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Insert(int index, bool value) => Insert(index, value.ToString(), 1);
+#pragma warning disable CA1830 // Prefer strongly-typed Append and Insert method overloads on StringBuilder. No need to fix for the builder itself
+        public StringBuilder Insert(int index, bool value) => Insert(index, value.ToString());
+#pragma warning restore CA1830
 
         [CLSCompliant(false)]
-        public StringBuilder Insert(int index, sbyte value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, sbyte value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, byte value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, byte value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, short value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, short value) => InsertSpanFormattable(index, value);
 
         public StringBuilder Insert(int index, char value)
         {
+            if ((uint)index > (uint)Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+            }
+
             Insert(index, ref value, 1);
             return this;
         }
@@ -1314,7 +1321,7 @@ namespace System.Text
 
             if (value != null)
             {
-                Insert(index, value, 0, value.Length);
+                Insert(index, ref MemoryMarshal.GetArrayDataReference(value), value.Length);
             }
             return this;
         }
@@ -1359,26 +1366,26 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Insert(int index, int value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, int value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, long value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, long value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, float value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, float value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, double value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, double value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, decimal value) => Insert(index, value.ToString(), 1);
-
-        [CLSCompliant(false)]
-        public StringBuilder Insert(int index, ushort value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, decimal value) => InsertSpanFormattable(index, value);
 
         [CLSCompliant(false)]
-        public StringBuilder Insert(int index, uint value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, ushort value) => InsertSpanFormattable(index, value);
 
         [CLSCompliant(false)]
-        public StringBuilder Insert(int index, ulong value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, uint value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, object? value) => (value == null) ? this : Insert(index, value.ToString(), 1);
+        [CLSCompliant(false)]
+        public StringBuilder Insert(int index, ulong value) => InsertSpanFormattable(index, value);
+
+        public StringBuilder Insert(int index, object? value) => (value == null) ? this : Insert(index, value.ToString());
 
         public StringBuilder Insert(int index, ReadOnlySpan<char> value)
         {
@@ -1393,6 +1400,19 @@ namespace System.Text
             }
 
             return this;
+        }
+
+        private StringBuilder InsertSpanFormattable<T>(int index, T value) where T : ISpanFormattable
+        {
+            Debug.Assert(typeof(T).Assembly.Equals(typeof(object).Assembly), "Implementation trusts the results of TryFormat because T is expected to be something known");
+
+            Span<char> buffer = stackalloc char[256];
+            if (value.TryFormat(buffer, out int charsWritten, format: default, provider: null))
+            {
+                return Insert(index, buffer.Slice(0, charsWritten));
+            }
+
+            return Insert(index, value.ToString());
         }
 
         public StringBuilder AppendFormat(string format, object? arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
@@ -2066,10 +2086,7 @@ namespace System.Text
         /// <param name="valueCount">The number of characters in the buffer.</param>
         private void Insert(int index, ref char value, int valueCount)
         {
-            if ((uint)index > (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-            }
+            Debug.Assert((uint)index <= (uint)Length, "Callers should check that index is a legal value.");
 
             if (valueCount > 0)
             {
