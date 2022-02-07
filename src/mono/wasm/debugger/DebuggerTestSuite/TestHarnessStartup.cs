@@ -99,10 +99,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (tcs.Task.IsCompleted)
                         return;
 
-                    var match = parseConnection.Match(str);
-                    if (match.Success)
+                    if (!string.IsNullOrEmpty(str))
                     {
-                        tcs.TrySetResult(match.Groups[1].Captures[0].Value);
+                        var match = parseConnection.Match(str);
+                        if (match.Success)
+                        {
+                            tcs.TrySetResult(match.Groups[1].Captures[0].Value);
+                        }
                     }
                 };
 
