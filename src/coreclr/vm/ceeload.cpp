@@ -6925,7 +6925,6 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly
 
     m_pInMemoryWriter = NULL;
     m_sdataSection = NULL;
-    m_pCreatingAssembly = NULL;
     m_pCeeFileGen = NULL;
     m_pDynamicMetadata = NULL;
 }

@@ -211,7 +211,7 @@ Shims the SSL_write method.
 Returns the positive number of bytes written when successful, 0 or a negative number
 when an error is encountered.
 */
-PALEXPORT int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num);
+PALEXPORT int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num, int32_t* error);
 
 /*
 Shims the SSL_read method.
@@ -219,14 +219,14 @@ Shims the SSL_read method.
 Returns the positive number of bytes read when successful, 0 or a negative number
 when an error is encountered.
 */
-PALEXPORT int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num);
+PALEXPORT int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error);
 
 /*
 Shims the SSL_renegotiate method.
 
 Returns 1 when renegotiation started; 0 on error.
 */
-PALEXPORT int32_t CryptoNative_SslRenegotiate(SSL* ssl);
+PALEXPORT int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error);
 
 /*
 Shims the SSL_renegotiate_pending method.
@@ -259,7 +259,7 @@ Returns:
 and by the specifications of the TLS/SSL protocol;
 <0 if the handshake was not successful because of a fatal error.
 */
-PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl);
+PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error);
 
 /*
 Gets a value indicating whether the SSL_state is SSL_ST_OK.
