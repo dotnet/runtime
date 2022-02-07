@@ -385,11 +385,12 @@ enum class DoNotEnregisterReason
 #endif
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
-    StoreBlkSrc,    // the local is used as STORE_BLK source.
-    OneAsgRetyping, // fgMorphOneAsgBlockOp prevents this local from being enregister.
-    SwizzleArg,     // the local is passed using LCL_FLD as another type.
-    BlockOpRet,     // the struct is returned and it promoted or there is a cast.
-    ReturnSpCheck   // the local is used to do SP check
+    StoreBlkSrc,      // the local is used as STORE_BLK source.
+    OneAsgRetyping,   // fgMorphOneAsgBlockOp prevents this local from being enregister.
+    SwizzleArg,       // the local is passed using LCL_FLD as another type.
+    BlockOpRet,       // the struct is returned and it promoted or there is a cast.
+    ReturnSpCheck,    // the local is used to do SP check
+    SimdUserForcesDep // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
 };
 
 enum class AddressExposedReason
@@ -5506,7 +5507,7 @@ public:
     // Does value-numbering for a block assignment.
     void fgValueNumberBlockAssignment(GenTree* tree);
 
-    bool fgValueNumberIsStructReinterpretation(GenTreeLclVarCommon* lhsLclVarTree, GenTreeLclVarCommon* rhsLclVarTree);
+    bool fgValueNumberBlockAssignmentTypeCheck(LclVarDsc* dstVarDsc, FieldSeqNode* dstFldSeq, GenTree* src);
 
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
@@ -6423,7 +6424,7 @@ private:
 
     bool fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2);
 
-    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
+    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroyNodes = true);
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
     GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
@@ -6561,6 +6562,10 @@ private:
 
     void fgMarkAddressExposedLocals();
     void fgMarkAddressExposedLocals(Statement* stmt);
+
+    PhaseStatus fgForwardSub();
+    bool fgForwardSubBlock(BasicBlock* block);
+    bool fgForwardSubStatement(Statement* statement);
 
     static fgWalkPreFn  fgUpdateSideEffectsPre;
     static fgWalkPostFn fgUpdateSideEffectsPost;
@@ -7121,12 +7126,6 @@ protected:
     int optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKinds inds = VR_NONE);
 
     bool optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
-
-    /**************************************************************************
-     *                       Optimization conditions
-     *************************************************************************/
-
-    bool optAvoidIntMult(void);
 
 protected:
     //  The following is the upper limit on how many expressions we'll keep track
@@ -10509,6 +10508,7 @@ public:
         unsigned m_swizzleArg;
         unsigned m_blockOpRet;
         unsigned m_returnSpCheck;
+        unsigned m_simdUserForcesDep;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
         unsigned m_noRegVars;

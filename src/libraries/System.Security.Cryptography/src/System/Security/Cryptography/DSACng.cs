@@ -1,149 +1,44 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
-using System.Diagnostics;
+using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    public partial class DSA : AsymmetricAlgorithm
+    public sealed partial class DSACng : DSA
     {
-        private static DSA CreateCore()
+        private CngAlgorithmCore _core = new CngAlgorithmCore(nameof(DSACng));
+
+        /// <summary>
+        ///     Creates a new DSACng object that will use the specified key. The key's
+        ///     <see cref="CngKey.AlgorithmGroup" /> must be Dsa. This constructor
+        ///     creates a copy of the key. Hence, the caller can safely dispose of the
+        ///     passed in key and continue using the DSACng object.
+        /// </summary>
+        /// <param name="key">Key to use for DSA operations</param>
+        /// <exception cref="ArgumentException">if <paramref name="key" /> is not an DSA key</exception>
+        /// <exception cref="ArgumentNullException">if <paramref name="key" /> is null.</exception>
+        [SupportedOSPlatform("windows")]
+        public DSACng(CngKey key)
         {
-            return new DSAImplementation.DSACng();
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+
+            if (key.AlgorithmGroup != CngAlgorithmGroup.Dsa)
+                throw new ArgumentException(SR.Cryptography_ArgDSARequiresDSAKey, nameof(key));
+
+            Key = CngAlgorithmCore.Duplicate(key);
         }
-    }
 
-    internal static partial class DSAImplementation
-    {
-        public sealed partial class DSACng : DSA
+        protected override void Dispose(bool disposing)
         {
-            private SafeNCryptKeyHandle? _keyHandle;
-            private int _lastKeySize;
-            private bool _disposed;
+            _core.Dispose();
+        }
 
-            private void ThrowIfDisposed()
-            {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(RSA));
-                }
-            }
-
-            private SafeNCryptKeyHandle GetDuplicatedKeyHandle()
-            {
-                ThrowIfDisposed();
-
-                int keySize = KeySize;
-
-                if (_lastKeySize != keySize)
-                {
-                    if (_keyHandle != null)
-                    {
-                        _keyHandle.Dispose();
-                    }
-
-                    const string BCRYPT_DSA_ALGORITHM = "DSA";
-
-                    _keyHandle = CngKeyLite.GenerateNewExportableKey(BCRYPT_DSA_ALGORITHM, keySize);
-                    _lastKeySize = keySize;
-                }
-
-                return new DuplicateSafeNCryptKeyHandle(_keyHandle!);
-            }
-
-            private byte[] ExportKeyBlob(bool includePrivateParameters)
-            {
-                // Use generic blob type for multiple version support
-                string blobType = includePrivateParameters ?
-                    Interop.BCrypt.KeyBlobType.BCRYPT_PRIVATE_KEY_BLOB :
-                    Interop.BCrypt.KeyBlobType.BCRYPT_PUBLIC_KEY_BLOB;
-
-                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
-                {
-                    return CngKeyLite.ExportKeyBlob(keyHandle, blobType);
-                }
-            }
-
-            private byte[] ExportEncryptedPkcs8(ReadOnlySpan<char> pkcs8Password, int kdfCount)
-            {
-                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
-                {
-                    return CngKeyLite.ExportPkcs8KeyBlob(keyHandle, pkcs8Password, kdfCount);
-                }
-            }
-
-            private bool TryExportEncryptedPkcs8(
-                ReadOnlySpan<char> pkcs8Password,
-                int kdfCount,
-                Span<byte> destination,
-                out int bytesWritten)
-            {
-                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
-                {
-                    return CngKeyLite.TryExportPkcs8KeyBlob(
-                        keyHandle,
-                        pkcs8Password,
-                        kdfCount,
-                        destination,
-                        out bytesWritten);
-                }
-            }
-
-            private void ImportKeyBlob(byte[] dsaBlob, bool includePrivate)
-            {
-                ThrowIfDisposed();
-
-                // Use generic blob type for multiple version support
-                string blobType = includePrivate ?
-                    Interop.BCrypt.KeyBlobType.BCRYPT_PRIVATE_KEY_BLOB :
-                    Interop.BCrypt.KeyBlobType.BCRYPT_PUBLIC_KEY_BLOB;
-
-                SafeNCryptKeyHandle keyHandle = CngKeyLite.ImportKeyBlob(blobType, dsaBlob);
-                SetKeyHandle(keyHandle);
-            }
-
-            private void AcceptImport(CngPkcs8.Pkcs8Response response)
-            {
-                ThrowIfDisposed();
-
-                SafeNCryptKeyHandle keyHandle = response.KeyHandle;
-                SetKeyHandle(keyHandle);
-            }
-
-            private void SetKeyHandle(SafeNCryptKeyHandle keyHandle)
-            {
-                Debug.Assert(!keyHandle.IsInvalid);
-
-                _keyHandle = keyHandle;
-
-                int newKeySize = CngKeyLite.GetKeyLength(keyHandle);
-
-                // Our LegalKeySizes value stores the values that we encoded as being the correct
-                // legal key size limitations for this algorithm, as documented on MSDN.
-                //
-                // But on a new OS version we might not question if our limit is accurate, or MSDN
-                // could have been inaccurate to start with.
-                //
-                // Since the key is already loaded, we know that Windows thought it to be valid;
-                // therefore we should set KeySizeValue directly to bypass the LegalKeySizes conformance
-                // check.
-                ForceSetKeySize(newKeySize);
-                _lastKeySize = newKeySize;
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    _keyHandle?.Dispose();
-                    _keyHandle = null;
-                    _disposed = true;
-                }
-
-
-                base.Dispose(disposing);
-            }
+        private void ThrowIfDisposed()
+        {
+            _core.ThrowIfDisposed();
         }
     }
 }

@@ -245,15 +245,15 @@ namespace System.Runtime
         // Get object reference from handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleGet")]
-        private static extern object _RhHandleGet(IntPtr handle);
+        private static extern object? _RhHandleGet(IntPtr handle);
 
-        internal static unsafe object RhHandleGet(IntPtr handle)
+        internal static unsafe object? RhHandleGet(IntPtr handle)
         {
 #if DEBUG
             // The runtime performs additional checks in debug builds
             return _RhHandleGet(handle);
 #else
-            return Unsafe.As<IntPtr, object>(ref *(IntPtr*)(nint)handle);
+            return Unsafe.As<IntPtr, object?>(ref *(IntPtr*)(nint)handle);
 #endif
         }
 

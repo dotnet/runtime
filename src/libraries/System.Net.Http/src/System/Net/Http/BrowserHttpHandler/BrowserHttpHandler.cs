@@ -148,10 +148,10 @@ namespace System.Net.Http
             {
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
-
+            CancellationTokenRegistration? abortRegistration = null;
             try
             {
-                var requestObject = new JSObject();
+                using var requestObject = new JSObject();
 
                 if (request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions))
                 {
@@ -221,44 +221,39 @@ namespace System.Net.Http
                 }
 
 
-                WasmHttpReadStream? wasmHttpReadStream = null;
-
                 JSObject abortController = new HostObject("AbortController");
-                JSObject signal = (JSObject)abortController.GetObjectProperty("signal");
+                using JSObject signal = (JSObject)abortController.GetObjectProperty("signal");
                 requestObject.SetObjectProperty("signal", signal);
-                signal.Dispose();
 
-                CancellationTokenSource abortCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                CancellationTokenRegistration abortRegistration = abortCts.Token.Register((Action)(() =>
+                abortRegistration = cancellationToken.Register(() =>
                 {
-                    if (abortController.JSHandle != -1)
+                    if (!abortController.IsDisposed)
                     {
                         abortController.Invoke("abort");
                         abortController?.Dispose();
                     }
-                    wasmHttpReadStream?.Dispose();
-                    abortCts.Dispose();
-                }));
+                });
 
-                var args = new System.Runtime.InteropServices.JavaScript.Array();
+                using var args = new System.Runtime.InteropServices.JavaScript.Array();
                 if (request.RequestUri != null)
                 {
                     args.Push(request.RequestUri.ToString());
                     args.Push(requestObject);
                 }
 
-                requestObject.Dispose();
 
-                var response = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
-                args.Dispose();
-                if (response == null)
+                var responseTask = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
+                if (responseTask == null)
                     throw new Exception(SR.net_http_marshalling_response_promise_from_fetch);
 
-                JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
+                cancellationToken.ThrowIfCancellationRequested();
 
-                var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
-                HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
-                httpResponse.RequestMessage = request;
+                var fetchResponseJs = (JSObject)await responseTask.ConfigureAwait(continueOnCapturedContext: true);
+
+                var fetchResponse = new WasmFetchResponse(fetchResponseJs, abortController, abortRegistration.Value);
+                abortRegistration = null;
+                var responseMessage = new HttpResponseMessage((HttpStatusCode)fetchResponse.Status);
+                responseMessage.RequestMessage = request;
 
                 // Here we will set the ReasonPhrase so that it can be evaluated later.
                 // We do not have a status code but this will signal some type of what happened
@@ -267,9 +262,9 @@ namespace System.Net.Http
                 // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
                 // opaqueredirect: The fetch request was made with redirect: "manual".
                 // The Response's status is 0, headers are empty, body is null and trailer is empty.
-                if (status.ResponseType == "opaqueredirect")
+                if (fetchResponse.ResponseType == "opaqueredirect")
                 {
-                    httpResponse.SetReasonPhraseWithoutValidation(status.ResponseType);
+                    responseMessage.SetReasonPhraseWithoutValidation(fetchResponse.ResponseType);
                 }
 
                 bool streamingEnabled = false;
@@ -278,9 +273,9 @@ namespace System.Net.Http
                     request.Options.TryGetValue(EnableStreamingResponse, out streamingEnabled);
                 }
 
-                httpResponse.Content = streamingEnabled
-                    ? new StreamContent(wasmHttpReadStream = new WasmHttpReadStream(status))
-                    : (HttpContent)new BrowserHttpContent(status);
+                responseMessage.Content = streamingEnabled
+                    ? new StreamContent(new WasmHttpReadStream(fetchResponse))
+                    : new BrowserHttpContent(fetchResponse);
 
                 // Fill the response headers
                 // CORS will only allow access to certain headers.
@@ -290,7 +285,7 @@ namespace System.Net.Http
                 // View more information https://developers.google.com/web/updates/2015/03/introduction-to-fetch#response_types
                 //
                 // Note: Some of the headers may not even be valid header types in .NET thus we use TryAddWithoutValidation
-                using (JSObject respHeaders = status.Headers)
+                using (JSObject respHeaders = fetchResponse.Headers)
                 {
                     if (respHeaders != null)
                     {
@@ -306,8 +301,8 @@ namespace System.Net.Http
                                     {
                                         var name = (string)resultValue[0];
                                         var value = (string)resultValue[1];
-                                        if (!httpResponse.Headers.TryAddWithoutValidation(name, value))
-                                            httpResponse.Content.Headers.TryAddWithoutValidation(name, value);
+                                        if (!responseMessage.Headers.TryAddWithoutValidation(name, value))
+                                            responseMessage.Content.Headers.TryAddWithoutValidation(name, value);
                                     }
                                     nextResult?.Dispose();
                                     nextResult = (JSObject)entriesIterator.Invoke("next");
@@ -320,7 +315,7 @@ namespace System.Net.Http
                         }
                     }
                 }
-                return httpResponse;
+                return responseMessage;
 
             }
             catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
@@ -330,6 +325,10 @@ namespace System.Net.Http
             catch (JSException jse)
             {
                 throw TranslateJSException(jse, cancellationToken);
+            }
+            finally
+            {
+                abortRegistration?.Dispose();
             }
         }
 
@@ -350,15 +349,13 @@ namespace System.Net.Http
         {
             private readonly JSObject _fetchResponse;
             private readonly JSObject _abortController;
-            private readonly CancellationTokenSource _abortCts;
             private readonly CancellationTokenRegistration _abortRegistration;
             private bool _isDisposed;
 
-            public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenSource abortCts, CancellationTokenRegistration abortRegistration)
+            public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenRegistration abortRegistration)
             {
                 _fetchResponse = fetchResponse ?? throw new ArgumentNullException(nameof(fetchResponse));
                 _abortController = abortController ?? throw new ArgumentNullException(nameof(abortController));
-                _abortCts = abortCts;
                 _abortRegistration = abortRegistration;
             }
 
@@ -383,10 +380,13 @@ namespace System.Net.Http
 
                 _isDisposed = true;
 
-                _abortCts.Dispose();
                 _abortRegistration.Dispose();
 
                 _fetchResponse?.Dispose();
+                if (_abortController != null && !_abortController.IsDisposed)
+                {
+                    _abortController.Invoke("abort");
+                }
                 _abortController?.Dispose();
             }
         }
@@ -460,15 +460,15 @@ namespace System.Net.Http
 
         private sealed class WasmHttpReadStream : Stream
         {
-            private WasmFetchResponse? _status;
+            private WasmFetchResponse? _fetchResponse;
             private JSObject? _reader;
 
             private byte[]? _bufferedBytes;
             private int _position;
 
-            public WasmHttpReadStream(WasmFetchResponse status)
+            public WasmHttpReadStream(WasmFetchResponse fetchResponse)
             {
-                _status = status;
+                _fetchResponse = fetchResponse;
             }
 
             public override bool CanRead => true;
@@ -489,17 +489,19 @@ namespace System.Net.Http
 
             public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
+                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
+
                 if (_reader == null)
                 {
                     // If we've read everything, then _reader and _status will be null
-                    if (_status == null)
+                    if (_fetchResponse == null)
                     {
                         return 0;
                     }
 
                     try
                     {
-                        using (JSObject body = _status.Body)
+                        using (JSObject body = _fetchResponse.Body)
                         {
                             _reader = (JSObject)body.Invoke("getReader");
                         }
@@ -514,6 +516,11 @@ namespace System.Net.Http
                     }
                 }
 
+                using var abortRegistration = cancellationToken.Register(() =>
+                {
+                    _reader.Invoke("cancel");
+                });
+
                 if (_bufferedBytes != null && _position < _bufferedBytes.Length)
                 {
                     return ReadBuffered();
@@ -524,13 +531,19 @@ namespace System.Net.Http
                     var t = (Task<object>)_reader.Invoke("read");
                     using (var read = (JSObject)await t.ConfigureAwait(continueOnCapturedContext: true))
                     {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            _reader.Invoke("cancel");
+                            throw CancellationHelper.CreateOperationCanceledException(null, cancellationToken);
+                        }
+
                         if ((bool)read.GetObjectProperty("done"))
                         {
                             _reader.Dispose();
                             _reader = null;
 
-                            _status?.Dispose();
-                            _status = null;
+                            _fetchResponse?.Dispose();
+                            _fetchResponse = null;
                             return 0;
                         }
 
@@ -569,7 +582,7 @@ namespace System.Net.Http
             protected override void Dispose(bool disposing)
             {
                 _reader?.Dispose();
-                _status?.Dispose();
+                _fetchResponse?.Dispose();
             }
 
             public override void Flush()

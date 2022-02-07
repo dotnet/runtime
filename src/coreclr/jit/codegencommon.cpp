@@ -4631,6 +4631,7 @@ void CodeGen::genCheckUseBlockInit()
         if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
         {
             noway_assert(varDsc->lvRefCnt() == 0);
+            varDsc->lvMustInit = 0;
             continue;
         }
 
@@ -4643,6 +4644,7 @@ void CodeGen::genCheckUseBlockInit()
 
         if (compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
+            varDsc->lvMustInit = 0;
             continue;
         }
 
@@ -4651,6 +4653,7 @@ void CodeGen::genCheckUseBlockInit()
             // For Compiler::PROMOTION_TYPE_DEPENDENT type of promotion, the whole struct should have been
             // initialized by the parent struct. No need to set the lvMustInit bit in the
             // field locals.
+            varDsc->lvMustInit = 0;
             continue;
         }
 

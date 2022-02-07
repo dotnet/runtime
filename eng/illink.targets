@@ -200,8 +200,7 @@
   </Target>
 
   <Target Name="_SetILLinkTrimAssembly"
-          Condition="'$(ILLinkTrimAssembly)' == ''"
-          DependsOnTargets="GetBinPlaceTargetFramework">
+          Condition="'$(ILLinkTrimAssembly)' == ''">
     <PropertyGroup>
       <!-- Currently ILLink cannot handle type projections from Windows.winmd, disable if the project references it -->
       <ILLinkTrimAssembly Condition="'%(ReferencePath.FileName)%(ReferencePath.Extension)' == 'Windows.winmd'">false</ILLinkTrimAssembly>

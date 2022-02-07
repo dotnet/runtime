@@ -219,4 +219,7 @@
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
   </data>
+  <data name="PlatformNotSupported_MemoryMappedFiles" xml:space="preserve">
+    <value>System.IO.MemoryMappedFiles is not supported on this platform.</value>
+  </data>
 </root>
