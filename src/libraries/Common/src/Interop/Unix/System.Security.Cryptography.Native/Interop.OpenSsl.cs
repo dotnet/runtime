@@ -59,7 +59,7 @@ internal static partial class Interop
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
-                if (!Interop.Ssl.Tls13Supported)
+                if (!Interop.Ssl.Capabilities.Tls13Supported)
                 {
                     if (protocols != SslProtocols.None &&
                         CipherSuitesPolicyPal.WantsTls13(protocols))
