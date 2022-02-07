@@ -1637,7 +1637,6 @@ namespace System
         // located at index length - i - 1, where length is the
         // length of the array.
         //
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Reverse(Array array)
         {
             if (array == null)
@@ -1719,15 +1718,13 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Reverse<T>(T[] array)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            Reverse(array, 0, array.Length);
+            SpanHelpers.Reverse(ref MemoryMarshal.GetArrayDataReference(array), (nuint)array.Length);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Reverse<T>(T[] array, int index, int length)
         {
             if (array == null)

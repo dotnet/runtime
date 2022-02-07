@@ -520,6 +520,7 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Reverse<T>(ref T elements, nuint length)
         {
             Debug.Assert(length > 0);

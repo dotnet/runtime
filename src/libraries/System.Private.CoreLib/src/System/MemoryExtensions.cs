@@ -1543,7 +1543,6 @@ namespace System
         /// <summary>
         /// Reverses the sequence of the elements in the entire span.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Reverse<T>(this Span<T> span)
         {
             if (span.Length <= 1)
