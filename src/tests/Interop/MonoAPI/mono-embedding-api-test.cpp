@@ -1,4 +1,3 @@
-#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,7 +8,6 @@
 #include <math.h>
 #include <setjmp.h>
 #include <signal.h>
-#include "mono/utils/mono-compiler.h"
 
 #ifndef HOST_WIN32
 #include <dlfcn.h>
@@ -36,6 +34,26 @@ extern "C" {
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wmissing-prototypes"
 #endif
+
+#ifdef _MSC_VER
+#define TEST_PRAGMA_WARNING_PUSH() __pragma(warning (push))
+#define TEST_PRAGMA_WARNING_DISABLE(x) __pragma(warning (disable:x))
+#define TEST_PRAGMA_WARNING_POP() __pragma(warning (pop))
+
+#define TEST_DISABLE_WARNING(x) \
+		TEST_PRAGMA_WARNING_PUSH() \
+		TEST_PRAGMA_WARNING_DISABLE(x)
+
+#define TEST_RESTORE_WARNING \
+		TEST_PRAGMA_WARNING_POP()
+#else
+#define TEST_PRAGMA_WARNING_PUSH()
+#define TEST_PRAGMA_WARNING_DISABLE(x)
+#define TEST_PRAGMA_WARNING_POP()
+#define TEST_DISABLE_WARNING(x)
+#define TEST_RESTORE_WARNING
+#endif
+
 
 #ifdef WIN32
 extern __declspec(dllimport) void __stdcall CoTaskMemFree(void *ptr);
@@ -837,7 +855,7 @@ mono_test_marshal_byref_class (simplestruct2 **ssp)
 	return 0;
 }
 
-MONO_DISABLE_WARNING (4172) // returning address of local
+TEST_DISABLE_WARNING (4172) // returning address of local
 
 static void *
 get_sp (void)
@@ -850,7 +868,7 @@ get_sp (void)
 	return p;
 }
 
-MONO_RESTORE_WARNING
+TEST_RESTORE_WARNING
 
 LIBTEST_API int STDCALL
 reliable_delegate (int a)
