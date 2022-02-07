@@ -20,10 +20,12 @@ g_clock_nanosleep (clockid_t clockid, gint flags, const struct timespec *request
 	g_assert_not_reached ();
 #endif
 
+#ifdef HOST_ANDROID
 	// Workaround for incorrect implementation of clock_nanosleep return value on old Android (<=5.1)
 	// See https://github.com/xamarin/xamarin-android/issues/6600
 	if (ret == -1)
 		ret = errno;
+#endif
 
 	return ret;
 }
