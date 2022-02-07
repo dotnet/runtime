@@ -368,9 +368,7 @@ EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size, int valtype, char* newvalue)
 {
 	if (!debugger_enabled) {
-		EM_ASM ({
-			MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
-		}, 0, id, 0, 0);
+		mono_wasm_add_dbg_command_received (0, id, 0, 0);
 		return TRUE;
 	}
 	MdbgProtBuffer bufWithParms;
@@ -389,9 +387,7 @@ EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size)
 {
 	if (!debugger_enabled) {
-		EM_ASM ({
-			MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
-		}, 0, id, 0, 0);
+		mono_wasm_add_dbg_command_received(0, id, 0, 0);
 		return TRUE;
 	}
 	ss_calculate_framecount (NULL, NULL, TRUE, NULL, NULL);
@@ -410,7 +406,7 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	else
 		error = mono_process_dbg_packet (id, command_set, command, &no_reply, data, data + size, &buf);
 
-	mono_wasm_add_dbg_command_received(error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);
+	mono_wasm_add_dbg_command_received (error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);
 
 	buffer_free (&buf);
 	return TRUE;
@@ -419,7 +415,7 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 static gboolean
 receive_debugger_agent_message (void *data, int len)
 {
-	mono_wasm_add_dbg_command_received(1, -1, data, len);
+	mono_wasm_add_dbg_command_received(1, 0, data, len);
 	mono_wasm_save_thread_context();
 	mono_wasm_fire_debugger_agent_message ();
 	return FALSE;
