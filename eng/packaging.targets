@@ -10,7 +10,7 @@
     <PackDependsOn>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(PackDependsOn)</PackDependsOn>
     <BeforePack>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(BeforePack)</BeforePack>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludePrivateProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
-    <IncludeBuildOutput Condition="'$(TargetFrameworkSuffix)' != ''">false</IncludeBuildOutput>
+    <IncludeBuildOutput Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetPlatformIdentifier)' != ''">false</IncludeBuildOutput>
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
     <SuppressDependenciesWhenPacking Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetPlatformIdentifier)' != ''">true</SuppressDependenciesWhenPacking>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
@@ -73,7 +73,6 @@
       </PropertyGroup>
       <ItemGroup Condition="'$(AddNETFrameworkPlaceholderFileToPackage)' == 'true'">
         <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/$(NetFrameworkMinimum)" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="runtimes/win/$(BuildOutputTargetFolder)/$(NetFrameworkMinimum)" Pack="true" Condition="$(TargetFrameworks.Contains('netstandard2.0-windows'))" />
       </ItemGroup>
       <ItemGroup Condition="'$(AddXamarinPlaceholderFilesToPackage)' == 'true'">
         <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/MonoAndroid10" Pack="true" />
@@ -96,19 +95,18 @@
     </ItemGroup>
   </Target>
 
-  <!-- Add runtime specific file into the package if the tfm is RID specific or if the tfm targets .NETFramework and netstandard2.0-windows TFM is present.
-       This is necessary as compatible RID specific tfms win over compatible RID agnostic tfms. Hence without this, netstandard2.0-windows would win over net461. -->
+  <!-- Add runtime specific file into the package if the tfm is RID specific. -->
   <Target Name="AddRuntimeSpecificFilesToPackage"
           DependsOnTargets="BuiltProjectOutputGroup;
                             DocumentationProjectOutputGroup;
                             SatelliteDllsProjectOutputGroup;
                             $(TargetsForTfmSpecificBuildOutput)"
-          Condition="'$(TargetFrameworkSuffix)' != '' or
-                     ('$(TargetFrameworkIdentifier)' == '.NETFramework' and $(TargetFrameworks.Contains('netstandard2.0-windows')))">
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetPlatformIdentifier)' != ''">
     <PropertyGroup>
       <RuntimeSymbolPath>$(TargetDir)$(TargetName).pdb</RuntimeSymbolPath>
-      <_packageTargetRuntime Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">$(PackageTargetRuntime)</_packageTargetRuntime>
-      <_packageTargetRuntime Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">win</_packageTargetRuntime>
+      <_packageTargetRuntime>$(TargetPlatformIdentifier.ToLowerInvariant().Replace('windows', 'win'))</_packageTargetRuntime>
+      <_targetFrameworkWithoutSuffix>$(TargetFramework)</_targetFrameworkWithoutSuffix>
+      <_targetFrameworkWithoutSuffix Condition="$(TargetFramework.Contains('-'))">$(TargetFramework.SubString(0, $(TargetFramework.IndexOf('-'))))</_targetFrameworkWithoutSuffix>
     </PropertyGroup>
 
     <ItemGroup>
@@ -116,10 +114,10 @@
                                               @(BuiltProjectOutputGroupOutput);
                                               @(DocumentationProjectOutputGroupOutput)" />
       <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
-                              PackagePath="runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(TargetFrameworkWithoutSuffix)" />
+                              PackagePath="runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(_targetFrameworkWithoutSuffix)" />
       <TfmSpecificDebugSymbolsFile Include="$(RuntimeSymbolPath)"
-                                   TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(TargetFrameworkWithoutSuffix)/%(Filename)%(Extension)"
-                                   TargetFramework="$(TargetFrameworkWithoutSuffix)"
+                                   TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(_targetFrameworkWithoutSuffix)/%(Filename)%(Extension)"
+                                   TargetFramework="$(_targetFrameworkWithoutSuffix)"
                                    Condition="'$(IncludeSymbols)' == 'true' and Exists('$(RuntimeSymbolPath)')" />
     </ItemGroup>
   </Target>

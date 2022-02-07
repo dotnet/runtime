@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
     public class LoggerMessageGeneratorParserTests
     {
         [Fact]
@@ -614,6 +614,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.LoggingMethodIsGeneric.Id, diagnostics[0].Id);
+        }
+
+        [Theory]
+        [InlineData("ref")]
+        [InlineData("in")]
+        public async Task SupportsRefKindsInAndRef(string modifier)
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@$"
+                partial class C
+                {{
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {{P1}}"")]
+                    static partial void M(ILogger logger, {modifier} int p1);
+                }}");
+
+            Assert.Empty(diagnostics);
         }
 
         [Fact]

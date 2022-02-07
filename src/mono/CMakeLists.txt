@@ -490,19 +490,23 @@ if(GCC)
   # We rely on signed overflow to behave
   append("-fwrapv" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 
-  set(WARNINGS "-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wno-format-zero-length -Wno-unused-function")
+  set(WARNINGS "-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes -Wno-format-zero-length -Wno-unused-function")
+  set(WARNINGS_C "-Wmissing-prototypes -Wstrict-prototypes -Wnested-externs")
 
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(WARNINGS "${WARNINGS} -Qunused-arguments -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign -Wno-return-stack-address -Wno-constant-logical-operand -Wno-zero-length-array")
   endif()
 
+  set(WERROR "-Werror=return-type")
+  set(WERROR_C "-Werror=implicit-function-declaration")
+
   check_c_compiler_flag("-Werror=incompatible-pointer-types" WERROR_INCOMPATIBLE_POINTER_TYPES)
   if(WERROR_INCOMPATIBLE_POINTER_TYPES)
-    set(WERROR "-Werror=incompatible-pointer-types")
+    set(WERROR_C "${WERROR_C} -Werror=incompatible-pointer-types")
   endif()
-  set(WERROR "-Werror=return-type -Werror-implicit-function-declaration")
 
-  append("${WARNINGS} ${WERROR}" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  append("${WARNINGS} ${WARNINGS_C} ${WERROR} ${WERROR_C}" CMAKE_C_FLAGS)
+  append("${WARNINGS} ${WERROR}" CMAKE_CXX_FLAGS)
 
   set(MONO_ZERO_LEN_ARRAY 0)
 

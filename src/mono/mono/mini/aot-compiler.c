@@ -230,6 +230,7 @@ typedef struct MonoAotOptions {
 	gboolean stats;
 	gboolean verbose;
 	gboolean deterministic;
+	gboolean allow_errors;
 	char *tool_prefix;
 	char *ld_flags;
 	char *ld_name;
@@ -528,7 +529,7 @@ report_loader_error (MonoAotCompile *acfg, MonoError *error, gboolean fatal, con
 	va_end (args);
 	mono_error_cleanup (error);
 
-	if (acfg->is_full_aot && fatal) {
+	if (acfg->is_full_aot && !acfg->aot_opts.allow_errors && fatal) {
 		fprintf (output, "FullAOT cannot continue if there are loader errors.\n");
 		exit (1);
 	}
@@ -8504,6 +8505,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->profile_only = TRUE;
 		} else if (!strcmp (arg, "verbose")) {
 			opts->verbose = TRUE;
+		} else if (!strcmp (arg, "allow-errors")) {
+			opts->allow_errors = TRUE;
 		} else if (str_begins_with (arg, "llvmopts=")){
 			if (opts->llvm_opts) {
 				char *s = g_strdup_printf ("%s %s", opts->llvm_opts, arg + strlen ("llvmopts="));
@@ -8587,6 +8590,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    threads=\n");
 			printf ("    write-symbols\n");
 			printf ("    verbose\n");
+			printf ("    allow-errors\n");
 			printf ("    no-opt\n");
 			printf ("    llvmopts=\n");
 			printf ("    llvmllc=\n");

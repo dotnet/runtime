@@ -167,10 +167,11 @@ void Phase::PostPhase(PhaseStatus status)
     // clang-format off
 
     static Phases s_allowlist[] = {
-        PHASE_IMPORTATION,
-        PHASE_IBCINSTR,
-        PHASE_IBCPREP,
         PHASE_INCPROFILE,
+        PHASE_IBCPREP,
+        PHASE_IMPORTATION,
+        PHASE_PATCHPOINTS,
+        PHASE_IBCINSTR,
         PHASE_INDXCALL,
         PHASE_MORPH_INLINE,
         PHASE_ALLOCATE_OBJECTS,
@@ -179,6 +180,7 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_MERGE_FINALLY_CHAINS,
         PHASE_CLONE_FINALLY,
         PHASE_MERGE_THROWS,
+        PHASE_FWD_SUB,
         PHASE_MORPH_GLOBAL,
         PHASE_INVERT_LOOPS,
         PHASE_OPTIMIZE_LAYOUT,

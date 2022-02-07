@@ -76,8 +76,9 @@ public partial class CancelKeyPressTests
                 Assert.Equal(RemoteExecutor.SuccessExitCode, handle.ExitCode);
             }
 
-            // Release CancelKeyPress
+            // Release CancelKeyPress, and give it time to return and tear down the app
             mre.Set();
+            Thread.Sleep(WaitFailTestTimeoutSeconds * 1000);
         }, new RemoteInvokeOptions() { ExpectedExitCode = 130 }).Dispose();
     }
 

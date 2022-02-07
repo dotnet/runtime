@@ -4631,6 +4631,7 @@ void CodeGen::genCheckUseBlockInit()
         if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
         {
             noway_assert(varDsc->lvRefCnt() == 0);
+            varDsc->lvMustInit = 0;
             continue;
         }
 
@@ -4643,6 +4644,7 @@ void CodeGen::genCheckUseBlockInit()
 
         if (compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
+            varDsc->lvMustInit = 0;
             continue;
         }
 
@@ -4651,6 +4653,7 @@ void CodeGen::genCheckUseBlockInit()
             // For Compiler::PROMOTION_TYPE_DEPENDENT type of promotion, the whole struct should have been
             // initialized by the parent struct. No need to set the lvMustInit bit in the
             // field locals.
+            varDsc->lvMustInit = 0;
             continue;
         }
 
@@ -6385,15 +6388,30 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
 void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
 {
-    // For OSR the original method has set this up for us.
-    if (compiler->opts.IsOSR())
-    {
-        return;
-    }
-
     assert(compiler->compGeneratingProlog);
 
-    bool reportArg = compiler->lvaReportParamTypeArg();
+    const bool reportArg = compiler->lvaReportParamTypeArg();
+
+    if (compiler->opts.IsOSR())
+    {
+        PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
+        if (reportArg)
+        {
+            // OSR method will use Tier0 slot to report context arg.
+            //
+            assert(ppInfo->HasGenericContextArgOffset());
+            JITDUMP("OSR method will use Tier0 frame slot for generics context arg.\n");
+        }
+        else if (compiler->lvaKeepAliveAndReportThis())
+        {
+            // OSR method will use Tier0 slot to report `this` as context.
+            //
+            assert(ppInfo->HasKeptAliveThis());
+            JITDUMP("OSR method will use Tier0 frame slot for generics context `this`.\n");
+        }
+
+        return;
+    }
 
     // We should report either generic context arg or "this" when used so.
     if (!reportArg)

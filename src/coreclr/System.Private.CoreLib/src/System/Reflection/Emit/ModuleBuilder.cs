@@ -10,31 +10,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    internal sealed partial class InternalModuleBuilder : RuntimeModule
-    {
-        // InternalModuleBuilder should not contain any data members as its reflectbase is the same as Module.
-
-        private InternalModuleBuilder() { }
-
-        public override bool Equals(object? obj)
-        {
-            if (obj == null)
-            {
-                return false;
-            }
-
-            if (obj is InternalModuleBuilder)
-            {
-                return (object)this == obj;
-            }
-
-            return obj.Equals(this);
-        }
-
-        // Need a dummy GetHashCode to pair with Equals
-        public override int GetHashCode() => base.GetHashCode();
-    }
-
     // deliberately not [serializable]
     public partial class ModuleBuilder : Module
     {
@@ -75,7 +50,7 @@ namespace System.Reflection.Emit
         // _TypeBuilder contains both TypeBuilder and EnumBuilder objects
         private Dictionary<string, Type> _typeBuilderDict = null!;
         internal ModuleBuilderData _moduleData = null!;
-        internal InternalModuleBuilder _internalModuleBuilder;
+        internal RuntimeModule _internalModule;
         // This is the "external" AssemblyBuilder
         // only the "external" ModuleBuilder has this set
         private readonly AssemblyBuilder _assemblyBuilder;
@@ -85,9 +60,9 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        internal ModuleBuilder(AssemblyBuilder assemblyBuilder, InternalModuleBuilder internalModuleBuilder)
+        internal ModuleBuilder(AssemblyBuilder assemblyBuilder, RuntimeModule internalModule)
         {
-            _internalModuleBuilder = internalModuleBuilder;
+            _internalModule = internalModule;
             _assemblyBuilder = assemblyBuilder;
         }
 
@@ -323,8 +298,7 @@ namespace System.Reflection.Emit
 
         #region Module Overrides
 
-        // _internalModuleBuilder is null iff this is a "internal" ModuleBuilder
-        internal InternalModuleBuilder InternalModule => _internalModuleBuilder;
+        internal RuntimeModule InternalModule => _internalModule;
 
         protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(InternalModule);
 
@@ -513,10 +487,9 @@ namespace System.Reflection.Emit
 
         #endregion
 
-        public override bool Equals(object? obj) => InternalModule.Equals(obj);
+        public override bool Equals(object? obj) => base.Equals(obj);
 
-        // Need a dummy GetHashCode to pair with Equals
-        public override int GetHashCode() => InternalModule.GetHashCode();
+        public override int GetHashCode() => base.GetHashCode();
 
         #region ICustomAttributeProvider Members
 
@@ -948,14 +921,7 @@ namespace System.Reflection.Emit
             {
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             }
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
             if ((attributes & MethodAttributes.Static) == 0)
             {
                 throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
@@ -1134,7 +1100,7 @@ namespace System.Reflection.Emit
                 // the file name of the referenced module.
                 if (refedModuleBuilder == null)
                 {
-                    refedModuleBuilder = ContainingAssemblyBuilder.GetModuleBuilder((InternalModuleBuilder)refedModule);
+                    refedModuleBuilder = ContainingAssemblyBuilder.GetModuleBuilder((RuntimeModule)refedModule);
                 }
                 referencedModuleFileName = refedModuleBuilder._moduleData._moduleName;
             }
@@ -1352,18 +1318,8 @@ namespace System.Reflection.Emit
         private int GetArrayMethodTokenNoLock(Type arrayClass, string methodName, CallingConventions callingConvention,
             Type? returnType, Type[]? parameterTypes)
         {
-            if (arrayClass == null)
-            {
-                throw new ArgumentNullException(nameof(arrayClass));
-            }
-            if (methodName == null)
-            {
-                throw new ArgumentNullException(nameof(methodName));
-            }
-            if (methodName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(methodName));
-            }
+            ArgumentNullException.ThrowIfNull(arrayClass);
+            ArgumentException.ThrowIfNullOrEmpty(methodName);
             if (!arrayClass.IsArray)
             {
                 throw new ArgumentException(SR.Argument_HasToBeArrayClass);

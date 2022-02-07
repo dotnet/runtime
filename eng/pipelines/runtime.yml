@@ -211,7 +211,7 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: NativeAOT
-      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+libs -rc $(_BuildConfig) -lc Release
+      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       condition: >-
         or(
@@ -233,7 +233,7 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: NativeAOT
-      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+libs -rc $(_BuildConfig) -lc Release
+      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       condition: >-
         or(
@@ -257,7 +257,7 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: NativeAOT
-      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+libs -rc $(_BuildConfig) -lc Release
+      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       condition: >-
         or(
