@@ -1511,7 +1511,9 @@ mono_qsort (void* base, size_t num, size_t size, int (*compare)(const void*, con
  * Clock Nanosleep
  */
 
+#ifdef HAVE_CLOCK_NANOSLEEP
 gint
 g_clock_nanosleep (clockid_t clockid, gint flags, const struct timespec *request, struct timespec *remain);
+#endif
 
 #endif // __GLIB_H
