@@ -748,8 +748,17 @@ namespace Internal.JitInterface
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
             MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
-            object literal = methodIL.GetObject((int)metaTok);
-            ISymbolNode stringObject = _compilation.NodeFactory.SerializedStringObject((string)literal);
+
+            ISymbolNode stringObject;
+            if (metaTok == (mdToken)CorConstants.CorTokenType.mdtString)
+            {
+                stringObject = _compilation.NodeFactory.SerializedStringObject("");
+            }
+            else
+            {
+                object literal = methodIL.GetObject((int)metaTok);
+                stringObject = _compilation.NodeFactory.SerializedStringObject((string)literal);
+            }
             ppValue = (void*)ObjectToHandle(stringObject);
             return stringObject.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
         }

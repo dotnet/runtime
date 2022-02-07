@@ -124,7 +124,6 @@ namespace System.Reflection.Tests
         [InlineData("na=me", typeof(FileLoadException))]
         [InlineData("na\'me", typeof(FileLoadException))]
         [InlineData("na\"me", typeof(FileLoadException))]
-        [ActiveIssue ("https://github.com/dotnet/runtime/issues/45032", TestRuntimes.Mono)]
         public void Ctor_String_Invalid_Issue(string assemblyName, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
@@ -310,20 +309,13 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34492", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser, "File locking is not respected")]
         public static void GetAssemblyName_LockedFile()
         {
             using (var tempFile = new TempFile(Path.GetTempFileName(), 100))
             using (var fileStream = new FileStream(tempFile.Path, FileMode.Append, FileAccess.Write, FileShare.None))
             {
-                if (PlatformDetection.IsWindows) // File locking is Windows specific.
-                {
-                    Assert.Throws<System.IO.FileLoadException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
-                }
-                else
-                {
-                    Assert.Throws<System.BadImageFormatException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
-                }
+                Assert.Throws<System.IO.IOException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
             }
         }
 

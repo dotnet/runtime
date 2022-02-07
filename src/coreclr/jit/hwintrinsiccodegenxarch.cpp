@@ -44,9 +44,19 @@ static void assertIsContainableHWIntrinsicOp(Lowering*           lowering,
     // spillage and for isUsedFromMemory contained nodes, in the case where the register allocator decided to not
     // allocate a register in the first place).
 
-    GenTree* node                = containedNode;
-    bool     supportsRegOptional = false;
-    bool     isContainable = lowering->TryGetContainableHWIntrinsicOp(containingNode, &node, &supportsRegOptional);
+    GenTree* node = containedNode;
+
+    // Now that we are doing full memory containment safety checks, we can't properly check nodes that are not
+    // linked into an evaluation tree, like the special nodes we create in genHWIntrinsic.
+    // So, just say those are ok.
+    //
+    if (node->gtNext == nullptr)
+    {
+        return;
+    }
+
+    bool supportsRegOptional = false;
+    bool isContainable       = lowering->TryGetContainableHWIntrinsicOp(containingNode, &node, &supportsRegOptional);
 
     assert(isContainable || supportsRegOptional);
     assert(node == containedNode);
@@ -85,6 +95,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
     HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     size_t                 numArgs     = node->GetOperandCount();
+
+    // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
+    assert(compiler->compIsaSupportedDebugOnly(isa));
 
     int ival = HWIntrinsicInfo::lookupIval(intrinsicId, compiler->compOpportunisticallyDependsOn(InstructionSet_AVX));
 

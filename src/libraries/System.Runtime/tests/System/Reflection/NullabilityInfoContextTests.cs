@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO.Enumeration;
+using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -30,10 +31,10 @@ namespace System.Reflection.Tests
             yield return new object[] { "FieldDisallowNull", NullabilityState.Nullable, NullabilityState.NotNull, typeof(string) };
             yield return new object[] { "FieldAllowNull", NullabilityState.NotNull, NullabilityState.Nullable, typeof(string) };
             yield return new object[] { "FieldDisallowNull2", NullabilityState.Nullable, NullabilityState.NotNull, typeof(string) };
-            yield return new object[] { "FieldAllowNull2", NullabilityState.NotNull, NullabilityState.Nullable, typeof(string) };
+            yield return new object[] { "FieldAllowNull2", NullabilityState.NotNull, NullabilityState.NotNull, typeof(string) };
             yield return new object[] { "FieldNotNull", NullabilityState.NotNull, NullabilityState.Nullable, typeof(string) };
             yield return new object[] { "FieldMaybeNull", NullabilityState.Nullable, NullabilityState.NotNull, typeof(string) };
-            yield return new object[] { "FieldMaybeNull2", NullabilityState.Nullable, NullabilityState.NotNull, typeof(string) };
+            yield return new object[] { "FieldMaybeNull2", NullabilityState.NotNull, NullabilityState.NotNull, typeof(string) };
             yield return new object[] { "FieldNotNull2", NullabilityState.NotNull, NullabilityState.Nullable, typeof(string) };
         }
 
@@ -86,11 +87,12 @@ namespace System.Reflection.Tests
             yield return new object[] { "PropertyDisallowNull", NullabilityState.Nullable, NullabilityState.NotNull, typeof(string) };
             yield return new object[] { "PropertyAllowNull", NullabilityState.NotNull, NullabilityState.Nullable, typeof(string) };
             yield return new object[] { "PropertyDisallowNull2", NullabilityState.Nullable, NullabilityState.NotNull, typeof(string) };
-            yield return new object[] { "PropertyAllowNull2", NullabilityState.NotNull, NullabilityState.Nullable, typeof(string) };
+            yield return new object[] { "PropertyAllowNull2", NullabilityState.NotNull, NullabilityState.NotNull, typeof(string) };
             yield return new object[] { "PropertyNotNull", NullabilityState.NotNull, NullabilityState.Nullable, typeof(string) };
             yield return new object[] { "PropertyMaybeNull", NullabilityState.Nullable, NullabilityState.NotNull, typeof(string) };
-            yield return new object[] { "PropertyMaybeNull2", NullabilityState.Nullable, NullabilityState.NotNull, typeof(string) };
+            yield return new object[] { "PropertyMaybeNull2", NullabilityState.NotNull, NullabilityState.NotNull, typeof(string) };
             yield return new object[] { "PropertyNotNull2", NullabilityState.NotNull, NullabilityState.Nullable, typeof(string) };
+            yield return new object[] { "Item", NullabilityState.Nullable, NullabilityState.NotNull, typeof(string) };
         }
 
         [Theory]
@@ -433,7 +435,7 @@ namespace System.Reflection.Tests
             Assert.Equal(type, nullability.Type);
         }
 
-        public static IEnumerable<object[]> GenericNotnullConstraintFieldsTestData()
+        public static IEnumerable<object[]> GenericNotNullConstraintFieldsTestData()
         {
             yield return new object[] { "FieldNullable", NullabilityState.Nullable, NullabilityState.Nullable, typeof(string) };
             yield return new object[] { "FieldUnknown", NullabilityState.Unknown, NullabilityState.Unknown, typeof(string) };
@@ -441,7 +443,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GenericNotnullConstraintFieldsTestData))]
+        [MemberData(nameof(GenericNotNullConstraintFieldsTestData))]
         public void GenericNotNullConstraintFieldsTest(string fieldName, NullabilityState readState, NullabilityState writeState, Type type)
         {
             FieldInfo field = typeof(GenericTestConstrainedNotNull<string>).GetField(fieldName, flags)!;
@@ -570,7 +572,7 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> MethodReturnParameterTestData()
         {
-            yield return new object[] { "MethodReturnsUnknown", NullabilityState.Unknown, NullabilityState.Unknown};
+            yield return new object[] { "MethodReturnsUnknown", NullabilityState.Unknown, NullabilityState.Unknown };
             yield return new object[] { "MethodReturnsNullNon", NullabilityState.Nullable, NullabilityState.NotNull };
             yield return new object[] { "MethodReturnsNullNull", NullabilityState.Nullable, NullabilityState.Nullable };
             yield return new object[] { "MethodReturnsNonNull", NullabilityState.NotNull, NullabilityState.Nullable };
@@ -671,7 +673,7 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> MethodGenericParametersTestData()
         {
-            yield return new object[] { "MethodParametersUnknown", NullabilityState.Unknown, NullabilityState.Unknown, NullabilityState.Unknown, NullabilityState.Unknown};
+            yield return new object[] { "MethodParametersUnknown", NullabilityState.Unknown, NullabilityState.Unknown, NullabilityState.Unknown, NullabilityState.Unknown };
             yield return new object[] { "MethodArgsNullGenericNullDictValueGeneric", NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.Nullable };
             yield return new object[] { "MethodArgsGenericDictValueNullGeneric", NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull };
         }
@@ -710,7 +712,7 @@ namespace System.Reflection.Tests
             Assert.Equal(param1State, param1.ReadState);
             Assert.Equal(param2State, param2.ReadState);
             Assert.Equal(param3State, param3.ReadState);
-            if (param2.ElementType  != null)
+            if (param2.ElementType != null)
             {
                 Assert.Equal(NullabilityState.Nullable, param2.ElementType.ReadState);
             }
@@ -739,7 +741,7 @@ namespace System.Reflection.Tests
             PropertyInfo publicGetPrivateSetNullableProperty = typeof(FileSystemEntry).GetProperty("Directory", flags)!;
             info = nullabilityContext.Create(publicGetPrivateSetNullableProperty);
             Assert.Equal(NullabilityState.NotNull, info.ReadState);
-            Assert.Equal(NullabilityState.Unknown, info.WriteState);
+            Assert.Equal(NullabilityState.NotNull, info.WriteState);
 
             MethodInfo protectedNullableReturnMethod = type.GetMethod("GetPropertyImpl", flags)!;
             info = nullabilityContext.Create(protectedNullableReturnMethod.ReturnParameter);
@@ -748,8 +750,8 @@ namespace System.Reflection.Tests
 
             MethodInfo privateValueTypeReturnMethod = type.GetMethod("BinarySearch", flags)!;
             info = nullabilityContext.Create(privateValueTypeReturnMethod.ReturnParameter);
-            Assert.Equal(NullabilityState.Unknown, info.ReadState);
-            Assert.Equal(NullabilityState.Unknown, info.WriteState);
+            Assert.Equal(NullabilityState.NotNull, info.ReadState);
+            Assert.Equal(NullabilityState.NotNull, info.WriteState);
 
             Type regexType = typeof(Regex);
             FieldInfo protectedInternalNullableField = regexType.GetField("pattern", flags)!;
@@ -761,13 +763,18 @@ namespace System.Reflection.Tests
             info = nullabilityContext.Create(privateNullableField);
             Assert.Equal(NullabilityState.Unknown, info.ReadState);
             Assert.Equal(NullabilityState.Unknown, info.WriteState);
+
+            ConstructorInfo privateConstructor = typeof(IndexOutOfRangeException)
+                .GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, new[] { typeof(SerializationInfo), typeof(StreamingContext) })!;
+            info = nullabilityContext.Create(privateConstructor.GetParameters()[0]);
+            Assert.Equal(NullabilityState.Unknown, info.WriteState);
         }
 
         public static IEnumerable<object[]> DifferentContextTestData()
         {
             yield return new object[] { "PropertyDisabled", NullabilityState.Unknown, NullabilityState.Unknown, typeof(string) };
-            yield return new object[] { "PropertyDisabledAllowNull", NullabilityState.Unknown, NullabilityState.Unknown, typeof(string) };
-            yield return new object[] { "PropertyDisabledMaybeNull", NullabilityState.Unknown, NullabilityState.Unknown, typeof(string) };
+            yield return new object[] { "PropertyDisabledAllowNull", NullabilityState.Unknown, NullabilityState.Nullable, typeof(string) };
+            yield return new object[] { "PropertyDisabledMaybeNull", NullabilityState.Nullable, NullabilityState.Unknown, typeof(string) };
             yield return new object[] { "PropertyEnabledAllowNull", NullabilityState.NotNull, NullabilityState.Nullable, typeof(string) };
             yield return new object[] { "PropertyEnabledNotNull", NullabilityState.NotNull, NullabilityState.Nullable, typeof(string) };
             yield return new object[] { "PropertyEnabledMaybeNull", NullabilityState.Nullable, NullabilityState.NotNull, typeof(string) };
@@ -984,6 +991,105 @@ namespace System.Reflection.Tests
             Assert.Equal(param1, tupleInfo.GenericTypeArguments[0].ReadState);
             Assert.Equal(param2, tupleInfo.GenericTypeArguments[1].ReadState);
         }
+
+        public static IEnumerable<object?[]> GenericInheritanceTestData()
+        {
+            yield return new object?[] { typeof(ListOfUnconstrained<string?>), NullabilityState.Nullable, null };
+            yield return new object?[] { typeof(ListUnconstrainedOfNullable<string>), NullabilityState.Nullable, null };
+            yield return new object?[] { typeof(ListUnconstrainedOfNullableOfObject<>), NullabilityState.NotNull, null };
+            yield return new object?[] { typeof(ListOfArrayOfNullableString), NullabilityState.NotNull, NullabilityState.Nullable };
+            yield return new object?[] { typeof(ListOfNotNull<ListOfNotNull<object>>), NullabilityState.NotNull, NullabilityState.NotNull };
+            yield return new object?[] { typeof(ListOfListOfObject<string?>), NullabilityState.NotNull, NullabilityState.NotNull };
+            yield return new object?[] { typeof(ListMultiGenericOfNotNull<object?, string, string?>), NullabilityState.NotNull, null };
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericInheritanceTestData))]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void TestGenericInheritance(Type listType, NullabilityState parameterState, NullabilityState? subState)
+        {
+            var addParameterInfo = nullabilityContext.Create(listType.GetMethod("Add")!.GetParameters()[0]);
+            Validate(addParameterInfo);
+
+            var copyToParameterInfo = nullabilityContext.Create(
+                listType.GetMethod("CopyTo", new[] { addParameterInfo.Type.MakeArrayType() })!
+                    .GetParameters()[0]);
+            Assert.Equal(NullabilityState.NotNull, copyToParameterInfo.ReadState);
+            Assert.Equal(NullabilityState.NotNull, copyToParameterInfo.WriteState);
+            Assert.NotNull(copyToParameterInfo.ElementType);
+            Validate(copyToParameterInfo.ElementType!);
+
+            void Validate(NullabilityInfo info)
+            {
+                Assert.Equal(parameterState, info.ReadState);
+                Assert.Equal(parameterState, info.WriteState);
+                if (subState != null)
+                {
+                    NullabilityInfo subInfo = info.ElementType ?? info.GenericTypeArguments[0];
+                    Assert.Equal(subState, subInfo.ReadState);
+                    Assert.Equal(subState, subInfo.WriteState);
+                    Assert.True(info.GenericTypeArguments.Length <= 1);
+                }
+                else
+                {
+                    Assert.Null(info.ElementType);
+                    Assert.Empty(info.GenericTypeArguments);
+                }
+            }
+        }
+
+        [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void TestDeeplyNestedGenericInheritance()
+        {
+            var copyToMethodInfo = nullabilityContext.Create(
+                typeof(ListOfTupleOfDictionaryOfStringNullableBoolIntNullableObject).GetMethod("CopyTo", new[] { typeof((Dictionary<string, bool?>, int, object?)[]) })!
+                    .GetParameters()[0]);
+
+            Validate(copyToMethodInfo, typeof((Dictionary<string, bool?>, int, object?)[]), NullabilityState.NotNull);
+            Assert.NotNull(copyToMethodInfo.ElementType);
+
+            var tupleInfo = copyToMethodInfo.ElementType!;
+            Validate(tupleInfo, typeof((Dictionary<string, bool?>, int, object?)), NullabilityState.NotNull);
+
+            var dictionaryInfo = tupleInfo.GenericTypeArguments[0];
+            Validate(dictionaryInfo, typeof(Dictionary<string, bool?>), NullabilityState.NotNull);
+
+            var stringInfo = dictionaryInfo.GenericTypeArguments[0];
+            Validate(stringInfo, typeof(string), NullabilityState.NotNull);
+
+            var nullableBoolInfo = dictionaryInfo.GenericTypeArguments[1];
+            Validate(nullableBoolInfo, typeof(bool?), NullabilityState.Nullable);
+
+            var intInfo = tupleInfo.GenericTypeArguments[1];
+            Validate(intInfo, typeof(int), NullabilityState.NotNull);
+
+            var objectInfo = tupleInfo.GenericTypeArguments[2];
+            Validate(objectInfo, typeof(object), NullabilityState.Nullable);
+
+            void Validate(NullabilityInfo info, Type type, NullabilityState state)
+            {
+                Assert.Equal(type, info.Type);
+                Assert.Equal(state, info.ReadState);
+                Assert.Equal(state, info.WriteState);
+                Assert.Equal(type.IsGenericType && type.GetGenericTypeDefinition() != typeof(Nullable<>) ? type.GetGenericArguments().Length : 0, info.GenericTypeArguments.Length);
+                Assert.Equal(type.IsArray, info.ElementType is not null);
+            }
+        }
+
+        [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void TestNestedGenericInheritanceWithMultipleParameters()
+        {
+            var item3Info = nullabilityContext.Create(typeof(DerivesFromTupleOfNestedGenerics).GetProperty("Item3")!);
+
+            Assert.Equal(typeof(IDisposable[]), item3Info.Type);
+            Assert.Equal(NullabilityState.Nullable, item3Info.ReadState);
+            Assert.Equal(NullabilityState.Unknown, item3Info.WriteState); // read-only property
+
+            Assert.Equal(NullabilityState.NotNull, item3Info.ElementType!.ReadState);
+            Assert.Equal(NullabilityState.NotNull, item3Info.ElementType.WriteState);
+        }
     }
 
 #pragma warning disable CS0649, CS0067, CS0414
@@ -1023,7 +1129,7 @@ namespace System.Reflection.Tests
         [AllowNull] public string PropertyEnabledAllowNull { get; set; }
         [NotNull] public string? PropertyEnabledNotNull { get; set; } = null!;
         [DisallowNull] public string? PropertyEnabledDisallowNull { get; set; } = null!;
-        [MaybeNull] public string PropertyEnabledMaybeNull { get; set; } 
+        [MaybeNull] public string PropertyEnabledMaybeNull { get; set; }
         public string? PropertyEnabledNullable { get; set; }
         public string PropertyEnabledNonNullable { get; set; } = null!;
 #nullable disable
@@ -1059,14 +1165,15 @@ namespace System.Reflection.Tests
         [AllowNull] public string PropertyAllowNull { get; set; }
         [NotNull] public string? PropertyNotNull { get; set; }
         [MaybeNull] public string PropertyMaybeNull { get; set; }
-        // only AllowNull matter
+        // only DisallowNull matters
         [AllowNull, DisallowNull] public string PropertyAllowNull2 { get; set; }
-        // only DisallowNull matter
+        // only AllowNull matters
         [AllowNull, DisallowNull] public string? PropertyDisallowNull2 { get; set; }
-        // only NotNull matter
+        // only NotNull matters
         [NotNull, MaybeNull] public string? PropertyNotNull2 { get; set; }
-        // only MaybeNull matter
+        // only NotNull matters
         [NotNull, MaybeNull] public string PropertyMaybeNull2 { get; set; }
+        [DisallowNull] public string? this[int i] { get => null; set { } }
         private protected string?[]?[]? PropertyJaggedArrayNullNullNull { get; set; }
         public static string?[]?[] PropertyJaggedArrayNullNullNon { get; set; } = null!;
         public string?[][]? PropertyJaggedArrayNullNonNull { get; set; }
@@ -1174,7 +1281,7 @@ namespace System.Reflection.Tests
         [DisallowNull] public T? FieldDisallowNull;
         [AllowNull] protected T FieldAllowNull;
         [NotNull] public T? FieldNotNull = default;
-        [MaybeNull] protected internal  T FieldMaybeNull = default!;
+        [MaybeNull] protected internal T FieldMaybeNull = default!;
         public List<T> FieldListOfT = default!;
         public Dictionary<string, T> FieldDictionaryStringToT = default!;
 
@@ -1212,5 +1319,34 @@ namespace System.Reflection.Tests
         public T? FieldNullable;
         public T PropertyNullableEnabled { get; set; }
         public T? PropertyNullable { get; set; }
+    }
+
+    public class ListOfUnconstrained<T> : List<T> { }
+
+    public class ListUnconstrainedOfNullable<T> : ListOfUnconstrained<T> where T : class? { }
+
+    public class ListUnconstrainedOfNullableOfObject<T> : ListUnconstrainedOfNullable<object> { }
+
+    public class ListOfArrayOfNullableString : List<string?[]> { }
+
+    public class ListOfNotNull<T> : List<T> where T : notnull { }
+
+    public class ListOfListOfObject<T> : List<List<object>> { }
+
+    public class ListMultiGenericOfNotNull<T, U, V> : List<U>
+        where T : class?
+        where U : class
+        where V : class?
+    {
+    }
+
+    public class ListOfTupleOfDictionaryOfStringNullableBoolIntNullableObject : List<(Dictionary<string, bool?>, int, object?)> { }
+
+    public class DerivesFromTupleOfNestedGenerics : Tuple<List<string[]>, Dictionary<object[], List<object>>, IDisposable[]?>
+    {
+        public DerivesFromTupleOfNestedGenerics(List<string[]> item1, Dictionary<object[], List<object>> item2, IDisposable[]? item3)
+            : base(item1, item2, item3)
+        {
+        }
     }
 }

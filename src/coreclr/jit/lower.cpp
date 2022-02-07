@@ -42,6 +42,22 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
     assert(childNode->canBeContained());
     childNode->SetContained();
     assert(childNode->isContained());
+
+#ifdef DEBUG
+    if (IsContainableMemoryOp(childNode))
+    {
+        // Verify caller of this method checked safety.
+        //
+        const bool isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
+
+        if (!isSafeToContainMem)
+        {
+            JITDUMP("** Unsafe mem containment of [%06u] in [%06u}, comp->dspTreeID(childNode), "
+                    "comp->dspTreeID(parentNode)\n");
+            assert(isSafeToContainMem);
+        }
+    }
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -79,13 +95,54 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 // Return value:
 //    true if it is safe to make childNode a contained memory operand.
 //
-bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
+bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const
 {
+    // Quick early-out for unary cases
+    //
+    if (childNode->gtNext == parentNode)
+    {
+        return true;
+    }
+
     m_scratchSideEffects.Clear();
     m_scratchSideEffects.AddNode(comp, childNode);
 
     for (GenTree* node = childNode->gtNext; node != parentNode; node = node->gtNext)
     {
+        const bool strict = true;
+        if (m_scratchSideEffects.InterferesWith(comp, node, strict))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// IsSafeToContainMem: Checks for conflicts between childNode and grandParentNode
+// and returns 'true' iff memory operand childNode can be contained in ancestorNode
+//
+// Arguments:
+//    grandParentNode - any non-leaf node
+//    parentNode - parent of `childNode` and an input to `grandParentNode`
+//    childNode  - some node that is an input to `parentNode`
+//
+// Return value:
+//    true if it is safe to make childNode a contained memory operand.
+//
+bool Lowering::IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const
+{
+    m_scratchSideEffects.Clear();
+    m_scratchSideEffects.AddNode(comp, childNode);
+
+    for (GenTree* node = childNode->gtNext; node != grandparentNode; node = node->gtNext)
+    {
+        if (node == parentNode)
+        {
+            continue;
+        }
+
         const bool strict = true;
         if (m_scratchSideEffects.InterferesWith(comp, node, strict))
         {
@@ -139,7 +196,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
-            return LowerBinaryArithmeticCommon(node->AsOp());
+            return LowerBinaryArithmetic(node->AsOp());
 
         case GT_MUL:
         case GT_MULHI:
@@ -4891,19 +4948,28 @@ bool Lowering::AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, Ge
 //    addressing mode and transform them to a GT_LEA
 //
 // Arguments:
-//    use - the use of the address we want to transform
+//    addr - the use of the address we want to transform
 //    isContainable - true if this addressing mode can be contained
-//    targetType - on arm we can use "scale" only for appropriate target type
+//    parent - the node that consumes the given addr (most likely it's an IND)
 //
 // Returns:
 //    true if the address node was changed to a LEA, false otherwise.
 //
-bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types targetType)
+bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent)
 {
     if (!addr->OperIs(GT_ADD) || addr->gtOverflow())
     {
         return false;
     }
+
+#ifdef TARGET_ARM64
+    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() && !varTypeIsGC(addr))
+    {
+        // For Arm64 we avoid using LEA for volatile INDs
+        // because we won't be able to use ldar/star
+        return false;
+    }
+#endif
 
     GenTree* base   = nullptr;
     GenTree* index  = nullptr;
@@ -4919,6 +4985,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
                                                        &index,   // index val
                                                        &scale,   // scaling
                                                        &offset); // displacement
+
+    var_types targetType = parent->OperIsIndir() ? parent->TypeGet() : TYP_UNDEF;
 
 #ifdef TARGET_ARMARCH
     // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
@@ -5109,7 +5177,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             GenTree* parent = use.User();
             if (!parent->OperIsIndir() && !parent->OperIs(GT_ADD))
             {
-                TryCreateAddrMode(node, false);
+                TryCreateAddrMode(node, false, parent);
             }
         }
 #endif // !TARGET_ARMARCH
@@ -5120,53 +5188,6 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         ContainCheckBinary(node);
     }
     return nullptr;
-}
-
-//------------------------------------------------------------------------
-// LowerBinaryArithmeticCommon: lowers the given binary arithmetic node.
-//
-// Recognizes opportunities for using target-independent "combined" nodes
-// (currently AND_NOT on ARMArch). Performs containment checks.
-//
-// Arguments:
-//    node - the arithmetic node to lower
-//
-// Returns:
-//    The next node to lower.
-//
-GenTree* Lowering::LowerBinaryArithmeticCommon(GenTreeOp* binOp)
-{
-    // TODO-CQ-XArch: support BMI2 "andn" in codegen and condition
-    // this logic on the support for the instruction set on XArch.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef TARGET_ARMARCH
-    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND))
-    {
-        GenTree* opNode  = nullptr;
-        GenTree* notNode = nullptr;
-        if (binOp->gtGetOp1()->OperIs(GT_NOT))
-        {
-            notNode = binOp->gtGetOp1();
-            opNode  = binOp->gtGetOp2();
-        }
-        else if (binOp->gtGetOp2()->OperIs(GT_NOT))
-        {
-            notNode = binOp->gtGetOp2();
-            opNode  = binOp->gtGetOp1();
-        }
-
-        if (notNode != nullptr)
-        {
-            binOp->gtOp1 = opNode;
-            binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
-            binOp->ChangeOper(GT_AND_NOT);
-            BlockRange().Remove(notNode);
-        }
-    }
-#endif
-
-    return LowerBinaryArithmetic(binOp);
 }
 
 //------------------------------------------------------------------------
@@ -6778,7 +6799,7 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
     assert(ind->TypeGet() != TYP_STRUCT);
-    TryCreateAddrMode(ind->Addr(), true, ind->TypeGet());
+    TryCreateAddrMode(ind->Addr(), true, ind);
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
         if (varTypeIsFloating(ind) && ind->Data()->IsCnsFltOrDbl())
@@ -6846,7 +6867,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
         // address containment in some cases so we end up creating trivial (reg + offfset)
         // or (reg + reg) LEAs that are not necessary.
-        TryCreateAddrMode(ind->Addr(), true, ind->TypeGet());
+        TryCreateAddrMode(ind->Addr(), true, ind);
         ContainCheckIndir(ind);
 
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
@@ -6859,7 +6880,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         // If the `ADDR` node under `STORE_OBJ(dstAddr, IND(struct(ADDR))`
         // is a complex one it could benefit from an `LEA` that is not contained.
         const bool isContainable = false;
-        TryCreateAddrMode(ind->Addr(), isContainable, ind->TypeGet());
+        TryCreateAddrMode(ind->Addr(), isContainable, ind);
     }
 }
 

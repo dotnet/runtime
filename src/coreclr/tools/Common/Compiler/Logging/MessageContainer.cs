@@ -68,6 +68,22 @@ namespace ILCompiler.Logging
         }
 
         /// <summary>
+        /// Create an error message.
+        /// </summary>
+        /// <param name="origin">Filename, line, and column where the error was found</param>
+        /// <param name="id">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
+        /// for the list of errors and possibly add a new one</param>
+        /// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+        /// <returns>New MessageContainer of 'Error' category</returns>
+        internal static MessageContainer CreateErrorMessage(MessageOrigin? origin, DiagnosticId id, params string[] args)
+        {
+            if (!((int)id >= 1000 && (int)id <= 2000))
+                throw new ArgumentOutOfRangeException(nameof(id), $"The provided code '{(int)id}' does not fall into the error category, which is in the range of 1000 to 2000 (inclusive).");
+
+            return new MessageContainer(MessageCategory.Error, id, origin: origin, args: args);
+        }
+
+        /// <summary>
         /// Create a warning message.
         /// </summary>
         /// <param name="context">Context with the relevant warning suppression info.</param>
@@ -81,10 +97,27 @@ namespace ILCompiler.Logging
         /// <returns>New MessageContainer of 'Warning' category</returns>
         internal static MessageContainer? CreateWarningMessage(Logger context, string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
         {
-            //if (!(code > 2000 && code <= 6000))
-            //    throw new ArgumentOutOfRangeException(nameof(code), $"The provided code '{code}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
+            if (!(code > 2000 && code <= 6000))
+                throw new ArgumentOutOfRangeException(nameof(code), $"The provided code '{code}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
 
             return CreateWarningMessageContainer(context, text, code, origin, subcategory);
+        }
+
+        /// <summary>
+        /// Create a warning message.
+        /// </summary>
+        /// <param name="context">Context with the relevant warning suppression info.</param>
+        /// <param name="origin">Filename or member where the warning is coming from</param>
+        /// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
+        /// for the list of warnings and possibly add a new one</param>
+        /// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+        /// <returns>New MessageContainer of 'Warning' category</returns>
+        internal static MessageContainer? CreateWarningMessage(Logger context, MessageOrigin origin, DiagnosticId id, params string[] args)
+        {
+            if (!((int)id > 2000 && (int)id <= 6000))
+                throw new ArgumentOutOfRangeException(nameof(id), $"The provided code '{(int)id}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
+
+            return CreateWarningMessageContainer(context, origin, id, id.GetDiagnosticSubcategory(), args);
         }
 
         private static MessageContainer? CreateWarningMessageContainer(Logger context, string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
@@ -99,6 +132,20 @@ namespace ILCompiler.Logging
                 return new MessageContainer(MessageCategory.WarningAsError, text, code, subcategory, origin);
 
             return new MessageContainer(MessageCategory.Warning, text, code, subcategory, origin);
+        }
+
+        private static MessageContainer? CreateWarningMessageContainer(Logger context, MessageOrigin origin, DiagnosticId id, string subcategory, params string[] args)
+        {
+            if (context.IsWarningSuppressed((int)id, origin))
+                return null;
+
+            if (TryLogSingleWarning(context, (int)id, origin, subcategory))
+                return null;
+
+            if (context.IsWarningAsError((int)id))
+                return new MessageContainer(MessageCategory.WarningAsError, id, subcategory, origin, args);
+
+            return new MessageContainer(MessageCategory.Warning, id, subcategory, origin, args);
         }
 
         private static bool TryLogSingleWarning(Logger context, int code, MessageOrigin origin, string subcategory)
@@ -137,7 +184,7 @@ namespace ILCompiler.Logging
         private static bool IsTrimmableAssembly(ModuleDesc assembly)
         {
             if (assembly is EcmaAssembly ecmaAssembly)
-            {   
+            {
                 foreach (var attribute in ecmaAssembly.GetDecodedCustomAttributes("System.Reflection", "AssemblyMetadataAttribute"))
                 {
                     if (attribute.FixedArguments.Length != 2)
@@ -195,6 +242,15 @@ namespace ILCompiler.Logging
             Text = text;
         }
 
+        private MessageContainer(MessageCategory category, DiagnosticId id, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null, params string[] args)
+        {
+            Code = (int)id;
+            Category = category;
+            Origin = origin;
+            SubCategory = subcategory;
+            Text = new DiagnosticString(id).GetMessage(args);
+        }
+
         public override string ToString() => ToMSBuildString();
 
         public string ToMSBuildString()
@@ -240,7 +296,7 @@ namespace ILCompiler.Logging
             {
                 if (Origin?.MemberDefinition is MethodDesc method)
                     sb.Append(method.GetDisplayName());
-                else 
+                else
                     sb.Append(Origin?.MemberDefinition.ToString());
 
                 sb.Append(": ");

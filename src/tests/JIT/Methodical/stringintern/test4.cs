@@ -6,7 +6,12 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Test4
+class
+#if XASSEM
+Test4_xassem
+#else
+Test4
+#endif
 {
     public static string teststr1 = null;
     public static string[] teststr2 = new string[3];

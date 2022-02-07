@@ -118,6 +118,7 @@ CONFIG_INTEGER(JitNoCSE2, W("JitNoCSE2"), 0)
 CONFIG_INTEGER(JitNoForceFallback, W("JitNoForceFallback"), 0) // Set to non-zero to prevent NOWAY assert testing.
                                                                // Overrides COMPlus_JitForceFallback and JIT stress
                                                                // flags.
+CONFIG_INTEGER(JitNoForwardSub, W("JitNoForwardSub"), 0)       // Disables forward sub
 CONFIG_INTEGER(JitNoHoist, W("JitNoHoist"), 0)
 CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)                 // Disables inlining of all methods
 CONFIG_INTEGER(JitNoMemoryBarriers, W("JitNoMemoryBarriers"), 0) // If 1, don't generate memory barriers
@@ -471,8 +472,16 @@ CONFIG_INTEGER(JitOffsetOnStackReplacement, W("JitOffsetOnStackReplacement"), -1
 #endif // debug
 
 #if defined(DEBUG)
-CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange")) // Enable osr for only some methods
-#endif                                                   // debug
+// EnableOsrRange allows you to limit the set of methods that will rely on OSR to escape
+// from Tier0 code. Methods outside the range that would normally be jitted at Tier0
+// and have patchpoints will instead be switched to optimized.
+CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange"))
+// EnablePatchpointRange allows you to limit the set of Tier0 methods that
+// will have patchpoints, and hence control which methods will create OSR methods.
+// Unlike EnableOsrRange, it will not alter the optimization setting for methods
+// outside the enabled range.
+CONFIG_STRING(JitEnablePatchpointRange, W("JitEnablePatchpointRange"))
+#endif
 
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)

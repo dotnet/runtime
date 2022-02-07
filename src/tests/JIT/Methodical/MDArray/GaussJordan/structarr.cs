@@ -4,8 +4,9 @@
 //Solving AX=B and the inverse of A with Gauss-Jordan algorithm
 
 using System;
+using Xunit;
 
-internal struct MatrixStruct
+public struct MatrixStruct
 {
     public double[,] arr;
     public MatrixStruct(int n, int m)
@@ -14,7 +15,7 @@ internal struct MatrixStruct
     }
 }
 
-internal class structarr
+public class structarr
 {
     private static double s_tolerance = 0.0000000000001;
     public static bool AreEqual(double left, double right)
@@ -93,7 +94,8 @@ internal class structarr
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = false;
 
