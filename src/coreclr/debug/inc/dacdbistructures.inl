@@ -712,14 +712,14 @@ void EnCHangingFieldInfo::Init(VMPTR_Object     pObject,
                                mdFieldDef       fieldToken,
                                CorElementType   elementType,
                                mdTypeDef        metadataToken,
-                               VMPTR_DomainFile vmDomainFile)
+                               VMPTR_DomainAssembly vmDomainAssembly)
     {
         m_vmObject = pObject;
         m_offsetToVars = offset;
         m_fldToken = fieldToken;
         m_objectTypeData.elementType = elementType;
         m_objectTypeData.metadataToken = metadataToken;
-        m_objectTypeData.vmDomainFile = vmDomainFile;
+        m_objectTypeData.vmDomainAssembly = vmDomainAssembly;
     }
 
 

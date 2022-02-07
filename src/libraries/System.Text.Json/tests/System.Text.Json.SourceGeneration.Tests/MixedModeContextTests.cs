@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Serialization;
-using System.Reflection;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
@@ -42,10 +41,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PersonStruct?), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(TypeWithValidationAttributes), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     internal partial class MixedModeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization;
-        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
     }
 
     public sealed class MixedModeContextTests : RealWorldContextTests
@@ -90,6 +90,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.StructWithBadCustomConverter.SerializeHandler);
             Assert.Null(MixedModeContext.Default.NullablePersonStruct.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.PersonStruct.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.TypeWithValidationAttributes.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.TypeWithDerivedAttribute.SerializeHandler);
         }
 
         [Fact]

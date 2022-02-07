@@ -316,7 +316,7 @@ int32_t AndroidCryptoNative_CipherCtxSetPadding(CipherCtx* ctx, int32_t padding)
     }
 }
 
-int32_t AndroidCryptoNative_CipherReset(CipherCtx* ctx)
+int32_t AndroidCryptoNative_CipherReset(CipherCtx* ctx, uint8_t* pIv, int32_t cIv)
 {
     if (!ctx)
         return FAIL;
@@ -333,6 +333,20 @@ int32_t AndroidCryptoNative_CipherReset(CipherCtx* ctx)
     (*env)->DeleteLocalRef(env, algName);
     if (CheckJNIExceptions(env))
         return FAIL;
+
+    if (pIv)
+    {
+        if (ctx->ivLength != cIv)
+        {
+            return FAIL;
+        }
+
+        SaveTo(pIv, &ctx->iv, (size_t)ctx->ivLength, /* overwrite */ true);
+    }
+    else if (cIv != 0)
+    {
+        return FAIL;
+    }
 
     return ReinitializeCipher(ctx);
 }

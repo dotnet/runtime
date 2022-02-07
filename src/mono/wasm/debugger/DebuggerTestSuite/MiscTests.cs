@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
 
@@ -736,6 +737,7 @@ namespace DebuggerTests
         [Fact]
         public async Task DebugLazyLoadedAssemblyWithPdb()
         {
+            Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             int line = 9;
             await SetBreakpoint(".*/lazy-debugger-test.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
@@ -744,7 +746,9 @@ namespace DebuggerTests
 
             var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
             Assert.Contains(source_location, scripts.Values);
-            System.Threading.Thread.Sleep(1000);
+
+            await bpResolved;
+
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
@@ -755,9 +759,9 @@ namespace DebuggerTests
         }
 
         [Fact]
-        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/62667
         public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb()
         {
+            Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             int line = 9;
             await SetBreakpoint(".*/lazy-debugger-test-embedded.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
@@ -766,6 +770,8 @@ namespace DebuggerTests
 
             var source_location = "dotnet://lazy-debugger-test-embedded.dll/lazy-debugger-test-embedded.cs";
             Assert.Contains(source_location, scripts.Values);
+
+            await bpResolved;
 
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test-embedded] LazyMath:IntAdd', 5, 10); }, 1);",
@@ -827,6 +833,26 @@ namespace DebuggerTests
 
             var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
             Assert.True(source.IsOk, $"Failed to getScriptSource: {source}");
+        }
+
+        [Fact]
+        public async Task GetSourceEmbeddedSource()
+        {
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            var bp = await SetBreakpoint(".*/MethodBody1.cs$", 48, 12, use_regex: true);
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody5", "StaticMethod1");
+
+            var sourceToGet = JObject.FromObject(new
+            {
+                scriptId = pause_location["callFrames"][0]["functionLocation"]["scriptId"].Value<string>()
+            });
+
+            var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
+            Assert.False(source.Value["scriptSource"].Value<string>().Contains("// Unable to read document"));
         }
 
         [Fact]
@@ -913,7 +939,7 @@ namespace DebuggerTests
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 924, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 965, 8,
                 "CallToEvaluateLocal",
                 wait_for_event_fn: async (pause_location) =>
                 {

@@ -235,7 +235,6 @@ namespace DebuggerTests
         [Theory]
         [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClassDefault:TestExceptions", "System.Exception", 76)]
         [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions", "DebuggerTests.CustomException", 28)]
-        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/62666
         public async Task ExceptionTestAllWithReload(string entry_method_name, string class_name, int line_number)
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";
@@ -249,14 +248,26 @@ namespace DebuggerTests
                                     }), "Page.reload",null, 0, 0, null);
             Thread.Sleep(1000);
 
-            //send a lot of resumes to "skip" all the pauses on caught exception and completely reload the page
-            int i = 0;
-            while (i < 100)
+            // Hit resume to skip 
+            int count = 0;
+            while(true)
             {
-                Result res = await cli.SendCommand("Debugger.resume", null, token);
-                i++;
-            }
+                await cli.SendCommand("Debugger.resume", null, token);
+                count++;
 
+                try
+                {
+                    await insp.WaitFor(Inspector.PAUSE)
+                                .WaitAsync(TimeSpan.FromSeconds(10));
+                }
+                catch (TimeoutException)
+                {
+                    // timed out waiting for a PAUSE
+                    insp.ClearWaiterFor(Inspector.PAUSE);
+                    break;
+                }
+            }
+            Console.WriteLine ($"* Resumed {count} times");
 
             var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
                 $"'{entry_method_name}'" +
@@ -309,7 +320,8 @@ namespace DebuggerTests
                     AssertEqual("exception", pause_location["reason"]?.Value<string>(), $"Expected to only pause because of an exception. {pause_location}");
 
                     // return in case of a managed exception, and ignore JS ones
-                    if (pause_location["data"]?["objectId"]?.Value<string>()?.StartsWith("dotnet:object:") == true)
+                    if (pause_location["data"]?["objectId"]?.Value<string>()?.StartsWith("dotnet:object:", StringComparison.Ordinal) == true ||
+                        pause_location["data"]?["uncaught"]?.Value<bool>() == true)
                     {
                         break;
                     }

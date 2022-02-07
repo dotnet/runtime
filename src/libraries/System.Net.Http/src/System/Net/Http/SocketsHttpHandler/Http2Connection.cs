@@ -2038,7 +2038,7 @@ namespace System.Net.Http
                         _keepAlivePingTimeoutTimestamp = now + _keepAlivePingTimeout;
 
                         long pingPayload = Interlocked.Increment(ref _keepAlivePingPayload);
-                        SendPingAsync(pingPayload);
+                        LogExceptions(SendPingAsync(pingPayload));
                         return;
                     }
                     break;

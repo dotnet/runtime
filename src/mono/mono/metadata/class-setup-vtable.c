@@ -242,7 +242,7 @@ mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, gbo
 			for (i = 0; i < ifaces->len; ++i) {
 				int io;
 				ic = (MonoClass *)g_ptr_array_index (ifaces, i);
-				
+
 				/*Force the sharing of interface offsets between parent and subtypes.*/
 				io = mono_class_interface_offset (k, ic);
 				g_assertf (io >= 0, "class %s parent %s has no offset for iface %s",
@@ -337,7 +337,7 @@ end:
 		}
 		g_free (ifaces_array);
 	}
-	
+
 	//printf ("JUST DONE: ");
 	//print_implemented_interfaces (klass);
 
@@ -345,7 +345,7 @@ end:
 }
 
 /*
- * Setup interface offsets for interfaces. 
+ * Setup interface offsets for interfaces.
  * Initializes:
  * - klass->max_interface_id
  * - klass->interface_offsets_count
@@ -409,7 +409,7 @@ mono_signature_get_full_desc (MonoMethodSignature *sig, gboolean include_namespa
 	int i;
 	char *result;
 	GString *res = g_string_new ("");
-	
+
 	g_string_append_c (res, '(');
 	for (i = 0; i < sig->param_count; ++i) {
 		if (i > 0)
@@ -433,7 +433,7 @@ print_method_signatures (MonoMethod *im, MonoMethod *cm) {
 	printf ("(IM \"%s\", CM \"%s\")", im_sig, cm_sig);
 	g_free (im_sig);
 	g_free (cm_sig);
-	
+
 }
 
 #endif
@@ -545,7 +545,7 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 		const char *ic_name_space = ic->name_space;
 		const char *ic_name = ic->name;
 		char *subname;
-		
+
 		if (! require_newslot) {
 			TRACE_INTERFACE_VTABLE (printf ("[INJECTED METHOD REFUSED]"));
 			return FALSE;
@@ -579,7 +579,7 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 			TRACE_INTERFACE_VTABLE (printf ("[INTERFACE NAME CHECK FAILED]"));
 			return FALSE;
 		}
-		
+
 		subname = (char*)strstr (cm->name, ic_name_space);
 		if (subname != cm->name) {
 			TRACE_INTERFACE_VTABLE (printf ("[ACTUAL NAMESPACE CHECK FAILED]"));
@@ -615,7 +615,7 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 			g_free (decl_name);
 			return FALSE;
 		}
-		
+
 		return TRUE;
 	}
 }
@@ -652,14 +652,14 @@ print_vtable_full (MonoClass *klass, MonoMethod** vtable, int size, int first_no
 	char *full_name = mono_type_full_name (m_class_get_byval_arg (klass));
 	int i;
 	int parent_size;
-	
+
 	printf ("*** Vtable for class '%s' at \"%s\" (size %d)\n", full_name, message, size);
-	
+
 	if (print_interfaces) {
 		print_implemented_interfaces (klass);
 		printf ("* Interfaces for class '%s' done.\nStarting vtable (size %d):\n", full_name, size);
 	}
-	
+
 	if (klass->parent) {
 		parent_size = klass->parent->vtable_size;
 	} else {
@@ -699,7 +699,7 @@ mono_class_verify_vtable (MonoClass *klass)
 	printf ("*** Verifying VTable of class '%s' \n", full_name);
 	g_free (full_name);
 	full_name = NULL;
-	
+
 	if (!klass->methods)
 		return;
 
@@ -840,7 +840,7 @@ mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup)
 	}
 	return TRUE;
 }
- 
+
 /*
  * mono_class_setup_vtable:
  *
@@ -959,10 +959,10 @@ apply_override (MonoClass *klass, MonoClass *override_class, MonoMethod **vtable
 
 	dslot += mono_class_interface_offset (klass, decl->klass);
 
-	//check if the override comes from an interface and the overrided method is from a class, if this is the case it shouldn't be changed 
+	//check if the override comes from an interface and the overrided method is from a class, if this is the case it shouldn't be changed
 	if (vtable [dslot] && vtable [dslot]->klass && MONO_CLASS_IS_INTERFACE_INTERNAL (override->klass) && !MONO_CLASS_IS_INTERFACE_INTERNAL (vtable [dslot]->klass))
 		return TRUE;
-	
+
 	vtable [dslot] = override;
 	if (!MONO_CLASS_IS_INTERFACE_INTERNAL (override->klass)) {
 		/*
@@ -1110,7 +1110,7 @@ print_unimplemented_interface_method_info (MonoClass *klass, MonoClass *ic, Mono
 	int index, mcount;
 	char *method_signature;
 	char *type_name;
-	
+
 	for (index = 0; index < onum; ++index) {
 		mono_trace_warning (MONO_TRACE_TYPE, " at slot %d: %s (%d) overrides %s (%d)", im_slot, overrides [index*2+1]->name,
 			 overrides [index*2+1]->slot, overrides [index*2]->name, overrides [index*2]->slot);
@@ -1266,15 +1266,15 @@ print_vtable_layout_result (MonoClass *klass, MonoMethod **vtable, int cur_slot)
 
 		for (i = 0; i < klass->interface_count; i++) {
 			MonoClass *ic = klass->interfaces [i];
-			printf ("  slot offset: %03d, method count: %03d, iid: %03d %s\n",  
+			printf ("  slot offset: %03d, method count: %03d, iid: %03d %s\n",
 				mono_class_interface_offset (klass, ic),
 				mono_class_setup_count_virtual_methods (ic), ic->interface_id, mono_type_full_name (m_class_get_byval_arg (ic)));
 		}
 
 		for (MonoClass *k = klass->parent; k ; k = k->parent) {
 			for (i = 0; i < k->interface_count; i++) {
-				MonoClass *ic = k->interfaces [i]; 
-				printf ("  parent slot offset: %03d, method count: %03d, iid: %03d %s\n",  
+				MonoClass *ic = k->interfaces [i];
+				printf ("  parent slot offset: %03d, method count: %03d, iid: %03d %s\n",
 					mono_class_interface_offset (klass, ic),
 					mono_class_setup_count_virtual_methods (ic), ic->interface_id, mono_type_full_name (m_class_get_byval_arg (ic)));
 			}
@@ -1285,10 +1285,10 @@ print_vtable_layout_result (MonoClass *klass, MonoMethod **vtable, int cur_slot)
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
-static int 
+static int
 setup_class_vtsize (MonoClass *klass, GList *in_setup, int *cur_slot, int *stelemref_slot, MonoError *error)
 {
-	GPtrArray *ifaces = NULL;	
+	GPtrArray *ifaces = NULL;
 	int i, max_vtsize = 0;
 	ifaces = mono_class_get_implemented_interfaces (klass, error);
 	if (!is_ok (error)) {
@@ -1305,7 +1305,7 @@ setup_class_vtsize (MonoClass *klass, GList *in_setup, int *cur_slot, int *stele
 		g_ptr_array_free (ifaces, TRUE);
 		ifaces = NULL;
 	}
-	
+
 	if (klass->parent) {
 		mono_class_init_internal (klass->parent);
 		mono_class_setup_vtable_full (klass->parent, in_setup);
@@ -1381,14 +1381,14 @@ mono_class_setup_vtable_ginst (MonoClass *klass, GList *in_setup)
 #ifdef FEATURE_COVARIANT_RETURNS
 /*
  * vtable_slot_has_preserve_base_overrides_attribute:
- * 
+ *
  * Needs to walk up the class hierarchy looking for the methods in this slot to
  * see if any are tagged with PreserveBaseOverrideAtrribute.
  */
 static gboolean
 vtable_slot_has_preserve_base_overrides_attribute (MonoClass *klass, int slot, MonoClass **out_klass)
 {
-	/* 
+	/*
 	 * FIXME: it's slow to do this loop every time.  A faster way would be
 	 * to hang a boolean in the image of the parent class if it or any of
 	 * its ancestors have the attribute.
@@ -1695,7 +1695,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	max_vtsize = setup_class_vtsize (klass, in_setup,  &cur_slot, &stelemref_slot, error);
 	if (max_vtsize == -1)
 		return;
-	
+
 	cur_slot = mono_class_setup_interface_offsets_internal (klass, cur_slot, TRUE);
 	if (cur_slot == -1) /*setup_interface_offsets fails the type.*/
 		return;
@@ -1768,7 +1768,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	TRACE_INTERFACE_VTABLE (print_vtable_full (klass, vtable, cur_slot, first_non_interface_slot, "AFTER OVERRIDING INTERFACE METHODS", FALSE));
 
 	/*
-	 * Create a list of virtual methods to avoid calling 
+	 * Create a list of virtual methods to avoid calling
 	 * mono_class_get_virtual_methods () which is slow because of the metadata
 	 * optimization.
 	 */
@@ -1823,14 +1823,14 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		} else {
 			interface_is_explicitly_implemented_by_class = TRUE;
 		}
-		
+
 		// Loop on all interface methods...
 		int mcount = mono_class_get_method_count (ic);
 		for (im_index = 0; im_index < mcount; im_index++) {
 			MonoMethod *im = ic->methods [im_index];
 			int im_slot = ic_offset + im->slot;
 			MonoMethod *override_im = (override_map != NULL) ? (MonoMethod *)g_hash_table_lookup (override_map, im) : NULL;
-			
+
 			if (!m_method_is_virtual (im))
 				continue;
 
@@ -1867,14 +1867,14 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 					if (mono_class_has_failure (klass))  /*Might be set by check_interface_method_override*/
 						goto fail;
 				}
-				
+
 				// If the slot is still empty, look in all the inherited virtual methods...
 				if ((vtable [im_slot] == NULL) && klass->parent != NULL) {
 					MonoClass *parent = klass->parent;
 					// Reverse order, so that last added methods are preferred
 					for (cm_index = parent->vtable_size - 1; cm_index >= 0; cm_index--) {
 						MonoMethod *cm = parent->vtable [cm_index];
-						
+
 						TRACE_INTERFACE_VTABLE ((cm != NULL) && printf ("    For slot %d ('%s'.'%s':'%s'), trying (ancestor) method '%s'.'%s':'%s'... ", im_slot, ic->name_space, ic->name, im->name, cm->klass->name_space, cm->klass->name, cm->name));
 						if ((cm != NULL) && check_interface_method_override (klass, im, cm, MONO_ITF_OVERRIDE_SLOT_EMPTY)) {
 							TRACE_INTERFACE_VTABLE (printf ("[everything ok]: ASSIGNING\n"));
@@ -1902,7 +1902,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			}
 		}
 	}
-	
+
 	// If the class is not abstract, check that all its interface slots are full.
 	// The check is done here and not directly at the end of the loop above because
 	// it can happen (for injected generic array interfaces) that the same slot is
@@ -1913,15 +1913,15 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		for (i = 0; i < klass->interface_offsets_count; i++) {
 			int ic_offset;
 			int im_index;
-			
+
 			ic = klass->interfaces_packed [i];
 			ic_offset = mono_class_interface_offset (klass, ic);
-			
+
 			int mcount = mono_class_get_method_count (ic);
 			for (im_index = 0; im_index < mcount; im_index++) {
 				MonoMethod *im = ic->methods [im_index];
 				int im_slot = ic_offset + im->slot;
-				
+
 				if (!m_method_is_virtual (im))
 					continue;
 				if (mono_method_get_is_reabstracted (im))
@@ -1960,7 +1960,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 					if (!cmsig || !m1sig) /* FIXME proper error message, use signature_checked? */
 						goto fail;
 
-					if (!strcmp(cm->name, m1->name) && 
+					if (!strcmp(cm->name, m1->name) &&
 					    mono_metadata_signature_equal (cmsig, m1sig)) {
 
 						slot = mono_method_get_vtable_slot (m1);
@@ -1996,8 +1996,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				}
 				if (mono_class_has_failure (k))
 					goto fail;
-				
-				if (slot >= 0) 
+
+				if (slot >= 0)
 					break;
 			}
 			if (slot >= 0)
@@ -2033,7 +2033,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 #endif
 			if (!override_map)
 				override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
-			TRACE_INTERFACE_VTABLE (printf ("adding explicit override from %s [%p] to %s [%p]\n", 
+			TRACE_INTERFACE_VTABLE (printf ("adding explicit override from %s [%p] to %s [%p]\n",
 				mono_method_full_name (decl, 1), decl,
 				mono_method_full_name (impl, 1), impl));
 			g_hash_table_insert (override_map, decl, impl);

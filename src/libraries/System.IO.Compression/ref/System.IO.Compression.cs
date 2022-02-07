@@ -94,6 +94,8 @@ namespace System.IO.Compression
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode) { }
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen) { }
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen, System.Text.Encoding? entryNameEncoding) { }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public string Comment { get { throw null; } set { } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.IO.Compression.ZipArchiveEntry> Entries { get { throw null; } }
         public System.IO.Compression.ZipArchiveMode Mode { get { throw null; } }
         public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName) { throw null; }
@@ -106,6 +108,8 @@ namespace System.IO.Compression
     {
         internal ZipArchiveEntry() { }
         public System.IO.Compression.ZipArchive Archive { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public string Comment { get { throw null; } set { } }
         public long CompressedLength { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public uint Crc32 { get { throw null; } }

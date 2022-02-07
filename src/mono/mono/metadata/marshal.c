@@ -3088,7 +3088,7 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	if (m_type_is_byref(t)) {
 		if (emit_exception)
-			get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed references when the runtime marshalling system is disabled.");	
+			get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed references when the runtime marshalling system is disabled.");
 		else
 			get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 		return conv_arg;
@@ -3140,7 +3140,7 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	if (emit_exception)
-		get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the runtime marshalling system is disabled.");	
+		get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the runtime marshalling system is disabled.");
 	else
 		get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	return conv_arg;
@@ -3803,7 +3803,9 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	mb->method->save_lmf = 1;
 
 	WrapperInfo *info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT);
-	info->d.managed_to_native.method = NULL;
+	//info->d.managed_to_native.method = NULL;
+	info->d.native_func.klass = caller_class;
+	info->d.native_func.sig = sig;
 
 	MonoMethodPInvoke *piinfo = NULL;
 	MonoMarshalSpec **mspecs = g_new0 (MonoMarshalSpec *, 1 + sig->param_count);

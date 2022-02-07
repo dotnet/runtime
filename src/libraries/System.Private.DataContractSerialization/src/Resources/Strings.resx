@@ -417,9 +417,6 @@
   <data name="NoConversionPossibleTo" xml:space="preserve">
     <value>An internal error has occurred. No conversion is possible to '{0}' - error generating code for serialization.</value>
   </data>
-  <data name="NoDefaultConstructorForCollection" xml:space="preserve">
-    <value>Collection type '{0}' doesn't have default constructor.</value>
-  </data>
   <data name="NoGetMethodForProperty" xml:space="preserve">
     <value>No get method for property '{1}' in type '{0}'.</value>
   </data>
@@ -1137,9 +1134,6 @@
   <data name="PlatformNotSupported_SchemaImporter" xml:space="preserve">
     <value>The implementation of the function requires System.Runtime.Serialization.SchemaImporter which is not supported on this platform.</value>
   </data>
-  <data name="PlatformNotSupported_Canonicalization" xml:space="preserve">
-    <value>The canonicalization process is not supported on this platform.</value>
-  </data>
   <data name="FactoryTypeNotISerializable" xml:space="preserve">
     <value>Factory type '{0}' for ISerializable type '{1}' must also be ISerializable.</value>
   </data>
@@ -1154,9 +1148,6 @@
   </data>
   <data name="InvalidInclusivePrefixListCollection" xml:space="preserve">
     <value>The inclusive namespace prefix collection cannot contain null as one of the items.</value>
-  </data>
-  <data name="FailedToCreateMethodDelegate" xml:space="preserve">
-    <value>Failed to create Delegate for method '{0}' of type '{1}'.</value>
   </data>
   <data name="CannotSetTwice" xml:space="preserve">
     <value>Cannot set option twice.</value>

@@ -80,7 +80,7 @@ typedef struct {
      * runtime, since it includes columns which are 0.
 	 */
 	int stack_bitmap_width;
-	/* 
+	/*
 	 * A bitmap whose width equals nslots, and whose height equals ncallsites.
 	 * The bitmap contains a 1 if the corresponding stack slot has type SLOT_REF at the
 	 * given callsite.
@@ -157,7 +157,7 @@ typedef struct {
 /* Number of registers stored in gc maps */
 #define NREGS MONO_MAX_IREGS
 
-/* 
+/*
  * The GC Map itself.
  * Contains information needed to mark a stack frame.
  * This is a transient structure, created from a compressed representation on-demand.
@@ -187,7 +187,7 @@ typedef struct {
 
 	/* The offsets below are into an external bitmaps array */
 
-	/* 
+	/*
 	 * A bitmap whose width is equal to bitmap_width, and whose height is equal to ncallsites.
 	 * The bitmap contains a 1 if the corresponding stack slot has type SLOT_REF at the
 	 * given callsite.
@@ -262,7 +262,7 @@ typedef struct {
 	gint32 scanned_registers;
 	gint32 scanned_native;
 	gint32 scanned_other;
-	
+
 	gint32 all_slots;
 	gint32 noref_slots;
 	gint32 ref_slots;
@@ -544,7 +544,7 @@ encode_gc_map (GCMap *map, guint8 *buf, guint8 **endbuf)
 	encode_uleb128 (map->ncallsites, buf, &buf);
 
 	*endbuf = buf;
-}	
+}
 
 /*
  * decode_gc_map:
@@ -907,7 +907,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		/* All the other frames are at a call site */
 
 		if (tls->nframes == MAX_FRAMES) {
-			/* 
+			/*
 			 * Can't save information since the array is full. So scan the rest of the
 			 * stack conservatively.
 			 */
@@ -949,7 +949,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			}
 			precise_frame_limit_inited = TRUE;
 		}
-				
+
 		if (precise_frame_limit != -1) {
 			if (precise_frame_count [FALSE] == precise_frame_limit)
 				printf ("LAST PRECISE FRAME: %s\n", mono_method_full_name (method, TRUE));
@@ -1000,7 +1000,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		}
 		cindex = i;
 
-		/* 
+		/*
 		 * This is not neccessary true on x86 because frames have a different size at each
 		 * call site.
 		 */
@@ -1048,7 +1048,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			for (i = 0; i < NREGS; ++i) {
 				if (!(map->used_int_regs & (1 << i)))
 					continue;
-				
+
 				if (!(map->reg_pin_mask & (1 << i)))
 					continue;
 
@@ -1176,8 +1176,8 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end, void *gc_dat
 
 		DEBUG (char *fname = mono_method_full_name (jinfo_get_method (fi->ji), TRUE); fprintf (logfile, "Mark(1): %s\n", fname); g_free (fname));
 
-		/* 
-		 * FIXME: Add a function to mark using a bitmap, to avoid doing a 
+		/*
+		 * FIXME: Add a function to mark using a bitmap, to avoid doing a
 		 * call for each object.
 		 */
 
@@ -1241,7 +1241,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end, void *gc_dat
 			} else {
 				DEBUG (fprintf (logfile, "\treg %s saved at %p: %p\n", mono_arch_regname (fi->regs [i]), ptr, obj));
 			}
-		}	
+		}
 	}
 
 	/*
@@ -1261,7 +1261,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end, void *gc_dat
  *
  *   This is called by the GC twice to mark a thread stack. PRECISE is FALSE at the first
  * call, and TRUE at the second. USER_DATA points to a TlsData
- * structure filled up by thread_suspend_func. 
+ * structure filled up by thread_suspend_func.
  */
 static void
 thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise, void *gc_data)
@@ -1571,7 +1571,7 @@ process_other_slots (MonoCompile *cfg)
 		int cfa_slot = data >> 16;
 		GCSlotType type = data & 0xff;
 		int slot;
-		
+
 		/*
 		 * Map the cfa relative slot to an fp relative slot.
 		 * slot_addr == cfa - <cfa_slot>*4/8
@@ -1595,7 +1595,7 @@ process_other_slots (MonoCompile *cfg)
 		int offset = data >> 16;
 		GCSlotType type = data & 0xff;
 		int slot;
-		
+
 		slot = fp_offset_to_slot (cfg, offset);
 
 		set_slot_everywhere (gcfg, slot, type);
@@ -1760,7 +1760,7 @@ process_variables (MonoCompile *cfg)
 			gboolean pin = FALSE;
 			int size;
 			int size_in_slots;
-			
+
 			if (ins->backend.is_pinvoke)
 				size = mono_class_native_size (ins->klass, NULL);
 			else
@@ -1912,7 +1912,7 @@ process_variables (MonoCompile *cfg)
 static int
 sp_offset_to_fp_offset (MonoCompile *cfg, int sp_offset)
 {
-	/* 
+	/*
 	 * Convert a sp relative offset to a slot index. This is
 	 * platform specific.
 	 */
@@ -1926,7 +1926,7 @@ sp_offset_to_fp_offset (MonoCompile *cfg, int sp_offset)
 #ifdef MONO_X86_NO_PUSHES
 	return (- cfg->arch.sp_fp_offset + sp_offset);
 #else
-	return (- cfg->arch.sp_fp_offset - sp_offset);	
+	return (- cfg->arch.sp_fp_offset - sp_offset);
 #endif
 #else
 	NOT_IMPLEMENTED;
@@ -2028,7 +2028,7 @@ process_finally_clauses (MonoCompile *cfg)
 
 			for (i = 0; i < cfg->header->num_clauses; ++i) {
 				clause = &cfg->header->clauses [i];
-			   
+
 				if (MONO_OFFSET_IN_HANDLER (clause, bb->real_offset)) {
 					if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 						is_in_finally = TRUE;
@@ -2237,7 +2237,7 @@ create_map (MonoCompile *cfg)
 	nregs = gcfg->nregs;
 	callsites = gcfg->callsites;
 
-	/* 
+	/*
 	 * Compute the real size of the bitmap i.e. ignore NOREF columns at the beginning and at
 	 * the end. Also, compute whenever the map needs ref/pin bitmaps, and collect stats.
 	 */
@@ -2323,7 +2323,7 @@ create_map (MonoCompile *cfg)
 	reg_pin_bitmap_width = ALIGN_TO (npin_regs, 8) / 8;
 	reg_pin_bitmap_size = reg_pin_bitmap_width * ncallsites;
 	bitmaps_size = (has_ref_slots ? stack_bitmap_size : 0) + (has_pin_slots ? stack_bitmap_size : 0) + (has_ref_regs ? reg_ref_bitmap_size : 0) + (has_pin_regs ? reg_pin_bitmap_size : 0);
-	
+
 	map = mono_mempool_alloc0 (cfg->mempool, sizeof (GCMap));
 
 	map->frame_reg = cfg->frame_reg;
