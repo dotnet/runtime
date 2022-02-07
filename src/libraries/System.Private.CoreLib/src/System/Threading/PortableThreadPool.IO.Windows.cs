@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -117,7 +118,7 @@ namespace System.Threading
 
                 _nativeEvents =
                     (Interop.Kernel32.OVERLAPPED_ENTRY*)
-                    Marshal.AllocHGlobal(NativeEventCapacity * Marshal.SizeOf<Interop.Kernel32.OVERLAPPED_ENTRY>());
+                    NativeMemory.Alloc((nuint)NativeEventCapacity * (nuint)Unsafe.SizeOf<Interop.Kernel32.OVERLAPPED_ENTRY>());
                 _events = new ThreadPoolTypedWorkItemQueue<Event>(ProcessEventDelegate);
 
                 // Thread pool threads must start in the default execution context without transferring the context, so
@@ -167,7 +168,15 @@ namespace System.Threading
                     NativeRuntimeEventSource.Log.ThreadPoolIODequeue(e.nativeOverlapped);
                 }
 
-                _IOCompletionCallback.PerformSingleIOCompletionCallback(e.nativeOverlapped, e.bytesTransferred);
+                // The NtStatus code for the operation is in the InternalLow field
+                uint ntStatus = (uint)(nint)e.nativeOverlapped->InternalLow;
+                uint errorCode = Interop.Errors.ERROR_SUCCESS;
+                if (ntStatus != Interop.StatusOptions.STATUS_SUCCESS)
+                {
+                    errorCode = Interop.NtDll.RtlNtStatusToDosError((int)ntStatus);
+                }
+
+                _IOCompletionCallback.PerformSingleIOCompletionCallback(e.nativeOverlapped, errorCode, e.bytesTransferred);
             }
 
             private readonly struct Event

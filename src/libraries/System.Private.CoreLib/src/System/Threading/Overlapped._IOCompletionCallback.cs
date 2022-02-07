@@ -29,15 +29,6 @@ namespace System.Threading
             helper._ioCompletionCallback(helper._errorCode, helper._numBytes, helper._pNativeOverlapped);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void PerformSingleIOCompletionCallback(NativeOverlapped* pNativeOverlapped, uint numBytes)
-        {
-            Debug.Assert(pNativeOverlapped != null);
-
-            // When the error code is not provided in the callback, it is in the InternalLow field
-            PerformSingleIOCompletionCallback(pNativeOverlapped, (uint)(nint)pNativeOverlapped->InternalLow, numBytes);
-        }
-
         public static void PerformSingleIOCompletionCallback(NativeOverlapped* pNativeOverlapped, uint errorCode, uint numBytes)
         {
             Debug.Assert(pNativeOverlapped != null);

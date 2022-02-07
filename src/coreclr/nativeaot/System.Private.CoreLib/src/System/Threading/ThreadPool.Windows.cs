@@ -412,21 +412,22 @@ namespace System.Threading
             return registeredWaitHandle;
         }
 
-        private static unsafe void NativeOverlappedCallback(object? obj)
-        {
-            Debug.Assert(obj != null);
-            NativeOverlapped* overlapped = (NativeOverlapped*)(IntPtr)obj;
-            _IOCompletionCallback.PerformSingleIOCompletionCallback(overlapped, 0, 0);
-        }
+        private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>
+            _IOCompletionCallback.PerformSingleIOCompletionCallback((NativeOverlapped*)overlappedPtr, 0, 0);
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
         {
+            if (overlapped == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
+            }
+
             // OS doesn't signal handle, so do it here (CoreCLR does this assignment in ThreadPoolNative::CorPostQueuedCompletionStatus)
             overlapped->InternalLow = (IntPtr)0;
             // Both types of callbacks are executed on the same thread pool
-            return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (IntPtr)overlapped);
+            return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (nint)overlapped, preferLocal: false);
         }
 
         [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
