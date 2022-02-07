@@ -95,11 +95,11 @@ jobs:
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
-        - Windows.10.Amd64.Client20H2.Open
+        - Windows.10.Amd64.Client21H1.Open
       
       # AllConfigurations
       - ${{ if eq(parameters.jobParameters.framework, 'allConfigurations') }}:
-        - Windows.10.Amd64.Client20H2.Open
+        - Windows.10.Amd64.Client21H1.Open
 
     # Windows_NT x86
     - ${{ if eq(parameters.platform, 'Windows_NT_x86') }}:
@@ -118,7 +118,7 @@ jobs:
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
-        - Windows.10.Amd64.Client20H2.Open
+        - Windows.10.Amd64.Client21H1.Open
 
     # Windows_NT arm
     - ${{ if eq(parameters.platform, 'Windows_NT_arm') }}:
