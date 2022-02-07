@@ -351,13 +351,13 @@ namespace System.Xml.Schema
             {
                 if (_years != 0)
                 {
-                    XmlConvert.AppendInt(ref vsb, _years);
+                    vsb.AppendSpanFormattable(_years, null, XmlConvert.s_invariantCultureInfo);
                     vsb.Append('Y');
                 }
 
                 if (_months != 0)
                 {
-                    XmlConvert.AppendInt(ref vsb, _months);
+                    vsb.AppendSpanFormattable(_months, null, XmlConvert.s_invariantCultureInfo);
                     vsb.Append('M');
                 }
             }
@@ -366,7 +366,7 @@ namespace System.Xml.Schema
             {
                 if (_days != 0)
                 {
-                    XmlConvert.AppendInt(ref vsb, _days);
+                    vsb.AppendSpanFormattable(_days, null, XmlConvert.s_invariantCultureInfo);
                     vsb.Append('D');
                 }
 
@@ -375,20 +375,20 @@ namespace System.Xml.Schema
                     vsb.Append('T');
                     if (_hours != 0)
                     {
-                        XmlConvert.AppendInt(ref vsb, _hours);
+                        vsb.AppendSpanFormattable(_hours, null, XmlConvert.s_invariantCultureInfo);
                         vsb.Append('H');
                     }
 
                     if (_minutes != 0)
                     {
-                        XmlConvert.AppendInt(ref vsb, _minutes);
+                        vsb.AppendSpanFormattable(_minutes, null, XmlConvert.s_invariantCultureInfo);
                         vsb.Append('M');
                     }
 
                     nanoseconds = Nanoseconds;
                     if (_seconds != 0 || nanoseconds != 0)
                     {
-                        XmlConvert.AppendInt(ref vsb, _seconds);
+                        vsb.AppendSpanFormattable(_seconds, null, XmlConvert.s_invariantCultureInfo);
                         if (nanoseconds != 0)
                         {
                             vsb.Append('.');

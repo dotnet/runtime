@@ -510,45 +510,35 @@ namespace System.Xml.Schema
                     break;
                 case DateTimeTypeCode.GYearMonth:
                     {
-                        Span<char> text = vsb.AppendSpan(s_lzyyyy_MM);
-                        IntToCharArray(ref text, 0, Year, 4);
-                        text[s_lzyyyy] = '-';
-                        ShortToCharArray(ref text, s_lzyyyy_, Month);
+                        vsb.AppendSpanFormattable(Year, format: "D4", provider: null);
+                        vsb.Append('-');
+                        vsb.AppendSpanFormattable(Month, format: "D2", provider: null);
                         break;
                     }
                 case DateTimeTypeCode.GYear:
                     {
-                        Span<char> text = vsb.AppendSpan(s_lzyyyy);
-                        IntToCharArray(ref text, 0, Year, 4);
+                        vsb.AppendSpanFormattable(Year, format: "D4", provider: null);
                         break;
                     }
                 case DateTimeTypeCode.GMonthDay:
                     {
-                        Span<char> text = vsb.AppendSpan(s_lz__mm_dd);
-                        text[0] = '-';
-                        text[s_Lz_] = '-';
-                        ShortToCharArray(ref text, s_Lz__, Month);
-                        text[s_lz__mm] = '-';
-                        ShortToCharArray(ref text, s_lz__mm_, Day);
+                        vsb.Append("--");
+                        vsb.AppendSpanFormattable(Month, format: "D2", provider: null);
+                        vsb.Append('-');
+                        vsb.AppendSpanFormattable(Day, format: "D2", provider: null);
                     }
                     break;
                 case DateTimeTypeCode.GDay:
                     {
-                        Span<char> text = vsb.AppendSpan(s_lz___dd);
-                        text[0] = '-';
-                        text[s_Lz_] = '-';
-                        text[s_Lz__] = '-';
-                        ShortToCharArray(ref text, s_Lz___, Day);
+                        vsb.Append("---");
+                        vsb.AppendSpanFormattable(Day, format: "D2", provider: null);
                         break;
                     }
                 case DateTimeTypeCode.GMonth:
                     {
-                        Span<char> text = vsb.AppendSpan(s_lz__mm__);
-                        text[0] = '-';
-                        text[s_Lz_] = '-';
-                        ShortToCharArray(ref text, s_Lz__, Month);
-                        text[s_lz__mm] = '-';
-                        text[s_lz__mm_] = '-';
+                        vsb.Append("--");
+                        vsb.AppendSpanFormattable(Month, format: "D2", provider: null);
+                        vsb.Append("--");
                         break;
                     }
             }
@@ -559,14 +549,13 @@ namespace System.Xml.Schema
         // Serialize year, month and day
         private void PrintDate(ref ValueStringBuilder vsb)
         {
-            Span<char> text = vsb.AppendSpan(s_lzyyyy_MM_dd);
             int year, month, day;
             GetYearMonthDay(out year, out month, out day);
-            IntToCharArray(ref text, 0, year, 4);
-            text[s_lzyyyy] = '-';
-            ShortToCharArray(ref text, s_lzyyyy_, month);
-            text[s_lzyyyy_MM] = '-';
-            ShortToCharArray(ref text, s_lzyyyy_MM_, day);
+            vsb.AppendSpanFormattable(year, format: "D4", provider: null);
+            vsb.Append('-');
+            vsb.AppendSpanFormattable(month, format: "D2", provider: null);
+            vsb.Append('-');
+            vsb.AppendSpanFormattable(day, format: "D2", provider: null);
         }
 
         // When printing the date, we need the year, month and the day. When
@@ -625,12 +614,11 @@ namespace System.Xml.Schema
         // Serialize hour, minute, second and fraction
         private void PrintTime(ref ValueStringBuilder vsb)
         {
-            Span<char> text = vsb.AppendSpan(s_lzHH_mm_ss);
-            ShortToCharArray(ref text, 0, Hour);
-            text[s_lzHH] = ':';
-            ShortToCharArray(ref text, s_lzHH_, Minute);
-            text[s_lzHH_mm] = ':';
-            ShortToCharArray(ref text, s_lzHH_mm_, Second);
+            vsb.AppendSpanFormattable(Hour, format: "D2", provider: null);
+            vsb.Append(':');
+            vsb.AppendSpanFormattable(Minute, format: "D2", provider: null);
+            vsb.Append(':');
+            vsb.AppendSpanFormattable(Second, format: "D2", provider: null);
             int fraction = Fraction;
             if (fraction != 0)
             {
@@ -640,9 +628,9 @@ namespace System.Xml.Schema
                     fractionDigits--;
                     fraction /= 10;
                 }
-                text = vsb.AppendSpan(fractionDigits + 1);
-                text[0] = '.';
-                IntToCharArray(ref text, 1, fraction, fractionDigits);
+
+                vsb.Append('.');
+                vsb.AppendSpanFormattable(fraction, format: "D" + fractionDigits, provider: null);
             }
         }
 
@@ -656,44 +644,24 @@ namespace System.Xml.Schema
                     break;
                 case XsdDateTimeKind.LocalWestOfZulu:
                     {
-                        Span<char> text = vsb.AppendSpan(s_lz_zz_zz);
-                        text[0] = '-';
-                        ShortToCharArray(ref text, s_Lz_, ZoneHour);
-                        text[s_lz_zz] = ':';
-                        ShortToCharArray(ref text, s_lz_zz_, ZoneMinute);
+                        vsb.Append('-');
+                        vsb.AppendSpanFormattable(ZoneHour, format: "D2", provider: null);
+                        vsb.Append(':');
+                        vsb.AppendSpanFormattable(ZoneMinute, format: "D2", provider: null);
                         break;
                     }
                 case XsdDateTimeKind.LocalEastOfZulu:
                     {
-                        Span<char> text = vsb.AppendSpan(s_lz_zz_zz);
-                        text[0] = '+';
-                        ShortToCharArray(ref text, s_Lz_, ZoneHour);
-                        text[s_lz_zz] = ':';
-                        ShortToCharArray(ref text, s_lz_zz_, ZoneMinute);
+                        vsb.Append('+');
+                        vsb.AppendSpanFormattable(ZoneHour, format: "D2", provider: null);
+                        vsb.Append(':');
+                        vsb.AppendSpanFormattable(ZoneMinute, format: "D2", provider: null);
                         break;
                     }
                 default:
                     // do nothing
                     break;
             }
-        }
-
-        // Serialize integer into character array starting with index [start].
-        // Number of digits is set by [digits]
-        private static void IntToCharArray(ref Span<char> text, int start, int value, int digits)
-        {
-            while (digits-- != 0)
-            {
-                text[start + digits] = (char)(value % 10 + '0');
-                value /= 10;
-            }
-        }
-
-        // Serialize two digit integer into character array starting with index [start].
-        private static void ShortToCharArray(ref Span<char> text, int start, int value)
-        {
-            text[start] = (char)(value / 10 + '0');
-            text[start + 1] = (char)(value % 10 + '0');
         }
 
         private static readonly XmlTypeCode[] s_typeCodes = {

@@ -36,7 +36,7 @@ namespace System.Xml
         //
         // Static fields with implicit initialization
         //
-        private static readonly CultureInfo s_invariantCultureInfo = CultureInfo.InvariantCulture;
+        internal static readonly CultureInfo s_invariantCultureInfo = CultureInfo.InvariantCulture;
 
         internal static char[] crt = new char[] { '\n', '\r', '\t' };
 
@@ -691,18 +691,6 @@ namespace System.Xml
         public static string ToString(int value)
         {
             return value.ToString(null, s_invariantCultureInfo);
-        }
-
-        internal static void AppendInt(ref ValueStringBuilder vsb, int value)
-        {
-            Span<char> tmpSpanDestination = stackalloc char[11];
-            if (value.TryFormat(tmpSpanDestination, out int charsWritten, provider: s_invariantCultureInfo))
-            {
-                var vsbSpan = vsb.AppendSpan(charsWritten);
-                tmpSpanDestination.Slice(0, charsWritten).CopyTo(vsbSpan);
-            }
-            else
-                vsb.Append(value.ToString(null, s_invariantCultureInfo));
         }
 
         public static string ToString(long value)
