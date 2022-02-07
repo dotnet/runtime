@@ -514,12 +514,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal PEReader peReader;
         internal MemoryStream asmStream;
         internal MemoryStream pdbStream;
-        public int DebugId { get; set; }
+        private int debugId;
 
         public bool TriedToLoadSymbolsOnDemand { get; set; }
 
         public unsafe AssemblyInfo(string url, byte[] assembly, byte[] pdb)
         {
+            debugId = -1;
             this.id = Interlocked.Increment(ref next_id);
             asmStream = new MemoryStream(assembly);
             peReader = new PEReader(asmStream);
@@ -549,7 +550,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             Populate();
         }
+        public async Task<int> GetDebugId(SessionId sessionId, MonoSDBHelper sdbAgent, CancellationToken token)
+        {
+            if (debugId > 0)
+                return debugId;
+            debugId = await sdbAgent.GetAssemblyId(sessionId, Name, token);
+            return debugId;
+        }
 
+        public void SetDebugId(int id)
+        {
+            if (debugId <= 0 && debugId != id)
+                debugId = id;
+        }
         public bool EnC(byte[] meta, byte[] pdb)
         {
             var asmStream = new MemoryStream(meta);

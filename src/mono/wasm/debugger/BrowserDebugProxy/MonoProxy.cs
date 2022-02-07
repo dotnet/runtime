@@ -1185,18 +1185,18 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             try
             {
-                string[] loaded_files = context.LoadedFiles;
+                string[] loaded_files = await GetLoadedFiles(sessionId, context, token);
 
                 if (loaded_files == null)
                 {
-                    Result loaded = await SendMonoCommand(sessionId, MonoCommands.GetLoadedFiles(), token);
-                    loaded_files = loaded.Value?["result"]?["value"]?.ToObject<string[]>();
+                    Console.WriteLine($"Failed to get the list of loaded files. Managed code debugging won't work due to this.");
                 }
-
-                await
-                foreach (SourceFile source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
+                else
                 {
-                    await OnSourceFileAdded(sessionId, source, context, token);
+                    await foreach (SourceFile source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
+                    {
+                        await OnSourceFileAdded(sessionId, source, context, token);
+                    }
                 }
             }
             catch (Exception e)
@@ -1207,6 +1207,25 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!context.Source.Task.IsCompleted)
                 context.Source.SetResult(context.store);
             return context.store;
+
+            async Task<string[]> GetLoadedFiles(SessionId sessionId, ExecutionContext context, CancellationToken token)
+            {
+                if (context.LoadedFiles != null)
+                    return context.LoadedFiles;
+
+                Result loaded = await SendMonoCommand(sessionId, MonoCommands.GetLoadedFiles(), token);
+                if (!loaded.IsOk)
+                {
+                    Console.WriteLine($"Error on mono_wasm_get_loaded_files {loaded}");
+                    return null;
+                }
+
+                string[] files = loaded.Value?["result"]?["value"]?.ToObject<string[]>();
+                if (files == null)
+                    Console.WriteLine($"Error extracting the list of loaded_files from the result of mono_wasm_get_loaded_files: {loaded}");
+
+                return files;
+            }
         }
 
         private async Task<DebugStore> RuntimeReady(SessionId sessionId, CancellationToken token)
