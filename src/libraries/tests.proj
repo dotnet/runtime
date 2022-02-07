@@ -18,10 +18,6 @@
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-ts\Wasm.Console.Node.TS.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-webpack\Wasm.Browser.WebPack.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-nextjs\Wasm.Browser.NextJs.Sample.csproj" />
-
-    <!-- https://github.com/dotnet/runtime/issues/64727 -->
-    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-cjs\Wasm.Console.Node.CJS.Sample.csproj" />
-    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-es6\Wasm.Console.Node.ES6.Sample.csproj" />
   </ItemGroup>
 
   <!-- Wasm aot on !windows -->
