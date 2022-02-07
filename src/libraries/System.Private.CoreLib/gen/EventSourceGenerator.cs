@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -37,90 +37,10 @@ namespace Generators
         {
             IncrementalValuesProvider<EventSourceClass> eventSourceClasses =
                 context.SyntaxProvider
-                .CreateSyntaxProvider(static (x, _) => IsSyntaxTargetForGeneration(x), (x, _) => GetSemanticTargetForGeneration(x))
-                .Where(x => x is not null)
-                .Collect()
-                .Combine(context.CompilationProvider)
-                // Use a custom comparer that ignores the compilation.
-                .WithComparer(ClassDeclarationsEqualityComparer.Instance)
-                .SelectMany((x, cancellationToken) => Parser.GetEventSourceClasses(x.Left, x.Right, cancellationToken));
+                .CreateSyntaxProvider(static (x, _) => Parser.IsSyntaxTargetForGeneration(x), (x, cancellationToken) => Parser.GetSemanticTargetForGeneration(x, cancellationToken))
+                .Where(x => x is not null);
 
             context.RegisterSourceOutput(eventSourceClasses, static (spc, x) => Emitter.Emit(spc, x));
-        }
-
-        private static bool IsSyntaxTargetForGeneration(SyntaxNode node) =>
-            node is ClassDeclarationSyntax x && x.AttributeLists.Count > 0;
-
-        private static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
-        {
-            // Only add classes annotated [EventSourceAutoGenerate] to reduce busy work.
-            const string EventSourceAttribute = "EventSourceAutoGenerateAttribute";
-            const string EventSourceAttributeShort = "EventSourceAutoGenerate";
-
-            var classDeclaration = (ClassDeclarationSyntax)context.Node;
-
-            // Check if has EventSource attribute before adding to candidates
-            // as we don't want to add every class in the project
-            foreach (AttributeListSyntax? cal in classDeclaration.AttributeLists)
-            {
-                foreach (AttributeSyntax? ca in cal.Attributes)
-                {
-                    // Check if Span length matches before allocating the string to check more
-                    int length = ca.Name.Span.Length;
-                    if (length != EventSourceAttribute.Length && length != EventSourceAttributeShort.Length)
-                    {
-                        continue;
-                    }
-
-                    // Possible match, now check the string value
-                    string attrName = ca.Name.ToString();
-                    if (attrName == EventSourceAttribute || attrName == EventSourceAttributeShort)
-                    {
-                        return classDeclaration;
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private sealed class ClassDeclarationsEqualityComparer : IEqualityComparer<(ImmutableArray<ClassDeclarationSyntax> Left, Compilation Right)>
-        {
-            public static readonly ClassDeclarationsEqualityComparer Instance = new();
-
-            private ClassDeclarationsEqualityComparer() { }
-
-            public bool Equals((ImmutableArray<ClassDeclarationSyntax>, Compilation) x, (ImmutableArray<ClassDeclarationSyntax>, Compilation) y)
-            {
-                var array1 = x.Item1;
-                var array2 = y.Item1;
-
-                if (array1.Length != array2.Length)
-                    return false;
-                for (int i = 0; i < array1.Length; i++)
-                {
-                    if (!array1[i].Equals(array2[i]))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-            public int GetHashCode((ImmutableArray<ClassDeclarationSyntax>, Compilation) obj)
-            {
-                // Numbers taken from the FNV prime and offset basis.
-                int hash = -2128831035;
-                foreach (ClassDeclarationSyntax x in obj.Item1)
-                {
-                    // The implementation is not correct in the strict
-                    // sense, since it needs to process each byte individually.
-                    // But never mind, we are combining reference-based hash codes.
-                    hash ^= x.GetHashCode();
-                    hash *= 16777619;
-                }
-                return hash;
-            }
         }
 
         private sealed class EventSourceClass
