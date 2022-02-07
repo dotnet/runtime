@@ -43,10 +43,26 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append(T item)
         {
+            Span<T> span = _span;
             int pos = _pos;
-            if (pos >= _span.Length)
-                Grow();
+            if ((uint)pos < (uint)span.Length)
+            {
+                span[pos] = item;
+                _pos = pos + 1;
+            }
+            else
+            {
+                AddWithResize(item);
+            }
+        }
 
+        // Hide uncommon path
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AddWithResize(T item)
+        {
+            Debug.Assert(_pos == _span.Length);
+            int pos = _pos;
+            Grow();
             _span[pos] = item;
             _pos = pos + 1;
         }
