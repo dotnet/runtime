@@ -422,21 +422,12 @@ namespace System.Net.Security
         private async ValueTask<ProtocolToken> ReceiveBlobAsync<TIOAdapter>(TIOAdapter adapter)
                  where TIOAdapter : IReadWriteAdapter
         {
-            await FillHandshakeBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
-            TlsFrameHelper.TryGetFrameHeader(_buffer.EncryptedReadOnlySpan, ref _lastFrame.Header);
+            int frameSize = await EnsureFullTlsFrameAsync(adapter).ConfigureAwait(false);
 
-            if (_lastFrame.Header.Length < 0)
+            if (frameSize == 0)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "invalid TLS frame size");
-                throw new AuthenticationException(SR.net_frame_read_size);
-            }
-
-            // Header length is content only so we must add header size as well.
-            int frameSize = _lastFrame.Header.Length + TlsFrameHelper.HeaderSize;
-
-            if (_buffer.EncryptedLength < frameSize)
-            {
-                await FillHandshakeBufferAsync(adapter, frameSize).ConfigureAwait(false);
+                // We expect to receive at least one frame
+                throw new IOException(SR.net_io_eof);
             }
 
             // At this point, we have at least one TLS frame.
@@ -736,7 +727,7 @@ namespace System.Net.Security
 
         private bool HaveFullTlsFrame(out int frameSize)
         {
-            if (_buffer.EncryptedLength < SecureChannel.ReadHeaderSize)
+            if (_buffer.EncryptedLength < TlsFrameHelper.HeaderSize)
             {
                 frameSize = int.MaxValue;
                 return false;
@@ -780,7 +771,7 @@ namespace System.Net.Security
                 }
 
                 _buffer.Commit(bytesRead);
-                if (frameSize == int.MaxValue && _buffer.EncryptedLength > SecureChannel.ReadHeaderSize)
+                if (frameSize == int.MaxValue && _buffer.EncryptedLength > TlsFrameHelper.HeaderSize)
                 {
                     // recalculate frame size if needed e.g. we could not get it before.
                     frameSize = GetFrameSize(_buffer.EncryptedReadOnlySpan);
@@ -977,59 +968,6 @@ namespace System.Net.Security
             }
         }
 
-        // This function tries to make sure buffer has at least minSize bytes available.
-        // If we have enough data, it returns synchronously. If not, it will try to read
-        // remaining bytes from given stream. It will throw if unable to fulfill minSize.
-        private ValueTask FillHandshakeBufferAsync<TIOAdapter>(TIOAdapter adapter, int minSize)
-             where TIOAdapter : IReadWriteAdapter
-        {
-            if (_buffer.EncryptedLength >= minSize)
-            {
-                return ValueTask.CompletedTask;
-            }
-
-            int bytesNeeded = minSize - _buffer.EncryptedLength;
-            _buffer.EnsureAvailableSpace(bytesNeeded);
-
-            while (_buffer.EncryptedLength < minSize)
-            {
-                ValueTask<int> t = adapter.ReadAsync(_buffer.AvailableMemory);
-                if (!t.IsCompletedSuccessfully)
-                {
-                    return InternalFillHandshakeBufferAsync(adapter, t, minSize);
-                }
-                int bytesRead = t.Result;
-                if (bytesRead == 0)
-                {
-                    throw new IOException(SR.net_io_eof);
-                }
-
-                _buffer.Commit(bytesRead);
-            }
-
-            return ValueTask.CompletedTask;
-
-            async ValueTask InternalFillHandshakeBufferAsync(TIOAdapter adap,  ValueTask<int> task, int minSize)
-            {
-                while (true)
-                {
-                    int bytesRead = await task.ConfigureAwait(false);
-                    if (bytesRead == 0)
-                    {
-                        throw new IOException(SR.net_io_eof);
-                    }
-
-                    _buffer.Commit(bytesRead);
-                    if (_buffer.EncryptedLength >= minSize)
-                    {
-                        return;
-                    }
-
-                    task = adap.ReadAsync(_buffer.AvailableMemory);
-                }
-            }
-        }
-
         private async ValueTask WriteAsyncInternal<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TIOAdapter : struct, IReadWriteAdapter
         {
@@ -1085,12 +1023,18 @@ namespace System.Net.Security
         // Returns TLS Frame size including header size.
         private int GetFrameSize(ReadOnlySpan<byte> buffer)
         {
-            if (buffer.Length < SecureChannel.ReadHeaderSize)
+            if (!TlsFrameHelper.TryGetFrameHeader(buffer, ref _lastFrame.Header))
             {
                 throw new IOException(SR.net_ssl_io_frame);
             }
 
-            return ((buffer[3] << 8) | buffer[4]) + SecureChannel.ReadHeaderSize;
+            if (_lastFrame.Header.Length < 0)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "invalid TLS frame size");
+                throw new AuthenticationException(SR.net_frame_read_size);
+            }
+
+            return _lastFrame.Header.Length + TlsFrameHelper.HeaderSize;
         }
     }
 }
