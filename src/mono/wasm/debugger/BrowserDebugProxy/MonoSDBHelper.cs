@@ -535,22 +535,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case ConstantTypeCode.Invalid:
                     return false;
                 case ConstantTypeCode.Boolean:
-                    Write(ElementType.Boolean, BitConverter.ToBoolean(bytes));
+                    var boolVal = BitConverter.ToBoolean(bytes);
+                    Write(ElementType.Boolean, boolVal ? 1 : 0);
                     return true;
                 case ConstantTypeCode.Char:
-                    Write(ElementType.Char, BitConverter.ToChar(bytes));
+                    Write(ElementType.Char, (int)BitConverter.ToChar(bytes));
                     return true;
                 case ConstantTypeCode.SByte:
-                    Write(ElementType.I1, bytes[0]);
+                    Write(ElementType.I1, (int)bytes[0]);
                     return true;
                 case ConstantTypeCode.Byte:
-                    Write(ElementType.U1, bytes[0]);
+                    Write(ElementType.U1, (uint)bytes[0]);
                     return true;
                 case ConstantTypeCode.Int16:
-                    Write(ElementType.I2, BitConverter.ToInt16(bytes, 0));
+                    Write(ElementType.I2, (uint)BitConverter.ToInt16(bytes, 0));
                     return true;
                 case ConstantTypeCode.UInt16:
-                    Write(ElementType.U2, BitConverter.ToUInt16(bytes, 0));
+                    Write(ElementType.U2, (uint)BitConverter.ToUInt16(bytes, 0));
                     return true;
                 case ConstantTypeCode.Int32:
                     Write(ElementType.I4, BitConverter.ToInt32(bytes, 0));
@@ -571,7 +572,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     Write(ElementType.R8, BitConverter.ToDouble(bytes, 0));
                     return true;
                 case ConstantTypeCode.String:
-                    var stringVal = BitConverter.ToString(bytes, 0);
+                    // encoded chars are separated by trailing nulls: '\0' that indicate the end of string,
+                    // leaving them results in cutting the string after 1st char
+                    var stringVal = Encoding.UTF8.GetString(bytes).Replace("\0", "");
                     int stringId = await SdbHelper.CreateString(stringVal, token);
                     Write(ElementType.String, stringId);
                     return true;

@@ -851,6 +851,33 @@ namespace DebuggerTests
             var s = new Point();
         }
     }
+
+    public static class DefaultParamMethods
+    {
+        public class TestClass
+        {
+            public bool GetBool(bool param = true) => param;
+            public char GetChar(char param = 'T') => param;
+            public byte GetByte(byte param = 1) => param;
+            public sbyte GetSByte(sbyte param = 1) => param;
+            public short GetInt16(short param = 1) => param;
+            public ushort GetUInt16(ushort param = 1) => param;
+            public int GetInt32(int param = 1) => param;
+            public uint GetUInt32(uint param = 1) => param;
+            public long GetInt64(long param = 1) => param;
+            public ulong GetUInt64(ulong param = 1) => param;
+            public float GetSingle(float param = 1.23f) => param;
+            public double GetDouble(double param = 1.23) => param;
+            public string GetString(string param = "1.23") => param;
+            public bool GetNull(object param = null) => param == null ? true : false;
+            public int GetInt32TwoParams(int requiredParam, int optionalParam = 3) => requiredParam + optionalParam;
+        }
+
+        public static void Evaluate()
+        {
+            var test = new TestClass();
+        }
+    }
 }
 
 namespace DebuggerTestsV2

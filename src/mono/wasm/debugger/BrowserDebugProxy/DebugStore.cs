@@ -406,18 +406,37 @@ namespace Microsoft.WebAssembly.Diagnostics
             localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
         }
 
-        public List<(ConstantTypeCode, byte[])> GetDefaultParams()
+        public List<ParameterInfo> GetMethodParams()
         {
-            var defParamInfo = new List<(ConstantTypeCode, byte[])>();
+            var paramsInfo = new List<ParameterInfo>();
             foreach (var parameterHandle in methodDef.GetParameters())
             {
                 var parameter = Assembly.asmMetadataReader.GetParameter(parameterHandle);
-                var constantHandle = parameter.GetDefaultValue();
-                var blobHandle = Assembly.asmMetadataReader.GetConstant(constantHandle);
-                var paramBytes = Assembly.asmMetadataReader.GetBlobBytes(blobHandle.Value);
-                defParamInfo.Add((blobHandle.TypeCode, paramBytes));
+                var paramName = Assembly.asmMetadataReader.GetString(parameter.Name);
+                var isOptional = parameter.Attributes.HasFlag(ParameterAttributes.Optional) && parameter.Attributes.HasFlag(ParameterAttributes.HasDefault);
+                if (isOptional)
+                {
+                    var constantHandle = parameter.GetDefaultValue();
+                    var blobHandle = Assembly.asmMetadataReader.GetConstant(constantHandle);
+                    var paramBytes = Assembly.asmMetadataReader.GetBlobBytes(blobHandle.Value);
+                    paramsInfo.Add(
+                    new ParameterInfo(
+                        paramName,
+                        true,
+                        blobHandle.TypeCode,
+                        paramBytes
+                    ));
+                }
+                else
+                {
+                    paramsInfo.Add(
+                    new ParameterInfo(
+                        paramName,
+                        false
+                    ));
+                }
             }
-            return defParamInfo;
+            return paramsInfo;
         }
 
         public void UpdateEnC(MetadataReader asmMetadataReader, MetadataReader pdbMetadataReaderParm, int method_idx)
@@ -541,6 +560,30 @@ namespace Microsoft.WebAssembly.Diagnostics
                     (StartLocation.Line == containerMethod.StartLocation.Line && StartLocation.Column > containerMethod.StartLocation.Column)) &&
                 (EndLocation.Line < containerMethod.EndLocation.Line ||
                     (EndLocation.Line == containerMethod.EndLocation.Line && EndLocation.Column < containerMethod.EndLocation.Column));
+    }
+
+    internal class ParameterInfo
+    {
+        public string Name { get; private set; }
+
+        public ConstantTypeCode TypeCode { get; private set; }
+
+        public byte[] Value { get; private set; }
+        public bool IsOptional { get; private set; }
+
+        internal ParameterInfo(string name, bool isOptional, ConstantTypeCode typeCode, byte[] value)
+        {
+            Name = name;
+            IsOptional = isOptional;
+            TypeCode = typeCode;
+            Value = value;
+        }
+
+        internal ParameterInfo(string name, bool isOptional)
+        {
+            Name = name;
+            IsOptional = isOptional;
+        }
     }
 
     internal class TypeInfo
