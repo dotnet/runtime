@@ -65,7 +65,7 @@ set_target_properties(monoapi_mini PROPERTIES PUBLIC_HEADER "${mini_public_heade
 add_library(monoapi INTERFACE)
 target_link_libraries(monoapi INTERFACE monoapi_utils monoapi_metadata monoapi_mini)
 
-if(NOT DISABLE_LIBS)
+if(INSTALL_MONO_API)
   install(TARGETS monoapi_utils PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/utils)
   install(TARGETS monoapi_metadata PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/metadata)
   install(TARGETS monoapi_mini PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
