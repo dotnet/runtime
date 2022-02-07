@@ -38,7 +38,7 @@ namespace System.Text.Json.Serialization.Metadata
                 long utcNowTicks = DateTime.UtcNow.Ticks;
                 Volatile.Write(ref entry.LastUsedTicks, utcNowTicks);
 
-                if (utcNowTicks - Volatile.Read(ref _lastEvictedTicks) > _evictionIntervalTicks)
+                if (utcNowTicks - Volatile.Read(ref _lastEvictedTicks) >= _evictionIntervalTicks)
                 {
                     if (Interlocked.CompareExchange(ref _lock, 1, 0) == 0)
                     {
