@@ -39,7 +39,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ToString() => $"session-{sessionId}";
     }
 
-    public struct MessageId : IEquatable<MessageId>
+    public class MessageId : IEquatable<MessageId>
     {
         public readonly string sessionId;
         public readonly int id;

@@ -580,7 +580,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!DotnetObjectId.TryParse(args?["to"], out DotnetObjectId objectId))
                             return false;
                         ExecutionContext ctx = GetContext(sessionId);
-                        Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == int.Parse(objectId.Value));
+                        Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == objectId.Value);
                         var res = await RuntimeGetPropertiesInternal(sessionId, objectId, args, token);
                         var variables = ConvertToFirefoxContent(res);
                         var o = JObject.FromObject(new
@@ -744,7 +744,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        protected override async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, JObject args, CancellationToken token)
+        protected override async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, JObject args, EventKind event_kind, CancellationToken token)
         {
             var orig_callframes = await SendCommand(sessionId, "frames", args, token);
 
@@ -761,8 +761,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var frame_id = retDebuggerCmdReader.ReadInt32();
                 var methodId = retDebuggerCmdReader.ReadInt32();
                 var il_pos = retDebuggerCmdReader.ReadInt32();
-                var flags = retDebuggerCmdReader.ReadByte();
-                DebugStore store = await LoadStore(sessionId, token);
                 var method = await context.SdbAgent.GetMethodInfo(methodId, token);
 
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);

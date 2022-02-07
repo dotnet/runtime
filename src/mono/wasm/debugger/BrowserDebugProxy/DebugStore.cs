@@ -359,7 +359,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     if (source.BreakableLines.Last<int>() != sp.StartLine)
                         source.BreakableLines.Add(sp.StartLine);
-                    
+
                     if (sp.IsHidden)
                         continue;
 
