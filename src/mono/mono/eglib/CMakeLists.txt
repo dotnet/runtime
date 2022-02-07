@@ -43,6 +43,4 @@ endif()
 
 addprefix(eglib_sources ../eglib/ "${eglib_platform_sources};${eglib_common_sources}")
 
-if(NOT COMPILE_APITEST)
 add_library(eglib_objects OBJECT "${eglib_sources}")
-endif()

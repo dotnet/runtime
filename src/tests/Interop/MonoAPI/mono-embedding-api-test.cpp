@@ -1,12 +1,14 @@
+#include <assert.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <glib.h>
 #include <errno.h>
 #include <time.h>
 #include <math.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <unistd.h>
 
 #ifndef HOST_WIN32
 #include <dlfcn.h>
@@ -17,6 +19,39 @@
 #include "initguid.h"
 #else
 #include <pthread.h>
+#endif
+
+#ifdef __cplusplus
+
+namespace {
+// g_cast converts void* to T*.
+// e.g. #define malloc(x) (g_cast (malloc (x)))
+struct g_cast
+{
+private:
+	void * const x;
+public:
+	explicit g_cast (void volatile *y) : x((void*)y) { }
+	// Lack of rvalue constructor inhibits ternary operator.
+	// Either don't use ternary, or cast each side.
+	// sa = (salen <= 128) ? g_alloca (salen) : g_malloc (salen);
+	//g_cast (g_cast&& y) : x(y.x) { }
+	g_cast (g_cast&&) = delete;
+	g_cast () = delete;
+	g_cast (const g_cast&) = delete;
+
+	template <typename TTo>
+	operator TTo* () const
+	{
+		return (TTo*)x;
+	}
+};
+} // end anonymous namespace
+
+#else
+
+#define g_cast(x) x
+
 #endif
 
 #ifdef __cplusplus
@@ -68,6 +103,95 @@ typedef int (STDCALL *SimpleDelegate) (int a);
 #define LIBTEST_API
 #endif
 
+#define FALSE                0
+#define TRUE                 1
+
+typedef size_t gsize;
+typedef ptrdiff_t gssize;
+
+typedef int            gint;
+typedef unsigned int   guint;
+typedef short          gshort;
+typedef unsigned short gushort;
+typedef long           glong;
+typedef unsigned long  gulong;
+typedef void *         gpointer;
+typedef const void *   gconstpointer;
+typedef char           gchar;
+typedef unsigned char  guchar;
+
+/* Types defined in terms of the stdint.h */
+typedef int8_t         gint8;
+typedef uint8_t        guint8;
+typedef int16_t        gint16;
+typedef uint16_t       guint16;
+typedef int32_t        gint32;
+typedef uint32_t       guint32;
+typedef int64_t        gint64;
+typedef uint64_t       guint64;
+typedef float          gfloat;
+typedef double         gdouble;
+typedef int32_t        gboolean;
+
+#define GPOINTER_TO_INT(ptr)   ((gint)(gssize)(ptr))
+#define GPOINTER_TO_UINT(ptr)  ((guint)(gsize)(ptr))
+#define GINT_TO_POINTER(v)     ((gpointer)(gssize)(v))
+#define GUINT_TO_POINTER(v)    ((gpointer)(gsize)(v))
+	
+#ifdef WIN32
+#include <wchar.h>
+typedef wchar_t gunichar2;
+#else
+typedef guint16 gunichar2;
+#endif
+typedef guint32 gunichar;
+
+static gpointer
+g_malloc (gsize x)
+{
+	return malloc (x);
+}
+
+static gpointer
+g_malloc0 (gsize x)
+{
+	return calloc (1, x);
+}
+
+static void
+g_free (void *ptr)
+{
+	free (ptr);
+}
+
+#define g_assert(x) assert((x))
+#if defined(_MSC_VER)
+#define  eg_unreachable() __assume(0)
+#elif defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 5)))
+#define  eg_unreachable() __builtin_unreachable()
+#else
+#define  eg_unreachable()
+#endif
+#define g_assert_not_reached() do { g_assert (0); abort (); eg_unreachable (); } while(0)
+	
+#define g_snprintf snprintf
+
+typedef void *GError;
+
+static gunichar2 *
+g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
+{
+	// TODO: implement this or delete the callers, if the tests are not useful
+	g_assert_not_reached ();
+}
+
+static gchar *
+g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err)
+{
+	// TODO: implement this or delete the callers if the tests are not useful
+	g_assert_not_reached ();
+}
+
 static void marshal_free (void *ptr)
 {
 #ifdef WIN32
@@ -106,7 +230,7 @@ static char* marshal_strdup (const char *str)
 	char *buf = (char *) CoTaskMemAlloc (strlen (str) + 1);
 	return strcpy (buf, str);
 #else
-	return g_strdup (str);
+	return strdup (str);
 #endif
 }
 
@@ -1087,7 +1211,7 @@ mono_test_marshal_inout_byval_class_delegate (InOutByvalClassDelegate delegate)
 	ss.a = FALSE;
 	ss.b = TRUE;
 	ss.c = FALSE;
-	ss.d = g_strdup_printf ("%s", "FOO");
+	ss.d = marshal_strdup ("FOO");
 
 	res = delegate (&ss);
 	if (res != 0)
@@ -3458,12 +3582,16 @@ mono_test_marshal_struct_with_bstr_in_unmanaged(CheckStructWithBstrFunc func)
 LIBTEST_API int STDCALL
 mono_test_marshal_struct_with_bstr_out_unmanaged (StructWithBstr sb)
 {
+#if 0
 	char *s = g_utf16_to_utf8 (sb.data, g_utf16_len (sb.data), NULL, NULL, NULL);
 	gboolean same = !strcmp (s, "this is a test string");
 	g_free (s);
 	if (!same)
 		return 1;
 	return 0;
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 typedef struct MonoComObject MonoComObject;
@@ -4152,7 +4280,7 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 	case 7: {
 		/* thunks.cs:Test.Test7 */
 		gint64 (STDCALL *F)(gpointer*) = (gint64 (STDCALL *)(gpointer *))test_method;
-		if (F (&ex) != G_MAXINT64) {
+		if (F (&ex) != INT64_MAX) {
 			ret = 4;
 			goto done;
 		}
@@ -7987,8 +8115,6 @@ static MonoObject *(*sym_mono_runtime_invoke) (MonoMethod *, void*, void**, Mono
 // SYM_LOOKUP(mono_runtime_invoke)
 // expands to
 //  sym_mono_runtime_invoke = g_cast (lookup_mono_symbol ("mono_runtime_invoke"));
-//
-// (the g_cast is necessary for C++ builds)
 #define SYM_LOOKUP(name) do {			\
 	sym_##name = g_cast (lookup_mono_symbol (#name));	\
 	} while (0)
@@ -8075,7 +8201,7 @@ mono_test_ftnptr_eh_callback (guint32 gchandle)
 	sym_mono_gchandle_free (exception_handle);
 
 	sym_mono_raise_exception (exc);
-	g_error ("mono_raise_exception should not return");
+	g_assert (((void)"mono_raise_exception should not return", 0));
 }
 
 LIBTEST_API void STDCALL
@@ -8170,122 +8296,6 @@ mono_test_cominterop_ccw_itest_foreign_thread (MonoComObject *pUnk)
 	int result = shared->i;
 	free (shared);
 	return result;
-#endif
-}
-
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashSnprintf (void)
-{
-	fprintf (stderr, "Before overwrite\n");
-
-	char buff [1] = { '\0' };
-	char overflow [1] = { 'a' }; // Not null-terminated
-	g_snprintf (buff, sizeof(buff) * 10, "THISSHOULDOVERRUNTERRIBLY%s", overflow);
-	g_snprintf ((char *) GINT_TO_POINTER(-1), sizeof(buff) * 10, "THISSHOULDOVERRUNTERRIBLY%s", overflow);
-}
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashDladdr (void)
-{
-#ifndef HOST_WIN32
-	dlopen ((const char*) GINT_TO_POINTER(-1), -1);
-#endif
-}
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashMalloc (void)
-{
-	gpointer x = g_malloc (sizeof(gpointer));
-	g_free (x);
-
-	// Double free
-	g_free (x);
-}
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashNullFp (void)
-{
-	null_function_ptr ();
-}
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashDomainUnload (void)
-{
-	mono_test_init_symbols ();
-	sym_mono_domain_unload (GINT_TO_POINTER (-1));
-}
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashUnbalancedGCSafe (void)
-{
-	mono_test_init_symbols ();
-	gpointer foo = GINT_TO_POINTER (-1);
-	gpointer bar = GINT_TO_POINTER (-2);
-	sym_mono_threads_exit_gc_safe_region_unbalanced (foo, &bar);
-}
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashUnhandledExceptionHook (void)
-{
-	g_assert_not_reached ();
-}
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashSignalTerm (void)
-{
-	raise (SIGTERM);
-}
-
-// for the rest of the signal tests, we use SIGTERM as a fallback
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashSignalAbrt (void)
-{
-#if defined (SIGABRT)
-	raise (SIGABRT);
-#else
-	raise (SIGTERM);
-#endif
-}
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashSignalFpe (void)
-{
-#if defined (SIGFPE)
-	raise (SIGFPE);
-#else
-	raise (SIGTERM);
-#endif
-}
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashSignalBus (void)
-{
-#if defined (SIGBUS)
-	raise (SIGBUS);
-#else
-	raise (SIGTERM);
-#endif
-}
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashSignalSegv (void)
-{
-#if defined (SIGSEGV)
-	raise (SIGSEGV);
-#else
-	raise (SIGTERM);
-#endif
-}
-
-LIBTEST_API void STDCALL
-mono_test_MerpCrashSignalIll (void)
-{
-#if defined (SIGILL)
-	raise (SIGILL);
-#else
-	raise (SIGTERM);
 #endif
 }
 
