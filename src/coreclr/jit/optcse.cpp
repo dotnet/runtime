@@ -3801,6 +3801,13 @@ bool Compiler::optConfigDisableCSE2()
 
 void Compiler::optOptimizeCSEs()
 {
+    if (optCSEstart != BAD_VAR_NUM)
+    {
+        // CSE being run multiple times so we may need to clean up old
+        // information.
+        optCleanupCSEs();
+    }
+
     optCSECandidateCount = 0;
     optCSEstart          = lvaCount;
 
