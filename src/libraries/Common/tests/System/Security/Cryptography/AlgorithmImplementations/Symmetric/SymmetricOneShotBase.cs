@@ -430,7 +430,6 @@ namespace System.Security.Cryptography.Tests
                 // Use paddingMode: None since we manually padded our data
                 byte[] ciphertext = alg.EncryptCfb(excessPadding, IV, paddingMode: PaddingMode.None, feedbackSizeInBits: 8);
 
-
                 // Now decrypt it with PKCS7 padding mode. It should remove all but the first byte since it is not padding.
                 byte[] decrypted = alg.DecryptCfb(ciphertext, IV, paddingMode: PaddingMode.PKCS7, feedbackSizeInBits: 8);
                 Assert.Equal(new byte[] { 0x42 }, decrypted);
