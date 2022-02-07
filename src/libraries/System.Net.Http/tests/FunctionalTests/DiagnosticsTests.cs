@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Net.Test.Common;
@@ -802,43 +803,6 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { false, ActivityIdFormat.W3C };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [MemberData(nameof(UseSocketsHttpHandler_WithIdFormat_MemberData))]
-        public async Task SendAsync_ExpectedActivityPropagationWithoutListener(bool useSocketsHttpHandler, ActivityIdFormat idFormat)
-        {
-            Activity parent = new Activity("parent");
-            parent.SetIdFormat(idFormat);
-            parent.Start();
-
-            await GetFactoryForVersion(UseVersion).CreateClientAndServerAsync(
-                async uri =>
-                {
-                    await GetAsync(UseVersion.ToString(), TestAsync.ToString(), uri, useSocketsHttpHandler: useSocketsHttpHandler);
-                },
-                async server =>
-                {
-                    HttpRequestData requestData = await server.HandleRequestAsync();
-                    AssertHeadersAreInjected(requestData, parent);
-                });
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task SendAsync_ExpectedActivityPropagationWithoutListenerOrParentActivity(bool useSocketsHttpHandler)
-        {
-            await GetFactoryForVersion(UseVersion).CreateClientAndServerAsync(
-                async uri =>
-                {
-                    await GetAsync(UseVersion.ToString(), TestAsync.ToString(), uri, useSocketsHttpHandler: useSocketsHttpHandler);
-                },
-                async server =>
-                {
-                    HttpRequestData requestData = await server.HandleRequestAsync();
-                    AssertNoHeadersAreInjected(requestData);
-                });
-        }
-
         [ConditionalTheory(nameof(EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported))]
         [InlineData("true")]
         [InlineData("1")]
@@ -996,6 +960,117 @@ namespace System.Net.Http.Functional.Tests
                         AssertHeadersAreInjected(requestData, parent, ReferenceEquals(propagator, DistributedContextPropagator.CreatePassThroughPropagator()));
                     }
                 });
+        }
+
+        public static IEnumerable<object[]> SocketsHttpHandler_ActivityCreation_MemberData()
+        {
+            foreach (var currentActivitySet in new bool[] {
+                true,    // Activity was set
+                false }) // No Activity is set
+            {
+                foreach (var diagnosticListenerActivityEnabled in new bool?[] {
+                    true,   // DiagnosticListener requested an Activity
+                    false,  // DiagnosticListener does not want an Activity
+                    null }) // There is no DiagnosticListener
+                {
+                    foreach (var activitySourceCreatesActivity in new bool?[] {
+                        true,   // ActivitySource created an Activity
+                        false,  // ActivitySource chose not to create an Activity
+                        null }) // ActivitySource had no listeners
+                    {
+                        yield return new object[] { currentActivitySet, diagnosticListenerActivityEnabled, activitySourceCreatesActivity };
+                    }
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(SocketsHttpHandler_ActivityCreation_MemberData))]
+        public void SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity)
+        {
+            string parameters = $"{currentActivitySet},{diagnosticListenerActivityEnabled},{activitySourceCreatesActivity}";
+
+            RemoteExecutor.Invoke(async (useVersion, testAsync, parametersString) =>
+            {
+                bool?[] parameters = parametersString.Split(',').Select(p => p.Length == 0 ? (bool?)null : bool.Parse(p)).ToArray();
+                bool currentActivitySet = parameters[0].Value;
+                bool? diagnosticListenerActivityEnabled = parameters[1];
+                bool? activitySourceCreatesActivity = parameters[2];
+
+                bool madeASamplingDecision = false;
+                if (activitySourceCreatesActivity.HasValue)
+                {
+                    ActivitySource.AddActivityListener(new ActivityListener
+                    {
+                        ShouldListenTo = _ => true,
+                        Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
+                        {
+                            madeASamplingDecision = true;
+                            return activitySourceCreatesActivity.Value ? ActivitySamplingResult.AllData : ActivitySamplingResult.None;
+                        }
+                    });
+                }
+
+                bool listenerCallbackWasCalled = false;
+                IDisposable listenerSubscription = new MemoryStream(); // Dummy disposable
+                if (diagnosticListenerActivityEnabled.HasValue)
+                {
+                    var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(_ => listenerCallbackWasCalled = true);
+
+                    diagnosticListenerObserver.Enable(name => !name.Contains("HttpRequestOut") || diagnosticListenerActivityEnabled.Value);
+
+                    listenerSubscription = DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver);
+                }
+
+                Activity parent = currentActivitySet ? new Activity("parent").Start() : null;
+                Activity activity = parent;
+
+                if (!currentActivitySet)
+                {
+                    // Listen to new activity creations if an Activity was created without a parent
+                    // (when a DiagnosticListener forced one to be created)
+                    ActivitySource.AddActivityListener(new ActivityListener
+                    {
+                        ShouldListenTo = _ => true,
+                        ActivityStarted = created =>
+                        {
+                            Assert.Null(parent);
+                            activity = created;
+                        }
+                    });
+                }
+
+                using (listenerSubscription)
+                {
+                    await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                        async uri =>
+                        {
+                            await GetAsync(useVersion, testAsync, uri);
+                        },
+                        async server =>
+                        {
+                            HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
+
+                            if (currentActivitySet || diagnosticListenerActivityEnabled == true || activitySourceCreatesActivity == true)
+                            {
+                                Assert.NotNull(activity);
+                                AssertHeadersAreInjected(requestData, activity, parent is null);
+                            }
+                            else
+                            {
+                                AssertNoHeadersAreInjected(requestData);
+
+                                if (!currentActivitySet)
+                                {
+                                    Assert.Null(activity);
+                                }
+                            }
+                        });
+                }
+
+                Assert.Equal(activitySourceCreatesActivity.HasValue, madeASamplingDecision);
+                Assert.Equal(diagnosticListenerActivityEnabled.HasValue, listenerCallbackWasCalled);
+            }, UseVersion.ToString(), TestAsync.ToString(), parameters).Dispose();
         }
 
         private static T GetProperty<T>(object obj, string propertyName)
