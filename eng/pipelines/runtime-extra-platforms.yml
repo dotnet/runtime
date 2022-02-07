@@ -9,22 +9,23 @@
 # that happened during the last build.
 trigger: none
 
-schedules:
-  - cron: "0 9,21 * * *" # run at 9:00 and 21:00 (UTC) which is 1:00 and 13:00 (PST).
-    displayName: Runtime extra main schedule
-    branches:
-      include:
-      - main
-    always: false # run only if there were changes since the last successful scheduled run.
-  - cron: "0 6,18 * * *" # run at 6:00 and 18:00 (UTC) which is 22:00 and 10:00 (PST).
-    displayName: Runtime extra release schedule
-    branches:
-      include:
-      - release/*
-    always: false # run only if there were changes since the last successful scheduled run.
-
 variables:
   - template: /eng/pipelines/common/variables.yml
+
+- ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
+  schedules:
+    - cron: "0 9,21 * * *" # run at 9:00 and 21:00 (UTC) which is 1:00 and 13:00 (PST).
+      displayName: Runtime extra main schedule
+      branches:
+        include:
+        - main
+      always: false # run only if there were changes since the last successful scheduled run.
+    - cron: "0 6,18 * * *" # run at 6:00 and 18:00 (UTC) which is 22:00 and 10:00 (PST).
+      displayName: Runtime extra release schedule
+      branches:
+        include:
+        - release/*
+      always: false # run only if there were changes since the last successful scheduled run.
 
 jobs:
 
