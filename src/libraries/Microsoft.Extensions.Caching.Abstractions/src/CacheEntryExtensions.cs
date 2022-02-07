@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public static ICacheEntry RegisterPostEvictionCallback(
             this ICacheEntry entry,
             PostEvictionDelegate callback,
-            object state)
+            object? state)
         {
             if (callback == null)
             {
@@ -186,7 +186,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             foreach (PostEvictionCallbackRegistration postEvictionCallback in options.PostEvictionCallbacks)
             {
-                entry.RegisterPostEvictionCallback(postEvictionCallback.EvictionCallback, postEvictionCallback.State);
+                entry.RegisterPostEvictionCallback(postEvictionCallback.EvictionCallback!, postEvictionCallback.State);
             }
 
             return entry;
