@@ -148,6 +148,24 @@ globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.
 
 async function main(processedArguments) {
     try {
+        if (is_node) {
+            const modulesToLoad = processedArguments.setenv["NPM_MODULES"];
+            if (modulesToLoad) {
+                modulesToLoad.split(',').forEach(module => {
+                    const parts = module.split(':');
+                    console.log(`Loading npm '${parts[0]}'`);
+                    const moduleExport = await import(parts[0]);
+                    if (parts.length >= 2) {
+                        console.log(`Attaching ${parts[0]} export to global as '${parts[1]}'.`);
+                        globalThis[parts[1]] = moduleExport;
+                    }
+                });
+            }
+        }
+
+        // Must be after loading npm modules.
+        processedArguments.setenv["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
+
         // this is dynamic import because V8 loads this file as CommonJS. For same reason there is not top level await.
         const { default: createDotnetRuntime } = await import('./dotnet.js');
         const { MONO, INTERNAL, BINDING, Module } = await createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
@@ -362,23 +380,3 @@ try {
 } catch (e) {
     console.error(e);
 }
-if (is_node) {
-    const modulesToLoad = processedArguments.setenv["NPM_MODULES"];
-    if (modulesToLoad) {
-        modulesToLoad.split(',').forEach(module => {
-            const parts = module.split(':');
-
-            let message = `Loading npm '${parts[0]}'`;
-            const moduleExport = require(parts[0]);
-            if (parts.length == 2) {
-                message += ` and attaching to global as '${parts[1]}'.`;
-                globalThis[parts[1]] = moduleExport;
-            }
-
-            console.log(message);
-        });
-    }
-}
-
-// Must be after loading npm modules.
-processedArguments.setenv["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
