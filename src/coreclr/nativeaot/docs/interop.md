@@ -3,7 +3,7 @@
 ## Direct PInvoke Calls
 
 The PInvoke calls in AOT compiled binaries are bound lazily at runtime by default for better compatibility. The AOT compiler
-can be configured to generate direct calls for selected PInvoke methods that are bound during startup. The unmanaged libraries 
+can be configured to generate direct calls for selected PInvoke methods that are bound during startup. The unmanaged libraries
 and entrypoints referenced via direct calls have to be always available at runtime, otherwise the native binary fails to start.
 
 The benefits of direct PInvoke calls are:

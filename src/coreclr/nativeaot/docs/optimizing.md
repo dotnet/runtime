@@ -48,6 +48,3 @@ To aid in troubleshooting some of the most common problems related to trimming a
 Debugging symbols (data about your program required for debugging) is by default part of native executable files on Unix-like operating systems. To minimize the size of your CoreRT-compiled executable, you can run the `strip` tool to remove the debugging symbols.
 
 No action is needed on Windows since the platform convention is to generate debug information into a separate file (`*.pdb`).
-
-## Advanced options 
-* `<IlcSystemModule>classlibmodule</IlcSystemModule>`: Name of the module which contains basic classes. When specified, disable automatic referencing of the `System.Private.CoreLib` and other libraries. See https://github.com/MichalStrehovsky/zerosharp for example of usage.

@@ -1,7 +1,7 @@
 # Limitations of Native AOT Runtime
 
-The native AOT .NET runtime form factor comes with a number of fundamental limitations and compatibility issues. The reasons 
-behind them are discussed in length in 
+The native AOT .NET runtime form factor comes with a number of fundamental limitations and compatibility issues. The reasons
+behind them are discussed in length in
 the [.NET Runtime Form Factors](https://github.com/dotnet/designs/blob/main/accepted/2020/form-factors.md) roadmap.
 
 The key limitations include:
