@@ -219,6 +219,9 @@ namespace System.Net.Sockets
                 }
 
                 // We've finished setting up and launching the operation.  Coordinate with the callback.
+                // The expectation is that in the majority of cases either the operation will have completed
+                // synchronously (in which case we won't be here) or the operation will complete asynchronously
+                // and this function will typically win the race condition with the callback.
                 ulong packedResult = Interlocked.Exchange(ref _asyncCompletionOwnership, 1);
                 if (packedResult == 0)
                 {
@@ -1223,19 +1226,26 @@ namespace System.Net.Sockets
             Debug.Assert(saeaBox.Value != null);
             SocketAsyncEventArgs saea = saeaBox.Value;
 
-            // Pack the error code and number of bytes transferred into a single ulong we can store into
-            // _asyncCompletionOwnership.  If the field was already set by the launcher, the value won't
-            // be needed, but if this callback wins the race condition and transfers ownership to the
-            // launcher to handle completion and clean up, transfering these values over prevents needing
-            // to make an additional call to WSAGetOverlappedResult.
-            Debug.Assert(numBytes <= int.MaxValue, "We rely on being able to set the top bit to ensure the whole packed result isn't 0.");
-            ulong packedResult = (1ul << 63) | ((ulong)numBytes << 32) | errorCode;
-
-            if (Interlocked.Exchange(ref saea._asyncCompletionOwnership, packedResult) == 0)
+            // We need to coordinate with the launching thread, just in case it hasn't yet finished setting up the operation.
+            // We typically expect the launching thread to have already completed setup, in which case _asyncCompletionOwnership
+            // will be 1, so we do a fast non-synchronized check to see if it's still 0, and only if it is do we proceed to
+            // pack the results for use with an interlocked coordination with that thread.
+            if (saea._asyncCompletionOwnership == 0)
             {
-                // The operation completed asynchronously so quickly that the thread launching the operation still hasn't finished setting
-                // up the state for the operation.  Leave all cleanup and completion logic to that thread.
-                return;
+                // Pack the error code and number of bytes transferred into a single ulong we can store into
+                // _asyncCompletionOwnership.  If the field was already set by the launcher, the value won't
+                // be needed, but if this callback wins the race condition and transfers ownership to the
+                // launcher to handle completion and clean up, transfering these values over prevents needing
+                // to make an additional call to WSAGetOverlappedResult.
+                Debug.Assert(numBytes <= int.MaxValue, "We rely on being able to set the top bit to ensure the whole packed result isn't 0.");
+                ulong packedResult = (1ul << 63) | ((ulong)numBytes << 32) | errorCode;
+
+                if (Interlocked.Exchange(ref saea._asyncCompletionOwnership, packedResult) == 0)
+                {
+                    // The operation completed asynchronously so quickly that the thread launching the operation still hasn't finished setting
+                    // up the state for the operation.  Leave all cleanup and completion logic to that thread.
+                    return;
+                }
             }
 
             // This callback owns the completion and cleanup for the operation.
