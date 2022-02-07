@@ -64,13 +64,7 @@ g_usleep (gulong microseconds)
 	}
 
 	do {
-		ret = clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
-#if HOST_ANDROID
-		// Workaround for incorrect implementation of clock_nanosleep return value on old Android (<=5.1)
-		// See https://github.com/xamarin/xamarin-android/issues/6600
-		if (ret == -1)
-			ret = errno;
-#endif
+		ret = g_clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
 		if (ret != 0 && ret != EINTR)
 			g_error ("%s: clock_nanosleep () returned %d", __func__, ret);
 	} while (ret == EINTR);

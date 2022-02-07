@@ -33,6 +33,7 @@
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/w32api.h>
+#include <mono/eglib/glib.h>
 
 #include <errno.h>
 #include <mono/utils/mono-errno.h>
@@ -1748,13 +1749,7 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 		}
 
 		do {
-			ret = clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
-#if HOST_ANDROID
-			// Workaround for incorrect implementation of clock_nanosleep return value on old Android (<=5.1)
-			// See https://github.com/xamarin/xamarin-android/issues/6600
-			if (ret == -1)
-				ret = errno;
-#endif
+			ret = g_clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
 		} while (ret != 0);
 #elif HOST_WIN32
 		Sleep (ms);

@@ -78,6 +78,7 @@
 #include <mono/component/debugger-agent.h>
 #include "mini-runtime.h"
 #include "jit-icalls.h"
+#include <mono/eglib/glib.h>
 
 #ifdef HOST_DARWIN
 #include <mach/mach.h>
@@ -484,14 +485,7 @@ clock_init_for_profiler (MonoProfilerSampleMode mode)
 		 * CLOCK_PROCESS_CPUTIME_ID clock but don't actually support it. For
 		 * those systems, we fall back to CLOCK_MONOTONIC if we get EINVAL.
 		 */
-		int ret = clock_nanosleep (CLOCK_PROCESS_CPUTIME_ID, TIMER_ABSTIME, &ts, NULL);
-#if HOST_ANDROID
-		// Workaround for incorrect implementation of clock_nanosleep return value on old Android (<=5.1)
-		// See https://github.com/xamarin/xamarin-android/issues/6600
-		if (ret == -1)
-			ret = errno;
-#endif
-		if (ret != EINVAL) {
+		if (g_clock_nanosleep (CLOCK_PROCESS_CPUTIME_ID, TIMER_ABSTIME, &ts, NULL) != EINVAL) {
 			sampling_clock = CLOCK_PROCESS_CPUTIME_ID;
 			break;
 		}
@@ -516,12 +510,6 @@ clock_sleep_ns_abs (guint64 ns_abs)
 
 	do {
 		ret = clock_nanosleep (sampling_clock, TIMER_ABSTIME, &then, NULL);
-#if HOST_ANDROID
-		// Workaround for incorrect implementation of clock_nanosleep return value on old Android (<=5.1)
-		// See https://github.com/xamarin/xamarin-android/issues/6600
-		if (ret == -1)
-			ret = errno;
-#endif
 		if (ret != 0 && ret != EINTR)
 			g_error ("%s: clock_nanosleep () returned %d", __func__, ret);
 	} while (ret == EINTR && mono_atomic_load_i32 (&sampling_thread_running));
