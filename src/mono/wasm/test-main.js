@@ -127,7 +127,7 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
         onConfigLoaded: (config) => {
             if (!Module.config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");
-                set_exit_code(1,);
+                set_exit_code(1);
                 throw err;
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
@@ -214,7 +214,9 @@ const App = {
                 const result = await MONO.mono_run_main(main_assembly_name, app_args);
                 set_exit_code(result);
             } catch (error) {
-                set_exit_code(1, error);
+                if (error.name != "ExitStatus") {
+                    set_exit_code(1, error);
+                }
             }
         } else {
             set_exit_code(1, "Unhandled argument: " + processedArguments.applicationArgs[0]);
@@ -242,7 +244,7 @@ globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.
 
 function set_exit_code(exit_code, reason) {
     if (reason) {
-        console.error(reason.toString());
+        console.error(`${JSON.stringify(reason)}`);
         if (reason.stack) {
             console.error(reason.stack);
         }

@@ -48,10 +48,9 @@ bool interceptor_ICJI::getMethodInfo(
 
 CorInfoInline interceptor_ICJI::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
-          CORINFO_METHOD_HANDLE calleeHnd,
-          uint32_t* pRestrictions)
+          CORINFO_METHOD_HANDLE calleeHnd)
 {
-    return original_ICorJitInfo->canInline(callerHnd, calleeHnd, pRestrictions);
+    return original_ICorJitInfo->canInline(callerHnd, calleeHnd);
 }
 
 void interceptor_ICJI::reportInliningDecision(

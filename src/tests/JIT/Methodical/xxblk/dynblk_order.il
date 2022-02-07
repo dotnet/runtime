@@ -7,7 +7,7 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 
-.assembly DynBlkOrder {}
+.assembly 'dynblk_order' {}
 
 .typedef [System.Runtime]System.OverflowException as OverflowException
 .typedef [System.Runtime]System.IndexOutOfRangeException as IndexOutOfRangeException
