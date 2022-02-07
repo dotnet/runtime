@@ -8,10 +8,10 @@ namespace System.IO.Tests
     public class RenamedEventArgsTests
     {
         [Theory]
-        [InlineData(WatcherChangeTypes.Changed, "C:\\bar", "foo.txt", "bar.txt")]
-        [InlineData(WatcherChangeTypes.All, "C:\\bar", "foo.txt", "bar.txt")]
-        [InlineData((WatcherChangeTypes)0, "C:\\bar", "", "")]
-        [InlineData((WatcherChangeTypes)0, "C:\\bar", null, null)]
+        [InlineData(WatcherChangeTypes.Changed, "bar", "foo.txt", "bar.txt")]
+        [InlineData(WatcherChangeTypes.All, "bar", "foo.txt", "bar.txt")]
+        [InlineData((WatcherChangeTypes)0, "bar", "", "")]
+        [InlineData((WatcherChangeTypes)0, "bar", null, null)]
         public static void RenamedEventArgs_ctor_NonPathPropertiesAreSetCorrectly(WatcherChangeTypes changeType, string directory, string name, string oldName)
         {
             RenamedEventArgs args = new RenamedEventArgs(changeType, directory, name, oldName);
@@ -52,9 +52,7 @@ namespace System.IO.Tests
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            directory = PathInternal.EnsureTrailingSeparator(directory);
-
-            Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + directory + oldName, args.OldFullPath);
+            Assert.Equal(Path.Combine(Directory.GetCurrentDirectory(), directory, oldName), args.OldFullPath);
         }
 
         [Theory]
@@ -65,9 +63,7 @@ namespace System.IO.Tests
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            directory = PathInternal.EnsureTrailingSeparator(directory);
-
-            Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + directory + oldName, args.OldFullPath);
+            Assert.Equal(Path.Combine(Directory.GetCurrentDirectory(), directory, oldName), args.OldFullPath);
         }
 
         [Theory]
@@ -77,13 +73,13 @@ namespace System.IO.Tests
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + oldName, args.OldFullPath);
+            Assert.Equal(Path.Combine(Directory.GetCurrentDirectory(), oldName), args.OldFullPath);
         }
 
         [Theory]
-        [InlineData( "bar", "", "")]
-        [InlineData( "bar", null, null)]
-        [InlineData( "bar", "foo.txt", null)]
+        [InlineData("bar", "", "")]
+        [InlineData("bar", null, null)]
+        [InlineData("bar", "foo.txt", null)]
         public static void RenamedEventArgs_ctor_When_EmptyOldFileName_Then_OldFullPathReturnsTheDirectoryFullPath_WithTrailingSeparator(string directory, string name, string oldName)
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
