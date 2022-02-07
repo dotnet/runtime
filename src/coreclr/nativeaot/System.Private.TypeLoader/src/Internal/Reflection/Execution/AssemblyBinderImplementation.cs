@@ -33,12 +33,12 @@ namespace Internal.Reflection.Execution
 
         public static AssemblyBinderImplementation Instance { get; } = new AssemblyBinderImplementation();
 
-        partial void BindEcmaFilePath(string assemblyPath, ref AssemblyBindResult bindResult, ref Exception? exception, ref bool? result);
-        partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception? exception, ref bool? result);
-        partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, bool cacheMissedLookups, ref AssemblyBindResult result, ref Exception? exception, ref Exception? preferredException, ref bool resultBoolean);
+        partial void BindEcmaFilePath(string assemblyPath, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
+        partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
+        partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, bool cacheMissedLookups, ref AssemblyBindResult result, ref Exception exception, ref Exception preferredException, ref bool resultBoolean);
         partial void InsertEcmaLoadedAssemblies(List<AssemblyBindResult> loadedAssemblies);
 
-        public sealed override bool Bind(string assemblyPath, out AssemblyBindResult bindResult, out Exception? exception)
+        public sealed override bool Bind(string assemblyPath, out AssemblyBindResult bindResult, out Exception exception)
         {
             bool? result = null;
             exception = null;
@@ -53,7 +53,7 @@ namespace Internal.Reflection.Execution
                 return result.Value;
         }
 
-        public sealed override bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult bindResult, out Exception? exception)
+        public sealed override bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult bindResult, out Exception exception)
         {
             bool? result = null;
             exception = null;
@@ -68,7 +68,7 @@ namespace Internal.Reflection.Execution
                 return result.Value;
         }
 
-        public sealed override bool Bind(RuntimeAssemblyName refName, bool cacheMissedLookups, out AssemblyBindResult result, out Exception? exception)
+        public sealed override bool Bind(RuntimeAssemblyName refName, bool cacheMissedLookups, out AssemblyBindResult result, out Exception exception)
         {
             bool foundMatch = false;
             result = default(AssemblyBindResult);
@@ -130,7 +130,7 @@ namespace Internal.Reflection.Execution
         //
         // Encapsulates the assembly ref->def matching policy.
         //
-        private bool AssemblyNameMatches(RuntimeAssemblyName refName, RuntimeAssemblyName defName, ref Exception? preferredException)
+        private bool AssemblyNameMatches(RuntimeAssemblyName refName, RuntimeAssemblyName defName, ref Exception preferredException)
         {
             //
             // The defName came from trusted metadata so it should be fully specified.
