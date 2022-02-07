@@ -439,6 +439,7 @@ arch_unwind_frame (MonoJitTlsData *jit_tls,
 				frame->type = FRAME_TYPE_JIT_ENTRY;
 			} else if (ext->kind == MONO_LMFEXT_IL_STATE) {
 				frame->type = FRAME_TYPE_IL_STATE;
+				frame->managed = TRUE;
 				frame->method = ext->il_state->method;
 				frame->actual_method = ext->il_state->method;
 				frame->il_state = ext->il_state;

@@ -5371,7 +5371,7 @@ emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBloc
 	}
 
 #ifdef TARGET_WASM
-	if (ctx->cfg->lmf_var) {
+	if (ctx->cfg->lmf_var && !ctx->cfg->deopt) {
 		LLVMValueRef callee;
 		LLVMValueRef args [1];
 		LLVMTypeRef sig = LLVMFunctionType1 (LLVMVoidType (), ctx->module->ptr_type, FALSE);

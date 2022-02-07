@@ -2998,8 +2998,10 @@ interp_compile_interp_method (MonoMethod *method, MonoError *error)
 	InterpMethod *imethod = mono_interp_get_imethod (method, error);
 	return_val_if_nok (error, NULL);
 
-	mono_interp_transform_method (imethod, get_context (), error);
-	return_val_if_nok (error, NULL);
+	if (!imethod->transformed) {
+		mono_interp_transform_method (imethod, get_context (), error);
+		return_val_if_nok (error, NULL);
+	}
 
 	return imethod->jinfo;
 }
