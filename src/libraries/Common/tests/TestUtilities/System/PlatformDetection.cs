@@ -113,7 +113,7 @@ namespace System
         // Drawing is not supported on non windows platforms in .NET 7.0+.
         public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore;
 
-        public static bool IsAsyncFileIOSupported => !IsBrowser && !(IsWindows && IsMonoRuntime); // https://github.com/dotnet/runtime/issues/34582
+        public static bool IsAsyncFileIOSupported => !IsBrowser;
 
         public static bool IsLineNumbersSupported => !IsNativeAot;
 

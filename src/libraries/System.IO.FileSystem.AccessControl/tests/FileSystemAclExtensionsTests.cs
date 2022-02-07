@@ -410,7 +410,7 @@ namespace System.IO
                     (mode == FileMode.Append || mode == FileMode.Create || mode == FileMode.CreateNew)) &&
                   !(mode == FileMode.Truncate && rights != FileSystemRights.Write) &&
                   (options != FileOptions.Encrypted && // Using FileOptions.Encrypted throws UnauthorizedAccessException when attempting to read the created file
-                  !(options == FileOptions.Asynchronous && !PlatformDetection.IsAsyncFileIOSupported))// Async IO not supported on Windows using Mono runtime https://github.com/dotnet/runtime/issues/34582
+                  !(options == FileOptions.Asynchronous && !PlatformDetection.IsAsyncFileIOSupported))
             select new object[] { mode, rights, share, options };
 
         [Theory]
@@ -434,7 +434,7 @@ namespace System.IO
             from share in Enum.GetValues<FileShare>()
             from options in Enum.GetValues<FileOptions>()
             where options != FileOptions.Encrypted && // Using FileOptions.Encrypted throws UnauthorizedAccessException when attempting to read the created file
-            !(options == FileOptions.Asynchronous && !PlatformDetection.IsAsyncFileIOSupported) // Async IO not supported on Windows using Mono runtime https://github.com/dotnet/runtime/issues/34582
+            !(options == FileOptions.Asynchronous && !PlatformDetection.IsAsyncFileIOSupported)
             select new object[] { mode, rights, share, options };
 
         [Theory]
