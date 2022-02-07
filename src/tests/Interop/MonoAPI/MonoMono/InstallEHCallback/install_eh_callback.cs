@@ -2,19 +2,21 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+using MonoAPI.Tests;
+
 public class MonoPInvokeCallbackAttribute : Attribute {
 	public MonoPInvokeCallbackAttribute (Type delegateType) { }
 }
 
 public class Tests {
 
-	[DllImport ("libtest")]
+	[DllImport (MonoAPISupport.TestLibName)]
 	public static extern void mono_test_setjmp_and_call (VoidVoidDelegate del, out IntPtr handle);
 
-	[DllImport ("libtest")]
+	[DllImport (MonoAPISupport.TestLibName)]
 	public static extern void mono_test_setup_ftnptr_eh_callback (VoidVoidDelegate del, VoidHandleHandleOutDelegate inside_eh_callback);
 
-	[DllImport ("libtest")]
+	[DllImport (MonoAPISupport.TestLibName)]
 	public static extern void mono_test_cleanup_ftptr_eh_callback ();
 	
 	public delegate void VoidVoidDelegate ();
