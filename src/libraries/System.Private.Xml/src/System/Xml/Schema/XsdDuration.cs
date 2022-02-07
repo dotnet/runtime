@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Globalization;
+
 namespace System.Xml.Schema
 {
     using System;
@@ -351,13 +353,13 @@ namespace System.Xml.Schema
             {
                 if (_years != 0)
                 {
-                    vsb.AppendSpanFormattable(_years, null, XmlConvert.s_invariantCultureInfo);
+                    vsb.AppendSpanFormattable(_years, null, CultureInfo.InvariantCulture);
                     vsb.Append('Y');
                 }
 
                 if (_months != 0)
                 {
-                    vsb.AppendSpanFormattable(_months, null, XmlConvert.s_invariantCultureInfo);
+                    vsb.AppendSpanFormattable(_months, null, CultureInfo.InvariantCulture);
                     vsb.Append('M');
                 }
             }
@@ -366,7 +368,7 @@ namespace System.Xml.Schema
             {
                 if (_days != 0)
                 {
-                    vsb.AppendSpanFormattable(_days, null, XmlConvert.s_invariantCultureInfo);
+                    vsb.AppendSpanFormattable(_days, null, CultureInfo.InvariantCulture);
                     vsb.Append('D');
                 }
 
@@ -375,20 +377,20 @@ namespace System.Xml.Schema
                     vsb.Append('T');
                     if (_hours != 0)
                     {
-                        vsb.AppendSpanFormattable(_hours, null, XmlConvert.s_invariantCultureInfo);
+                        vsb.AppendSpanFormattable(_hours, null, CultureInfo.InvariantCulture);
                         vsb.Append('H');
                     }
 
                     if (_minutes != 0)
                     {
-                        vsb.AppendSpanFormattable(_minutes, null, XmlConvert.s_invariantCultureInfo);
+                        vsb.AppendSpanFormattable(_minutes, null, CultureInfo.InvariantCulture);
                         vsb.Append('M');
                     }
 
                     nanoseconds = Nanoseconds;
                     if (_seconds != 0 || nanoseconds != 0)
                     {
-                        vsb.AppendSpanFormattable(_seconds, null, XmlConvert.s_invariantCultureInfo);
+                        vsb.AppendSpanFormattable(_seconds, null, CultureInfo.InvariantCulture);
                         if (nanoseconds != 0)
                         {
                             vsb.Append('.');

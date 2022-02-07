@@ -509,38 +509,28 @@ namespace System.Xml.Schema
                     PrintDate(ref vsb);
                     break;
                 case DateTimeTypeCode.GYearMonth:
-                    {
-                        vsb.AppendSpanFormattable(Year, format: "D4", provider: null);
-                        vsb.Append('-');
-                        vsb.AppendSpanFormattable(Month, format: "D2", provider: null);
-                        break;
-                    }
+                    vsb.AppendSpanFormattable(Year, format: "D4", provider: null);
+                    vsb.Append('-');
+                    vsb.AppendSpanFormattable(Month, format: "D2", provider: null);
+                    break;
                 case DateTimeTypeCode.GYear:
-                    {
-                        vsb.AppendSpanFormattable(Year, format: "D4", provider: null);
-                        break;
-                    }
+                    vsb.AppendSpanFormattable(Year, format: "D4", provider: null);
+                    break;
                 case DateTimeTypeCode.GMonthDay:
-                    {
-                        vsb.Append("--");
-                        vsb.AppendSpanFormattable(Month, format: "D2", provider: null);
-                        vsb.Append('-');
-                        vsb.AppendSpanFormattable(Day, format: "D2", provider: null);
-                    }
+                    vsb.Append("--");
+                    vsb.AppendSpanFormattable(Month, format: "D2", provider: null);
+                    vsb.Append('-');
+                    vsb.AppendSpanFormattable(Day, format: "D2", provider: null);
                     break;
                 case DateTimeTypeCode.GDay:
-                    {
-                        vsb.Append("---");
-                        vsb.AppendSpanFormattable(Day, format: "D2", provider: null);
-                        break;
-                    }
+                    vsb.Append("---");
+                    vsb.AppendSpanFormattable(Day, format: "D2", provider: null);
+                    break;
                 case DateTimeTypeCode.GMonth:
-                    {
-                        vsb.Append("--");
-                        vsb.AppendSpanFormattable(Month, format: "D2", provider: null);
-                        vsb.Append("--");
-                        break;
-                    }
+                    vsb.Append("--");
+                    vsb.AppendSpanFormattable(Month, format: "D2", provider: null);
+                    vsb.Append("--");
+                    break;
             }
             PrintZone(ref vsb);
             return vsb.ToString();
