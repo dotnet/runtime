@@ -70,7 +70,7 @@ namespace System.Drawing
 
             // Imported functions
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdiplusStartup(out IntPtr token, ref StartupInput input, out StartupOutput output);
+            internal static partial int GdiplusStartup(out IntPtr token, in StartupInputEx input, out StartupOutput output);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial void GdiplusShutdown(ref ulong token);

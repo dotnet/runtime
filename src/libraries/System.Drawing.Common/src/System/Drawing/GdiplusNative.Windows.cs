@@ -23,7 +23,7 @@ namespace System.Drawing
 
             // Imported functions
             [GeneratedDllImport(LibraryName)]
-            private static partial int GdiplusStartup(out IntPtr token, ref StartupInput input, out StartupOutput output);
+            private static partial int GdiplusStartup(out IntPtr token, in StartupInputEx input, out StartupOutput output);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipCreatePath(int brushMode, out IntPtr path);

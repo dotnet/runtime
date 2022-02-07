@@ -3452,9 +3452,9 @@ namespace System.Drawing
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct StartupInput
+        internal struct StartupInputEx
         {
-            public int GdiplusVersion;             // Must be 1
+            public int GdiplusVersion;             // Must be 1 or 2
 
             public IntPtr DebugEventCallback;
 
@@ -3463,17 +3463,19 @@ namespace System.Drawing
 
             public Interop.BOOL SuppressExternalCodecs;       // FALSE unless you want GDI+ only to use
                                                       // its internal image codecs.
+            public int StartupParameters;
 
-            public static StartupInput GetDefault()
+            public static StartupInputEx GetDefault()
             {
                 OperatingSystem os = Environment.OSVersion;
-                StartupInput result = default;
+                StartupInputEx result = default;
 
                 // In Windows 7 GDI+1.1 story is different as there are different binaries per GDI+ version.
                 bool isWindows7 = os.Platform == PlatformID.Win32NT && os.Version.Major == 6 && os.Version.Minor == 1;
                 result.GdiplusVersion = isWindows7 ? 1 : 2;
                 result.SuppressBackgroundThread = Interop.BOOL.FALSE;
                 result.SuppressExternalCodecs = Interop.BOOL.FALSE;
+                result.StartupParameters = 0;
                 return result;
             }
         }
