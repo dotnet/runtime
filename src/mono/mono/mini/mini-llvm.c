@@ -981,7 +981,6 @@ op_to_llvm_type (int opcode)
 	case OP_RCONV_TO_U8:
 		return LLVMInt64Type ();
 	case OP_FCONV_TO_I:
-	case OP_FCONV_TO_U:
 		return TARGET_SIZEOF_VOID_P == 8 ? LLVMInt64Type () : LLVMInt32Type ();
 	case OP_IADD_OVF:
 	case OP_IADD_OVF_UN:

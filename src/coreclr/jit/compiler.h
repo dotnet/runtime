@@ -385,11 +385,12 @@ enum class DoNotEnregisterReason
 #endif
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
-    StoreBlkSrc,    // the local is used as STORE_BLK source.
-    OneAsgRetyping, // fgMorphOneAsgBlockOp prevents this local from being enregister.
-    SwizzleArg,     // the local is passed using LCL_FLD as another type.
-    BlockOpRet,     // the struct is returned and it promoted or there is a cast.
-    ReturnSpCheck   // the local is used to do SP check
+    StoreBlkSrc,      // the local is used as STORE_BLK source.
+    OneAsgRetyping,   // fgMorphOneAsgBlockOp prevents this local from being enregister.
+    SwizzleArg,       // the local is passed using LCL_FLD as another type.
+    BlockOpRet,       // the struct is returned and it promoted or there is a cast.
+    ReturnSpCheck,    // the local is used to do SP check
+    SimdUserForcesDep // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
 };
 
 enum class AddressExposedReason
@@ -10507,6 +10508,7 @@ public:
         unsigned m_swizzleArg;
         unsigned m_blockOpRet;
         unsigned m_returnSpCheck;
+        unsigned m_simdUserForcesDep;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
         unsigned m_noRegVars;
