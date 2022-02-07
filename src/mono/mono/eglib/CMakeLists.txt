@@ -5,7 +5,7 @@ set(eglib_win32_sources
 
 set(eglib_unix_sources
     gdate-unix.c  gdir-unix.c  gfile-unix.c  gmisc-unix.c
-    gmodule-unix.c gtimer-unix.c gclock-nanosleep.c)
+    gmodule-unix.c gtimer-unix.c)
 
 if(HOST_WIN32)
 set(eglib_platform_sources ${eglib_win32_sources})
@@ -42,6 +42,10 @@ set(eglib_common_sources
     gutf8.c
     gunicode.c
     unicode-data.h)
+
+if(HAVE_CLOCK_NANOSLEEP)
+list(APPEND eglib_common_sources gclock-nanosleep.c)
+endif()
 
 addprefix(eglib_sources ../eglib/ "${eglib_platform_sources};${eglib_common_sources}")
 
