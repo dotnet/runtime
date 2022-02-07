@@ -60,6 +60,7 @@ namespace System.Net.Security
         // FrameOverhead = 5 byte header + HMAC trailer + padding (if block cipher)
         // HMAC: 32 bytes for SHA-256 or 20 bytes for SHA-1 or 16 bytes for the MD5
         private const int FrameOverhead = 64;
+        private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
 
         private SslBuffer _buffer;
@@ -76,17 +77,17 @@ namespace System.Net.Security
             // padding between decrypted part of the active memory and following undecrypted TLS frame.
             private int _decryptedPadding;
 
-            private bool _valid;
+            private bool _isValid;
 
             public SslBuffer(int initialSize)
             {
                 _buffer = new ArrayBuffer(initialSize, true);
                 _decryptedLength = 0;
                 _decryptedPadding = 0;
-                _valid = true;
+                _isValid = true;
             }
 
-            public bool Valid => _valid;
+            public bool IsValid => _isValid;
 
             public Span<byte> DecryptedSpan => _buffer.ActiveSpan.Slice(0, _decryptedLength);
 
@@ -114,7 +115,18 @@ namespace System.Net.Security
 
             public void Commit(int byteCount) => _buffer.Commit(byteCount);
 
-            public void EnsureAvailableSpace(int byteCount) => _buffer.EnsureAvailableSpace(byteCount);
+            public void EnsureAvailableSpace(int byteCount)
+            {
+                if (_isValid)
+                {
+                    _buffer.EnsureAvailableSpace(byteCount);
+                }
+                else
+                {
+                    _isValid = true;
+                    _buffer = new ArrayBuffer(byteCount, true);
+                }
+            }
 
             public void Discard(int byteCount)
             {
@@ -161,12 +173,12 @@ namespace System.Net.Security
                 }
             }
 
-            public void Dispose()
+            public void ReturnBuffer()
             {
                 _buffer.Dispose();
                 _decryptedLength = 0;
                 _decryptedPadding = 0;
-                _valid = false;
+                _isValid = false;
             }
         }
 

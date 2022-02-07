@@ -124,10 +124,10 @@ namespace System.Net.Security
             // subsequent Reads first check if the context is still available.
             if (Interlocked.CompareExchange(ref _nestedRead, 1, 0) == 0)
             {
-                _buffer.Dispose();
+                _buffer.ReturnBuffer();
             }
 
-            if (!_buffer.Valid)
+            if (!_buffer.IsValid)
             {
                 // Suppress finalizer since the read buffer was returned.
                 GC.SuppressFinalize(this);
@@ -273,7 +273,7 @@ namespace System.Net.Security
                     throw SslStreamPal.GetException(status);
                 }
 
-                _buffer = new SslBuffer(ReadBufferSize);
+                _buffer.EnsureAvailableSpace(InitialHandshakeBufferSize);
 
                 ProtocolToken message = null!;
                 do {
@@ -291,7 +291,7 @@ namespace System.Net.Security
             {
                 if (_buffer.ActiveLength == 0)
                 {
-                    _buffer.Dispose();
+                    _buffer.ReturnBuffer();
                 }
 
                 _nestedRead = 0;
@@ -345,7 +345,7 @@ namespace System.Net.Security
 
                 if (!handshakeCompleted)
                 {
-                    _buffer = new SslBuffer(ReadBufferSize);
+                    _buffer.EnsureAvailableSpace(InitialHandshakeBufferSize);
                 }
 
                 while (!handshakeCompleted)
@@ -730,7 +730,7 @@ namespace System.Net.Security
         {
             if (_buffer.ActiveLength == 0)
             {
-                _buffer.Dispose();
+                _buffer.ReturnBuffer();
             }
         }
 
@@ -759,7 +759,7 @@ namespace System.Net.Security
             // We may have enough space to complete frame, but we may still do extra IO if the frame is small.
             // So we will attempt larger read - that is trade of with extra copy.
             // This may be updated at some point based on size of existing chunk, rented buffer and size of 'buffer'.
-            ResetReadBuffer();
+            _buffer.EnsureAvailableSpace(ReadBufferSize - _buffer.ActiveLength);
 
             while (_buffer.EncryptedLength < frameSize)
             {
@@ -1080,24 +1080,6 @@ namespace System.Net.Security
             }
 
             return copyBytes;
-        }
-
-        private void ResetReadBuffer()
-        {
-           Debug.Assert(_buffer.DecryptedLength == 0);
-
-            if (_buffer.Valid)
-            {
-                // We may have buffered data at a non-zero offset.
-                // To maximize the buffer space available for the next read,
-                // copy the existing data down to the beginning of the buffer.
-               _buffer.EnsureAvailableSpace(_buffer.Capacity - _buffer.ActiveLength);
-            }
-            else
-            {
-                // buffer has been disposed, reset it
-                _buffer = new SslBuffer(ReadBufferSize);
-            }
         }
 
         // Returns TLS Frame size including header size.
