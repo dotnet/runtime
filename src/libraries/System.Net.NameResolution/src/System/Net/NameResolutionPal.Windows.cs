@@ -522,12 +522,7 @@ namespace System.Net
             public IntPtr CancelHandle;
             public IntPtr QueryStateHandle;
 
-            public static GetAddrInfoExContext* AllocateContext()
-            {
-                var context = (GetAddrInfoExContext*)Marshal.AllocHGlobal(sizeof(GetAddrInfoExContext));
-                *context = default;
-                return context;
-            }
+            public static GetAddrInfoExContext* AllocateContext() => (GetAddrInfoExContext*)NativeMemory.AllocZeroed((nuint)sizeof(GetAddrInfoExContext));
 
             public static void FreeContext(GetAddrInfoExContext* context)
             {
@@ -535,8 +530,7 @@ namespace System.Net
                 {
                     Interop.Winsock.FreeAddrInfoExW(context->Result);
                 }
-
-                Marshal.FreeHGlobal((IntPtr)context);
+                NativeMemory.Free(context);
             }
         }
     }
