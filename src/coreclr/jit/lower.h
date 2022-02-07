@@ -560,14 +560,17 @@ public:
     bool IsContainableImmed(GenTree* parentNode, GenTree* childNode) const;
 
     // Return true if 'node' is a containable memory op.
-    bool IsContainableMemoryOp(GenTree* node)
+    bool IsContainableMemoryOp(GenTree* node) const
     {
         return m_lsra->isContainableMemoryOp(node);
     }
 
 #ifdef FEATURE_HW_INTRINSICS
     // Tries to get a containable node for a given HWIntrinsic
-    bool TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree** pNode, bool* supportsRegOptional);
+    bool TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode,
+                                        GenTree**           pNode,
+                                        bool*               supportsRegOptional,
+                                        GenTreeHWIntrinsic* transparentParentNode = nullptr);
 #endif // FEATURE_HW_INTRINSICS
 
     static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);
@@ -585,7 +588,10 @@ private:
 
     // Checks for memory conflicts in the instructions between childNode and parentNode, and returns true if childNode
     // can be contained.
-    bool IsSafeToContainMem(GenTree* parentNode, GenTree* childNode);
+    bool IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const;
+
+    // Similar to above, but allows bypassing a "transparent" parent.
+    bool IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const;
 
     inline LIR::Range& BlockRange() const
     {
@@ -609,10 +615,10 @@ private:
         }
     }
 
-    LinearScan*   m_lsra;
-    unsigned      vtableCallTemp;       // local variable we use as a temp for vtable calls
-    SideEffectSet m_scratchSideEffects; // SideEffectSet used for IsSafeToContainMem and isRMWIndirCandidate
-    BasicBlock*   m_block;
+    LinearScan*           m_lsra;
+    unsigned              vtableCallTemp;       // local variable we use as a temp for vtable calls
+    mutable SideEffectSet m_scratchSideEffects; // SideEffectSet used for IsSafeToContainMem and isRMWIndirCandidate
+    BasicBlock*           m_block;
 };
 
 #endif // _LOWER_H_

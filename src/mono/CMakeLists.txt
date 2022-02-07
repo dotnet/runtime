@@ -485,6 +485,11 @@ if(GCC)
     # We require C99 with some GNU extensions, e.g. `linux` macro
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
   endif()
+
+  # Turn off floating point expression contraction because it is considered a value changing
+  # optimization in the IEEE 754 specification and is therefore considered unsafe.
+  add_compile_options(-ffp-contract=off)
+
   # The runtime code does not respect ANSI C strict aliasing rules
   append("-fno-strict-aliasing" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   # We rely on signed overflow to behave
