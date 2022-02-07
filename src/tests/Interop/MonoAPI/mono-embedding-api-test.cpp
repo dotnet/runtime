@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
-#include <gmodule.h>
 #include <errno.h>
 #include <time.h>
 #include <math.h>
@@ -3894,27 +3893,85 @@ typedef struct _TestStruct {
 	double B;
 } TestStruct;
 
+#ifdef WIN32
+// Copied from eglib gmodule-win32.c
+#if HAVE_API_SUPPORT_WIN32_ENUM_PROCESS_MODULES
+static gpointer
+w32_find_symbol (const gchar *symbol_name)
+{
+	HMODULE *modules;
+	DWORD buffer_size = sizeof (HMODULE) * 1024;
+	DWORD needed, i;
+
+	modules = (HMODULE *) g_malloc (buffer_size);
+
+	if (modules == NULL)
+		return NULL;
+
+	if (!EnumProcessModules (GetCurrentProcess (), modules,
+				 buffer_size, &needed)) {
+		g_free (modules);
+		return NULL;
+	}
+
+	/* check whether the supplied buffer was too small, realloc, retry */
+	if (needed > buffer_size) {
+		g_free (modules);
+
+		buffer_size = needed;
+		modules = (HMODULE *) g_malloc (buffer_size);
+
+		if (modules == NULL)
+			return NULL;
+
+		if (!EnumProcessModules (GetCurrentProcess (), modules,
+					 buffer_size, &needed)) {
+			g_free (modules);
+			return NULL;
+		}
+	}
+
+	for (i = 0; i < needed / sizeof (HANDLE); i++) {
+		gpointer proc = (gpointer)(intptr_t)GetProcAddress (modules [i], symbol_name);
+		if (proc != NULL) {
+			g_free (modules);
+			return proc;
+		}
+	}
+
+	g_free (modules);
+	return NULL;
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_ENUM_PROCESS_MODULES
+static gpointer
+w32_find_symbol (const gchar *symbol_name)
+{
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return NULL;
+}
+#endif
+#endif/*WIN32*/
+
 /* Searches for mono symbols in all loaded modules */
 static gpointer
 lookup_mono_symbol (const char *symbol_name)
 {
+#ifndef HOST_WIN32
+	return dlsym (RTLD_DEFAULT, symbol_name);
+#else
+	HMODULE main_module = GetModuleHandle (NULL);
 	gpointer symbol = NULL;
-	GModule *mod = g_module_open (NULL, G_MODULE_BIND_LAZY);
-	g_assert (mod != NULL);
-	const gboolean success = g_module_symbol (mod, symbol_name, &symbol);
-	g_assertf (success, "%s", symbol_name);
-	return success ? symbol : NULL;
+	symbol = (gpointer)(intptr_t)GetProcAddress(main_module, symbol_name);
+	if (symbol)
+		return symbol;
+	return w32_find_symbol (symbol_name);
+#endif
 }
 
 LIBTEST_API gpointer STDCALL
 mono_test_marshal_lookup_symbol (const char *symbol_name)
 {
-#ifndef HOST_WIN32
-	return dlsym (RTLD_DEFAULT, symbol_name);
-#else
-	// This isn't really proper, but it should work
 	return lookup_mono_symbol (symbol_name);
-#endif
 }
 
 
