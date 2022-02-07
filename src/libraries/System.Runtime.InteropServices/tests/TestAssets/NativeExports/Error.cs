@@ -54,11 +54,11 @@ namespace NativeExports
             }
             else if (OperatingSystem.IsMacOS())
             {
-                *Libc.__error() = error;
+                *libc.__error() = error;
             }
             else if (OperatingSystem.IsLinux())
             {
-                *Libc.__errno_location() = error;
+                *libc.__errno_location() = error;
             }
             else
             {
