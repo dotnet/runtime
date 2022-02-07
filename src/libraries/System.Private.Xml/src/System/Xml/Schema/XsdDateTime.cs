@@ -633,21 +633,17 @@ namespace System.Xml.Schema
                     vsb.Append('Z');
                     break;
                 case XsdDateTimeKind.LocalWestOfZulu:
-                    {
-                        vsb.Append('-');
-                        vsb.AppendSpanFormattable(ZoneHour, format: "D2", provider: null);
-                        vsb.Append(':');
-                        vsb.AppendSpanFormattable(ZoneMinute, format: "D2", provider: null);
-                        break;
-                    }
+                    vsb.Append('-');
+                    vsb.AppendSpanFormattable(ZoneHour, format: "D2", provider: null);
+                    vsb.Append(':');
+                    vsb.AppendSpanFormattable(ZoneMinute, format: "D2", provider: null);
+                    break;
                 case XsdDateTimeKind.LocalEastOfZulu:
-                    {
-                        vsb.Append('+');
-                        vsb.AppendSpanFormattable(ZoneHour, format: "D2", provider: null);
-                        vsb.Append(':');
-                        vsb.AppendSpanFormattable(ZoneMinute, format: "D2", provider: null);
-                        break;
-                    }
+                    vsb.Append('+');
+                    vsb.AppendSpanFormattable(ZoneHour, format: "D2", provider: null);
+                    vsb.Append(':');
+                    vsb.AppendSpanFormattable(ZoneMinute, format: "D2", provider: null);
+                    break;
                 default:
                     // do nothing
                     break;
