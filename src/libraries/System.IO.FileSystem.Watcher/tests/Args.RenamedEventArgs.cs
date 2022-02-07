@@ -19,6 +19,7 @@ namespace System.IO.Tests
             Assert.Equal(changeType, args.ChangeType);
             Assert.Equal(name, args.Name);
             Assert.Equal(oldName, args.OldName);
+
             // FullPath is tested as part of the base class FileSystemEventArgs tests
         }
 
