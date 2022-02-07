@@ -121,11 +121,10 @@ namespace System.Security.Cryptography.Cose
             if (state != null)
             {
                 Debug.Assert(encodedValue == null);
-                if (label.LabelAsInt32 != null)
+                if (label.LabelAsString == null)
                 {
-                    Debug.Assert(label.LabelAsString == null);
                     // all known headers are integers.
-                    ValidateKnownHeaderValue(label.LabelAsInt32.Value, state, null);
+                    ValidateKnownHeaderValue(label.LabelAsInt32, state, null);
                 }
             }
             else
@@ -133,15 +132,13 @@ namespace System.Security.Cryptography.Cose
                 Debug.Assert(encodedValue != null);
                 var reader = new CborReader(encodedValue.Value);
 
-                if (label.LabelAsInt32 != null)
+                if (label.LabelAsString == null)
                 {
-                    Debug.Assert(label.LabelAsString == null);
                     // all known headers are integers.
-                    ValidateKnownHeaderValue(label.LabelAsInt32.Value, reader.PeekState(), reader);
+                    ValidateKnownHeaderValue(label.LabelAsInt32, reader.PeekState(), reader);
                 }
                 else
                 {
-                    Debug.Assert(label.LabelAsString != null);
                     reader.SkipValue();
                 }
 
@@ -222,13 +219,12 @@ namespace System.Security.Cryptography.Cose
             foreach ((CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue) header in this)
             {
                 CoseHeaderLabel label = header.Label;
-                if (label.LabelAsInt32 != null)
+                if (label.LabelAsString == null)
                 {
-                    writer.WriteInt32(label.LabelAsInt32.Value);
+                    writer.WriteInt32(label.LabelAsInt32);
                 }
                 else
                 {
-                    Debug.Assert(label.LabelAsString != null);
                     writer.WriteTextString(label.LabelAsString);
                 }
                 writer.WriteEncodedValue(header.EncodedValue.Span);

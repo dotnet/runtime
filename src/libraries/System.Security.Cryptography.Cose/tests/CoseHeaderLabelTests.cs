@@ -11,19 +11,19 @@ namespace System.Security.Cryptography.Cose.Tests
         public void CoseHeaderLabel_GetHashCode()
         {
             CoseHeaderLabel label = default;
-            Assert.Equal(0.GetHashCode(), label.GetHashCode());
+            Assert.Equal(0, label.GetHashCode()); // There's no need to call GetHashCode on integers as they are their own hashcode.
 
             label = new CoseHeaderLabel();
-            Assert.Equal(0.GetHashCode(), label.GetHashCode());
+            Assert.Equal(0, label.GetHashCode());
 
             label = new CoseHeaderLabel(0);
-            Assert.Equal(0.GetHashCode(), label.GetHashCode());
+            Assert.Equal(0, label.GetHashCode());
 
             label = new CoseHeaderLabel("");
             Assert.Equal("".GetHashCode(), label.GetHashCode());
 
             label = new CoseHeaderLabel(1);
-            Assert.Equal(1.GetHashCode(), label.GetHashCode());
+            Assert.Equal(1, label.GetHashCode());
 
             label = new CoseHeaderLabel("content-type");
             Assert.Equal("content-type".GetHashCode(), label.GetHashCode());

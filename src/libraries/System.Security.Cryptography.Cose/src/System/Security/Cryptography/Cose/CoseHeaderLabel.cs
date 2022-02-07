@@ -11,8 +11,8 @@ namespace System.Security.Cryptography.Cose
     [RequiresPreviewFeatures(CoseMessage.PreviewFeatureMessage)]
     public readonly struct CoseHeaderLabel : IEquatable<CoseHeaderLabel>
     {
-        internal string LabelName => LabelAsInt32?.ToString() ?? LabelAsString ?? 0.ToString();
-        private string DebuggerDisplay => $"Label = {LabelName}, Type = {(LabelAsInt32.HasValue ? typeof(int) : typeof(string))}";
+        internal string LabelName => LabelAsString ?? LabelAsInt32.ToString();
+        private string DebuggerDisplay => $"Label = {LabelName}, Type = {(LabelAsString != null ? typeof(string) : typeof(int))}";
 
         // https://www.iana.org/assignments/cose/cose.xhtml#header-parameters
         public static CoseHeaderLabel Algorithm => new CoseHeaderLabel(KnownHeaders.Alg);
@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Cose
         public static CoseHeaderLabel PartialIV => new CoseHeaderLabel(KnownHeaders.PartialIV);
         public static CoseHeaderLabel CounterSignature => new CoseHeaderLabel(KnownHeaders.CounterSignature);
 
-        internal int? LabelAsInt32 { get; }
+        internal int LabelAsInt32 { get; }
         internal string? LabelAsString { get; }
 
         public CoseHeaderLabel(int label)
@@ -45,35 +45,19 @@ namespace System.Security.Cryptography.Cose
 
         public bool Equals(CoseHeaderLabel other)
         {
-            if (LabelAsInt32.HasValue)
-            {
-                return LabelAsInt32 == other.LabelAsInt32;
-            }
-
-            if (LabelAsString != null)
-            {
-                return LabelAsString == other.LabelAsString;
-            }
-
-            // this is default, if other is not default treat this as new CoseHeaderLabel(0)
-            return (other.LabelAsInt32 == null && other.LabelAsString == null) || 0 == other.LabelAsInt32;
+            return LabelAsString == other.LabelAsString && LabelAsInt32 == other.LabelAsInt32;
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is CoseHeaderLabel otherObj && Equals(otherObj);
 
         public override int GetHashCode()
         {
-            if (LabelAsInt32 != null)
-            {
-                return LabelAsInt32.Value.GetHashCode();
-            }
-
             if (LabelAsString != null)
             {
                 return LabelAsString.GetHashCode();
             }
 
-            return 0.GetHashCode();
+            return LabelAsInt32.GetHashCode();
         }
 
         public static bool operator ==(CoseHeaderLabel left, CoseHeaderLabel right) => left.Equals(right);
