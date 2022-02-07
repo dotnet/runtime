@@ -528,6 +528,9 @@
   <data name="Arg_MustBeInterface" xml:space="preserve">
     <value>Type passed must be an interface.</value>
   </data>
+  <data name="Arg_MustBeNFloat" xml:space="preserve">
+    <value>Object must be of type NFloat.</value>
+  </data>
   <data name="Arg_MustBePointer" xml:space="preserve">
     <value>Type must be a Pointer.</value>
   </data>
@@ -786,6 +789,9 @@
   <data name="Arg_UnknownTypeCode" xml:space="preserve">
     <value>Unknown TypeCode value.</value>
   </data>
+  <data name="Arg_UnreachableException" xml:space="preserve">
+    <value>The program executed an instruction that was thought to be unreachable.</value>
+  </data>
   <data name="Arg_VarMissNull" xml:space="preserve">
     <value>Missing parameter does not have a default value.</value>
   </data>
@@ -999,17 +1005,11 @@
   <data name="Argument_EmitWriteLineType" xml:space="preserve">
     <value>EmitWriteLine does not support this field or local type.</value>
   </data>
-  <data name="Argument_EmptyDecString" xml:space="preserve">
-    <value>Decimal separator cannot be the empty string.</value>
-  </data>
   <data name="Argument_EmptyFileName" xml:space="preserve">
     <value>Empty file name is not legal.</value>
   </data>
   <data name="Argument_EmptyName" xml:space="preserve">
     <value>Empty name is not legal.</value>
-  </data>
-  <data name="Argument_EmptyPath" xml:space="preserve">
-    <value>Empty path name is not legal.</value>
   </data>
   <data name="Argument_EmptyWaithandleArray" xml:space="preserve">
     <value>Waithandle array may not be empty.</value>
@@ -1104,8 +1104,8 @@
   <data name="Argument_InvalidArrayType" xml:space="preserve">
     <value>Target array type is not compatible with the type of items in the collection.</value>
   </data>
-  <data name="Argument_InvalidAssemblyName" xml:space="preserve">
-    <value>Assembly names may not begin with whitespace or contain the characters '/', or '\\' or ':'.</value>
+  <data name="InvalidAssemblyName" xml:space="preserve">
+    <value>The given assembly name or codebase was invalid.</value>
   </data>
   <data name="Argument_InvalidCalendar" xml:space="preserve">
     <value>Not a valid calendar for the given culture.</value>
@@ -1476,9 +1476,6 @@
   </data>
   <data name="Argument_StringFirstCharIsZero" xml:space="preserve">
     <value>The first char in the string is the null character.</value>
-  </data>
-  <data name="Argument_StringZeroLength" xml:space="preserve">
-    <value>String cannot be of zero length.</value>
   </data>
   <data name="Argument_StructMustNotBeValueClass" xml:space="preserve">
     <value>The structure must not be a value class.</value>
@@ -3876,9 +3873,6 @@
   </data>
   <data name="TypeInitialization_Type_NoTypeAvailable" xml:space="preserve">
     <value>A type initializer threw an exception. To determine which type, inspect the InnerException's StackTrace property.</value>
-  </data>
-  <data name="InvalidAssemblyName" xml:space="preserve">
-    <value>The given assembly name or codebase was invalid</value>
   </data>
   <data name="Security_InvalidAssemblyPublicKey" xml:space="preserve">
     <value>Invalid assembly public key.</value>

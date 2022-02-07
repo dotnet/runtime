@@ -678,12 +678,9 @@ namespace System.Security.Cryptography
 
             public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
-                if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                    throw HashAlgorithmNameNullOrEmpty();
-                if (padding == null)
-                    throw new ArgumentNullException(nameof(padding));
+                ArgumentNullException.ThrowIfNull(hash);
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+                ArgumentNullException.ThrowIfNull(padding);
 
                 if (!TrySignHash(
                     hash,
@@ -708,14 +705,8 @@ namespace System.Security.Cryptography
                 RSASignaturePadding padding,
                 out int bytesWritten)
             {
-                if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                {
-                    throw HashAlgorithmNameNullOrEmpty();
-                }
-                if (padding == null)
-                {
-                    throw new ArgumentNullException(nameof(padding));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+                ArgumentNullException.ThrowIfNull(padding);
 
                 bool ret = TrySignHash(
                     hash,
@@ -817,14 +808,8 @@ namespace System.Security.Cryptography
 
             public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
-                if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                {
-                    throw HashAlgorithmNameNullOrEmpty();
-                }
-                if (padding == null)
-                {
-                    throw new ArgumentNullException(nameof(padding));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+                ArgumentNullException.ThrowIfNull(padding);
                 if (padding != RSASignaturePadding.Pkcs1 && padding != RSASignaturePadding.Pss)
                 {
                     throw PaddingModeNotSupported();
@@ -894,9 +879,6 @@ namespace System.Security.Cryptography
 
             private static Exception PaddingModeNotSupported() =>
                 new CryptographicException(SR.Cryptography_InvalidPaddingMode);
-
-            private static Exception HashAlgorithmNameNullOrEmpty() =>
-                new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");
         }
     }
 }

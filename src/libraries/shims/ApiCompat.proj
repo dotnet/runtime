@@ -1,12 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
-  <!-- Run API compat against the following 1:1 assemblies but don't include them in the list that is used to generate facades -->
-  <ItemGroup>
-    <NetFxReference Include="System.DirectoryServices" />
-    <NetFxReference Include="System.DirectoryServices.AccountManagement" />
-    <NetFxReference Include="System.DirectoryServices.Protocols" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(NetCoreAppLatestStablePackageBaselineVersion)]" />
     <PackageDownload Include="NETStandard.Library.Ref" Version="[$(NETStandardLibraryRefVersion)]" />
@@ -16,8 +9,6 @@
 
   <Target Name="GetApiCompatInputsAndOutputs">
     <PropertyGroup>
-      <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netfx461.txt</ApiCompatBaselineFile>
-      <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
       <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netstandard.txt</ApiCompatNSBaselineFile>
       <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
       <PreviousNetCoreAppBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.PreviousNetCoreApp.txt</PreviousNetCoreAppBaselineFile>
@@ -32,7 +23,7 @@
   <Target Name="RunApiCompat"
           DependsOnTargets="GetApiCompatInputsAndOutputs"
           AfterTargets="Build"
-          Inputs="@(NetCoreAppCurrentRefFile);$(ApiCompatBaselineFile);$(ApiCompatBaselineIgnoreFile);$(ApiCompatNSBaselineFile);$(ApiCompatNSOnlyBaselineFile);$(PreviousNetCoreAppBaselineFile)"
+          Inputs="@(NetCoreAppCurrentRefFile);$(ApiCompatNSBaselineFile);$(ApiCompatNSOnlyBaselineFile);$(PreviousNetCoreAppBaselineFile)"
           Outputs="$(ApiCompatMarkerFile)">
 
     <PropertyGroup>
@@ -45,15 +36,6 @@
     <WriteLinesToFile File="$(ApiCompatResponseFile)"
                       Lines="$(ApiCompatArgs)"
                       Overwrite="true" />
-
-    <Exec Command="$(_ApiCompatCommand) &quot;@(NetFxReference -> '$(NetFxRefPath)%(Identity).dll')&quot; --baseline &quot;$(ApiCompatBaselineIgnoreFile)&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
-          Condition="'$(BaselineApiCompat)' == 'true'"
-          CustomErrorRegularExpression="^[a-zA-Z]+ :"
-          StandardOutputImportance="Low"
-          IgnoreExitCode="true">
-      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
-    </Exec>
-    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NETFrameworkReferenceAssemblyTFM) to $(NetCoreAppCurrent)" />
 
     <!-- In order to update the .NETStandard baseline, you can just start the build with /p:UpdateNETStandardBaseline=true -->
     <PropertyGroup>

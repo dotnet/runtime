@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.MemoryMappedFiles
@@ -173,9 +174,6 @@ namespace System.IO.MemoryMappedFiles
         private static FileStream? CreateSharedBackingObjectUsingMemory(
            Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
-            // The POSIX shared memory object name must begin with '/'.  After that we just want something short and unique.
-            string mapName = string.Create(null, stackalloc char[128], $"/corefx_map_{Guid.NewGuid():N}");
-
             // Determine the flags to use when creating the shared memory object
             Interop.Sys.OpenFlags flags = (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0 ?
                 Interop.Sys.OpenFlags.O_RDWR :
@@ -191,22 +189,32 @@ namespace System.IO.MemoryMappedFiles
             if ((protections & Interop.Sys.MemoryMappedProtections.PROT_EXEC) != 0)
                 perms |= Interop.Sys.Permissions.S_IXUSR;
 
-            // Create the shared memory object.
-            SafeFileHandle fd = Interop.Sys.ShmOpen(mapName, flags, (int)perms);
-            if (fd.IsInvalid)
-            {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (errorInfo.Error == Interop.Error.ENOTSUP)
-                {
-                    // If ShmOpen is not supported, fall back to file backing object.
-                    // Note that the System.Native shim will force this failure on platforms where
-                    // the result of native shm_open does not work well with our subsequent call
-                    // to mmap.
-                    return null;
-                }
+            string mapName;
+            SafeFileHandle fd;
 
-                throw Interop.GetExceptionForIoErrno(errorInfo);
-            }
+            do
+            {
+                mapName = GenerateMapName();
+                fd = Interop.Sys.ShmOpen(mapName, flags, (int)perms); // Create the shared memory object.
+
+                if (fd.IsInvalid)
+                {
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    fd.Dispose();
+
+                    if (errorInfo.Error == Interop.Error.ENOTSUP)
+                    {
+                        // If ShmOpen is not supported, fall back to file backing object.
+                        // Note that the System.Native shim will force this failure on platforms where
+                        // the result of native shm_open does not work well with our subsequent call to mmap.
+                        return null;
+                    }
+                    else if (errorInfo.Error != Interop.Error.EEXIST) // map with same name already existed
+                    {
+                        throw Interop.GetExceptionForIoErrno(errorInfo);
+                    }
+                }
+            } while (fd.IsInvalid);
 
             try
             {
@@ -235,6 +243,18 @@ namespace System.IO.MemoryMappedFiles
             {
                 fd.Dispose();
                 throw;
+            }
+
+            static string GenerateMapName()
+            {
+                const int MaxSharedMemoryObjectNameLength = 32; // SHM_NAME_MAX on OSX ARM64, on other systems it's equal PATH_MAX (250)
+                // The POSIX shared memory object name must begin with '/'.  After that we just want something short (32) and unique.
+                return string.Create(MaxSharedMemoryObjectNameLength, 0, (span, state) =>
+                {
+                    Guid.NewGuid().TryFormat(span, out int charsWritten, "N");
+                    Debug.Assert(charsWritten == MaxSharedMemoryObjectNameLength);
+                    "/dotnet_".CopyTo(span);
+                });
             }
         }
 

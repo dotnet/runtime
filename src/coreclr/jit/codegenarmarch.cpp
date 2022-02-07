@@ -2416,7 +2416,7 @@ private:
 
         const int dstOffsetAligned = AlignUp((UINT)dstOffset, storePairRegsAlignment);
 
-        if (endDstOffset - dstOffsetAligned >= storePairRegsWritesBytes)
+        if (byteCount >= (unsigned)storePairRegsWritesBytes)
         {
             const int dstBytesToAlign = dstOffsetAligned - dstOffset;
 

@@ -484,7 +484,7 @@ jobs:
         additionalSetupParameters: '--latestdotnet'
         logicalmachine: 'perftiger'
 
-  # build maui workload packs
+  # build maui runtime packs
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -497,6 +497,8 @@ jobs:
       - Android_arm64
       - MacCatalyst_x64
       - iOSSimulator_x64
+      - iOS_arm64
+      - iOS_arm
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: Maui_Packs_Mono
@@ -521,6 +523,8 @@ jobs:
           - Build_Android_x64_release_Maui_Packs_Mono
           - Build_MacCatalyst_x64_release_Maui_Packs_Mono
           - Build_iOSSimulator_x64_release_Maui_Packs_Mono
+          - Build_iOS_arm_release_Maui_Packs_Mono
+          - Build_iOS_arm64_release_Maui_Packs_Mono
         buildArgs: -s mono -c $(_BuildConfig)
         nameSuffix: MACiOSAndroidMaui
         isOfficialBuild: false

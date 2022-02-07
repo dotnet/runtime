@@ -211,7 +211,7 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: NativeAOT
-      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+libs -rc $(_BuildConfig) -lc Release
+      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       condition: >-
         or(
@@ -233,7 +233,7 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: NativeAOT
-      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+libs -rc $(_BuildConfig) -lc Release
+      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       condition: >-
         or(
@@ -257,7 +257,7 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: NativeAOT
-      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+libs -rc $(_BuildConfig) -lc Release
+      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       condition: >-
         or(
@@ -1110,8 +1110,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_x64
-    # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
-    #- Linux_arm64
+    - Linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
