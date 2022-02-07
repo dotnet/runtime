@@ -410,7 +410,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        public void DeryptOneShot_Cfb8_ToleratesExtraPadding()
+        public void DecryptOneShot_Cfb8_ToleratesExtraPadding()
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
             {
