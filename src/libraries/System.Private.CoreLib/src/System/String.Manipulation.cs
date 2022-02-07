@@ -925,15 +925,7 @@ namespace System
 
         private string ReplaceCore(string oldValue, string? newValue, CompareInfo? ci, CompareOptions options)
         {
-            if (oldValue is null)
-            {
-                throw new ArgumentNullException(nameof(oldValue));
-            }
-
-            if (oldValue.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
             // If they asked to replace oldValue with a null, replace all occurrences
             // with the empty string. AsSpan() will normalize appropriately.
@@ -1054,14 +1046,7 @@ namespace System
 
         public string Replace(string oldValue, string? newValue)
         {
-            if (oldValue is null)
-            {
-                throw new ArgumentNullException(nameof(oldValue));
-            }
-            if (oldValue.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
             // If newValue is null, treat it as an empty string.  Callers use this to remove the oldValue.
             newValue ??= Empty;
@@ -1087,7 +1072,7 @@ namespace System
                 while (true)
                 {
                     int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
-                    if (pos == -1)
+                    if (pos < 0)
                     {
                         break;
                     }
@@ -1102,7 +1087,7 @@ namespace System
                 while (true)
                 {
                     int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), Length - i, ref oldValue._firstChar, oldValue.Length);
-                    if (pos == -1)
+                    if (pos < 0)
                     {
                         break;
                     }
@@ -1683,12 +1668,13 @@ namespace System
                 {
                     ProbabilisticMap map = default;
                     uint* charMap = (uint*)&map;
-                    InitializeProbabilisticMap(charMap, separators);
+                    ProbabilisticMap.Initialize(charMap, separators);
 
                     for (int i = 0; i < Length; i++)
                     {
                         char c = this[i];
-                        if (IsCharBitSet(charMap, (byte)c) && IsCharBitSet(charMap, (byte)(c >> 8)) &&
+                        if (ProbabilisticMap.IsCharBitSet(charMap, (byte)c) &&
+                            ProbabilisticMap.IsCharBitSet(charMap, (byte)(c >> 8)) &&
                             separators.Contains(c))
                         {
                             sepListBuilder.Append(i);

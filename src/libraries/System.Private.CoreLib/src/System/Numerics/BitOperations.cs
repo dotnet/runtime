@@ -708,5 +708,25 @@ namespace System.Numerics
             return (nuint)RotateRight((uint)value, offset);
 #endif
         }
+
+        /// <summary>
+        /// Reset the lowest significant bit in the given value
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static uint ResetLowestSetBit(uint value)
+        {
+            // It's lowered to BLSR on x86
+            return value & (value - 1);
+        }
+
+        /// <summary>
+        /// Reset specific bit in the given value
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static uint ResetBit(uint value, int bitPos)
+        {
+            // TODO: Recognize BTR on x86 and LSL+BIC on ARM
+            return value & ~(uint)(1 << bitPos);
+        }
     }
 }

@@ -253,8 +253,7 @@ namespace System.Collections.Immutable
         public ImmutableSortedDictionary<TKey, TValue> Add(TKey key, TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
-            bool mutated;
-            var result = _root.Add(key, value, _keyComparer, _valueComparer, out mutated);
+            var result = _root.Add(key, value, _keyComparer, _valueComparer, out _);
             return this.Wrap(result, _count + 1);
         }
 
@@ -264,8 +263,8 @@ namespace System.Collections.Immutable
         public ImmutableSortedDictionary<TKey, TValue> SetItem(TKey key, TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
-            bool replacedExistingValue, mutated;
-            var result = _root.SetItem(key, value, _keyComparer, _valueComparer, out replacedExistingValue, out mutated);
+            bool replacedExistingValue;
+            var result = _root.SetItem(key, value, _keyComparer, _valueComparer, out replacedExistingValue, out _);
             return this.Wrap(result, replacedExistingValue ? _count : _count + 1);
         }
 
@@ -297,8 +296,7 @@ namespace System.Collections.Immutable
         public ImmutableSortedDictionary<TKey, TValue> Remove(TKey value)
         {
             Requires.NotNullAllowStructs(value, nameof(value));
-            bool mutated;
-            var result = _root.Remove(value, _keyComparer, out mutated);
+            var result = _root.Remove(value, _keyComparer, out _);
             return this.Wrap(result, _count - 1);
         }
 

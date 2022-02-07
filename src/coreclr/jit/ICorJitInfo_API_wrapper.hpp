@@ -61,11 +61,10 @@ bool WrapICorJitInfo::getMethodInfo(
 
 CorInfoInline WrapICorJitInfo::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
-          CORINFO_METHOD_HANDLE calleeHnd,
-          uint32_t* pRestrictions)
+          CORINFO_METHOD_HANDLE calleeHnd)
 {
     API_ENTER(canInline);
-    CorInfoInline temp = wrapHnd->canInline(callerHnd, calleeHnd, pRestrictions);
+    CorInfoInline temp = wrapHnd->canInline(callerHnd, calleeHnd);
     API_LEAVE(canInline);
     return temp;
 }
@@ -1446,15 +1445,6 @@ uint32_t WrapICorJitInfo::getFieldThreadLocalStoreID(
     uint32_t temp = wrapHnd->getFieldThreadLocalStoreID(field, ppIndirection);
     API_LEAVE(getFieldThreadLocalStoreID);
     return temp;
-}
-
-void WrapICorJitInfo::setOverride(
-          ICorDynamicInfo* pOverride,
-          CORINFO_METHOD_HANDLE currentMethod)
-{
-    API_ENTER(setOverride);
-    wrapHnd->setOverride(pOverride, currentMethod);
-    API_LEAVE(setOverride);
 }
 
 void WrapICorJitInfo::addActiveDependency(

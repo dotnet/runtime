@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    internal partial class RuntimeModule : Module
+    internal sealed partial class RuntimeModule : Module
     {
         internal RuntimeModule() { throw new NotSupportedException(); }
 
@@ -523,7 +523,7 @@ namespace System.Reflection
 
                 int i = s.LastIndexOf(System.IO.Path.DirectorySeparatorChar);
 
-                if (i == -1)
+                if (i < 0)
                     return s;
 
                 return s.Substring(i + 1);

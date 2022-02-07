@@ -546,13 +546,13 @@ namespace System.PrivateUri.Tests
             int i;
 
             i = Uri.Compare(uri1, uri2, UriComponents.AbsoluteUri, UriFormat.UriEscaped, StringComparison.CurrentCulture);
-            Assert.Equal(i, -1);
+            Assert.Equal(-1, i);
 
             i = Uri.Compare(uri1, uri2, UriComponents.Query, UriFormat.UriEscaped, StringComparison.CurrentCulture);
             Assert.Equal(0, i);
 
             i = Uri.Compare(uri1, uri2, UriComponents.Query | UriComponents.Fragment, UriFormat.UriEscaped, StringComparison.CurrentCulture);
-            Assert.Equal(i, -1);
+            Assert.Equal(-1, i);
 
             Assert.False(uri1.Equals(uri2));
 

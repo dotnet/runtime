@@ -477,7 +477,6 @@ namespace System.Security.Cryptography
             {
                 charsWritten += WriteBase64(remainingData, destination, charsWritten);
                 charsWritten += Write(NewLine, destination, charsWritten);
-                remainingData = default;
             }
 
             charsWritten += Write(PostEBPrefix, destination, charsWritten);

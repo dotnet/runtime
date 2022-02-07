@@ -3591,12 +3591,12 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                         DWORD id = (DWORD) thread->m_OSThreadId;
                         if (id == 0xbaadf00d)
                         {
-                            sprintf_s (message, COUNTOF(message), "Thread CLR ID=%x cannot be suspended",
+                            sprintf_s (message, ARRAY_SIZE(message), "Thread CLR ID=%x cannot be suspended",
                                         thread->GetThreadId());
                         }
                         else
                         {
-                            sprintf_s (message, COUNTOF(message), "Thread OS ID=%x cannot be suspended",
+                            sprintf_s (message, ARRAY_SIZE(message), "Thread OS ID=%x cannot be suspended",
                                         id);
                         }
                         DbgAssertDialog(__FILE__, __LINE__, message);
@@ -6255,7 +6255,7 @@ void SuspendStatistics::DisplayAndUpdate()
 const char* const str_timeUnit[]   = { "usec", "msec", "sec" };
 const int         timeUnitFactor[] = { 1, 1000, 1000000 };
 
-void MinMaxTot::DisplayAndUpdate(FILE* logFile, __in_z const char *pName, MinMaxTot *pLastOne, int fullCount, int priorCount, timeUnit unit /* = usec */)
+void MinMaxTot::DisplayAndUpdate(FILE* logFile, _In_z_ const char *pName, MinMaxTot *pLastOne, int fullCount, int priorCount, timeUnit unit /* = usec */)
 {
     LIMITED_METHOD_CONTRACT;
 

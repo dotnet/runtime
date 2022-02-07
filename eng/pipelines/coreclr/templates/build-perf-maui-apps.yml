@@ -31,7 +31,7 @@ steps:
         IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-!(*.symbols).nupkg
         
       # Other artifacts to include once they are being built
-      # IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
+      # EX. IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
 
   - task: CopyFiles@2
     displayName: Flatten packages
@@ -81,6 +81,20 @@ steps:
         overwriteExistingFiles: true
         cleanDestinationFolder: false
   - task: ExtractFiles@1
+    displayName: Extract ios-arm runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
+  - task: ExtractFiles@1
+    displayName: Extract ios-arm64 runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm64.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm64
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
+  - task: ExtractFiles@1
     displayName: Extract maccatalyst-x64 runtime
     inputs:
         archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64.*.zip
@@ -96,14 +110,16 @@ steps:
         cleanDestinationFolder: false
 
   - script: |
-      curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
-      ./dotnet.sh workload update --from-rollback-file ./rollback.json
-      ./dotnet.sh workload install maui --skip-manifest-update
+      curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
+      chmod -R a+rx .
+      ./dotnet-install.sh --channel 6.0.2xx --quality signed --install-dir .
+      ./dotnet --info
+      ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --source https://aka.ms/dotnet6/nuget/index.json --source https://api.nuget.org/v3/index.json
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
 
   - script: |
-      ./dotnet.sh new maui -n MauiTesting
+      ./dotnet new maui -n MauiTesting
       cd MauiTesting
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
@@ -112,21 +128,21 @@ steps:
 
   - script: |
       chmod -R a+r .
-      ../dotnet.sh publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
+      ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
       mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - script: |
       chmod -R a+r .
-      ../dotnet.sh publish -bl:MauiiOS.binlog -f net6.0-ios -c Release
+      ../dotnet build -bl:MauiiOS.binlog -f net6.0-ios -c Release
       mv ./bin/Release/net6.0-ios/iossimulator-x64/MauiTesting.app ./MauiiOSDefault.app
     displayName: Build MAUI iOS
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - script: |
       chmod -R a+r .
-      ../dotnet.sh publish -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -c Release
+      ../dotnet publish -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -c Release
       mv ./bin/Release/net6.0-maccatalyst/maccatalyst-x64/MauiTesting.app ./MauiMacCatalystDefault.app
     displayName: Build MAUI MacCatalyst
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting

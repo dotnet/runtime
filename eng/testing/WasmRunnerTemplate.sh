@@ -24,16 +24,16 @@ else
 fi
 
 if [[ -z "$XHARNESS_COMMAND" ]]; then
-	if [[ "${SCENARIO,,}" == "wasmtestonbrowser" ]]; then
+	if [[ "$SCENARIO" == "WasmTestOnBrowser" || "$SCENARIO" == "wasmtestonbrowser" ]]; then
 		XHARNESS_COMMAND="test-browser"
 	else
 		XHARNESS_COMMAND="test"
 	fi
 fi
 
-if [[ "${XHARNESS_COMMAND,,}" == "test" ]]; then
+if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 	if [[ -z "$JS_ENGINE" ]]; then
-		if [[ "${SCENARIO,,}" == "wasmtestonnodejs" ]]; then
+		if [[ "$SCENARIO" == "WasmTestOnNodeJs" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
 			JS_ENGINE="--engine=NodeJS"
 		else
 			JS_ENGINE="--engine=V8"
@@ -50,7 +50,7 @@ if [[ "${XHARNESS_COMMAND,,}" == "test" ]]; then
 fi
 
 if [[ -z "$XHARNESS_ARGS" ]]; then
-	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
+	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS $WASM_XHARNESS_MONO_ARGS"
 fi
 
 echo EXECUTION_DIR=$EXECUTION_DIR

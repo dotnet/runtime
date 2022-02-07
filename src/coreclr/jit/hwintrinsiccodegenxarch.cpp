@@ -27,11 +27,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // assertIsContainableHWIntrinsicOp: Asserts that op is containable by node
 //
 // Arguments:
-//    lowering - The lowering phase from the compiler
-//    node     - The HWIntrinsic node that has the contained node
-//    op       - The op that is contained
+//    lowering       - The lowering phase from the compiler
+//    containingNode - The HWIntrinsic node that has the contained node
+//    containedNode  - The node that is contained
 //
-static void assertIsContainableHWIntrinsicOp(Lowering* lowering, GenTreeHWIntrinsic* node, GenTree* op)
+static void assertIsContainableHWIntrinsicOp(Lowering*           lowering,
+                                             GenTreeHWIntrinsic* containingNode,
+                                             GenTree*            containedNode)
 {
 #if DEBUG
     // The Lowering::IsContainableHWIntrinsicOp call is not quite right, since it follows pre-register allocation
@@ -39,14 +41,25 @@ static void assertIsContainableHWIntrinsicOp(Lowering* lowering, GenTreeHWIntrin
     //
     // We use isContainable to track the special HWIntrinsic node containment rules (for things like LoadAligned and
     // LoadUnaligned) and we use the supportsRegOptional check to support general-purpose loads (both from stack
-    // spillage
-    // and for isUsedFromMemory contained nodes, in the case where the register allocator decided to not allocate a
-    // register
-    // in the first place).
+    // spillage and for isUsedFromMemory contained nodes, in the case where the register allocator decided to not
+    // allocate a register in the first place).
+
+    GenTree* node = containedNode;
+
+    // Now that we are doing full memory containment safety checks, we can't properly check nodes that are not
+    // linked into an evaluation tree, like the special nodes we create in genHWIntrinsic.
+    // So, just say those are ok.
+    //
+    if (node->gtNext == nullptr)
+    {
+        return;
+    }
 
     bool supportsRegOptional = false;
-    bool isContainable       = lowering->IsContainableHWIntrinsicOp(node, op, &supportsRegOptional);
+    bool isContainable       = lowering->TryGetContainableHWIntrinsicOp(containingNode, &node, &supportsRegOptional);
+
     assert(isContainable || supportsRegOptional);
+    assert(node == containedNode);
 #endif // DEBUG
 }
 
@@ -82,6 +95,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
     HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     size_t                 numArgs     = node->GetOperandCount();
+
+    // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
+    assert(compiler->compIsaSupportedDebugOnly(isa));
 
     int ival = HWIntrinsicInfo::lookupIval(intrinsicId, compiler->compOpportunisticallyDependsOn(InstructionSet_AVX));
 
@@ -521,6 +537,14 @@ void CodeGen::genHWIntrinsic_R_RM(
                     break;
                 }
 
+                case GT_CNS_DBL:
+                {
+                    GenTreeDblCon*       cns = rmOp->AsDblCon();
+                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(cns->gtDconVal, emitTypeSize(cns));
+                    emit->emitIns_R_C(ins, attr, reg, hnd, 0);
+                    return;
+                }
+
                 default:
                 {
                     unreached();
@@ -737,6 +761,14 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
                     break;
                 }
 
+                case GT_CNS_DBL:
+                {
+                    GenTreeDblCon*       cns = op2->AsDblCon();
+                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(cns->gtDconVal, emitTypeSize(cns));
+                    emit->emitIns_SIMD_R_R_C_I(ins, simdSize, targetReg, op1Reg, hnd, 0, ival);
+                    return;
+                }
+
                 default:
                     unreached();
                     break;
@@ -886,6 +918,14 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins,
                     break;
                 }
 
+                case GT_CNS_DBL:
+                {
+                    GenTreeDblCon*       cns = op2->AsDblCon();
+                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(cns->gtDconVal, emitTypeSize(cns));
+                    emit->emitIns_SIMD_R_R_C_R(ins, simdSize, targetReg, op1Reg, op3Reg, hnd, 0);
+                    return;
+                }
+
                 default:
                     unreached();
                     break;
@@ -1010,6 +1050,14 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
                     varNum = op3->AsLclVar()->GetLclNum();
                     offset = 0;
                     break;
+                }
+
+                case GT_CNS_DBL:
+                {
+                    GenTreeDblCon*       cns = op3->AsDblCon();
+                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(cns->gtDconVal, emitTypeSize(cns));
+                    emit->emitIns_SIMD_R_R_R_C(ins, attr, targetReg, op1Reg, op2Reg, hnd, 0);
+                    return;
                 }
 
                 default:

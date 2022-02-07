@@ -1362,9 +1362,10 @@ AGAIN:
 
     assert(mul == 0);
 
-    /* Special case: keep constants as 'op2' */
+    /* Special case: keep constants as 'op2', but don't do this for constant handles
+       because they don't fit I32 that we're going to check for below anyway. */
 
-    if (op1->IsCnsIntOrI())
+    if (op1->IsCnsIntOrI() && !op1->IsIconHandle())
     {
         // Presumably op2 is assumed to not be a constant (shouldn't happen if we've done constant folding)?
         tmp = op1;
@@ -4630,6 +4631,7 @@ void CodeGen::genCheckUseBlockInit()
         if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
         {
             noway_assert(varDsc->lvRefCnt() == 0);
+            varDsc->lvMustInit = 0;
             continue;
         }
 
@@ -4642,6 +4644,7 @@ void CodeGen::genCheckUseBlockInit()
 
         if (compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
+            varDsc->lvMustInit = 0;
             continue;
         }
 
@@ -4650,6 +4653,7 @@ void CodeGen::genCheckUseBlockInit()
             // For Compiler::PROMOTION_TYPE_DEPENDENT type of promotion, the whole struct should have been
             // initialized by the parent struct. No need to set the lvMustInit bit in the
             // field locals.
+            varDsc->lvMustInit = 0;
             continue;
         }
 
@@ -6235,15 +6239,9 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
         // This local was part of the live tier0 state and is enregistered in the
         // OSR method. Initialize the register from the right frame slot.
         //
-        // We currently don't expect to see enregistered multi-reg args in OSR methods,
-        // as struct promotion is disabled. So any struct arg just uses the location
-        // on the tier0 frame.
-        //
         // If we ever enable promotion we'll need to generalize what follows to copy each
         // field from the tier0 frame to its OSR home.
         //
-        assert(!varDsc->lvIsMultiRegArg);
-
         if (!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
             // This arg or local is not live at entry to the OSR method.
@@ -6390,15 +6388,30 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
 void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
 {
-    // For OSR the original method has set this up for us.
-    if (compiler->opts.IsOSR())
-    {
-        return;
-    }
-
     assert(compiler->compGeneratingProlog);
 
-    bool reportArg = compiler->lvaReportParamTypeArg();
+    const bool reportArg = compiler->lvaReportParamTypeArg();
+
+    if (compiler->opts.IsOSR())
+    {
+        PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
+        if (reportArg)
+        {
+            // OSR method will use Tier0 slot to report context arg.
+            //
+            assert(ppInfo->HasGenericContextArgOffset());
+            JITDUMP("OSR method will use Tier0 frame slot for generics context arg.\n");
+        }
+        else if (compiler->lvaKeepAliveAndReportThis())
+        {
+            // OSR method will use Tier0 slot to report `this` as context.
+            //
+            assert(ppInfo->HasKeptAliveThis());
+            JITDUMP("OSR method will use Tier0 frame slot for generics context `this`.\n");
+        }
+
+        return;
+    }
 
     // We should report either generic context arg or "this" when used so.
     if (!reportArg)
@@ -7541,6 +7554,16 @@ void CodeGen::genFnProlog()
     }
 
 #endif // PROFILING_SUPPORTED
+
+    // For OSR we may have a zero-length prolog. That's not supported
+    // when the method must report a generics context,/ so add a nop if so.
+    //
+    if (compiler->opts.IsOSR() && (GetEmitter()->emitGetPrologOffsetEstimate() == 0) &&
+        (compiler->lvaReportParamTypeArg() || compiler->lvaKeepAliveAndReportThis()))
+    {
+        JITDUMP("OSR: prolog was zero length and has generic context to report: adding nop to pad prolog.\n");
+        instGen(INS_nop);
+    }
 
     if (!GetInterruptible())
     {

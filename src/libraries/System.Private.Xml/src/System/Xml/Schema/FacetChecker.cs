@@ -1460,8 +1460,7 @@ namespace System.Xml.Schema
                 case XmlTypeCode.AnyUri:
                     if (verifyUri)
                     {
-                        Uri? uri;
-                        exception = XmlConvert.TryToUri(s, out uri);
+                        exception = XmlConvert.TryToUri(s, out _);
                     }
                     break;
 

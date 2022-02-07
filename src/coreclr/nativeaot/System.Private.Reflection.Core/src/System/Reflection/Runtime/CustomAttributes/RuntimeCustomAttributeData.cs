@@ -146,11 +146,10 @@ namespace System.Reflection.Runtime.CustomAttributes
 
             else if (argumentType.IsArray)
             {
-                string result = null;
                 IList<CustomAttributeTypedArgument> array = value as IList<CustomAttributeTypedArgument>;
 
                 Type elementType = argumentType.GetElementType();
-                result = string.Format(@"new {0}[{1}] {{ ", elementType.IsEnum ? elementType.FullName : elementType.Name, array.Count);
+                string result = string.Format(@"new {0}[{1}] {{ ", elementType.IsEnum ? elementType.FullName : elementType.Name, array.Count);
 
                 for (int i = 0; i < array.Count; i++)
                     result += string.Format(i == 0 ? "{0}" : ", {0}", ComputeTypedArgumentString(array[i], elementType != typeof(object)));

@@ -265,7 +265,7 @@ enum {
         NULLIFY_INS ((ins)); \
     } while (0)
 
-/* 
+/*
  * this is used to determine when some branch optimizations are possible: we exclude FP compares
  * because they have weird semantics with NaNs.
  */
@@ -454,7 +454,7 @@ typedef struct {
 	int pc_offset;
 	/* The basic block containing the call site */
 	MonoBasicBlock *bb;
-	/* 
+	/*
 	 * The set of variables live at the call site.
 	 * Has length cfg->num_varinfo in bits.
 	 */
@@ -467,7 +467,7 @@ typedef struct {
 } GCCallSite;
 
 /*
- * The IR-level extended basic block.  
+ * The IR-level extended basic block.
  *
  * A basic block can have multiple exits just fine, as long as the point of
  * 'departure' is the last instruction in the basic block. Extended basic
@@ -492,7 +492,7 @@ struct MonoBasicBlock {
 
 	/* unique block number identification */
 	gint32 block_num;
-	
+
 	gint32 dfn;
 
 	/* Basic blocks: incoming and outgoing counts and pointers */
@@ -529,13 +529,13 @@ struct MonoBasicBlock {
 	/* fast dominator algorithm */
 	MonoBasicBlock *df_parent, *ancestor, *child, *label;
 	int size, sdom, idomn;
-	
+
 	/* loop nesting and recognition */
 	GList *loop_blocks;
 	gint8  nesting;
 	gint8  loop_body_start;
 
-	/* 
+	/*
 	 * Whenever the bblock is rarely executed so it should be emitted after
 	 * the function epilog.
 	 */
@@ -564,7 +564,7 @@ struct MonoBasicBlock {
 	 * call).
 	 */
 	guint extend_try_block : 1;
-	
+
 	/* use for liveness analysis */
 	MonoBitSet *gen_set;
 	MonoBitSet *kill_set;
@@ -583,7 +583,7 @@ struct MonoBasicBlock {
 
 	// The MonoInst of the last sequence point for the current basic block.
 	MonoInst *last_seq_point;
-	
+
 	// This will hold a list of last sequence points of incoming basic blocks
 	MonoInst **pred_seq_points;
 	guint num_pred_seq_points;
@@ -609,7 +609,7 @@ struct MonoBasicBlock {
 	 *
 	 *  Bits: |     0-3      |       4-7      |     8-31
 	 * 	  |		 |                |
-	 *        | clause-flags |   MONO_REGION  | clause-index 
+	 *        | clause-flags |   MONO_REGION  | clause-index
 	 *
 	 */
 	guint region;
@@ -709,7 +709,7 @@ typedef struct {
 	gboolean imt_arg;
 	/* Whenever there is a dummy extra argument */
 	gboolean dummy_arg;
-	/* 
+	/*
 	 * The position of the vret arg in the argument list.
 	 * Only if ret->storage == ArgVtypeRetAddr.
 	 * Should be 0 or 1.
@@ -729,7 +729,7 @@ struct MonoInst {
  	guint16 opcode;
 	guint8  type; /* stack type */
 	guint8  flags;
-	
+
 	/* used by the register allocator */
 	gint32 dreg, sreg1, sreg2, sreg3;
 
@@ -757,6 +757,7 @@ struct MonoInst {
 			int *phi_args;
 			MonoCallInst *call_inst;
 			GList *exception_clauses;
+			const char *exc_name;
 		} op [2];
 		gint64 i8const;
 		double r8const;
@@ -785,10 +786,10 @@ struct MonoInst {
 		 */
 		int memory_barrier_kind;
 	} backend;
-	
+
 	MonoClass *klass;
 };
-	
+
 struct MonoCallInst {
 	MonoInst inst;
 	MonoMethodSignature *signature;
@@ -844,7 +845,7 @@ struct MonoCallArgParm {
 	gint32 offPrm;
 };
 
-/* 
+/*
  * flags for MonoInst
  * Note: some of the values overlap, because they can't appear
  * in the same MonoInst.
@@ -868,7 +869,7 @@ enum {
 	MONO_INST_NORANGECHECK   = 16,
 	/* On loads, the source address can be null */
 	MONO_INST_FAULT = 32,
-	/* 
+	/*
 	 * On variables, identifies LMF variables. These variables have a dummy type (int), but
 	 * require stack space for a MonoLMF struct.
 	 */
@@ -907,6 +908,9 @@ enum {
 
 #define inst_newa_len   data.op[0].src
 #define inst_newa_class data.op[1].klass
+
+/* In _OVF opcodes */
+#define inst_exc_name  data.op[0].exc_name
 
 #define inst_var    data.op[0].var
 #define inst_vtype  data.op[1].vtype
@@ -953,7 +957,7 @@ typedef union {
 		guint16 tid; /* tree number */
 		guint16 bid; /* block number */
 	} pos ;
-	guint32 abs_pos; 
+	guint32 abs_pos;
 } MonoPosition;
 
 typedef struct {
@@ -989,8 +993,8 @@ struct MonoMethodVar {
 	char            cpstate;  /* used by SSA conditional  constant propagation */
 	/* The native offsets corresponding to the live range of the variable */
 	gint32         live_range_start, live_range_end;
-	/* 
-	 * cfg->varinfo [idx]->dreg could be replaced for OP_REGVAR, this contains the 
+	/*
+	 * cfg->varinfo [idx]->dreg could be replaced for OP_REGVAR, this contains the
 	 * original vreg.
 	 */
 	gint32         vreg;
@@ -1334,7 +1338,7 @@ typedef struct {
 
 	MonoBackend *backend;
 
-	/* 
+	/*
 	 * This variable represents the hidden argument holding the vtype
 	 * return address. If the method returns something other than a vtype, or
 	 * the vtype is returned in registers this is NULL.
@@ -1345,7 +1349,7 @@ typedef struct {
 	 * This is used to initialize the cil_code field of MonoInst's.
 	 */
 	const unsigned char *ip;
-	
+
 	struct MonoAliasingInformation *aliasing_info;
 
 	/* A hashtable of region ID-> SP var mappings */
@@ -1365,7 +1369,7 @@ typedef struct {
 	GHashTable      *exvars;
 
 	GList           *ldstr_list; /* used by AOT */
-	
+
 	guint            real_offset;
 	GHashTable      *cbb_hash;
 
@@ -1395,6 +1399,7 @@ typedef struct {
 
 	MonoInst *lmf_var;
 	MonoInst *lmf_addr_var;
+	MonoInst *il_state_var;
 
 	MonoInst *stack_inbalance_var;
 
@@ -1448,10 +1453,6 @@ typedef struct {
 	 * instead of being generated in emit_prolog ()/emit_epilog ().
 	 */
 	guint            lmf_ir : 1;
-	/*
-	 * Whenever to use the mono_lmf TLS variable instead of indirection through the
-	 * mono_lmf_addr TLS variable.
-	 */
 	guint            gen_write_barriers : 1;
 	guint            init_ref_vars : 1;
 	guint            extend_live_ranges : 1;
@@ -1489,6 +1490,7 @@ typedef struct {
 	guint            interp_entry_only : 1;
 	guint            after_method_to_ir : 1;
 	guint            disable_inline_rgctx_fetch : 1;
+	guint            deopt : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
@@ -1540,7 +1542,7 @@ typedef struct {
 	/* Size of above array */
 	guint32 vreg_is_mp_len;
 
-	/* 
+	/*
 	 * The original method to compile, differs from 'method' when doing generic
 	 * sharing.
 	 */
@@ -1608,7 +1610,7 @@ typedef struct {
 	GSList *interp_in_signatures;
 
 	/* GC Maps */
-   
+
 	/* The offsets of the locals area relative to the frame pointer */
 	gint locals_min_stack_offset, locals_max_stack_offset;
 
@@ -1798,6 +1800,7 @@ enum {
 #define OP_PSUB OP_LSUB
 #define OP_PMUL OP_LMUL
 #define OP_PMUL_IMM OP_LMUL_IMM
+#define OP_POR_IMM OP_LOR_IMM
 #define OP_PNEG OP_LNEG
 #define OP_PCONV_TO_I1 OP_LCONV_TO_I1
 #define OP_PCONV_TO_U1 OP_LCONV_TO_U1
@@ -1828,6 +1831,7 @@ enum {
 #define OP_PSUB OP_ISUB
 #define OP_PMUL OP_IMUL
 #define OP_PMUL_IMM OP_IMUL_IMM
+#define OP_POR_IMM OP_IOR_IMM
 #define OP_PNEG OP_INEG
 #define OP_PCONV_TO_I1 OP_ICONV_TO_I1
 #define OP_PCONV_TO_U1 OP_ICONV_TO_U1
@@ -1991,15 +1995,16 @@ enum {
 	MONO_EXC_ARRAY_TYPE_MISMATCH,
 	MONO_EXC_ARGUMENT,
 	MONO_EXC_ARGUMENT_OUT_OF_RANGE,
+	MONO_EXC_ARGUMENT_OUT_OF_MEMORY,
 	MONO_EXC_INTRINS_NUM
 };
 
- /* 
+ /*
   * Information about a trampoline function.
   */
 struct MonoTrampInfo
 {
-	/* 
+	/*
 	 * The native code of the trampoline. Not owned by this structure.
 	 */
  	guint8 *code;
@@ -2009,7 +2014,7 @@ struct MonoTrampInfo
 	 * structure.
 	 */
  	char *name;
-	/* 
+	/*
 	 * Patches required by the trampoline when aot-ing. Owned by this structure.
 	 */
 	MonoJumpInfo *ji;
@@ -2237,7 +2242,7 @@ mini_register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, co
 void              mono_trampolines_init (void);
 guint8 *          mono_get_trampoline_code (MonoTrampolineType tramp_type);
 gpointer          mono_create_specific_trampoline (MonoMemoryManager *mem_manager, gpointer arg1, MonoTrampolineType tramp_type, guint32 *code_len);
-gpointer          mono_create_jump_trampoline (MonoMethod *method, 
+gpointer          mono_create_jump_trampoline (MonoMethod *method,
 											   gboolean add_sync_wrapper,
 											   MonoError *error);
 gpointer mono_create_jit_trampoline (MonoMethod *method, MonoError *error);
@@ -2251,9 +2256,9 @@ gpointer          mono_create_ftnptr_arg_trampoline (gpointer arg, gpointer addr
 guint32           mono_find_rgctx_lazy_fetch_trampoline_by_addr (gconstpointer addr);
 gpointer          mono_magic_trampoline (host_mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp);
 gpointer          mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp);
-gpointer          mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info, 
+gpointer          mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info,
 									   guint8* tramp);
-gpointer          mono_aot_plt_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info, 
+gpointer          mono_aot_plt_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info,
 										   guint8* tramp);
 gconstpointer     mono_get_trampoline_func (MonoTrampolineType tramp_type);
 gpointer          mini_get_vtable_trampoline (MonoVTable *vt, int slot_index);
@@ -2336,11 +2341,11 @@ CompRelation      mono_negate_cond (CompRelation cond);
 int               mono_op_imm_to_op (int opcode);
 void              mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
 void              mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins);
-MonoUnwindOp     *mono_create_unwind_op (int when, 
-										 int tag, int reg, 
+MonoUnwindOp     *mono_create_unwind_op (int when,
+										 int tag, int reg,
 										 int val);
-void              mono_emit_unwind_op (MonoCompile *cfg, int when, 
-									   int tag, int reg, 
+void              mono_emit_unwind_op (MonoCompile *cfg, int when,
+									   int tag, int reg,
 									   int val);
 MonoTrampInfo*    mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJumpInfo *ji, GSList *unwind_ops);
 void              mono_tramp_info_free (MonoTrampInfo *info);
@@ -2349,7 +2354,7 @@ void              mono_tramp_info_register (MonoTrampInfo *info, MonoMemoryManag
 int mini_exception_id_by_name (const char *name);
 gboolean mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize);
 
-int               mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
+int               mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock,
 									 MonoInst *return_var, MonoInst **inline_args,
 									 guint inline_offset, gboolean is_virtual_call);
 
@@ -2470,7 +2475,7 @@ SeqPointInfo *mono_arch_get_seq_point_info      (guint8 *code);
 
 gboolean
 mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
-						MonoJitInfo *ji, MonoContext *ctx, 
+						MonoJitInfo *ji, MonoContext *ctx,
 						MonoContext *new_ctx, MonoLMF **lmf,
 						host_mgreg_t **save_locations,
 						StackFrameInfo *frame_info);
@@ -2605,8 +2610,8 @@ ICALL_EXPORT
 MonoArray *ves_icall_get_trace                  (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
 
 ICALL_EXPORT
-MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_file_info, 
-						 MonoReflectionMethod **method, 
+MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_file_info,
+						 MonoReflectionMethod **method,
 						 gint32 *iloffset, gint32 *native_offset,
 						 MonoString **file, gint32 *line, gint32 *column);
 void mono_set_cast_details                      (MonoClass *from, MonoClass *to);
@@ -2639,7 +2644,7 @@ void      mono_debug_free_method                (MonoCompile *cfg);
 void      mono_debug_open_block                 (MonoCompile *cfg, MonoBasicBlock *bb, guint32 address);
 void      mono_debug_record_line_number         (MonoCompile *cfg, MonoInst *ins, guint32 address);
 void      mono_debug_serialize_debug_info       (MonoCompile *cfg, guint8 **out_buf, guint32 *buf_len);
-void      mono_debug_add_aot_method             (MonoMethod *method, guint8 *code_start, 
+void      mono_debug_add_aot_method             (MonoMethod *method, guint8 *code_start,
 												 guint8 *debug_info, guint32 debug_info_len);
 MONO_API void      mono_debug_print_vars                 (gpointer ip, gboolean only_arguments);
 MONO_API void      mono_debugger_run_finally             (MonoContext *start_ctx);
@@ -2851,7 +2856,6 @@ typedef enum {
 	MONO_CPU_X86_BMI1	= 1 << 14,
 	MONO_CPU_X86_BMI2	= 1 << 15,
 
-
 	//
 	// Dependencies (based on System.Runtime.Intrinsics.X86 class hierarchy):
 	//
@@ -2882,7 +2886,7 @@ typedef enum {
 	MONO_CPU_X86_AVX_COMBINED         = MONO_CPU_X86_SSE42_COMBINED | MONO_CPU_X86_AVX,
 	MONO_CPU_X86_AVX2_COMBINED        = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_AVX2,
 	MONO_CPU_X86_FMA_COMBINED         = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_FMA,
-	MONO_CPU_X86_FULL_SSEAVX_COMBINED = MONO_CPU_X86_FMA_COMBINED   | MONO_CPU_X86_AVX2   | MONO_CPU_X86_PCLMUL 
+	MONO_CPU_X86_FULL_SSEAVX_COMBINED = MONO_CPU_X86_FMA_COMBINED   | MONO_CPU_X86_AVX2   | MONO_CPU_X86_PCLMUL
 									  | MONO_CPU_X86_AES            | MONO_CPU_X86_POPCNT | MONO_CPU_X86_FMA,
 #endif
 #ifdef TARGET_WASM

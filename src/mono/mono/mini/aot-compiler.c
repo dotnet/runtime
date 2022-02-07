@@ -230,6 +230,7 @@ typedef struct MonoAotOptions {
 	gboolean stats;
 	gboolean verbose;
 	gboolean deterministic;
+	gboolean allow_errors;
 	char *tool_prefix;
 	char *ld_flags;
 	char *ld_name;
@@ -528,7 +529,7 @@ report_loader_error (MonoAotCompile *acfg, MonoError *error, gboolean fatal, con
 	va_end (args);
 	mono_error_cleanup (error);
 
-	if (acfg->is_full_aot && fatal) {
+	if (acfg->is_full_aot && !acfg->aot_opts.allow_errors && fatal) {
 		fprintf (output, "FullAOT cannot continue if there are loader errors.\n");
 		exit (1);
 	}
@@ -2989,7 +2990,7 @@ arch_emit_unbox_arbitrary_trampoline (MonoAotCompile *acfg, int offset, int *tra
 static guint32
 mono_get_field_token (MonoClassField *field)
 {
-	MonoClass *klass = field->parent;
+	MonoClass *klass = m_field_get_parent (field);
 	int i;
 
 	int fcount = mono_class_get_field_count (klass);
@@ -3484,7 +3485,7 @@ encode_field_info (MonoAotCompile *cfg, MonoClassField *field, guint8 *buf, guin
 	guint32 token = mono_get_field_token (field);
 	guint8 *p = buf;
 
-	encode_klass_ref (cfg, field->parent, p, &p);
+	encode_klass_ref (cfg, m_field_get_parent (field), p, &p);
 	g_assert (mono_metadata_token_code (token) == MONO_TOKEN_FIELD_DEF);
 	encode_value (token - MONO_TOKEN_FIELD_DEF, p, &p);
 	*endbuf = p;
@@ -3671,6 +3672,8 @@ encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, g
 		flags |= 0x20;
 	if (sig->explicit_this)
 		flags |= 0x40;
+	if (sig->pinvoke)
+		flags |= 0x80;
 	flags |= (sig->call_convention & 0x0F);
 
 	*p = flags;
@@ -3772,6 +3775,9 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_value (info->d.icall.jit_icall_id, p, &p);
 			} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_AOT) {
 				encode_method_ref (acfg, info->d.managed_to_native.method, p, &p);
+			} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT) {
+				encode_klass_ref (acfg, info->d.native_func.klass, p, &p);
+				encode_signature (acfg, info->d.native_func.sig, p, &p);
 			} else {
 				g_assert (info->subtype == WRAPPER_SUBTYPE_NONE || info->subtype == WRAPPER_SUBTYPE_PINVOKE);
 				encode_method_ref (acfg, info->d.managed_to_native.method, p, &p);
@@ -8077,14 +8083,15 @@ mono_aot_readonly_field_override (MonoClassField *field)
 	for (rdv = readonly_values; rdv; rdv = rdv->next) {
 		char *p = rdv->name;
 		int len;
-		len = strlen (m_class_get_name_space (field->parent));
-		if (strncmp (p, m_class_get_name_space (field->parent), len))
+		MonoClass *field_parent = m_field_get_parent (field);
+		len = strlen (m_class_get_name_space (field_parent));
+		if (strncmp (p, m_class_get_name_space (field_parent), len))
 			continue;
 		p += len;
 		if (*p++ != '.')
 			continue;
-		len = strlen (m_class_get_name (field->parent));
-		if (strncmp (p, m_class_get_name (field->parent), len))
+		len = strlen (m_class_get_name (field_parent));
+		if (strncmp (p, m_class_get_name (field_parent), len))
 			continue;
 		p += len;
 		if (*p++ != '.')
@@ -8498,6 +8505,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->profile_only = TRUE;
 		} else if (!strcmp (arg, "verbose")) {
 			opts->verbose = TRUE;
+		} else if (!strcmp (arg, "allow-errors")) {
+			opts->allow_errors = TRUE;
 		} else if (str_begins_with (arg, "llvmopts=")){
 			if (opts->llvm_opts) {
 				char *s = g_strdup_printf ("%s %s", opts->llvm_opts, arg + strlen ("llvmopts="));
@@ -8581,6 +8590,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    threads=\n");
 			printf ("    write-symbols\n");
 			printf ("    verbose\n");
+			printf ("    allow-errors\n");
 			printf ("    no-opt\n");
 			printf ("    llvmopts=\n");
 			printf ("    llvmllc=\n");
@@ -9121,7 +9131,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				break;
 			}
 			case MONO_PATCH_INFO_SFLDA: {
-				MonoClass *klass = patch_info->data.field->parent;
+				MonoClass *klass = m_field_get_parent (patch_info->data.field);
 
 				/* The .cctor needs to run at runtime. */
 				if (mono_class_is_ginst (klass) && !mono_generic_context_is_sharable_full (&mono_class_get_generic_class (klass)->context, FALSE, FALSE) && mono_class_get_cctor (klass))

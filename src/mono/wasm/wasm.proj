@@ -12,6 +12,8 @@
     <EmccCmd>emcc</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
     <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
+    <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
+    <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
   </PropertyGroup>
 
@@ -64,31 +66,39 @@
 
   <Target Name="GenerateEmccPropsAndRspFiles">
     <ItemGroup>
-      <_EmccCommonFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
-      <_EmccCommonFlags Include="-s NO_EXIT_RUNTIME=1" />
-      <_EmccCommonFlags Include="-s FORCE_FILESYSTEM=1" />
-      <_EmccCommonFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency']&quot;" />
-      <_EmccCommonFlags Include="-s EXPORTED_FUNCTIONS=&quot;['_free','_malloc']&quot;" />
-      <_EmccCommonFlags Include="--source-map-base http://example.com" />
-
-      <_EmccCommonFlags Include="-s STRICT_JS=1" />      
-      <_EmccCommonFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
-      <_EmccCommonFlags Include="-s MODULARIZE=1"/>
-      <_EmccCommonFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
+      <_EmccLinkFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
+      <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
+      <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
+      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency']&quot;" />
+      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=&quot;['_free','_malloc']&quot;" />
+      <_EmccLinkFlags Include="--source-map-base http://example.com" />
+      <_EmccLinkFlags Include="-s STRICT_JS=1" />
+      <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
+      <_EmccLinkFlags Include="-s MODULARIZE=1"/>
+      <_EmccLinkFlags Include="-Wl,--allow-undefined"/>
+      <_EmccLinkFlags Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-      <_EmccFlags Include="--profiling-funcs" />
+      <_EmccLinkFlags Include="--profiling-funcs" />
       <_EmccFlags Include="@(_EmccCommonFlags)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <_EmccFlags Include="@(_EmccCommonFlags)" />
-      <_EmccFlags Include="-s USE_ZLIB=1" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(_EmccDefaultsRspPath)"
                       Lines="@(_EmccFlags)"
+                      WriteOnlyWhenDifferent="true"
+                      Overwrite="true" />
+    <WriteLinesToFile File="$(_EmccCompileRspPath)"
+                      Lines="@(_EmccCompileFlags)"
+                      WriteOnlyWhenDifferent="true"
+                      Overwrite="true" />
+    <WriteLinesToFile File="$(_EmccLinkRspPath)"
+                      Lines="@(_EmccLinkFlags)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
 
@@ -192,8 +202,7 @@
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(ICULibFiles);
-                       @(ICULibNativeFiles);
-                       runtime/package.json;"
+                       @(ICULibNativeFiles);"
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
@@ -205,6 +214,8 @@
       <WasmSrcFiles Include="$(NativeBinDir)src\*.c;
                              $(NativeBinDir)src\*.js;
                              $(_EmccDefaultsRspPath);
+                             $(_EmccCompileRspPath);
+                             $(_EmccLinkRspPath);
                              $(NativeBinDir)src\emcc-props.json" />
       <WasmSrcFilesCjs Include="$(NativeBinDir)src\cjs\*.js;" />
       <WasmSrcFilesEs6 Include="$(NativeBinDir)src\es6\*.js;" />
@@ -253,7 +264,6 @@
     <Touch Files="$(MonoProjectRoot)wasm/runtime/node_modules/.npm-stamp" AlwaysCreate="true" />
   </Target>
 
-
   <ItemGroup>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/types/*.ts"/>
@@ -272,6 +282,14 @@
     <!-- compile typescript -->
     <RunWithEmSdkEnv Command="npm run rollup -- --environment Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
+    <Copy SourceFiles="runtime/package.json;"
+          DestinationFolder="$(NativeBinDir)"
+          SkipUnchangedFiles="true" />
+
+    <!-- set version -->
+    <RunWithEmSdkEnv Command="npm version $(PackageVersion)" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(NativeBinDir)"/>
+
     <Touch Files="$(NativeBinDir).rollup-stamp" AlwaysCreate="true" />
   </Target>
+
 </Project>

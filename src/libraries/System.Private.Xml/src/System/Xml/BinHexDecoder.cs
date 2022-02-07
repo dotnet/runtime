@@ -141,7 +141,7 @@ namespace System.Xml
             bool hasHalfByteCached = false;
             byte cachedHalfByte = 0;
 
-            Decode(chars, bytes, ref hasHalfByteCached, ref cachedHalfByte, out int charsDecoded, out int bytesDecoded);
+            Decode(chars, bytes, ref hasHalfByteCached, ref cachedHalfByte, out _, out int bytesDecoded);
 
             if (hasHalfByteCached && !allowOddChars)
             {

@@ -117,7 +117,7 @@ inline void RestoreNonvolatileRegisterPointers(PT_KNONVOLATILE_CONTEXT_POINTERS 
 //
 #ifdef _DEBUG
 void DumpClauses(IJitManager* pJitMan, const METHODTOKEN& MethToken, UINT_PTR uMethodStartPC, UINT_PTR dwControlPc);
-static void DoEHLog(DWORD lvl, __in_z const char *fmt, ...);
+static void DoEHLog(DWORD lvl, _In_z_ const char *fmt, ...);
 #define EH_LOG(expr)  { DoEHLog expr ; }
 #else
 #define EH_LOG(expr)
@@ -2035,7 +2035,7 @@ lExit:
 }
 
 // static
-void ExceptionTracker::DebugLogTrackerRanges(__in_z const char *pszTag)
+void ExceptionTracker::DebugLogTrackerRanges(_In_z_ const char *pszTag)
 {
 #ifdef _DEBUG
     CONTRACTL
@@ -4277,7 +4277,7 @@ void DumpClauses(IJitManager* pJitMan, const METHODTOKEN& MethToken, UINT_PTR uM
 
 static void DoEHLog(
     DWORD lvl,
-    __in_z const char *fmt,
+    _In_z_ const char *fmt,
     ...
     )
 {

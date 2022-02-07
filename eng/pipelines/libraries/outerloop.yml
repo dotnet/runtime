@@ -27,7 +27,7 @@ jobs:
       - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
         - Linux_x64
         - Linux_musl_x64
-        - ${{ if eq(variables['isFullMatrix'], true) }}:
+        - ${{ if eq(variables['isRollingBuild'], true) }}:
           - Linux_arm
           - Linux_arm64
           - Linux_musl_arm64
@@ -46,27 +46,27 @@ jobs:
       platforms:
       - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
         - windows_x86
-        - ${{ if eq(variables['isFullMatrix'], true) }}:
+        - ${{ if eq(variables['isRollingBuild'], true) }}:
           - windows_x64
       - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
-        - ${{ if eq(variables['isFullMatrix'], true) }}:
+        - ${{ if eq(variables['isRollingBuild'], true) }}:
           - Linux_x64
           - Linux_arm
           - Linux_arm64
           - Linux_musl_x64
           - Linux_musl_arm64
-      - ${{ if and(eq(variables['includeOsxOuterloop'], true), eq(variables['isFullMatrix'], true)) }}:
+      - ${{ if and(eq(variables['includeOsxOuterloop'], true), eq(variables['isRollingBuild'], true)) }}:
         - OSX_arm64
         - OSX_x64
       helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
       jobParameters:
         isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-        isFullMatrix: ${{ variables['isFullMatrix'] }}
+        includeAllPlatforms: ${{ variables['isRollingBuild'] }}
         runTests: true
         testScope: outerloop
         liveRuntimeBuildConfig: release
   
-  - ${{ if eq(variables['isFullMatrix'], false) }}:
+  - ${{ if eq(variables['isRollingBuild'], false) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobTemplate: /eng/pipelines/libraries/build-job.yml
@@ -83,7 +83,7 @@ jobs:
         helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:
           isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-          isFullMatrix: ${{ variables['isFullMatrix'] }}
+          includeAllPlatforms: ${{ variables['isRollingBuild'] }}
           runTests: true
           testScope: outerloop
           liveRuntimeBuildConfig: release
@@ -95,12 +95,12 @@ jobs:
         buildConfig: Release
         platforms:
         - windows_x86
-        - ${{ if eq(variables['isFullMatrix'], true) }}:
+        - ${{ if eq(variables['isRollingBuild'], true) }}:
           - windows_x64
         helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:
           isOfficialBuild: ${{ variables['isOfficialBuild'] }}
-          isFullMatrix: ${{ variables['isFullMatrix'] }}
+          includeAllPlatforms: ${{ variables['isRollingBuild'] }}
           framework: net48
           runTests: true
           testScope: outerloop

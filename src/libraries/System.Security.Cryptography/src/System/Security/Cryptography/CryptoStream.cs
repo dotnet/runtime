@@ -51,7 +51,7 @@ namespace System.Security.Cryptography
                 case CryptoStreamMode.Read:
                     if (!_stream.CanRead)
                     {
-                        throw new ArgumentException(SR.Format(SR.Argument_StreamNotReadable, nameof(stream)));
+                        throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(stream));
                     }
                     _canRead = true;
                     break;
@@ -59,7 +59,7 @@ namespace System.Security.Cryptography
                 case CryptoStreamMode.Write:
                     if (!_stream.CanWrite)
                     {
-                        throw new ArgumentException(SR.Format(SR.Argument_StreamNotWritable, nameof(stream)));
+                        throw new ArgumentException(SR.Argument_StreamNotWritable, nameof(stream));
                     }
                     _canWrite = true;
                     break;
@@ -717,7 +717,6 @@ namespace System.Security.Cryptography
                 pinHandle.Free();
             }
             ArrayPool<byte>.Shared.Return(rentedBuffer);
-            rentedBuffer = null;
         }
 
         private void CheckCopyToArguments(Stream destination, int bufferSize)

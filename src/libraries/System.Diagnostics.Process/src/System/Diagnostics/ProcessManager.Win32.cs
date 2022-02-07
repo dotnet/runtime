@@ -161,13 +161,6 @@ namespace System.Diagnostics
                             continue;
                         }
 
-                        var module = new ProcessModule()
-                        {
-                            ModuleMemorySize = ntModuleInfo.SizeOfImage,
-                            EntryPointAddress = ntModuleInfo.EntryPoint,
-                            BaseAddress = ntModuleInfo.BaseOfDll
-                        };
-
                         int length = 0;
                         while ((length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length)) == chars.Length)
                         {
@@ -178,12 +171,11 @@ namespace System.Diagnostics
 
                         if (length == 0)
                         {
-                            module.Dispose();
                             HandleLastWin32Error();
                             continue;
                         }
 
-                        module.ModuleName = new string(chars, 0, length);
+                        string moduleName = new string(chars, 0, length);
 
                         while ((length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length)) == chars.Length)
                         {
@@ -194,7 +186,6 @@ namespace System.Diagnostics
 
                         if (length == 0)
                         {
-                            module.Dispose();
                             HandleLastWin32Error();
                             continue;
                         }
@@ -205,9 +196,13 @@ namespace System.Diagnostics
                         {
                             charsSpan = charsSpan.Slice(NtPathPrefix.Length);
                         }
-                        module.FileName = charsSpan.ToString();
 
-                        modules.Add(module);
+                        modules.Add(new ProcessModule(charsSpan.ToString(), moduleName)
+                        {
+                            ModuleMemorySize = ntModuleInfo.SizeOfImage,
+                            EntryPointAddress = ntModuleInfo.EntryPoint,
+                            BaseAddress = ntModuleInfo.BaseOfDll,
+                        });
                     }
                 }
                 finally

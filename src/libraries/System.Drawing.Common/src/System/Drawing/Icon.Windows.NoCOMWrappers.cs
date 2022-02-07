@@ -15,6 +15,7 @@ namespace System.Drawing
         {
             if (_iconData != null)
             {
+                ArgumentNullException.ThrowIfNull(outputStream);
                 outputStream.Write(_iconData, 0, _iconData.Length);
             }
             else
@@ -32,9 +33,7 @@ namespace System.Drawing
                 {
                     try
                     {
-                        if (outputStream == null)
-                            throw new ArgumentNullException(nameof(outputStream));
-
+                        ArgumentNullException.ThrowIfNull(outputStream);
                         picture.SaveAsFile(new GPStream(outputStream, makeSeekable: false), -1, out int temp);
                     }
                     finally

@@ -4,7 +4,7 @@
  *
  * Authors:
  *	Rodrigo Kumpera (rkumpera@novell.com)
- * 
+ *
  */
 
 #include <config.h>
@@ -29,7 +29,7 @@
 /*
  * This is a very simple lock trace implementation. It can be used to verify that the runtime is
  * correctly following all locking rules.
- * 
+ *
  * To log more kind of locks just do the following:
  * 	- add an entry into the RuntimeLocks enum
  *  - change mono_os_mutex_lock(mutex) to mono_locks_os_acquire (mutex, LockName)
@@ -44,7 +44,7 @@
  *  - Enable tracing of more runtime locks
  *  - Add lock check assertions (must_not_hold_any_lock_but, must_hold_lock, etc)
  *   This should be used to verify methods that expect that a given lock is held at entrypoint, for example.
- * 
+ *
  * To use the trace, define LOCK_TRACER in lock-trace.h and when running mono define MONO_ENABLE_LOCK_TRACER.
  * This will produce a locks.ZZZ where ZZZ is the pid of the mono process.
  * Use the decoder to verify the result.
