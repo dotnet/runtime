@@ -3,9 +3,7 @@ project (MonoEmbeddingApiTest)
 include_directories(${INC_PLATFORM_DIR})
 
 
-# FIXME: rename DISABLE_LIBS to something more descriptive and negate, for example MONOAPI_NO_INSTALL
-set (DISABLE_LIBS 1)
-add_subdirectory(${CLR_SRC_NATIVE_DIR}/include/mono-2.0 mono-2.0)
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/monoapi monoapi)
 
 # we need eglib objects
 
