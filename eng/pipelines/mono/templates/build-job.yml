@@ -146,10 +146,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono$(msCorDbi) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(darwinFrameworks)
+      - script: ./build$(scriptExt) -subset mono$(msCorDbi)+clr.hosts -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(darwinFrameworks)
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: build$(scriptExt) -subset mono$(msCorDbi) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter)
+      - script: build$(scriptExt) -subset mono$(msCorDbi)+clr.hosts -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter)
         displayName: Build product
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
@@ -171,10 +171,10 @@ jobs:
 
     # Build packages
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono$(msCorDbi) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
+      - script: ./build$(scriptExt) -subset mono$(msCorDbi)+clr.hosts -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: build$(scriptExt) -subset mono$(msCorDbi) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
+      - script: build$(scriptExt) -subset mono$(msCorDbi)+clr.hosts -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
 
     # Publish official build

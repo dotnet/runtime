@@ -11,8 +11,8 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "LogonUserW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static partial int LogonUser(
             string username,
-            string domain,
-            string password,
+            string? domain,
+            string? password,
             int logonType,
             int logonProvider,
             ref IntPtr token);

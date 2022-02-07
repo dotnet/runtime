@@ -258,11 +258,7 @@ void debugError(const char* msg, const char* file, unsigned line)
     // If ComPlus_JitRequired is 0 or is not set, we will not assert.
     if (JitConfig.JitRequired() == 1 || getBreakOnBadCode())
     {
-        // Don't assert if verification is done.
-        if (!env->compiler->tiVerificationNeeded || getBreakOnBadCode())
-        {
-            assertAbort(msg, file, line);
-        }
+        assertAbort(msg, file, line);
     }
 
     BreakIfDebuggerPresent();
@@ -279,7 +275,7 @@ extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned 
     const char* msg       = why;
     LogEnv*     env       = JitTls::GetLogEnv();
     const int   BUFF_SIZE = 8192;
-    char*       buff      = (char*)alloca(BUFF_SIZE);
+    char*       buff      = (char*)_alloca(BUFF_SIZE);
     const char* phaseName = "unknown phase";
     if (env->compiler)
     {
@@ -490,7 +486,7 @@ void logf(unsigned level, const char* fmt, ...)
     va_end(args);
 }
 
-void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, __in_z const char* file, unsigned line)
+void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, _In_z_ const char* file, unsigned line)
 {
     const int BUFF_SIZE = 512;
     char      buf1[BUFF_SIZE];

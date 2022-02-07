@@ -234,11 +234,11 @@ FileLoadLevel MulticoreJitManager::GetModuleFileLoadLevel(Module * pModule)
 
     if (pModule != NULL)
     {
-        DomainFile * pDomainFile = pModule->GetDomainFile();
+        DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
 
-        if (pDomainFile != NULL)
+        if (pDomainAssembly != NULL)
         {
-            level = pDomainFile->GetLoadLevel();
+            level = pDomainAssembly->GetLoadLevel();
         }
     }
 
@@ -310,7 +310,7 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
 
     SString sAssemblyName;
     StackScratchBuffer scratch;
-    pMod->GetAssembly()->GetManifestFile()->GetDisplayName(sAssemblyName);
+    pMod->GetAssembly()->GetPEAssembly()->GetDisplayName(sAssemblyName);
 
     LPCUTF8 pAssemblyName = sAssemblyName.GetUTF8(scratch);
     unsigned lenAssemblyName = sAssemblyName.GetCount();
@@ -770,21 +770,8 @@ HRESULT MulticoreJitModuleEnumerator::HandleAssembly(DomainAssembly * pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
-    DomainAssembly::ModuleIterator modIt = pAssembly->IterateModules(kModIterIncludeLoaded);
-
-    HRESULT hr = S_OK;
-
-    while (modIt.Next() && SUCCEEDED(hr))
-    {
-        Module * pModule = modIt.GetModule();
-
-        if (pModule != NULL)
-        {
-            hr = OnModule(pModule);
-        }
-    }
-
-    return hr;
+    Module * pModule = pAssembly->GetModule();
+    return OnModule(pModule);
 }
 
 
@@ -1551,7 +1538,7 @@ DWORD MulticoreJitManager::EncodeModuleHelper(void * pModuleContext, Module * pR
 //    wszProfile  - profile name
 //    ptrNativeAssemblyBinder - the binding context
 //
-extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder)
 {
     QCALL_CONTRACT;
 
@@ -1570,7 +1557,7 @@ extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(__in_z LPCWSTR wszPr
 }
 
 
-extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(__in_z LPCWSTR wszProfilePath)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(_In_z_ LPCWSTR wszProfilePath)
 {
     QCALL_CONTRACT;
 

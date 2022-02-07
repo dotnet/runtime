@@ -5,7 +5,7 @@
 // the IL_0090 shift operand.
 
 .assembly extern System.Runtime { auto }
-.assembly DevDiv_524309 {}
+.assembly 'DevDiv_545497' {}
 .assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit DevDiv_545497

@@ -37,17 +37,8 @@ namespace System.Net.Mail
 
         public MailMessage(string from, string to)
         {
-            if (from == null)
-                throw new ArgumentNullException(nameof(from));
-
-            if (to == null)
-                throw new ArgumentNullException(nameof(to));
-
-            if (from.Length == 0)
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(from)), nameof(from));
-
-            if (to.Length == 0)
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(to)), nameof(to));
+            ArgumentException.ThrowIfNullOrEmpty(from);
+            ArgumentException.ThrowIfNullOrEmpty(to);
 
             _message = new Message(from, to);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _message);
@@ -377,7 +368,7 @@ namespace System.Net.Mail
             {
                 // we should not unnecessarily use Multipart/Mixed
                 // When there is no attachement and all the alternative views are of "Alternative" types.
-                MimeMultiPart? part = null;
+                MimeMultiPart? part;
                 MimeMultiPart viewsPart = new MimeMultiPart(MimeMultiPartType.Alternative);
 
                 if (!string.IsNullOrEmpty(_body))

@@ -4,11 +4,18 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
 
+if (CLR_CMAKE_HOST_ALPINE_LINUX)
+    # Fix up the thread stack size for MUSL to more reasonable size.
+    # TODO: https://github.com/dotnet/runtimelab/issues/791
+    add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
+endif ()
+
 if (CLR_CMAKE_TARGET_OSX)
     add_definitions(-D_DARWIN_C_SOURCE)
 endif ()
 
 set(NATIVE_SOURCES
+    pal_dynamicload.c
     pal_errno.c
     pal_interfaceaddresses.c
     pal_io.c
@@ -20,7 +27,6 @@ set(NATIVE_SOURCES
     pal_process.c
     pal_random.c
     pal_runtimeinformation.c
-    pal_runtimeextensions.c
     pal_signal.c
     pal_string.c
     pal_tcpstate.c

@@ -42,11 +42,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<StructWithCustomConverterFactory> StructWithCustomConverterFactory { get; }
         public JsonTypeInfo<ClassWithCustomConverterProperty> ClassWithCustomConverterProperty { get; }
         public JsonTypeInfo<StructWithCustomConverterProperty> StructWithCustomConverterProperty { get; }
-        public JsonTypeInfo<ClassWithCustomConverterPropertyFactory> ClassWithCustomConverterPropertyFactory { get; }
-        public JsonTypeInfo<StructWithCustomConverterPropertyFactory> StructWithCustomConverterPropertyFactory { get; }
+        public JsonTypeInfo<ClassWithCustomConverterFactoryProperty> ClassWithCustomConverterFactoryProperty { get; }
+        public JsonTypeInfo<StructWithCustomConverterFactoryProperty> StructWithCustomConverterFactoryProperty { get; }
         public JsonTypeInfo<ClassWithBadCustomConverter> ClassWithBadCustomConverter { get; }
         public JsonTypeInfo<StructWithBadCustomConverter> StructWithBadCustomConverter { get; }
         public JsonTypeInfo<PersonStruct?> NullablePersonStruct { get; }
+        public JsonTypeInfo<TypeWithValidationAttributes> TypeWithValidationAttributes { get; }
+        public JsonTypeInfo<TypeWithDerivedAttribute> TypeWithDerivedAttribute { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext

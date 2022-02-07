@@ -108,3 +108,19 @@ public class SparseTest : ISparseType
     public int MultiplyBy19(int a) { return a * 19; }
     public int MultiplyBy20(int a) { return a * 20; }
 }
+
+public class OnlyLoadOnceCaller
+{
+    public static int GetField_1(OnlyLoadOnce_1 s)
+    {
+        return s.Field;
+    }
+    public static int GetField_2(OnlyLoadOnce_2 s)
+    {
+        return s.Field;
+    }
+    public static int GetField_3(OnlyLoadOnce_3 s)
+    {
+        return s.Field;
+    }
+}

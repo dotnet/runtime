@@ -308,8 +308,7 @@ namespace System.Media
 
         private void LoadStream(bool loadSync)
         {
-            Debug.Assert(_stream != null);
-            if (loadSync && _stream.CanSeek)
+            if (loadSync && _stream!.CanSeek)
             {
                 int streamLen = (int)_stream.Length;
                 _currentPos = 0;
@@ -617,7 +616,7 @@ namespace System.Media
 
         private static void ValidateSoundData(byte[] data)
         {
-            int position = 0;
+            int position;
             short wFormatTag = -1;
             bool fmtChunkFound = false;
 

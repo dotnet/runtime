@@ -149,7 +149,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataTask::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -713,7 +713,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataAppDomain::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status = S_OK;
 
@@ -948,6 +948,11 @@ ClrDataAssembly::Release(THIS)
     return newRefs;
 }
 
+struct TrivialModuleIterator
+{
+    Module* m_module;
+};
+
 HRESULT STDMETHODCALLTYPE
 ClrDataAssembly::StartEnumModules(
     /* [out] */ CLRDATA_ENUM* handle)
@@ -958,11 +963,10 @@ ClrDataAssembly::StartEnumModules(
 
     EX_TRY
     {
-        Assembly::ModuleIterator* iter = new (nothrow)
-            Assembly::ModuleIterator;
+        TrivialModuleIterator* iter = new (nothrow) TrivialModuleIterator;
         if (iter)
         {
-            *iter = m_assembly->IterateModules();
+            iter->m_module = m_assembly->GetModule();
             *handle = TO_CDENUM(iter);
             status = S_OK;
         }
@@ -995,12 +999,13 @@ ClrDataAssembly::EnumModule(
 
     EX_TRY
     {
-        Assembly::ModuleIterator* iter =
-            FROM_CDENUM(Assembly::ModuleIterator, *handle);
-        if (iter->Next())
+        TrivialModuleIterator* iter = FROM_CDENUM(TrivialModuleIterator, *handle);
+        if (iter->m_module)
         {
             *mod = new (nothrow)
-                ClrDataModule(m_dac, iter->GetModule());
+                ClrDataModule(m_dac, iter->m_module);
+
+            iter->m_module = NULL;
             status = *mod ? S_OK : E_OUTOFMEMORY;
         }
         else
@@ -1031,8 +1036,7 @@ ClrDataAssembly::EndEnumModules(
 
     EX_TRY
     {
-        Assembly::ModuleIterator* iter =
-            FROM_CDENUM(Assembly::ModuleIterator, handle);
+        TrivialModuleIterator* iter = FROM_CDENUM(TrivialModuleIterator, handle);
         delete iter;
         status = S_OK;
     }
@@ -1132,7 +1136,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataAssembly::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -1160,7 +1164,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataAssembly::GetFileName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -1170,7 +1174,7 @@ ClrDataAssembly::GetFileName(
     {
         COUNT_T _nameLen;
 
-        if (m_assembly->GetManifestFile()->GetPath().
+        if (m_assembly->GetPEAssembly()->GetPath().
             DacGetUnicode(bufLen, name, &_nameLen))
         {
             if (nameLen)
@@ -1201,7 +1205,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataAssembly::GetDisplayName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -2376,7 +2380,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataModule::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -2404,7 +2408,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataModule::GetFileName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -3115,7 +3119,7 @@ ClrDataMethodDefinition::GetName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -3858,7 +3862,7 @@ ClrDataMethodInstance::GetName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -4735,7 +4739,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataExceptionState::GetString(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *strLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *strLen) WCHAR str[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *strLen) WCHAR str[  ])
 {
     HRESULT status = E_FAIL;
 

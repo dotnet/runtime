@@ -89,8 +89,10 @@ namespace System.Text.RegularExpressions.Symbolic
 
             protected override void Go()
             {
+                ReadOnlySpan<char> inputSpan = runtext;
+
                 // Perform the match.
-                SymbolicMatch pos = _matcher.FindMatch(quick, runtext!, runtextpos, runtextend);
+                SymbolicMatch pos = _matcher.FindMatch(quick, inputSpan, runtextpos, runtextend);
                 if (pos.Success)
                 {
                     // If we successfully matched, capture the match, and then jump the current position to the end of the match.

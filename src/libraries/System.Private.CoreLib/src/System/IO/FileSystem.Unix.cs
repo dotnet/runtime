@@ -159,8 +159,7 @@ namespace System.IO
             else
             {
                 // There is no backup file.  Just make sure the destination file exists, throwing if it doesn't.
-                Interop.Sys.FileStatus ignored;
-                if (Interop.Sys.Stat(destFullPath, out ignored) != 0)
+                if (Interop.Sys.Stat(destFullPath, out _) != 0)
                 {
                     Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
                     if (errno.Error == Interop.Error.ENOENT)
@@ -492,43 +491,45 @@ namespace System.IO
             if (Interop.Sys.RmDir(fullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                switch (errorInfo.Error)
-                {
-                    case Interop.Error.EACCES:
-                    case Interop.Error.EPERM:
-                    case Interop.Error.EROFS:
-                    case Interop.Error.EISDIR:
-                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath)); // match Win32 exception
-                    case Interop.Error.ENOENT:
-                        // When we're recursing, don't throw for items that go missing.
-                        if (!topLevel)
-                        {
-                            return true;
-                        }
-                        goto default;
-                    case Interop.Error.ENOTDIR:
-                        // When the top-level path is a symlink to a directory, delete the link.
-                        // In other cases, throw because we expect path to be a real directory.
-                        if (topLevel)
-                        {
-                            if (!DirectoryExists(fullPath))
-                            {
-                                throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
-                            }
 
-                            DeleteFile(fullPath);
-                            return true;
-                        }
-                        goto default;
-                    case Interop.Error.ENOTEMPTY:
-                        if (!throwWhenNotEmpty)
-                        {
-                            return false;
-                        }
-                        goto default;
-                    default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
+                if (errorInfo.Error == Interop.Error.ENOTEMPTY)
+                {
+                    if (!throwWhenNotEmpty)
+                    {
+                        return false;
+                    }
                 }
+                else if (errorInfo.Error == Interop.Error.ENOENT)
+                {
+                    // When we're recursing, don't throw for items that go missing.
+                    if (!topLevel)
+                    {
+                        return true;
+                    }
+                }
+                else if (DirectoryExists(fullPath, out Interop.ErrorInfo existErr))
+                {
+                    // Top-level path is a symlink to a directory, delete the link.
+                    if (topLevel && errorInfo.Error == Interop.Error.ENOTDIR)
+                    {
+                        DeleteFile(fullPath);
+                        return true;
+                    }
+                }
+                else if (existErr.Error == Interop.Error.ENOENT)
+                {
+                    // Prefer throwing DirectoryNotFoundException over other exceptions.
+                    errorInfo = existErr;
+                }
+
+                if (errorInfo.Error == Interop.Error.EACCES ||
+                    errorInfo.Error == Interop.Error.EPERM ||
+                    errorInfo.Error == Interop.Error.EROFS)
+                {
+                    throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath));
+                }
+
+                throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
             }
 
             return true;
@@ -553,51 +554,25 @@ namespace System.IO
         }
 
         public static void SetAttributes(string fullPath, FileAttributes attributes)
-        {
-            new FileInfo(fullPath, null).Attributes = attributes;
-        }
+            => default(FileStatus).SetAttributes(fullPath, attributes, asDirectory: false);
 
         public static DateTimeOffset GetCreationTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).CreationTimeUtc;
-        }
+            => default(FileStatus).GetCreationTime(fullPath).UtcDateTime;
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-
-            info.CreationTimeCore = time;
-        }
+            => default(FileStatus).SetCreationTime(fullPath, time, asDirectory);
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).LastAccessTimeUtc;
-        }
+            => default(FileStatus).GetLastAccessTime(fullPath).UtcDateTime;
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-
-            info.LastAccessTimeCore = time;
-        }
+            => default(FileStatus).SetLastAccessTime(fullPath, time, asDirectory);
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).LastWriteTimeUtc;
-        }
+            => default(FileStatus).GetLastWriteTime(fullPath).UtcDateTime;
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-
-            info.LastWriteTimeCore = time;
-        }
+            => default(FileStatus).SetLastWriteTime(fullPath, time, asDirectory);
 
         public static string[] GetLogicalDrives()
         {

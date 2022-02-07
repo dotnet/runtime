@@ -92,6 +92,8 @@ parser.add_argument("--long_gc", dest="long_gc", action="store_true", default=Fa
 parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", default=False)
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
+parser.add_argument("--run_nativeaot_tests", dest="run_nativeaot_tests", action="store_true", default=False)
+parser.add_argument("--nativeaot_multimodule", dest="nativeaot_multimodule", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests.")
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
@@ -147,7 +149,7 @@ class DebugEnv:
             test ({})               : The test metadata
 
         """
-        self.unique_name = "%s_%s_%s_%s" % (test["name"],
+        self.unique_name = "%s_%s_%s_%s" % (test["test_path"],
                                             args.host_os,
                                             args.arch,
                                             args.build_type)
@@ -160,7 +162,7 @@ class DebugEnv:
         self.__create_repro_wrapper__()
 
         self.path = None
-        
+
         if self.args.host_os == "windows":
             self.path = self.unique_name + ".cmd"
         else:
@@ -869,6 +871,16 @@ def run_tests(args,
         print("Setting RunCrossGen2=true")
         os.environ["RunCrossGen2"] = "true"
 
+    if args.run_nativeaot_tests:
+        print("Running tests Native AOT")
+        print("Setting RunNativeAot=true")
+        os.environ["RunNativeAot"] = "true"
+
+    if args.nativeaot_multimodule:
+        print("Native AOT will be compiled in multimodule mode")
+        print("Setting NativeAotMultimodule=true")
+        os.environ["NativeAotMultimodule"] = "true"
+
     if args.large_version_bubble:
         print("Large Version Bubble enabled")
         os.environ["LargeVersionBubble"] = "true"
@@ -990,6 +1002,16 @@ def setup_args(args):
                               "run_crossgen2_tests",
                               lambda unused: True,
                               "Error setting run_crossgen2_tests")
+
+    coreclr_setup_args.verify(args,
+                              "run_nativeaot_tests",
+                              lambda unused: True,
+                              "Error setting run_nativeaot_tests")
+
+    coreclr_setup_args.verify(args,
+                              "nativeaot_multimodule",
+                              lambda unused: True,
+                              "Error setting nativeaot_multimodule")
 
     coreclr_setup_args.verify(args,
                               "skip_test_run",
@@ -1147,14 +1169,13 @@ def find_test_from_name(host_os, test_location, test_name):
 
     location = starting_path
     if not os.path.isfile(location):
-        print("Warning: couldn't find test: %s" % test_name)
         return None
 
     assert(os.path.isfile(location))
 
     return location
 
-def parse_test_results(args):
+def parse_test_results(args, tests, assemblies):
     """ Parse the test results for test execution information
 
     Args:
@@ -1163,30 +1184,52 @@ def parse_test_results(args):
     log_path = os.path.join(args.logs_dir, "TestRunResults_%s_%s_%s" % (args.host_os, args.arch, args.build_type))
     print("Parsing test results from (%s)" % log_path)
 
-    test_run_location = os.path.join(args.logs_dir, "testRun.xml")
+    found = False
 
-    if not os.path.isfile(test_run_location):
-        # Check if this is a casing issue
+    for item in os.listdir(args.logs_dir):
+        suffix_index = item.lower().find("testrun.xml")
+        if suffix_index >= 0:
+            found = True
+            item_name = ""
+            if suffix_index > 0:
+                item_name = item[:suffix_index - 1]
+            parse_test_results_xml_file(args, item, item_name, tests, assemblies)
 
-        found = False
-        for item in os.listdir(args.logs_dir):
-            item_lower = item.lower()
-            if item_lower == "testrun.xml":
-                # Correct the name.
-                os.rename(os.path.join(args.logs_dir, item), test_run_location)
-                found = True
-                break
+    if not found:
+        print("Unable to find testRun.xml. This normally means the tests did not run.")
+        print("It could also mean there was a problem logging. Please run the tests again.")
+        return
 
-        if not found:
-            print("Unable to find testRun.xml. This normally means the tests did not run.")
-            print("It could also mean there was a problem logging. Please run the tests again.")
-            return
+def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
+    """ Parse test results from a single xml results file
+    Args:
+        xml_result_file      : results xml file to parse
+        args                 : arguments
+        tests                : dictionary of individual test results
+        assemblies           : dictionary of per-assembly aggregations
+    """
 
-    print("Analyzing {}".format(test_run_location))
-    assemblies = xml.etree.ElementTree.parse(test_run_location).getroot()
-
-    tests = defaultdict(lambda: None)
-    for assembly in assemblies:
+    xml_result_file = os.path.join(args.logs_dir, item)
+    print("Analyzing {}".format(xml_result_file))
+    xml_assemblies = xml.etree.ElementTree.parse(xml_result_file).getroot()
+    for assembly in xml_assemblies:
+        if "name" not in assembly.attrib:
+            continue
+        assembly_name = assembly.attrib["name"]
+        assembly_info = assemblies[assembly_name]
+        display_name = assembly_name
+        if len(item_name) > 0:
+            display_name = item_name
+        if assembly_info == None:
+            assembly_info = defaultdict(lambda: None, {
+                "name": assembly_name,
+                "display_name": display_name,
+                "time": 0.0,
+                "passed": 0,
+                "failed": 0,
+                "skipped": 0,
+            })
+        assembly_info["time"] = assembly_info["time"] + float(assembly.attrib["time"])
         for collection in assembly:
             if collection.tag == "errors" and collection.text != None:
                 # Something went wrong during running the tests.
@@ -1199,39 +1242,33 @@ def parse_test_results(args):
                     method = test.attrib["method"]
 
                     type = type.split("._")[0]
-                    test_name = type + method
-
-                assert test_name != None
-
-                failed = collection.attrib["failed"]
-                skipped = collection.attrib["skipped"]
-                passed = collection.attrib["passed"]
-                time = float(collection.attrib["time"])
-
-                test_output = None
-
-                if failed == "1":
-                    failure_info = collection[0][0]
-                    test_output = failure_info.text
-
-                test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, test_name)
-                if test_location_on_filesystem is not None:
-                    assert os.path.isfile(test_location_on_filesystem)
-
+                    test_name = type + "::" + method
+                    name = test.attrib["name"]
+                    if len(name) > 0:
+                        test_name += " (" + name + ")"
+                    result = test.attrib["result"]
+                    time = float(collection.attrib["time"])
+                    test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, name)
+                    if test_location_on_filesystem is None or not os.path.isfile(test_location_on_filesystem):
+                        test_location_on_filesystem = None
+                    test_output = test.findtext("output")
                     assert tests[test_name] == None
                     tests[test_name] = defaultdict(lambda: None, {
                         "name": test_name,
                         "test_path": test_location_on_filesystem,
-                        "failed": failed,
-                        "skipped": skipped,
-                        "passed": passed,
+                        "result" : result,
                         "time": time,
                         "test_output": test_output
                     })
+                    if result == "Pass":
+                        assembly_info["passed"] += 1
+                    elif result == "Fail":
+                        assembly_info["failed"] += 1
+                    else:
+                        assembly_info["skipped"] += 1
+        assemblies[assembly_name] = assembly_info
 
-    return tests
-
-def print_summary(tests):
+def print_summary(tests, assemblies):
     """ Print a summary of the test results
 
     Args:
@@ -1241,122 +1278,64 @@ def print_summary(tests):
     """
 
     assert tests is not None
+    assert assemblies is not None
 
     failed_tests = []
-    passed_tests = []
-    skipped_tests = []
 
     for test in tests:
         test = tests[test]
+        if test["result"] == "Fail":
+            print("Failed test: %s" % test["name"])
 
-        if test["failed"] == "1":
-            failed_tests.append(test)
-        elif test["passed"] == "1":
-            passed_tests.append(test)
-        else:
-            skipped_tests.append(test)
-
-    failed_tests.sort(key=lambda item: item["time"], reverse=True)
-    passed_tests.sort(key=lambda item: item["time"], reverse=True)
-    skipped_tests.sort(key=lambda item: item["time"], reverse=True)
-
-    def print_tests_helper(tests, stop_count):
-        for index, item in enumerate(tests):
-            time = item["time"]
-            unit = "seconds"
-            time_remainder = ""
-            second_unit = ""
-            saved_time = time
-            remainder_str = ""
-
-            # If it can be expressed in hours
-            if time > 60**2:
-                time = saved_time / (60**2)
-                time_remainder = saved_time % (60**2)
-                time_remainder /= 60
-                time_remainder = math.floor(time_remainder)
-                unit = "hours"
-                second_unit = "minutes"
-
-                remainder_str = " %s %s" % (int(time_remainder), second_unit)
-
-            elif time > 60 and time < 60**2:
-                time = saved_time / 60
-                time_remainder = saved_time % 60
-                time_remainder = math.floor(time_remainder)
-                unit = "minutes"
-                second_unit = "seconds"
-
-                remainder_str = " %s %s" % (int(time_remainder), second_unit)
-
-            print("%s (%d %s%s)" % (item["test_path"], time, unit, remainder_str))
-
-            if stop_count != None:
-                if index >= stop_count:
-                    break
-
-    if len(failed_tests) > 0:
-        print("%d failed tests:" % len(failed_tests))
-        print("")
-        print_tests_helper(failed_tests, None)
-
-    # The following code is currently disabled, as it produces too much verbosity in a normal
-    # test run. It could be put under a switch, or else just enabled as needed when investigating
-    # test slowness.
-    #
-    # if len(passed_tests) > 50:
-    #     print("")
-    #     print("50 slowest passing tests:")
-    #     print("")
-    #     print_tests_helper(passed_tests, 50)
-
-    if len(failed_tests) > 0:
-        print("")
-        print("#################################################################")
-        print("Output of failing tests:")
-        print("")
-
-        for item in failed_tests:
-            print("[%s]: " % item["test_path"])
-            print("")
-
-            test_output = item["test_output"]
-
-            # XUnit results are captured as escaped characters.
-            #test_output = test_output.replace("\\r", "\r")
-            #test_output = test_output.replace("\\n", "\n")
-            #test_output = test_output.replace("/r", "\r")
-            #test_output = test_output.replace("/n", "\n")
+            test_output = test["test_output"]
 
             # Replace CR/LF by just LF; Python "print", below, will map as necessary on the platform.
             # If we don't do this, then Python on Windows will convert \r\n to \r\r\n on output.
-            test_output = test_output.replace("\r\n", "\n")
+            if test_output is not None:
+                test_output = test_output.replace("\r\n", "\n")
 
-            unicode_output = None
-            if sys.version_info < (3,0):
-                # Handle unicode characters in output in python2.*
-                try:
-                    unicode_output = unicode(test_output, "utf-8")
-                except:
-                    print("Error: failed to convert Unicode output")
+                unicode_output = None
+                if sys.version_info < (3,0):
+                    # Handle unicode characters in output in python2.*
+                    try:
+                        unicode_output = unicode(test_output, "utf-8")
+                    except:
+                        print("Error: failed to convert Unicode output")
+                else:
+                    unicode_output = test_output
+
+                if unicode_output is not None:
+                    print(unicode_output)
             else:
-                unicode_output = test_output
-
-            if unicode_output is not None:
-                print(unicode_output)
+                print("# Test output recorded in log file.")
             print("")
 
-        print("")
-        print("#################################################################")
-        print("End of output of failing tests")
-        print("#################################################################")
-        print("")
+    print("Time [secs] | Total | Passed | Failed | Skipped | Assembly Execution Summary")
+    print("============================================================================")
 
-    print("")
-    print("Total tests run    : %d" % len(tests))
-    print("Total passing tests: %d" % len(passed_tests))
-    print("Total failed tests : %d" % len(failed_tests))
-    print("Total skipped tests: %d" % len(skipped_tests))
+    total_time = 0.0
+    total_total = 0
+    total_passed = 0
+    total_failed = 0
+    total_skipped = 0
+
+    for assembly in assemblies:
+        assembly = assemblies[assembly]
+        name = assembly["display_name"]
+        time = assembly["time"]
+        passed = assembly["passed"]
+        failed = assembly["failed"]
+        skipped = assembly["skipped"]
+        total = passed + failed + skipped
+        print("%11.3f | %5d | %6d | %6d | %7d | %s" % (time, total, passed, failed, skipped, name))
+        total_time += time
+        total_total += total
+        total_passed += passed
+        total_failed += failed
+        total_skipped += skipped
+
+    print("----------------------------------------------------------------------------")
+    print("%11.3f | %5d | %6d | %6d | %7d | (total)" % (total_time, total_total, total_passed, total_failed, total_skipped))
     print("")
 
 def create_repro(args, env, tests):
@@ -1371,7 +1350,7 @@ def create_repro(args, env, tests):
     """
     assert tests is not None
 
-    failed_tests = [tests[item] for item in tests if tests[item]["failed"] == "1"]
+    failed_tests = [tests[item] for item in tests if tests[item]["result"] == "Fail" and tests[item]["test_path"] is not None]
     if len(failed_tests) == 0:
         return
 
@@ -1415,10 +1394,11 @@ def main(args):
         print("Test run finished.")
 
     if not args.skip_test_run:
-        tests = parse_test_results(args)
-        if tests is not None:
-            print_summary(tests)
-            create_repro(args, env, tests)
+        assemblies = defaultdict(lambda: None)
+        tests = defaultdict(lambda: None)
+        parse_test_results(args, tests, assemblies)
+        print_summary(tests, assemblies)
+        create_repro(args, env, tests)
 
     return ret_code
 

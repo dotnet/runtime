@@ -47,11 +47,6 @@
         <target state="translated">A matriz de destino não é longa o suficiente para copiar todos os itens da coleção. Verifique o índice e o tamanho da matriz.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">A matriz não pode conter elementos nulos.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">Índice inicial não pode ser menor que 0 ou maior que o comprimento de entrada.</target>
@@ -152,6 +147,16 @@
         <target state="translated">Comprimento não pode ser menor que 0 ou exceder o comprimento de entrada.</target>
         <note />
       </trans-unit>
+      <trans-unit id="LimitedSourceGenerationMessage">
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
+        <target state="translated">O RegexGenerator não pôde gerar uma implementação de origem completa para a expressão regular especificada, devido a uma opção sem suporte ou a uma expressão regular muito complexa.  A implementação interpretará a expressão regular em tempo de execução.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationTitle">
+        <source>RegexGenerator limitation reached.</source>
+        <target state="translated">Limitação de RegexGenerator atingida.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MakeException">
         <source>Invalid pattern '{0}' at offset {1}. {2}</source>
         <target state="translated">Padrão inválido '{0}' no deslocamento {1}. {2}</target>
@@ -200,11 +205,6 @@
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">A coleção é somente leitura.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">Esta operação só é permitida uma vez por objeto.</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">
@@ -280,11 +280,6 @@
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \\ at end of pattern.</source>
         <target state="translated">\\ incorreto no final do padrão.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">Opcode inesperado na geração de expressão regular: {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">

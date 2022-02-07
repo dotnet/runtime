@@ -228,7 +228,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\FSharpCoreReflectionProxy.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\GenericMethodHolder.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\DefaultValueHolder.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonCollectionInfoValuesOfTCollection.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Converters.cs" />
@@ -314,12 +314,16 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System.Text.Json.Typeforwards.netcoreapp.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
   </ItemGroup>
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
   <ItemGroup>
@@ -354,8 +358,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj"
-                       Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
     <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" />
   </ItemGroup>
 </Project>

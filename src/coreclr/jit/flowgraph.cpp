@@ -67,7 +67,6 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 // Returns:
 //    PhaseStatus indicating what, if anything, was changed.
 //
-
 PhaseStatus Compiler::fgInsertGCPolls()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
@@ -108,23 +107,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
         // the test.
 
         // If we're doing GCPOLL_CALL, just insert a GT_CALL node before the last node in the block.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef DEBUG
-        switch (block->bbJumpKind)
-        {
-            case BBJ_RETURN:
-            case BBJ_ALWAYS:
-            case BBJ_COND:
-            case BBJ_SWITCH:
-            case BBJ_NONE:
-            case BBJ_THROW:
-            case BBJ_CALLFINALLY:
-                break;
-            default:
-                assert(!"Unexpected block kind");
-        }
-#endif // DEBUG
+        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_NONE, BBJ_THROW, BBJ_CALLFINALLY));
 
         GCPollType pollType = GCPOLL_INLINE;
 
@@ -196,13 +180,6 @@ PhaseStatus Compiler::fgInsertGCPolls()
         constexpr bool computeDoms  = false;
         fgUpdateChangedFlowGraph(computePreds, computeDoms);
     }
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** After fgInsertGCPolls()\n");
-        fgDispBasicBlocks(true);
-    }
-#endif // DEBUG
 
     return result;
 }
@@ -245,10 +222,9 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         createdPollBlocks = false;
 
         Statement* newStmt = nullptr;
-        if ((block->bbJumpKind == BBJ_ALWAYS) || (block->bbJumpKind == BBJ_CALLFINALLY) ||
-            (block->bbJumpKind == BBJ_NONE))
+        if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_NONE))
         {
-            // For BBJ_ALWAYS, BBJ_CALLFINALLY, and BBJ_NONE and  we don't need to insert it before the condition.
+            // For BBJ_ALWAYS, BBJ_CALLFINALLY, and BBJ_NONE we don't need to insert it before the condition.
             // Just append it.
             newStmt = fgNewStmtAtEnd(block, call);
         }
@@ -920,7 +896,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
     // intrinsics, flag the helper call. Later during inlining, we can
     // remove the helper call if the associated field lookup is unused.
-    if ((info.compFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
+    if ((info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
         NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
         if ((ni == NI_System_Collections_Generic_EqualityComparer_get_Default) ||
@@ -967,7 +943,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
     {
         return false;
     }
-    else if (addr->OperIs(GT_CNS_STR))
+    else if (addr->OperIs(GT_CNS_STR, GT_CLS_VAR_ADDR))
     {
         return false;
     }
@@ -1084,7 +1060,9 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     GenTree*              qmarkNode       = nullptr;
     if (oper == GT_FTN_ADDR)
     {
-        targetMethodHnd = targetMethod->AsFptrVal()->gtFptrMethod;
+        GenTreeFptrVal* fptrValTree       = targetMethod->AsFptrVal();
+        fptrValTree->gtFptrDelegateTarget = true;
+        targetMethodHnd                   = fptrValTree->gtFptrMethod;
     }
     else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
@@ -1267,7 +1245,7 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     // If tree is a relop and we need an 4-byte integer
     //  then we never need to insert a cast
     //
-    if ((tree->OperKind() & GTK_RELOP) && (genActualType(toType) == TYP_INT))
+    if (tree->OperIsCompare() && (genActualType(toType) == TYP_INT))
     {
         return false;
     }
@@ -1392,14 +1370,13 @@ void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
     }
 }
 
-/*****************************************************************************
- *
- *  Mark which loops are guaranteed to execute a call.
- */
-
+//------------------------------------------------------------------------
+// fgLoopCallMark: Mark which loops are guaranteed to execute a call by setting the
+// block BBF_LOOP_CALL0 and BBF_LOOP_CALL1 flags, as appropriate.
+//
 void Compiler::fgLoopCallMark()
 {
-    /* If we've already marked all the block, bail */
+    // If we've already marked all the blocks, bail.
 
     if (fgLoopCallMarked)
     {
@@ -1408,7 +1385,12 @@ void Compiler::fgLoopCallMark()
 
     fgLoopCallMarked = true;
 
-    /* Walk the blocks, looking for backward edges */
+#ifdef DEBUG
+    // This code depends on properly ordered bbNum, so check that.
+    fgDebugCheckBBNumIncreasing();
+#endif // DEBUG
+
+    // Walk the blocks, looking for backward edges.
 
     for (BasicBlock* const block : Blocks())
     {
@@ -2938,7 +2920,7 @@ void Compiler::fgFindOperOrder()
 // and computing lvaOutgoingArgSpaceSize.
 //
 // Notes:
-//    Lowers GT_ARR_LENGTH, GT_ARR_BOUNDS_CHECK, and GT_SIMD_CHK.
+//    Lowers GT_ARR_LENGTH, GT_BOUNDS_CHECK.
 //
 //    For target ABIs with fixed out args area, computes upper bound on
 //    the size of this area from the calls in the IR.
@@ -3001,13 +2983,7 @@ void Compiler::fgSimpleLowering()
                     break;
                 }
 
-                case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-                case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-                case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+                case GT_BOUNDS_CHECK:
                 {
                     // Add in a call to an error routine.
                     fgSetRngChkTarget(tree, false);
@@ -3109,6 +3085,9 @@ void Compiler::fgSimpleLowering()
         fgDispHandlerTab();
         printf("\n");
     }
+
+    fgDebugCheckBBlist();
+    fgDebugCheckLinks();
 #endif
 }
 
@@ -3390,7 +3369,7 @@ void Compiler::fgCreateFunclets()
  * or are rarely executed.
  */
 
-void Compiler::fgDetermineFirstColdBlock()
+PhaseStatus Compiler::fgDetermineFirstColdBlock()
 {
 #ifdef DEBUG
     if (verbose)
@@ -3404,19 +3383,19 @@ void Compiler::fgDetermineFirstColdBlock()
     //
     assert(fgSafeBasicBlockCreation);
 
-    fgFirstColdBlock = nullptr;
+    assert(fgFirstColdBlock == nullptr);
 
     if (!opts.compProcedureSplitting)
     {
         JITDUMP("No procedure splitting will be done for this method\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
     if ((compHndBBtabCount > 0) && !opts.compProcedureSplittingEH)
     {
         JITDUMP("No procedure splitting will be done for this method with EH (by request)\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif // DEBUG
 
@@ -3427,7 +3406,7 @@ void Compiler::fgDetermineFirstColdBlock()
     if (compHndBBtabCount > 0)
     {
         JITDUMP("No procedure splitting will be done for this method with EH (implementation limitation)\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -3498,7 +3477,7 @@ void Compiler::fgDetermineFirstColdBlock()
 
         if (prevToFirstColdBlock == nullptr)
         {
-            return; // To keep Prefast happy
+            return PhaseStatus::MODIFIED_EVERYTHING; // To keep Prefast happy
         }
 
         // If we only have one cold block
@@ -3594,14 +3573,12 @@ EXIT:;
         {
             printf("fgFirstColdBlock is NULL.\n");
         }
-
-        fgDispBasicBlocks();
     }
-
-    fgVerifyHandlerTab();
 #endif // DEBUG
 
     fgFirstColdBlock = firstColdBlock;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 /* static */
@@ -3920,42 +3897,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 
     /* Is this a leaf/constant node? */
 
-    if (kind & (GTK_CONST | GTK_LEAF))
+    if (kind & GTK_LEAF)
     {
         fgSetTreeSeqFinish(tree, isLIR);
-        return;
-    }
-
-    // Special handling for dynamic block ops.
-    if (tree->OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK))
-    {
-        GenTreeDynBlk* dynBlk    = tree->AsDynBlk();
-        GenTree*       sizeNode  = dynBlk->gtDynamicSize;
-        GenTree*       dstAddr   = dynBlk->Addr();
-        GenTree*       src       = dynBlk->Data();
-        bool           isReverse = ((dynBlk->gtFlags & GTF_REVERSE_OPS) != 0);
-        if (dynBlk->gtEvalSizeFirst)
-        {
-            fgSetTreeSeqHelper(sizeNode, isLIR);
-        }
-
-        // We either have a DYN_BLK or a STORE_DYN_BLK. If the latter, we have a
-        // src (the Data to be stored), and isReverse tells us whether to evaluate
-        // that before dstAddr.
-        if (isReverse && (src != nullptr))
-        {
-            fgSetTreeSeqHelper(src, isLIR);
-        }
-        fgSetTreeSeqHelper(dstAddr, isLIR);
-        if (!isReverse && (src != nullptr))
-        {
-            fgSetTreeSeqHelper(src, isLIR);
-        }
-        if (!dynBlk->gtEvalSizeFirst)
-        {
-            fgSetTreeSeqHelper(sizeNode, isLIR);
-        }
-        fgSetTreeSeqFinish(dynBlk, isLIR);
         return;
     }
 
@@ -4130,8 +4074,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             break;
 
         case GT_STORE_DYN_BLK:
-        case GT_DYN_BLK:
-            noway_assert(!"DYN_BLK nodes should be sequenced as a special case");
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->Addr(), isLIR);
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->Data(), isLIR);
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->gtDynamicSize, isLIR);
             break;
 
         default:
@@ -4429,32 +4374,29 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
 // Return Value:
 //    The first node in execution order, that belongs to tree.
 //
-// Assumptions:
-//     'tree' must either be a leaf, or all of its constituent nodes must be contiguous
-//     in execution order.
-//     TODO-Cleanup: Add a debug-only method that verifies this.
-
-/* static */
-GenTree* Compiler::fgGetFirstNode(GenTree* tree)
+// Notes:
+//    This function is only correct for HIR trees.
+//
+/* static */ GenTree* Compiler::fgGetFirstNode(GenTree* tree)
 {
-    GenTree* child = tree;
-    while (child->NumChildren() > 0)
+    GenTree* firstNode = tree;
+    while (true)
     {
-        if ((child->OperIsBinary() || child->OperIsMultiOp()) && child->IsReverseOp())
+        auto operandsBegin = firstNode->OperandsBegin();
+        auto operandsEnd   = firstNode->OperandsEnd();
+
+        if (operandsBegin == operandsEnd)
         {
-            child = child->GetChild(1);
+            break;
         }
-        else
-        {
-            child = child->GetChild(0);
-        }
+
+        firstNode = *operandsBegin;
     }
-    return child;
+
+    return firstNode;
 }
 
-/*****************************************************************************/
-/*static*/
-Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
+/*static*/ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
 
@@ -4486,7 +4428,7 @@ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
             }
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
+        case GT_BOUNDS_CHECK:
             return Compiler::WALK_ABORT;
 
         default:
@@ -4496,9 +4438,7 @@ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
     return Compiler::WALK_CONTINUE;
 }
 
-/*****************************************************************************/
-/*static*/
-Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)
+/*static*/ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
 
@@ -4510,9 +4450,7 @@ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* da
     return Compiler::WALK_CONTINUE;
 }
 
-/*****************************************************************************/
-/*static*/
-Compiler::fgWalkResult Compiler::fgChkQmarkCB(GenTree** pTree, fgWalkData* data)
+/*static*/ Compiler::fgWalkResult Compiler::fgChkQmarkCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
 

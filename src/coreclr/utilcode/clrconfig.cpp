@@ -228,7 +228,7 @@ namespace
     HRESULT GetConfigDWORD(
         LPCWSTR name,
         DWORD defValue,
-        __out DWORD *result,
+        _Out_ DWORD *result,
         LookupOptions options)
     {
         CONTRACTL
@@ -312,7 +312,7 @@ namespace
     // Return Value:
     //     HRESULT indicating success or failure.
     //
-    HRESULT TrimWhiteSpace(LPCWSTR wszOrig, __deref_out_z LPWSTR * pwszTrimmed)
+    HRESULT TrimWhiteSpace(LPCWSTR wszOrig, _Outptr_result_z_ LPWSTR * pwszTrimmed)
     {
         CONTRACTL
         {
@@ -537,7 +537,7 @@ LPWSTR CLRConfig::GetConfigValue(const ConfigStringInfo & info)
 //         not found.
 //
 // static
-HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, __deref_out_z LPWSTR * outVal)
+HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, _Outptr_result_z_ LPWSTR * outVal)
 {
     CONTRACT(HRESULT) {
         NOTHROW;
@@ -609,7 +609,7 @@ BOOL CLRConfig::IsConfigOptionSpecified(LPCWSTR name)
 // Deallocation function for code:CLRConfig::FreeConfigString
 //
 // static
-void CLRConfig::FreeConfigString(__in_z LPWSTR str)
+void CLRConfig::FreeConfigString(_In_z_ LPWSTR str)
 {
     LIMITED_METHOD_CONTRACT;
 

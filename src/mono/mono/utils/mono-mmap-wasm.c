@@ -64,6 +64,12 @@ mono_valloc_granule (void)
 static int
 prot_from_flags (int flags)
 {
+#if HOST_WASI
+	// The mmap in wasi-sdk rejects PROT_NONE, but otherwise disregards the flags
+	// We just need to pass an acceptable value
+	return PROT_READ;
+#endif
+
 	int prot = PROT_NONE;
 	/* translate the protection bits */
 	if (flags & MONO_MMAP_READ)
@@ -72,6 +78,7 @@ prot_from_flags (int flags)
 		prot |= PROT_WRITE;
 	if (flags & MONO_MMAP_EXEC)
 		prot |= PROT_EXEC;
+
 	return prot;
 }
 
@@ -154,7 +161,6 @@ int
 mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 {
 	VallocInfo *info = (VallocInfo*)(valloc_hash ? g_hash_table_lookup (valloc_hash, addr) : NULL);
-	int res;
 
 	if (info) {
 		/*
@@ -162,13 +168,13 @@ mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 		 * mono_valloc_align (), free the original mapping.
 		 */
 		BEGIN_CRITICAL_SECTION;
-		res = munmap (info->addr, info->size);
+		munmap (info->addr, info->size);
 		END_CRITICAL_SECTION;
 		g_free (info);
 		g_hash_table_remove (valloc_hash, addr);
 	} else {
 		BEGIN_CRITICAL_SECTION;
-		res = munmap (addr, length);
+		munmap (addr, length);
 		END_CRITICAL_SECTION;
 	}
 

@@ -9,8 +9,7 @@
   .ver 4:0:0:0
 }
 
-.assembly test1 {}
-.module test1.exe
+.assembly 'test' {}
 
 .namespace Test
 {

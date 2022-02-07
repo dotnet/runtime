@@ -1242,7 +1242,7 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
         return NULL;
     }
 
-    if(!MultiByteToWideChar(CP_ACP, 0,command_line, i, retval, i))
+    if(!MultiByteToWideChar(CP_ACP, 0,command_line, -1, retval, i))
     {
         ASSERT("MultiByteToWideChar failure\n");
         free(retval);

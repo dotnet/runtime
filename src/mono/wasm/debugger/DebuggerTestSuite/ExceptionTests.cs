@@ -41,7 +41,7 @@ namespace DebuggerTests
             }), "exception0.data");
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", "not implemented caught");
+            await CheckString(exception_members, "message", "not implemented caught");
 
             pause_location = await WaitForManagedException(null);
             AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
@@ -58,7 +58,7 @@ namespace DebuggerTests
             }), "exception1.data");
 
             exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", "not implemented uncaught");
+            await CheckString(exception_members, "message", "not implemented uncaught");
         }
 
         [Fact]
@@ -79,7 +79,7 @@ namespace DebuggerTests
             }), "exception0.data");
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", "exception caught");
+            await CheckString(exception_members, "message", "exception caught");
 
             pause_location = await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0, "exception_uncaught_test");
 
@@ -93,7 +93,7 @@ namespace DebuggerTests
             }), "exception1.data");
 
             exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", "exception uncaught");
+            await CheckString(exception_members, "message", "exception uncaught");
         }
 
         // FIXME? BUG? We seem to get the stack trace for Runtime.exceptionThrown at `call_method`,
@@ -189,7 +189,7 @@ namespace DebuggerTests
             }), "exception.data");
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", exception_message);
+            await CheckString(exception_members, "message", exception_message);
         }
 
         [Fact]
@@ -229,7 +229,7 @@ namespace DebuggerTests
             }), "exception1.data");
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", "not implemented uncaught");
+            await CheckString(exception_members, "message", "not implemented uncaught");
         }
 
         [Theory]
@@ -248,14 +248,26 @@ namespace DebuggerTests
                                     }), "Page.reload",null, 0, 0, null);
             Thread.Sleep(1000);
 
-            //send a lot of resumes to "skip" all the pauses on caught exception and completely reload the page
-            int i = 0;
-            while (i < 100)
+            // Hit resume to skip 
+            int count = 0;
+            while(true)
             {
-                Result res = await cli.SendCommand("Debugger.resume", null, token);
-                i++;
-            }
+                await cli.SendCommand("Debugger.resume", null, token);
+                count++;
 
+                try
+                {
+                    await insp.WaitFor(Inspector.PAUSE)
+                                .WaitAsync(TimeSpan.FromSeconds(10));
+                }
+                catch (TimeoutException)
+                {
+                    // timed out waiting for a PAUSE
+                    insp.ClearWaiterFor(Inspector.PAUSE);
+                    break;
+                }
+            }
+            Console.WriteLine ($"* Resumed {count} times");
 
             var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
                 $"'{entry_method_name}'" +
@@ -277,7 +289,7 @@ namespace DebuggerTests
             }), "exception0.data");
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "_message", "not implemented caught");
+            await CheckString(exception_members, "_message", "not implemented caught");
 
             pause_location = await WaitForManagedException(null);
             AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
@@ -295,7 +307,7 @@ namespace DebuggerTests
             }), "exception1.data");
 
             exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "_message", "not implemented uncaught");
+            await CheckString(exception_members, "_message", "not implemented uncaught");
         }
 
 
@@ -308,7 +320,8 @@ namespace DebuggerTests
                     AssertEqual("exception", pause_location["reason"]?.Value<string>(), $"Expected to only pause because of an exception. {pause_location}");
 
                     // return in case of a managed exception, and ignore JS ones
-                    if (pause_location["data"]?["objectId"]?.Value<string>()?.StartsWith("dotnet:object:") == true)
+                    if (pause_location["data"]?["objectId"]?.Value<string>()?.StartsWith("dotnet:object:", StringComparison.Ordinal) == true ||
+                        pause_location["data"]?["uncaught"]?.Value<bool>() == true)
                     {
                         break;
                     }

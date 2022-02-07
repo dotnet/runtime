@@ -21,8 +21,10 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
 {
     public static partial class WindowsServiceHelpers
     {
+        [System.Runtime.Versioning.SupportedOSPlatformGuard("windows")]
         public static bool IsWindowsService() { throw null; }
     }
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public partial class WindowsServiceLifetime : System.ServiceProcess.ServiceBase, Microsoft.Extensions.Hosting.IHostLifetime
     {
         public WindowsServiceLifetime(Microsoft.Extensions.Hosting.IHostEnvironment environment, Microsoft.Extensions.Hosting.IHostApplicationLifetime applicationLifetime, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory, Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Hosting.HostOptions> optionsAccessor) { }

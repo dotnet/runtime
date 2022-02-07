@@ -7,6 +7,7 @@ using Xunit;
 namespace System.Security.Cryptography.EcDsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
     public sealed class ECDsaTests_Span : ECDsaTests
     {
         protected override bool VerifyData(ECDsa ecdsa, byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm) =>
@@ -27,7 +28,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         [Theory, MemberData(nameof(RealImplementations))]
         public void SignData_InvalidArguments_Throws(ECDsa ecdsa)
         {
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.TrySignData(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, new HashAlgorithmName(null), out int bytesWritten));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.TrySignData(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, new HashAlgorithmName(null), out int bytesWritten));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.TrySignData(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, new HashAlgorithmName(""), out int bytesWritten));
             Assert.ThrowsAny<CryptographicException>(() => ecdsa.TrySignData(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, new HashAlgorithmName(Guid.NewGuid().ToString("N")), out int bytesWritten));
         }
@@ -35,7 +36,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         [Theory, MemberData(nameof(RealImplementations))]
         public void VerifyData_InvalidArguments_Throws(ECDsa ecdsa)
         {
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, new HashAlgorithmName(null)));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.VerifyData(ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, new HashAlgorithmName(null)));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, new HashAlgorithmName("")));
             Assert.ThrowsAny<CryptographicException>(() => ecdsa.VerifyData(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
         }

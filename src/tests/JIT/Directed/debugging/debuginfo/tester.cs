@@ -64,6 +64,9 @@ public unsafe class DebugInfoTest
         source.Clr.MethodLoadVerbose += e => methodTier[e.MethodID] = e.OptimizationTier;
         source.Clr.MethodILToNativeMap += e =>
         {
+            if (e.MethodID == 0)
+                return;
+
             var mappings = new (int, int)[e.CountOfMapEntries];
             for (int i = 0; i < mappings.Length; i++)
                 mappings[i] = (e.ILOffset(i), e.NativeOffset(i));

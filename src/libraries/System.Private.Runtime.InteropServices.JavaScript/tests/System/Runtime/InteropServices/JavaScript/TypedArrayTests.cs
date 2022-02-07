@@ -108,7 +108,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61945", TestPlatforms.Browser)]
         [MemberData(nameof(Object_Prototype))]
         public static void Uint8ClampedArrayFromSharedArrayBuffer(Function objectPrototype)
         {
@@ -118,7 +117,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61945", TestPlatforms.Browser)]
         [MemberData(nameof(Object_Prototype))]
         public static void Uint8ArrayFromSharedArrayBuffer(Function objectPrototype)
         {
@@ -128,7 +126,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61945", TestPlatforms.Browser)]
         [MemberData(nameof(Object_Prototype))]
         public static void Uint16ArrayFromSharedArrayBuffer(Function objectPrototype)
         {
@@ -138,7 +135,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61945", TestPlatforms.Browser)]
         [MemberData(nameof(Object_Prototype))]
         public static void Uint32ArrayFromSharedArrayBuffer(Function objectPrototype)
         {
@@ -148,7 +144,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61945", TestPlatforms.Browser)]
         [MemberData(nameof(Object_Prototype))]
         public static void Int8ArrayFromSharedArrayBuffer(Function objectPrototype)
         {
@@ -158,7 +153,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61945", TestPlatforms.Browser)]
         [MemberData(nameof(Object_Prototype))]
         public static void Int16ArrayFromSharedArrayBuffer(Function objectPrototype)
         {
@@ -168,7 +162,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61945", TestPlatforms.Browser)]
         [MemberData(nameof(Object_Prototype))]
         public static void Int32ArrayFromSharedArrayBuffer(Function objectPrototype)
         {
@@ -178,7 +171,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61945", TestPlatforms.Browser)]
         [MemberData(nameof(Object_Prototype))]
         public static void Float32ArrayFromSharedArrayBuffer(Function objectPrototype)
         {
@@ -188,7 +180,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61945", TestPlatforms.Browser)]
         [MemberData(nameof(Object_Prototype))]
         public static void Float64ArrayFromSharedArrayBuffer(Function objectPrototype)
         {

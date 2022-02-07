@@ -300,32 +300,10 @@ internal class FloatOvfToInt
         return res;
     }
 
-    public static void Usage()
+    public static int Main()
     {
-        Console.WriteLine("FloatOvfToInt [print|test]");
-    }
-
-    public static int Main(String[] args)
-    {
-        if (args.Length != 1)
-        {
-            int res = TestValues();
-            Console.WriteLine("Test " + (res == 100 ? "passed" : "failed"));
-            return res;
-        }
-        switch (args[0])
-        {
-            case "print":
-                PrintValues();
-                break;
-            case "test":
-                int res = TestValues();
-                Console.WriteLine("Test " + (res == 100 ? "passed" : "failed"));
-                return res;
-            default:
-                Usage();
-                break;
-        }
-        return 0;
+        int res = TestValues();
+        Console.WriteLine("Test " + (res == 100 ? "passed" : "failed"));
+        return res;
     }
 }

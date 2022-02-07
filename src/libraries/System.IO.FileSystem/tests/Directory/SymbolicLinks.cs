@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
     public class Directory_SymbolicLinks : BaseSymbolicLinks_FileSystem
     {
         protected override bool IsDirectoryTest => true;
@@ -46,11 +47,7 @@ namespace System.IO.Tests
             }
             else
             {
-                // Unix implementation detail:
-                // When the directory target does not exist FileStatus.GetExists returns false because:
-                // - We check _exists (which whould be true because the link itself exists).
-                // - We check InitiallyDirectory, which is the initial expected object type (which would be true).
-                // - We check _directory (false because the target directory does not exist)
+                // Unix requires the target to be a directory that exists.
                 Assert.False(link.Exists);
             }
         }

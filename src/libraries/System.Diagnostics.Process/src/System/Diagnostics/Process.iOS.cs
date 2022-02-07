@@ -11,6 +11,7 @@ namespace System.Diagnostics
     {
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public void Kill(bool entireProcessTree)
         {
             throw new PlatformNotSupportedException();
@@ -22,6 +23,7 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             throw new PlatformNotSupportedException();

@@ -1303,7 +1303,7 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 void
 mono_metadata_decode_row_slow (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
 {
-	mono_image_effective_table (&t, &idx);
+	mono_image_effective_table (&t, idx);
 	mono_metadata_decode_row_raw (t, idx, res, res_size);
 }
 
@@ -1359,7 +1359,7 @@ mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t
 {
 	const char *image_name = image && image->name ? image->name : "unknown image";
 
-	mono_image_effective_table (&t, &idx);
+	mono_image_effective_table (&t, idx);
 
 	guint32 bitfield = t->size_bitfield;
 	int i, count = mono_metadata_table_count (bitfield);
@@ -1448,7 +1448,7 @@ mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 guint32
 mono_metadata_decode_row_col_slow (const MonoTableInfo *t, int idx, guint col)
 {
-	mono_image_effective_table (&t, &idx);
+	mono_image_effective_table (&t, idx);
 	return mono_metadata_decode_row_col_raw (t, idx, col);
 }
 
@@ -2311,8 +2311,12 @@ mono_metadata_get_param_attrs (MonoImage *m, int def, int param_count)
 	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
 	int *pattrs = NULL;
 
+	/* hot reload deltas may specify 0 for the param table index */
+	if (param_index == 0)
+		return NULL;
+
 	/* FIXME: metadata-update */
-	int rows = table_info_get_rows (methodt);
+	int rows = mono_metadata_table_num_rows (m, MONO_TABLE_METHOD);
 	if (def < rows)
 		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
 	else
@@ -4797,7 +4801,12 @@ mono_metadata_typedef_from_field (MonoImage *meta, guint32 index)
 	if (meta->uncompressed_metadata)
 		loc.idx = search_ptr_table (meta, MONO_TABLE_FIELD_POINTER, loc.idx);
 
-	/* FIXME: metadata-update */
+	/* if it's not in the base image, look in the hot reload table */
+	gboolean added = (loc.idx > table_info_get_rows (&meta->tables [MONO_TABLE_FIELD]));
+	if (added) {
+		uint32_t res = mono_component_hot_reload()->field_parent (meta, loc.idx);
+		return res; /* 0 if not found, otherwise 1-based */
+	}
 
 	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, typedef_locator))
 		return 0;
@@ -4829,7 +4838,12 @@ mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
 	if (meta->uncompressed_metadata)
 		loc.idx = search_ptr_table (meta, MONO_TABLE_METHOD_POINTER, loc.idx);
 
-	/* FIXME: metadata-update */
+	/* if it's not in the base image, look in the hot reload table */
+	gboolean added = (loc.idx > table_info_get_rows (&meta->tables [MONO_TABLE_METHOD]));
+	if (added) {
+		uint32_t res = mono_component_hot_reload ()->method_parent (meta, loc.idx);
+		return res; /* 0 if not found, otherwise 1-based */
+	}
 
 	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, typedef_locator))
 		return 0;
@@ -4965,17 +4979,21 @@ mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_NESTEDCLASS];
 	locator_t loc;
 
-	if (!tdef->base)
+	if (!tdef->base && !meta->has_updates)
 		return 0;
 
 	loc.idx = mono_metadata_token_index (index);
 	loc.col_idx = MONO_NESTED_CLASS_NESTED;
 	loc.t = tdef;
 
-	/* FIXME: metadata-update */
-
-	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator))
+	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
+	if (!found && !meta->has_updates)
 		return 0;
+
+	if (G_UNLIKELY (meta->has_updates)) {
+		if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+			return 0;
+	}
 
 	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
 	return mono_metadata_decode_row_col (tdef, loc.result, MONO_NESTED_CLASS_ENCLOSING) | MONO_TOKEN_TYPE_DEF;
@@ -5068,18 +5086,23 @@ mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 	locator_t loc;
 
-	if (!tdef->base)
+	if (!tdef->base && !meta->has_updates)
 		return 0;
 
 	loc.idx = index;
 	loc.col_idx = MONO_CUSTOM_ATTR_PARENT;
 	loc.t = tdef;
 
-	/* FIXME: metadata-update */
 	/* FIXME: Index translation */
 
-	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator))
+	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
+	if (!found && !meta->has_updates)
 		return 0;
+
+	if (G_UNLIKELY (meta->has_updates)) {
+		if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+			return 0;
+	}
 
 	/* Find the first entry by searching backwards */
 	while ((loc.result > 0) && (mono_metadata_decode_row_col (tdef, loc.result - 1, MONO_CUSTOM_ATTR_PARENT) == index))
@@ -7559,11 +7582,11 @@ mono_metadata_get_corresponding_field_from_generic_type_definition (MonoClassFie
 	MonoClass *gtd;
 	int offset;
 
-	if (!mono_class_is_ginst (field->parent))
+	if (!mono_class_is_ginst (m_field_get_parent (field)))
 		return field;
 
-	gtd = mono_class_get_generic_class (field->parent)->container_class;
-	offset = field - m_class_get_fields (field->parent);
+	gtd = mono_class_get_generic_class (m_field_get_parent (field))->container_class;
+	offset = field - m_class_get_fields (m_field_get_parent (field));
 	return m_class_get_fields (gtd) + offset;
 }
 

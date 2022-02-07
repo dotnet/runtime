@@ -1131,10 +1131,10 @@ UINT FixedBitVect::bitVectGetNextAndClear()
     return bitNum;
 }
 
-int SimpleSprintf_s(__in_ecount(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
-                    __in_ecount(cbBufSize) char*                             pBufStart,
-                    size_t                                                   cbBufSize,
-                    __in_z const char*                                       fmt,
+int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
+                    _In_reads_(cbBufSize) char*                             pBufStart,
+                    size_t                                                  cbBufSize,
+                    _In_z_ const char*                                      fmt,
                     ...)
 {
     assert(fmt);
@@ -1377,7 +1377,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
             case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSTATICFIELDADDR_CONTEXT:
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
             case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:

@@ -99,7 +99,11 @@ namespace Internal.TypeVerifier
                             continue;
                         }
 
-                        MethodDesc resolvedMethod = type.ResolveInterfaceMethodTarget(method);
+                        if (type.ResolveInterfaceMethodTarget(method) is not MethodDesc resolvedMethod)
+                        {
+                            type.ResolveInterfaceMethodToDefaultImplementationOnType(method, out resolvedMethod);
+                        }
+
                         if (resolvedMethod is null)
                         {
                             VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.InterfaceType, _module, implementedInterface.InterfaceImplementation), Format(method));

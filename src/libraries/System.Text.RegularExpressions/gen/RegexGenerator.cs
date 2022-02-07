@@ -49,7 +49,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     Debug.Assert(state.Item1 is not null);
                     object? result = GetRegexTypeToEmit(state.Item2, state.Item1, cancellationToken);
-                    return result is RegexType regexType ? EmitRegexType(regexType) : result;
+                    return result is RegexType regexType ? EmitRegexType(regexType, state.Item2) : result;
                 })
                 .Collect();
 
@@ -70,8 +70,12 @@ namespace System.Text.RegularExpressions.Generator
                             context.ReportDiagnostic(d);
                             break;
 
-                        case string s:
-                            code.Add(s);
+                        case ValueTuple<string, ImmutableArray<Diagnostic>> t:
+                            code.Add(t.Item1);
+                            foreach (Diagnostic d in t.Item2)
+                            {
+                                context.ReportDiagnostic(d);
+                            }
                             break;
                     }
                 }

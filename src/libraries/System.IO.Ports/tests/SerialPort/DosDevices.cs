@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 namespace System.IO.Ports.Tests
@@ -127,14 +128,20 @@ namespace System.IO.Ports.Tests
                     buffer = new char[buffer.Length * 2];
                     dataSize = QueryDosDevice(null, buffer, buffer.Length);
                 }
+                else if (lastError == ERROR_ACCESS_DENIED) // Access denied eg for "MSSECFLTSYS" - just skip
+                {
+                    dataSize = 0;
+                    break;
+                }
                 else
                 {
-                    throw new Exception("Unknown Win32 Error: " + lastError);
+                    throw new Exception($"Error {lastError} calling QueryDosDevice for '{name}' with buffer size {buffer.Length}. {new Win32Exception((int)lastError).Message}");
                 }
             }
             return buffer;
         }
 
+        public const int ERROR_ACCESS_DENIED = 5;
         public const int ERROR_INSUFFICIENT_BUFFER = 122;
         public const int ERROR_MORE_DATA = 234;
 

@@ -20,18 +20,18 @@ namespace System.Runtime.InteropServices
 
         /// External functions that implement the NativeLibrary interface
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_LoadFromPath", CharSet = CharSet.Unicode)]
-        internal static extern IntPtr LoadFromPath(string libraryName, bool throwOnError);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_LoadFromPath", CharSet = CharSet.Unicode)]
+        internal static partial IntPtr LoadFromPath(string libraryName, bool throwOnError);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_LoadByName", CharSet = CharSet.Unicode)]
-        internal static extern IntPtr LoadByName(string libraryName, QCallAssembly callingAssembly,
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_LoadByName", CharSet = CharSet.Unicode)]
+        internal static partial IntPtr LoadByName(string libraryName, QCallAssembly callingAssembly,
                                                  bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag,
                                                  bool throwOnError);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_FreeLib")]
-        internal static extern void FreeLib(IntPtr handle);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_FreeLib")]
+        internal static partial void FreeLib(IntPtr handle);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_GetSymbol", CharSet = CharSet.Unicode)]
-        internal static extern IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_GetSymbol", CharSet = CharSet.Unicode)]
+        internal static partial IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError);
     }
 }

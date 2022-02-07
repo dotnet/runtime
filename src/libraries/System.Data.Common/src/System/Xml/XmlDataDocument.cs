@@ -148,7 +148,7 @@ namespace System.Xml
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SyncTree(XmlNode node)
         {
-            XmlBoundElement? be = null;
+            XmlBoundElement? be;
             _mapper.GetRegion(node, out be);
             DataRow? parentRow = null;
             bool fAddRowsToTable = IsConnected(node);
@@ -765,7 +765,7 @@ namespace System.Xml
         private XmlNode? GetColumnInsertAfterLocation(DataRow row, DataColumn col, XmlBoundElement rowElement)
         {
             XmlNode? prev = null;
-            XmlNode? node = null;
+            XmlNode? node;
 
             // text only columns appear first
             if (IsTextOnly(col))
@@ -866,7 +866,7 @@ namespace System.Xml
         private XmlNode? GetRowInsertBeforeLocation(DataRow row, XmlElement rowElement, XmlNode parentElement)
         {
             DataRow refRow = row;
-            int i = 0;
+            int i;
             int pos;
 
             // Find position
@@ -2327,7 +2327,7 @@ namespace System.Xml
             XmlNode prevSibling = parent;
             XmlNode? child = parent.FirstChild;
             bool bTextLikeNode = true;
-            XmlNode? nextSibling = null;
+            XmlNode? nextSibling;
             while (child != null)
             {
                 nextSibling = child.NextSibling;
@@ -2496,7 +2496,7 @@ namespace System.Xml
             Debug.Assert(row != null);
 
             Hashtable foundColumns = new Hashtable();
-            string xsi_attrVal = string.Empty;
+            string xsi_attrVal;
 
             RegionIterator iter = new RegionIterator(rowElement);
             bool fMore;

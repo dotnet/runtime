@@ -60,15 +60,7 @@ namespace System.IO.MemoryMappedFiles
         public static MemoryMappedFile OpenExisting(string mapName, MemoryMappedFileRights desiredAccessRights,
                                                                     HandleInheritability inheritability)
         {
-            if (mapName == null)
-            {
-                throw new ArgumentNullException(nameof(mapName), SR.ArgumentNull_MapName);
-            }
-
-            if (mapName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_MapNameEmptyString);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(mapName);
 
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
@@ -148,7 +140,12 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
             }
 
-            bool existed = File.Exists(path);
+            bool existed = mode switch
+            {
+                FileMode.Open => true, // FileStream ctor will throw if the file doesn't exist
+                FileMode.CreateNew => false,
+                _ => File.Exists(path)
+            };
             FileStream fileStream = new FileStream(path, mode, GetFileAccess(access), FileShare.Read, 0x1000, FileOptions.None);
 
             if (capacity == 0 && fileStream.Length == 0)
@@ -162,7 +159,7 @@ namespace System.IO.MemoryMappedFiles
                 capacity = fileStream.Length;
             }
 
-            SafeMemoryMappedFileHandle? handle = null;
+            SafeMemoryMappedFileHandle? handle;
             try
             {
                 handle = CreateCore(fileStream, mapName, HandleInheritability.None,
@@ -314,15 +311,7 @@ namespace System.IO.MemoryMappedFiles
                                                     MemoryMappedFileAccess access, MemoryMappedFileOptions options,
                                                     HandleInheritability inheritability)
         {
-            if (mapName == null)
-            {
-                throw new ArgumentNullException(nameof(mapName), SR.ArgumentNull_MapName);
-            }
-
-            if (mapName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_MapNameEmptyString);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(mapName);
 
             if (capacity <= 0)
             {

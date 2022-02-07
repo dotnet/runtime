@@ -35,7 +35,7 @@ static void *logUserData = NULL;
 
 /**
  * mapSyslogLevel:
- * 	
+ *
  * 	@level - GLogLevelFlags value
  * 	@returns The equivalent character identifier
  */
@@ -80,7 +80,7 @@ mono_log_open_logfile(const char *path, void *userData)
 		}
 #endif
 		if (logFile == NULL) {
-			g_warning("opening of log file %s failed with %s - defaulting to stdout", 
+			g_warning("opening of log file %s failed with %s - defaulting to stdout",
 				  path, strerror(errno));
 			logFile = stdout;
 		}

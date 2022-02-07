@@ -36,11 +36,13 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterFactory))]
     [JsonSerializable(typeof(ClassWithCustomConverterProperty))]
     [JsonSerializable(typeof(StructWithCustomConverterProperty))]
-    [JsonSerializable(typeof(ClassWithCustomConverterPropertyFactory))]
-    [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory))]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactoryProperty))]
+    [JsonSerializable(typeof(StructWithCustomConverterFactoryProperty))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
     [JsonSerializable(typeof(PersonStruct?))]
+    [JsonSerializable(typeof(TypeWithValidationAttributes))]
+    [JsonSerializable(typeof(TypeWithDerivedAttribute))]
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Default;
@@ -82,12 +84,14 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterFactory);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverterProperty);
             Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterProperty);
-            Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverterPropertyFactory);
-            Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterPropertyFactory);
+            Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverterFactoryProperty);
+            Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterFactoryProperty);
             Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.ClassWithBadCustomConverter);
             Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.StructWithBadCustomConverter);
             Assert.Null(MetadataAndSerializationContext.Default.NullablePersonStruct.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.PersonStruct.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.TypeWithValidationAttributes.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.TypeWithDerivedAttribute.SerializeHandler);
         }
     }
 }

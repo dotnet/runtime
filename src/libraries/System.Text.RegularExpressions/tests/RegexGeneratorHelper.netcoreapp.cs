@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -57,6 +59,20 @@ namespace System.Text.RegularExpressions.Tests
         internal static async Task<Regex[]> SourceGenRegexAsync(
             (string pattern, RegexOptions? options, TimeSpan? matchTimeout)[] regexes, CancellationToken cancellationToken = default)
         {
+            // Un-ifdef to compile each regex individually, which can be useful if one regex among thousands is causing a failure.
+            // We compile them all en mass for test efficiency, but it can make it harder to debug a compilation failure in one of them.
+#if false
+            if (regexes.Length > 1)
+            {
+                var r = new List<Regex>();
+                foreach (var input in regexes)
+                {
+                    r.AddRange(await SourceGenRegexAsync(new[] { input }, cancellationToken));
+                }
+                return r.ToArray();
+            }
+#endif
+
             Debug.Assert(regexes.Length > 0);
 
             var code = new StringBuilder();
@@ -94,9 +110,13 @@ namespace System.Text.RegularExpressions.Tests
                     .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
                     .AddProject("Test", "test.dll", "C#")
                     .WithMetadataReferences(s_refs)
-                    .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                    .WithNullableContextOptions(NullableContextOptions.Enable))
-                    .WithParseOptions(new CSharpParseOptions(LanguageVersion.Preview))
+                    .WithCompilationOptions(
+                        new CSharpCompilationOptions(
+                            OutputKind.DynamicallyLinkedLibrary,
+                            warningLevel: 9999, // docs recommend using "9999" to catch all warnings now and in the future
+                            specificDiagnosticOptions: ImmutableDictionary<string, ReportDiagnostic>.Empty.Add("SYSLIB1045", ReportDiagnostic.Hidden)) // regex with limited support
+                            .WithNullableContextOptions(NullableContextOptions.Enable))
+                            .WithParseOptions(new CSharpParseOptions(LanguageVersion.Preview, DocumentationMode.Diagnose))
                     .AddDocument("RegexGenerator.g.cs", SourceText.From("// Empty", Encoding.UTF8)).Project;
                 Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
 
@@ -108,11 +128,12 @@ namespace System.Text.RegularExpressions.Tests
 
             // Run the generator
             GeneratorDriverRunResult generatorResults = s_generatorDriver.RunGenerators(comp!, cancellationToken).GetRunResult();
-            if (generatorResults.Diagnostics.Length != 0)
+            ImmutableArray<Diagnostic> generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
+            if (generatorDiagnostics.Length != 0)
             {
                 throw new ArgumentException(
                     string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))) + Environment.NewLine +
-                    string.Join(Environment.NewLine, generatorResults.Diagnostics));
+                    string.Join(Environment.NewLine, generatorDiagnostics));
             }
 
             // Compile the assembly to a stream
@@ -123,7 +144,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 throw new ArgumentException(
                     string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))) + Environment.NewLine +
-                    string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorResults.Diagnostics)));
+                    string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorDiagnostics)));
             }
             dll.Position = 0;
 

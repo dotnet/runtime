@@ -4,9 +4,6 @@
 // File: stubhelpers.h
 //
 
-//
-
-
 #ifndef __STUBHELPERS_h__
 #define __STUBHELPERS_h__
 
@@ -60,8 +57,7 @@ public:
     static FCDECL0(void,            SetLastError            );
     static FCDECL0(void,            ClearLastError          );
     static FCDECL1(void*,           GetNDirectTarget,       NDirectMethodDesc* pNMD);
-    static FCDECL2(void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE, UINT_PTR *ppStubArg);
-
+    static FCDECL1(void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE);
 
     static FCDECL2(void,            ThrowInteropParamException, UINT resID, UINT paramIdx);
     static FCDECL1(Object*,         GetHRExceptionObject,   HRESULT hr);
@@ -80,9 +76,6 @@ public:
     static FCDECL2(void,            MarshalToManagedVaListInternal, va_list va, VARARGS* pArgIterator);
     static FCDECL0(void*,           GetStubContext);
     static FCDECL2(void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
-#ifdef TARGET_64BIT
-    static FCDECL0(void*,           GetStubContextAddr);
-#endif // TARGET_64BIT
     static FCDECL1(DWORD,           CalcVaListSize, VARARGS *varargs);
     static FCDECL3(void,            ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, Object *pThisUNSAFE);
     static FCDECL3(void,            ValidateByref, void *pByref, MethodDesc *pMD, Object *pThisUNSAFE);

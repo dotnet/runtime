@@ -48,7 +48,6 @@ mono_w32process_get_name (pid_t pid)
 {
 	FILE *fp;
 	gchar *filename;
-	gchar buf[256];
 	gchar *ret = NULL;
 
 #if defined(HOST_SOLARIS) || (defined(_AIX) && !defined(__PASE__))
@@ -75,6 +74,7 @@ mono_w32process_get_name (pid_t pid)
 		ret = g_strdup (proc.pi_comm);
 	}
 #else
+	gchar buf[256];
 	memset (buf, '\0', sizeof(buf));
 	filename = g_strdup_printf ("/proc/%d/exe", pid);
 #if defined(HAVE_READLINK)

@@ -118,26 +118,26 @@ jobs:
       displayName: Copy scenario support files (Linux)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # build Startup
-    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\Startup -f netcoreapp3.1 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\Startup\Startup.csproj
+    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\Startup -f net6.0 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\Startup\Startup.csproj
       displayName: Build Startup tool (Windows)
       env:
-        PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
+        PERFLAB_TARGET_FRAMEWORKS: net6.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/startup -f netcoreapp3.1 -r linux-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/Startup/Startup.csproj
+    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/startup -f net6.0 -r linux-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/Startup/Startup.csproj
       displayName: Build Startup tool (Linux)
       env:
-        PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
+        PERFLAB_TARGET_FRAMEWORKS: net6.0
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # build SizeOnDisk
-    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\SOD -f netcoreapp3.1 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\SizeOnDisk\SizeOnDisk.csproj
+    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\SOD -f net6.0 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\SizeOnDisk\SizeOnDisk.csproj
       displayName: Build SizeOnDisk tool (Windows)
       env:
-        PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
+        PERFLAB_TARGET_FRAMEWORKS: net6.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/SOD -f netcoreapp3.1 -r linux-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/SizeOnDisk/SizeOnDisk.csproj
+    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/SOD -f net6.0 -r linux-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/SizeOnDisk/SizeOnDisk.csproj
       displayName: Build SizeOnDisk tool (Linux)
       env:
-        PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
+        PERFLAB_TARGET_FRAMEWORKS: net6.0
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       
     # run perf testing in helix

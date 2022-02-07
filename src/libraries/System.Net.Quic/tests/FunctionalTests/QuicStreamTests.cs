@@ -994,13 +994,9 @@ namespace System.Net.Quic.Tests
     }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory>
     {
         public QuicStreamTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
     }
-
-    // Define test collection for tests to avoid all other tests.
-    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-    public partial class NoParallelTests { }
 }
