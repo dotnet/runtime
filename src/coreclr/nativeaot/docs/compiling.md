@@ -6,7 +6,7 @@ This document explains how to compile and publish your project using Native AOT 
 
 To use Native AOT with your project, you need to add a reference to the ILCompiler NuGet package containing the Native AOT compiler and runtime. Make sure the `nuget.config` file for your project contains the following package sources under the `<packageSources>` element:
 ```xml
-<add key="dotnet-experimental" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-experimental/nuget/v3/index.json" />
+<add key="dotnet7" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json" />
 <add key="nuget" value="https://api.nuget.org/v3/index.json" />
 ```
 
@@ -50,7 +50,7 @@ Native AOT toolchain allows targeting ARM64 on an x64 host and vice versa for bo
 <PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="7.0.0-alpha.1.21423.2" />
 ```
 
-Note that it is important to use _the same version_ for both packages to avoid potential hard-to-debug issues (use the latest version from the [dotnet-experimental feed](https://dev.azure.com/dnceng/public/_packaging?_a=package&feed=dotnet-experimental&package=Microsoft.DotNet.ILCompiler&protocolType=NuGet)). After adding the package reference, you may publish for win-arm64 as usual:
+Note that it is important to use _the same version_ for both packages to avoid potential hard-to-debug issues (use the latest version from the [dotnet7](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet7/NuGet/Microsoft.DotNet.ILCompiler/7.0.0-preview.2.22103.2/versions)). After adding the package reference, you may publish for win-arm64 as usual:
 ```bash
 > dotnet publish -r win-arm64 -c Release
 ```

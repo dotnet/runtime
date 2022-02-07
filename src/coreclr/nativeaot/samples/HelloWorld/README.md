@@ -26,7 +26,7 @@ In your shell/command prompt navigate to the root directory of your project and 
 This will add a nuget.config file to your application. Open the file and in the ``<packageSources> `` element under ``<clear/>`` add the following:
 
 ```xml
-<add key="dotnet-experimental" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-experimental/nuget/v3/index.json" />
+<add key="dotnet7" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json" />
 <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
 ```
 
@@ -52,4 +52,4 @@ where `<Configuration>` is your project configuration (such as Debug or Release)
 
 Once completed, you can find the native executable in the root folder of your project under `/bin/<Configuration>/net6.0/<RID>/publish/`. Navigate to `/bin/<Configuration>/net6.0/<RID>/publish/` in your project folder and run the produced native executable.
 
-Feel free to modify the sample application and experiment. However, keep in mind some functionality might not yet be supported in NativeAOT. Let us know on the [Issues page](https://github.com/dotnet/runtimelab/issues).
+Feel free to modify the sample application and experiment. However, keep in mind some functionality might not yet be supported in NativeAOT. Let us know on the [Issues page](https://github.com/dotnet/runtime/issues).
