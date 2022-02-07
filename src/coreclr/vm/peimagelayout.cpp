@@ -235,14 +235,14 @@ void PEImageLayout::ApplyBaseRelocations()
             if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_WRITE)) == 0))
             {
                 DWORD dwNewProtection = PAGE_READWRITE;
-#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE) && !defined(__APPLE__)
                 if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0))
                 {
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
                     dwNewProtection = PAGE_EXECUTE_READWRITE;
                 }
-#endif // TARGET_UNIX && !CROSSGEN_COMPILE
+#endif // TARGET_UNIX && !CROSSGEN_COMPILE && !__APPLE__
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwNewProtection, &dwOldProtection))
                     ThrowLastError();
