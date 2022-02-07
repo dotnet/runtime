@@ -10,8 +10,11 @@ namespace System.Globalization.Tests
     public class IcuTests
     {
         private static bool IsIcuCompatiblePlatform => PlatformDetection.IsNotWindows ||
-                                                       PlatformDetection.IsWindows10Version1903OrGreater;
+                                                       (PlatformDetection.IsWindows10Version1903OrGreater &&
+                                                        // Server core doesn't have icu.dll on SysWOW64
+                                                        !(PlatformDetection.IsWindowsServerCore && PlatformDetection.IsX86Process));
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64763", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX86Process))]
         [ConditionalFact(nameof(IsIcuCompatiblePlatform))]
         public static void IcuShouldBeUsedByDefault()
         {
