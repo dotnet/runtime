@@ -6,7 +6,6 @@
 
 namespace System.Security.Cryptography.Cose
 {
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("COSE is in preview.")]
     public readonly partial struct CoseHeaderLabel : System.IEquatable<System.Security.Cryptography.Cose.CoseHeaderLabel>
     {
         public CoseHeaderLabel(int label) { throw null; }
@@ -24,7 +23,6 @@ namespace System.Security.Cryptography.Cose
         public static bool operator ==(System.Security.Cryptography.Cose.CoseHeaderLabel left, System.Security.Cryptography.Cose.CoseHeaderLabel right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.Cose.CoseHeaderLabel left, System.Security.Cryptography.Cose.CoseHeaderLabel right) { throw null; }
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("COSE is in preview.")]
     public sealed partial class CoseHeaderMap : System.Collections.Generic.IEnumerable<(System.Security.Cryptography.Cose.CoseHeaderLabel Label, System.ReadOnlyMemory<byte> EncodedValue)>, System.Collections.IEnumerable
     {
         public CoseHeaderMap() { }
@@ -51,7 +49,6 @@ namespace System.Security.Cryptography.Cose
             public void Reset() { }
         }
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("COSE is in preview.")]
     public abstract partial class CoseMessage
     {
         internal CoseMessage() { }
@@ -60,7 +57,6 @@ namespace System.Security.Cryptography.Cose
         public System.Security.Cryptography.Cose.CoseHeaderMap UnprotectedHeaders { get { throw null; } }
         public static System.Security.Cryptography.Cose.CoseSign1Message DecodeSign1(byte[] cborPayload) { throw null; }
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("COSE is in preview.")]
     public sealed partial class CoseSign1Message : System.Security.Cryptography.Cose.CoseMessage
     {
         internal CoseSign1Message() { }

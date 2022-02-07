@@ -9,7 +9,6 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.Cose
 {
-    [RequiresPreviewFeatures(CoseMessage.PreviewFeatureMessage)]
     public sealed class CoseHeaderMap : IEnumerable<(CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue)>
     {
         private static readonly byte[] s_emptyBstrEncoded = new byte[] { 0x40 };

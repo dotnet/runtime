@@ -8,7 +8,6 @@ using System.Runtime.Versioning;
 namespace System.Security.Cryptography.Cose
 {
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    [RequiresPreviewFeatures(CoseMessage.PreviewFeatureMessage)]
     public readonly struct CoseHeaderLabel : IEquatable<CoseHeaderLabel>
     {
         internal string LabelName => LabelAsString ?? LabelAsInt32.ToString();

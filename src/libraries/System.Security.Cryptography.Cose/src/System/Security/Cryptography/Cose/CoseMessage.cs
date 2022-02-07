@@ -6,7 +6,6 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.Cose
 {
-    [RequiresPreviewFeatures(PreviewFeatureMessage)]
     public abstract class CoseMessage
     {
         internal const string PreviewFeatureMessage = "COSE is in preview.";

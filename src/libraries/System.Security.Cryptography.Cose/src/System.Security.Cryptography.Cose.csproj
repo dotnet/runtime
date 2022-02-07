@@ -7,6 +7,8 @@
        Once this package has shipped a stable version, the following line
        should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <EnablePreviewFeatures>True</EnablePreviewFeatures>
+    <GenerateRequiresPreviewFeaturesAttribute>true</GenerateRequiresPreviewFeaturesAttribute>
     <PackageDescription>Provides support for CBOR Object Signing and Encryption (COSE).</PackageDescription>
   </PropertyGroup>
 

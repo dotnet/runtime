@@ -7,7 +7,6 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.Cose
 {
-    [RequiresPreviewFeatures(PreviewFeatureMessage)]
     public sealed class CoseSign1Message : CoseMessage
     {
         private const string SigStructureCoxtextSign1 = "Signature1";
