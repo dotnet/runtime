@@ -3866,7 +3866,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	 * The IsByRefLike attribute only applies to value types and enums. This matches CoreCLR behavior.
 	 */
 	if (klass->enumtype || klass->valuetype)
-		klass->is_byreflike = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_tb), is_byreflike_set);
+		klass->is_byreflike = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_tb), is_byreflike_set) != 0;
 
 	/* enums are done right away */
 	if (!klass->enumtype)
