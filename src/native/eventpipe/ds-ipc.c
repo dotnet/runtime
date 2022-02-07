@@ -218,11 +218,11 @@ ipc_log_poll_handles (ds_rt_ipc_poll_handle_array_t *ipc_poll_handles)
 	while (!ds_rt_ipc_poll_handle_array_iterator_end (ipc_poll_handles, &ipc_poll_handles_iterator)) {
 		ipc_poll_handle = ds_rt_ipc_poll_handle_array_iterator_value (&ipc_poll_handles_iterator);
 		if (ipc_poll_handle.ipc) {
-			if (!(ds_ipc_to_string (ipc_poll_handle.ipc, buffer, (uint32_t)EP_ARRAY_SIZE (buffer)) > 0))
+			if (!(ds_ipc_to_string (ipc_poll_handle.ipc, buffer, (uint32_t)ARRAY_SIZE (buffer)) > 0))
 				buffer [0] = '\0';
 			DS_LOG_DEBUG_2 ("\tSERVER IpcPollHandle[%d] = %s", connection_id, buffer);
 		} else {
-			if (!(ds_ipc_stream_to_string (ipc_poll_handle.stream, buffer, (uint32_t)EP_ARRAY_SIZE (buffer))))
+			if (!(ds_ipc_stream_to_string (ipc_poll_handle.stream, buffer, (uint32_t)ARRAY_SIZE (buffer))))
 				buffer [0] = '\0';
 			DS_LOG_DEBUG_2 ("\tCLIENT IpcPollHandle[%d] = %s", connection_id, buffer);
 		}
@@ -703,7 +703,7 @@ connect_port_get_ipc_poll_handle_func (
 		}
 
 		ep_char8_t buffer [DS_IPC_MAX_TO_STRING_LEN];
-		if (!(ds_ipc_stream_to_string (connection, buffer, (uint32_t)EP_ARRAY_SIZE (buffer))))
+		if (!(ds_ipc_stream_to_string (connection, buffer, (uint32_t)ARRAY_SIZE (buffer))))
 			buffer [0] = '\0';
 		DS_LOG_DEBUG_1 ("connect_port_get_ipc_poll_handle - returned connection %s", buffer);
 

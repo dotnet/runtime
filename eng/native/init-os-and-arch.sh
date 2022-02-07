@@ -37,6 +37,10 @@ case "$CPUName" in
         arch=arm64
         ;;
 
+    loongarch64)
+        arch=loongarch64
+        ;;
+
     amd64|x86_64)
         arch=x64
         ;;
@@ -47,6 +51,10 @@ case "$CPUName" in
         else
             arch=arm
         fi
+        ;;
+
+    armv6l)
+        arch=armv6
         ;;
 
     i[3-6]86)

@@ -216,12 +216,12 @@ namespace System.Xml
         public static char ToChar(string s) { throw null; }
         [System.ObsoleteAttribute("Use XmlConvert.ToDateTime() that accepts an XmlDateTimeSerializationMode instead.")]
         public static System.DateTime ToDateTime(string s) { throw null; }
-        public static System.DateTime ToDateTime(string s, string format) { throw null; }
-        public static System.DateTime ToDateTime(string s, string[] formats) { throw null; }
+        public static System.DateTime ToDateTime(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string format) { throw null; }
+        public static System.DateTime ToDateTime(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string[] formats) { throw null; }
         public static System.DateTime ToDateTime(string s, System.Xml.XmlDateTimeSerializationMode dateTimeOption) { throw null; }
         public static System.DateTimeOffset ToDateTimeOffset(string s) { throw null; }
-        public static System.DateTimeOffset ToDateTimeOffset(string s, string format) { throw null; }
-        public static System.DateTimeOffset ToDateTimeOffset(string s, string[] formats) { throw null; }
+        public static System.DateTimeOffset ToDateTimeOffset(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string format) { throw null; }
+        public static System.DateTimeOffset ToDateTimeOffset(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string[] formats) { throw null; }
         public static decimal ToDecimal(string s) { throw null; }
         public static double ToDouble(string s) { throw null; }
         public static System.Guid ToGuid(string s) { throw null; }
@@ -236,10 +236,10 @@ namespace System.Xml
         public static string ToString(char value) { throw null; }
         [System.ObsoleteAttribute("Use XmlConvert.ToString() that accepts an XmlDateTimeSerializationMode instead.")]
         public static string ToString(System.DateTime value) { throw null; }
-        public static string ToString(System.DateTime value, string format) { throw null; }
+        public static string ToString(System.DateTime value, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string format) { throw null; }
         public static string ToString(System.DateTime value, System.Xml.XmlDateTimeSerializationMode dateTimeOption) { throw null; }
         public static string ToString(System.DateTimeOffset value) { throw null; }
-        public static string ToString(System.DateTimeOffset value, string format) { throw null; }
+        public static string ToString(System.DateTimeOffset value, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string format) { throw null; }
         public static string ToString(decimal value) { throw null; }
         public static string ToString(double value) { throw null; }
         public static string ToString(System.Guid value) { throw null; }

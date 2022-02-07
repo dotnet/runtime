@@ -193,12 +193,12 @@ class AsmMan
     ErrorReporter*      report;
     void*               m_pAssembler;
 
-    AsmManFile*         GetFileByName(__in __nullterminated char* szFileName);
-    AsmManAssembly*     GetAsmRefByName(__in __nullterminated const char* szAsmRefName);
-    AsmManComType*      GetComTypeByName(__in_opt __nullterminated char* szComTypeName,
-                                         __in_opt __nullterminated char* szComEnclosingTypeName = NULL);
-    mdToken             GetComTypeTokByName(__in_opt __nullterminated char* szComTypeName,
-                                            __in_opt __nullterminated char* szComEnclosingTypeName = NULL);
+    AsmManFile*         GetFileByName(_In_ __nullterminated char* szFileName);
+    AsmManAssembly*     GetAsmRefByName(_In_ __nullterminated const char* szAsmRefName);
+    AsmManComType*      GetComTypeByName(_In_opt_z_ char* szComTypeName,
+                                         _In_opt_z_ char* szComEnclosingTypeName = NULL);
+    mdToken             GetComTypeTokByName(_In_opt_z_ char* szComTypeName,
+                                            _In_opt_z_ char* szComEnclosingTypeName = NULL);
 
     IMetaDataEmit*          m_pEmitter;
 
@@ -241,11 +241,11 @@ public:
 
     void    SetModuleName(__inout_opt __nullterminated char* szName);
 
-    void    AddFile(__in __nullterminated char* szName, DWORD dwAttr, BinStr* pHashBlob);
+    void    AddFile(_In_ __nullterminated char* szName, DWORD dwAttr, BinStr* pHashBlob);
     void    EmitFiles();
 	void	EmitDebuggableAttribute(mdToken tkOwner);
 
-	void	StartAssembly(__in __nullterminated char* szName, __in_opt __nullterminated char* szAlias, DWORD dwAttr, BOOL isRef);
+	void	StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ char* szAlias, DWORD dwAttr, BOOL isRef);
 	void	EndAssembly();
     void    EmitAssemblyRefs();
     void    EmitAssembly();
@@ -257,27 +257,27 @@ public:
 	void	SetAssemblyHashBlob(BinStr* pHashBlob);
     void    SetAssemblyAutodetect();
 
-    void    StartComType(__in __nullterminated char* szName, DWORD dwAttr);
+    void    StartComType(_In_ __nullterminated char* szName, DWORD dwAttr);
     void    EndComType();
-    void    SetComTypeFile(__in __nullterminated char* szFileName);
-    void    SetComTypeAsmRef(__in __nullterminated char* szAsmRefName);
-    void    SetComTypeComType(__in __nullterminated char* szComTypeName);
+    void    SetComTypeFile(_In_ __nullterminated char* szFileName);
+    void    SetComTypeAsmRef(_In_ __nullterminated char* szAsmRefName);
+    void    SetComTypeComType(_In_ __nullterminated char* szComTypeName);
     BOOL    SetComTypeImplementationTok(mdToken tk);
     BOOL    SetComTypeClassTok(mdToken tkClass);
 
-    void    StartManifestRes(__in __nullterminated char* szName, __in __nullterminated char* szAlias, DWORD dwAttr);
+    void    StartManifestRes(_In_ __nullterminated char* szName, _In_ __nullterminated char* szAlias, DWORD dwAttr);
     void    EndManifestRes();
-    void    SetManifestResFile(__in __nullterminated char* szFileName, ULONG ulOffset);
-    void    SetManifestResAsmRef(__in __nullterminated char* szAsmRefName);
+    void    SetManifestResFile(_In_ __nullterminated char* szFileName, ULONG ulOffset);
+    void    SetManifestResAsmRef(_In_ __nullterminated char* szAsmRefName);
 
-    AsmManAssembly*     GetAsmRefByAsmName(__in __nullterminated const char* szAsmName);
+    AsmManAssembly*     GetAsmRefByAsmName(_In_ __nullterminated const char* szAsmName);
 
-    mdToken             GetFileTokByName(__in __nullterminated char* szFileName);
-    mdToken             GetAsmRefTokByName(__in __nullterminated const char* szAsmRefName);
-    mdToken             GetAsmTokByName(__in __nullterminated const char* szAsmName)
+    mdToken             GetFileTokByName(_In_ __nullterminated char* szFileName);
+    mdToken             GetAsmRefTokByName(_In_ __nullterminated const char* szAsmRefName);
+    mdToken             GetAsmTokByName(_In_ __nullterminated const char* szAsmName)
         { return (m_pAssembly && (strcmp(m_pAssembly->szName,szAsmName)==0)) ? m_pAssembly->tkTok : 0; };
 
-    mdToken GetModuleRefTokByName(__in __nullterminated char* szName)
+    mdToken GetModuleRefTokByName(_In_ __nullterminated char* szName)
     {
         if(szName && *szName)
         {

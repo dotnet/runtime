@@ -115,7 +115,7 @@ const char* emitter::emitIfName(unsigned f)
 
     static char errBuff[32];
 
-    if (f < _countof(ifNames))
+    if (f < ArrLen(ifNames))
     {
         return ifNames[f];
     }
@@ -1479,7 +1479,9 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     // Make sure that idAddrUnion is just a union of various pointer sized things
     C_ASSERT(sizeof(CORINFO_FIELD_HANDLE) <= sizeof(void*));
     C_ASSERT(sizeof(CORINFO_METHOD_HANDLE) <= sizeof(void*));
+#ifdef TARGET_XARCH
     C_ASSERT(sizeof(emitter::emitAddrMode) <= sizeof(void*));
+#endif // TARGET_XARCH
     C_ASSERT(sizeof(emitLclVarAddr) <= sizeof(void*));
     C_ASSERT(sizeof(emitter::instrDesc) == (SMALL_IDSC_SIZE + sizeof(void*)));
 
@@ -2736,13 +2738,29 @@ void emitter::emitSplit(emitLocation*         startLoc,
                 reportCandidate = false;
             }
 
+            // Don't report a zero-size candidate. This will only occur in a stress mode with JitSplitFunctionSize
+            // set to something small, and a zero-sized IG (possibly inserted for use by the alignment code). Normally,
+            // the split size will be much larger than the maximum size of an instruction group. The invariant we want
+            // to maintain is that each fragment contains a non-zero amount of code.
+            if (reportCandidate && (candidateSize == 0))
+            {
+#ifdef DEBUG
+                if (EMITVERBOSE)
+                    printf("emitSplit: can't split at IG%02u; zero-sized candidate\n", igLastCandidate->igNum);
+#endif
+                reportCandidate = false;
+            }
+
             // Report it!
             if (reportCandidate)
             {
 #ifdef DEBUG
-                if (EMITVERBOSE && (candidateSize >= maxSplitSize))
-                    printf("emitSplit: split at IG%02u is size %d, larger than requested maximum size of %d\n",
-                           igLastCandidate->igNum, candidateSize, maxSplitSize);
+                if (EMITVERBOSE)
+                {
+                    printf("emitSplit: split at IG%02u is size %d, %s than requested maximum size of %d\n",
+                           igLastCandidate->igNum, candidateSize, (candidateSize >= maxSplitSize) ? "larger" : "less",
+                           maxSplitSize);
+                }
 #endif
 
                 // hand memory ownership to the callback function
@@ -3185,11 +3203,13 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
     if (!VarSetOps::IsEmpty(emitComp, GCvars) || // any frame GCvars live
         (gcRefRegsInScratch) ||                  // any register gc refs live in scratch regs
         (byrefRegs != 0) ||                      // any register byrefs live
-        (disp < AM_DISP_MIN) ||                  // displacement too negative
-        (disp > AM_DISP_MAX) ||                  // displacement too positive
-        (argCnt > ID_MAX_SMALL_CNS) ||           // too many args
-        (argCnt < 0)                             // caller pops arguments
-                                                 // There is a second ref/byref return register.
+#ifdef TARGET_XARCH
+        (disp < AM_DISP_MIN) ||        // displacement too negative
+        (disp > AM_DISP_MAX) ||        // displacement too positive
+#endif                                 // TARGET_XARCH
+        (argCnt > ID_MAX_SMALL_CNS) || // too many args
+        (argCnt < 0)                   // caller pops arguments
+                                       // There is a second ref/byref return register.
         MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)))
     {
         instrDescCGCA* id;
@@ -3219,9 +3239,11 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
         /* Make sure we didn't waste space unexpectedly */
         assert(!id->idIsLargeCns());
 
+#ifdef TARGET_XARCH
         /* Store the displacement and make sure the value fit */
         id->idAddr()->iiaAddrMode.amDisp = disp;
         assert(id->idAddr()->iiaAddrMode.amDisp == disp);
+#endif // TARGET_XARCH
 
         /* Save the the live GC registers in the unused register fields */
         emitEncodeCallGCregs(gcrefRegs, id);
@@ -3356,7 +3378,7 @@ const BYTE emitter::emitFmtToOps[] = {
 };
 
 #ifdef DEBUG
-const unsigned emitter::emitFmtCount = _countof(emitFmtToOps);
+const unsigned emitter::emitFmtCount = ArrLen(emitFmtToOps);
 #endif
 
 //------------------------------------------------------------------------
@@ -3381,6 +3403,15 @@ const size_t hexEncodingSize = 11;
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
+// emitDispInsIndent: Print indentation corresponding to an instruction's
+// indentation.
+//
+void emitter::emitDispInsIndent()
+{
+    size_t indent = emitComp->opts.disDiffable ? basicIndent : basicIndent + hexEncodingSize;
+    printf("%.*s", indent, "                             ");
+}
+//------------------------------------------------------------------------
 // emitDispGCDeltaTitle: Print an appropriately indented title for a GC info delta
 //
 // Arguments:
@@ -3388,8 +3419,8 @@ const size_t hexEncodingSize = 11;
 //
 void emitter::emitDispGCDeltaTitle(const char* title)
 {
-    size_t indent = emitComp->opts.disDiffable ? basicIndent : basicIndent + hexEncodingSize;
-    printf("%.*s; %s", indent, "                             ", title);
+    emitDispInsIndent();
+    printf("; %s", title);
 }
 
 //------------------------------------------------------------------------
@@ -6064,7 +6095,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     if (emitComp->lvaKeepAliveAndReportThis())
     {
         assert(emitComp->lvaIsOriginalThisArg(0));
-        LclVarDsc* thisDsc = &emitComp->lvaTable[0];
+        LclVarDsc* thisDsc = emitComp->lvaGetDesc(0U);
 
         /* If "this" (which is passed in as a register argument in REG_ARG_0)
            is enregistered, we normally spot the "mov REG_ARG_0 -> thisReg"
@@ -6233,7 +6264,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
 
 #ifdef DEBUG
-    *instrCount = 0;
+    *instrCount                                          = 0;
+    jitstd::list<PreciseIPMapping>::iterator nextMapping = emitComp->genPreciseIPmappings.begin();
 #endif
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
@@ -6402,6 +6434,34 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
             size_t     curInstrAddr = (size_t)cp;
             instrDesc* curInstrDesc = id;
+
+            if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
+                (id->idCodeSize() > 0))
+            {
+                UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
+                while (nextMapping != emitComp->genPreciseIPmappings.end())
+                {
+                    UNATIVE_OFFSET mappingOffs = nextMapping->nativeLoc.CodeOffset(this);
+
+                    if (mappingOffs > curCodeOffs)
+                    {
+                        // Still haven't reached instruction that next mapping belongs to.
+                        break;
+                    }
+
+                    // We reached the mapping or went past it.
+                    if (mappingOffs == curCodeOffs)
+                    {
+                        emitDispInsIndent();
+                        printf("; ");
+                        nextMapping->debugInfo.Dump(true);
+                        printf("\n");
+                    }
+
+                    ++nextMapping;
+                }
+            }
+
 #endif
 
             castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp);
@@ -7315,7 +7375,7 @@ void emitter::emitDispDataSec(dataSecDsc* section)
     {
         const char* labelFormat = "%-7s";
         char        label[64];
-        sprintf_s(label, _countof(label), "RWD%02u", offset);
+        sprintf_s(label, ArrLen(label), "RWD%02u", offset);
         printf(labelFormat, label);
         offset += data->dsSize;
 
@@ -8333,8 +8393,8 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr D
                 if (varNum >= 0)
                 {
                     // This is NOT a spill temp
-                    LclVarDsc* varDsc = &emitComp->lvaTable[varNum];
-                    isTracked         = emitComp->lvaIsGCTracked(varDsc);
+                    const LclVarDsc* varDsc = emitComp->lvaGetDesc(varNum);
+                    isTracked               = emitComp->lvaIsGCTracked(varDsc);
                 }
 
                 if (!isTracked)

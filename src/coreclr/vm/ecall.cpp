@@ -641,56 +641,6 @@ MethodDesc* ECall::MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoi
 
 #ifndef DACCESS_COMPILE
 
-/* static */
-CorInfoIntrinsics ECall::GetIntrinsicID(MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(pMD->IsFCall());
-    }
-    CONTRACTL_END;
-
-    MethodTable * pMT = pMD->GetMethodTable();
-
-#ifdef FEATURE_COMINTEROP
-    // COM imported classes have special constructors
-    if (pMT->IsComObjectType())
-    {
-        // This has to be tlbimp constructor
-        return(CORINFO_INTRINSIC_Illegal);
-    }
-#endif // FEATURE_COMINTEROP
-
-    //
-    // Delegate constructors are FCalls for which the entrypoint points to the target of the delegate
-    // We have to intercept these and set the call target to the helper COMDelegate::DelegateConstruct
-    //
-    if (pMT->IsDelegate())
-    {
-        // COMDelegate::DelegateConstruct is the only fcall used by user delegates.
-        // All the other gDelegateFuncs are only used by System.Delegate
-        _ASSERTE(pMD->IsCtor());
-
-        return(CORINFO_INTRINSIC_Illegal);
-    }
-
-    // All intrinsic live in CoreLib (FindECFuncForMethod does not work for non-CoreLib intrinsics)
-    if (!pMD->GetModule()->IsSystem())
-    {
-        return(CORINFO_INTRINSIC_Illegal);
-    }
-
-    ECFunc* info = FindECFuncForMethod(pMD);
-
-    if (info == NULL)
-        return(CORINFO_INTRINSIC_Illegal);
-
-    return info->IntrinsicID();
-}
-
 #ifdef _DEBUG
 
 void FCallAssert(void*& cache, void* target)

@@ -331,12 +331,6 @@ inline ULONG RoundUpToPower2(ULONG x)
 #define UNIQUE_LABEL(a)                 UNIQUE_LABEL_DEF_X(_unique_label_##a##_, __LINE__)
 #endif
 
-
-#ifndef _countof
-#define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
-#endif
-
-
 // This is temporary.  LKG should provide these macros and we should then
 // remove STRUNCATE and _TRUNCATE from here.
 

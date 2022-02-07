@@ -103,8 +103,8 @@ namespace System.Runtime.InteropServices
             return TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack.Create(ref impl), impl.id, ObjectHandleOnStack.Create(ref instance), flags, out retValue);
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetOrCreateComInterfaceForObject")]
-        private static extern bool TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack comWrappersImpl, long wrapperId, ObjectHandleOnStack instance, CreateComInterfaceFlags flags, out IntPtr retValue);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetOrCreateComInterfaceForObject")]
+        private static partial bool TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack comWrappersImpl, long wrapperId, ObjectHandleOnStack instance, CreateComInterfaceFlags flags, out IntPtr retValue);
 
         // Called by the runtime to execute the abstract instance function
         internal static unsafe void* CallComputeVtables(ComWrappersScenario scenario, ComWrappers? comWrappersImpl, object obj, CreateComInterfaceFlags flags, out int count)
@@ -251,8 +251,8 @@ namespace System.Runtime.InteropServices
             return TryGetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), impl.id, externalComObject, innerMaybe, flags, ObjectHandleOnStack.Create(ref wrapperMaybeLocal), ObjectHandleOnStack.Create(ref retValue));
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetOrCreateObjectForComInstance")]
-        private static extern bool TryGetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, long wrapperId, IntPtr externalComObject, IntPtr innerMaybe, CreateObjectFlags flags, ObjectHandleOnStack wrapper, ObjectHandleOnStack retValue);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetOrCreateObjectForComInstance")]
+        private static partial bool TryGetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, long wrapperId, IntPtr externalComObject, IntPtr innerMaybe, CreateObjectFlags flags, ObjectHandleOnStack wrapper, ObjectHandleOnStack retValue);
 
         // Call to execute the virtual instance function
         internal static void CallReleaseObjects(ComWrappers? comWrappersImpl, IEnumerable objects)
@@ -283,9 +283,9 @@ namespace System.Runtime.InteropServices
         }
 
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_SetGlobalInstanceRegisteredForTrackerSupport")]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_SetGlobalInstanceRegisteredForTrackerSupport")]
         [SuppressGCTransition]
-        private static extern void SetGlobalInstanceRegisteredForTrackerSupport(long id);
+        private static partial void SetGlobalInstanceRegisteredForTrackerSupport(long id);
 
         /// <summary>
         /// Register a <see cref="ComWrappers" /> instance to be used as the global instance for marshalling in the runtime.
@@ -317,9 +317,9 @@ namespace System.Runtime.InteropServices
             SetGlobalInstanceRegisteredForMarshalling(instance.id);
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_SetGlobalInstanceRegisteredForMarshalling")]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_SetGlobalInstanceRegisteredForMarshalling")]
         [SuppressGCTransition]
-        private static extern void SetGlobalInstanceRegisteredForMarshalling(long id);
+        private static partial void SetGlobalInstanceRegisteredForMarshalling(long id);
 
         /// <summary>
         /// Get the runtime provided IUnknown implementation.
@@ -330,8 +330,8 @@ namespace System.Runtime.InteropServices
         protected static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
             => GetIUnknownImplInternal(out fpQueryInterface, out fpAddRef, out fpRelease);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIUnknownImpl")]
-        private static extern void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIUnknownImpl")]
+        private static partial void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
         internal static int CallICustomQueryInterface(object customQueryInterfaceMaybe, ref Guid iid, out IntPtr ppObject)
         {

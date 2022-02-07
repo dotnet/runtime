@@ -210,6 +210,10 @@ Specify the failure `limit` after which replay and asmdiffs will exit if it sees
 more than `limit` failures.
 """
 
+compile_help = """\
+Compile only specified method contexts, e.g., `-compile 20,25`. This is passed directly to the superpmi.exe `-compile` argument. See `superpmi.exe -?` for full documentation about allowed formats.
+"""
+
 # Start of parser object creation.
 
 parser = argparse.ArgumentParser(description=description)
@@ -272,6 +276,7 @@ collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossg
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
+collect_parser.add_argument("-pmi_path", metavar="PMIPATH_DIR", nargs='*', help="Specify a \"load path\" where assemblies can be found during pmi.dll run. Optional; the argument values are translated to PMIPATH environment variable.")
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
@@ -297,6 +302,7 @@ replay_common_parser.add_argument("-product_location", help=product_location_hel
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 replay_common_parser.add_argument("-private_store", action="append", help=private_store_help)
+replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -826,7 +832,14 @@ class SuperPMICollect:
                 pmi_command_env = env_copy.copy()
                 pmi_complus_env = complus_env.copy()
                 pmi_complus_env["JitName"] = self.collection_shim_name
-                set_and_report_env(pmi_command_env, root_env, pmi_complus_env)
+
+                if self.coreclr_args.pmi_path is not None:
+                    pmi_root_env = root_env.copy()
+                    pmi_root_env["PMIPATH"] = ";".join(self.coreclr_args.pmi_path)
+                else:
+                    pmi_root_env = root_env
+
+                set_and_report_env(pmi_command_env, pmi_root_env, pmi_complus_env)
 
                 old_env = os.environ.copy()
                 os.environ.update(pmi_command_env)
@@ -1212,7 +1225,7 @@ class SuperPMIReplay:
             if self.coreclr_args.arch != self.coreclr_args.target_arch:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
-            if not self.coreclr_args.sequential:
+            if not self.coreclr_args.sequential and not self.coreclr_args.compile:
                 common_flags += [ "-p" ]
 
             if self.coreclr_args.break_on_assert:
@@ -1220,6 +1233,9 @@ class SuperPMIReplay:
 
             if self.coreclr_args.break_on_error:
                 common_flags += [ "-boe" ]
+
+            if self.coreclr_args.compile:
+                common_flags += [ "-c", self.coreclr_args.compile ]
 
             if self.coreclr_args.spmi_log_file is not None:
                 common_flags += [ "-w", self.coreclr_args.spmi_log_file ]
@@ -1363,7 +1379,8 @@ class SuperPMIReplayAsmDiffs:
         if self.coreclr_args.debuginfo:
             asm_complus_vars.update({
                 "COMPlus_JitDebugDump": "*",
-                "COMPlus_NgenDebugDump": "*" })
+                "COMPlus_NgenDebugDump": "*",
+                "COMPlus_JitDisasmWithDebugInfo": "1" })
 
         jit_dump_complus_vars = asm_complus_vars.copy()
         jit_dump_complus_vars.update({
@@ -1451,7 +1468,7 @@ class SuperPMIReplayAsmDiffs:
                 flags += base_option_flags
                 flags += diff_option_flags
 
-                if not self.coreclr_args.sequential:
+                if not self.coreclr_args.sequential and not self.coreclr_args.compile:
                     flags += [ "-p" ]
 
                 if self.coreclr_args.break_on_assert:
@@ -1459,6 +1476,9 @@ class SuperPMIReplayAsmDiffs:
 
                 if self.coreclr_args.break_on_error:
                     flags += [ "-boe" ]
+
+                if self.coreclr_args.compile:
+                    flags += [ "-c", self.coreclr_args.compile ]
 
                 if self.coreclr_args.spmi_log_file is not None:
                     flags += [ "-w", self.coreclr_args.spmi_log_file ]
@@ -2970,6 +2990,11 @@ def setup_args(args):
                             "Unable to set mch_files")
 
         coreclr_args.verify(args,
+                            "compile",
+                            lambda unused: True,
+                            "Method context not valid")
+
+        coreclr_args.verify(args,
                             "private_store",
                             lambda item: True,
                             "Specify private_store or set environment variable SUPERPMI_PRIVATE_STORE to use a private store.",
@@ -2994,6 +3019,11 @@ def setup_args(args):
                             "jitoption",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Unable to set jitoption")
+
+        coreclr_args.verify(args,
+                            "compile",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Method context not valid")
 
         coreclr_args.verify(args,
                             "collection_command",
@@ -3083,6 +3113,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set tiered_compilation")
 
+        coreclr_args.verify(args,
+                            "pmi_path",
+                            lambda unused: True,
+                            "Unable to set pmi_path")
+
         if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False):
             print("Either a collection command or `--pmi` or `--crossgen2` must be specified")
             sys.exit(1)
@@ -3098,6 +3133,12 @@ def setup_args(args):
         if ((args.pmi is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
             print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
             sys.exit(1)
+
+        if not args.pmi:
+            if args.pmi_path is not None:
+                logging.warning("Warning: -pmi_path is set but --pmi is not.")
+            if args.pmi_location is not None:
+                logging.warning("Warning: -pmi_location is set but --pmi is not.")
 
         if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None

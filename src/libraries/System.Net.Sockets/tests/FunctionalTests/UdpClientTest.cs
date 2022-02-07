@@ -439,7 +439,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61343", TestPlatforms.Android)]
         public async Task ConnectAsync_StringHost_Success()
         {
             using (var c = new UdpClient())
@@ -449,7 +448,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61343", TestPlatforms.Android)]
         public async Task ConnectAsync_IPAddressHost_Success()
         {
             using (var c = new UdpClient())
@@ -459,7 +457,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61343", TestPlatforms.Android)]
         public void Connect_StringHost_Success()
         {
             using (var c = new UdpClient())
@@ -469,7 +466,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61343", TestPlatforms.Android)]
         public void Connect_IPAddressHost_Success()
         {
             using (var c = new UdpClient())

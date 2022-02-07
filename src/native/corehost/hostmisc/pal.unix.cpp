@@ -19,7 +19,7 @@
 #include <locale>
 #include <pwd.h>
 #include "config.h"
-#include <common/getexepath.h>
+#include <minipal/getexepath.h>
 
 #if defined(TARGET_OSX)
 #include <mach-o/dyld.h>

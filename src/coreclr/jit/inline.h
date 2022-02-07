@@ -554,7 +554,6 @@ struct ClassProfileCandidateInfo
 {
     IL_OFFSET ilOffset;
     unsigned  probeIndex;
-    void*     stubAddr;
 };
 
 // GuardedDevirtualizationCandidateInfo provides information about
@@ -582,7 +581,6 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
     CORINFO_CLASS_HANDLE   clsHandle;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
     GenTree*               retExpr;
-    DWORD                  dwRestrictions;
     unsigned               preexistingSpillTemp;
     unsigned               clsAttr;
     unsigned               methAttr;
@@ -590,6 +588,15 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
     var_types              fncRetType;
     bool                   exactContextNeedsRuntimeLookup;
     InlineContext*         inlinersContext;
+};
+
+// LateDevirtualizationInfo
+//
+// Used to fill in missing contexts during late devirtualization.
+//
+struct LateDevirtualizationInfo
+{
+    CORINFO_CONTEXT_HANDLE exactContextHnd;
 };
 
 // InlArgInfo describes inline candidate argument properties.
@@ -726,6 +733,18 @@ public:
         return m_Parent;
     }
 
+    // Get the sibling context.
+    InlineContext* GetSibling() const
+    {
+        return m_Sibling;
+    }
+
+    // Get the first child context.
+    InlineContext* GetChild() const
+    {
+        return m_Child;
+    }
+
     // Get the code pointer for this context.
     const BYTE* GetCode() const
     {
@@ -806,7 +825,6 @@ public:
 private:
     InlineContext(InlineStrategy* strategy);
 
-private:
     InlineStrategy*   m_InlineStrategy;    // overall strategy
     InlineContext*    m_Parent;            // logical caller (parent)
     InlineContext*    m_Child;             // first child

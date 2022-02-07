@@ -7,10 +7,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
 include_directories(${CLR_SRC_NATIVE_DIR})
 
 # needed when zLib compression is used
-include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/AnyOS/zlib)
-if(NOT CLR_CMAKE_TARGET_WIN32)
-    include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/Unix/Common)
-endif()
+include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
+include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
@@ -65,7 +63,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     debuginfostore.cpp
     decodemd.cpp
     disassembler.cpp
-    domainfile.cpp
+    domainassembly.cpp
     dynamicmethod.cpp
     ecall.cpp
     eedbginterfaceimpl.cpp
@@ -163,8 +161,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     debuginfostore.h
     decodemd.h
     disassembler.h
-    domainfile.h
-    domainfile.inl
+    domainassembly.h
     dynamicmethod.h
     ecall.h
     eedbginterfaceimpl.h
@@ -291,7 +288,6 @@ set(GC_HEADERS_DAC
 set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     appdomainnative.cpp
-    assemblyname.cpp
     assemblynative.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
@@ -394,7 +390,6 @@ set(VM_HEADERS_WKS
     ${VM_HEADERS_DAC_AND_WKS_COMMON}
     ../inc/jithelpers.h
     appdomainnative.hpp
-    assemblyname.hpp
     assemblynative.hpp
     assemblyspec.hpp
     assemblyspecbase.h
@@ -619,7 +614,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.cpp
         dispparammarshaler.cpp
         mngstdinterfaces.cpp
-        notifyexternals.cpp
         olecontexthelpers.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
@@ -636,7 +630,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.h
         dispparammarshaler.h
         mngstdinterfaces.h
-        notifyexternals.h
         olecontexthelpers.h
         runtimecallablewrapper.h
         stdinterfaces.h

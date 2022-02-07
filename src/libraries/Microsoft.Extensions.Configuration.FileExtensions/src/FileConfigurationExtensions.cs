@@ -43,9 +43,9 @@ namespace Microsoft.Extensions.Configuration
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (builder.Properties.TryGetValue(FileProviderKey, out object provider))
+            if (builder.Properties.TryGetValue(FileProviderKey, out object? provider))
             {
-                return provider as IFileProvider;
+                return (IFileProvider)provider;
             }
 
             return new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty);
@@ -94,14 +94,14 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static Action<FileLoadExceptionContext> GetFileLoadExceptionHandler(this IConfigurationBuilder builder)
+        public static Action<FileLoadExceptionContext>? GetFileLoadExceptionHandler(this IConfigurationBuilder builder)
         {
             if (builder == null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (builder.Properties.TryGetValue(FileLoadExceptionHandlerKey, out object handler))
+            if (builder.Properties.TryGetValue(FileLoadExceptionHandlerKey, out object? handler))
             {
                 return handler as Action<FileLoadExceptionContext>;
             }

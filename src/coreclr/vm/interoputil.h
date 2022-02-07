@@ -92,7 +92,7 @@ BOOL IsComObjectClass(TypeHandle type);
 //---------------------------------------------------------
 VOID ReadBestFitCustomAttribute(MethodDesc* pMD, BOOL* BestFit, BOOL* ThrowOnUnmappableChar);
 VOID ReadBestFitCustomAttribute(Module* pModule, mdTypeDef cl, BOOL* BestFit, BOOL* ThrowOnUnmappableChar);
-int  InternalWideToAnsi(__in_ecount(iNumWideChars) LPCWSTR szWideString, int iNumWideChars, __out_ecount_opt(cbAnsiBufferSize) LPSTR szAnsiString, int cbAnsiBufferSize, BOOL fBestFit, BOOL fThrowOnUnmappableChar);
+int  InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumWideChars, _Out_writes_bytes_opt_(cbAnsiBufferSize) LPSTR szAnsiString, int cbAnsiBufferSize, BOOL fBestFit, BOOL fThrowOnUnmappableChar);
 
 //---------------------------------------------------------
 // Read the ClassInterfaceType custom attribute info from
@@ -358,14 +358,14 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT);
 
 #ifdef _DEBUG
 
-VOID LogInterop(__in_z LPCSTR szMsg);
-VOID LogInterop(__in_z LPCWSTR szMsg);
+VOID LogInterop(_In_z_ LPCSTR szMsg);
+VOID LogInterop(_In_z_ LPCWSTR szMsg);
 
 VOID LogInteropLeak(IUnkEntry * pEntry);
 VOID LogInteropLeak(IUnknown* pItf);
-VOID LogInteropQI(IUnknown* pItf, REFIID riid, HRESULT hr, __in_z LPCSTR szMsg);
-VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, __in_z LPCSTR szMsg);
-VOID LogInteropRelease(IUnknown* pItf, ULONG cbRef, __in_z LPCSTR szMsg);
+VOID LogInteropQI(IUnknown* pItf, REFIID riid, HRESULT hr, _In_z_ LPCSTR szMsg);
+VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, _In_z_ LPCSTR szMsg);
+VOID LogInteropRelease(IUnknown* pItf, ULONG cbRef, _In_z_ LPCSTR szMsg);
 
 VOID LogRCWCreate(RCW* pWrap, IUnknown* pUnk);
 VOID LogRCWMinorCleanup(RCW* pWrap);

@@ -488,10 +488,10 @@ namespace Microsoft.Interop
                 if (fixedStatements.Any())
                 {
                     fixedStatements.Reverse();
-                    invokeStatement = fixedStatements.First().WithStatement(invokeStatement);
+                    invokeStatement = fixedStatements.First().AddStatementWithoutEmptyStatements(Block(invokeStatement));
                     foreach (FixedStatementSyntax fixedStatement in fixedStatements.Skip(1))
                     {
-                        invokeStatement = fixedStatement.WithStatement(Block(invokeStatement));
+                        invokeStatement = fixedStatement.AddStatementWithoutEmptyStatements(invokeStatement);
                     }
                 }
 

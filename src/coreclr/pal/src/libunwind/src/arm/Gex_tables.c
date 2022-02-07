@@ -383,7 +383,7 @@ arm_exidx_extract (struct dwarf_cursor *c, uint8_t *buf)
   return nbuf;
 }
 
-int
+static int
 arm_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
 			 unw_dyn_info_t *di, unw_proc_info_t *pi,
 			 int need_unwind_info, void *arg)

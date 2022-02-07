@@ -456,7 +456,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         // If the value number for op2 and tree are different, then some new
         // exceptions were produced by op1. For that case we will NOT use the
         // normal value. This allows us to CSE commas with an op1 that is
-        // an ARR_BOUNDS_CHECK.
+        // an BOUNDS_CHECK.
         //
         if (vnOp2Lib != vnLib)
         {
@@ -655,6 +655,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                     }
                 }
 
+                hval                           = optCSEKeyToHashIndex(key, newOptCSEhashSize);
                 optCSEhash                     = newOptCSEhash;
                 optCSEhashSize                 = newOptCSEhashSize;
                 optCSEhashMaxCountBeforeResize = optCSEhashMaxCountBeforeResize * s_optCSEhashGrowthFactor;
@@ -828,7 +829,8 @@ bool Compiler::optValnumCSE_Locate()
                     continue;
                 }
 
-                if (ValueNumStore::isReservedVN(tree->GetVN(VNK_Liberal)))
+                ValueNum valueVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
+                if (ValueNumStore::isReservedVN(valueVN) && (valueVN != ValueNumStore::VNForNull()))
                 {
                     continue;
                 }
@@ -2597,17 +2599,18 @@ public:
             cse_use_cost *= slotCount;
         }
 
-        // If this CSE is live across a call then we may need to spill an additional caller save register
+        // If this CSE is live across a call then we may have additional costs
         //
         if (candidate->LiveAcrossCall())
         {
-            if (candidate->Expr()->IsCnsFltOrDbl() && (CNT_CALLEE_SAVED_FLOAT == 0) &&
-                (candidate->CseDsc()->csdUseWtCnt <= 4))
+            // If we have a floating-point CSE that is both live across a call and there
+            // are no callee-saved FP registers available, the RA will have to spill at
+            // the def site and reload at the (first) use site, if the variable is a register
+            // candidate. Account for that.
+            if (varTypeIsFloating(candidate->Expr()) && (CNT_CALLEE_SAVED_FLOAT == 0) && !candidate->IsConservative())
             {
-                // Floating point constants are expected to be contained, so unless there are more than 4 uses
-                // we better not to CSE them, especially on platforms without callee-saved registers
-                // for values living across calls
-                return false;
+                cse_def_cost += 1;
+                cse_use_cost += 1;
             }
 
             // If we don't have a lot of variables to enregister or we have a floating point type
@@ -3514,8 +3517,10 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
 #if !CSE_CONSTS
     /* Don't bother with constants */
-    if (tree->OperKind() & GTK_CONST)
+    if (tree->OperIsConst())
+    {
         return false;
+    }
 #endif
 
     /* Check for some special cases */
@@ -3635,7 +3640,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         {
             GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
             assert(hwIntrinsicNode != nullptr);
-            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwIntrinsicNode->gtHWIntrinsicId);
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwIntrinsicNode->GetHWIntrinsicId());
 
             switch (category)
             {

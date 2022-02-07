@@ -159,7 +159,6 @@ namespace System.Linq.Expressions
                                  (s_Math_Pow_Double_Double = typeof(Math).GetMethod(nameof(Math.Pow), new[] { typeof(double), typeof(double) })!);
 
         // Closure and RuntimeOps helpers are used only in the compiler.
-#if FEATURE_COMPILE
         private static ConstructorInfo? s_Closure_ObjectArray_ObjectArray;
         public static ConstructorInfo Closure_ObjectArray_ObjectArray =>
                                        s_Closure_ObjectArray_ObjectArray ??
@@ -194,6 +193,5 @@ namespace System.Linq.Expressions
         public static MethodInfo RuntimeOps_Quote =>
                                   s_RuntimeOps_Quote ??
                                  (s_RuntimeOps_Quote = typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.Quote))!);
-#endif
     }
 }

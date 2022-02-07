@@ -7,7 +7,7 @@ var Module = {
     onConfigLoaded: function () {
         MONO.config.environment_variables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
     },
-    onDotNetReady: function () {
+    onDotnetReady: function () {
         App.init();
     },
 };

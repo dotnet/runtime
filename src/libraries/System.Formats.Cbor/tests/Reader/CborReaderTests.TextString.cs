@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -44,7 +45,7 @@ namespace System.Formats.Cbor.Tests
             bool result = reader.TryReadTextString(buffer, out int charsWritten);
             Assert.True(result);
             Assert.Equal(expectedValue.Length, charsWritten);
-            Assert.Equal(expectedValue.ToCharArray(), buffer[..charsWritten]);
+            Assert.Equal(expectedValue.ToCharArray(), buffer.Take(charsWritten));
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
@@ -104,7 +105,11 @@ namespace System.Formats.Cbor.Tests
 
             Assert.True(result);
             Assert.Equal(expectedValue.Length, charsWritten);
-            Assert.Equal(expectedValue, new string(buffer.Slice(0, charsWritten)));
+            Assert.Equal(expectedValue, new string(buffer.Slice(0, charsWritten)
+#if !NETCOREAPP
+.ToArray()
+#endif
+                ));
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
@@ -130,7 +135,11 @@ namespace System.Formats.Cbor.Tests
             result = reader.TryReadTextString(buffer, out charsWritten);
             Assert.True(result);
             Assert.Equal(actualValue.Length, charsWritten);
-            Assert.Equal(actualValue, new string(buffer.AsSpan(0, charsWritten)));
+            Assert.Equal(actualValue, new string(buffer.AsSpan(0, charsWritten)
+#if !NETCOREAPP
+.ToArray()
+#endif
+                ));
         }
 
         [Theory]
@@ -152,7 +161,11 @@ namespace System.Formats.Cbor.Tests
             result = reader.TryReadTextString(buffer, out charsWritten);
             Assert.True(result);
             Assert.Equal(expectedValue.Length, charsWritten);
-            Assert.Equal(expectedValue, new string(buffer.AsSpan(0, charsWritten)));
+            Assert.Equal(expectedValue, new string(buffer.AsSpan(0, charsWritten)
+#if !NETCOREAPP
+.ToArray()
+#endif
+                ));
         }
 
         [Theory]
@@ -170,7 +183,11 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             ReadOnlyMemory<byte> resultBytes = reader.ReadDefiniteLengthTextStringBytes();
-            string result = System.Text.Encoding.UTF8.GetString(resultBytes.Span);
+            string result = Encoding.UTF8.GetString(resultBytes.Span
+#if !NETCOREAPP
+.ToArray()
+#endif
+                );
             Assert.Equal(expectedValue, result);
             Assert.Equal(0, reader.BytesRemaining);
         }

@@ -64,6 +64,7 @@ namespace System.Linq.Parallel
 
                     if (partitions.PartitionCount > 1)
                     {
+                        Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
                         // We use a pipelining ordered merge
                         mergeExecutor._mergeHelper = new OrderPreservingPipeliningMergeHelper<TInputOutput, TKey>(
                             partitions, taskScheduler, cancellationState, autoBuffered, queryId, partitions.KeyComparer);
@@ -140,6 +141,7 @@ namespace System.Linq.Parallel
         //     An array of asynchronous channels, one for each partition.
         //
 
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         internal static AsynchronousChannel<TInputOutput>[] MakeAsynchronousChannels(int partitionCount, ParallelMergeOptions options, IntValueEvent? consumerEvent, CancellationToken cancellationToken)
         {
             AsynchronousChannel<TInputOutput>[] channels = new AsynchronousChannel<TInputOutput>[partitionCount];

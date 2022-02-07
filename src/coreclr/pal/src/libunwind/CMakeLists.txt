@@ -19,12 +19,15 @@ add_definitions(-D_GNU_SOURCE)
 add_definitions(-DPACKAGE_STRING="")
 add_definitions(-DPACKAGE_BUGREPORT="")
 
+
 if(CLR_CMAKE_HOST_UNIX)
     if (CLR_CMAKE_HOST_ARCH_AMD64)
       set(arch x86_64)
     elseif(CLR_CMAKE_HOST_ARCH_ARM64)
       set(arch aarch64)
     elseif(CLR_CMAKE_HOST_ARCH_ARM)
+      set(arch arm)
+    elseif(CLR_CMAKE_HOST_ARCH_ARMV6)
       set(arch arm)
     elseif(CLR_CMAKE_HOST_ARCH_I386)
         set(arch x86)
@@ -45,7 +48,7 @@ if(CLR_CMAKE_HOST_UNIX)
       add_compile_options(-Wno-incompatible-pointer-types)
     endif()
 
-    if(CLR_CMAKE_HOST_ARCH_ARM)
+    if(CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARMV6)
         # Ensure that the remote and local unwind code can reside in the same binary without name clashing
         add_definitions("-Darm_search_unwind_table=UNW_OBJ(arm_search_unwind_table)")
         if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -67,6 +70,8 @@ if(CLR_CMAKE_HOST_UNIX)
         endif()
         # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
         add_definitions(-Dasm=__asm__)
+        # Disable warning for a bug in the libunwind source src/aarch64/Ginit.c, but not in code that we exercise
+        add_compile_options(-Wno-incompatible-pointer-types)
     elseif(CLR_CMAKE_HOST_ARCH_I386)
         # Disable warning for a bug in the libunwind source src/x86/Gos-linux.c, but not in code that we exercise
         add_compile_options(-Wno-incompatible-pointer-types)
@@ -104,6 +109,10 @@ if(CLR_CMAKE_HOST_WIN32)
       set(arch aarch64)
       add_definitions(-D__aarch64__)
     elseif(CLR_CMAKE_TARGET_ARCH_ARM)
+      set(TARGET_ARM 1)
+      set(arch arm)
+      add_definitions(-D__arm__)
+    elseif(CLR_CMAKE_TARGET_ARCH_ARMV6)
       set(TARGET_ARM 1)
       set(arch arm)
       add_definitions(-D__arm__)
@@ -153,7 +162,7 @@ if(CLR_CMAKE_HOST_WIN32)
     add_compile_options(-wd4477) # fprintf argument type
 endif (CLR_CMAKE_HOST_WIN32)
 
-if(CLR_CMAKE_TARGET_ARCH_ARM)
+if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
     # The arm sources include ex_tables.h from include/tdep-arm without going through a redirection
     # in include/tdep like it works for similar files on other architectures. So we need to add
     # the include/tdep-arm to include directories

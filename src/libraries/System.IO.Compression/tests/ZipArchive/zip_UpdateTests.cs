@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class zip_UpdateTests : ZipFileTestBase
+    public partial class zip_UpdateTests : ZipFileTestBase
     {
         [Theory]
         [InlineData("normal.zip", "normal")]
@@ -92,20 +93,38 @@ namespace System.IO.Compression.Tests
             baseline = baseline.Clone();
             using (ZipArchive archive = new ZipArchive(baseline, mode))
             {
-                AddEntry(archive, "data1.txt", data1, lastWrite);
+                if (mode == ZipArchiveMode.Create)
+                {
+                    AddEntry(archive, "data1.txt", data1, lastWrite);
 
-                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-                e.LastWriteTime = lastWrite;
-                using (Stream s = e.Open()) { }
+                    ZipArchiveEntry e = archive.CreateEntry("empty.txt");
+                    e.LastWriteTime = lastWrite;
+                    using (Stream s = e.Open()) { }
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => AddEntry(archive, "data1.txt", data1, lastWrite));
+
+                    Assert.Throws<InvalidOperationException>(() => archive.CreateEntry("empty.txt"));
+                }
             }
 
             test = test.Clone();
             using (ZipArchive archive = new ZipArchive(test, mode))
             {
-                AddEntry(archive, "data1.txt", data1, lastWrite);
+                if (mode == ZipArchiveMode.Create)
+                {
+                    AddEntry(archive, "data1.txt", data1, lastWrite);
 
-                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-                e.LastWriteTime = lastWrite;
+                    ZipArchiveEntry e = archive.CreateEntry("empty.txt");
+                    e.LastWriteTime = lastWrite;
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => AddEntry(archive, "data1.txt", data1, lastWrite));
+
+                    Assert.Throws<InvalidOperationException>(() => archive.CreateEntry("empty.txt"));
+                }
             }
             //compare
             Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match after update");

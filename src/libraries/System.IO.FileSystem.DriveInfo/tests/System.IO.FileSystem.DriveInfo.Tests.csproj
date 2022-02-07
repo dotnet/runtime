@@ -5,5 +5,8 @@
   <ItemGroup>
     <Compile Include="DriveInfo.Unix.Tests.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'" />
     <Compile Include="DriveInfo.Windows.Tests.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="VirtualDrives.Windows.Tests.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="$(CommonTestPath)System\IO\VirtualDriveHelper.Windows.cs" Link="Common\System\IO\VirtualDriveHelper.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelizationPerAssembly.cs" />
   </ItemGroup>
 </Project>

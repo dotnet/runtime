@@ -164,6 +164,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60558", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64675", typeof(PlatformDetection), nameof(PlatformDetection.IsArmv6Process))]
         public void GetField()
         {
             FieldInfo testInt = TestModule.GetField("TestInt", BindingFlags.Public | BindingFlags.Static);
@@ -245,7 +246,7 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<Type> Types => Module.GetTypes();
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void ResolveTypes()
         {
             foreach(Type t in Types)
@@ -260,7 +261,7 @@ namespace System.Reflection.Tests
             }
             .Union(NullTokens);
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         [MemberData(nameof(BadResolveTypes))]
         public void ResolveTypeFail(int token)
         {
@@ -273,7 +274,7 @@ namespace System.Reflection.Tests
         public static IEnumerable<MemberInfo> Methods =>
             typeof(ModuleTests).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void ResolveMethodsByMethodInfo()
         {
             foreach(MethodInfo mi in Methods)
@@ -289,7 +290,7 @@ namespace System.Reflection.Tests
             }
             .Union(NullTokens);
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         [MemberData(nameof(BadResolveMethods))]
         public void ResolveMethodFail(int token)
         {
@@ -302,7 +303,7 @@ namespace System.Reflection.Tests
         public static IEnumerable<MemberInfo> Fields =>
             typeof(ModuleTests).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void ResolveFieldsByFieldInfo()
         {
@@ -319,7 +320,7 @@ namespace System.Reflection.Tests
             }
             .Union(NullTokens);
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         [MemberData(nameof(BadResolveFields))]
         public void ResolveFieldFail(int token)
         {
@@ -338,7 +339,7 @@ namespace System.Reflection.Tests
             }
             .Union(NullTokens);
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         [MemberData(nameof(BadResolveStrings))]
         public void ResolveStringFail(int token)
         {
@@ -348,28 +349,28 @@ namespace System.Reflection.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void ResolveTypesByMemberInfo()
         {
             foreach(MemberInfo mi in Types)
                 Assert.Equal(mi, Module.ResolveMember(mi.MetadataToken));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void ResolveMethodsByMemberInfo()
         {
             foreach (MemberInfo mi in Methods)
                 Assert.Equal(mi, Module.ResolveMember(mi.MetadataToken));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void ResolveFieldsByMemberInfo()
         {
             foreach (MemberInfo mi in Fields)
                 Assert.Equal(mi, Module.ResolveMember(mi.MetadataToken));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void ResolveMethodOfGenericClass()
         {
             Type t = typeof(Foo<>);

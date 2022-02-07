@@ -10,7 +10,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class InteropTests
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void TestHandle()
         {
             //
@@ -21,7 +20,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 IntPtr h = c.Handle;
                 unsafe
                 {
-                    CERT_CONTEXT* pCertContext = (CERT_CONTEXT*)h;
+                    Interop.Crypt32.CERT_CONTEXT* pCertContext = (Interop.Crypt32.CERT_CONTEXT*)h;
 
                     // Does the blob data match?
                     int cbCertEncoded = pCertContext->cbCertEncoded;
@@ -32,7 +31,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(TestData.MsCertificate, pCertEncoded);
 
                     // Does the serial number match?
-                    CERT_INFO* pCertInfo = pCertContext->pCertInfo;
+                    Interop.Crypt32.CERT_INFO* pCertInfo = pCertContext->pCertInfo;
                     byte[] serialNumber = pCertInfo->SerialNumber.ToByteArray();
                     byte[] expectedSerial = "b00000000100dd9f3bd08b0aaf11b000000033".HexToByteArray();
                     Assert.Equal(expectedSerial, serialNumber);
@@ -41,7 +40,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void TestHandleCtor()
         {
             IntPtr pCertContext = IntPtr.Zero;
@@ -50,15 +48,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 fixed (byte* pRawData = rawData)
                 {
-                    CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB() { cbData = rawData.Length, pbData = pRawData };
-                    bool success = CryptQueryObject(
-                        CertQueryObjectType.CERT_QUERY_OBJECT_BLOB,
-                        ref certBlob,
-                        ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_CERT,
-                        ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_BINARY,
+                    Interop.Crypt32.DATA_BLOB certBlob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pRawData), (uint)rawData.Length);
+                    bool success = Interop.Crypt32.CryptQueryObject(
+                        Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_BLOB,
+                        &certBlob,
+                        Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_CERT,
+                        Interop.Crypt32.ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_BINARY,
                         0,
                         IntPtr.Zero,
-                        IntPtr.Zero,
+                        out Interop.Crypt32.ContentType contentType,
                         IntPtr.Zero,
                         IntPtr.Zero,
                         IntPtr.Zero,
@@ -77,7 +75,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 c = new X509Certificate2(pCertContext))
             {
                 // And release our ref-count on the handle. X509Certificate better be maintaining its own.
-                CertFreeCertificateContext(pCertContext);
+                Interop.Crypt32.CertFreeCertificateContext(pCertContext);
 
                 // Now, test various properties to make sure the X509Certificate actually wraps our CERT_CONTEXT.
                 IntPtr h = c.Handle;
@@ -109,234 +107,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 byte[] expectedThumbPrint = "108e2ba23632620c427c570b6d9db51ac31387fe".HexToByteArray();
                 byte[] thumbPrint = c.GetCertHash();
                 Assert.Equal(expectedThumbPrint, thumbPrint);
-            }
-        }
-
-        [DllImport("crypt32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern bool CryptQueryObject(
-            CertQueryObjectType dwObjectType,
-            [In] ref CRYPTOAPI_BLOB pvObject,
-            ExpectedContentTypeFlags dwExpectedContentTypeFlags,
-            ExpectedFormatTypeFlags dwExpectedFormatTypeFlags,
-            int dwFlags, // reserved - always pass 0
-            IntPtr pdwMsgAndCertEncodingType,
-            IntPtr pdwContentType,
-            IntPtr pdwFormatType,
-            IntPtr phCertStore,
-            IntPtr phMsg,
-            out IntPtr ppvContext
-            );
-
-        [DllImport("crypt32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern bool CertFreeCertificateContext(IntPtr pCertContext);
-
-        private enum CertQueryObjectType : int
-        {
-            CERT_QUERY_OBJECT_FILE = 0x00000001,
-            CERT_QUERY_OBJECT_BLOB = 0x00000002,
-        }
-
-        [Flags]
-        private enum ExpectedContentTypeFlags : int
-        {
-            //encoded single certificate
-            CERT_QUERY_CONTENT_FLAG_CERT = 1 << ContentType.CERT_QUERY_CONTENT_CERT,
-
-            //encoded single CTL
-            CERT_QUERY_CONTENT_FLAG_CTL = 1 << ContentType.CERT_QUERY_CONTENT_CTL,
-
-            //encoded single CRL
-            CERT_QUERY_CONTENT_FLAG_CRL = 1 << ContentType.CERT_QUERY_CONTENT_CRL,
-
-            //serialized store
-            CERT_QUERY_CONTENT_FLAG_SERIALIZED_STORE = 1 << ContentType.CERT_QUERY_CONTENT_SERIALIZED_STORE,
-
-            //serialized single certificate
-            CERT_QUERY_CONTENT_FLAG_SERIALIZED_CERT = 1 << ContentType.CERT_QUERY_CONTENT_SERIALIZED_CERT,
-
-            //serialized single CTL
-            CERT_QUERY_CONTENT_FLAG_SERIALIZED_CTL = 1 << ContentType.CERT_QUERY_CONTENT_SERIALIZED_CTL,
-
-            //serialized single CRL
-            CERT_QUERY_CONTENT_FLAG_SERIALIZED_CRL = 1 << ContentType.CERT_QUERY_CONTENT_SERIALIZED_CRL,
-
-            //an encoded PKCS#7 signed message
-            CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED = 1 << ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED,
-
-            //an encoded PKCS#7 message.  But it is not a signed message
-            CERT_QUERY_CONTENT_FLAG_PKCS7_UNSIGNED = 1 << ContentType.CERT_QUERY_CONTENT_PKCS7_UNSIGNED,
-
-            //the content includes an embedded PKCS7 signed message
-            CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED = 1 << ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED_EMBED,
-
-            //an encoded PKCS#10
-            CERT_QUERY_CONTENT_FLAG_PKCS10 = 1 << ContentType.CERT_QUERY_CONTENT_PKCS10,
-
-            //an encoded PFX BLOB
-            CERT_QUERY_CONTENT_FLAG_PFX = 1 << ContentType.CERT_QUERY_CONTENT_PFX,
-
-            //an encoded CertificatePair (contains forward and/or reverse cross certs)
-            CERT_QUERY_CONTENT_FLAG_CERT_PAIR = 1 << ContentType.CERT_QUERY_CONTENT_CERT_PAIR,
-
-            //an encoded PFX BLOB, and we do want to load it (not included in
-            //CERT_QUERY_CONTENT_FLAG_ALL)
-            CERT_QUERY_CONTENT_FLAG_PFX_AND_LOAD = 1 << ContentType.CERT_QUERY_CONTENT_PFX_AND_LOAD,
-        }
-
-        [Flags]
-        private enum ExpectedFormatTypeFlags : int
-        {
-            CERT_QUERY_FORMAT_FLAG_BINARY = 1 << FormatType.CERT_QUERY_FORMAT_BINARY,
-            CERT_QUERY_FORMAT_FLAG_BASE64_ENCODED = 1 << FormatType.CERT_QUERY_FORMAT_BASE64_ENCODED,
-            CERT_QUERY_FORMAT_FLAG_ASN_ASCII_HEX_ENCODED = 1 << FormatType.CERT_QUERY_FORMAT_ASN_ASCII_HEX_ENCODED,
-
-            CERT_QUERY_FORMAT_FLAG_ALL = CERT_QUERY_FORMAT_FLAG_BINARY | CERT_QUERY_FORMAT_FLAG_BASE64_ENCODED | CERT_QUERY_FORMAT_FLAG_ASN_ASCII_HEX_ENCODED,
-        }
-
-        private enum MsgAndCertEncodingType : int
-        {
-            PKCS_7_ASN_ENCODING = 0x10000,
-            X509_ASN_ENCODING = 0x1,
-        }
-
-        private enum ContentType : int
-        {
-            //encoded single certificate
-            CERT_QUERY_CONTENT_CERT = 1,
-            //encoded single CTL
-            CERT_QUERY_CONTENT_CTL = 2,
-            //encoded single CRL
-            CERT_QUERY_CONTENT_CRL = 3,
-            //serialized store
-            CERT_QUERY_CONTENT_SERIALIZED_STORE = 4,
-            //serialized single certificate
-            CERT_QUERY_CONTENT_SERIALIZED_CERT = 5,
-            //serialized single CTL
-            CERT_QUERY_CONTENT_SERIALIZED_CTL = 6,
-            //serialized single CRL
-            CERT_QUERY_CONTENT_SERIALIZED_CRL = 7,
-            //a PKCS#7 signed message
-            CERT_QUERY_CONTENT_PKCS7_SIGNED = 8,
-            //a PKCS#7 message, such as enveloped message.  But it is not a signed message,
-            CERT_QUERY_CONTENT_PKCS7_UNSIGNED = 9,
-            //a PKCS7 signed message embedded in a file
-            CERT_QUERY_CONTENT_PKCS7_SIGNED_EMBED = 10,
-            //an encoded PKCS#10
-            CERT_QUERY_CONTENT_PKCS10 = 11,
-            //an encoded PFX BLOB
-            CERT_QUERY_CONTENT_PFX = 12,
-            //an encoded CertificatePair (contains forward and/or reverse cross certs)
-            CERT_QUERY_CONTENT_CERT_PAIR = 13,
-            //an encoded PFX BLOB, which was loaded to phCertStore
-            CERT_QUERY_CONTENT_PFX_AND_LOAD = 14,
-        }
-
-        private enum FormatType : int
-        {
-            CERT_QUERY_FORMAT_BINARY = 1,
-            CERT_QUERY_FORMAT_BASE64_ENCODED = 2,
-            CERT_QUERY_FORMAT_ASN_ASCII_HEX_ENCODED = 3,
-        }
-
-        // CRYPTOAPI_BLOB has many typedef aliases in the C++ world (CERT_BLOB, DATA_BLOB, etc.) We'll just stick to one name here.
-        [StructLayout(LayoutKind.Sequential)]
-        private unsafe struct CRYPTOAPI_BLOB
-        {
-            public int cbData;
-            public byte* pbData;
-
-            public byte[] ToByteArray()
-            {
-                if (cbData == 0)
-                {
-                    return Array.Empty<byte>();
-                }
-
-                byte[] array = new byte[cbData];
-                Marshal.Copy((IntPtr)pbData, array, 0, cbData);
-                return array;
-            }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private unsafe struct CERT_CONTEXT
-        {
-            public readonly MsgAndCertEncodingType dwCertEncodingType;
-            public readonly byte* pbCertEncoded;
-            public readonly int cbCertEncoded;
-            public readonly CERT_INFO* pCertInfo;
-            public readonly IntPtr hCertStore;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private unsafe struct CERT_INFO
-        {
-            public readonly int dwVersion;
-            public CRYPTOAPI_BLOB SerialNumber;
-            public readonly CRYPT_ALGORITHM_IDENTIFIER SignatureAlgorithm;
-            public readonly CRYPTOAPI_BLOB Issuer;
-            public readonly FILETIME NotBefore;
-            public readonly FILETIME NotAfter;
-            public readonly CRYPTOAPI_BLOB Subject;
-            public readonly CERT_PUBLIC_KEY_INFO SubjectPublicKeyInfo;
-            public readonly CRYPT_BIT_BLOB IssuerUniqueId;
-            public readonly CRYPT_BIT_BLOB SubjectUniqueId;
-            public readonly int cExtension;
-            public readonly CERT_EXTENSION* rgExtension;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct CRYPT_ALGORITHM_IDENTIFIER
-        {
-            public readonly IntPtr pszObjId;
-            public readonly CRYPTOAPI_BLOB Parameters;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct CERT_PUBLIC_KEY_INFO
-        {
-            public readonly CRYPT_ALGORITHM_IDENTIFIER Algorithm;
-            public readonly CRYPT_BIT_BLOB PublicKey;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private unsafe struct CRYPT_BIT_BLOB
-        {
-            public readonly int cbData;
-            public readonly byte* pbData;
-            public readonly int cUnusedBits;
-
-            public byte[] ToByteArray()
-            {
-                if (cbData == 0)
-                {
-                    return Array.Empty<byte>();
-                }
-
-                byte[] array = new byte[cbData];
-                Marshal.Copy((IntPtr)pbData, array, 0, cbData);
-                return array;
-            }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private unsafe struct CERT_EXTENSION
-        {
-            public readonly IntPtr pszObjId;
-            public readonly int fCritical;
-            public readonly CRYPTOAPI_BLOB Value;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct FILETIME
-        {
-            private readonly uint _ftTimeLow;
-            private readonly uint _ftTimeHigh;
-
-            public DateTime ToDateTime()
-            {
-                long fileTime = (((long)_ftTimeHigh) << 32) + _ftTimeLow;
-                return DateTime.FromFileTime(fileTime);
             }
         }
     }

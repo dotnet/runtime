@@ -329,7 +329,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             expression = expression.Trim();
             if (!expression.StartsWith('('))
             {
-                expression = "(" + expression + ")";
+                expression = "(" + expression + "\n)";
             }
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(expression + @";", cancellationToken: token);
 

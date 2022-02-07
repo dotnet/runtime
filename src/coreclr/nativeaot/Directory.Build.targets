@@ -1,0 +1,13 @@
+<Project>
+
+  <!-- resources.targets need to be imported before the Arcade SDK. -->
+  <Import Project="$(RepositoryEngineeringDir)resources.targets" />
+
+  <PropertyGroup>
+    <!-- resources.targets will "helpfully" opt us into this in debug builds, but we don't really want
+         a debug/checked/release difference on this. It makes resx strings removal just harder to test. -->
+    <GenerateResxSourceIncludeDefaultValues>false</GenerateResxSourceIncludeDefaultValues>
+  </PropertyGroup>
+  
+  <Import Project="..\Directory.Build.targets" />
+</Project>

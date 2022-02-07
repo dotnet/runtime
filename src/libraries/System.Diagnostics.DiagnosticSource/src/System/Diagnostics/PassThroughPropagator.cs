@@ -52,7 +52,7 @@ namespace System.Diagnostics
 
             traceState = activity?.TraceStateString;
             parentId = activity?.ParentId ?? activity?.Id;
-            isW3c = parentId is not null ? Activity.TryConvertIdToContext(parentId, traceState, out _) : false;
+            isW3c = parentId is not null ? Activity.TryConvertIdToContext(parentId, traceState, isRemote: false, out _) : false;
             baggage = activity?.Baggage;
         }
     }

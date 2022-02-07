@@ -7,8 +7,8 @@
 **
 ** Purpose: Create a child process and debug it.  When the child
 ** raises an exception, it sends back a memory location.  Call
-** WriteProcessMemory on the memory location, but attempt to write 
-** more than the memory allows.  This should cause an error and the 
+** WriteProcessMemory on the memory location, but attempt to write
+** more than the memory allows.  This should cause an error and the
 ** data should be unchanged.
 **
 **
@@ -28,7 +28,7 @@ PALTEST(debug_api_WriteProcessMemory_test3_paltest_writeprocessmemory_test3, "de
     HANDLE hEvToHelper;
     HANDLE hEvFromHelper;
     DWORD dwExitCode;
-    
+
 
     DWORD dwRet;
     BOOL success = TRUE;  /* assume success */
@@ -42,31 +42,31 @@ PALTEST(debug_api_WriteProcessMemory_test3_paltest_writeprocessmemory_test3, "de
 
     /* Create the signals we need for cross process communication */
     hEvToHelper = CreateEvent(NULL, TRUE, FALSE, szcToHelperEvName);
-    if (!hEvToHelper) 
+    if (!hEvToHelper)
     {
         Fail("WriteProcessMemory: CreateEvent of '%S' failed. "
-             "GetLastError() returned %u.\n", szcToHelperEvName, 
+             "GetLastError() returned %u.\n", szcToHelperEvName,
              GetLastError());
     }
-    if (GetLastError() == ERROR_ALREADY_EXISTS) 
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
     {
         Fail("WriteProcessMemory: CreateEvent of '%S' failed. "
              "(already exists!)\n", szcToHelperEvName);
     }
     hEvFromHelper = CreateEvent(NULL, TRUE, FALSE, szcFromHelperEvName);
-    if (!hEvToHelper) 
+    if (!hEvToHelper)
     {
         Fail("WriteProcessMemory: CreateEvent of '%S' failed. "
-             "GetLastError() returned %u.\n", szcFromHelperEvName, 
+             "GetLastError() returned %u.\n", szcFromHelperEvName,
              GetLastError());
     }
-    if (GetLastError() == ERROR_ALREADY_EXISTS) 
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
     {
         Fail("WriteProcessMemory: CreateEvent of '%S' failed. "
              "(already exists!)\n", szcFromHelperEvName);
     }
-    
-    if (!sprintf_s(cmdComposeBuf, _countof(cmdComposeBuf), "helper %s", commsFileName)) 
+
+    if (!sprintf_s(cmdComposeBuf, ARRAY_SIZE(cmdComposeBuf), "helper %s", commsFileName))
     {
         Fail("Could not convert command line\n");
     }
@@ -75,11 +75,11 @@ PALTEST(debug_api_WriteProcessMemory_test3_paltest_writeprocessmemory_test3, "de
     ZeroMemory( &si, sizeof(si) );
     si.cb = sizeof(si);
     ZeroMemory( &pi, sizeof(pi) );
-    
+
     /* Create a new process.  This is the process that will ask for
      * memory munging */
-    if(!CreateProcess( NULL, uniString, NULL, NULL, 
-                        FALSE, 0, NULL, NULL, &si, &pi)) 
+    if(!CreateProcess( NULL, uniString, NULL, NULL,
+                        FALSE, 0, NULL, NULL, &si, &pi))
     {
         Trace("ERROR: CreateProcess failed to load executable '%S'.  "
              "GetLastError() returned %u.\n",
@@ -127,11 +127,11 @@ PALTEST(debug_api_WriteProcessMemory_test3_paltest_writeprocessmemory_test3, "de
             goto doneIteration;
         }
         PEDANTIC1(fclose,(commsFile));
-        sscanf(incomingCMDBuffer, "%u %u %u", 
+        sscanf(incomingCMDBuffer, "%u %u %u",
                &pDestMemory, &Count, &dwExpectedErrorCode);
-        if (argc > 1) 
+        if (argc > 1)
         {
-            Trace("Preparing to write to %u bytes @ %u ('%s')\n", 
+            Trace("Preparing to write to %u bytes @ %u ('%s')\n",
                   Count, pDestMemory, incomingCMDBuffer);
         }
 
@@ -147,12 +147,12 @@ PALTEST(debug_api_WriteProcessMemory_test3_paltest_writeprocessmemory_test3, "de
         memset(pSrcMemory, nextValue, Count);
 
         /* do the work */
-        dwRet = WriteProcessMemory(pi.hProcess, 
+        dwRet = WriteProcessMemory(pi.hProcess,
                                  pDestMemory,
                                  pSrcMemory,
                                  Count,
                                  &wpmCount);
-            
+
         if(dwRet != 0)
         {
             Trace("ERROR: Situation: '%s', return code: %u, bytes 'written': %u\n",
@@ -162,7 +162,7 @@ PALTEST(debug_api_WriteProcessMemory_test3_paltest_writeprocessmemory_test3, "de
                   "not completely accessible.\n");
             success = FALSE;
         }
-            
+
         if(GetLastError() != dwExpectedErrorCode)
         {
             Trace("ERROR: GetLastError() should have returned "
@@ -172,12 +172,12 @@ PALTEST(debug_api_WriteProcessMemory_test3_paltest_writeprocessmemory_test3, "de
         }
         free(pSrcMemory);
 
-    doneIteration: 
+    doneIteration:
         PEDANTIC(ResetEvent, (hEvFromHelper));
         PEDANTIC(SetEvent, (hEvToHelper));
     }
 
-            
+
     /* wait for the child process to complete */
     WaitForSingleObject ( pi.hProcess, TIMEOUT );
     /* this may return a failure code on a success path */
@@ -185,8 +185,8 @@ PALTEST(debug_api_WriteProcessMemory_test3_paltest_writeprocessmemory_test3, "de
     /* check the exit code from the process */
     if( ! GetExitCodeProcess( pi.hProcess, &dwExitCode ) )
     {
-        Trace( "GetExitCodeProcess call failed with error code %u\n", 
-              GetLastError() ); 
+        Trace( "GetExitCodeProcess call failed with error code %u\n",
+              GetLastError() );
         dwExitCode = FAIL;
     }
     if(!success)

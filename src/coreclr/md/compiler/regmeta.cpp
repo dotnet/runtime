@@ -811,20 +811,20 @@ ErrExit:
 #define STRING_BUFFER_LEN 1024
 #define ENUM_BUFFER_SIZE 10
 
-int DumpMD_Write(__in __in_z const char *str)
+int DumpMD_Write(_In_ _In_z_ const char *str)
 {
     OutputDebugStringA(str);
     return 0; // strlen(str);
 } // int DumpMD_Write()
 
-int DumpMD_WriteLine(__in __in_z const char *str)
+int DumpMD_WriteLine(_In_ _In_z_ const char *str)
 {
     OutputDebugStringA(str);
     OutputDebugStringA("\n");
     return 0; // strlen(str);
 } // int DumpMD_Write()
 
-int DumpMD_VWriteMarker(__in __in_z const char *str, va_list marker)
+int DumpMD_VWriteMarker(_In_ _In_z_ const char *str, va_list marker)
 {
     CQuickBytes m_output;
 
@@ -846,7 +846,7 @@ int DumpMD_VWriteMarker(__in __in_z const char *str, va_list marker)
     return count;
 } // int DumpMD_VWriteMarker()
 
-int DumpMD_VWrite(__in __in_z const char *str, ...)
+int DumpMD_VWrite(_In_ _In_z_ const char *str, ...)
 {
     va_list marker;
     int     count;
@@ -857,7 +857,7 @@ int DumpMD_VWrite(__in __in_z const char *str, ...)
     return count;
 } // int DumpMD_VWrite()
 
-int DumpMD_VWriteLine(__in __in_z const char *str, ...)
+int DumpMD_VWriteLine(_In_ _In_z_ const char *str, ...)
 {
     va_list marker;
     int     count;
@@ -910,7 +910,7 @@ const char *DumpMD_DumpRawNameOfType(RegMeta *pMD, ULONG iType)
     }
     // default:
     static char buf[30];
-    sprintf_s(buf, NumItems(buf), "unknown type 0x%02x", iType);
+    sprintf_s(buf, ARRAY_SIZE(buf), "unknown type 0x%02x", iType);
     return buf;
 } // const char *DumpMD_DumpRawNameOfType()
 
@@ -1127,7 +1127,7 @@ void DumpMD_DisplayUserStrings(
     bool        bUnprint = false;       // Is an unprintable character found?
     HRESULT     hr;                     // A result.
     while (SUCCEEDED(hr = pMD->EnumUserStrings( &stringEnum,
-                             Strings, NumItems(Strings), &count)) &&
+                             Strings, ARRAY_SIZE(Strings), &count)) &&
             count > 0)
     {
         if (totalCount == 1)
@@ -1225,7 +1225,7 @@ void DumpMD_DumpRawHeaps(
     do
     {
         pMD->GetBlob(oData, &cbData, (const void**)&pData);
-        sprintf_s(rcPrefix, NumItems(rcPrefix), "%5x,%-2x", oData, cbData);
+        sprintf_s(rcPrefix, ARRAY_SIZE(rcPrefix), "%5x,%-2x", oData, cbData);
         DumpMD_DumpHex(rcPrefix, pData, cbData);
         hr = pMD->GetNextBlob(oData, &oData);
     }
@@ -1239,7 +1239,7 @@ void DumpMD_DumpRawHeaps(
     do
     {
         pMD->GetString(oData, &pString);
-        sprintf_s(rcPrefix, NumItems(rcPrefix), "%08x", oData);
+        sprintf_s(rcPrefix, ARRAY_SIZE(rcPrefix), "%08x", oData);
         DumpMD_DumpHex(rcPrefix, pString, (ULONG)strlen(pString)+1);
         if (*pString != 0)
             DumpMD_VWrite("%08x: %s\n", oData, pString);

@@ -32,7 +32,6 @@
 #include "comdatetime.h"
 #include "compatibilityswitch.h"
 #include "debugdebugger.h"
-#include "assemblyname.hpp"
 #include "assemblynative.hpp"
 #include "comthreadpool.h"
 #include "comwaithandle.h"
@@ -114,7 +113,6 @@ enum _gsigc {
 #include "metasig.h"
 };
 
-
 //
 // The actual array with the hardcoded metasig:
 //
@@ -176,8 +174,6 @@ enum _gsigc {
 #undef _IM
 #undef _Fld
 
-
-
 #ifdef _DEBUG
 
 //
@@ -213,10 +209,6 @@ enum _gsigc {
 
 #endif
 
-
-
-
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // CoreLib binder
@@ -246,7 +238,7 @@ const CoreLibClassDescription c_rgCoreLibClassDescriptions[] =
     #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) { ns , # reKind },
     #include "rexcep.h"
 };
-const USHORT c_nCoreLibClassDescriptions = NumItems(c_rgCoreLibClassDescriptions);
+const USHORT c_nCoreLibClassDescriptions = ARRAY_SIZE(c_rgCoreLibClassDescriptions);
 
 #define gsig_NoSig (*(HardCodedMetaSig *)NULL)
 
@@ -255,14 +247,14 @@ const CoreLibMethodDescription c_rgCoreLibMethodDescriptions[] =
     #define DEFINE_METHOD(c,i,s,g)          { CLASS__ ## c , # s, & gsig_ ## g },
     #include "corelib.h"
 };
-const USHORT c_nCoreLibMethodDescriptions = NumItems(c_rgCoreLibMethodDescriptions) + 1;
+const USHORT c_nCoreLibMethodDescriptions = ARRAY_SIZE(c_rgCoreLibMethodDescriptions) + 1;
 
 const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[] =
 {
     #define DEFINE_FIELD(c,i,s)           { CLASS__ ## c , # s },
     #include "corelib.h"
 };
-const USHORT c_nCoreLibFieldDescriptions = NumItems(c_rgCoreLibFieldDescriptions) + 1;
+const USHORT c_nCoreLibFieldDescriptions = ARRAY_SIZE(c_rgCoreLibFieldDescriptions) + 1;
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -271,35 +263,27 @@ const USHORT c_nCoreLibFieldDescriptions = NumItems(c_rgCoreLibFieldDescriptions
 
 // When compiling crossgen, we only need the target version of the ecall tables
 
-#define FCFuncFlags(intrinsicID, dynamicID) \
-    (BYTE*)( (((BYTE)intrinsicID) << 16) + (((BYTE)dynamicID) << 24) )
+#define FCFuncFlags(dynamicID) \
+    (BYTE*)( (((BYTE)dynamicID) << 24) )
 
-
-#define FCFuncElement(name, impl) FCFuncFlags(CORINFO_INTRINSIC_Illegal, ECall::InvalidDynamicFCallId), \
+#define FCFuncElement(name, impl) FCFuncFlags(ECall::InvalidDynamicFCallId), \
     (LPVOID)GetEEFuncEntryPoint(impl), (LPVOID)name,
 
 #define FCFuncElementSig(name,sig,impl) \
     FCFuncFlag_HasSignature + FCFuncElement(name, impl) (LPVOID)sig,
 
-#define FCIntrinsic(name,impl,intrinsicID) FCFuncFlags(intrinsicID, ECall::InvalidDynamicFCallId), \
-    (LPVOID)GetEEFuncEntryPoint(impl), (LPVOID)name,
-
-#define FCIntrinsicSig(name,sig,impl,intrinsicID) \
-    FCFuncFlag_HasSignature + FCIntrinsic(name,impl,intrinsicID) (LPVOID)sig,
-
-#define FCDynamic(name,intrinsicID,dynamicID) FCFuncFlags(intrinsicID, dynamicID), \
+#define FCDynamic(name,dynamicID) FCFuncFlags(dynamicID), \
     NULL, (LPVOID)name,
 
-#define FCDynamicSig(name,sig,intrinsicID,dynamicID) \
-    FCFuncFlag_HasSignature + FCDynamic(name,intrinsicID,dynamicID) (LPVOID)sig,
+#define FCDynamicSig(name,sig,dynamicID) \
+    FCFuncFlag_HasSignature + FCDynamic(name,dynamicID) (LPVOID)sig,
 
 #define FCUnreferenced FCFuncFlag_Unreferenced +
 
 #define FCFuncStart(name) static const LPVOID name[] = {
-#define FCFuncEnd() FCFuncFlag_EndOfArray + FCFuncFlags(CORINFO_INTRINSIC_Illegal, ECall::InvalidDynamicFCallId) };
+#define FCFuncEnd() FCFuncFlag_EndOfArray + FCFuncFlags(ECall::InvalidDynamicFCallId) };
 
 #include "ecalllist.h"
-
 
 // Extern definitions so that ecall.cpp can see these tables
 extern const ECClass c_rgECClasses[];
@@ -311,4 +295,4 @@ const ECClass c_rgECClasses[] =
 #include "ecalllist.h"
 };  // c_rgECClasses[]
 
-const int c_nECClasses = NumItems(c_rgECClasses);
+const int c_nECClasses = ARRAY_SIZE(c_rgECClasses);

@@ -312,7 +312,7 @@ namespace System.CodeDom.Tests
             Assert.Same(sw, itw.InnerWriter);
             Assert.Equal(sw.NewLine, itw.NewLine);
 
-            Assert.Equal(new string(' ', 4), IndentedTextWriter.DefaultTabString);
+            Assert.Equal("    ", IndentedTextWriter.DefaultTabString);
         }
 
         [Fact]

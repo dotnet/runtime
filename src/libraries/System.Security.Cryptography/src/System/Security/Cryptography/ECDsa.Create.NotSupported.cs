@@ -3,7 +3,7 @@
 
 namespace System.Security.Cryptography
 {
-    public partial class ECDsa : AsymmetricAlgorithm
+    public partial class ECDsa : ECAlgorithm
     {
         public static new partial ECDsa Create()
         {

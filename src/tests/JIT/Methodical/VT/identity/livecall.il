@@ -16,7 +16,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module livecall.exe
 // MVID: {6300FB9B-B24E-45DA-9A61-2556746FEEEF}
 .namespace MS
 {

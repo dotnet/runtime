@@ -384,7 +384,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                string processedValue = string.Empty;
+                string processedValue;
                 if (parameter.EndsWith('*'))
                 {
                     processedValue = HeaderUtilities.Encode5987(value);

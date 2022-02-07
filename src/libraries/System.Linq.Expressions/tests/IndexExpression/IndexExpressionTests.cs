@@ -92,13 +92,12 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("xs[i, j]", e3.ToString());
         }
 
-#if FEATURE_COMPILE
         private static TypeBuilder GetTestTypeBuilder() =>
             AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.RunAndCollect)
                 .DefineDynamicModule("TestModule")
                 .DefineType("TestType");
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/mono/mono/issues/14920", TestRuntimes.Mono)]
         public void NoAccessorIndexedProperty()
         {
@@ -114,7 +113,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void ByRefIndexedProperty()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -145,7 +144,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void VoidIndexedProperty()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -173,7 +172,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/mono/mono/issues/14927", TestRuntimes.Mono)]
         public void IndexedPropertyGetReturnsWrongType()
         {
@@ -202,7 +201,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void IndexedPropertySetterNoParams()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -230,7 +229,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void IndexedPropertySetterByrefValueType()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -258,7 +257,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void IndexedPropertySetterNotReturnVoid()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -286,7 +285,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void IndexedPropertyGetterInstanceSetterStatic()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -326,7 +325,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/mono/mono/issues/14927", TestRuntimes.Mono)]
         public void IndexedPropertySetterValueTypeNotMatchPropertyType()
         {
@@ -355,7 +354,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void IndexedPropertyGetterSetterArgCountMismatch()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -395,7 +394,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void IndexedPropertyGetterSetterArgumentTypeMismatch()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -435,7 +434,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", Expression.Constant(0), Expression.Constant(0), Expression.Constant(0)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void IndexedPropertyVarArgs()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -473,7 +472,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("instance", () => Expression.Property(null, prop, index));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void InstanceToStaticProperty()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -501,7 +500,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("instance", () => Expression.Property(instance, prop, Expression.Constant(0)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void ByRefIndexer()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -528,9 +527,6 @@ namespace System.Linq.Expressions.Tests
             Expression instance = Expression.Default(type);
             AssertExtensions.Throws<ArgumentException>("indexes[0]", () => Expression.Property(instance, prop, Expression.Constant(0)));
         }
-
-// FEATURE_COMPILE
-#endif
 
         [Fact]
         public void CallWithoutIndices()

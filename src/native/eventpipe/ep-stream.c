@@ -167,7 +167,7 @@ ep_fast_serializer_alloc (StreamWriter *stream_writer)
 	EP_ASSERT (stream_writer != NULL);
 
 	const ep_char8_t signature[] = "!FastSerialization.1"; // the consumer lib expects exactly the same string, it must not be changed
-	uint32_t signature_len = (uint32_t)(EP_ARRAY_SIZE (signature) - 1);
+	uint32_t signature_len = (uint32_t)(STRING_LENGTH (signature));
 
 	FastSerializer *instance = ep_rt_object_alloc (FastSerializer);
 	ep_raise_error_if_nok (instance != NULL);

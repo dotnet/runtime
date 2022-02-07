@@ -168,16 +168,13 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             RSASignaturePadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(count));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             byte[] hash = HashData(data, offset, count, hashAlgorithm);
             return SignHash(hash, hashAlgorithm, padding);
@@ -185,12 +182,9 @@ namespace System.Security.Cryptography
 
         public virtual byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             byte[] hash = HashData(data, hashAlgorithm);
             return SignHash(hash, hashAlgorithm, padding);
@@ -198,14 +192,8 @@ namespace System.Security.Cryptography
 
         public virtual bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-            {
-                throw HashAlgorithmNameNullOrEmpty();
-            }
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             if (TryHashData(data, destination, hashAlgorithm, out int hashLength) &&
                 TrySignHash(destination.Slice(0, hashLength), destination, hashAlgorithm, padding, out bytesWritten))
@@ -233,18 +221,14 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             RSASignaturePadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(count));
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(signature);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             byte[] hash = HashData(data, offset, count, hashAlgorithm);
             return VerifyHash(hash, signature, hashAlgorithm, padding);
@@ -252,14 +236,10 @@ namespace System.Security.Cryptography
 
         public bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(signature);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             byte[] hash = HashData(data, hashAlgorithm);
             return VerifyHash(hash, signature, hashAlgorithm, padding);
@@ -267,14 +247,8 @@ namespace System.Security.Cryptography
 
         public virtual bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-            {
-                throw HashAlgorithmNameNullOrEmpty();
-            }
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             for (int i = 256; ; i = checked(i * 2))
             {
@@ -850,6 +824,159 @@ namespace System.Security.Cryptography
             base.ImportFromEncryptedPem(input, passwordBytes);
         }
 
+        /// <summary>
+        /// Exports the current key in the PKCS#1 RSAPrivateKey format, PEM encoded.
+        /// </summary>
+        /// <returns>A string containing the PEM-encoded PKCS#1 RSAPrivateKey.</returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded PKCS#1 RSAPrivateKey will begin with <c>-----BEGIN RSA PRIVATE KEY-----</c>
+        ///   and end with <c>-----END RSA PRIVATE KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public unsafe string ExportRSAPrivateKeyPem()
+        {
+            byte[] exported = ExportRSAPrivateKey();
+
+            // Fixed to prevent GC moves.
+            fixed (byte* pExported = exported)
+            {
+                try
+                {
+                    return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPrivateKey, exported);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(exported);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Exports the public-key portion of the current key in the PKCS#1
+        /// RSAPublicKey format, PEM encoded.
+        /// </summary>
+        /// <returns>A string containing the PEM-encoded PKCS#1 RSAPublicKey.</returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded PKCS#1 RSAPublicKey will begin with <c>-----BEGIN RSA PUBLIC KEY-----</c>
+        ///   and end with <c>-----END RSA PUBLIC KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public string ExportRSAPublicKeyPem()
+        {
+            byte[] exported = ExportRSAPublicKey();
+            return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPublicKey, exported);
+        }
+
+        /// <summary>
+        /// Attempts to export the current key in the PEM-encoded PKCS#1
+        /// RSAPrivateKey format into a provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        /// The character span to receive the PEM-encoded PKCS#1 RSAPrivateKey data.
+        /// </param>
+        /// <param name="charsWritten">
+        /// When this method returns, contains a value that indicates the number
+        /// of characters written to <paramref name="destination" />. This
+        /// parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded PKCS#1 RSAPrivateKey will begin with
+        ///   <c>-----BEGIN RSA PRIVATE KEY-----</c> and end with
+        ///   <c>-----END RSA PRIVATE KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public bool TryExportRSAPrivateKeyPem(Span<char> destination, out int charsWritten)
+        {
+            static bool Export(RSA alg, Span<byte> destination, out int bytesWritten)
+            {
+                return alg.TryExportRSAPrivateKey(destination, out bytesWritten);
+            }
+
+            return PemKeyHelpers.TryExportToPem(
+                this,
+                PemLabels.RsaPrivateKey,
+                Export,
+                destination,
+                out charsWritten);
+        }
+
+        /// <summary>
+        /// Attempts to export the current key in the PEM-encoded PKCS#1
+        /// RSAPublicKey format into a provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        /// The character span to receive the PEM-encoded PKCS#1 RSAPublicKey data.
+        /// </param>
+        /// <param name="charsWritten">
+        /// When this method returns, contains a value that indicates the number
+        /// of characters written to <paramref name="destination" />. This
+        /// parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded PKCS#1 RSAPublicKey will begin with
+        ///   <c>-----BEGIN RSA PUBLIC KEY-----</c> and end with
+        ///   <c>-----END RSA PUBLIC KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public bool TryExportRSAPublicKeyPem(Span<char> destination, out int charsWritten)
+        {
+            static bool Export(RSA alg, Span<byte> destination, out int bytesWritten)
+            {
+                return alg.TryExportRSAPublicKey(destination, out bytesWritten);
+            }
+
+            return PemKeyHelpers.TryExportToPem(
+                this,
+                PemLabels.RsaPublicKey,
+                Export,
+                destination,
+                out charsWritten);
+        }
+
         private static void ClearPrivateParameters(in RSAParameters rsaParameters)
         {
             CryptographicOperations.ZeroMemory(rsaParameters.D);
@@ -862,8 +989,5 @@ namespace System.Security.Cryptography
 
         public override string? KeyExchangeAlgorithm => "RSA";
         public override string SignatureAlgorithm => "RSA";
-
-        private static Exception HashAlgorithmNameNullOrEmpty() =>
-            new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");
     }
 }

@@ -1,7 +1,7 @@
-v1.5-rc1-28-g9165d2a1
-https://github.com/libunwind/libunwind/commit/9165d2a150d707d3037c2045f2cdc0fabd5fee98
+v1.6.2
+https://github.com/libunwind/libunwind/commit/b3ca1b59a795a617877c01fe5d299ab7a07ff29d
 
-Remove upstream CMakelist.txt & src/CMakelist.txt, keep .NET Core custom version
-Keep .NET Core oop directory
-Apply https://github.com/libunwind/libunwind/pull/186
-Apply https://github.com/libunwind/libunwind/pull/245
+Replace CMakeLists.txt, src/CMakeLists.txt, configure.cmake with .NET custom version
+Keep .NET oop directory
+Reapply changes from https://github.com/dotnet/runtime/commit/1b5719c2e3dde393531eaeb5b5cde05dabeef5b8
+Apply https://github.com/libunwind/libunwind/pull/317

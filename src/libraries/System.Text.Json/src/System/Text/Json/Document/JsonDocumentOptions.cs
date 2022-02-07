@@ -52,7 +52,9 @@ namespace System.Text.Json
             set
             {
                 if (value < 0)
-                    throw ThrowHelper.GetArgumentOutOfRangeException_MaxDepthMustBePositive(nameof(value));
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException_MaxDepthMustBePositive(nameof(value));
+                }
 
                 _maxDepth = value;
             }

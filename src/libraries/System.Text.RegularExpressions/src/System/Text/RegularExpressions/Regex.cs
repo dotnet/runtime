@@ -22,6 +22,7 @@ namespace System.Text.RegularExpressions
     {
         internal const int MaxOptionShift = 11;
 
+        [StringSyntax(StringSyntaxAttribute.Regex)]
         protected internal string? pattern;                   // The string pattern provided
         protected internal RegexOptions roptions;             // the top-level options from the options string
         protected internal RegexRunnerFactory? factory;       // Factory used to create runner instances for executing the regex
@@ -42,7 +43,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Creates a regular expression object for the specified regular expression.
         /// </summary>
-        public Regex(string pattern) :
+        public Regex([StringSyntax(StringSyntaxAttribute.Regex)] string pattern) :
             this(pattern, culture: null)
         {
         }
@@ -50,12 +51,12 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Creates a regular expression object for the specified regular expression, with options that modify the pattern.
         /// </summary>
-        public Regex(string pattern, RegexOptions options) :
+        public Regex([StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) :
             this(pattern, options, s_defaultMatchTimeout, culture: null)
         {
         }
 
-        public Regex(string pattern, RegexOptions options, TimeSpan matchTimeout) :
+        public Regex([StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, TimeSpan matchTimeout) :
             this(pattern, options, matchTimeout, culture: null)
         {
         }
@@ -82,8 +83,13 @@ namespace System.Text.RegularExpressions
             else if (RuntimeFeature.IsDynamicCodeCompiled && UseOptionC())
             {
                 // If the compile option is set and compilation is supported, then compile the code.
+                // If the compiler can't compile this regex, it'll return null, and we'll fall back
+                // to the interpreter.
                 factory = Compile(pattern, _code, options, matchTimeout != InfiniteMatchTimeout);
-                _code = null;
+                if (factory is not null)
+                {
+                    _code = null;
+                }
             }
         }
 
@@ -103,13 +109,6 @@ namespace System.Text.RegularExpressions
             this.pattern = pattern;
             internalMatchTimeout = matchTimeout;
             roptions = options;
-
-#if DEBUG
-            if (IsDebug)
-            {
-                Debug.WriteLine($"Pattern: {pattern}    Options: {options & ~RegexOptions.Debug}    Timeout: {(matchTimeout == InfiniteMatchTimeout ? "infinite" : matchTimeout.ToString())}");
-            }
-#endif
 
             // Parse the input
             RegexTree tree = RegexParser.Parse(pattern, roptions, culture);
@@ -147,11 +146,7 @@ namespace System.Text.RegularExpressions
         {
             if (((((uint)options) >> MaxOptionShift) != 0) ||
                 ((options & RegexOptions.ECMAScript) != 0 &&
-                 (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.NonBacktracking |
-#if DEBUG
-                             RegexOptions.Debug |
-#endif
-                             RegexOptions.CultureInvariant)) != 0))
+                 (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.NonBacktracking | RegexOptions.CultureInvariant)) != 0))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.options);
             }
@@ -215,7 +210,7 @@ namespace System.Text.RegularExpressions
         /// instantiating a non-compiled regex.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static RegexRunnerFactory Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
+        private static RegexRunnerFactory? Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
             RegexCompiler.Compile(pattern, code, options, hasTimeout);
 
         [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -335,18 +330,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string GroupNameFromNumber(int i)
         {
-            if (capslist is null)
-            {
-                return (uint)i < (uint)capsize ?
-                    ((uint)i).ToString() :
-                    string.Empty;
-            }
-            else
-            {
-                return caps != null && !caps.TryGetValue(i, out i) ? string.Empty :
-                    (uint)i < (uint)capslist.Length ? capslist[i] :
-                    string.Empty;
-            }
+            return RegexParser.GroupNameFromNumber(caps, capslist, capsize, i);
         }
 
         /// <summary>
@@ -399,12 +383,7 @@ namespace System.Text.RegularExpressions
             RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
             try
             {
-                // Do the scan starting at the requested position
-                Match? match = runner.Scan(this, input, beginning, beginning + length, startat, prevlen, quick, internalMatchTimeout);
-#if DEBUG
-                if (IsDebug) match?.Dump();
-#endif
-                return match;
+                return runner.Scan(this, input, beginning, beginning + length, startat, prevlen, quick, internalMatchTimeout);
             }
             finally
             {
@@ -415,6 +394,7 @@ namespace System.Text.RegularExpressions
         internal void Run<TState>(string input, int startat, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject)
         {
             Debug.Assert((uint)startat <= (uint)input.Length);
+
             RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
             try
             {

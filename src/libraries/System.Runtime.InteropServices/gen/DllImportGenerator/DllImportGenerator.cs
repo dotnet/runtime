@@ -265,7 +265,7 @@ namespace Microsoft.Interop
                 typeDeclaration.Kind(),
                 typeDeclaration.Identifier)
                 .WithTypeParameterList(typeDeclaration.TypeParameterList)
-                .WithModifiers(typeDeclaration.Modifiers);
+                .WithModifiers(StripTriviaFromModifiers(typeDeclaration.Modifiers));
         }
 
         private static MemberDeclarationSyntax PrintGeneratedSource(

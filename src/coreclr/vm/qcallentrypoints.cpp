@@ -27,7 +27,6 @@
 #include "comdatetime.h"
 #include "compatibilityswitch.h"
 #include "debugdebugger.h"
-#include "assemblyname.hpp"
 #include "assemblynative.hpp"
 #include "comthreadpool.h"
 #include "comwaithandle.h"
@@ -74,7 +73,7 @@
 
 #include "tailcallhelp.h"
 
-#include <common/entrypoints.h>
+#include <minipal/entrypoints.h>
 
 static const Entry s_QCall[] =
 {
@@ -321,5 +320,5 @@ static const Entry s_QCall[] =
 
 const void* QCallResolveDllImport(const char* name)
 {
-    return minipal_resolve_dllimport(s_QCall, lengthof(s_QCall), name);
+    return minipal_resolve_dllimport(s_QCall, ARRAY_SIZE(s_QCall), name);
 }

@@ -70,7 +70,10 @@ namespace System.Text.RegularExpressions.Tests
 
                     (string Pattern, RegexOptions Options, string Input, string Expected) testCase = allEngineCases[i];
                     yield return new object[] { engine, testCase.Pattern, testCase.Options, results[i], testCase.Input, expected };
-                    yield return new object[] { engine, testCase.Pattern, testCase.Options | RegexOptions.CultureInvariant, results[i], testCase.Input, expected };
+                    if ((testCase.Options & RegexOptions.IgnoreCase) != 0)
+                    {
+                        yield return new object[] { engine, testCase.Pattern, testCase.Options | RegexOptions.CultureInvariant, results[i], testCase.Input, expected };
+                    }
                 }
             }
 
