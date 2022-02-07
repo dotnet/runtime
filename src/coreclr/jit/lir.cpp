@@ -1392,8 +1392,8 @@ public:
                                 writeStart, writeEnd, readStart, readEnd);
 
                             LIR::Use use;
-                            bool found = const_cast<LIR::Range*>(range)->TryGetUse(read, &use);
-                            GenTree* user = found ? use.User() : nullptr;
+                            bool     found = const_cast<LIR::Range*>(range)->TryGetUse(read, &use);
+                            GenTree* user  = found ? use.User() : nullptr;
 
                             for (GenTree* rangeNode : *range)
                             {
