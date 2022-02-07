@@ -260,6 +260,7 @@
 #define g_unichar_xdigit_value monoeg_g_unichar_xdigit_value
 #define g_unsetenv monoeg_g_unsetenv
 #define g_usleep monoeg_g_usleep
+#define g_clock_nanosleep monoeg_clock_nanosleep
 #define g_utf16_to_ucs4 monoeg_g_utf16_to_ucs4
 #define g_utf16_to_utf8 monoeg_g_utf16_to_utf8
 #define g_utf16_to_utf8_custom_alloc monoeg_g_utf16_to_utf8_custom_alloc
