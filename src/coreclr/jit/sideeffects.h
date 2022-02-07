@@ -72,6 +72,7 @@ public:
         GenTree*  m_node;
         unsigned  m_flags;
         unsigned  m_lclNum;
+        unsigned  m_lclOffs;
 
     public:
         NodeInfo(Compiler* compiler, GenTree* node);
@@ -110,6 +111,12 @@ public:
         {
             assert(IsLclVarRead() || IsLclVarWrite());
             return m_lclNum;
+        }
+
+        inline unsigned LclOffs() const
+        {
+            assert(IsLclVarRead() || IsLclVarWrite());
+            return m_lclOffs;
         }
 
         inline bool WritesAnyLocation() const

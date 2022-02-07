@@ -1293,7 +1293,6 @@ LPCWSTR MethodContext::repGetJitTimeLogFilename()
 
 void MethodContext::recCanInline(CORINFO_METHOD_HANDLE callerHnd,
                                  CORINFO_METHOD_HANDLE calleeHnd,
-                                 uint32_t*                pRestrictions,
                                  CorInfoInline         response,
                                  DWORD                 exceptionCode)
 {
@@ -1306,10 +1305,6 @@ void MethodContext::recCanInline(CORINFO_METHOD_HANDLE callerHnd,
     key.B = CastHandle(calleeHnd);
 
     Agnostic_CanInline value;
-    if (pRestrictions != nullptr)
-        value.Restrictions = (DWORD)*pRestrictions;
-    else
-        value.Restrictions = (DWORD)0;
     value.result           = (DWORD)response;
     value.exceptionCode    = (DWORD)exceptionCode;
 
@@ -1318,12 +1313,11 @@ void MethodContext::recCanInline(CORINFO_METHOD_HANDLE callerHnd,
 }
 void MethodContext::dmpCanInline(DLDL key, const Agnostic_CanInline& value)
 {
-    printf("CanInline key - callerHnd-%016llX calleeHnd-%016llX, value pRestrictions-%u result-%u exceptionCode-%08X",
-           key.A, key.B, value.Restrictions, value.result, value.exceptionCode);
+    printf("CanInline key - callerHnd-%016llX calleeHnd-%016llX, value result-%u exceptionCode-%08X",
+           key.A, key.B, value.result, value.exceptionCode);
 }
 CorInfoInline MethodContext::repCanInline(CORINFO_METHOD_HANDLE callerHnd,
                                           CORINFO_METHOD_HANDLE calleeHnd,
-                                          uint32_t*             pRestrictions,
                                           DWORD*                exceptionCode)
 {
     DLDL key;
@@ -1347,8 +1341,6 @@ CorInfoInline MethodContext::repCanInline(CORINFO_METHOD_HANDLE callerHnd,
 
     *exceptionCode = value.exceptionCode;
 
-    if (pRestrictions != nullptr)
-        *pRestrictions     = (DWORD)value.Restrictions;
     CorInfoInline response = (CorInfoInline)value.result;
     return response;
 }

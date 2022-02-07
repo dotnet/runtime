@@ -509,23 +509,16 @@ namespace System.IO
 
         private void WriteFormatHelper(string format, ParamsArray args, bool appendNewLine)
         {
-            StringBuilder sb =
-                StringBuilderCache.Acquire((format?.Length ?? 0) + args.Length * 8)
-                .AppendFormatHelper(null, format!, args); // AppendFormatHelper will appropriately throw ArgumentNullException for a null format
+            int estimatedLength = (format?.Length ?? 0) + args.Length * 8;
+            var vsb = estimatedLength <= 256 ?
+                new ValueStringBuilder(stackalloc char[256]) :
+                new ValueStringBuilder(estimatedLength);
 
-            StringBuilder.ChunkEnumerator chunks = sb.GetChunks();
+            vsb.AppendFormatHelper(null, format!, args); // AppendFormatHelper will appropriately throw ArgumentNullException for a null format
 
-            bool more = chunks.MoveNext();
-            while (more)
-            {
-                ReadOnlySpan<char> current = chunks.Current.Span;
-                more = chunks.MoveNext();
+            WriteSpan(vsb.AsSpan(), appendNewLine);
 
-                // If final chunk, include the newline if needed
-                WriteSpan(current, appendNewLine: more ? false : appendNewLine);
-            }
-
-            StringBuilderCache.Release(sb);
+            vsb.Dispose();
         }
 
         public override void Write(string format, object? arg0)
