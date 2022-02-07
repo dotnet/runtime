@@ -78,7 +78,7 @@
 #include <mono/component/debugger-agent.h>
 #include "mini-runtime.h"
 #include "jit-icalls.h"
-#include <mono/eglib/glib.h>
+#include <glib.h>
 
 #ifdef HOST_DARWIN
 #include <mach/mach.h>

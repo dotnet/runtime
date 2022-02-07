@@ -33,7 +33,7 @@
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/w32api.h>
-#include <mono/eglib/glib.h>
+#include <glib.h>
 
 #include <errno.h>
 #include <mono/utils/mono-errno.h>

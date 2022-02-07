@@ -41,7 +41,7 @@ set(eglib_common_sources
     gmarkup.c
     gutf8.c
     gunicode.c
-    gclock_nanosleep.c
+    gclock-nanosleep.c
     unicode-data.h)
 
 addprefix(eglib_sources ../eglib/ "${eglib_platform_sources};${eglib_common_sources}")
