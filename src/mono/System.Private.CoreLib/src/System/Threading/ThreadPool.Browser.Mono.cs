@@ -26,12 +26,9 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        // Time-sensitive work items are those that may need to run ahead of normal work items at least periodically. For a
-        // runtime that does not support time-sensitive work items on the managed side, the thread pool yields the thread to the
-        // runtime periodically (by exiting the dispatch loop) so that the runtime may use that thread for processing
-        // any time-sensitive work. For a runtime that supports time-sensitive work items on the managed side, the thread pool
-        // does not yield the thread and instead processes time-sensitive work items queued by specific APIs periodically.
-        internal const bool SupportsTimeSensitiveWorkItems = false; // the timer currently doesn't queue time-sensitive work
+        // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
+        // the runtime may use the thread for processing other work
+        internal static bool YieldFromDispatchLoop => true;
 
         private const bool IsWorkerTrackingEnabledInConfig = false;
 
