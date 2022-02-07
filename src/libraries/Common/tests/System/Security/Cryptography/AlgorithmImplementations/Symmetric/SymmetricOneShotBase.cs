@@ -421,8 +421,8 @@ namespace System.Security.Cryptography.Tests
 
                 alg.Key = Key;
 
-                // This is a plaintext that is manually padded. Though it is going to be
-                // encrypted with CFB8, it's padded to BlockSizeInBytes-1.
+                // This is a plaintext that is manually padded. It contains one byte of
+                // data, padded up to the block size, in bytes, of the algorithm.
                 Span<byte> excessPadding = new byte[alg.BlockSize / 8];
                 excessPadding.Fill((byte)(alg.BlockSize / 8 - 1));
                 excessPadding[0] = 0x42;
