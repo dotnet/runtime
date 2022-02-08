@@ -762,7 +762,8 @@ This mechanism is exposed through two different helper functions, each with diff
 The first mechanism is a validator that takes the target address as an argument and fails fast if the address is not an expected indirect call target; otherwise, it does nothing and returns.
 The second mechanism is a dispatcher that takes the target address in a non-standard register; on successful validation of the address, it jumps directly to the target function.
 Windows makes the dispatcher available only on ARM64 and x64, while the validator is available on all platforms.
-However, the JIT supports CFG only on ARM64 and x64, wth CFG by default being disabled for these platforms.
+However, the JIT supports CFG only on ARM64 and x64, with CFG by default being disabled for these platforms.
+The expected use of the CFG feature is for NativeAOT scenarios that are running in constrained environments where CFG is required.
 
 The helpers are exposed to the JIT as standard JIT helpers `CORINFO_HELP_VALIDATE_INDIRECT_CALL` and `CORINFO_HELP_DISPATCH_INDIRECT_CALL`.
 
