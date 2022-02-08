@@ -168,7 +168,8 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_HWINTRINSIC:
             if (HWIntrinsicInfo::IsXCNTIntrinsic(node->AsHWIntrinsic()->GetHWIntrinsicId()))
             {
-                return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::IntMax};
+                // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
+                return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
             }
             break;
 #endif // FEATURE_HW_INTRINSICS
