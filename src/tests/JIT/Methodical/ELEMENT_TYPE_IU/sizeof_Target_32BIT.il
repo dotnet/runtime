@@ -13,7 +13,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'sizeof-ia64'// as "avg"
+.assembly 'sizeof_Target_32BIT'// as "avg"
 {
 }
 .assembly extern xunit.core {}
@@ -31,10 +31,10 @@
 		.entrypoint
 		// Code size       48 (0x30)
 		.maxstack  5
-		ldc.i4.8
-		ldc.i4.8
-		ldc.i4.8
-		ldc.i4.8
+		ldc.i4.4
+		dup 
+		dup
+		dup
 		sizeof native int
 		ceq
 		brfalse pop3

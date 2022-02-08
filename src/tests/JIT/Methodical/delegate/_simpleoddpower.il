@@ -8,7 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib {}
-.assembly oddpower {}
+.assembly _simpleoddpower {}
 .assembly extern xunit.core {}
 .class interface private abstract auto ansi Power
 {

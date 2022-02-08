@@ -8,12 +8,12 @@
 }
 
 .assembly extern mscorlib { }
-.assembly '64sizeof'
+.assembly 'sizeof_Target_32Bit_x86'
 {
 }
 .assembly extern xunit.core {}
-.custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
-.namespace JitTest
+.custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
+.namespace JitTest_sizeof_Target_32Bit_x86_il
 {
   .class private sequential ansi sealed beforefieldinit SimpleStruct
          extends [mscorlib]System.ValueType
@@ -31,44 +31,44 @@
   .class private sequential ansi sealed beforefieldinit ComplexStruct
          extends [mscorlib]System.ValueType
   {
-    .field private valuetype JitTest.SimpleStruct ss1
-    .field private valuetype JitTest.SimpleStruct ss2
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.SimpleStruct ss1
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.SimpleStruct ss2
   }
   .class private sequential ansi sealed beforefieldinit RefComplexStruct
          extends [mscorlib]System.ValueType
   {
-    .field private valuetype JitTest.SimpleStruct ss1
-    .field private valuetype JitTest.SimpleStruct[] ssarr
-    .field private valuetype JitTest.SimpleStruct ss2
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.SimpleStruct ss1
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.SimpleStruct[] ssarr
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.SimpleStruct ss2
   }
   .class private sequential ansi sealed beforefieldinit ComplexStruct2
          extends [mscorlib]System.ValueType
   {
-    .field private valuetype JitTest.ComplexStruct x1
-    .field private valuetype JitTest.ComplexStruct x2
-    .field private valuetype JitTest.ComplexStruct x3
-    .field private valuetype JitTest.ComplexStruct x4
-    .field private valuetype JitTest.ComplexStruct x5
-    .field private valuetype JitTest.ComplexStruct x6
-    .field private valuetype JitTest.ComplexStruct x7
-    .field private valuetype JitTest.ComplexStruct x8
-    .field private valuetype JitTest.ComplexStruct x9
-    .field private valuetype JitTest.ComplexStruct x10
-    .field private valuetype JitTest.ComplexStruct x11
-    .field private valuetype JitTest.ComplexStruct x12
-    .field private valuetype JitTest.ComplexStruct x13
-    .field private valuetype JitTest.ComplexStruct x14
-    .field private valuetype JitTest.ComplexStruct x15
-    .field private valuetype JitTest.ComplexStruct x16
-    .field private valuetype JitTest.ComplexStruct x17
-    .field private valuetype JitTest.ComplexStruct x18
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x1
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x2
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x3
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x4
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x5
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x6
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x7
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x8
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x9
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x10
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x11
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x12
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x13
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x14
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x15
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x16
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x17
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct x18
   }
   .class private sequential ansi sealed beforefieldinit RefComplexStruct2
          extends [mscorlib]System.ValueType
   {
-    .field private valuetype JitTest.ComplexStruct2 ss1
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct2 ss1
     .field private class [mscorlib]System.AppDomain ad
-    .field private valuetype JitTest.ComplexStruct2 ss2
+    .field private valuetype JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct2 ss2
   }
   .class private sequential ansi sealed beforefieldinit Test
          extends [mscorlib]System.ValueType
@@ -84,7 +84,7 @@
       .entrypoint
       .maxstack  3
       .locals (int32 V_0)
-      IL_0000:  sizeof     JitTest.SimpleStruct
+      IL_0000:  sizeof     JitTest_sizeof_Target_32Bit_x86_il.SimpleStruct
       IL_0006:  ldc.i4.s   32
       IL_0008:  beq.s      IL_0019
       IL_000a:  ldstr      "sizeof(SimpleStruct) failed."
@@ -92,16 +92,16 @@
       IL_0014:  ldc.i4.s   101
       IL_0016:  stloc.0
       IL_0017:  br       EXIT
-      IL_0019:  sizeof     JitTest.ComplexStruct
+      IL_0019:  sizeof     JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct
       IL_001f:  ldc.i4.s   64
       IL_0021:  beq.s      IL_0032
       IL_0023:  ldstr      "sizeof(ComplexStruct) failed."
       IL_0028:  call       void [System.Console]System.Console::WriteLine(string)
       IL_002d:  ldc.i4.s   102
       IL_002f:  stloc.0
-      IL_0030:  br.s       EXIT
-      IL_0032:  sizeof     JitTest.ComplexStruct2
-      IL_0038:  sizeof     JitTest.ComplexStruct
+      IL_0030:  br       EXIT
+      IL_0032:  sizeof     JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct2
+      IL_0038:  sizeof     JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct
       IL_003e:  ldc.i4.s   18
       IL_0040:  mul
       IL_0041:  beq.s      NEXT1
@@ -110,38 +110,40 @@
       IL_004d:  ldc.i4.s   103
       IL_004f:  stloc.0
       IL_0050:  br.s       EXIT
-      			
+
       NEXT1:
-      			sizeof     JitTest.RefComplexStruct
+      			sizeof     JitTest_sizeof_Target_32Bit_x86_il.RefComplexStruct
       			ldc.i4.s   72
       			beq.s  NEXT2
-      			
+
       				ldstr      "sizeof(RefComplexStruct) failed."
       				call       void [System.Console]System.Console::WriteLine(string)
       				ldc.i4.s   104
       				stloc.0
       				br.s       EXIT
-      
-      NEXT2:			
-      			sizeof     JitTest.RefComplexStruct2
-      			sizeof     JitTest.ComplexStruct2
+
+      NEXT2:
+      			sizeof     JitTest_sizeof_Target_32Bit_x86_il.RefComplexStruct2
+      			sizeof     JitTest_sizeof_Target_32Bit_x86_il.ComplexStruct2
       			ldc.i4.1
       			shl
-      			ldc.i4.8
+      			ldc.i4.4 // Add 4 for the AppDomain field
+      			add
+      			ldc.i4.4 // Add 4 to ensure alignment for ComplexStruct2 (which contains longs)
       			add
       			beq.s  OK
-      			
+
       				ldstr      "sizeof(RefComplexStruct2) failed."
       				call       void [System.Console]System.Console::WriteLine(string)
       				ldc.i4.s   105
       				stloc.0
       				br.s       EXIT
-      
+
       OK:  ldstr      "sizeof passed"
       IL_0057:  call       void [System.Console]System.Console::WriteLine(string)
       IL_005c:  ldc.i4 100
       IL_005d:  stloc.0
-      
+
       EXIT: ldloc.0
       			ret
     }
