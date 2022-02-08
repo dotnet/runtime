@@ -1949,9 +1949,9 @@ BOOL EEJitManager::LoadJIT()
 #endif // TARGET_WINDOWS
 
 #if defined(TARGET_ARM)
-            altJitName = MAKEDLLNAME_W(W("clrjit_universal_arm_x86"));
+            altJitName = MAKEDLLNAME_W(W("clrjit_universal_arm_arm"));
 #elif defined(TARGET_ARM64)
-            altJitName = MAKEDLLNAME_W(W("clrjit_universal_arm64_x64"));
+            altJitName = MAKEDLLNAME_W(W("clrjit_universal_arm64_arm64"));
 #endif // TARGET_ARM
         }
 
