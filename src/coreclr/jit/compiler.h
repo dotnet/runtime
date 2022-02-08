@@ -7627,7 +7627,6 @@ public:
         O2K_CONST_INT,
         O2K_CONST_LONG,
         O2K_CONST_DOUBLE,
-        O2K_ARR_LEN,
         O2K_SUBRANGE,
         O2K_COUNT
     };
@@ -7667,7 +7666,11 @@ public:
                 GenTreeFlags iconFlags; // gtFlags
             };
             union {
-                SsaVar        lcl;
+                struct
+                {
+                    SsaVar        lcl;
+                    FieldSeqNode* zeroOffsetFieldSeq;
+                };
                 IntVal        u1;
                 __int64       lconVal;
                 double        dconVal;
@@ -7746,6 +7749,7 @@ public:
             {
                 return false;
             }
+
             switch (op2.kind)
             {
                 case O2K_IND_CNS_INT:
@@ -7760,9 +7764,9 @@ public:
                     return (memcmp(&op2.dconVal, &that->op2.dconVal, sizeof(double)) == 0);
 
                 case O2K_LCLVAR_COPY:
-                case O2K_ARR_LEN:
                     return (op2.lcl.lclNum == that->op2.lcl.lclNum) &&
-                           (!vnBased || op2.lcl.ssaNum == that->op2.lcl.ssaNum);
+                           (!vnBased || op2.lcl.ssaNum == that->op2.lcl.ssaNum) &&
+                           (op2.zeroOffsetFieldSeq == that->op2.zeroOffsetFieldSeq);
 
                 case O2K_SUBRANGE:
                     return op2.u2.Equals(that->op2.u2);
@@ -7775,6 +7779,7 @@ public:
                     assert(!"Unexpected value for op2.kind in AssertionDsc.");
                     break;
             }
+
             return false;
         }
 
