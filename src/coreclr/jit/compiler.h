@@ -9644,10 +9644,6 @@ public:
             // On these platforms we assume the register that the target is
             // passed in is preserved by the validator and take care to get the
             // target from the register for the call (even in debug mode).
-            //
-            // TODO: Confirm that the ARM64 validator guarantees that the
-            // target-address register is preserved (there is conflicting
-            // documentation on this, but it currently does).
             static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH & (1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) == 0);
             if (JitConfig.JitForceControlFlowGuard())
                 return true;
