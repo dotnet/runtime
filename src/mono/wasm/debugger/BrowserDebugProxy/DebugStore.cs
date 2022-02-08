@@ -414,27 +414,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var parameter = Assembly.asmMetadataReader.GetParameter(parameterHandle);
                 var paramName = Assembly.asmMetadataReader.GetString(parameter.Name);
                 var isOptional = parameter.Attributes.HasFlag(ParameterAttributes.Optional) && parameter.Attributes.HasFlag(ParameterAttributes.HasDefault);
-                if (isOptional)
+                if (!isOptional)
                 {
-                    var constantHandle = parameter.GetDefaultValue();
-                    var blobHandle = Assembly.asmMetadataReader.GetConstant(constantHandle);
-                    var paramBytes = Assembly.asmMetadataReader.GetBlobBytes(blobHandle.Value);
-                    paramsInfo.Add(
-                    new ParameterInfo(
-                        paramName,
-                        true,
-                        blobHandle.TypeCode,
-                        paramBytes
-                    ));
+                    paramsInfo.Add(new ParameterInfo(paramName));
+                    continue;
                 }
-                else
-                {
-                    paramsInfo.Add(
-                    new ParameterInfo(
-                        paramName,
-                        false
-                    ));
-                }
+                var constantHandle = parameter.GetDefaultValue();
+                var blobHandle = Assembly.asmMetadataReader.GetConstant(constantHandle);
+                var paramBytes = Assembly.asmMetadataReader.GetBlobBytes(blobHandle.Value);
+                paramsInfo.Add(new ParameterInfo(
+                    paramName,
+                    blobHandle.TypeCode,
+                    paramBytes
+                ));
             }
             return paramsInfo;
         }
@@ -569,20 +561,17 @@ namespace Microsoft.WebAssembly.Diagnostics
         public ConstantTypeCode TypeCode { get; private set; }
 
         public byte[] Value { get; private set; }
-        public bool IsOptional { get; private set; }
 
-        internal ParameterInfo(string name, bool isOptional, ConstantTypeCode typeCode, byte[] value)
+        internal ParameterInfo(string name, ConstantTypeCode typeCode, byte[] value)
         {
             Name = name;
-            IsOptional = isOptional;
             TypeCode = typeCode;
             Value = value;
         }
 
-        internal ParameterInfo(string name, bool isOptional)
+        internal ParameterInfo(string name)
         {
             Name = name;
-            IsOptional = isOptional;
         }
     }
 

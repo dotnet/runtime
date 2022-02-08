@@ -400,7 +400,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (Exception ex)
             {
-                throw new ReturnAsErrorException($"Cannot evaluate '{expression}'. {ex.Message}", "CompilationError");
+                throw new ReturnAsErrorException($"Cannot evaluate '{expression}'. Error: {ex.Message}", "CompilationError");
             }
         }
 

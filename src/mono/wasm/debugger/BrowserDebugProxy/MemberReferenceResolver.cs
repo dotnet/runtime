@@ -419,14 +419,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     using var commandParamsObjWriter = new MonoBinaryWriter();
                     if (isTryingLinq == 0)
                         commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
-                    var methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
-                    if (methodInfo?.Info == null)
-                        return null;
-                    var methodParamsInfo = methodInfo.Info.GetMethodParams();
 
                     if (method.ArgumentList != null)
                     {
-                        commandParamsObjWriter.Write(methodParamsInfo.Count + isTryingLinq); // check if default arg is not already passed as argument - HOW? NAMES?
+                        var methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
+                        if (methodInfo?.Info == null)
+                            return null;
+                        var methodParamsInfo = methodInfo.Info.GetMethodParams();
+                        commandParamsObjWriter.Write(methodParamsInfo.Count + isTryingLinq);
                         if (isTryingLinq == 1)
                             commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
                         for (var i = 0; i < methodParamsInfo.Count; i++)
@@ -448,32 +448,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 }
                             }
                             // optional arguments that were not overritten
-                            else
-                            {
-                                if (!await commandParamsObjWriter.WriteConst(methodParamsInfo[i].TypeCode, methodParamsInfo[i].Value, context.SdbAgent, token))
-                                    return null;
-                            }
+                            else if (!await commandParamsObjWriter.WriteConst(methodParamsInfo[i].TypeCode, methodParamsInfo[i].Value, context.SdbAgent, token))
+                                return null;
                         }
-
-                        //foreach (var arg in method.ArgumentList.Arguments)
-                        //{
-                        //    if (arg.Expression is LiteralExpressionSyntax)
-                        //    {
-                        //        if (!await commandParamsObjWriter.WriteConst(arg.Expression as LiteralExpressionSyntax, context.SdbAgent, token))
-                        //            return null;
-                        //    }
-                        //    if (arg.Expression is IdentifierNameSyntax)
-                        //    {
-                        //        var argParm = arg.Expression as IdentifierNameSyntax;
-                        //        if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[argParm.Identifier.Text], context.SdbAgent, token))
-                        //            return null;
-                        //    }
-                        //}
-                        //foreach (var paramInfo in methodParamsInfo)
-                        //{
-                        //    if (!await commandParamsObjWriter.WriteConst(paramInfo.TypeCode, paramInfo.Value, context.SdbAgent, token))
-                        //        return null;
-                        //}
                         var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);
                         return await GetValueFromObject(retMethod, token);
                     }
