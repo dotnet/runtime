@@ -144,12 +144,6 @@ void SSL_CTX_set_alpn_select_cb(SSL_CTX* ctx,
 void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsigned int* len);
 #endif
 
-
-#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_1_RTM
-int SSL_verify_client_post_handshake(SSL *s);
-void SSL_set_post_handshake_auth(SSL *s, int val);
-#endif
-
 #if !HAVE_OPENSSL_CHACHA20POLY1305
 #undef HAVE_OPENSSL_CHACHA20POLY1305
 #define HAVE_OPENSSL_CHACHA20POLY1305 1

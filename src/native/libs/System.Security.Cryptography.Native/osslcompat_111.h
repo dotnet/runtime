@@ -79,6 +79,8 @@ int32_t X509_get_version(const X509* x509);
 int X509_set1_notAfter(X509* x509, const ASN1_TIME*);
 int X509_set1_notBefore(X509* x509, const ASN1_TIME*);
 int32_t X509_up_ref(X509* x509);
+int SSL_verify_client_post_handshake(SSL *s);
+void SSL_set_post_handshake_auth(SSL *s, int val);
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_0_2_RTM
 int32_t X509_check_host(X509* x509, const char* name, size_t namelen, unsigned int flags, char** peername);
