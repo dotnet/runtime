@@ -42,7 +42,10 @@ endif()
 set (NATIVECOMPRESSION_SOURCES
     ${NATIVECOMPRESSION_SOURCES}
     ../../AnyOS/zlib/pal_zlib.c
+    ../../AnyOS/brotli/common/constants.c
+    ../../AnyOS/brotli/common/context.c
     ../../AnyOS/brotli/common/dictionary.c
+    ../../AnyOS/brotli/common/platform.c
     ../../AnyOS/brotli/common/transform.c
     ../../AnyOS/brotli/dec/bit_reader.c
     ../../AnyOS/brotli/dec/decode.c
@@ -54,12 +57,14 @@ set (NATIVECOMPRESSION_SOURCES
     ../../AnyOS/brotli/enc/block_splitter.c
     ../../AnyOS/brotli/enc/brotli_bit_stream.c
     ../../AnyOS/brotli/enc/cluster.c
+    ../../AnyOS/brotli/enc/command.c
     ../../AnyOS/brotli/enc/compress_fragment.c
     ../../AnyOS/brotli/enc/compress_fragment_two_pass.c
     ../../AnyOS/brotli/enc/dictionary_hash.c
     ../../AnyOS/brotli/enc/encode.c
     ../../AnyOS/brotli/enc/encoder_dict.c
     ../../AnyOS/brotli/enc/entropy_encode.c
+    ../../AnyOS/brotli/enc/fast_log.c
     ../../AnyOS/brotli/enc/histogram.c
     ../../AnyOS/brotli/enc/literal_cost.c
     ../../AnyOS/brotli/enc/memory.c
