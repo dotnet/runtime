@@ -78,11 +78,8 @@ namespace System.Xml
             if (string.IsNullOrEmpty(name))
                 return name;
 
-            StringBuilder? bufBld = null;
-
             int length = name.Length;
             int copyPosition = 0;
-
             int underscorePos = name.IndexOf('_');
             MatchCollection? mc;
             IEnumerator? en;
@@ -107,6 +104,13 @@ namespace System.Xml
                 matchPos = m.Index;
             }
 
+            ValueStringBuilder bufBld =
+                matchPos == -1
+                    ? default
+                    : length < 50
+                        ? new ValueStringBuilder(stackalloc char[length])
+                        : new ValueStringBuilder(length);
+
             for (int position = 0; position < length - EncodedCharLength + 1; position++)
             {
                 if (position == matchPos)
@@ -117,11 +121,11 @@ namespace System.Xml
                         matchPos = m.Index;
                     }
 
-                    if (bufBld == null)
+                    if (bufBld.Length == 0)
                     {
-                        bufBld = new StringBuilder(length + 20);
+                        bufBld.EnsureCapacity(length + 20);
                     }
-                    bufBld.Append(name, copyPosition, position - copyPosition);
+                    bufBld.Append(name.AsSpan(copyPosition, position - copyPosition));
 
                     if (name[position + 6] != '_')
                     { //_x1234_
@@ -171,15 +175,13 @@ namespace System.Xml
             {
                 return name;
             }
-            else
-            {
-                if (copyPosition < length)
-                {
-                    bufBld!.Append(name, copyPosition, length - copyPosition);
-                }
 
-                return bufBld!.ToString();
+            if (copyPosition < length)
+            {
+                bufBld.Append(name.AsSpan(copyPosition, length - copyPosition));
             }
+
+            return bufBld.ToString();
         }
 
         [return: NotNullIfNotNull("name")]
@@ -190,7 +192,6 @@ namespace System.Xml
                 return name;
             }
 
-            StringBuilder? bufBld = null;
             int length = name.Length;
             int copyPosition = 0;
             int position = 0;
@@ -216,29 +217,35 @@ namespace System.Xml
                 matchPos = m.Index - 1;
             }
 
+            ValueStringBuilder bufBld =
+                matchPos == -1
+                    ? default
+                    : length < 50
+                        ? new ValueStringBuilder(stackalloc char[length])
+                        : new ValueStringBuilder(length);
+
             if (first)
             {
                 if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || (!local && name[0] != ':'))) ||
                      matchPos == 0)
                 {
-                    if (bufBld == null)
+                    if (bufBld.Length == 0)
                     {
-                        bufBld = new StringBuilder(length + 20);
+                        bufBld.EnsureCapacity(length + 20);
                     }
-
                     bufBld.Append("_x");
                     if (length > 1 && XmlCharType.IsHighSurrogate(name[0]) && XmlCharType.IsLowSurrogate(name[1]))
                     {
                         int x = name[0];
                         int y = name[1];
                         int u = XmlCharType.CombineSurrogateChar(y, x);
-                        bufBld.Append($"{u:X8}");
+                        bufBld.AppendSpanFormattable(u, "X8", provider: null);
                         position++;
                         copyPosition = 2;
                     }
                     else
                     {
-                        bufBld.Append($"{(int)name[0]:X4}");
+                        bufBld.AppendSpanFormattable((int)name[0], "X4", provider: null);
                         copyPosition = 1;
                     }
 
@@ -259,9 +266,9 @@ namespace System.Xml
                     (!local && !XmlCharType.IsNameCharXml4e(name[position])) ||
                     (matchPos == position))
                 {
-                    if (bufBld == null)
+                    if (bufBld.Length == 0)
                     {
-                        bufBld = new StringBuilder(length + 20);
+                        bufBld.EnsureCapacity(length + 20);
                     }
                     if (matchPos == position)
                         if (en!.MoveNext())
@@ -270,20 +277,20 @@ namespace System.Xml
                             matchPos = m.Index - 1;
                         }
 
-                    bufBld.Append(name, copyPosition, position - copyPosition);
+                    bufBld.Append(name.AsSpan(copyPosition, position - copyPosition));
                     bufBld.Append("_x");
                     if ((length > position + 1) && XmlCharType.IsHighSurrogate(name[position]) && XmlCharType.IsLowSurrogate(name[position + 1]))
                     {
                         int x = name[position];
                         int y = name[position + 1];
                         int u = XmlCharType.CombineSurrogateChar(y, x);
-                        bufBld.Append($"{u:X8}");
+                        bufBld.AppendSpanFormattable(u, "X8", provider: null);
                         copyPosition = position + 2;
                         position++;
                     }
                     else
                     {
-                        bufBld.Append($"{(int)name[position]:X4}");
+                        bufBld.AppendSpanFormattable((int)name[position], "X4", provider: null);
                         copyPosition = position + 1;
                     }
                     bufBld.Append('_');
@@ -293,15 +300,13 @@ namespace System.Xml
             {
                 return name;
             }
-            else
-            {
-                if (copyPosition < length)
-                {
-                    bufBld!.Append(name, copyPosition, length - copyPosition);
-                }
 
-                return bufBld!.ToString();
+            if (copyPosition < length)
+            {
+                bufBld.Append(name.AsSpan(copyPosition, length - copyPosition));
             }
+
+            return bufBld.ToString();
         }
 
         private const int EncodedCharLength = 7; // ("_xFFFF_".Length);
