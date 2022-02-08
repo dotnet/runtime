@@ -610,15 +610,21 @@ struct HWIntrinsicInfo
     {
         switch (id)
         {
-            case NI_System_Numerics_BitOperations_PopCount:
 #ifdef TARGET_XARCH
-            case NI_POPCNT_PopCount:
             case NI_BMI1_TrailingZeroCount:
-            case NI_LZCNT_LeadingZeroCount:
-            case NI_POPCNT_X64_PopCount:
             case NI_BMI1_X64_TrailingZeroCount:
+            case NI_LZCNT_LeadingZeroCount:
             case NI_LZCNT_X64_LeadingZeroCount:
-#endif // TARGET_XARCH
+            case NI_POPCNT_PopCount:
+            case NI_POPCNT_X64_PopCount:
+#elif TARGET_ARM64
+            case NI_AdvSimd_PopCount:
+            case NI_AdvSimd_LeadingZeroCount:
+            case NI_AdvSimd_LeadingSignCount:
+            case NI_ArmBase_LeadingZeroCount:
+            case NI_ArmBase_Arm64_LeadingZeroCount:
+            case NI_ArmBase_Arm64_LeadingSignCount:
+#endif
                 return true;
             default:
                 break;
