@@ -2209,6 +2209,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_ro/*">
             <Issue>TODO: Finally block OP_START_HANDLER adjust RSP based on param_area (32 byte on Windows, 0 on Unix), brancing back to finally block will incorrectly decrement RSP on each iteration</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/v2.0-beta2/460373/460373/*">
+            <Issue>TODO: Triggers OOM issue on CI causing other test failures ??</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in interpreter runtime mode -->
