@@ -5338,6 +5338,12 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 
 	info = mono_marshal_load_type_info (klass);
 
+	if (info->native_size == 0)
+		return;
+
+	if (m_class_is_blittable (klass))
+		return;
+
 	for (i = 0; i < info->num_fields; i++) {
 		MonoMarshalConv conv;
 		MonoType *ftype = info->fields [i].field->type;
@@ -5354,7 +5360,7 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 		switch (conv) {
 		case MONO_MARSHAL_CONV_NONE:
 			if (MONO_TYPE_ISSTRUCT (ftype)) {
-				mono_struct_delete_old (ftype->data.klass, cpos);
+				mono_struct_delete_old (mono_class_from_mono_type_internal (ftype), cpos);
 				continue;
 			}
 			break;
