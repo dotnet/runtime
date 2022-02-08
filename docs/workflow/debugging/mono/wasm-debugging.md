@@ -2,7 +2,7 @@
 WASM runtime debugging
 ======================
 
-- Disable symbol stripping by setting the `WasmNativeStrip` msbuild property to `false`.
+- Disable symbol stripping by setting the `WasmNativeStrip` msbuild property to `false`.  See also, [collecting stack traces with symbols in Blazor](#collecting-stack-traces-with-symbols-in-blazor)
 
 - Emscripten generates dwarf debug info and Chrome 80 and later can use it.
 
@@ -133,3 +133,131 @@ These kinds of faults usually happen because the mono runtime has some helper fu
 never meant to be reached, i.e. `no_gsharedvt_in_wrapper` or `no_llvmonly_interp_method_pointer`.
 These functions are used as placeholders for function pointers with different signatures, so
 if they do end up being called due to a bug, a signature mismatch error happens.
+
+# Collecting stack traces with symbols in Blazor
+
+When debugging a native crash in a .NET 6 Blazor app or another WebAssembly
+framework that uses our default `dotnet.wasm`, the native stack frames will not
+have C symbol names, but will instead look like `$func1234`.
+
+For example this Razor page will crash when a user clicks on the `Crash` button
+
+```csharp
+<button class="btn btn-warning" @onclick="Crash">Crash</button>
+
+@code {
+    private void Crash ()
+    {
+        IntPtr p = (IntPtr)0x01;
+        Console.WriteLine ("About to crash");
+        System.Runtime.InteropServices.Marshal.FreeHGlobal(p);
+    }
+}
+```
+
+Clicking on the `Crash` button will produce the following output in the console (the function indices may be different):
+
+```console
+dotnet.wasm:0x1d8355 Uncaught (in promise) RuntimeError: memory access out of bounds
+    at _framework/dotnet.wasm
+    at _framework/dotnet.wasm
+    at _framework/dotnet.wasm
+    at _framework/dotnet.wasm
+    at _framework/dotnet.wasm
+    at _framework/dotnet.wasm
+    at _framework/dotnet.wasm
+    at _framework/dotnet.wasm
+    at _framework/dotnet.wasm
+    at _framework/dotnet.wasm
+$free @ dotnet.wasm:0x1d8355
+$func4027 @ dotnet.wasm:0xead6a
+$func219 @ dotnet.wasm:0x1a03a
+$func167 @ dotnet.wasm:0xcaf7
+$func166 @ dotnet.wasm:0xba0a
+$func2810 @ dotnet.wasm:0xabacf
+$func1615 @ dotnet.wasm:0x6f8eb
+$func1613 @ dotnet.wasm:0x6f85d
+$func966 @ dotnet.wasm:0x502dc
+$func219 @ dotnet.wasm:0x1a0e2
+$func167 @ dotnet.wasm:0xcaf7
+$func166 @ dotnet.wasm:0xba0a
+$func2810 @ dotnet.wasm:0xabacf
+$func1615 @ dotnet.wasm:0x6f8eb
+$func1619 @ dotnet.wasm:0x6ff58
+$mono_wasm_invoke_method @ dotnet.wasm:0x96c9
+Module._mono_wasm_invoke_method @ dotnet.6.0.1.hopd7ipo8x.js:1
+managed__Microsoft_AspNetCore_Components_WebAssembly__Microsoft_AspNetCore_Components_WebAssembly_Services_DefaultWebAssemblyJSRuntime_BeginInvokeDotNet @ managed__Microsoft_AspNetCore_Components_WebAssembly__Microsoft_AspNetCore_Components_WebAssembly_Services_DefaultWebAssemblyJSRuntime_BeginInvokeDotNet:19
+beginInvokeDotNetFromJS @ blazor.webassembly.js:1
+b @ blazor.webassembly.js:1
+invokeMethodAsync @ blazor.webassembly.js:1
+(anonymous) @ blazor.webassembly.js:1
+invokeWhenHeapUnlocked @ blazor.webassembly.js:1
+S @ blazor.webassembly.js:1
+C @ blazor.webassembly.js:1
+dispatchGlobalEventToAllElements @ blazor.webassembly.js:1
+onGlobalEvent @ blazor.webassembly.js:1
+```
+
+In order to get symbols, the user should:
+
+1. Install the `wasm-tools` workload using `dotnet workload install wasm-tools`
+2. Set these additional properties in their `.csproj` file:
+
+   ```xml
+     <!-- Builds a dotnet.wasm with debug symbols preserved -->
+     <PropertyGroup>
+       <WasmBuildNative>true</WasmBuildNative>
+       <WasmNativeStrip>false</WasmNativeStrip>
+     </PropertyGroup>
+   ```
+
+3. Delete the `bin` and `obj` folders, re-build the project and run it again.
+
+Now clicking on the `Crash` button will produce a stack trace with symbols:
+
+```console
+dotnet.wasm:0x224878 Uncaught (in promise) RuntimeError: memory access out of bounds
+    at dlfree (dotnet.wasm:0x224878)
+    at SystemNative_Free (dotnet.wasm:0x20f0e2)
+    at do_icall (dotnet.wasm:0x190f9)
+    at do_icall_wrapper (dotnet.wasm:0x18429)
+    at interp_exec_method (dotnet.wasm:0xa56c)
+    at interp_runtime_invoke (dotnet.wasm:0x943a)
+    at mono_jit_runtime_invoke (dotnet.wasm:0x1dec32)
+    at do_runtime_invoke (dotnet.wasm:0x95fca)
+    at mono_runtime_invoke_checked (dotnet.wasm:0x95f57)
+    at mono_runtime_try_invoke_array (dotnet.wasm:0x9a87e)
+$dlfree @ dotnet.wasm:0x224878
+$SystemNative_Free @ dotnet.wasm:0x20f0e2
+$do_icall @ dotnet.wasm:0x190f9
+$do_icall_wrapper @ dotnet.wasm:0x18429
+$interp_exec_method @ dotnet.wasm:0xa56c
+$interp_runtime_invoke @ dotnet.wasm:0x943a
+$mono_jit_runtime_invoke @ dotnet.wasm:0x1dec32
+$do_runtime_invoke @ dotnet.wasm:0x95fca
+$mono_runtime_invoke_checked @ dotnet.wasm:0x95f57
+$mono_runtime_try_invoke_array @ dotnet.wasm:0x9a87e
+$mono_runtime_invoke_array_checked @ dotnet.wasm:0x9af17
+$ves_icall_InternalInvoke @ dotnet.wasm:0x702ed
+$ves_icall_InternalInvoke_raw @ dotnet.wasm:0x7777f
+$do_icall @ dotnet.wasm:0x191c5
+$do_icall_wrapper @ dotnet.wasm:0x18429
+$interp_exec_method @ dotnet.wasm:0xa56c
+$interp_runtime_invoke @ dotnet.wasm:0x943a
+$mono_jit_runtime_invoke @ dotnet.wasm:0x1dec32
+$do_runtime_invoke @ dotnet.wasm:0x95fca
+$mono_runtime_try_invoke @ dotnet.wasm:0x966fe
+$mono_runtime_invoke @ dotnet.wasm:0x98982
+$mono_wasm_invoke_method @ dotnet.wasm:0x227de2
+Module._mono_wasm_invoke_method @ dotnet..y6ggkhlo8e.js:9927
+managed__Microsoft_AspNetCore_Components_WebAssembly__Microsoft_AspNetCore_Components_WebAssembly_Services_DefaultWebAssemblyJSRuntime_BeginInvokeDotNet @ managed__Microsoft_AspNetCore_Components_WebAssembly__Microsoft_AspNetCore_Components_WebAssembly_Services_DefaultWebAssemblyJSRuntime_BeginInvokeDotNet:19
+beginInvokeDotNetFromJS @ blazor.webassembly.js:1
+b @ blazor.webassembly.js:1
+invokeMethodAsync @ blazor.webassembly.js:1
+(anonymous) @ blazor.webassembly.js:1
+invokeWhenHeapUnlocked @ blazor.webassembly.js:1
+S @ blazor.webassembly.js:1
+C @ blazor.webassembly.js:1
+dispatchGlobalEventToAllElements @ blazor.webassembly.js:1
+onGlobalEvent @ blazor.webassembly.js:1
+```

@@ -96,11 +96,11 @@ public static class RunnerEntryPoint
         {
             get
             {
-                string? publicDir = Environment.GetEnvironmentVariable("DOCSDIR");
-                if (string.IsNullOrEmpty(publicDir))
-                    throw new ArgumentException("DOCSDIR should not be empty");
+                string? testResultsDir = Environment.GetEnvironmentVariable("TEST_RESULTS_DIR");
+                if (string.IsNullOrEmpty(testResultsDir))
+                    throw new ArgumentException("TEST_RESULTS_DIR should not be empty");
 
-                return Path.Combine(publicDir, "testResults.xml");
+                return Path.Combine(testResultsDir, "testResults.xml");
             }
         }
         protected override IEnumerable<TestAssemblyInfo> GetTestAssemblies() => Array.Empty<TestAssemblyInfo>();

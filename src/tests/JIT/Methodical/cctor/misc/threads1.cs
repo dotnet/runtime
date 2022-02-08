@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace Precise
 {
-    internal class Driver
+    internal class Driver_threads1
     {
         public static void f()
         {

@@ -402,16 +402,14 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
     bool removeLoop = false;
 
-    /* If an unreachable block was part of a loop entry or bottom then the loop is unreachable */
-    /* Special case: the block was the head of a loop - or pointing to a loop entry */
+    // If an unreachable block is a loop entry or bottom then the loop is unreachable.
+    // Special case: the block was the head of a loop - or pointing to a loop entry.
 
     for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
     {
         LoopDsc& loop = optLoopTable[loopNum];
 
-        /* Some loops may have been already removed by
-         * loop unrolling or conditional folding */
-
+        // Some loops may have been already removed by loop unrolling or conditional folding.
         if (loop.lpFlags & LPFLG_REMOVED)
         {
             continue;
@@ -454,11 +452,9 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
             continue;
         }
 
-        /* If the loop is still in the table
-         * any block in the loop must be reachable !!! */
+        // If the loop is still in the table any block in the loop must be reachable.
 
-        noway_assert(loop.lpEntry != block);
-        noway_assert(loop.lpBottom != block);
+        noway_assert((loop.lpEntry != block) && (loop.lpBottom != block));
 
         if (loop.lpExit == block)
         {
@@ -468,27 +464,26 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
             loop.lpExit = nullptr;
         }
 
-        /* If this points to the actual entry in the loop
-         * then the whole loop may become unreachable */
+        // If `block` flows to the loop entry then the whole loop will become unreachable if it is the
+        // only non-loop predecessor.
 
         switch (block->bbJumpKind)
         {
             case BBJ_NONE:
-            case BBJ_COND:
                 if (block->bbNext == loop.lpEntry)
                 {
                     removeLoop = true;
-                    break;
                 }
-                if (block->bbJumpKind == BBJ_NONE)
-                {
-                    break;
-                }
+                break;
 
-                FALLTHROUGH;
+            case BBJ_COND:
+                if ((block->bbNext == loop.lpEntry) || (block->bbJumpDest == loop.lpEntry))
+                {
+                    removeLoop = true;
+                }
+                break;
 
             case BBJ_ALWAYS:
-                noway_assert(block->bbJumpDest);
                 if (block->bbJumpDest == loop.lpEntry)
                 {
                     removeLoop = true;
@@ -512,13 +507,12 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
         if (removeLoop)
         {
-            /* Check if the entry has other predecessors outside the loop
-             * TODO: Replace this when predecessors are available */
+            // Check if the entry has other predecessors outside the loop.
+            // TODO: Replace this when predecessors are available.
 
             for (BasicBlock* const auxBlock : Blocks())
             {
-                /* Ignore blocks in the loop */
-
+                // Ignore blocks in the loop.
                 if (loop.lpContains(auxBlock))
                 {
                     continue;
@@ -527,21 +521,20 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
                 switch (auxBlock->bbJumpKind)
                 {
                     case BBJ_NONE:
-                    case BBJ_COND:
                         if (auxBlock->bbNext == loop.lpEntry)
                         {
                             removeLoop = false;
-                            break;
                         }
-                        if (auxBlock->bbJumpKind == BBJ_NONE)
-                        {
-                            break;
-                        }
+                        break;
 
-                        FALLTHROUGH;
+                    case BBJ_COND:
+                        if ((auxBlock->bbNext == loop.lpEntry) || (auxBlock->bbJumpDest == loop.lpEntry))
+                        {
+                            removeLoop = false;
+                        }
+                        break;
 
                     case BBJ_ALWAYS:
-                        noway_assert(auxBlock->bbJumpDest);
                         if (auxBlock->bbJumpDest == loop.lpEntry)
                         {
                             removeLoop = false;
@@ -589,6 +582,27 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         fgReachable(block->bbJumpDest, block))
     {
         optUnmarkLoopBlocks(block->bbJumpDest, block);
+    }
+}
+
+//------------------------------------------------------------------------
+// optClearLoopIterInfo: Clear the info related to LPFLG_ITER loops in the loop table.
+// The various fields related to iterators is known to be valid for loop cloning and unrolling,
+// but becomes invalid afterwards. Clear the info that might be used incorrectly afterwards
+// in JitDump or by subsequent phases.
+//
+void Compiler::optClearLoopIterInfo()
+{
+    for (unsigned lnum = 0; lnum < optLoopCount; lnum++)
+    {
+        LoopDsc& loop = optLoopTable[lnum];
+        loop.lpFlags &= ~(LPFLG_ITER | LPFLG_VAR_INIT | LPFLG_CONST_INIT | LPFLG_SIMD_LIMIT | LPFLG_VAR_LIMIT |
+                          LPFLG_CONST_LIMIT | LPFLG_ARRLEN_LIMIT);
+
+        loop.lpIterTree  = nullptr;
+        loop.lpInitBlock = nullptr;
+        loop.lpConstInit = -1; // union with loop.lpVarInit
+        loop.lpTestTree  = nullptr;
     }
 }
 
@@ -1145,7 +1159,7 @@ bool Compiler::optExtractInitTestIncr(
     noway_assert(initStmt != nullptr && (initStmt->GetNextStmt() == nullptr));
 
     // If it is a duplicated loop condition, skip it.
-    if (initStmt->IsCompilerAdded())
+    if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
     {
         bool doGetPrev = true;
 #ifdef DEBUG
@@ -3757,10 +3771,9 @@ PhaseStatus Compiler::optUnrollLoops()
         Statement* incrStmt = testStmt->GetPrevStmt();
         noway_assert(incrStmt != nullptr);
 
-        if (initStmt->IsCompilerAdded())
+        if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
         {
             // Must be a duplicated loop condition.
-            noway_assert(initStmt->GetRootNode()->gtOper == GT_JTRUE);
 
             dupCond  = true;
             initStmt = initStmt->GetPrevStmt();
@@ -4587,8 +4600,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         {
             clonedStmt->SetDebugInfo(stmt->GetDebugInfo());
         }
-
-        clonedStmt->SetCompilerAdded();
     }
 
     assert(foundCondTree);
@@ -5821,12 +5832,9 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     preHead->bbFlags |= (exprBb->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK));
 
     Statement* hoistStmt = gtNewStmt(hoist);
-    hoistStmt->SetCompilerAdded();
 
-    /* simply append the statement at the end of the preHead's list */
-
+    // Simply append the statement at the end of the preHead's list.
     Statement* firstStmt = preHead->firstStmt();
-
     if (firstStmt != nullptr)
     {
         /* append after last statement */

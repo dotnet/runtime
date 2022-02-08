@@ -887,6 +887,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 				} else {
 					/* fall through */
 				}
+			case MONO_TYPE_TYPEDBYREF:
 			case MONO_TYPE_VALUETYPE: {
 				MonoClass *fclass = mono_class_from_mono_type_internal (field->type);
 				if (m_class_has_references (fclass)) {
@@ -3241,9 +3242,13 @@ mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
+	HANDLE_FUNCTION_ENTER ();
+
 	ERROR_DECL (error);
 	mono_field_static_get_value_checked (vt, field, value, MONO_HANDLE_NEW (MonoString, NULL), error);
 	mono_error_cleanup (error);
+
+	HANDLE_FUNCTION_RETURN ();
 }
 
 /**

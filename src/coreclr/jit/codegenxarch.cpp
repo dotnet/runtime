@@ -1972,6 +1972,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
             inst_Mov(TYP_FLOAT, tempXmm, reg1, /* canSkip */ false);
             GetEmitter()->emitIns_SIMD_R_R_R(INS_punpckldq, size, targetReg, targetReg, tempXmm);
         }
+        genProduceReg(lclNode);
     }
 #elif defined(TARGET_AMD64)
     assert(!TargetOS::IsWindows || !"Multireg store to SIMD reg not supported on Windows x64");

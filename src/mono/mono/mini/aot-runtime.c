@@ -840,13 +840,14 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	guint32 flags;
 	int i, gen_param_count = 0, param_count, call_conv;
 	guint8 *p = buf;
-	gboolean hasthis, explicit_this, has_gen_params;
+	gboolean hasthis, explicit_this, has_gen_params, pinvoke;
 
 	flags = *p;
 	p ++;
 	has_gen_params = (flags & 0x10) != 0;
 	hasthis = (flags & 0x20) != 0;
 	explicit_this = (flags & 0x40) != 0;
+	pinvoke = (flags & 0x80) != 0;
 	call_conv = flags & 0x0F;
 
 	if (has_gen_params)
@@ -859,6 +860,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	sig->sentinelpos = -1;
 	sig->hasthis = hasthis;
 	sig->explicit_this = explicit_this;
+	sig->pinvoke = pinvoke;
 	sig->call_convention = call_conv;
 	sig->generic_param_count = gen_param_count;
 	sig->ret = decode_type (module, p, &p, error);
@@ -1127,6 +1129,14 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			if (subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
 				MonoJitICallInfo *info = mono_find_jit_icall_info ((MonoJitICallId)decode_value (p, &p));
 				ref->method = mono_icall_get_wrapper_method (info);
+			} else if (subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT) {
+				MonoClass *klass = decode_klass_ref (module, p, &p, error);
+				if (!klass)
+					return FALSE;
+				MonoMethodSignature *sig = decode_signature (module, p, &p);
+				if (!sig)
+					return FALSE;
+				ref->method = mono_marshal_get_native_func_wrapper_indirect (klass, sig, TRUE);
 			} else {
 				m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)
@@ -2299,7 +2309,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	if (amodule->out_of_date) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: Module %s is unusable because a dependency is out-of-date.", assembly->image->name);
-		if (mono_aot_only)
+		if (mono_aot_only && (mono_aot_mode != MONO_AOT_MODE_LLVMONLY_INTERP))
 			g_error ("Failed to load AOT module '%s' while running in aot-only mode because a dependency cannot be found or it is out of date.\n", found_aot_name);
 	} else {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' found.", found_aot_name);
@@ -2658,7 +2668,7 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 
 #ifdef HOST_WASM
 		gsize min = 1 << 30, max = 0;
-		gsize prev = 0;
+		//gsize prev = 0;
 
 		// FIXME: This depends on emscripten allocating ftnptr ids sequentially
 		for (int i = 0; i < amodule->info.nmethods; ++i) {
@@ -2672,7 +2682,7 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 					min = val;
 				else if (val > max)
 					max = val;
-				prev = val;
+				//prev = val;
 			}
 		}
 		if (max) {
@@ -5679,12 +5689,16 @@ get_new_unbox_arbitrary_trampoline_frome_page (gpointer addr)
 static gpointer
 get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotModule **out_amodule, guint32 *got_offset, guint32 *out_tramp_size)
 {
+#ifndef DISABLE_ASSERT_MESSAGES
 	MonoImage *image;
+#endif
 	MonoAotModule *amodule = get_mscorlib_aot_module ();
 	int index, tramp_size;
 
+#ifndef DISABLE_ASSERT_MESSAGES
 	/* Currently, we keep all trampolines in the mscorlib AOT image */
 	image = mono_defaults.corlib;
+#endif
 
 	*out_amodule = amodule;
 

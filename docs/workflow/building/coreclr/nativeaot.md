@@ -21,7 +21,7 @@ The executable looks like a native executable, in the sense that it can be debug
 ## Building
 
 - [Install pre-requisites](../../README.md#build-requirements)
-- Run `build[.cmd|.sh] clr+libs -rc [Debug|Release] -lc Release` from the repo root. This will restore nuget packages required for building and build the parts of the repo required for general CoreCLR development. Alternatively, instead of specifying `clr+libs`, you can specify `clr.jit+clr.tools+clr.nativeaotlibs+libs` which is more targeted and builds faster. Replace `clr.jit` with `clr.alljits` if you need to crosscompile.
+- Run `build[.cmd|.sh] clr+libs -rc [Debug|Release] -lc Release` from the repo root. This will restore nuget packages required for building and build the parts of the repo required for general CoreCLR development. Alternatively, instead of specifying `clr+libs`, you can specify `clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs` which is more targeted and builds faster.
 - [NOT PORTED OVER YET] The build will place the toolchain packages at `artifacts\packages\[Debug|Release]\Shipping`. To publish your project using these packages:
    - [NOT PORTED OVER YET] Add the package directory to your `nuget.config` file. For example, replace `dotnet-experimental` line in `samples\HelloWorld\nuget.config` with `<add key="local" value="C:\runtimelab\artifacts\packages\Debug\Shipping" />`
    - [NOT PORTED OVER YET] Run `dotnet publish --packages pkg -r [win-x64|linux-x64|osx-64] -c [Debug|Release]` to publish your project. `--packages pkg` option restores the package into a local directory that is easy to cleanup once you are done. It avoids polluting the global nuget cache with your locally built dev package.
@@ -59,7 +59,7 @@ The workflow looks like this:
 
 ## Running tests
 
-If you haven't built the tests yet, run `src\tests\build[.cmd|.sh] nativeaot [Debug|Release] tree nativeaot`. This will build the smoke tests only - they usually suffice to ensure the runtime and compiler is in a workable shape. To build all Pri-0 tests, drop the `tree nativeaot` parameter. The `Debug`/`Release` parameter should match the build configuration you used to build the runtime.
+If you haven't built the tests yet, run `src\tests\build.cmd nativeaot [Debug|Release] tree nativeaot` on Windows, or `src/tests/build.sh -nativeaot [Debug|Release] -tree:nativeaot` on Linux. This will build the smoke tests only - they usually suffice to ensure the runtime and compiler is in a workable shape. To build all Pri-0 tests, drop the `tree nativeaot` parameter. The `Debug`/`Release` parameter should match the build configuration you used to build the runtime.
 
 To run all the tests that got built, run `src\tests\run.cmd runnativeaottests [Debug|Release]` on Windows, or `src/tests/run.sh --runnativeaottests [Debug|Release]` on Linux. The `Debug`/`Release` flag should match the flag that was passed to `build.cmd` in the previous step.
 

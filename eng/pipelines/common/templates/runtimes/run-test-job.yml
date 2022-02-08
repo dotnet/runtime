@@ -319,7 +319,7 @@ jobs:
         - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot $(monoAotBuildshCommand) $(buildConfig) $(archType) $(runtimeVariantArg)
           displayName: "LLVM AOT compile CoreCLR tests"
       - ${{ if eq(parameters.archType, 'arm64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot $(monoAotBuildshCommand) $(buildConfig) $(archType) cross $(runtimeVariantArg)
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot $(monoAotBuildshCommand) $(buildConfig) $(archType) cross $(runtimeVariantArg) -maxcpucount:2
           displayName: "LLVM AOT cross-compile CoreCLR tests"
           env:
             __MonoToolPrefix: aarch64-linux-gnu-

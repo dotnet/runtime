@@ -277,6 +277,7 @@ namespace System
         public override string Message { get { throw null; } }
         public virtual string? ParamName { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static void ThrowIfNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpression("argument")] string? paramName = null) { throw null; }
     }
     public partial class ArgumentNullException : System.ArgumentException
     {
@@ -4826,7 +4827,7 @@ namespace System
         public MissingMethodException(string? className, string? methodName) { }
         public override string Message { get { throw null; } }
     }
-    public partial struct ModuleHandle
+    public partial struct ModuleHandle : System.IEquatable<System.ModuleHandle>
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -6367,6 +6368,7 @@ namespace System
             public static System.TimeZoneInfo.AdjustmentRule CreateAdjustmentRule(System.DateTime dateStart, System.DateTime dateEnd, System.TimeSpan daylightDelta, System.TimeZoneInfo.TransitionTime daylightTransitionStart, System.TimeZoneInfo.TransitionTime daylightTransitionEnd) { throw null; }
             public static System.TimeZoneInfo.AdjustmentRule CreateAdjustmentRule(System.DateTime dateStart, System.DateTime dateEnd, System.TimeSpan daylightDelta, System.TimeZoneInfo.TransitionTime daylightTransitionStart, System.TimeZoneInfo.TransitionTime daylightTransitionEnd, System.TimeSpan baseUtcOffsetDelta) { throw null; }
             public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.TimeZoneInfo.AdjustmentRule? other) { throw null; }
+            public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
             public override int GetHashCode() { throw null; }
             void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
             void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -9036,6 +9038,12 @@ namespace System.Diagnostics
         public static System.Diagnostics.Stopwatch StartNew() { throw null; }
         public void Stop() { }
     }
+    public sealed partial class UnreachableException : System.Exception
+    {
+        public UnreachableException() { }
+        public UnreachableException(string? message) { }
+        public UnreachableException(string? message, System.Exception? innerException) { }
+    }
 }
 namespace System.Diagnostics.CodeAnalysis
 {
@@ -9178,6 +9186,11 @@ namespace System.Diagnostics.CodeAnalysis
         public RequiresUnreferencedCodeAttribute(string message) { }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
+    public sealed class SetsRequiredMembersAttribute : System.Attribute
+    {
+        public SetsRequiredMembersAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public sealed partial class StringSyntaxAttribute : System.Attribute
@@ -10712,6 +10725,7 @@ namespace System.IO
         public static string Combine(params string[] paths) { throw null; }
         public static bool EndsInDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
         public static bool EndsInDirectorySeparator(string path) { throw null; }
+        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? path) { throw null; }
         public static System.ReadOnlySpan<char> GetDirectoryName(System.ReadOnlySpan<char> path) { throw null; }
         public static string? GetDirectoryName(string? path) { throw null; }
         public static System.ReadOnlySpan<char> GetExtension(System.ReadOnlySpan<char> path) { throw null; }
@@ -10867,8 +10881,10 @@ namespace System.IO
         public override System.Threading.Tasks.ValueTask<int> ReadBlockAsync(System.Memory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string? ReadLine() { throw null; }
         public override System.Threading.Tasks.Task<string?> ReadLineAsync() { throw null; }
+        public override System.Threading.Tasks.ValueTask<string?> ReadLineAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override string ReadToEnd() { throw null; }
         public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
+        public override System.Threading.Tasks.Task<string> ReadToEndAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class StreamWriter : System.IO.TextWriter
     {
@@ -10932,8 +10948,10 @@ namespace System.IO
         public override System.Threading.Tasks.ValueTask<int> ReadBlockAsync(System.Memory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string? ReadLine() { throw null; }
         public override System.Threading.Tasks.Task<string?> ReadLineAsync() { throw null; }
+        public override System.Threading.Tasks.ValueTask<string?> ReadLineAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override string ReadToEnd() { throw null; }
         public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
+        public override System.Threading.Tasks.Task<string> ReadToEndAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class StringWriter : System.IO.TextWriter
     {
@@ -10984,8 +11002,10 @@ namespace System.IO
         public virtual System.Threading.Tasks.ValueTask<int> ReadBlockAsync(System.Memory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual string? ReadLine() { throw null; }
         public virtual System.Threading.Tasks.Task<string?> ReadLineAsync() { throw null; }
+        public virtual System.Threading.Tasks.ValueTask<string?> ReadLineAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual string ReadToEnd() { throw null; }
         public virtual System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
+        public virtual System.Threading.Tasks.Task<string> ReadToEndAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public static System.IO.TextReader Synchronized(System.IO.TextReader reader) { throw null; }
     }
     public abstract partial class TextWriter : System.MarshalByRefObject, System.IAsyncDisposable, System.IDisposable
@@ -11648,7 +11668,7 @@ namespace System.Reflection
         public CustomAttributeFormatException(string? message) { }
         public CustomAttributeFormatException(string? message, System.Exception? inner) { }
     }
-    public readonly partial struct CustomAttributeNamedArgument
+    public readonly partial struct CustomAttributeNamedArgument : System.IEquatable<System.Reflection.CustomAttributeNamedArgument>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -11658,13 +11678,14 @@ namespace System.Reflection
         public System.Reflection.MemberInfo MemberInfo { get { throw null; } }
         public string MemberName { get { throw null; } }
         public System.Reflection.CustomAttributeTypedArgument TypedValue { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public bool Equals(System.Reflection.CustomAttributeNamedArgument other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.CustomAttributeNamedArgument left, System.Reflection.CustomAttributeNamedArgument right) { throw null; }
         public static bool operator !=(System.Reflection.CustomAttributeNamedArgument left, System.Reflection.CustomAttributeNamedArgument right) { throw null; }
         public override string ToString() { throw null; }
     }
-    public readonly partial struct CustomAttributeTypedArgument
+    public readonly partial struct CustomAttributeTypedArgument : System.IEquatable<System.Reflection.CustomAttributeTypedArgument>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -11672,7 +11693,8 @@ namespace System.Reflection
         public CustomAttributeTypedArgument(System.Type argumentType, object? value) { throw null; }
         public System.Type ArgumentType { get { throw null; } }
         public object? Value { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals(System.Reflection.CustomAttributeTypedArgument other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.CustomAttributeTypedArgument left, System.Reflection.CustomAttributeTypedArgument right) { throw null; }
         public static bool operator !=(System.Reflection.CustomAttributeTypedArgument left, System.Reflection.CustomAttributeTypedArgument right) { throw null; }
@@ -13191,6 +13213,11 @@ namespace System.Runtime.CompilerServices
     {
         public PreserveBaseOverridesAttribute() { }
     }
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+    public sealed class RequiredMemberAttribute : System.Attribute
+    {
+        public RequiredMemberAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
     public sealed partial class ReferenceAssemblyAttribute : System.Attribute
     {
@@ -13206,6 +13233,7 @@ namespace System.Runtime.CompilerServices
     }
     public static partial class RuntimeFeature
     {
+        public const string ByRefFields = "ByRefFields";
         public const string CovariantReturnsOfClasses = "CovariantReturnsOfClasses";
         public const string DefaultImplementationsOfInterfaces = "DefaultImplementationsOfInterfaces";
         public const string PortablePdb = "PortablePdb";
@@ -13449,6 +13477,7 @@ namespace System.Runtime.InteropServices
         Wasm = 4,
         S390x = 5,
         LoongArch64 = 6,
+        Armv6 = 7,
     }
     public enum CharSet
     {
@@ -13493,7 +13522,7 @@ namespace System.Runtime.InteropServices
         public FieldOffsetAttribute(int offset) { }
         public int Value { get { throw null; } }
     }
-    public partial struct GCHandle
+    public partial struct GCHandle : System.IEquatable<System.Runtime.InteropServices.GCHandle>
     {
         private int _dummyPrimitive;
         public bool IsAllocated { get { throw null; } }
@@ -13502,6 +13531,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.GCHandle Alloc(object? value) { throw null; }
         public static System.Runtime.InteropServices.GCHandle Alloc(object? value, System.Runtime.InteropServices.GCHandleType type) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
+        public bool Equals(System.Runtime.InteropServices.GCHandle other) { throw null; }
         public void Free() { }
         public static System.Runtime.InteropServices.GCHandle FromIntPtr(System.IntPtr value) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -14770,7 +14800,7 @@ namespace System.Text.Unicode
 }
 namespace System.Threading
 {
-    public readonly partial struct CancellationToken
+    public readonly partial struct CancellationToken : System.IEquatable<System.Threading.CancellationToken>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;

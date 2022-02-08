@@ -2415,8 +2415,9 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             costEx = IND_COST_EX;
             costSz = 2;
 
-            GenTree* addr = hwTree->Op(1)->gtEffectiveVal();
-            level         = gtSetEvalOrder(addr);
+            GenTree* const addrNode = hwTree->Op(1);
+            level                   = gtSetEvalOrder(addrNode);
+            GenTree* const addr     = addrNode->gtEffectiveVal();
 
             // See if we can form a complex addressing mode.
             if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, hwTree->TypeGet()))
@@ -4176,6 +4177,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 case GT_LCL_VAR:
                 case GT_LCL_FLD:
+                case GT_CLS_VAR:
 
                     // We evaluate op2 before op1
                     bReverseInAssignment = true;
@@ -5226,7 +5228,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp)
 // Return Value:
 //    True if the given node contains an implicit indirection
 //
-// Note that for the GT_HWINTRINSIC node we have to examine the
+// Note that for the [HW]INTRINSIC nodes we have to examine the
 // details of the node to determine its result.
 //
 
@@ -5250,6 +5252,8 @@ bool GenTree::OperIsImplicitIndir() const
         case GT_ARR_ELEM:
         case GT_ARR_OFFSET:
             return true;
+        case GT_INTRINSIC:
+            return AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType;
 #ifdef FEATURE_SIMD
         case GT_SIMD:
         {
@@ -5306,18 +5310,8 @@ bool GenTree::OperMayThrow(Compiler* comp)
 
         case GT_INTRINSIC:
             // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
-            // Report it as may throw.
-            // Note: Some of the rest of the existing intrinsics could potentially throw an exception (for example
-            //       the array and string element access ones). They are handled differently than the GetType intrinsic
-            //       and are not marked with GTF_EXCEPT. If these are revisited at some point to be marked as
-            //       GTF_EXCEPT,
-            //       the code below might need to be specialized to handle them properly.
-            if ((this->gtFlags & GTF_EXCEPT) != 0)
-            {
-                return true;
-            }
-
-            break;
+            // Currently, this is the only intrinsic that can throw an exception.
+            return AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType;
 
         case GT_CALL:
 
@@ -5800,6 +5794,12 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 //
 GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
 {
+    if (node->IsStringEmptyField())
+    {
+        JITDUMP("Folded String.Empty.Length to 0\n");
+        return gtNewIconNode(0);
+    }
+
     int             length = -1;
     const char16_t* str    = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, &length);
     if (length >= 0)
@@ -5809,11 +5809,11 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
         // str can be NULL for dynamic context
         if (str != nullptr)
         {
-            JITDUMP("String '\"%ws\".Length' is '%d'\n", str, length)
+            JITDUMP("Folded '\"%ws\".Length' to '%d'\n", str, length)
         }
         else
         {
-            JITDUMP("String 'CNS_STR.Length' is '%d'\n", length)
+            JITDUMP("Folded 'CNS_STR.Length' to '%d'\n", length)
         }
         return iconNode;
     }
@@ -11692,11 +11692,34 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
         return tree;
     }
 
-    /* Currently we can only fold when the two subtrees exactly match */
-
-    if ((tree->gtFlags & GTF_SIDE_EFFECT) || GenTree::Compare(op1, op2, true) == false)
+    // Currently we can only fold when the two subtrees exactly match
+    // and everything is side effect free.
+    //
+    if (((tree->gtFlags & GTF_SIDE_EFFECT) != 0) || !GenTree::Compare(op1, op2, true))
     {
-        return tree; /* return unfolded tree */
+        // No folding.
+        //
+        return tree;
+    }
+
+    // GTF_ORDER_SIDEEFF here may indicate volatile subtrees.
+    // Or it may indicate a non-null assertion prop into an indir subtree.
+    //
+    // Check the operands.
+    //
+    if ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+    {
+        // If op1 is "volatle" and op2 is not, we can still fold.
+        //
+        const bool op1MayBeVolatile = (op1->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+        const bool op2MayBeVolatile = (op2->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+
+        if (!op1MayBeVolatile || op2MayBeVolatile)
+        {
+            // No folding.
+            //
+            return tree;
+        }
     }
 
     GenTree* cons;
@@ -15924,6 +15947,9 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     // will effectively treat such cases ("possible" in unsafe code) as undefined behavior.
     if (comp->eeIsFieldStatic(fldSeq->GetFieldHandle()))
     {
+        // TODO-VNTypes: this code is out of sync w.r.t. boxed statics that are numbered with
+        // VNF_PtrToStatic and treated as "simple" while here we treat them as "complex".
+
         // TODO-VNTypes: we will always return the "baseAddr" here for now, but strictly speaking,
         // we only need to do that if we have a shared field, to encode the logical "instantiation"
         // argument. In all other cases, this serves no purpose and just leads to redundant maps.
@@ -19294,20 +19320,22 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
-#if defined(TARGET_XARCH)
-    if (simdSize == 32)
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-        assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-    }
-#endif // TARGET_XARCH
-
     switch (op)
     {
 #if defined(TARGET_XARCH)
         case GT_EQ:
         {
-            intrinsic = (simdSize == 32) ? NI_Vector256_op_Equality : NI_Vector128_op_Equality;
+            if (simdSize == 32)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+                assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+                intrinsic = NI_Vector256_op_Equality;
+            }
+            else
+            {
+                intrinsic = NI_Vector128_op_Equality;
+            }
             break;
         }
 
@@ -19323,6 +19351,12 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
 
             if (simdSize == 32)
             {
+                // TODO-XArch-CQ: It's a non-trivial amount of work to support these
+                // for floating-point while only utilizing AVX. It would require, among
+                // other things, inverting the comparison and potentially support for a
+                // new Avx.TestNotZ intrinsic to ensure the codegen remains efficient.
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
                 intrinsic     = NI_Vector256_op_Equality;
                 getAllBitsSet = NI_Vector256_get_AllBitsSet;
             }
@@ -19433,14 +19467,6 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
-#if defined(TARGET_XARCH)
-    if (simdSize == 32)
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-        assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-    }
-#endif // TARGET_XARCH
-
     switch (op)
     {
 #if defined(TARGET_XARCH)
@@ -19453,7 +19479,20 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
             // We want to generate a comparison along the lines of
             // GT_XX(op1, op2).As<T, TInteger>() != Vector128<TInteger>.Zero
 
-            intrinsic = (simdSize == 32) ? NI_Vector256_op_Inequality : NI_Vector128_op_Inequality;
+            if (simdSize == 32)
+            {
+                // TODO-XArch-CQ: It's a non-trivial amount of work to support these
+                // for floating-point while only utilizing AVX. It would require, among
+                // other things, inverting the comparison and potentially support for a
+                // new Avx.TestNotZ intrinsic to ensure the codegen remains efficient.
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+                intrinsic = NI_Vector256_op_Inequality;
+            }
+            else
+            {
+                intrinsic = NI_Vector128_op_Inequality;
+            }
 
             op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
                                      /* isSimdAsHWIntrinsic */ false);
@@ -19475,7 +19514,17 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
 
         case GT_NE:
         {
-            intrinsic = (simdSize == 32) ? NI_Vector256_op_Inequality : NI_Vector128_op_Inequality;
+            if (simdSize == 32)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+                assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+                intrinsic = NI_Vector256_op_Inequality;
+            }
+            else
+            {
+                intrinsic = NI_Vector128_op_Inequality;
+            }
             break;
         }
 #elif defined(TARGET_ARM64)
@@ -22009,8 +22058,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    GenTree* lclVarTree = nullptr;
-    return OperIsConst() || Compiler::impIsAddressInLocal(this, &lclVarTree);
+    return OperIsConst() || Compiler::impIsAddressInLocal(this);
 }
 
 //------------------------------------------------------------------------
