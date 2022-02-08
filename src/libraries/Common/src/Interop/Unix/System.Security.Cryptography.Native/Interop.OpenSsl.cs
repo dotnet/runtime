@@ -328,7 +328,7 @@ internal static partial class Interop
                     }
 
                     // relevant to TLS 1.3 only: if user supplied a client cert or cert callback,
-                    // advertise that server request the cert post-handshake.
+                    // advertise that we are willing to send the certificate post-handshake.
                     if (sslAuthenticationOptions.ClientCertificates?.Count > 0 ||
                         sslAuthenticationOptions.CertSelectionDelegate != null)
                     {
