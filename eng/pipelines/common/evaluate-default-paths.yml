@@ -119,6 +119,7 @@ jobs:
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/workloads-testing.targets
       - eng/Version.Details.xml
+      - eng/Versions.props
       - src/mono/wasm/emscripten-version.txt
     - subset: wasmdebuggertests
       include:
