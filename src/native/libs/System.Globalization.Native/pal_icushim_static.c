@@ -105,15 +105,6 @@ static int32_t load_icu_data(void* pData)
 }
 
 #if defined(USE_APPLE_DECOMPRESSION)
-static int
-ends_with(const char *buf, size_t buf_len, const char *query, size_t query_len)
-{
-    if (query_len > buf_len) {
-        return 0;
-    }
-    return memcmp(buf + buf_len - query_len, query, query_len) == 0;
-}
-
 static char *
 apple_decompress(const char *src_buf, size_t src_len)
 {
@@ -195,13 +186,6 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
     long file_buf_size = 0;
     char *uncompressed_file_buf = NULL;
 
-    int use_lzfse = 0;
-    #if defined(USE_APPLE_DECOMPRESSION)
-    {
-        size_t path_len = strlen(path);
-        use_lzfse = ends_with(path, path_len, ".lzfse", sizeof(".lzfse") - 1);
-    }
-    #endif
     FILE *fp = fopen(path, "rb");
 
     if (fp == NULL) {
@@ -243,14 +227,18 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
     fp = NULL;
 
     #if defined(USE_APPLE_DECOMPRESSION)
-    if (use_lzfse) {
-        uncompressed_file_buf = apple_decompress(file_buf, file_buf_size);
-        if (uncompressed_file_buf == NULL) {
-            goto error;
+    {
+        const char *last_period = strrchr(path, '.');
+        if (last_period && strcmp(last_period, ".lzfse") == 0)
+        {
+            uncompressed_file_buf = apple_decompress(file_buf, file_buf_size);
+            if (uncompressed_file_buf == NULL) {
+                goto error;
+            }
+            icu_data = uncompressed_file_buf;
+            free(file_buf);
+            file_buf = NULL;
         }
-        icu_data = uncompressed_file_buf;
-        free(file_buf);
-        file_buf = NULL;
     }
     #endif
     if (icu_data == NULL) {
