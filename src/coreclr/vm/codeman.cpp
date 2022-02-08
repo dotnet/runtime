@@ -1975,7 +1975,7 @@ BOOL EEJitManager::LoadJIT()
             }
             else
             {
-                _ASSERTE(!"Unknown AltJitOs, it has to be either Windows, Linux or MacOS");
+                _ASSERTE(!"Unknown AltJitOS, it has to be either Windows, Linux or MacOS");
             }
         }
         g_JitLoadData.jld_id = JIT_LOAD_ALTJIT;
