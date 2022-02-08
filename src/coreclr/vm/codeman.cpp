@@ -1955,7 +1955,7 @@ BOOL EEJitManager::LoadJIT()
 #endif // TARGET_ARM
         }
 
-        CORINFO_OS targetOs;
+        CORINFO_OS targetOs = getClrVmOs();
         LPWSTR altJitOsConfig;
         IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AltJitOs, &altJitOsConfig));
         if (altJitOsConfig != NULL)
@@ -1977,10 +1977,6 @@ BOOL EEJitManager::LoadJIT()
             {
                 _ASSERTE(!"Unknown AltJitOs, it has to be either Windows, Linux or MacOS");
             }
-        }
-        else
-        {
-            targetOs = getClrVmOs();
         }
         g_JitLoadData.jld_id = JIT_LOAD_ALTJIT;
         LoadAndInitializeJIT(altJitName, &m_AltJITCompiler, &newAltJitCompiler, &g_JitLoadData, targetOs);
