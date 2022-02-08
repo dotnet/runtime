@@ -4085,7 +4085,9 @@ static gpointer
 lookup_mono_symbol (const char *symbol_name)
 {
 #ifndef HOST_WIN32
-	return dlsym (RTLD_DEFAULT, symbol_name);
+	void *module = dlopen ("libcoreclr.dylib", RTLD_LAZY);
+	g_assert (module);
+	return dlsym (/*RTLD_DEFAULT*/ module, symbol_name);
 #else
 	HMODULE main_module = GetModuleHandle (NULL);
 	gpointer symbol = NULL;
@@ -8126,6 +8128,7 @@ mono_test_init_symbols (void)
 		return;
 
 	SYM_LOOKUP (mono_install_ftnptr_eh_callback);
+	g_assert (sym_mono_install_ftnptr_eh_callback);
 	SYM_LOOKUP (mono_gchandle_get_target);
 	SYM_LOOKUP (mono_gchandle_new);
 	SYM_LOOKUP (mono_gchandle_free);
