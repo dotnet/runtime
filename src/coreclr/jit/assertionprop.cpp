@@ -164,6 +164,22 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_CAST:
             return ForCastOutput(node->AsCast());
 
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+            if (HWIntrinsicInfo::IsXCNTIntrinsic(node->AsHWIntrinsic()->GetHWIntrinsicId()))
+            {
+                return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::IntMax};
+            }
+            break;
+#endif // FEATURE_HW_INTRINSICS
+
+        case GT_INTRINSIC:
+            if (node->AsIntrinsic()->gtIntrinsicName == NI_System_Numerics_BitOperations_PopCount)
+            {
+                return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::IntMax};
+            }
+            break;
+
         default:
             break;
     }

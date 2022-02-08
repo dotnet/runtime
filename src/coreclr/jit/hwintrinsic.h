@@ -606,6 +606,27 @@ struct HWIntrinsicInfo
         return lookup(id).flags;
     }
 
+    static bool IsXCNTIntrinsic(NamedIntrinsic id)
+    {
+        switch (id)
+        {
+            case NI_System_Numerics_BitOperations_PopCount:
+#ifdef TARGET_XARCH
+            case NI_POPCNT_PopCount:
+            case NI_BMI1_TrailingZeroCount:
+            case NI_LZCNT_LeadingZeroCount:
+            case NI_POPCNT_X64_PopCount:
+            case NI_BMI1_X64_TrailingZeroCount:
+            case NI_LZCNT_X64_LeadingZeroCount:
+#endif // TARGET_XARCH
+                return true;
+            default:
+                break;
+        }
+
+        return false;
+    }
+
     // Flags lookup
 
     static bool IsCommutative(NamedIntrinsic id)
