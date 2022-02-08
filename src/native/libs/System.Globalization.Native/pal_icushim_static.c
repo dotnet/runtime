@@ -28,13 +28,14 @@ static void log_shim_error(const char* format, ...)
 
     va_start(args, format);
     vfprintf(stderr, format, args);
+    fputc('\n', stderr);
     va_end(args);
 }
 
 static void log_icu_error(const char* name, UErrorCode status)
 {
     const char * statusText = u_errorName(status);
-    log_shim_error("ICU call %s failed with error #%d '%s'.\n", name, status, statusText);
+    log_shim_error("ICU call %s failed with error #%d '%s'.", name, status, statusText);
 }
 
 static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int32_t level, const char* fmt, va_list args)
