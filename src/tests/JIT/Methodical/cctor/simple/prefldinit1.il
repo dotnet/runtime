@@ -48,7 +48,7 @@
 
 } // end of class measure
 
-.class private auto ansi  beforefieldinit test
+.class private auto ansi test
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  f(unsigned int8& b) cil managed
