@@ -1996,6 +1996,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                     : TlsClientServerEkuPfx_TripleDESContentEncryption;
 
             internal static readonly byte[] s_RSAKeyTransfer4_ExplicitSkiCer = Convert.FromBase64String(
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Dummy certificate for testing.")]
                 "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURhakNDQWxLZ0F3SUJBZ0lKQUppdWpocnpi" +
                 "Sk9XTUEwR0NTcUdTSWIzRFFFQkN3VUFNR014Q3pBSkJnTlYKQkFZVEFsVlRNUk13RVFZRFZRUUlE" +
                 "QXBYWVhOb2FXNW5kRzl1TVJBd0RnWURWUVFIREFkU1pXUnRiMjVrTVJJdwpFQVlEVlFRS0RBbE5h" +
@@ -2020,6 +2021,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 "ClEveU9MN2psMGFnT1dTcngwWnM9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K");
 
             private static readonly byte[] s_RSAKeyTransfer4_ExplicitSkiPfx_RC2ContentEncryption = Convert.FromBase64String(
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Dummy certificate for testing.")]
                 "MIIJqQIBAzCCCW8GCSqGSIb3DQEHAaCCCWAEgglcMIIJWDCCBA8GCSqGSIb3DQEHBqCCBAAwggP8" +
                 "AgEAMIID9QYJKoZIhvcNAQcBMBwGCiqGSIb3DQEMAQYwDgQI2rQEBhq4HAUCAggAgIIDyEn+zCF3" +
                 "wteqkmcbOFO7Aa2HbI8d1Dbp8M2QESYZhIZr/nX69etCuh4UewErHwwxfJYVQjhKO9NhWO4wB3UP" +
@@ -2066,6 +2068,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 "sbfisMs0Ll8CgjH2BAhMwg4eZANcOgICCAA=");
 
             private static readonly byte[] s_RSAKeyTransfer4_ExplicitSkiPfx_TripleDESContentEncryption = Convert.FromBase64String(
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Dummy certificate for testing.")]
                 "MIIJuwIBAzCCCXcGCSqGSIb3DQEHAaCCCWgEgglkMIIJYDCCBBcGCSqGSIb3DQEHBqCCBAgwggQE" +
                 "AgEAMIID/QYJKoZIhvcNAQcBMCQGCiqGSIb3DQEMAQMwFgQQzMqKF6TLC64Jd+DF7mgQmQICB9CA" +
                 "ggPIoCkOExBhWQ0rnLj6ZlwP9pkKhnC07NHHXBuRKQTLdZgQlchqjz6wMebmc+ZlwVQbaPvJmXMF" +
@@ -2117,6 +2120,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                     : s_RSAKeyTransfer4_ExplicitSkiPfx_TripleDESContentEncryption;
 
             internal static readonly byte[] s_RSAKeyTransfer5_ExplicitSkiOfRSAKeyTransfer4Cer = Convert.FromBase64String(
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Dummy certificate for testing.")]
                 "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURhakNDQWxLZ0F3SUJBZ0lKQUs0cjJQai96" +
                 "ZnF2TUEwR0NTcUdTSWIzRFFFQkN3VUFNR014Q3pBSkJnTlYKQkFZVEFsVlRNUk13RVFZRFZRUUlE" +
                 "QXBYWVhOb2FXNW5kRzl1TVJBd0RnWURWUVFIREFkU1pXUnRiMjVrTVJJdwpFQVlEVlFRS0RBbE5h" +
@@ -2141,6 +2145,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 "CkZDUFYveUJyVm5Md0ZHR3NheFk9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K");
 
             private static readonly byte[] s_RSAKeyTransfer5_ExplicitSkiOfRSAKeyTransfer4Pfx_RC2ContentEncryption = Convert.FromBase64String(
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Dummy certificate for testing.")]
                 "MIIJqQIBAzCCCW8GCSqGSIb3DQEHAaCCCWAEgglcMIIJWDCCBA8GCSqGSIb3DQEHBqCCBAAwggP8" +
                 "AgEAMIID9QYJKoZIhvcNAQcBMBwGCiqGSIb3DQEMAQYwDgQITLms5nr095wCAggAgIIDyPyxib5c" +
                 "oCEPC3OpfmCzzieARKf56sQZU31qlDJNDet7v1R68T7X9vu236kHOphKvqedPVNXKEPpaQXIxkSY" +
@@ -2187,6 +2192,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 "f0PE6idyhcH963CyBAiMLpuBSuzCdgICCAA=");
 
             private static readonly byte[] s_RSAKeyTransfer5_ExplicitSkiOfRSAKeyTransfer4Pfx_TripleDESContentEncryption = Convert.FromBase64String(
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Dummy certificate for testing.")]
                 "MIIJuwIBAzCCCXcGCSqGSIb3DQEHAaCCCWgEgglkMIIJYDCCBBcGCSqGSIb3DQEHBqCCBAgwggQE" +
                 "AgEAMIID/QYJKoZIhvcNAQcBMCQGCiqGSIb3DQEMAQMwFgQQcikkI3mNYPzp9KgATYd+sgICB9CA" +
                 "ggPI8jMlpeNA98igwqedfn4BlSDksVxqex+KPgGDn/UYx/S5yfQMUxq2vocr3mXGBGm5B7/4v7mV" +
