@@ -1743,6 +1743,7 @@ public:
             case NonStandardArgKind::ShiftLow:
             case NonStandardArgKind::ShiftHigh:
             case NonStandardArgKind::FixedRetBuffer:
+            case NonStandardArgKind::ValidateIndirectCallTarget:
                 return false;
             case NonStandardArgKind::WrapperDelegateCell:
             case NonStandardArgKind::VirtualStubCell:
@@ -9604,7 +9605,7 @@ public:
             compMinOptsIsUsed = true;
             return compMinOpts;
         }
-        bool IsMinOptsSet()
+        bool IsMinOptsSet() const
         {
             return compMinOptsIsSet;
         }
@@ -9613,7 +9614,7 @@ public:
         {
             return compMinOpts;
         }
-        bool IsMinOptsSet()
+        bool IsMinOptsSet() const
         {
             return compMinOptsIsSet;
         }
@@ -9637,22 +9638,54 @@ public:
         }
 
         // true if the CLFLG_* for an optimization is set.
-        bool OptEnabled(unsigned optFlag)
+        bool OptEnabled(unsigned optFlag) const
         {
             return !!(compFlags & optFlag);
         }
 
 #ifdef FEATURE_READYTORUN
-        bool IsReadyToRun()
+        bool IsReadyToRun() const
         {
             return jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN);
         }
 #else
-        bool IsReadyToRun()
+        bool IsReadyToRun() const
         {
             return false;
         }
 #endif
+
+        // Check if the compilation is control-flow guard enabled.
+        bool IsCFGEnabled() const
+        {
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+            // On these platforms we assume the register that the target is
+            // passed in is preserved by the validator and take care to get the
+            // target from the register for the call (even in debug mode).
+            static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH & (1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) == 0);
+            if (JitConfig.JitForceControlFlowGuard())
+                return true;
+
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_ENABLE_CFG);
+#else
+            // The remaining platforms are not supported and would require some
+            // work to support.
+            //
+            // ARM32:
+            //   The ARM32 validator does not preserve any volatile registers
+            //   which means we have to take special care to allocate and use a
+            //   callee-saved register (reloading the target from memory is a
+            //   security issue).
+            //
+            // x86:
+            //   On x86 some VSD calls disassemble the call site and expect an
+            //   indirect call which is fundamentally incompatible with CFG.
+            //   This would require a different way to pass this information
+            //   through.
+            //
+            return false;
+#endif
+        }
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         bool IsOSR() const

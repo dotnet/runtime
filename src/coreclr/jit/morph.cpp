@@ -590,6 +590,8 @@ const char* getNonStandardArgKindName(NonStandardArgKind kind)
             return "VirtualStubCell";
         case NonStandardArgKind::R2RIndirectionCell:
             return "R2RIndirectionCell";
+        case NonStandardArgKind::ValidateIndirectCallTarget:
+            return "ValidateIndirectCallTarget";
         default:
             unreached();
     }
@@ -859,6 +861,14 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->SetByteOffset(0);
 
     hasRegArgs = true;
+    if (argCount >= argTableSize)
+    {
+        fgArgTabEntry** oldTable = argTable;
+        argTable                 = new (compiler, CMK_fgArgInfoPtrArr) fgArgTabEntry*[argCount + 1];
+        memcpy(argTable, oldTable, argCount * sizeof(fgArgTabEntry*));
+        argTableSize++;
+    }
+
     AddArg(curArgTabEntry);
     return curArgTabEntry;
 }
@@ -1432,6 +1442,29 @@ void fgArgInfo::ArgsComplete()
         }
     }
 
+    // When CFG is enabled and this is a delegate call or vtable call we must
+    // compute the call target before all late args. However this will
+    // effectively null-check 'this', which should happen only after all
+    // arguments are evaluated. Thus we must evaluate all args with side
+    // effects to a temp.
+    if (compiler->opts.IsCFGEnabled() && (callTree->IsVirtualVtable() || callTree->IsDelegateInvoke()))
+    {
+        // Always evaluate 'this' to temp.
+        argTable[0]->needTmp = true;
+        needsTemps           = true;
+
+        for (unsigned curInx = 1; curInx < argCount; curInx++)
+        {
+            fgArgTabEntry* curArgTabEntry = argTable[curInx];
+            GenTree*       arg            = curArgTabEntry->GetNode();
+            if ((arg->gtFlags & GTF_ALL_EFFECT) != 0)
+            {
+                curArgTabEntry->needTmp = true;
+                needsTemps              = true;
+            }
+        }
+    }
+
     argsComplete = true;
 }
 
@@ -1882,7 +1915,7 @@ void fgArgInfo::EvalArgsToTemps()
 
         if (curArgTabEntry->needTmp)
         {
-            if (curArgTabEntry->isTmp == true)
+            if (curArgTabEntry->isTmp)
             {
                 // Create a copy of the temp to go into the late argument list
                 defArg = compiler->fgMakeTmpArgNode(curArgTabEntry);
@@ -2565,6 +2598,14 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                             NonStandardArgKind::R2RIndirectionCell);
     }
 #endif
+
+    if ((REG_VALIDATE_INDIRECT_CALL_ADDR != REG_ARG_0) && call->IsHelperCall(this, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
+    {
+        assert(call->gtCallArgs != nullptr);
+        GenTreeCall::Use* args = call->gtCallArgs;
+        GenTree*          tar  = args->GetNode();
+        nonStandardArgs.Add(tar, REG_VALIDATE_INDIRECT_CALL_ADDR, NonStandardArgKind::ValidateIndirectCallTarget);
+    }
 
     // Allocate the fgArgInfo for the call node;
     //
