@@ -170,7 +170,7 @@
 
       -->
 
-      <_WasmItemsToPass Include="@(HighAotMemoryUsageAssembly)" OriginalItemName="HighAotMemoryUsageAssembly" />
+      <_WasmItemsToPass Include="@(HighAotMemoryUsageAssembly)" OriginalItemName__="HighAotMemoryUsageAssembly" />
 
     </ItemGroup>
 
