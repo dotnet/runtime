@@ -43,6 +43,7 @@
 
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit/bin:$PATH" />
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="mkdir -p $HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit &amp;&amp; tar -xf $HELIX_CORRELATION_PAYLOAD/build/emsdk/node-tar/node.tar -C $HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="$HELIX_NODEJS_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit &amp;&amp; rm $HELIX_NODEJS_PATH/bin/npm &amp;&amp; rm $HELIX_NODEJS_PATH/bin/npx &amp;&amp; ln -s ../lib/node_modules/npm/bin/npm-cli.js $HELIX_NODEJS_PATH/bin/npm &amp;&amp; ln -s ../lib/node_modules/npm/bin/npx-cli.js $HELIX_NODEJS_PATH/bin/npx" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
