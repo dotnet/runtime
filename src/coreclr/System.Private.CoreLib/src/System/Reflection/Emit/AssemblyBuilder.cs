@@ -24,18 +24,7 @@ namespace System.Reflection.Emit
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
-        {
-            if (s_useManagedReflectionEmit)
-            {
-                return (s_defineDynamicAssembly ?? InitDefineDynamicAssembly())(name, access, null, Assembly.GetCallingAssembly());
-            }
-
-            return RuntimeAssemblyBuilder.InternalDefineDynamicAssembly(name,
-                                                 access,
-                                                 Assembly.GetCallingAssembly(),
-                                                 AssemblyLoadContext.CurrentContextualReflectionContext,
-                                                 null);
-        }
+            => DefineDynamicAssembly(name, access, null, Assembly.GetCallingAssembly());
 
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
@@ -43,17 +32,40 @@ namespace System.Reflection.Emit
             AssemblyName name,
             AssemblyBuilderAccess access,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+                => DefineDynamicAssembly(name, access, null, Assembly.GetCallingAssembly());
+
+        private static AssemblyBuilder DefineDynamicAssembly(
+            AssemblyName name!!,
+            AssemblyBuilderAccess access,
+            IEnumerable<CustomAttributeBuilder>? assemblyAttributes,
+            Assembly? callingAssembly)
         {
             if (s_useManagedReflectionEmit)
             {
-                return (s_defineDynamicAssembly ?? InitDefineDynamicAssembly())(name, access, assemblyAttributes, Assembly.GetCallingAssembly());
+                return (s_defineDynamicAssembly ?? InitDefineDynamicAssembly())(name, access, assemblyAttributes, callingAssembly);
             }
 
-            return RuntimeAssemblyBuilder.InternalDefineDynamicAssembly(name,
-                                                 access,
-                                                 Assembly.GetCallingAssembly(),
-                                                 AssemblyLoadContext.CurrentContextualReflectionContext,
-                                                 assemblyAttributes);
+            if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
+            {
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)access), nameof(access));
+            }
+
+            if (callingAssembly == null)
+            {
+                // Called either from interop or async delegate invocation. Rejecting because we don't
+                // know how to set the correct context of the new dynamic assembly.
+                throw new InvalidOperationException();
+            }
+
+            AssemblyLoadContext? assemblyLoadContext =
+                AssemblyLoadContext.CurrentContextualReflectionContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly);
+
+            if (assemblyLoadContext == null)
+            {
+                throw new InvalidOperationException();
+            }
+
+            return new RuntimeAssemblyBuilder(name, access, assemblyAttributes, assemblyLoadContext);
         }
 
         private static Func<AssemblyName, AssemblyBuilderAccess, IEnumerable<CustomAttributeBuilder>?, Assembly?, AssemblyBuilder>? s_defineDynamicAssembly;
@@ -100,9 +112,8 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        internal AssemblyBuilder(AssemblyName name,
+        internal RuntimeAssemblyBuilder(AssemblyName name,
                                  AssemblyBuilderAccess access,
-                                 Assembly? callingAssembly,
                                  AssemblyLoadContext? assemblyLoadContext,
                                  IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
@@ -274,10 +285,6 @@ namespace System.Reflection.Emit
             _manifestModuleBuilder.CheckTypeNameConflict(strTypeName, enclosingType);
         }
 
-        public override bool Equals(object? obj) => base.Equals(obj);
-
-        public override int GetHashCode() => base.GetHashCode();
-
         #region ICustomAttributeProvider Members
         public override object[] GetCustomAttributes(bool inherit) =>
             InternalAssembly.GetCustomAttributes(inherit);
@@ -297,7 +304,7 @@ namespace System.Reflection.Emit
 
         public override AssemblyName GetName(bool copiedName) => InternalAssembly.GetName(copiedName);
 
-        public override string FullName => InternalAssembly.FullName!;
+        public override string? FullName => InternalAssembly.FullName;
 
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase) =>

@@ -239,14 +239,8 @@ namespace System.Reflection.Emit
                 if (s_anonymouslyHostedDynamicMethodsModule != null)
                     return s_anonymouslyHostedDynamicMethodsModule;
 
-                AssemblyName assemblyName = new AssemblyName("Anonymously Hosted DynamicMethods Assembly");
-
-                RuntimeAssemblyBuilder assembly = RuntimeAssemblyBuilder.InternalDefineDynamicAssembly(
-                    assemblyName,
-                    AssemblyBuilderAccess.Run,
-                    typeof(object).Assembly,
-                    null,
-                    null);
+                var assembly = new RuntimeAssemblyBuilder(new AssemblyName("Anonymously Hosted DynamicMethods Assembly"),
+                    AssemblyBuilderAccess.Run, null, AssemblyLoadContext.Default);
 
                 // this always gets the internal module.
                 s_anonymouslyHostedDynamicMethodsModule = (RuntimeModule)assembly.ManifestModule!;
