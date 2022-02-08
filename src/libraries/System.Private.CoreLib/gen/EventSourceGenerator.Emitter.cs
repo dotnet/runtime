@@ -15,7 +15,7 @@ namespace Generators
         /// <summary>Code for a [GeneratedCode] attribute to put on the top-level generated members.</summary>
         private static readonly string s_generatedCodeAttribute = $"[global::System.CodeDom.Compiler.GeneratedCodeAttribute(\"{typeof(EventSourceGenerator).Assembly.GetName().Name}\", \"{typeof(EventSourceGenerator).Assembly.GetName().Version}\")]";
 
-        private static void EmitSourceFile(SourceProductionContext spc, EventSourceClass ec)
+        private static void EmitSourceFile(SourceProductionContext context, EventSourceClass ec)
         {
             StringBuilder sb = new StringBuilder(1024);
 
@@ -24,7 +24,7 @@ namespace Generators
             sb.AppendLine("using System;");
             GenType(ec, sb);
 
-            spc.AddSource($"{ec.ClassName}.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
+            context.AddSource($"{ec.ClassName}.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
         }
 
         private static void GenType(EventSourceClass ec, StringBuilder sb)

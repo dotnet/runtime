@@ -37,18 +37,12 @@ namespace Generators
         {
             IncrementalValuesProvider<EventSourceClass> eventSourceClasses =
                 context.SyntaxProvider
-                .CreateSyntaxProvider(static (x, _) => IsSyntaxTargetForGeneration(x), (x, cancellationToken) => GetSemanticTargetForGeneration(x, cancellationToken))
+                .CreateSyntaxProvider(IsSyntaxTargetForGeneration, GetSemanticTargetForGeneration)
                 .Where(x => x is not null);
 
-            context.RegisterSourceOutput(eventSourceClasses, static (spc, x) => EmitSourceFile(spc, x));
+            context.RegisterSourceOutput(eventSourceClasses, EmitSourceFile);
         }
 
-        private sealed class EventSourceClass
-        {
-            public string Namespace = string.Empty;
-            public string ClassName = string.Empty;
-            public string SourceName = string.Empty;
-            public Guid Guid = Guid.Empty;
-        }
+        private sealed record EventSourceClass(string Namespace, string ClassName, string SourceName, Guid Guid);
     }
 }

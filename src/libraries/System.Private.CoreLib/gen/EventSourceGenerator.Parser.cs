@@ -17,8 +17,8 @@ namespace Generators
 {
     public partial class EventSourceGenerator
     {
-        private static bool IsSyntaxTargetForGeneration(SyntaxNode node) =>
-            node is ClassDeclarationSyntax x && x.AttributeLists.Count > 0;
+        private static bool IsSyntaxTargetForGeneration(SyntaxNode node, CancellationToken cancellationToken) =>
+            node is ClassDeclarationSyntax { AttributeLists.Count: > 0 };
 
         private static EventSourceClass? GetSemanticTargetForGeneration(GeneratorSyntaxContext context, CancellationToken cancellationToken)
         {
@@ -107,13 +107,7 @@ namespace Generators
                         result = GenerateGuidFromName(name.ToUpperInvariant());
                     }
 
-                    eventSourceClass = new EventSourceClass
-                    {
-                        Namespace = nspace,
-                        ClassName = className,
-                        SourceName = name,
-                        Guid = result
-                    };
+                    eventSourceClass = new EventSourceClass(nspace, className, name, result);
                     continue;
                 }
             }
