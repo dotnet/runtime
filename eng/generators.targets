@@ -65,13 +65,6 @@
 
   <ItemGroup>
     <EnabledGenerators Include="RegexGenerator" Condition="'$(EnableRegexGenerator)' == 'true'" />
-    <!-- Enable the RegexGenerator source generator when the project is a C# source project that references System.Text.RegularExpressions -->
-    <EnabledGenerators Include="RegexGenerator"
-                       Condition="'$(EnableRegexGenerator)' == ''
-                        and '$(IsFrameworkSupportFacade)' != 'true'
-                        and '$(IsSourceProject)' == 'true'
-                        and '$(MSBuildProjectExtension)' == '.csproj'
-                        and ('@(Reference)' != '' and @(Reference->AnyHaveMetadataValue('Identity', 'System.Text.RegularExpressions')))" />
   </ItemGroup>
 
   <!-- Use this complex ItemGroup-based filtering to add the ProjectReference to make sure dotnet/runtime stays compatible with NuGet Static Graph Restore. -->
