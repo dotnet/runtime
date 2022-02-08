@@ -2512,7 +2512,7 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
     assert(0 <= imm8 && imm8 < count);
 
-    if (IsContainableMemoryOp(op1))
+    if (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))
     {
         // We will specially handle GetElement in codegen when op1 is already in memory
         op2->AsIntCon()->SetIconValue(imm8);
