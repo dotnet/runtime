@@ -169,7 +169,7 @@ namespace Internal.IL.Stubs
 
         private static MethodIL EmitCopy(MethodDesc method)
         {
-            Debug.Assert(method.Signature.IsStatic && method.Signature.Length == 1);
+            Debug.Assert(method.Signature.IsStatic && method.Signature.Length == 2);
 
             TypeSystemContext context = method.Context;
 

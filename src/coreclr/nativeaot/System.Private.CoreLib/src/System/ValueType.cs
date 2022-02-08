@@ -146,11 +146,11 @@ namespace System
 
                 if (fieldType.ElementType == Internal.Runtime.EETypeElementType.Single)
                 {
-                    hashCode = Unsafe.Read<float>(ref fieldData).GetHashCode();
+                    hashCode = Unsafe.As<byte, float>(ref fieldData).GetHashCode();
                 }
                 else if (fieldType.ElementType == Internal.Runtime.EETypeElementType.Double)
                 {
-                    hashCode = Unsafe.Read<double>(ref fieldData).GetHashCode();
+                    hashCode = Unsafe.As<byte, double>(ref fieldData).GetHashCode();
                 }
                 else if (fieldType.IsPrimitive)
                 {
@@ -178,7 +178,7 @@ namespace System
                 }
                 else
                 {
-                    object fieldValue = Unsafe.Read<object>(ref fieldData);
+                    object fieldValue = Unsafe.As<byte, object>(ref fieldData);
                     if (fieldValue != null)
                     {
                         hashCode = fieldValue.GetHashCode();

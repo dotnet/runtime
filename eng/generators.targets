@@ -57,7 +57,6 @@
                           '$(MSBuildProjectName)' == 'System.Private.CoreLib'
                           or '$(EnableDllImportGenerator)' == 'true'
                           or ('@(Reference)' != ''
-                            and (@(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.CompilerServices.Unsafe')))
                             and @(Reference->AnyHaveMetadataValue('Identity', 'System.Memory')))
                           or ('@(ProjectReference)' != ''
                             and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))))" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\ArrayMarshaller.cs" />
