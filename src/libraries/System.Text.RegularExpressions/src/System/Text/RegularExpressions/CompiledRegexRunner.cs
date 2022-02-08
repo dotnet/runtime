@@ -17,7 +17,5 @@ namespace System.Text.RegularExpressions
 
         protected internal override void Scan(ReadOnlySpan<char> text)
             => _scanMethod(this, text);
-
-        protected override void InitTrackCount() { }
     }
 }

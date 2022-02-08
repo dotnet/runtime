@@ -470,9 +470,8 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected bool IsBoundary(int index, int startpos, int endpos)
         {
-            Debug.Assert(runtext != null, "runtext should not be null since this method is only callable by old codegen.");
-            return (index > startpos && RegexCharClass.IsBoundaryWordChar(runtext[index - 1])) !=
-                   (index < endpos && RegexCharClass.IsBoundaryWordChar(runtext[index]));
+            return (index > startpos && RegexCharClass.IsBoundaryWordChar(runtext![index - 1])) !=
+                   (index < endpos && RegexCharClass.IsBoundaryWordChar(runtext![index]));
         }
 
         protected bool IsBoundary(ReadOnlySpan<char> inputSpan, int index, int startpos, int endpos)
@@ -486,9 +485,8 @@ namespace System.Text.RegularExpressions
 
         protected bool IsECMABoundary(int index, int startpos, int endpos)
         {
-            Debug.Assert(runtext != null, "runtext should not be null since this method is only callable by old codegen.");
-            return (index > startpos && RegexCharClass.IsECMAWordChar(runtext[index - 1])) !=
-                   (index < endpos && RegexCharClass.IsECMAWordChar(runtext[index]));
+            return (index > startpos && RegexCharClass.IsECMAWordChar(runtext![index - 1])) !=
+                   (index < endpos && RegexCharClass.IsECMAWordChar(runtext![index]));
         }
 
         protected bool IsECMABoundary(ReadOnlySpan<char> inputSpan, int index, int startpos, int endpos)

@@ -313,7 +313,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 using (EmitBlock(writer, "if (FindFirstChar(text))"))
                 {
-                    if (rm.MatchTimeout != int.MaxValue)
+                    if (rm.MatchTimeout != Timeout.Infinite)
                     {
                         writer.WriteLine("base.CheckTimeout();");
                         writer.WriteLine();
