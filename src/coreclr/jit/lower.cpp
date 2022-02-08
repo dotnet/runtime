@@ -2240,8 +2240,8 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
 //
 void Lowering::LowerCFGCall(GenTreeCall* call)
 {
-    if (call->IsHelperCall(comp, CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
-        call->IsHelperCall(comp, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+    assert(!call->IsHelperCall(comp, CORINFO_HELP_DISPATCH_INDIRECT_CALL));
+    if (call->IsHelperCall(comp, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
     {
         return;
     }
