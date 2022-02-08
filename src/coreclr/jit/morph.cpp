@@ -11421,23 +11421,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             return fgMorphIntoHelperCall(tree, helper, gtNewCallArgs(op1, op2));
 
         case GT_RETURN:
-            // normalize small integer return values
-            if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (op1 != nullptr) && !op1->TypeIs(TYP_VOID) &&
-                fgCastNeeded(op1, info.compRetType))
-            {
-                // Small-typed return values are normalized by the callee
-                op1 = gtNewCastNode(TYP_INT, op1, false, info.compRetType);
-
-                // Propagate GTF_COLON_COND
-                op1->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
-
-                tree->AsOp()->gtOp1 = fgMorphTree(op1);
-
-                // Propagate side effect flags
-                tree->SetAllEffectsFlags(tree->AsOp()->gtGetOp1());
-
-                return tree;
-            }
             if (!tree->TypeIs(TYP_VOID))
             {
                 if (op1->OperIs(GT_OBJ, GT_BLK, GT_IND))
@@ -11470,6 +11453,24 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                         }
                     }
                 }
+            }
+
+            // normalize small integer return values
+            if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (op1 != nullptr) && !op1->TypeIs(TYP_VOID) &&
+                fgCastNeeded(op1, info.compRetType))
+            {
+                // Small-typed return values are normalized by the callee
+                op1 = gtNewCastNode(TYP_INT, op1, false, info.compRetType);
+
+                // Propagate GTF_COLON_COND
+                op1->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
+
+                tree->AsOp()->gtOp1 = fgMorphTree(op1);
+
+                // Propagate side effect flags
+                tree->SetAllEffectsFlags(tree->AsOp()->gtGetOp1());
+
+                return tree;
             }
             break;
 
@@ -12591,28 +12592,20 @@ DONE_MORPHING_CHILDREN:
                         lclFld->SetLclOffs(lclFld->GetLclOffs() + static_cast<unsigned>(ival1));
                         lclFld->SetFieldSeq(GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeq));
                     }
-                    else // we have a GT_LCL_VAR
+                    else // We have a GT_LCL_VAR.
                     {
                         assert(temp->OperGet() == GT_LCL_VAR);
-                        temp->ChangeOper(GT_LCL_FLD); // Note that this typically makes the gtFieldSeq "NotAField",
-                        // unless there is a zero filed offset associated with 'temp'.
+                        temp->ChangeOper(GT_LCL_FLD); // Note that this makes the gtFieldSeq "NotAField".
                         lclFld = temp->AsLclFld();
                         lclFld->SetLclOffs(static_cast<unsigned>(ival1));
 
-                        if (lclFld->GetFieldSeq() == FieldSeqStore::NotAField())
+                        if (fieldSeq != nullptr)
                         {
-                            if (fieldSeq != nullptr)
-                            {
-                                // If it does represent a field, note that.
-                                lclFld->SetFieldSeq(fieldSeq);
-                            }
-                        }
-                        else
-                        {
-                            // Append 'fieldSeq' to the existing one
-                            lclFld->SetFieldSeq(GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeq));
+                            // If it does represent a field, note that.
+                            lclFld->SetFieldSeq(fieldSeq);
                         }
                     }
+
                     temp->gtType      = tree->gtType;
                     foldAndReturnTemp = true;
                 }
@@ -14295,11 +14288,26 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     for (GenTree** use : multiOp->UseEdges())
     {
         *use = fgMorphTree(*use);
-        multiOp->gtFlags |= ((*use)->gtFlags & GTF_ALL_EFFECT);
 
-        if (dontCseConstArguments && (*use)->OperIsConst())
+        GenTree* operand = *use;
+        multiOp->gtFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
+
+        if (dontCseConstArguments && operand->OperIsConst())
         {
-            (*use)->SetDoNotCSE();
+            operand->SetDoNotCSE();
+        }
+
+        // Promoted structs after morph must be in one of two states:
+        //  a) Fully eliminated from the IR (independent promotion) OR only be
+        //     used by "special" nodes (e. g. LHS of ASGs for multi-reg structs).
+        //  b) Marked as do-not-enregister (dependent promotion).
+        //
+        // So here we preserve this invariant and mark any promoted structs as do-not-enreg.
+        //
+        if (operand->OperIs(GT_LCL_VAR) && lvaGetDesc(operand->AsLclVar())->lvPromoted)
+        {
+            lvaSetVarDoNotEnregister(operand->AsLclVar()->GetLclNum()
+                                         DEBUGARG(DoNotEnregisterReason::SimdUserForcesDep));
         }
     }
 
@@ -15217,20 +15225,25 @@ DONE:;
 #endif
 }
 
-/*****************************************************************************
- *
- *  Check and fold blocks of type BBJ_COND and BBJ_SWITCH on constants
- *  Returns true if we modified the flow graph
- */
-
-bool Compiler::fgFoldConditional(BasicBlock* block)
+//------------------------------------------------------------------------
+// fgFoldConditional: try and fold conditionals and optimize BBJ_COND or
+//   BBJ_SWITCH blocks.
+//
+// Argumetns:
+//   block - block to examine
+//
+// Returns:
+//   FoldResult indicating what changes were made, if any
+//
+Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 {
-    bool result = false;
+    FoldResult result = FoldResult::FOLD_DID_NOTHING;
 
     // We don't want to make any code unreachable
+    //
     if (opts.OptimizationDisabled())
     {
-        return false;
+        return result;
     }
 
     if (block->bbJumpKind == BBJ_COND)
@@ -15245,17 +15258,14 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         {
             noway_assert(fgRemoveRestOfBlock);
 
-            /* Unconditional throw - transform the basic block into a BBJ_THROW */
+            // Unconditional throw - transform the basic block into a BBJ_THROW
+            //
             fgConvertBBToThrowBB(block);
+            result = FoldResult::FOLD_CHANGED_CONTROL_FLOW;
+            JITDUMP("\nConditional folded at " FMT_BB "\n", block->bbNum);
+            JITDUMP(FMT_BB " becomes a BBJ_THROW\n", block->bbNum);
 
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a BBJ_THROW\n", block->bbNum);
-            }
-#endif
-            goto DONE_COND;
+            return result;
         }
 
         noway_assert(lastStmt->GetRootNode()->gtOper == GT_JTRUE);
@@ -15281,11 +15291,13 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 // Preserve any side effects
                 assert(condTree->OperIs(GT_COMMA));
                 lastStmt->SetRootNode(condTree);
+                result = FoldResult::FOLD_ALTERED_LAST_STMT;
             }
             else
             {
                 // no side effects, remove the jump entirely
                 fgRemoveStmt(block, lastStmt);
+                result = FoldResult::FOLD_REMOVED_LAST_STMT;
             }
             // block is a BBJ_COND that we are folding the conditional for.
             // bTaken is the path that will always be taken from block.
@@ -15453,8 +15465,6 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                     }
                 }
             }
-        DONE_COND:
-            result = true;
         }
     }
     else if (block->bbJumpKind == BBJ_SWITCH)
@@ -15469,17 +15479,14 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         {
             noway_assert(fgRemoveRestOfBlock);
 
-            /* Unconditional throw - transform the basic block into a BBJ_THROW */
+            // Unconditional throw - transform the basic block into a BBJ_THROW
+            //
             fgConvertBBToThrowBB(block);
+            result = FoldResult::FOLD_CHANGED_CONTROL_FLOW;
+            JITDUMP("\nConditional folded at " FMT_BB "\n", block->bbNum);
+            JITDUMP(FMT_BB " becomes a BBJ_THROW\n", block->bbNum);
 
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a BBJ_THROW\n", block->bbNum);
-            }
-#endif
-            goto DONE_SWITCH;
+            return result;
         }
 
         noway_assert(lastStmt->GetRootNode()->gtOper == GT_SWITCH);
@@ -15504,11 +15511,13 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 // Preserve any side effects
                 assert(condTree->OperIs(GT_COMMA));
                 lastStmt->SetRootNode(condTree);
+                result = FoldResult::FOLD_ALTERED_LAST_STMT;
             }
             else
             {
                 // no side effects, remove the switch entirely
                 fgRemoveStmt(block, lastStmt);
+                result = FoldResult::FOLD_REMOVED_LAST_STMT;
             }
 
             /* modify the flow graph */
@@ -15553,6 +15562,9 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                     fgRemoveRefPred(curJump, block);
                 }
             }
+
+            assert(foundVal);
+
 #ifdef DEBUG
             if (verbose)
             {
@@ -15566,8 +15578,6 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 printf("\n");
             }
 #endif
-        DONE_SWITCH:
-            result = true;
         }
     }
     return result;
@@ -15653,13 +15663,8 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
     // Or this is the last statement of a conditional branch that was just folded?
     if (!removedStmt && (stmt->GetNextStmt() == nullptr) && !fgRemoveRestOfBlock)
     {
-        if (fgFoldConditional(block))
-        {
-            if (block->bbJumpKind != BBJ_THROW)
-            {
-                removedStmt = true;
-            }
-        }
+        FoldResult const fr = fgFoldConditional(block);
+        removedStmt         = (fr == FoldResult::FOLD_REMOVED_LAST_STMT);
     }
 
     if (!removedStmt)
@@ -15861,7 +15866,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 
         /* Check if this block ends with a conditional branch that can be folded */
 
-        if (fgFoldConditional(block))
+        if (fgFoldConditional(block) != FoldResult::FOLD_DID_NOTHING)
         {
             continue;
         }
@@ -17805,15 +17810,6 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
             addr->AsIntCon()->gtFieldSeq = fieldSeqUpdate;
             fieldSeqRecorded             = true;
             break;
-
-        case GT_LCL_FLD:
-        {
-            GenTreeLclFld* lclFld = addr->AsLclFld();
-            fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeqZero);
-            lclFld->SetFieldSeq(fieldSeqUpdate);
-            fieldSeqRecorded = true;
-            break;
-        }
 
         case GT_ADDR:
             if (addr->AsOp()->gtOp1->OperGet() == GT_LCL_FLD)

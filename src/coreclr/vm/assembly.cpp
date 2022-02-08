@@ -393,15 +393,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
 
     Assembly *pRetVal = NULL;
 
-    MethodDesc *pmdEmitter = SystemDomain::GetCallersMethod(args->stackMark);
-
-    // Called either from interop or async delegate invocation. Rejecting because we don't
-    // know how to set the correct permission on the new dynamic assembly.
-    if (!pmdEmitter)
-        COMPlusThrow(kInvalidOperationException);
-
-    Assembly   *pCallerAssembly = pmdEmitter->GetAssembly();
-
     // First, we set up a pseudo-manifest file for the assembly.
 
     // Set up the assembly name
@@ -510,48 +501,10 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
         IfFailThrow(pAssemblyEmit->DefineAssembly(publicKey, publicKey.GetSize(), ulHashAlgId,
                                                    name, &assemData, dwFlags,
                                                    &ma));
-        pPEAssembly = PEAssembly::Create(pCallerAssembly->GetPEAssembly(), pAssemblyEmit);
-
-        AssemblyBinder* pFallbackBinder = pBinder;
-
-        // If ALC is not specified
-        if (pFallbackBinder == nullptr)
-        {
-            // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
-            // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
-            // caller/creator to ensure that any assembly loads triggered by the dynamic assembly are resolved using the intended load context.
-            //
-            // If the creator assembly has a HostAssembly associated with it, then use it for binding. Otherwise, the creator is dynamic
-            // and will have a fallback load context binder associated with it.
-
-            // There is always a manifest file - wehther working with static or dynamic assemblies.
-            PEAssembly* pCallerAssemblyManifestFile = pCallerAssembly->GetPEAssembly();
-            _ASSERTE(pCallerAssemblyManifestFile != NULL);
-
-            if (!pCallerAssemblyManifestFile->IsDynamic())
-            {
-                // Static assemblies with do not have fallback load context
-                _ASSERTE(pCallerAssemblyManifestFile->GetFallbackBinder() == nullptr);
-
-                // Fetch the binder from the host assembly
-                PTR_BINDER_SPACE_Assembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
-                _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
-
-                pFallbackBinder = pCallerAssemblyHostAssembly->GetBinder();
-            }
-            else
-            {
-                // Creator assembly is dynamic too, so use its fallback load context for the one
-                // we are creating.
-                pFallbackBinder = pCallerAssemblyManifestFile->GetFallbackBinder();
-            }
-        }
-
-        // At this point, we should have a fallback load context binder to work with
-        _ASSERTE(pFallbackBinder != nullptr);
+        pPEAssembly = PEAssembly::Create(pAssemblyEmit);
 
         // Set it as the fallback load context binder for the dynamic assembly being created
-        pPEAssembly->SetFallbackBinder(pFallbackBinder);
+        pPEAssembly->SetFallbackBinder(pBinder);
     }
 
     NewHolder<DomainAssembly> pDomainAssembly;
@@ -620,8 +573,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
             pAssem = Assembly::Create(pDomain, pPEAssembly, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
 
             ReflectionModule* pModule = (ReflectionModule*) pAssem->GetModule();
-            pModule->SetCreatingAssembly( pCallerAssembly );
-
 
             if (createdNewAssemblyLoaderAllocator)
             {

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 
@@ -234,12 +235,11 @@ namespace System.Reflection.Emit
                     return s_anonymouslyHostedDynamicMethodsModule;
 
                 AssemblyName assemblyName = new AssemblyName("Anonymously Hosted DynamicMethods Assembly");
-                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
 
                 AssemblyBuilder assembly = AssemblyBuilder.InternalDefineDynamicAssembly(
                     assemblyName,
                     AssemblyBuilderAccess.Run,
-                    ref stackMark,
+                    typeof(object).Assembly,
                     null,
                     null);
 
