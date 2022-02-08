@@ -408,7 +408,7 @@ namespace System
             ip = default;
         }
 
-        public static void ReverseRef(ref int buf, nuint length)
+        public static void Reverse(ref int buf, nuint length)
         {
             int numBytes = (int)length * sizeof(int);
             int numBytesWritten = 0;
@@ -499,7 +499,7 @@ namespace System
             }
         }
 
-        public static void ReverseRef(ref long buf, nuint length)
+        public static void Reverse(ref long buf, nuint length)
         {
             nint numBytes = (int)length * sizeof(long);
             int numBytesWritten = 0;
@@ -598,22 +598,22 @@ namespace System
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
-                    ReverseRef(ref Unsafe.As<T, byte>(ref elements), length);
+                    Reverse(ref Unsafe.As<T, byte>(ref elements), length);
                     return;
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(char))
                 {
-                    ReverseRef(ref Unsafe.As<T, char>(ref elements), length);
+                    Reverse(ref Unsafe.As<T, char>(ref elements), length);
                     return;
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
-                    ReverseRef(ref Unsafe.As<T, int>(ref elements), length);
+                    Reverse(ref Unsafe.As<T, int>(ref elements), length);
                     return;
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
-                    ReverseRef(ref Unsafe.As<T, long>(ref elements), length);
+                    Reverse(ref Unsafe.As<T, long>(ref elements), length);
                     return;
                 }
             }

@@ -2016,7 +2016,7 @@ namespace System
             return BitOperations.TrailingZeroCount(selectedLanes) >> 3;
         }
 
-        public static void ReverseRef(ref char buf, nuint length)
+        public static void Reverse(ref char buf, nuint length)
         {
             nint numBytes = (int)length * sizeof(char);
             int numBytesWritten = 0;

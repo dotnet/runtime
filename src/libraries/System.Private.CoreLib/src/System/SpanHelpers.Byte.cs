@@ -2239,7 +2239,7 @@ namespace System
             return (uint)BitOperations.TrailingZeroCount(selectedLanes) >> 2;
         }
 
-        public static void ReverseRef(ref byte buf, nuint length)
+        public static void Reverse(ref byte buf, nuint length)
         {
             int numBytes = (int)length;
             ref byte first = ref buf;
