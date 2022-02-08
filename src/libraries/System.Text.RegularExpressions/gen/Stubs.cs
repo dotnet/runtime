@@ -84,8 +84,3 @@ namespace System.Text.RegularExpressions
         public const int WholeString = -4;
     }
 }
-
-namespace System.Runtime.CompilerServices
-{
-    internal static class IsExternalInit { }
-}
