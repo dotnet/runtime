@@ -163,8 +163,8 @@ const char* GlobalizationNative_GetICUDTName(const char* culture)
         return "icudt.dat";
 
     // CJK: starts with "ja", "ko" or "zh"
-    if (!strncasecmp("ja", culture, 2) || 
-        !strncasecmp("ko", culture, 2) || 
+    if (!strncasecmp("ja", culture, 2) ||
+        !strncasecmp("ko", culture, 2) ||
         !strncasecmp("zh", culture, 2))
         return "icudt_CJK.dat"; // contains "en" as well.
 
@@ -200,7 +200,7 @@ int32_t GlobalizationNative_LoadICU(void)
         log_icu_error("ulocdata_getCLDRVersion", status);
         return 0;
     }
-    
+
     isLoaded = 1;
     return 1;
 }
