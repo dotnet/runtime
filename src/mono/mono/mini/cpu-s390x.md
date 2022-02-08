@@ -128,7 +128,6 @@ float_conv_to_u1: dest:i src1:f len:72
 float_conv_to_u2: dest:i src1:f len:72
 float_conv_to_u4: dest:i src1:f len:72
 float_conv_to_u8: dest:i src1:f len:72
-float_conv_to_u: dest:i src1:f len:36
 float_div: dest:f src1:f src2:f len:24
 float_div_un: dest:f src1:f src2:f len:30
 float_mul: dest:f src1:f src2:f len:8

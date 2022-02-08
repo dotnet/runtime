@@ -442,8 +442,8 @@ namespace System.Security.Cryptography
         public byte[] SignData(byte[] buffer, int offset, int count, object halg)
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
-            HashAlgorithm hash = CapiHelper.ObjToHashAlgorithm(halg);
-            byte[] hashVal = hash.ComputeHash(buffer, offset, count);
+            HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
+            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, new ReadOnlySpan<byte>(buffer, offset, count));
             return SignHash(hashVal, calgHash);
         }
 
@@ -457,8 +457,8 @@ namespace System.Security.Cryptography
         public byte[] SignData(byte[] buffer, object halg)
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
-            HashAlgorithm hash = CapiHelper.ObjToHashAlgorithm(halg);
-            byte[] hashVal = hash.ComputeHash(buffer);
+            HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
+            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, buffer);
             return SignHash(hashVal, calgHash);
         }
 
@@ -472,8 +472,8 @@ namespace System.Security.Cryptography
         public byte[] SignData(Stream inputStream, object halg)
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
-            HashAlgorithm hash = CapiHelper.ObjToHashAlgorithm(halg);
-            byte[] hashVal = hash.ComputeHash(inputStream);
+            HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
+            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, inputStream);
             return SignHash(hashVal, calgHash);
         }
 
@@ -522,8 +522,8 @@ namespace System.Security.Cryptography
         public bool VerifyData(byte[] buffer, object halg, byte[] signature)
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
-            HashAlgorithm hash = CapiHelper.ObjToHashAlgorithm(halg);
-            byte[] hashVal = hash.ComputeHash(buffer);
+            HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
+            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, buffer);
             return VerifyHash(hashVal, calgHash, signature);
         }
 
