@@ -682,12 +682,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			case SN_Subtract:
 				instc0 = OP_FSUB;
 				break;
-			case SN_Max:
-				instc0 = OP_FMAX;
-				break;
-			case SN_Min:
-				instc0 = OP_FMIN;
-				break;
 			default:
 				g_assert_not_reached ();
 			}
@@ -701,12 +695,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				break;
 			case SN_Subtract:
 				instc0 = OP_ISUB;
-				break;
-			case SN_Max:
-				instc0 = OP_IMAX;
-				break;
-			case SN_Min:
-				instc0 = OP_IMIN;
 				break;
 			default:
 				g_assert_not_reached ();
@@ -799,6 +787,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_Max:
 	case SN_Min: {
+#ifdef TARGET_ARM64
 		int instc0 = -1;
 		if (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8) {
 			switch (id) {
@@ -838,6 +827,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			}
 		}
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, instc0, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
 	}
 	case SN_ToScalar: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
