@@ -2601,9 +2601,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
     if ((REG_VALIDATE_INDIRECT_CALL_ADDR != REG_ARG_0) && call->IsHelperCall(this, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
     {
+        assert(call->gtCallArgs != nullptr);
         GenTreeCall::Use* args = call->gtCallArgs;
         GenTree*          tar  = args->GetNode();
-        assert(tar != nullptr);
         nonStandardArgs.Add(tar, REG_VALIDATE_INDIRECT_CALL_ADDR, NonStandardArgKind::ValidateIndirectCallTarget);
     }
 
