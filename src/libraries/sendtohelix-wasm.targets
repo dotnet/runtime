@@ -103,7 +103,7 @@
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true'">EMSDK-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
     </PropertyGroup>
-    
+
     <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ and find the closest one in
          https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Linux_x64/
          and https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Win_x64/
