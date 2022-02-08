@@ -269,7 +269,7 @@ namespace Mono.Linker.Dataflow
 			case IntrinsicId.Type_get_TypeHandle:
 			case IntrinsicId.Type_GetInterface:
 			case IntrinsicId.Type_get_AssemblyQualifiedName:
-			case IntrinsicId.RuntimeHelpers_RunClassConstructor : {
+			case IntrinsicId.RuntimeHelpers_RunClassConstructor: {
 					var instanceValue = MultiValueLattice.Top;
 					IReadOnlyList<MultiValue> parameterValues = methodParams;
 					if (calledMethodDefinition.HasImplicitThis ()) {

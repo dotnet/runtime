@@ -99,7 +99,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 						var arrayExpression = args["#1"];
 						if (arrayExpression is not (ArrayCreationExpressionSyntax or ImplicitArrayCreationExpressionSyntax))
 							throw new InvalidOperationException ();
-						foreach (var sourceFile in ((ExpressionSyntax) args["#1"]).DescendantNodes ().OfType<LiteralExpressionSyntax> ())
+						foreach (var sourceFile in args["#1"].DescendantNodes ().OfType<LiteralExpressionSyntax> ())
 							yield return Path.Combine (testDir, LinkerTestBase.GetStringFromExpression (sourceFile));
 						break;
 					}
