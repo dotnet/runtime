@@ -161,9 +161,7 @@ namespace System.IO.Strategies
                 // when users have a race condition in their code (i.e. they call
                 // FileStream.Close when calling another method on FileStream like Read).
 
-                // Call base.Dispose(bool) to cleanup async IO resources
-                base.Dispose(disposing);
-
+                // There is no need to call base.Dispose as it's empty
                 _writePos = 0;
             }
         }
