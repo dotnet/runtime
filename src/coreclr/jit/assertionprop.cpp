@@ -2873,7 +2873,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
     ValueNumPair vnPair = tree->gtVNPair;
     ValueNum     vnCns  = vnStore->VNConservativeNormalValue(vnPair);
 
-    // Check if node evaluates to a constant.
+    // Check if node evaluates to a constant or Vector.Zero.
     if (!vnStore->IsVNConstant(vnCns) && !vnStore->IsVNVectorZero(vnCns))
     {
         return nullptr;
@@ -3039,9 +3039,16 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         case TYP_SIMD16:
         case TYP_SIMD32:
         {
-            conValTree = gtNewSimdZeroNode(tree->TypeGet(), CorInfoType::CORINFO_TYPE_FLOAT, 16,
-                                           true); // gtGetSIMDZero(tree->TypeGet(), CorInfoType::CORINFO_TYPE_FLOAT,
-                                             // varDsc->GetStructHnd());
+            assert(vnStore->IsVNVectorZero(vnCns));
+
+            VNFuncSimdTypeInfo vnInfo = vnStore->GetFuncSimdTypeOfVN(vnCns);
+
+            assert(vnInfo.m_simdBaseJitType != CORINFO_TYPE_UNDEF);
+            assert(vnInfo.m_simdSize != 0);
+            assert(getSIMDTypeForSize(vnInfo.m_simdSize) == vnStore->TypeOfVN(vnCns));
+
+            conValTree = gtNewSimdZeroNode(tree->TypeGet(), vnInfo.m_simdBaseJitType, vnInfo.m_simdSize,
+                                           true);
         }
             break;
 #endif

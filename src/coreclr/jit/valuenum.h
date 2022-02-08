@@ -184,6 +184,14 @@ struct VNFuncApp
     }
 };
 
+// An instance of this struct represents the decoded information of a SIMD type from a value number of a function.
+struct VNFuncSimdTypeInfo
+{
+    ValueNum     m_simdTypeVN;
+    unsigned int m_simdSize;
+    CorInfoType  m_simdBaseJitType;
+};
+
 // We use a unique prefix character when printing value numbers in dumps:  i.e.  $1c0
 // This define is used with string concatenation to put this in printf format strings
 #define FMT_VN "$%x"
@@ -463,7 +471,7 @@ public:
 
 #ifdef FEATURE_SIMD
     // A helper function for constructing VNF_SimdType VNs.
-    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType);
+    ValueNum VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType);
 #endif // FEATURE_SIMD
 
     // Create or return the existimg value number representing a singleton exception set
@@ -714,10 +722,13 @@ public:
     // Returns true iff the VN represents a (non-handle) constant.
     bool IsVNConstant(ValueNum vn);
 
-    // Returns true iff the VN represents a (non-handle) constant.
+    // Returns true if the VN represents a Vector64/128/256.Zero.
     bool IsVNVectorZero(ValueNum vn);
 
-    var_types GetVectorType(ValueNum vn);
+#if FEATURE_SIMD
+    /// Returns VNFuncSimdTypeInfo(NoVN, 0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type on a function.
+    VNFuncSimdTypeInfo GetFuncSimdTypeOfVN(ValueNum vn);
+#endif
 
     // Returns true iff the VN represents an integer constant.
     bool IsVNInt32Constant(ValueNum vn);

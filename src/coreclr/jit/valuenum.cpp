@@ -1888,7 +1888,7 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
             // "fully zeroed" vectors, and here we may be loading one from memory, leaving upper
             // bits undefined. So using "SIMD_Init" is "the next best thing", so to speak, and
             // TYP_FLOAT is one of the more popular base types, so that's why we use it here.
-            return VNForFunc(typ, VNF_SIMD_Init, VNForFloatCon(0), VNForSimdType(genTypeSize(typ), TYP_FLOAT));
+            return VNForFunc(typ, VNF_SIMD_Init, VNForFloatCon(0), VNForSimdType(genTypeSize(typ), CORINFO_TYPE_FLOAT));
 #endif // FEATURE_SIMD
 
         // These should be unreached.
@@ -1935,9 +1935,9 @@ ValueNum ValueNumStore::VNOneForType(var_types typ)
 }
 
 #ifdef FEATURE_SIMD
-ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, var_types simdBaseType)
+ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType)
 {
-    ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseType));
+    ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseJitType));
     ValueNum sizeVN     = VNForIntCon(simdSize);
     ValueNum simdTypeVN = VNForFunc(TYP_REF, VNF_SimdType, sizeVN, baseTypeVN);
 
@@ -4605,35 +4605,63 @@ bool ValueNumStore::IsVNVectorZero(ValueNum vn)
     if (c->m_attribs == CEA_Func1)
     {
         VNDefFunc1Arg* const chunkSlots = reinterpret_cast<VNDefFunc1Arg*>(c->m_defs);
-        if (chunkSlots[vn - c->m_baseVN].m_func == VNF_HWI_Vector128_get_Zero)
+        VNFunc vnFunc = chunkSlots[vn - c->m_baseVN].m_func;
+        switch (chunkSlots[vn - c->m_baseVN].m_func)
         {
-            return true;
+            case VNF_HWI_Vector128_get_Zero:
+#if defined(TARGET_XARCH)
+            case VNF_HWI_Vector256_get_Zero:
+#elif defined(TARGET_ARM64)
+            case VNF_HWI_Vector64_get_Zero:
+#endif
+            {
+                return true;
+            }
         }
     }
 #endif
     return false;
 }
 
-var_types ValueNumStore::GetVectorType(ValueNum vn)
+#if FEATURE_SIMD
+VNFuncSimdTypeInfo ValueNumStore::GetFuncSimdTypeOfVN(ValueNum vn)
 {
+    VNFuncSimdTypeInfo vnFuncSimdType;
+
     if (vn == NoVN)
     {
-        return TYP_UNKNOWN;
+        vnFuncSimdType.m_simdTypeVN      = NoVN;
+        vnFuncSimdType.m_simdSize        = 0;
+        vnFuncSimdType.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
+        return vnFuncSimdType;
     }
-//#if FEATURE_HW_INTRINSICS
-//    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
-//    if (c->m_attribs == CEA_Func1)
-//    {
-//        VNDefFunc1Arg* const chunkSlots = reinterpret_cast<VNDefFunc1Arg*>(c->m_defs);
-//
-//        ValueNum baseTypeVN    = chunkSlots[vn - c->m_baseVN].m_arg0;
-//        var_types simdBaseType = (CorInfoType)GetConstantInt32(baseTypeVN);
-//
-//        return simdBaseType;
-//    }
-//#endif
-    return TYP_UNKNOWN;
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    if (c->m_attribs == CEA_Func1)
+    {
+        VNDefFunc1Arg* chunkSlots    = reinterpret_cast<VNDefFunc1Arg*>(c->m_defs);
+        ValueNum       simdTypeVN    = chunkSlots[vn - c->m_baseVN].m_arg0;
+        Chunk*         simdTypeChunk = m_chunks.GetNoExpand(GetChunkNum(simdTypeVN));
+
+        if (simdTypeChunk->m_attribs == CEA_Func2 && simdTypeChunk->m_typ == TYP_REF)
+        {
+            VNDefFunc2Arg* simdTypeChunkSlots = reinterpret_cast<VNDefFunc2Arg*>(simdTypeChunk->m_defs);
+            VNDefFunc2Arg  simdTypeSlot       = simdTypeChunkSlots[simdTypeVN - simdTypeChunk->m_baseVN];
+
+            if (simdTypeSlot.m_func == VNF_SimdType)
+            {
+                vnFuncSimdType.m_simdTypeVN      = simdTypeVN;
+                vnFuncSimdType.m_simdSize        = GetConstantInt32(simdTypeSlot.m_arg0);
+                vnFuncSimdType.m_simdBaseJitType = (CorInfoType)GetConstantInt32(simdTypeSlot.m_arg1);
+                return vnFuncSimdType;
+            }
+        }
+    }
+    vnFuncSimdType.m_simdTypeVN      = NoVN;
+    vnFuncSimdType.m_simdSize        = 0;
+    vnFuncSimdType.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
+    return vnFuncSimdType;
 }
+#endif // FEATURE_SIMD
 
 bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 {
@@ -9595,7 +9623,7 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
 
         if (encodeResultType)
         {
-            ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseType());
+            ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseJitType());
             resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG
@@ -9710,7 +9738,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     if (encodeResultType)
     {
-        ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseType());
+        ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseJitType());
         resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG
