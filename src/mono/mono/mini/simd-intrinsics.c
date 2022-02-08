@@ -564,6 +564,8 @@ type_to_extract_op (MonoTypeEnum type)
 
 static guint16 sri_vector_methods [] = {
 	SN_Abs,
+	SN_Add,
+	SN_AndNot,
 	SN_As,
 	SN_AsByte,
 	SN_AsDouble,
@@ -575,6 +577,8 @@ static guint16 sri_vector_methods [] = {
 	SN_AsUInt16,
 	SN_AsUInt32,
 	SN_AsUInt64,
+	SN_BitwiseAnd,
+	SN_BitwiseOr,
 	SN_AsVector128,
 	SN_AsVector2,
 	SN_AsVector256,
@@ -585,16 +589,22 @@ static guint16 sri_vector_methods [] = {
 	SN_Create,
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
+	SN_Divide,
 	SN_Floor,
 	SN_GetElement,
 	SN_GetLower,
 	SN_GetUpper,
+	SN_Max,
+	SN_Min,
+	SN_Multiply,
+	SN_Subtract,
 	SN_ToScalar,
 	SN_ToVector128,
 	SN_ToVector128Unsafe,
 	SN_ToVector256,
 	SN_ToVector256Unsafe,
 	SN_WithElement,
+	SN_Xor,
 };
 
 /* nint and nuint haven't been enabled yet for System.Runtime.Intrinsics.
@@ -657,6 +667,66 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 }
+	case SN_Add:
+	case SN_Multiply:
+	case SN_Subtract: {
+		int instc0 = -1;
+		if (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8) {
+			switch (id) {
+			case SN_Add:
+				instc0 = OP_FADD;
+				break;
+			case SN_Multiply:
+				instc0 = OP_FMUL;
+				break;
+			case SN_Subtract:
+				instc0 = OP_FSUB;
+				break;
+			case SN_Max:
+				instc0 = OP_FMAX;
+				break;
+			case SN_Min:
+				instc0 = OP_FMIN;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		} else {
+			switch (id) {
+			case SN_Add:
+				instc0 = OP_IADD;
+				break;
+			case SN_Multiply:
+				instc0 = OP_IMUL;
+				break;
+			case SN_Subtract:
+				instc0 = OP_ISUB;
+				break;
+			case SN_Max:
+				instc0 = OP_IMAX;
+				break;
+			case SN_Min:
+				instc0 = OP_IMIN;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		}
+		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
+	}
+	case SN_Divide: {
+		if ((arg0_type != MONO_TYPE_R4) && (arg0_type != MONO_TYPE_R8))
+			return NULL;
+		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FDIV, arg0_type, fsig, args);
+	}
+	case SN_AndNot:
+		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BIC, -1, arg0_type, fsig, args);
+	case SN_BitwiseAnd:
+		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IAND, arg0_type, fsig, args);
+	case SN_BitwiseOr:
+		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IOR, arg0_type, fsig, args);
+	case SN_Xor:
+		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IXOR, arg0_type, fsig, args);
 	case SN_As:
 	case SN_AsByte:
 	case SN_AsDouble:
@@ -726,6 +796,48 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		int op = id == SN_GetLower ? OP_XLOWER : OP_XUPPER;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+	}
+	case SN_Max:
+	case SN_Min: {
+		int instc0 = -1;
+		if (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8) {
+			switch (id) {
+			case SN_Max:
+				instc0 = INTRINS_AARCH64_ADV_SIMD_FMAX;
+				break;
+			case SN_Min:
+				instc0 = INTRINS_AARCH64_ADV_SIMD_FMIN;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		} else {
+			gboolean is_unsigned = arg0_type == MONO_TYPE_U1 || arg0_type == MONO_TYPE_U2 || arg0_type == MONO_TYPE_U4 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_U;
+			if (is_unsigned) {
+				switch (id) {
+				case SN_Max:
+					instc0 = INTRINS_AARCH64_ADV_SIMD_UMAX;
+					break;
+				case SN_Min:
+					instc0 = INTRINS_AARCH64_ADV_SIMD_UMIN;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+			} else {
+				switch (id) {
+				case SN_Max:
+					instc0 = INTRINS_AARCH64_ADV_SIMD_SMAX;
+					break;
+				case SN_Min:
+					instc0 = INTRINS_AARCH64_ADV_SIMD_SMIN;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+			}
+		}
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, instc0, arg0_type, fsig, args);
 	}
 	case SN_ToScalar: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
