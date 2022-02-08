@@ -625,6 +625,8 @@ struct HWIntrinsicInfo
             case NI_ArmBase_LeadingZeroCount:
             case NI_ArmBase_Arm64_LeadingZeroCount:
             case NI_ArmBase_Arm64_LeadingSignCount:
+#else
+#error Unsupported platform
 #endif
                 return true;
             default:
