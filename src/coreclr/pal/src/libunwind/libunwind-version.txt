@@ -7,4 +7,4 @@ Reapply changes from https://github.com/dotnet/runtime/commit/1b5719c2e3dde39353
 Apply https://github.com/libunwind/libunwind/pull/317
 
 For LoongArch64:
-Apply https://github.com/libunwind/libunwind/pull/316
+Apply https://github.com/libunwind/libunwind/pull/316 and https://github.com/libunwind/libunwind/pull/322
