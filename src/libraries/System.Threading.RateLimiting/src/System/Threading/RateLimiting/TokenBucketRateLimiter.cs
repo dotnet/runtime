@@ -382,7 +382,7 @@ namespace System.Threading.RateLimiting
             public CancellationTokenRegistration CancellationTokenRegistration { get; }
         }
 
-        private class CancelQueueState : TaskCompletionSource<RateLimitLease>
+        private sealed class CancelQueueState : TaskCompletionSource<RateLimitLease>
         {
             private readonly int _tokenCount;
             private readonly TokenBucketRateLimiter _limiter;
