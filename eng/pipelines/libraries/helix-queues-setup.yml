@@ -75,15 +75,7 @@ jobs:
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - OSX.1013.Amd64.Open
-        - OSX.1014.Amd64.Open
-        # The 10.15 machines aren't in the same configuration, see
-        # https://github.com/dotnet/runtime/issues/24736
-        #- OSX.1015.Amd64.Open
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-        - OSX.1013.Amd64.Open
-        - OSX.1014.Amd64.Open
+        - OSX.1015.Amd64.Open
 
     # Windows_NT x64
     - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:
@@ -92,7 +84,7 @@ jobs:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
-          - Windows.10.Amd64.Server19H1.Open
+          - Windows.Amd64.Server2022.Open
           - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
             - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
@@ -103,11 +95,11 @@ jobs:
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
-        - Windows.10.Amd64.Client19H1.Open
+        - Windows.10.Amd64.Client21H1.Open
       
       # AllConfigurations
       - ${{ if eq(parameters.jobParameters.framework, 'allConfigurations') }}:
-        - Windows.10.Amd64.Server19H1.Open
+        - Windows.10.Amd64.Client21H1.Open
 
     # Windows_NT x86
     - ${{ if eq(parameters.platform, 'Windows_NT_x86') }}:
@@ -116,17 +108,17 @@ jobs:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
           - Windows.7.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
-          - Windows.10.Amd64.Server19H1.Open
+          - Windows.Amd64.Server2022.Open
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
           - ${{ if eq(parameters.jobParameters.buildConfig, 'Release') }}:
             - Windows.10.Amd64.Server19H1.ES.Open
           - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
             - Windows.7.Amd64.Open
-            - Windows.10.Amd64.Server19H1.Open
+            - Windows.Amd64.Server2022.Open
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
-        - Windows.10.Amd64.Client19H1.Open
+        - Windows.10.Amd64.Client21H1.Open
 
     # Windows_NT arm
     - ${{ if eq(parameters.platform, 'Windows_NT_arm') }}:
