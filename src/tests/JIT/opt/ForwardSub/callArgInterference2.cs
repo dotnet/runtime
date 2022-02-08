@@ -19,7 +19,7 @@ public struct S0
     public int[] M35(int arg0, int[] arg1)
     {
         this.F3 = arg1[0];
-        Program.s_rt.WriteLine(arg0);
+        ForwardSubCallArgInterference2.s_rt.WriteLine(arg0);
         s_result = arg0 + 100;
         return arg1;
     }
