@@ -4616,6 +4616,9 @@ bool ValueNumStore::IsVNVectorZero(ValueNum vn)
             {
                 return true;
             }
+
+            default:
+                return false;
         }
     }
 #endif
