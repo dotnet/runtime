@@ -169,6 +169,9 @@
           <_WasmItemsToPass Include="@(BundleFiles)" OriginalItemName__="BundleFiles" ConditionToUse__="'$(Foo)' != 'true'" />
 
       -->
+
+      <_WasmItemsToPass Include="@(HighAotMemoryUsageAssembly)" OriginalItemName="HighAotMemoryUsageAssembly" />
+
     </ItemGroup>
 
     <!-- This file gets imported by the project file on helix -->
