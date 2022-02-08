@@ -606,37 +606,6 @@ struct HWIntrinsicInfo
         return lookup(id).flags;
     }
 
-    static bool IsXCNTIntrinsic(NamedIntrinsic id)
-    {
-#if defined(FEATURE_HW_INTRINSICS)
-        switch (id)
-        {
-#if defined(TARGET_XARCH)
-            case NI_BMI1_TrailingZeroCount:
-            case NI_BMI1_X64_TrailingZeroCount:
-            case NI_LZCNT_LeadingZeroCount:
-            case NI_LZCNT_X64_LeadingZeroCount:
-            case NI_POPCNT_PopCount:
-            case NI_POPCNT_X64_PopCount:
-#elif defined(TARGET_ARM64)
-            case NI_AdvSimd_PopCount:
-            case NI_AdvSimd_LeadingZeroCount:
-            case NI_AdvSimd_LeadingSignCount:
-            case NI_ArmBase_LeadingZeroCount:
-            case NI_ArmBase_Arm64_LeadingZeroCount:
-            case NI_ArmBase_Arm64_LeadingSignCount:
-#else
-#error Unsupported platform
-#endif
-                return true;
-            default:
-                break;
-        }
-#endif // defined(FEATURE_HW_INTRINSICS)
-
-        return false;
-    }
-
     // Flags lookup
 
     static bool IsCommutative(NamedIntrinsic id)

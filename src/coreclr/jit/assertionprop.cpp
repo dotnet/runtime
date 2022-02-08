@@ -164,15 +164,34 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_CAST:
             return ForCastOutput(node->AsCast());
 
-#ifdef FEATURE_HW_INTRINSICS
+#if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            if (HWIntrinsicInfo::IsXCNTIntrinsic(node->AsHWIntrinsic()->GetHWIntrinsicId()))
+            switch (node->AsHWIntrinsic()->GetHWIntrinsicId())
             {
-                // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
-                return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+#if defined(TARGET_XARCH)
+                case NI_BMI1_TrailingZeroCount:
+                case NI_BMI1_X64_TrailingZeroCount:
+                case NI_LZCNT_LeadingZeroCount:
+                case NI_LZCNT_X64_LeadingZeroCount:
+                case NI_POPCNT_PopCount:
+                case NI_POPCNT_X64_PopCount:
+#elif defined(TARGET_ARM64)
+                case NI_AdvSimd_PopCount:
+                case NI_AdvSimd_LeadingZeroCount:
+                case NI_AdvSimd_LeadingSignCount:
+                case NI_ArmBase_LeadingZeroCount:
+                case NI_ArmBase_Arm64_LeadingZeroCount:
+                case NI_ArmBase_Arm64_LeadingSignCount:
+#else
+#error Unsupported platform
+#endif
+                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+                default:
+                    break;
             }
             break;
-#endif // FEATURE_HW_INTRINSICS
+#endif // defined(FEATURE_HW_INTRINSICS)
 
         default:
             break;
