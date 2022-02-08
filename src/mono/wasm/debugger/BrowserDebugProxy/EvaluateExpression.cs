@@ -404,7 +404,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (Exception ex)
             {
-                throw new Exception($"BUG: Unable to run {expression}, error: {ex.Message}.");
+                throw new Exception($"Internal Error: Unable to run {expression}, error: {ex.Message}.");
             }
         }
 
