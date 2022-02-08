@@ -517,8 +517,7 @@ namespace System.Diagnostics.Contracts
         {
             if (fromInclusive > toExclusive)
                 throw new ArgumentException(SR.Argument_ToExclusiveLessThanFromExclusive);
-            if (predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
+            ArgumentNullException.ThrowIfNull(predicate);
 
             for (int i = fromInclusive; i < toExclusive; i++)
                 if (!predicate(i)) return false;
@@ -536,13 +535,8 @@ namespace System.Diagnostics.Contracts
         /// <paramref name="collection"/>.</returns>
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.TrueForAll"/>
         [Pure]
-        public static bool ForAll<T>(IEnumerable<T> collection, Predicate<T> predicate)
+        public static bool ForAll<T>(IEnumerable<T> collection!!, Predicate<T> predicate!!)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
-            if (predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
-
             foreach (T t in collection)
                 if (!predicate(t)) return false;
             return true;
@@ -567,8 +561,7 @@ namespace System.Diagnostics.Contracts
         {
             if (fromInclusive > toExclusive)
                 throw new ArgumentException(SR.Argument_ToExclusiveLessThanFromExclusive);
-            if (predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
+            ArgumentNullException.ThrowIfNull(predicate);
 
             for (int i = fromInclusive; i < toExclusive; i++)
                 if (predicate(i)) return true;
@@ -585,13 +578,8 @@ namespace System.Diagnostics.Contracts
         /// <paramref name="collection"/>.</returns>
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.Exists"/>
         [Pure]
-        public static bool Exists<T>(IEnumerable<T> collection, Predicate<T> predicate)
+        public static bool Exists<T>(IEnumerable<T> collection!!, Predicate<T> predicate!!)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
-            if (predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
-
             foreach (T t in collection)
                 if (predicate(t)) return true;
             return false;

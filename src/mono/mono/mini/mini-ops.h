@@ -586,7 +586,6 @@ MINI_OP(OP_FCGT_UN_MEMBASE,"float_cgt_un_membase", IREG, FREG, IREG)
 MINI_OP(OP_FCLT_MEMBASE,   "float_clt_membase", IREG, FREG, IREG)
 MINI_OP(OP_FCLT_UN_MEMBASE,"float_clt_un_membase", IREG, FREG, IREG)
 
-MINI_OP(OP_FCONV_TO_U,	"float_conv_to_u", IREG, FREG, NONE)
 MINI_OP(OP_CKFINITE, "ckfinite", FREG, FREG, NONE)
 
 /* r4 opcodes: must be in the same order as the matching CEE_ opcodes: ovfops_op_map */

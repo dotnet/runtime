@@ -367,12 +367,8 @@ namespace System.IO
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // prevent WriteSpan from bloating call sites
-        public override void Write(char[] buffer, int index, int count)
+        public override void Write(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -700,12 +696,8 @@ namespace System.IO
             }
         }
 
-        public override Task WriteAsync(char[] buffer, int index, int count)
+        public override Task WriteAsync(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -860,12 +852,8 @@ namespace System.IO
             return task;
         }
 
-        public override Task WriteLineAsync(char[] buffer, int index, int count)
+        public override Task WriteLineAsync(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);

@@ -1133,13 +1133,8 @@ namespace System.Xml
 
 
         // Creates an instance of the XmlNodeReader class using the specified XmlNode.
-        public XmlNodeReader(XmlNode node)
+        public XmlNodeReader(XmlNode node!!)
         {
-            if (node == null)
-            {
-                throw new ArgumentNullException(nameof(node));
-            }
-
             _readerNav = new XmlNodeReaderNavigator(node);
             _curDepth = 0;
 

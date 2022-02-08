@@ -679,11 +679,8 @@ namespace System.Reflection
         internal static void ParseAttributeArguments(ConstArray attributeBlob,
             ref CustomAttributeCtorParameter[] customAttributeCtorParameters,
             ref CustomAttributeNamedParameter[] customAttributeNamedParameters,
-            RuntimeModule customAttributeModule)
+            RuntimeModule customAttributeModule!!)
         {
-            if (customAttributeModule is null)
-                throw new ArgumentNullException(nameof(customAttributeModule));
-
             Debug.Assert(customAttributeCtorParameters is not null);
             Debug.Assert(customAttributeNamedParameters is not null);
 
@@ -713,11 +710,8 @@ namespace System.Reflection
         private readonly CustomAttributeType m_type;
         private readonly CustomAttributeEncodedArgument m_encodedArgument;
 
-        public CustomAttributeNamedParameter(string argumentName, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
+        public CustomAttributeNamedParameter(string argumentName!!, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
         {
-            if (argumentName is null)
-                throw new ArgumentNullException(nameof(argumentName));
-
             m_argumentName = argumentName;
             m_fieldOrProperty = fieldOrProperty;
             m_padding = fieldOrProperty;
@@ -1872,12 +1866,6 @@ namespace System.Reflection
                 default: Debug.Fail("Unreachable code"); break;
             }
             type.GetRuntimeModule().MetadataImport.GetClassLayout(type.MetadataToken, out int pack, out int size);
-
-            // Metadata parameter checking should not have allowed 0 for packing size.
-            // The runtime later converts a packing size of 0 to 8 so do the same here
-            // because it's more useful from a user perspective.
-            if (pack == 0)
-                pack = 8; // DEFAULT_PACKING_SIZE
 
             StructLayoutAttribute attribute = new StructLayoutAttribute(layoutKind);
 

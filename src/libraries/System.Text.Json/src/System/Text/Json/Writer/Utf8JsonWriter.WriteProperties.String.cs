@@ -478,13 +478,8 @@ namespace System.Text.Json
         /// as if <see cref="WriteNull(System.ReadOnlySpan{byte})"/> were called.
         /// </para>
         /// </remarks>
-        public void WriteString(string propertyName, string? value)
+        public void WriteString(string propertyName!!, string? value)
         {
-            if (propertyName == null)
-            {
-                throw new ArgumentNullException(nameof(propertyName));
-            }
-
             if (value == null)
             {
                 WriteNull(propertyName.AsSpan());

@@ -23,13 +23,8 @@ namespace System.Net.Http
             Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
         }
 
-        private static byte[] GetContentByteArray(IEnumerable<KeyValuePair<string?, string?>> nameValueCollection)
+        private static byte[] GetContentByteArray(IEnumerable<KeyValuePair<string?, string?>> nameValueCollection!!)
         {
-            if (nameValueCollection == null)
-            {
-                throw new ArgumentNullException(nameof(nameValueCollection));
-            }
-
             // Encode and concatenate data
             StringBuilder builder = new StringBuilder();
             foreach (KeyValuePair<string?, string?> pair in nameValueCollection)

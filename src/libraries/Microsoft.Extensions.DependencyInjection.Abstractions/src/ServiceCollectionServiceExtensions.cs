@@ -22,25 +22,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddTransient(
-            this IServiceCollection services,
-            Type serviceType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
+            this IServiceCollection services!!,
+            Type serviceType!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType!!)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (implementationType == null)
-            {
-                throw new ArgumentNullException(nameof(implementationType));
-            }
-
             return Add(services, serviceType, implementationType, ServiceLifetime.Transient);
         }
 
@@ -55,25 +40,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddTransient(
-            this IServiceCollection services,
-            Type serviceType,
-            Func<IServiceProvider, object> implementationFactory)
+            this IServiceCollection services!!,
+            Type serviceType!!,
+            Func<IServiceProvider, object> implementationFactory!!)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return Add(services, serviceType, implementationFactory, ServiceLifetime.Transient);
         }
 
@@ -87,15 +57,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service to.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Transient"/>
-        public static IServiceCollection AddTransient<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection services)
+        public static IServiceCollection AddTransient<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection services!!)
             where TService : class
             where TImplementation : class, TService
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
             return services.AddTransient(typeof(TService), typeof(TImplementation));
         }
 
@@ -108,19 +73,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddTransient(
-            this IServiceCollection services,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serviceType)
+            this IServiceCollection services!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serviceType!!)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
             return services.AddTransient(serviceType, serviceType);
         }
 
@@ -132,14 +87,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service to.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Transient"/>
-        public static IServiceCollection AddTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
+        public static IServiceCollection AddTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services!!)
             where TService : class
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
             return services.AddTransient(typeof(TService));
         }
 
@@ -154,20 +104,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddTransient<TService>(
-            this IServiceCollection services,
-            Func<IServiceProvider, TService> implementationFactory)
+            this IServiceCollection services!!,
+            Func<IServiceProvider, TService> implementationFactory!!)
             where TService : class
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return services.AddTransient(typeof(TService), implementationFactory);
         }
 
@@ -184,21 +124,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddTransient<TService, TImplementation>(
-            this IServiceCollection services,
-            Func<IServiceProvider, TImplementation> implementationFactory)
+            this IServiceCollection services!!,
+            Func<IServiceProvider, TImplementation> implementationFactory!!)
             where TService : class
             where TImplementation : class, TService
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return services.AddTransient(typeof(TService), implementationFactory);
         }
 
@@ -213,25 +143,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddScoped(
-            this IServiceCollection services,
-            Type serviceType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
+            this IServiceCollection services!!,
+            Type serviceType!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType!!)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (implementationType == null)
-            {
-                throw new ArgumentNullException(nameof(implementationType));
-            }
-
             return Add(services, serviceType, implementationType, ServiceLifetime.Scoped);
         }
 
@@ -246,25 +161,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddScoped(
-            this IServiceCollection services,
-            Type serviceType,
-            Func<IServiceProvider, object> implementationFactory)
+            this IServiceCollection services!!,
+            Type serviceType!!,
+            Func<IServiceProvider, object> implementationFactory!!)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return Add(services, serviceType, implementationFactory, ServiceLifetime.Scoped);
         }
 
@@ -278,15 +178,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service to.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Scoped"/>
-        public static IServiceCollection AddScoped<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection services)
+        public static IServiceCollection AddScoped<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection services!!)
             where TService : class
             where TImplementation : class, TService
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
             return services.AddScoped(typeof(TService), typeof(TImplementation));
         }
 
@@ -299,19 +194,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddScoped(
-            this IServiceCollection services,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serviceType)
+            this IServiceCollection services!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serviceType!!)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
             return services.AddScoped(serviceType, serviceType);
         }
 
@@ -323,14 +208,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service to.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Scoped"/>
-        public static IServiceCollection AddScoped<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
+        public static IServiceCollection AddScoped<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services!!)
             where TService : class
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
             return services.AddScoped(typeof(TService));
         }
 
@@ -345,20 +225,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddScoped<TService>(
-            this IServiceCollection services,
-            Func<IServiceProvider, TService> implementationFactory)
+            this IServiceCollection services!!,
+            Func<IServiceProvider, TService> implementationFactory!!)
             where TService : class
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return services.AddScoped(typeof(TService), implementationFactory);
         }
 
@@ -375,21 +245,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddScoped<TService, TImplementation>(
-            this IServiceCollection services,
-            Func<IServiceProvider, TImplementation> implementationFactory)
+            this IServiceCollection services!!,
+            Func<IServiceProvider, TImplementation> implementationFactory!!)
             where TService : class
             where TImplementation : class, TService
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return services.AddScoped(typeof(TService), implementationFactory);
         }
 
@@ -405,25 +265,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddSingleton(
-            this IServiceCollection services,
-            Type serviceType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
+            this IServiceCollection services!!,
+            Type serviceType!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType!!)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (implementationType == null)
-            {
-                throw new ArgumentNullException(nameof(implementationType));
-            }
-
             return Add(services, serviceType, implementationType, ServiceLifetime.Singleton);
         }
 
@@ -438,25 +283,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddSingleton(
-            this IServiceCollection services,
-            Type serviceType,
-            Func<IServiceProvider, object> implementationFactory)
+            this IServiceCollection services!!,
+            Type serviceType!!,
+            Func<IServiceProvider, object> implementationFactory!!)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return Add(services, serviceType, implementationFactory, ServiceLifetime.Singleton);
         }
 
@@ -470,15 +300,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service to.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Singleton"/>
-        public static IServiceCollection AddSingleton<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection services)
+        public static IServiceCollection AddSingleton<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection services!!)
             where TService : class
             where TImplementation : class, TService
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
             return services.AddSingleton(typeof(TService), typeof(TImplementation));
         }
 
@@ -491,19 +316,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddSingleton(
-            this IServiceCollection services,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serviceType)
+            this IServiceCollection services!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serviceType!!)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
             return services.AddSingleton(serviceType, serviceType);
         }
 
@@ -515,14 +330,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service to.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Singleton"/>
-        public static IServiceCollection AddSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
+        public static IServiceCollection AddSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services!!)
             where TService : class
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
             return services.AddSingleton(typeof(TService));
         }
 
@@ -537,20 +347,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddSingleton<TService>(
-            this IServiceCollection services,
-            Func<IServiceProvider, TService> implementationFactory)
+            this IServiceCollection services!!,
+            Func<IServiceProvider, TService> implementationFactory!!)
             where TService : class
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return services.AddSingleton(typeof(TService), implementationFactory);
         }
 
@@ -567,21 +367,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddSingleton<TService, TImplementation>(
-            this IServiceCollection services,
-            Func<IServiceProvider, TImplementation> implementationFactory)
+            this IServiceCollection services!!,
+            Func<IServiceProvider, TImplementation> implementationFactory!!)
             where TService : class
             where TImplementation : class, TService
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return services.AddSingleton(typeof(TService), implementationFactory);
         }
 
@@ -596,25 +386,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddSingleton(
-            this IServiceCollection services,
-            Type serviceType,
-            object implementationInstance)
+            this IServiceCollection services!!,
+            Type serviceType!!,
+            object implementationInstance!!)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (implementationInstance == null)
-            {
-                throw new ArgumentNullException(nameof(implementationInstance));
-            }
-
             var serviceDescriptor = new ServiceDescriptor(serviceType, implementationInstance);
             services.Add(serviceDescriptor);
             return services;
@@ -630,20 +405,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddSingleton<TService>(
-            this IServiceCollection services,
-            TService implementationInstance)
+            this IServiceCollection services!!,
+            TService implementationInstance!!)
             where TService : class
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (implementationInstance == null)
-            {
-                throw new ArgumentNullException(nameof(implementationInstance));
-            }
-
             return services.AddSingleton(typeof(TService), implementationInstance);
         }
 

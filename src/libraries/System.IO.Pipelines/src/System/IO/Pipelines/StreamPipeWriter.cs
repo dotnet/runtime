@@ -46,15 +46,9 @@ namespace System.IO.Pipelines
             }
         }
 
-        public StreamPipeWriter(Stream writingStream, StreamPipeWriterOptions options)
+        public StreamPipeWriter(Stream writingStream!!, StreamPipeWriterOptions options!!)
         {
-            InnerStream = writingStream ?? throw new ArgumentNullException(nameof(writingStream));
-
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
+            InnerStream = writingStream;
             _minimumBufferSize = options.MinimumBufferSize;
             _pool = options.Pool == MemoryPool<byte>.Shared ? null : options.Pool;
             _maxPooledBufferSize = _pool?.MaxBufferSize ?? -1;

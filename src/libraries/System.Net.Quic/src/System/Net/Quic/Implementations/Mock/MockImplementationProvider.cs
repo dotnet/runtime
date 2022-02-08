@@ -16,7 +16,7 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal override QuicConnectionProvider CreateConnection(QuicClientConnectionOptions options)
         {
-            return new MockConnection(options.RemoteEndPoint,
+            return new MockConnection(options.RemoteEndPoint!,
                                       options.ClientAuthenticationOptions,
                                       options.LocalEndPoint,
                                       options.MaxUnidirectionalStreams,

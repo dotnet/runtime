@@ -9,18 +9,8 @@ namespace Microsoft.Internal.Collections
 {
     internal static partial class CollectionServices
     {
-        public static ICollection<object> GetCollectionWrapper(Type itemType, object collectionObject)
+        public static ICollection<object> GetCollectionWrapper(Type itemType!!, object collectionObject!!)
         {
-            if (itemType == null)
-            {
-                throw new ArgumentNullException(nameof(itemType));
-            }
-
-            if (collectionObject == null)
-            {
-                throw new ArgumentNullException(nameof(collectionObject));
-            }
-
             var underlyingItemType = itemType.UnderlyingSystemType;
 
             if (underlyingItemType == typeof(object))

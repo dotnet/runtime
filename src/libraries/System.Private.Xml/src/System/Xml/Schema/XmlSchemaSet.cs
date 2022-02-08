@@ -84,13 +84,8 @@ namespace System.Xml.Schema
         /// Construct a new empty schema schemas with associated XmlNameTable.
         /// The XmlNameTable is used when loading schemas.
         /// </summary>
-        public XmlSchemaSet(XmlNameTable nameTable)
+        public XmlSchemaSet(XmlNameTable nameTable!!)
         {
-            if (nameTable == null)
-            {
-                throw new ArgumentNullException(nameof(nameTable));
-            }
-
             _nameTable = nameTable;
             _schemas = new SortedList();
 
@@ -324,12 +319,8 @@ namespace System.Xml.Schema
         /// If the given schema references other namespaces, the schemas for those
         /// other namespaces are NOT automatically loaded.
         /// </summary>
-        public XmlSchema? Add(string? targetNamespace, XmlReader schemaDocument)
+        public XmlSchema? Add(string? targetNamespace, XmlReader schemaDocument!!)
         {
-            if (schemaDocument == null)
-            {
-                throw new ArgumentNullException(nameof(schemaDocument));
-            }
             if (targetNamespace != null)
             {
                 targetNamespace = XmlComplianceUtil.CDataNormalize(targetNamespace);
@@ -358,12 +349,8 @@ namespace System.Xml.Schema
         /// Adds all the namespaces defined in the given schemas
         /// (including their associated schemas) to this schemas.
         /// </summary>
-        public void Add(XmlSchemaSet schemas)
+        public void Add(XmlSchemaSet schemas!!)
         {
-            if (schemas == null)
-            {
-                throw new ArgumentNullException(nameof(schemas));
-            }
             if (this == schemas)
             {
                 return;
@@ -444,12 +431,8 @@ namespace System.Xml.Schema
             }
         }
 
-        public XmlSchema? Add(XmlSchema schema)
+        public XmlSchema? Add(XmlSchema schema!!)
         {
-            if (schema == null)
-            {
-                throw new ArgumentNullException(nameof(schema));
-            }
             lock (InternalSyncObject)
             {
                 if (_schemas.ContainsKey(schema.SchemaId))
@@ -466,12 +449,8 @@ namespace System.Xml.Schema
             return Remove(schema, true);
         }
 
-        public bool RemoveRecursive(XmlSchema schemaToRemove)
+        public bool RemoveRecursive(XmlSchema schemaToRemove!!)
         {
-            if (schemaToRemove == null)
-            {
-                throw new ArgumentNullException(nameof(schemaToRemove));
-            }
             if (!_schemas.ContainsKey(schemaToRemove.SchemaId))
             {
                 return false;
@@ -549,12 +528,8 @@ namespace System.Xml.Schema
             return _targetNamespaces[targetNamespace] != null;
         }
 
-        public bool Contains(XmlSchema schema)
+        public bool Contains(XmlSchema schema!!)
         {
-            if (schema == null)
-            {
-                throw new ArgumentNullException(nameof(schema));
-            }
             return _schemas.ContainsValue(schema);
         }
 
@@ -653,17 +628,13 @@ namespace System.Xml.Schema
             return;
         }
 
-        public XmlSchema Reprocess(XmlSchema schema)
+        public XmlSchema Reprocess(XmlSchema schema!!)
         {
             // Due to bug 644477 - this method is tightly coupled (THE CODE IS BASICALLY COPIED) to Remove, Add and AddSchemaToSet
             // methods. If you change anything here *make sure* to update Remove/Add/AddSchemaToSet method(s) accordingly.
             // The only difference is that we don't touch .schemas collection here to not break a code like this:
             // foreach (XmlSchema s in schemaset.schemas) { schemaset.Reprocess(s); }
             // This is by purpose.
-            if (schema == null)
-            {
-                throw new ArgumentNullException(nameof(schema));
-            }
             if (!_schemas.ContainsKey(schema.SchemaId))
             {
                 throw new ArgumentException(SR.Sch_SchemaDoesNotExist, nameof(schema));
@@ -744,10 +715,8 @@ namespace System.Xml.Schema
             }
         }
 
-        public void CopyTo(XmlSchema[] schemas, int index)
+        public void CopyTo(XmlSchema[] schemas!!, int index)
         {
-            if (schemas == null)
-                throw new ArgumentNullException(nameof(schemas));
             if (index < 0 || index > schemas.Length - 1)
                 throw new ArgumentOutOfRangeException(nameof(index));
             _schemas.Values.CopyTo(schemas, index);
@@ -877,12 +846,8 @@ namespace System.Xml.Schema
 #endif
 
         //For use by the validator when loading schemaLocations in the instance
-        internal void Add(string? targetNamespace, XmlReader reader, Hashtable validatedNamespaces)
+        internal void Add(string? targetNamespace, XmlReader reader!!, Hashtable validatedNamespaces)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
             if (targetNamespace == null)
             {
                 targetNamespace = string.Empty;
@@ -1115,15 +1080,10 @@ namespace System.Xml.Schema
             substitutionGroup.Members.Add(headElement);
         }
 
-        internal XmlSchema? Remove(XmlSchema schema, bool forceCompile)
+        internal XmlSchema? Remove(XmlSchema schema!!, bool forceCompile)
         {
             // Due to bug 644477 - this method is tightly coupled (THE CODE IS BASICALLY COPIED) to Reprocess
             // method. If you change anything here *make sure* to update Reprocess method accordingly.
-            if (schema == null)
-            {
-                throw new ArgumentNullException(nameof(schema));
-            }
-
             lock (InternalSyncObject)
             { //Need to lock here so that remove cannot be called while the set is being compiled
                 if (_schemas.ContainsKey(schema.SchemaId))

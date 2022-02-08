@@ -243,11 +243,8 @@ namespace System.Diagnostics
             CreateEventSource(new EventSourceCreationData(source, logName, machineName));
         }
 
-        public static void CreateEventSource(EventSourceCreationData sourceData)
+        public static void CreateEventSource(EventSourceCreationData sourceData!!)
         {
-            if (sourceData == null)
-                throw new ArgumentNullException(nameof(sourceData));
-
             string logName = sourceData.LogName;
             string source = sourceData.Source;
             string machineName = sourceData.MachineName;

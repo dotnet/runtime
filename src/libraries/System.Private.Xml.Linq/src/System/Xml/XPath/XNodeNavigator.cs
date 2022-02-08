@@ -922,9 +922,8 @@ namespace System.Xml.XPath
         /// <param name="nameTable">The <see cref="XmlNameTable"/> to be used by
         /// the <see cref="XPathNavigator"/></param>
         /// <returns>An <see cref="XPathNavigator"/></returns>
-        public static XPathNavigator CreateNavigator(this XNode node, XmlNameTable? nameTable)
+        public static XPathNavigator CreateNavigator(this XNode node!!, XmlNameTable? nameTable)
         {
-            if (node == null) throw new ArgumentNullException(nameof(node));
             if (node is XDocumentType) throw new ArgumentException(SR.Format(SR.Argument_CreateNavigator, XmlNodeType.DocumentType));
             XText? text = node as XText;
             if (text != null)
@@ -956,9 +955,8 @@ namespace System.Xml.XPath
         /// prefixes used in the XPath expression</see></param>
         /// <returns>The result of evaluating the expression which can be typed as bool, double, string or
         /// IEnumerable</returns>
-        public static object XPathEvaluate(this XNode node, string expression, IXmlNamespaceResolver? resolver)
+        public static object XPathEvaluate(this XNode node!!, string expression, IXmlNamespaceResolver? resolver)
         {
-            if (node == null) throw new ArgumentNullException(nameof(node));
             return default(XPathEvaluator).Evaluate<object>(node, expression, resolver);
         }
 
@@ -1005,9 +1003,8 @@ namespace System.Xml.XPath
         /// <param name="resolver">A <see cref="IXmlNamespaceResolver"/> for the namespace
         /// prefixes used in the XPath expression</param>
         /// <returns>An <see cref="IEnumerable&lt;XElement&gt;"/> corresponding to the resulting set of elements</returns>
-        public static IEnumerable<XElement> XPathSelectElements(this XNode node, string expression, IXmlNamespaceResolver? resolver)
+        public static IEnumerable<XElement> XPathSelectElements(this XNode node!!, string expression, IXmlNamespaceResolver? resolver)
         {
-            if (node == null) throw new ArgumentNullException(nameof(node));
             return (IEnumerable<XElement>)default(XPathEvaluator).Evaluate<XElement>(node, expression, resolver);
         }
 

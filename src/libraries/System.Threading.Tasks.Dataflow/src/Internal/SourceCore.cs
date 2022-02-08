@@ -121,12 +121,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
-        internal IDisposable LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions)
+        internal IDisposable LinkTo(ITargetBlock<TOutput> target!!, DataflowLinkOptions linkOptions!!)
         {
-            // Validate arguments
-            if (target == null) throw new ArgumentNullException(nameof(target));
-            if (linkOptions == null) throw new ArgumentNullException(nameof(linkOptions));
-
             // If the block is already completed, there is not much to do -
             // we have to propagate completion if that was requested, and
             // then bail without taking the lock.

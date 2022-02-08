@@ -25,13 +25,8 @@ namespace Microsoft.Extensions.Http.Logging
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to log to.</param>
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> is <see langword="null"/>.</exception>
-        public LoggingScopeHttpMessageHandler(ILogger logger)
+        public LoggingScopeHttpMessageHandler(ILogger logger!!)
         {
-            if (logger == null)
-            {
-                throw new ArgumentNullException(nameof(logger));
-            }
-
             _logger = logger;
         }
 
@@ -41,31 +36,16 @@ namespace Microsoft.Extensions.Http.Logging
         /// <param name="logger">The <see cref="ILogger"/> to log to.</param>
         /// <param name="options">The <see cref="HttpClientFactoryOptions"/> used to configure the <see cref="LoggingScopeHttpMessageHandler"/> instance.</param>
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
-        public LoggingScopeHttpMessageHandler(ILogger logger, HttpClientFactoryOptions options)
+        public LoggingScopeHttpMessageHandler(ILogger logger!!, HttpClientFactoryOptions options!!)
         {
-            if (logger == null)
-            {
-                throw new ArgumentNullException(nameof(logger));
-            }
-
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
             _logger = logger;
             _options = options;
         }
 
         /// <inheritdoc />
         /// <remarks>Loggs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
-        protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
             var stopwatch = ValueStopwatch.StartNew();
 
             Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;

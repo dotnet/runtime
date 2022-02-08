@@ -57,16 +57,12 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        internal AssemblyBuilder(AssemblyName name,
+        internal AssemblyBuilder(AssemblyName name!!,
                                  AssemblyBuilderAccess access,
                                  Assembly? callingAssembly,
                                  AssemblyLoadContext? assemblyLoadContext,
                                  IEnumerable<CustomAttributeBuilder>? unsafeAssemblyAttributes)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
             if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)access), nameof(access));
@@ -371,17 +367,8 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client decides to form the custom attribute blob themselves.
         /// </summary>
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
         {
-            if (con == null)
-            {
-                throw new ArgumentNullException(nameof(con));
-            }
-            if (binaryAttribute == null)
-            {
-                throw new ArgumentNullException(nameof(binaryAttribute));
-            }
-
             lock (SyncRoot)
             {
                 TypeBuilder.DefineCustomAttribute(
@@ -395,13 +382,8 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder.
         /// </summary>
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
         {
-            if (customBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(customBuilder));
-            }
-
             lock (SyncRoot)
             {
                 customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyBuilderData.AssemblyDefToken);

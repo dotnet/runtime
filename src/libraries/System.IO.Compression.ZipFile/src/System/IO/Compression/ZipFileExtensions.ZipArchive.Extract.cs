@@ -65,14 +65,8 @@ namespace System.IO.Compression
         /// The directory specified must not exist. The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
         /// <param name="overwriteFiles">True to indicate overwrite.</param>
-        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName, bool overwriteFiles)
+        public static void ExtractToDirectory(this ZipArchive source!!, string destinationDirectoryName!!, bool overwriteFiles)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            if (destinationDirectoryName == null)
-                throw new ArgumentNullException(nameof(destinationDirectoryName));
-
             foreach (ZipArchiveEntry entry in source.Entries)
             {
                 entry.ExtractRelativeToDirectory(destinationDirectoryName, overwriteFiles);

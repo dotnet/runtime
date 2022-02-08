@@ -44,19 +44,13 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public int Add(X509Certificate2 certificate)
+        public int Add(X509Certificate2 certificate!!)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
-
             return base.Add(certificate);
         }
 
-        public void AddRange(X509Certificate2[] certificates)
+        public void AddRange(X509Certificate2[] certificates!!)
         {
-            if (certificates == null)
-                throw new ArgumentNullException(nameof(certificates));
-
             int i = 0;
             try
             {
@@ -75,11 +69,8 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public void AddRange(X509Certificate2Collection certificates)
+        public void AddRange(X509Certificate2Collection certificates!!)
         {
-            if (certificates == null)
-                throw new ArgumentNullException(nameof(certificates));
-
             int i = 0;
             try
             {
@@ -121,11 +112,8 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public X509Certificate2Collection Find(X509FindType findType, object findValue, bool validOnly)
+        public X509Certificate2Collection Find(X509FindType findType, object findValue!!, bool validOnly)
         {
-            if (findValue == null)
-                throw new ArgumentNullException(nameof(findValue));
-
             return FindPal.FindFromCollection(this, findType, findValue, validOnly);
         }
 
@@ -136,11 +124,8 @@ namespace System.Security.Cryptography.X509Certificates
 
         IEnumerator<X509Certificate2> IEnumerable<X509Certificate2>.GetEnumerator() => GetEnumerator();
 
-        public void Import(byte[] rawData)
+        public void Import(byte[] rawData!!)
         {
-            if (rawData == null)
-                throw new ArgumentNullException(nameof(rawData));
-
             Import(rawData.AsSpan());
         }
 
@@ -155,11 +140,8 @@ namespace System.Security.Cryptography.X509Certificates
             Import(rawData, password: null, keyStorageFlags: X509KeyStorageFlags.DefaultKeySet);
         }
 
-        public void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags = 0)
+        public void Import(byte[] rawData!!, string? password, X509KeyStorageFlags keyStorageFlags = 0)
         {
-            if (rawData == null)
-                throw new ArgumentNullException(nameof(rawData));
-
             Import(rawData.AsSpan(), password.AsSpan(), keyStorageFlags);
         }
 
@@ -211,11 +193,8 @@ namespace System.Security.Cryptography.X509Certificates
             Import(fileName, password: null, keyStorageFlags: X509KeyStorageFlags.DefaultKeySet);
         }
 
-        public void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags = 0)
+        public void Import(string fileName!!, string? password, X509KeyStorageFlags keyStorageFlags = 0)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-
             X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
 
             using (var safePasswordHandle = new SafePasswordHandle(password))
@@ -237,11 +216,8 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="keyStorageFlags">
         ///   A bitwise combination of the enumeration values that control where and how to import the certificate.
         /// </param>
-        public void Import(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
+        public void Import(string fileName!!, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-
             X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
 
             using (var safePasswordHandle = new SafePasswordHandle(password))
@@ -251,27 +227,18 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public void Insert(int index, X509Certificate2 certificate)
+        public void Insert(int index, X509Certificate2 certificate!!)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
-
             base.Insert(index, certificate);
         }
 
-        public void Remove(X509Certificate2 certificate)
+        public void Remove(X509Certificate2 certificate!!)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
-
             base.Remove(certificate);
         }
 
-        public void RemoveRange(X509Certificate2[] certificates)
+        public void RemoveRange(X509Certificate2[] certificates!!)
         {
-            if (certificates == null)
-                throw new ArgumentNullException(nameof(certificates));
-
             int i = 0;
             try
             {
@@ -290,11 +257,8 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public void RemoveRange(X509Certificate2Collection certificates)
+        public void RemoveRange(X509Certificate2Collection certificates!!)
         {
-            if (certificates == null)
-                throw new ArgumentNullException(nameof(certificates));
-
             int i = 0;
             try
             {
@@ -338,11 +302,8 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         /// <paramref name="certPemFilePath" /> is <see langword="null" />.
         /// </exception>
-        public void ImportFromPemFile(string certPemFilePath)
+        public void ImportFromPemFile(string certPemFilePath!!)
         {
-            if (certPemFilePath is null)
-                throw new ArgumentNullException(nameof(certPemFilePath));
-
             ReadOnlySpan<char> contents = System.IO.File.ReadAllText(certPemFilePath);
             ImportFromPem(contents);
         }

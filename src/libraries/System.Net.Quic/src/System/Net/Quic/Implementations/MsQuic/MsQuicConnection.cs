@@ -172,10 +172,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // constructor for outbound connections
         public MsQuicConnection(QuicClientConnectionOptions options)
         {
-            if (options.RemoteEndPoint == null)
-            {
-                throw new ArgumentNullException(nameof(options.RemoteEndPoint));
-            }
+            ArgumentNullException.ThrowIfNull(options.RemoteEndPoint, nameof(options.RemoteEndPoint));
 
             _remoteEndPoint = options.RemoteEndPoint;
             _configuration = SafeMsQuicConfigurationHandle.Create(options);

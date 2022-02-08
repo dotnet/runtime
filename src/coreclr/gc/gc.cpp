@@ -36106,6 +36106,8 @@ gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
     if (child_object_gen < current_gen)
     {
         cg_pointers_found++;
+        dprintf (4, ("cg pointer %Ix found, %Id so far",
+                     (size_t)*poo, cg_pointers_found ));
     }
 #else //USE_REGIONS
     assert (condemned_gen == -1);
@@ -36431,11 +36433,16 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
         {
             if (foundp && (cg_pointers_found == 0))
             {
+#ifndef USE_REGIONS
+                // in the segment case, need to recompute end_card so we don't clear cards
+                // for the next generation
+                end_card = card_of (end);
+#endif
                 dprintf(3,(" Clearing cards [%Ix, %Ix[ ", (size_t)card_address(card),
-                           (size_t)end));
-                clear_cards (card, card_of (end));
-                n_card_set -= (card_of (end) - card);
-                total_cards_cleared += (card_of (end) - card);
+                            (size_t)card_address(end_card)));
+                clear_cards (card, end_card);
+                n_card_set -= (end_card - card);
+                total_cards_cleared += (end_card - card);
             }
             n_eph += cg_pointers_found;
             cg_pointers_found = 0;

@@ -49,14 +49,8 @@ namespace System.Diagnostics.Eventing.Reader
         {
         }
 
-        public EventLogWatcher(EventLogQuery eventQuery, EventBookmark bookmark, bool readExistingEvents)
+        public EventLogWatcher(EventLogQuery eventQuery!!, EventBookmark bookmark, bool readExistingEvents)
         {
-
-            if (eventQuery == null)
-            {
-                throw new ArgumentNullException(nameof(eventQuery));
-            }
-
             if (bookmark != null)
             {
                 readExistingEvents = false;
