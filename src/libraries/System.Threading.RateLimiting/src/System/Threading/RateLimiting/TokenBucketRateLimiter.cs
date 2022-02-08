@@ -124,13 +124,13 @@ namespace System.Threading.RateLimiting
                     }
                 }
 
-                WrappedTCS tcs = new WrappedTCS(tokenCount, this);
+                CancelQueueState tcs = new CancelQueueState(tokenCount, this, cancellationToken);
                 CancellationTokenRegistration ctr = default;
                 if (cancellationToken.CanBeCanceled)
                 {
                     ctr = cancellationToken.Register(static obj =>
                     {
-                        ((WrappedTCS)obj!).TryCancel();
+                        ((CancelQueueState)obj!).TrySetCanceled();
                     }, tcs);
                 }
 
@@ -382,26 +382,31 @@ namespace System.Threading.RateLimiting
             public CancellationTokenRegistration CancellationTokenRegistration { get; }
         }
 
-        private class WrappedTCS : TaskCompletionSource<RateLimitLease>
+        private class CancelQueueState : TaskCompletionSource<RateLimitLease>
         {
-            private readonly int TokenCount;
-            private readonly TokenBucketRateLimiter Limiter;
+            private readonly int _tokenCount;
+            private readonly TokenBucketRateLimiter _limiter;
+            private readonly CancellationToken _cancellationToken;
 
-            public WrappedTCS(int tokenCount, TokenBucketRateLimiter limiter) : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            public CancelQueueState(int tokenCount, TokenBucketRateLimiter limiter, CancellationToken cancellationToken)
+                : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
-                TokenCount = tokenCount;
-                Limiter = limiter;
+                _tokenCount = tokenCount;
+                _limiter = limiter;
+                _cancellationToken = cancellationToken;
             }
 
-            public void TryCancel()
+            public new bool TrySetCanceled()
             {
-                if (TrySetException(new OperationCanceledException()))
+                if (TrySetCanceled(_cancellationToken))
                 {
-                    lock (Limiter.Lock)
+                    lock (_limiter.Lock)
                     {
-                        Limiter._queueCount -= TokenCount;
+                        _limiter._queueCount -= _tokenCount;
                     }
+                    return true;
                 }
+                return false;
             }
         }
     }
