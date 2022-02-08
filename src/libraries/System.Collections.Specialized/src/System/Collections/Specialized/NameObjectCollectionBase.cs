@@ -363,13 +363,8 @@ namespace System.Collections.Specialized
             }
         }
 
-        void ICollection.CopyTo(Array array, int index)
+        void ICollection.CopyTo(Array array!!, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
-
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_MultiRank, nameof(array));
@@ -434,13 +429,9 @@ namespace System.Collections.Specialized
         ///    <para>Returns an array of the specified type containing
         ///       all the values in the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
-        protected object?[] BaseGetAllValues(Type type)
+        protected object?[] BaseGetAllValues(Type type!!)
         {
             int n = _entriesArray.Count;
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
             object?[] allValues = (object?[])Array.CreateInstance(type, n);
 
             for (int i = 0; i < n; i++)
@@ -601,13 +592,8 @@ namespace System.Collections.Specialized
                 }
             }
 
-            void ICollection.CopyTo(Array array, int index)
+            void ICollection.CopyTo(Array array!!, int index)
             {
-                if (array == null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
-
                 if (array.Rank != 1)
                 {
                     throw new ArgumentException(SR.Arg_MultiRank, nameof(array));

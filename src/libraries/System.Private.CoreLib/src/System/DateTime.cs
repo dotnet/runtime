@@ -232,11 +232,8 @@ namespace System
         // Constructs a DateTime from a given year, month, day, hour,
         // minute, and second for the specified calendar.
         //
-        public DateTime(int year, int month, int day, int hour, int minute, int second, Calendar calendar)
+        public DateTime(int year, int month, int day, int hour, int minute, int second, Calendar calendar!!)
         {
-            if (calendar == null)
-                throw new ArgumentNullException(nameof(calendar));
-
             if (second != 60 || !s_systemSupportsLeapSeconds)
             {
                 _dateData = calendar.ToDateTime(year, month, day, hour, minute, second, 0).UTicks;
@@ -294,11 +291,8 @@ namespace System
         // Constructs a DateTime from a given year, month, day, hour,
         // minute, and second for the specified calendar.
         //
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar)
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar!!)
         {
-            if (calendar == null)
-                throw new ArgumentNullException(nameof(calendar));
-
             if (second != 60 || !s_systemSupportsLeapSeconds)
             {
                 _dateData = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
@@ -311,10 +305,8 @@ namespace System
             }
         }
 
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, DateTimeKind kind)
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar!!, DateTimeKind kind)
         {
-            if (calendar == null)
-                throw new ArgumentNullException(nameof(calendar));
             if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 

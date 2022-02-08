@@ -138,10 +138,10 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(false, "This constructor should not be called.");
         }
 
-        internal JsonTypeInfo(Type type, JsonSerializerOptions options, bool dummy)
+        internal JsonTypeInfo(Type type, JsonSerializerOptions options!!, bool dummy)
         {
             Type = type;
-            Options = options ?? throw new ArgumentNullException(nameof(options));
+            Options = options;
             // Setting this option is deferred to the initialization methods of the various metadada info types.
             PropertyInfoForTypeInfo = null!;
         }

@@ -19,11 +19,11 @@ namespace Microsoft.Extensions.Hosting.Systemd
         private CancellationTokenRegistration _applicationStartedRegistration;
         private CancellationTokenRegistration _applicationStoppingRegistration;
 
-        public SystemdLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ISystemdNotifier systemdNotifier, ILoggerFactory loggerFactory)
+        public SystemdLifetime(IHostEnvironment environment!!, IHostApplicationLifetime applicationLifetime!!, ISystemdNotifier systemdNotifier!!, ILoggerFactory loggerFactory)
         {
-            Environment = environment ?? throw new ArgumentNullException(nameof(environment));
-            ApplicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
-            SystemdNotifier = systemdNotifier ?? throw new ArgumentNullException(nameof(systemdNotifier));
+            Environment = environment;
+            ApplicationLifetime = applicationLifetime;
+            SystemdNotifier = systemdNotifier;
             Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
         }
 

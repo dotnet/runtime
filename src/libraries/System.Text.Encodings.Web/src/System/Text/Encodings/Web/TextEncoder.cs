@@ -201,16 +201,8 @@ namespace System.Text.Encodings.Web
         /// <param name="value">String whose substring is to be encoded.</param>
         /// <param name="startIndex">The index where the substring starts.</param>
         /// <param name="characterCount">Number of characters in the substring.</param>
-        public virtual void Encode(TextWriter output, string value, int startIndex, int characterCount)
+        public virtual void Encode(TextWriter output!!, string value!!, int startIndex, int characterCount)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
             ValidateRanges(startIndex, characterCount, actualInputLength: value.Length);
 
             int indexOfFirstCharToEncode = FindFirstCharacterToEncode(value.AsSpan(startIndex, characterCount));
@@ -235,16 +227,8 @@ namespace System.Text.Encodings.Web
         /// <param name="value">Array of characters to be encoded.</param>
         /// <param name="startIndex">The index where the substring starts.</param>
         /// <param name="characterCount">Number of characters in the substring.</param>
-        public virtual void Encode(TextWriter output, char[] value, int startIndex, int characterCount)
+        public virtual void Encode(TextWriter output!!, char[] value!!, int startIndex, int characterCount)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
             ValidateRanges(startIndex, characterCount, actualInputLength: value.Length);
 
             int indexOfFirstCharToEncode = FindFirstCharacterToEncode(value.AsSpan(startIndex, characterCount));

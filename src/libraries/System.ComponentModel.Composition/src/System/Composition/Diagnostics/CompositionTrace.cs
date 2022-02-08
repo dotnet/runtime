@@ -12,13 +12,8 @@ namespace System.Composition.Diagnostics
 {
     internal static class CompositionTrace
     {
-        internal static void PartDefinitionResurrected(ComposablePartDefinition definition)
+        internal static void PartDefinitionResurrected(ComposablePartDefinition definition!!)
         {
-            if (definition == null)
-            {
-                throw new ArgumentNullException(nameof(definition));
-            }
-
             if (CompositionTraceSource.CanWriteInformation)
             {
                 CompositionTraceSource.WriteInformation(CompositionTraceId.Rejection_DefinitionResurrected,
@@ -27,19 +22,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        internal static void PartDefinitionRejected(ComposablePartDefinition definition, ChangeRejectedException exception)
+        internal static void PartDefinitionRejected(ComposablePartDefinition definition!!, ChangeRejectedException exception!!)
         {
-            if (definition == null)
-            {
-                throw new ArgumentNullException(nameof(definition));
-            }
-
-            if (exception == null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
-
-
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Rejection_DefinitionRejected,
@@ -49,23 +33,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        internal static void AssemblyLoadFailed(DirectoryCatalog catalog, string fileName, Exception exception)
+        internal static void AssemblyLoadFailed(DirectoryCatalog catalog!!, string fileName!!, Exception exception!!)
         {
-            if (catalog == null)
-            {
-                throw new ArgumentNullException(nameof(catalog));
-            }
-
-            if (exception == null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
-
-            if (fileName == null)
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
-
             if (fileName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(fileName)), nameof(fileName));
@@ -81,13 +50,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        internal static void DefinitionMarkedWithPartNotDiscoverableAttribute(Type type)
+        internal static void DefinitionMarkedWithPartNotDiscoverableAttribute(Type type!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
             if (CompositionTraceSource.CanWriteInformation)
             {
                 CompositionTraceSource.WriteInformation(CompositionTraceId.Discovery_DefinitionMarkedWithPartNotDiscoverableAttribute,
@@ -96,18 +60,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        internal static void DefinitionMismatchedExportArity(Type type, MemberInfo member)
+        internal static void DefinitionMismatchedExportArity(Type type!!, MemberInfo member!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
-
             if (CompositionTraceSource.CanWriteInformation)
             {
                 CompositionTraceSource.WriteInformation(CompositionTraceId.Discovery_DefinitionMismatchedExportArity,
@@ -116,13 +70,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        internal static void DefinitionContainsNoExports(Type type)
+        internal static void DefinitionContainsNoExports(Type type!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
             if (CompositionTraceSource.CanWriteInformation)
             {
                 CompositionTraceSource.WriteInformation(CompositionTraceId.Discovery_DefinitionContainsNoExports,
@@ -131,13 +80,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        internal static void MemberMarkedWithMultipleImportAndImportMany(ReflectionItem item)
+        internal static void MemberMarkedWithMultipleImportAndImportMany(ReflectionItem item!!)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
-
             if (CompositionTraceSource.CanWriteError)
             {
                 CompositionTraceSource.WriteError(CompositionTraceId.Discovery_MemberMarkedWithMultipleImportAndImportMany,

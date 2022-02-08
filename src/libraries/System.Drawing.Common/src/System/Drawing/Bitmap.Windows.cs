@@ -9,13 +9,8 @@ namespace System.Drawing
 {
     public sealed partial class Bitmap
     {
-        public unsafe Bitmap(Stream stream, bool useIcm)
+        public unsafe Bitmap(Stream stream!!, bool useIcm)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream));
 
             IntPtr bitmap = IntPtr.Zero;

@@ -37,11 +37,8 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">if <paramref name="key" /> is not an ECDsa key</exception>
         /// <exception cref="ArgumentNullException">if <paramref name="key" /> is null.</exception>
         [SupportedOSPlatform("windows")]
-        public ECDsaCng(CngKey key)
+        public ECDsaCng(CngKey key!!)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             if (!IsEccAlgorithmGroup(key.AlgorithmGroup))
                 throw new ArgumentException(SR.Cryptography_ArgECDsaRequiresECDsaKey, nameof(key));
 
