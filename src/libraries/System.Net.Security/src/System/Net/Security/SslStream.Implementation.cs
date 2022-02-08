@@ -273,7 +273,7 @@ namespace System.Net.Security
                     throw SslStreamPal.GetException(status);
                 }
 
-                _buffer.EnsureAvailableSpace(InitialBufferSize);
+                _buffer.EnsureAvailableSpace(InitialHandshakeBufferSize);
 
                 ProtocolToken message = null!;
                 do {
@@ -345,7 +345,7 @@ namespace System.Net.Security
 
                 if (!handshakeCompleted)
                 {
-                    _buffer.EnsureAvailableSpace(InitialBufferSize);
+                    _buffer.EnsureAvailableSpace(InitialHandshakeBufferSize);
                 }
 
                 while (!handshakeCompleted)
@@ -747,11 +747,6 @@ namespace System.Net.Security
                 return frameSize;
             }
 
-            // We may have enough space to complete frame, but we may still do extra IO if the frame is small.
-            // So we will attempt larger read - that is trade of with extra copy.
-            // This may be updated at some point based on size of existing chunk, rented buffer and size of 'buffer'.
-            _buffer.EnsureAvailableSpace(Math.Min(frameSize, InitialBufferSize) - _buffer.ActiveLength);
-
             while (_buffer.EncryptedLength < frameSize)
             {
                 // there should be space left to read into
@@ -775,7 +770,7 @@ namespace System.Net.Security
                 {
                     // recalculate frame size if needed e.g. we could not get it before.
                     frameSize = GetFrameSize(_buffer.EncryptedReadOnlySpan);
-                    _buffer.EnsureAvailableSpace(frameSize - _buffer.ActiveLength);
+                    _buffer.EnsureAvailableSpace(frameSize - _buffer.EncryptedLength);
                 }
             }
 
@@ -869,6 +864,8 @@ namespace System.Net.Security
                 }
 
                 Debug.Assert(_buffer.DecryptedLength == 0);
+
+                _buffer.EnsureAvailableSpace(ReadBufferSize - _buffer.ActiveLength);
 
                 while (true)
                 {
