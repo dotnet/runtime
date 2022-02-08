@@ -137,7 +137,15 @@ namespace System.IO.Strategies
             }
         }
 
-        internal override void DisposeInternal(bool disposing) => Dispose(disposing);
+        internal override void DisposeInternal(bool disposing)
+        {
+            Dispose(disposing);
+
+            if (disposing)
+            {
+                GC.SuppressFinalize(this);
+            }
+        }
 
         protected override void Dispose(bool disposing)
         {
