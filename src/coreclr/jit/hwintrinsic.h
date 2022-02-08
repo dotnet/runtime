@@ -608,6 +608,7 @@ struct HWIntrinsicInfo
 
     static bool IsXCNTIntrinsic(NamedIntrinsic id)
     {
+#if defined(FEATURE_HW_INTRINSICS)
         switch (id)
         {
 #ifdef TARGET_XARCH
@@ -629,6 +630,7 @@ struct HWIntrinsicInfo
             default:
                 break;
         }
+#endif // defined(FEATURE_HW_INTRINSICS)
 
         return false;
     }
