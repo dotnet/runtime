@@ -152,13 +152,8 @@ namespace System.Text.Json.Nodes
         }
 
         /// <inheritdoc/>
-        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
+        public override void WriteTo(Utf8JsonWriter writer!!, JsonSerializerOptions? options = null)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             if (_jsonElement.HasValue)
             {
                 _jsonElement.Value.WriteTo(writer);

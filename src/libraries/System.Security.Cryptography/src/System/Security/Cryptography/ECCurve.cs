@@ -103,12 +103,8 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="oidFriendlyName">The Oid friendly name to use.</param>
         /// <returns>An ECCurve representing a named curve.</returns>
-        public static ECCurve CreateFromFriendlyName(string oidFriendlyName)
+        public static ECCurve CreateFromFriendlyName(string oidFriendlyName!!)
         {
-            if (oidFriendlyName == null)
-            {
-                throw new ArgumentNullException(nameof(oidFriendlyName));
-            }
             return ECCurve.CreateFromValueAndName(null, oidFriendlyName);
         }
 
@@ -117,12 +113,8 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="oidValue">The Oid value to use.</param>
         /// <returns>An ECCurve representing a named curve.</returns>
-        public static ECCurve CreateFromValue(string oidValue)
+        public static ECCurve CreateFromValue(string oidValue!!)
         {
-            if (oidValue == null)
-            {
-                throw new ArgumentNullException(nameof(oidValue));
-            }
             return ECCurve.CreateFromValueAndName(oidValue, null);
         }
 

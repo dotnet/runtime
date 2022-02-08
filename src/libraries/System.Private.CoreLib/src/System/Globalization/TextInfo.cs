@@ -90,13 +90,8 @@ namespace System.Globalization
         /// Create a cloned readonly instance or return the input one if it is
         /// readonly.
         /// </summary>
-        public static TextInfo ReadOnly(TextInfo textInfo)
+        public static TextInfo ReadOnly(TextInfo textInfo!!)
         {
-            if (textInfo == null)
-            {
-                throw new ArgumentNullException(nameof(textInfo));
-            }
-
             if (textInfo.IsReadOnly)
             {
                 return textInfo;
@@ -128,10 +123,7 @@ namespace System.Globalization
             get => _listSeparator ??= _cultureData.ListSeparator;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _listSeparator = value;
@@ -172,13 +164,8 @@ namespace System.Globalization
             return Invariant.ChangeCase(c, toUpper: false);
         }
 
-        public string ToLower(string str)
+        public string ToLower(string str!!)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
-
             if (GlobalizationMode.Invariant)
             {
                 return InvariantModeCasing.ToLower(str);
@@ -586,13 +573,8 @@ namespace System.Globalization
             return Invariant.ChangeCase(c, toUpper: true);
         }
 
-        public string ToUpper(string str)
+        public string ToUpper(string str!!)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
-
             if (GlobalizationMode.Invariant)
             {
                 return InvariantModeCasing.ToUpper(str);
@@ -664,13 +646,8 @@ namespace System.Globalization
         /// influence which letter or letters of a "word" are uppercased when titlecasing strings.  For example
         /// "l'arbre" is considered two words in French, whereas "can't" is considered one word in English.
         /// </summary>
-        public unsafe string ToTitleCase(string str)
+        public unsafe string ToTitleCase(string str!!)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
-
             if (str.Length == 0)
             {
                 return str;

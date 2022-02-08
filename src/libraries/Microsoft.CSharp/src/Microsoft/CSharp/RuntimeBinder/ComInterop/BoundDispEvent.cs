@@ -78,7 +78,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private object InPlaceAdd(object handler)
         {
-            Requires.NotNull(handler, nameof(handler));
+            Requires.NotNull(handler);
             VerifyHandler(handler);
 
             ComEventsSink comEventSink = ComEventsSink.FromRuntimeCallableWrapper(_rcw, _sourceIid, true);
@@ -93,7 +93,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// <returns>The original event with handler removed.</returns>
         private object InPlaceSubtract(object handler)
         {
-            Requires.NotNull(handler, nameof(handler));
+            Requires.NotNull(handler);
             VerifyHandler(handler);
 
             ComEventsSink comEventSink = ComEventsSink.FromRuntimeCallableWrapper(_rcw, _sourceIid, false);

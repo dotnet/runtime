@@ -162,11 +162,8 @@ namespace System.Security.AccessControl
             base.ResetAccessRule(rule);
         }
 
-        public bool RemoveAccessRule(FileSystemAccessRule rule)
+        public bool RemoveAccessRule(FileSystemAccessRule rule!!)
         {
-            if (rule == null)
-                throw new ArgumentNullException(nameof(rule));
-
             // If the rule to be removed matches what is there currently then
             // remove it unaltered. That is, don't mask off the Synchronize bit.
             // This is to avoid dangling synchronize bit
@@ -206,11 +203,8 @@ namespace System.Security.AccessControl
             base.RemoveAccessRuleAll(rule);
         }
 
-        public void RemoveAccessRuleSpecific(FileSystemAccessRule rule)
+        public void RemoveAccessRuleSpecific(FileSystemAccessRule rule!!)
         {
-            if (rule == null)
-                throw new ArgumentNullException(nameof(rule));
-
             // If the rule to be removed matches what is there currently then
             // remove it unaltered. That is, don't mask off the Synchronize bit
             // This is to avoid dangling synchronize bit

@@ -198,9 +198,8 @@ namespace System
 
         // Determines whether a String represents true or false.
         //
-        public static bool Parse(string value)
+        public static bool Parse(string value!!)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
             return Parse(value.AsSpan());
         }
 

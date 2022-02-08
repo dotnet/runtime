@@ -62,12 +62,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="optional">Whether the file is optional.</param>
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddIniFile(this IConfigurationBuilder builder, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
+        public static IConfigurationBuilder AddIniFile(this IConfigurationBuilder builder!!, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
             if (string.IsNullOrEmpty(path))
             {
                 throw new ArgumentException(SR.Error_InvalidFilePath, nameof(path));
@@ -98,13 +94,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="stream">The <see cref="Stream"/> to read the ini configuration data from.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddIniStream(this IConfigurationBuilder builder, Stream stream)
+        public static IConfigurationBuilder AddIniStream(this IConfigurationBuilder builder!!, Stream stream)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
-
             return builder.Add<IniStreamConfigurationSource>(s => s.Stream = stream);
         }
 

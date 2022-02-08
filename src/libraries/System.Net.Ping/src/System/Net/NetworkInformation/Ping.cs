@@ -42,10 +42,7 @@ namespace System.Net.NetworkInformation
         private void CheckArgs(int timeout, byte[] buffer, PingOptions? options)
         {
             CheckDisposed();
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
 
             if (buffer.Length > MaxBufferSize)
             {
@@ -62,10 +59,7 @@ namespace System.Net.NetworkInformation
         {
             CheckArgs(timeout, buffer, options);
 
-            if (address == null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
+            ArgumentNullException.ThrowIfNull(address);
 
             // Check if address family is installed.
             TestIsIpSupported(address);

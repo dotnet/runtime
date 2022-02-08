@@ -195,11 +195,8 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="reader">a <see cref="BinaryReader"/> pointing to a <see cref="ClaimsIdentity"/>.</param>
         /// <exception cref="ArgumentNullException">if 'reader' is null.</exception>
-        public ClaimsIdentity(BinaryReader reader)
+        public ClaimsIdentity(BinaryReader reader!!)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             Initialize(reader);
         }
 
@@ -208,13 +205,8 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="other"><see cref="ClaimsIdentity"/> to copy.</param>
         /// <exception cref="ArgumentNullException">if 'other' is null.</exception>
-        protected ClaimsIdentity(ClaimsIdentity other)
+        protected ClaimsIdentity(ClaimsIdentity other!!)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
-
             if (other._actor != null)
             {
                 _actor = other._actor.Clone();
@@ -417,13 +409,8 @@ namespace System.Security.Claims
         /// <param name="claim">the <see cref="Claim"/>add.</param>
         /// <remarks>If <see cref="Claim.Subject"/> != this, then Claim.Clone(this) is called before the claim is added.</remarks>
         /// <exception cref="ArgumentNullException">if 'claim' is null.</exception>
-        public virtual void AddClaim(Claim claim)
+        public virtual void AddClaim(Claim claim!!)
         {
-            if (claim == null)
-            {
-                throw new ArgumentNullException(nameof(claim));
-            }
-
             if (object.ReferenceEquals(claim.Subject, this))
             {
                 _instanceClaims.Add(claim);
@@ -440,13 +427,8 @@ namespace System.Security.Claims
         /// <param name="claims">Enumeration of claims to add.</param>
         /// <remarks>Each claim is examined and if <see cref="Claim.Subject"/> != this, then Claim.Clone(this) is called before the claim is added.</remarks>
         /// <exception cref="ArgumentNullException">if 'claims' is null.</exception>
-        public virtual void AddClaims(IEnumerable<Claim?> claims)
+        public virtual void AddClaims(IEnumerable<Claim?> claims!!)
         {
-            if (claims == null)
-            {
-                throw new ArgumentNullException(nameof(claims));
-            }
-
             foreach (Claim? claim in claims)
             {
                 if (claim == null)
@@ -557,13 +539,8 @@ namespace System.Security.Claims
         /// <param name="match">The function that performs the matching logic.</param>
         /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual IEnumerable<Claim> FindAll(Predicate<Claim> match)
+        public virtual IEnumerable<Claim> FindAll(Predicate<Claim> match!!)
         {
-            if (match == null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
-
             foreach (Claim claim in Claims)
             {
                 if (match(claim))
@@ -580,13 +557,8 @@ namespace System.Security.Claims
         /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>
         /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
-        public virtual IEnumerable<Claim> FindAll(string type)
+        public virtual IEnumerable<Claim> FindAll(string type!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
             foreach (Claim claim in Claims)
             {
                 if (claim != null)
@@ -605,13 +577,8 @@ namespace System.Security.Claims
         /// <param name="match">The function that performs the matching logic.</param>
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual Claim? FindFirst(Predicate<Claim> match)
+        public virtual Claim? FindFirst(Predicate<Claim> match!!)
         {
-            if (match == null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
-
             foreach (Claim claim in Claims)
             {
                 if (match(claim))
@@ -630,13 +597,8 @@ namespace System.Security.Claims
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
         /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
-        public virtual Claim? FindFirst(string type)
+        public virtual Claim? FindFirst(string type!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
             foreach (Claim claim in Claims)
             {
                 if (claim != null)
@@ -657,13 +619,8 @@ namespace System.Security.Claims
         /// <param name="match">The function that performs the matching logic.</param>
         /// <returns>true if a claim is found, false otherwise.</returns>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual bool HasClaim(Predicate<Claim> match)
+        public virtual bool HasClaim(Predicate<Claim> match!!)
         {
-            if (match == null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
-
             foreach (Claim claim in Claims)
             {
                 if (match(claim))
@@ -684,18 +641,8 @@ namespace System.Security.Claims
         /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase for Claim.Type, StringComparison.Ordinal for Claim.Value.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         /// <exception cref="ArgumentNullException">if 'value' is null.</exception>
-        public virtual bool HasClaim(string type, string value)
+        public virtual bool HasClaim(string type!!, string value!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             foreach (Claim claim in Claims)
             {
                 if (claim != null
@@ -715,13 +662,8 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="reader">a <see cref="BinaryReader"/> pointing to a <see cref="ClaimsIdentity"/>.</param>
         /// <exception cref="ArgumentNullException">if 'reader' is null.</exception>
-        private void Initialize(BinaryReader reader)
+        private void Initialize(BinaryReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             SerializationMask mask = (SerializationMask)reader.ReadInt32();
             int numPropertiesRead = 0;
             int numPropertiesToRead = reader.ReadInt32();
@@ -798,13 +740,8 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="reader">the <see cref="BinaryReader"/>that points at the claim.</param>
         /// <returns>a new <see cref="Claim"/>.</returns>
-        protected virtual Claim CreateClaim(BinaryReader reader)
+        protected virtual Claim CreateClaim(BinaryReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             return new Claim(reader, this);
         }
 
@@ -824,13 +761,8 @@ namespace System.Security.Claims
         /// <param name="writer">the <see cref="BinaryWriter"/> to use for data storage.</param>
         /// <param name="userData">additional data provided by derived type.</param>
         /// <exception cref="ArgumentNullException">if 'writer' is null.</exception>
-        protected virtual void WriteTo(BinaryWriter writer, byte[]? userData)
+        protected virtual void WriteTo(BinaryWriter writer!!, byte[]? userData)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             int numberOfPropertiesWritten = 0;
             var mask = SerializationMask.None;
             if (_authenticationType != null)

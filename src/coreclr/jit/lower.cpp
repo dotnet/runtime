@@ -1640,7 +1640,7 @@ void Lowering::LowerCall(GenTree* node)
     call->ClearOtherRegs();
     LowerArgsForCall(call);
 
-    // note that everything generated from this point on runs AFTER the outgoing args are placed
+    // note that everything generated from this point might run AFTER the outgoing args are placed
     GenTree* controlExpr          = nullptr;
     bool     callWasExpandedEarly = false;
 
@@ -1697,6 +1697,10 @@ void Lowering::LowerCall(GenTree* node)
         }
     }
 
+    // Indirect calls should always go through GenTreeCall::gtCallAddr and
+    // should never have a control expression as well.
+    assert((call->gtCallType != CT_INDIRECT) || (controlExpr == nullptr));
+
     if (call->IsTailCallViaJitHelper())
     {
         // Either controlExpr or gtCallAddr must contain real call target.
@@ -1719,40 +1723,17 @@ void Lowering::LowerCall(GenTree* node)
         JITDUMP("results of lowering call:\n");
         DISPRANGE(controlExprRange);
 
-        GenTree* insertionPoint = call;
-        if (!call->IsTailCallViaJitHelper())
-        {
-            // The controlExpr should go before the gtCallCookie and the gtCallAddr, if they exist
-            //
-            // TODO-LIR: find out what's really required here, as this is currently a tree order
-            // dependency.
-            if (call->gtCallType == CT_INDIRECT)
-            {
-                bool isClosed = false;
-                if (call->gtCallCookie != nullptr)
-                {
-#ifdef DEBUG
-                    GenTree* firstCallAddrNode = BlockRange().GetTreeRange(call->gtCallAddr, &isClosed).FirstNode();
-                    assert(isClosed);
-                    assert(call->gtCallCookie->Precedes(firstCallAddrNode));
-#endif // DEBUG
-
-                    insertionPoint = BlockRange().GetTreeRange(call->gtCallCookie, &isClosed).FirstNode();
-                    assert(isClosed);
-                }
-                else if (call->gtCallAddr != nullptr)
-                {
-                    insertionPoint = BlockRange().GetTreeRange(call->gtCallAddr, &isClosed).FirstNode();
-                    assert(isClosed);
-                }
-            }
-        }
-
         ContainCheckRange(controlExprRange);
-        BlockRange().InsertBefore(insertionPoint, std::move(controlExprRange));
 
+        BlockRange().InsertBefore(call, std::move(controlExprRange));
         call->gtControlExpr = controlExpr;
     }
+
+    if (comp->opts.IsCFGEnabled())
+    {
+        LowerCFGCall(call);
+    }
+
     if (call->IsFastTailCall())
     {
         // Lower fast tail call can introduce new temps to set up args correctly for Callee.
@@ -2304,6 +2285,295 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
 #endif // PROFILING_SUPPORTED
 
     return result;
+}
+
+//------------------------------------------------------------------------
+// LowerCFGCall: Potentially lower a call to use control-flow guard. This
+// expands indirect calls into either a validate+call sequence or to a dispatch
+// helper taking the original target in a special register.
+//
+// Arguments:
+//    call         -  The call node
+//
+void Lowering::LowerCFGCall(GenTreeCall* call)
+{
+    assert(!call->IsHelperCall(comp, CORINFO_HELP_DISPATCH_INDIRECT_CALL));
+    if (call->IsHelperCall(comp, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
+    {
+        return;
+    }
+
+    GenTree* callTarget = call->gtCallType == CT_INDIRECT ? call->gtCallAddr : call->gtControlExpr;
+    if ((callTarget == nullptr) || callTarget->IsIntegralConst())
+    {
+        // This is a direct call, no CFG check is necessary.
+        return;
+    }
+
+    CFGCallKind cfgKind = call->GetCFGCallKind();
+
+    switch (cfgKind)
+    {
+        case CFGCallKind::ValidateAndCall:
+        {
+            // To safely apply CFG we need to generate a very specific pattern:
+            // in particular, it is a safety issue to allow the JIT to reload
+            // the call target from memory between calling
+            // CORINFO_HELP_VALIDATE_INDIRECT_CALL and the target. This is
+            // something that would easily occur in debug codegen if we
+            // produced high-level IR. Instead we will use a GT_PHYSREG node
+            // to get the target back from the register that contains the target.
+            //
+            // Additionally, the validator does not preserve all arg registers,
+            // so we have to move all GT_PUTARG_REG nodes that would otherwise
+            // be trashed ahead. The JIT also has an internal invariant that
+            // once GT_PUTARG nodes start to appear in LIR, the call is coming
+            // up. To avoid breaking this invariant we move _all_ GT_PUTARG
+            // nodes (in particular, GC info reporting relies on this).
+            //
+            // To sum up, we end up transforming
+            //
+            // ta... = <early args>
+            // tb... = <late args>
+            // tc = callTarget
+            // GT_CALL tc, ta..., tb...
+            //
+            // into
+            //
+            // ta... = <early args> (without GT_PUTARG_* nodes)
+            // tb = callTarget
+            // GT_CALL CORINFO_HELP_VALIDATE_INDIRECT_CALL, tb
+            // tc = GT_PHYSREG REG_VALIDATE_INDIRECT_CALL_ADDR (preserved by helper)
+            // td = <moved GT_PUTARG_* nodes>
+            // GT_CALL tb, ta..., td..
+            //
+
+            GenTree* regNode = PhysReg(REG_VALIDATE_INDIRECT_CALL_ADDR, TYP_I_IMPL);
+            LIR::Use useOfTar;
+            bool     gotUse = BlockRange().TryGetUse(callTarget, &useOfTar);
+            assert(gotUse);
+            useOfTar.ReplaceWith(regNode);
+
+            GenTree* targetPlaceholder = comp->gtNewZeroConNode(callTarget->TypeGet());
+            // Add the call to the validator. Use a placeholder for the target while we
+            // morph, sequence and lower, to avoid redoing that for the actual target.
+            GenTreeCall::Use* args     = comp->gtNewCallArgs(targetPlaceholder);
+            GenTreeCall*      validate = comp->gtNewHelperCallNode(CORINFO_HELP_VALIDATE_INDIRECT_CALL, TYP_VOID, args);
+
+            comp->fgMorphTree(validate);
+
+            LIR::Range validateRange = LIR::SeqTree(comp, validate);
+            GenTree*   validateFirst = validateRange.FirstNode();
+            GenTree*   validateLast  = validateRange.LastNode();
+            // Insert the validator with the call target before the late args.
+            BlockRange().InsertBefore(call, std::move(validateRange));
+
+            // Swap out the target
+            gotUse = BlockRange().TryGetUse(targetPlaceholder, &useOfTar);
+            assert(gotUse);
+            useOfTar.ReplaceWith(callTarget);
+            targetPlaceholder->SetUnusedValue();
+
+            LowerRange(validateFirst, validateLast);
+
+            // Insert the PHYSREG node that we must load right after validation.
+            BlockRange().InsertAfter(validate, regNode);
+            LowerNode(regNode);
+
+            // Finally move all GT_PUTARG_* nodes
+            for (GenTreeCall::Use& use : call->Args())
+            {
+                GenTree* node = use.GetNode();
+                if (!node->IsValue())
+                {
+                    // Non-value nodes in early args are setup nodes for late args.
+                    continue;
+                }
+
+                assert(node->OperIsPutArg() || node->OperIsFieldList());
+                MoveCFGCallArg(call, node);
+            }
+
+            for (GenTreeCall::Use& use : call->LateArgs())
+            {
+                GenTree* node = use.GetNode();
+                assert(node->OperIsPutArg() || node->OperIsFieldList());
+                MoveCFGCallArg(call, node);
+            }
+            break;
+        }
+        case CFGCallKind::Dispatch:
+        {
+#ifdef REG_DISPATCH_INDIRECT_CALL_ADDR
+            // Now insert the call target as an extra argument.
+            //
+            // First append the early placeholder arg
+            GenTreeCall::Use** earlySlot = &call->gtCallArgs;
+            unsigned int       index     = call->gtCallThisArg != nullptr ? 1 : 0;
+            while (*earlySlot != nullptr)
+            {
+                earlySlot = &(*earlySlot)->NextRef();
+                index++;
+            }
+
+            assert(index == call->fgArgInfo->ArgCount());
+            GenTree* placeHolder = comp->gtNewArgPlaceHolderNode(callTarget->TypeGet(), NO_CLASS_HANDLE);
+            placeHolder->gtFlags |= GTF_LATE_ARG;
+            *earlySlot = comp->gtNewCallArgs(placeHolder);
+
+            // Append the late actual arg
+            GenTreeCall::Use** lateSlot  = &call->gtCallLateArgs;
+            unsigned int       lateIndex = 0;
+            while (*lateSlot != nullptr)
+            {
+                lateSlot = &(*lateSlot)->NextRef();
+                lateIndex++;
+            }
+
+            *lateSlot = comp->gtNewCallArgs(callTarget);
+
+            // Add an entry into the arg info
+            regNumber regNum        = REG_DISPATCH_INDIRECT_CALL_ADDR;
+            unsigned  numRegs       = 1;
+            unsigned  byteSize      = TARGET_POINTER_SIZE;
+            unsigned  byteAlignment = TARGET_POINTER_SIZE;
+            bool      isStruct      = false;
+            bool      isFloatHfa    = false;
+            bool      isVararg      = false;
+
+            fgArgTabEntry* entry =
+                call->fgArgInfo->AddRegArg(index, placeHolder, *earlySlot, regNum, numRegs, byteSize, byteAlignment,
+                                           isStruct, isFloatHfa,
+                                           isVararg UNIX_AMD64_ABI_ONLY_ARG(REG_STK) UNIX_AMD64_ABI_ONLY_ARG(0)
+                                               UNIX_AMD64_ABI_ONLY_ARG(0) UNIX_AMD64_ABI_ONLY_ARG(nullptr));
+
+            entry->lateUse = *lateSlot;
+            entry->SetLateArgInx(lateIndex);
+
+            // Lower the newly added args now that call is updated
+            LowerArg(call, &(*earlySlot)->NodeRef());
+            LowerArg(call, &(*lateSlot)->NodeRef());
+
+            // Finally update the call to be a helper call
+            call->gtCallType    = CT_HELPER;
+            call->gtCallMethHnd = comp->eeFindHelper(CORINFO_HELP_DISPATCH_INDIRECT_CALL);
+            call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
+#ifdef FEATURE_READYTORUN
+            call->gtEntryPoint.addr       = nullptr;
+            call->gtEntryPoint.accessType = IAT_VALUE;
+#endif
+
+            // Now relower the call target
+            call->gtControlExpr = LowerDirectCall(call);
+
+            if (call->gtControlExpr != nullptr)
+            {
+                LIR::Range dispatchControlExprRange = LIR::SeqTree(comp, call->gtControlExpr);
+
+                ContainCheckRange(dispatchControlExprRange);
+                BlockRange().InsertBefore(call, std::move(dispatchControlExprRange));
+            }
+#else
+            assert(!"Unexpected CFGCallKind::Dispatch for platform without dispatcher");
+#endif
+            break;
+        }
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// IsInvariantInRange: Check if a node is invariant in the specified range. In
+// other words, can 'node' be moved to right before 'endExclusive' without its
+// computation changing values?
+//
+// Arguments:
+//    node         -  The node.
+//    endExclusive -  The exclusive end of the range to check invariance for.
+//
+bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive)
+{
+    assert(node->Precedes(endExclusive));
+
+    if (node->IsInvariant())
+    {
+        return true;
+    }
+
+    if (!node->IsValue())
+    {
+        return false;
+    }
+
+    if (node->OperIsLocal())
+    {
+        GenTreeLclVarCommon* lcl  = node->AsLclVarCommon();
+        LclVarDsc*           desc = comp->lvaGetDesc(lcl);
+        if (desc->IsAddressExposed())
+        {
+            return false;
+        }
+
+        // Currently, non-address exposed locals have the property that their
+        // use occurs at the user, so no further interference check is
+        // necessary.
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// MoveCFGCallArg: Given a call that will be CFG transformed using the
+// validate+call scheme, and an argument GT_PUTARG_* or GT_FIELD_LIST node,
+// move that node right before the call.
+//
+// Arguments:
+//    call - The call that is being CFG transformed
+//    node - The argument node
+//
+// Remarks:
+//    We can always move the GT_PUTARG_* node further ahead as the side-effects
+//    of these nodes are handled by LSRA. However, the operands of these nodes
+//    are not always safe to move further ahead; for invariant operands, we
+//    move them ahead as well to shorten the lifetime of these values.
+//
+void Lowering::MoveCFGCallArg(GenTreeCall* call, GenTree* node)
+{
+    assert(node->OperIsPutArg() || node->OperIsFieldList());
+
+    if (node->OperIsFieldList())
+    {
+        JITDUMP("Node is a GT_FIELD_LIST; moving all operands\n");
+        for (GenTreeFieldList::Use& operand : node->AsFieldList()->Uses())
+        {
+            assert(operand.GetNode()->OperIsPutArg());
+            MoveCFGCallArg(call, operand.GetNode());
+        }
+    }
+    else
+    {
+        GenTree* operand = node->AsOp()->gtGetOp1();
+        JITDUMP("Checking if we can move operand of GT_PUTARG_* node:\n");
+        DISPTREE(operand);
+        if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsInvariantInRange(operand, call))
+        {
+            JITDUMP("...yes, moving to after validator call\n");
+            BlockRange().Remove(operand);
+            BlockRange().InsertBefore(call, operand);
+        }
+        else
+        {
+            JITDUMP("...no, operand has side effects or is not invariant\n");
+        }
+    }
+
+    JITDUMP("Moving\n");
+    DISPTREE(node);
+    JITDUMP("\n");
+    BlockRange().Remove(node);
+    BlockRange().InsertBefore(call, node);
 }
 
 #ifndef TARGET_64BIT
@@ -3693,10 +3963,6 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 {
     noway_assert(call->gtCallType == CT_USER_FUNC || call->gtCallType == CT_HELPER);
 
-    // Don't support tail calling helper methods.
-    // But we might encounter tail calls dispatched via JIT helper appear as a tail call to helper.
-    noway_assert(!call->IsTailCall() || call->IsTailCallViaJitHelper() || call->gtCallType == CT_USER_FUNC);
-
     // Non-virtual direct/indirect calls: Work out if the address of the
     // call is known at JIT time.  If not it is either an indirect call
     // or the address must be accessed via an single/double indirection.
@@ -4851,7 +5117,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
             // Skip inserting the indirection node to load the address that is already
             // computed in the VSD stub arg register as a hidden parameter. Instead during the
             // codegen, just load the call target from there.
-            shouldOptimizeVirtualStubCall = true;
+            shouldOptimizeVirtualStubCall = !comp->opts.IsCFGEnabled();
 #endif
 
             if (!shouldOptimizeVirtualStubCall)

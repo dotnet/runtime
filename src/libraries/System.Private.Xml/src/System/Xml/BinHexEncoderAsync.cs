@@ -7,12 +7,8 @@ namespace System.Xml
 {
     internal static partial class BinHexEncoder
     {
-        internal static async Task EncodeAsync(byte[] buffer, int index, int count, XmlWriter writer)
+        internal static async Task EncodeAsync(byte[] buffer!!, int index, int count, XmlWriter writer)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));

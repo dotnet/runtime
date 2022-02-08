@@ -33,18 +33,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        public static void Registration_MemberExportConventionOverridden(Type type, MemberInfo member)
+        public static void Registration_MemberExportConventionOverridden(Type type!!, MemberInfo member!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
-
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_MemberExportConventionOverridden,
@@ -53,18 +43,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        public static void Registration_MemberImportConventionOverridden(Type type, MemberInfo member)
+        public static void Registration_MemberImportConventionOverridden(Type type!!, MemberInfo member!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
-
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_MemberImportConventionOverridden,
@@ -73,18 +53,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        public static void Registration_OnSatisfiedImportNotificationOverridden(Type type, MemberInfo member)
+        public static void Registration_OnSatisfiedImportNotificationOverridden(Type type!!, MemberInfo member!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
-
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_OnSatisfiedImportNotificationOverridden,
@@ -93,13 +63,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        public static void Registration_PartCreationConventionOverridden(Type type)
+        public static void Registration_PartCreationConventionOverridden(Type type!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_PartCreationConventionOverridden,
@@ -108,18 +73,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        public static void Registration_MemberImportConventionMatchedTwice(Type type, MemberInfo member)
+        public static void Registration_MemberImportConventionMatchedTwice(Type type!!, MemberInfo member!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
-
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_MemberImportConventionMatchedTwice,
@@ -128,13 +83,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        public static void Registration_PartMetadataConventionOverridden(Type type)
+        public static void Registration_PartMetadataConventionOverridden(Type type!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_PartMetadataConventionOverridden,
@@ -143,18 +93,8 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        public static void Registration_ParameterImportConventionOverridden(ParameterInfo parameter, ConstructorInfo constructor)
+        public static void Registration_ParameterImportConventionOverridden(ParameterInfo parameter!!, ConstructorInfo constructor!!)
         {
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
-
-            if (constructor == null)
-            {
-                throw new ArgumentNullException(nameof(constructor));
-            }
-
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_ParameterImportConventionOverridden,

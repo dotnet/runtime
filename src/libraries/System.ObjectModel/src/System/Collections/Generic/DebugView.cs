@@ -9,9 +9,9 @@ namespace System.Collections.Generic
     {
         private readonly ICollection<T> _collection;
 
-        public CollectionDebugView(ICollection<T> collection)
+        public CollectionDebugView(ICollection<T> collection!!)
         {
-            _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+            _collection = collection;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

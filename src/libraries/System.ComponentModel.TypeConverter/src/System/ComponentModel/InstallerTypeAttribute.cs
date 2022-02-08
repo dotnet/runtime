@@ -17,13 +17,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of the System.Windows.Forms.ComponentModel.InstallerTypeAttribute class.
         /// </summary>
-        public InstallerTypeAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type installerType)
+        public InstallerTypeAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type installerType!!)
         {
-            if (installerType == null)
-            {
-                throw new ArgumentNullException(nameof(installerType));
-            }
-
             _typeName = installerType.AssemblyQualifiedName;
         }
 

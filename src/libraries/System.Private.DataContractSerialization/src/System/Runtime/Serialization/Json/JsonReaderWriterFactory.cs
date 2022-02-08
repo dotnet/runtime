@@ -19,13 +19,8 @@ namespace System.Runtime.Serialization.Json
             return CreateJsonReader(stream, null, quotas, null);
         }
 
-        public static XmlDictionaryReader CreateJsonReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateJsonReader(byte[] buffer!!, XmlDictionaryReaderQuotas quotas)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
             return CreateJsonReader(buffer, 0, buffer.Length, null, quotas, null);
         }
 

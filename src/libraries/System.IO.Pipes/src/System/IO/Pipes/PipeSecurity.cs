@@ -17,37 +17,23 @@ namespace System.IO.Pipes
         internal PipeSecurity(SafePipeHandle safeHandle, AccessControlSections includeSections)
             : base(false, ResourceType.KernelObject, safeHandle, includeSections) { }
 
-        public void AddAccessRule(PipeAccessRule rule)
+        public void AddAccessRule(PipeAccessRule rule!!)
         {
-            if (rule == null)
-                throw new ArgumentNullException(nameof(rule));
-
             base.AddAccessRule(rule);
         }
 
-        public void SetAccessRule(PipeAccessRule rule)
+        public void SetAccessRule(PipeAccessRule rule!!)
         {
-            if (rule == null)
-                throw new ArgumentNullException(nameof(rule));
-
             base.SetAccessRule(rule);
         }
 
-        public void ResetAccessRule(PipeAccessRule rule)
+        public void ResetAccessRule(PipeAccessRule rule!!)
         {
-            if (rule == null)
-                throw new ArgumentNullException(nameof(rule));
-
             base.ResetAccessRule(rule);
         }
 
-        public bool RemoveAccessRule(PipeAccessRule rule)
+        public bool RemoveAccessRule(PipeAccessRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
-
             // If the rule to be removed matches what is there currently then
             // remove it unaltered. That is, don't mask off the Synchronize bit.
             AuthorizationRuleCollection rules = GetAccessRules(true, true, rule.IdentityReference.GetType());
@@ -82,12 +68,8 @@ namespace System.IO.Pipes
             }
         }
 
-        public void RemoveAccessRuleSpecific(PipeAccessRule rule)
+        public void RemoveAccessRuleSpecific(PipeAccessRule rule!!)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException(nameof(rule));
-            }
 
             // If the rule to be removed matches what is there currently then
             // remove it unaltered. That is, don't mask off the Synchronize bit

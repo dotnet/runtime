@@ -50,13 +50,8 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        public AddRequest(string distinguishedName, string objectClass) : this()
+        public AddRequest(string distinguishedName, string objectClass!!) : this()
         {
-            if (objectClass == null)
-            {
-                throw new ArgumentNullException(nameof(objectClass));
-            }
-
             DistinguishedName = distinguishedName;
 
             var objClassAttr = new DirectoryAttribute()
@@ -82,13 +77,8 @@ namespace System.DirectoryServices.Protocols
             Modifications.AddRange(modifications);
         }
 
-        public ModifyRequest(string distinguishedName, DirectoryAttributeOperation operation, string attributeName, params object[] values) : this()
+        public ModifyRequest(string distinguishedName, DirectoryAttributeOperation operation, string attributeName!!, params object[] values) : this()
         {
-            if (attributeName == null)
-            {
-                throw new ArgumentNullException(nameof(attributeName));
-            }
-
             DistinguishedName = distinguishedName;
             var mod = new DirectoryAttributeModification()
             {
@@ -130,12 +120,8 @@ namespace System.DirectoryServices.Protocols
             CompareRequestHelper(distinguishedName, attributeName, value);
         }
 
-        public CompareRequest(string distinguishedName, DirectoryAttribute assertion)
+        public CompareRequest(string distinguishedName, DirectoryAttribute assertion!!)
         {
-            if (assertion == null)
-            {
-                throw new ArgumentNullException(nameof(assertion));
-            }
             if (assertion.Count != 1)
             {
                 throw new ArgumentException(SR.WrongNumValuesCompare);
@@ -144,17 +130,8 @@ namespace System.DirectoryServices.Protocols
             CompareRequestHelper(distinguishedName, assertion.Name, assertion[0]);
         }
 
-        private void CompareRequestHelper(string distinguishedName, string attributeName, object value)
+        private void CompareRequestHelper(string distinguishedName, string attributeName!!, object value!!)
         {
-            if (attributeName == null)
-            {
-                throw new ArgumentNullException(nameof(attributeName));
-            }
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             DistinguishedName = distinguishedName;
             Assertion.Name = attributeName;
             Assertion.Add(value);
