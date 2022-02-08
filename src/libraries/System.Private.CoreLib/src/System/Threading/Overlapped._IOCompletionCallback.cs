@@ -29,7 +29,7 @@ namespace System.Threading
             helper._ioCompletionCallback(helper._errorCode, helper._numBytes, helper._pNativeOverlapped);
         }
 
-        public static void PerformSingleIOCompletionCallback(NativeOverlapped* pNativeOverlapped, uint errorCode, uint numBytes)
+        public static void PerformSingleIOCompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* pNativeOverlapped)
         {
             Debug.Assert(pNativeOverlapped != null);
 

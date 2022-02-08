@@ -12,7 +12,7 @@ namespace System.Threading
     internal sealed partial class PortableThreadPool
     {
         private static readonly int ProcessorsPerPoller =
-            AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.ProcessorsPerPollerThread", 12, false);
+            AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.ProcessorsPerIOPollerThread", 12, false);
 
         private static nint CreateIOCompletionPort()
         {
@@ -133,8 +133,6 @@ namespace System.Threading
                 _thread.UnsafeStart();
             }
 
-            public int QueuedEventCount => _events.Count;
-
             private void Poll()
             {
                 while (
@@ -176,7 +174,7 @@ namespace System.Threading
                     errorCode = Interop.NtDll.RtlNtStatusToDosError((int)ntStatus);
                 }
 
-                _IOCompletionCallback.PerformSingleIOCompletionCallback(e.nativeOverlapped, errorCode, e.bytesTransferred);
+                _IOCompletionCallback.PerformSingleIOCompletionCallback(errorCode, e.bytesTransferred, e.nativeOverlapped);
             }
 
             private readonly struct Event

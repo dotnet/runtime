@@ -413,7 +413,7 @@ namespace System.Threading
         }
 
         private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>
-            _IOCompletionCallback.PerformSingleIOCompletionCallback((NativeOverlapped*)overlappedPtr, 0, 0);
+            _IOCompletionCallback.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
