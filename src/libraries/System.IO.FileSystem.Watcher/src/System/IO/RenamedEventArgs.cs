@@ -18,7 +18,12 @@ namespace System.IO
             : base(changeType, directory, name)
         {
             _oldName = oldName;
-            _oldFullPath = Combine(directory, oldName);
+            _oldFullPath = Path.Join(Path.GetFullPath(directory), oldName);
+
+            if (string.IsNullOrWhiteSpace(oldName))
+            {
+                _oldFullPath = PathInternal.EnsureTrailingSeparator(_oldFullPath);
+            }
         }
 
         /// <devdoc>
