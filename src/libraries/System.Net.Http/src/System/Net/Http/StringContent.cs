@@ -29,14 +29,14 @@ namespace System.Net.Http
         }
 
         public StringContent(string content, Encoding? encoding, string mediaType)
-            : this(content, encoding, new MediaTypeHeaderValue(mediaType, (encoding == null) ? DefaultStringEncoding.WebName : encoding.WebName))
+            : this(content, encoding, new MediaTypeHeaderValue(mediaType, (encoding ?? DefaultStringEncoding).WebName))
         {
         }
 
-        public StringContent(string content, Encoding? encoding, MediaTypeHeaderValue mediaTypeHeaderValue)
+        public StringContent(string content, Encoding? encoding, MediaTypeHeaderValue mediaType)
             : base(GetContentByteArray(content, encoding))
         {
-            Headers.ContentType = mediaTypeHeaderValue;
+            Headers.ContentType = mediaType;
         }
 
         // A StringContent is essentially a ByteArrayContent. We serialize the string into a byte-array in the

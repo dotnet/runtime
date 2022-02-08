@@ -80,7 +80,7 @@ namespace System.Net.Http.Headers
         }
 
         public MediaTypeHeaderValue(string mediaType)
-            : this(mediaType, null)
+            : this(mediaType, charSet: null)
         {
         }
 
