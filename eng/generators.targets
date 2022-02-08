@@ -107,15 +107,5 @@
     </PropertyGroup>
   </Target>
 
-  <!-- System.Text.RegularExpressions -->
-  <Target Name="ConfigureRegexGenerator"
-          Condition="'@(EnabledGenerators)' != '' and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'RegexGenerator'))"
-          DependsOnTargets="ResolveProjectReferences"
-          BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun">
-    <PropertyGroup>
-      <DefineConstants>$(DefineConstants);REGEXGENERATOR_ENABLED</DefineConstants>
-    </PropertyGroup>
-  </Target>
-
   <Import Project="$(LibrariesProjectRoot)System.Runtime.InteropServices/gen/DllImportGenerator/Microsoft.Interop.DllImportGenerator.props" />
 </Project>
