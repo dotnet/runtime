@@ -2384,8 +2384,6 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             bool      isFloatHfa    = false;
             bool      isVararg      = false;
 
-            // TODO: Preallocate space for this? Potentially hard as it is
-            // expensive to know in morph whether a call ends up being indirect.
             fgArgTabEntry* entry =
                 call->fgArgInfo->AddRegArg(index, placeHolder, *earlySlot, regNum, numRegs, byteSize, byteAlignment,
                                            isStruct, isFloatHfa,
