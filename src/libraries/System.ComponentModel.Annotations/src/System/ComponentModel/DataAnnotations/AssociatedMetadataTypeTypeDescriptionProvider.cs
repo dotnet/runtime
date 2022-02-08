@@ -33,14 +33,9 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="System.ArgumentNullException">The value of associatedMetadataType is null.</exception>
         public AssociatedMetadataTypeTypeDescriptionProvider(
             Type type,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type associatedMetadataType)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type associatedMetadataType!!)
             : this(type)
         {
-            if (associatedMetadataType == null)
-            {
-                throw new ArgumentNullException(nameof(associatedMetadataType));
-            }
-
             _associatedMetadataType = associatedMetadataType;
         }
 

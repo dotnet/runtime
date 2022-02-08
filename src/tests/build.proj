@@ -442,7 +442,7 @@
       DependsOnTargets="BuildManagedTestGroups"
       Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__SkipManaged)' != '1' and !$(MonoAot) and !$(MonoFullAot)" />
 
-  <Target Name="BuildManagedTestGroups" DependsOnTargets="RestorePackages;ResolveDisabledProjects">
+  <Target Name="BuildManagedTestGroups" DependsOnTargets="RestorePackages;ResolveDisabledProjects;BuildNativeAotFrameworkObjects">
     <Message Importance="High" Text="$(MsgPrefix)Building managed test components" />
     <!-- Execute msbuild test build in stages - workaround for excessive data retention in MSBuild ConfigCache -->
     <!-- See https://github.com/Microsoft/msbuild/issues/2993 -->
@@ -477,6 +477,9 @@
       <GroupBuildCmd>$(GroupBuildCmd) /nodeReuse:false</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /maxcpucount</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot'">$(GroupBuildCmd) "/p:DefaultBuildAllTarget=BuildNativeAot"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Building managed test group $(__TestGroupToBuild): $(GroupBuildCmd)" />
@@ -557,14 +560,20 @@
       AfterTargets="ManagedBuild"
       Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ($(MonoAot) or $(MonoFullAot))" />
 
-  <Target Name="NativeAotCompileFramework" AfterTargets="CopyDependencyToCoreRoot" Condition="'$(NativeAotMultimodule)' == 'true'">
-    <!-- MSBuild doesn't understand the Checked configuration -->
-    <PropertyGroup>
-      <_OptimizeFlagValue Condition="'$(Configuration)' == 'Checked' or '$(Configuration)' == 'Release'">true</_OptimizeFlagValue>
-    </PropertyGroup>
-    <MSBuild Projects="$(CORE_ROOT)/nativeaot/build/BuildFrameworkNativeObjects.proj"
+  <Target Name="BuildNativeAotFrameworkObjects"
+          Condition="'$(BuildNativeAotFrameworkObjects)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">
+    <ItemGroup>
+      <CreateLibProperty Include="IlcToolsPath=$(IlcToolsPath)" />
+      <CreateLibProperty Include="IlcBuildTasksPath=$(IlcBuildTasksPath)" />
+      <CreateLibProperty Include="IlcSdkPath=$(IlcSdkPath)" />
+      <CreateLibProperty Include="IlcFrameworkPath=$(IlcFrameworkPath)" />
+      <CreateLibProperty Include="FrameworkLibPath=$(IlcSdkPath)" />
+      <CreateLibProperty Include="FrameworkObjPath=$(IntermediateOutputPath)/NativeAOTFX" />
+      <CreateLibProperty Condition="'$(Configuration)' == 'Checked' or '$(Configuration)' == 'Release'" Include="Optimize=true" />
+      <CreateLibProperty Include="NETCoreSdkVersion=6.0.0" />
+    </ItemGroup>
+    <MSBuild Projects="$(CoreCLRBuildIntegrationDir)/BuildFrameworkNativeObjects.proj"
       Targets="CreateLib"
-      Properties="FrameworkLibPath=$(CORE_ROOT)/nativeaot/sdk;FrameworkObjPath=$(BaseIntermediateOutputPath)/NativeAOTFX;IlcPath=$(CORE_ROOT)/nativeaot;Optimize=$(_OptimizeFlagValue);NETCoreSdkVersion=6.0.0" />
+      Properties="@(CreateLibProperty)" />
   </Target>
-
 </Project>

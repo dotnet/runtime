@@ -385,22 +385,16 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType, bool inherit)
+        public override bool IsDefined(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -420,12 +414,10 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types might be removed")]
-        public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
+        public override Type? GetType(
+            string className!!, // throw on null strings regardless of the value of "throwOnError"
+            bool throwOnError, bool ignoreCase)
         {
-            // throw on null strings regardless of the value of "throwOnError"
-            if (className == null)
-                throw new ArgumentNullException(nameof(className));
-
             RuntimeType? retType = null;
             object? keepAlive = null;
             RuntimeModule thisAsLocal = this;
@@ -483,15 +475,9 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Fields might be removed")]
-        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
+        public override FieldInfo? GetField(string name!!, BindingFlags bindingAttr)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (RuntimeType == null)
-                return null;
-
-            return RuntimeType.GetField(name, bindingAttr);
+            return RuntimeType?.GetField(name, bindingAttr);
         }
 
         [RequiresUnreferencedCode("Methods might be removed")]

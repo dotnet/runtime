@@ -1102,12 +1102,8 @@ namespace System.DirectoryServices.ActiveDirectory
             _disposed = true;
         }
 
-        private static void ValidateArgument(DirectoryContext context, string siteName)
+        private static void ValidateArgument(DirectoryContext context!!, string siteName)
         {
-            // basic validation first
-            if (context == null)
-                throw new ArgumentNullException(nameof(context));
-
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
             if ((context.Name == null) && (!context.isRootDomain()))
             {

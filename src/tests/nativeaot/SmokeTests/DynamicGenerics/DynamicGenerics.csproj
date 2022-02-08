@@ -4,22 +4,14 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DisableNativeAotReflectionCompatibility>true</DisableNativeAotReflectionCompatibility>
-    <DebugType>portable</DebugType>
 
     <!-- Look for MULTIMODULE_BUILD #define for the more specific incompatible parts -->
-    <NativeAotMultimoduleIncompatible>true</NativeAotMultimoduleIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <NativeAotProjectLines>
-      <![CDATA[
   <ItemGroup>
     <RdXmlFile Include="rd.xml" />
   </ItemGroup>
-      ]]>
-    </NativeAotProjectLines>
-  </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="*.cs" />
@@ -29,9 +21,5 @@
     <Compile Remove="UniversalConstrainedCalls.cs" />
     <Compile Remove="fieldlayout.cs" />
     <Compile Remove="B279085.cs" />
-
-    <Content Include="rd.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 </Project>

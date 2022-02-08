@@ -196,7 +196,7 @@ namespace System.Threading
                     WaitHandle waitHandle = waitHandles[i];
                     if (waitHandle == null)
                     {
-                        throw new ArgumentNullException("waitHandles[" + i + ']', SR.ArgumentNull_ArrayElement);
+                        throw new ArgumentNullException($"waitHandles[{i}]", SR.ArgumentNull_ArrayElement);
                     }
 
                     SafeWaitHandle safeWaitHandle = waitHandle._waitHandle ??
@@ -238,13 +238,8 @@ namespace System.Threading
             }
         }
 
-        private static int WaitMultiple(WaitHandle[] waitHandles, bool waitAll, int millisecondsTimeout)
+        private static int WaitMultiple(WaitHandle[] waitHandles!!, bool waitAll, int millisecondsTimeout)
         {
-            if (waitHandles == null)
-            {
-                throw new ArgumentNullException(nameof(waitHandles), SR.ArgumentNull_Waithandles);
-            }
-
             return WaitMultiple(new ReadOnlySpan<WaitHandle>(waitHandles), waitAll, millisecondsTimeout);
         }
 
@@ -353,16 +348,8 @@ namespace System.Threading
             return waitResult;
         }
 
-        private static bool SignalAndWait(WaitHandle toSignal, WaitHandle toWaitOn, int millisecondsTimeout)
+        private static bool SignalAndWait(WaitHandle toSignal!!, WaitHandle toWaitOn!!, int millisecondsTimeout)
         {
-            if (toSignal == null)
-            {
-                throw new ArgumentNullException(nameof(toSignal));
-            }
-            if (toWaitOn == null)
-            {
-                throw new ArgumentNullException(nameof(toWaitOn));
-            }
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);

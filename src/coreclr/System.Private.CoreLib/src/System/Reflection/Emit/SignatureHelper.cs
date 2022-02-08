@@ -167,14 +167,8 @@ namespace System.Reflection.Emit
             return sigHelp;
         }
 
-        internal static SignatureHelper GetTypeSigToken(Module module, Type type)
+        internal static SignatureHelper GetTypeSigToken(Module module!!, Type type!!)
         {
-            if (module == null)
-                throw new ArgumentNullException(nameof(module));
-
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             return new SignatureHelper(module, type);
         }
         #endregion
@@ -308,8 +302,7 @@ namespace System.Reflection.Emit
                 {
                     Type t = requiredCustomModifiers[i];
 
-                    if (t == null)
-                        throw new ArgumentNullException(nameof(requiredCustomModifiers));
+                    ArgumentNullException.ThrowIfNull(t, nameof(requiredCustomModifiers));
 
                     if (t.HasElementType)
                         throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(requiredCustomModifiers));
@@ -746,11 +739,8 @@ namespace System.Reflection.Emit
             AddArgument(clsArgument, null, null);
         }
 
-        public void AddArgument(Type argument, bool pinned)
+        public void AddArgument(Type argument!!, bool pinned)
         {
-            if (argument == null)
-                throw new ArgumentNullException(nameof(argument));
-
             IncrementArgCounts();
             AddOneArgTypeHelper(argument, pinned);
         }
@@ -777,8 +767,7 @@ namespace System.Reflection.Emit
             if (m_sigDone)
                 throw new ArgumentException(SR.Argument_SigIsFinalized);
 
-            if (argument == null)
-                throw new ArgumentNullException(nameof(argument));
+            ArgumentNullException.ThrowIfNull(argument);
 
             IncrementArgCounts();
 

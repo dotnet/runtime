@@ -15,7 +15,7 @@ namespace System.Reflection.Tests
             StructLayoutAttribute s = t.StructLayoutAttribute;
             Assert.Equal(LayoutKind.Auto, s.Value);
             Assert.Equal(CharSet.Ansi, s.CharSet);
-            Assert.Equal(8, s.Pack);
+            Assert.Equal(0, s.Pack);
             Assert.Equal(0, s.Size);
         }
 
@@ -71,7 +71,7 @@ namespace System.Reflection.Tests
             StructLayoutAttribute s = t.StructLayoutAttribute;
             Assert.Equal(LayoutKind.Sequential, s.Value);
             Assert.Equal(CharSet.Auto, s.CharSet);
-            Assert.Equal(8, s.Pack);  // Not an error: Pack=0 is treated as if it were Pack=8.
+            Assert.Equal(0, s.Pack);
             Assert.Equal(0, s.Size);
         }
 
@@ -149,7 +149,7 @@ namespace System.Reflection.Tests
             StructLayoutAttribute s = t.StructLayoutAttribute;
             Assert.Equal(LayoutKind.Auto, s.Value);
             Assert.Equal(CharSet.Ansi, s.CharSet);
-            Assert.Equal(8, s.Pack);
+            Assert.Equal(0, s.Pack);
             Assert.Equal(0, s.Size);
         }
 

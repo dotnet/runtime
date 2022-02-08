@@ -188,14 +188,11 @@ namespace System.Resources
             _defaultReader = new ResourceReader(stream, _resCache, permitDeserialization);
         }
 #else
-        internal RuntimeResourceSet(IResourceReader reader) :
+        internal RuntimeResourceSet(IResourceReader reader!!) :
             // explicitly do not call IResourceReader constructor since it caches all resources
             // the purpose of RuntimeResourceSet is to lazily load and cache.
             base()
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             _defaultReader = reader as DeserializingResourceReader ?? throw new ArgumentException(SR.Format(SR.NotSupported_WrongResourceReader_Type, reader.GetType()), nameof(reader));
             _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
 
@@ -263,11 +260,8 @@ namespace System.Resources
             return GetObject(key, ignoreCase, false);
         }
 
-        private object? GetObject(string key, bool ignoreCase, bool isString)
+        private object? GetObject(string key!!, bool ignoreCase, bool isString)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             ResourceReader? reader = _defaultReader;
             Dictionary<string, ResourceLocator>? cache = _resCache;
             if (reader is null || cache is null)

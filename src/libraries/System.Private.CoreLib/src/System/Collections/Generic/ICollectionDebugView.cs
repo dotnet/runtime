@@ -9,13 +9,8 @@ namespace System.Collections.Generic
     {
         private readonly ICollection<T> _collection;
 
-        public ICollectionDebugView(ICollection<T> collection)
+        public ICollectionDebugView(ICollection<T> collection!!)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
-
             _collection = collection;
         }
 

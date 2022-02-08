@@ -35,10 +35,7 @@ namespace System.Diagnostics
             get => _target;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 TargetTypeName = value.AssemblyQualifiedName;
                 _target = value;

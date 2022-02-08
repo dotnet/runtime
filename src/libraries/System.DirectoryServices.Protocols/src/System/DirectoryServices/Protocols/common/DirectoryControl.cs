@@ -91,9 +91,9 @@ namespace System.DirectoryServices.Protocols
     {
         internal byte[] _directoryControlValue;
 
-        public DirectoryControl(string type, byte[] value, bool isCritical, bool serverSide)
+        public DirectoryControl(string type!!, byte[] value, bool isCritical, bool serverSide)
         {
-            Type = type ?? throw new ArgumentNullException(nameof(type));
+            Type = type;
 
             if (value != null)
             {
@@ -408,9 +408,9 @@ namespace System.DirectoryServices.Protocols
 
         public VerifyNameControl() : base("1.2.840.113556.1.4.1338", null, true, true) { }
 
-        public VerifyNameControl(string serverName) : this()
+        public VerifyNameControl(string serverName!!) : this()
         {
-            _serverName = serverName ?? throw new ArgumentNullException(nameof(serverName));
+            _serverName = serverName;
         }
 
         public VerifyNameControl(string serverName, int flag) : this(serverName)
@@ -635,13 +635,8 @@ namespace System.DirectoryServices.Protocols
     public class SortRequestControl : DirectoryControl
     {
         private SortKey[] _keys = Array.Empty<SortKey>();
-        public SortRequestControl(params SortKey[] sortKeys) : base("1.2.840.113556.1.4.473", null, true, true)
+        public SortRequestControl(params SortKey[] sortKeys!!) : base("1.2.840.113556.1.4.473", null, true, true)
         {
-            if (sortKeys == null)
-            {
-                throw new ArgumentNullException(nameof(sortKeys));
-            }
-
             for (int i = 0; i < sortKeys.Length; i++)
             {
                 if (sortKeys[i] == null)
@@ -1052,23 +1047,13 @@ namespace System.DirectoryServices.Protocols
             set => List[index] = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        public int Add(DirectoryControl control)
+        public int Add(DirectoryControl control!!)
         {
-            if (control == null)
-            {
-                throw new ArgumentNullException(nameof(control));
-            }
-
             return List.Add(control);
         }
 
-        public void AddRange(DirectoryControl[] controls)
+        public void AddRange(DirectoryControl[] controls!!)
         {
-            if (controls == null)
-            {
-                throw new ArgumentNullException(nameof(controls));
-            }
-
             foreach (DirectoryControl control in controls)
             {
                 if (control == null)
@@ -1080,13 +1065,8 @@ namespace System.DirectoryServices.Protocols
             InnerList.AddRange(controls);
         }
 
-        public void AddRange(DirectoryControlCollection controlCollection)
+        public void AddRange(DirectoryControlCollection controlCollection!!)
         {
-            if (controlCollection == null)
-            {
-                throw new ArgumentNullException(nameof(controlCollection));
-            }
-
             int currentCount = controlCollection.Count;
             for (int i = 0; i < currentCount; i = ((i) + (1)))
             {
@@ -1100,24 +1080,15 @@ namespace System.DirectoryServices.Protocols
 
         public int IndexOf(DirectoryControl value) => List.IndexOf(value);
 
-        public void Insert(int index, DirectoryControl value)
+        public void Insert(int index, DirectoryControl value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             List.Insert(index, value);
         }
 
         public void Remove(DirectoryControl value) => List.Remove(value);
 
-        protected override void OnValidate(object value)
+        protected override void OnValidate(object value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
             if (!(value is DirectoryControl))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidValueType, nameof(DirectoryControl)), nameof(value));

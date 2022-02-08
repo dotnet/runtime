@@ -5,19 +5,12 @@
     <CLRTestPriority>0</CLRTestPriority>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IlcDisableReflection>true</IlcDisableReflection>
     <DefineConstants>$(DefineConstants);VEX_INTRINSICS</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <NativeAotProjectLines>
-      <![CDATA[
   <ItemGroup>
     <IlcArg Include="--instructionset:avx2" />
   </ItemGroup>
-      ]]>
-    </NativeAotProjectLines>
-  </PropertyGroup>
 
   <PropertyGroup>
     <BashCLRTestPreCommands><![CDATA[

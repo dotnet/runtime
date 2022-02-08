@@ -22,10 +22,8 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
-        public ECDsaOpenSsl(SafeEvpPKeyHandle pkeyHandle)
+        public ECDsaOpenSsl(SafeEvpPKeyHandle pkeyHandle!!)
         {
-            if (pkeyHandle == null)
-                throw new ArgumentNullException(nameof(pkeyHandle));
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 

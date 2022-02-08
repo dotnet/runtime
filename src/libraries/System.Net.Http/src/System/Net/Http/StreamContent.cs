@@ -17,23 +17,14 @@ namespace System.Net.Http
         private bool _contentConsumed;
         private long _start;
 
-        public StreamContent(Stream content)
+        public StreamContent(Stream content!!)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
-
             // Indicate that we should use default buffer size by setting size to 0.
             InitializeContent(content, 0);
         }
 
-        public StreamContent(Stream content, int bufferSize)
+        public StreamContent(Stream content!!, int bufferSize)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
             if (bufferSize <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize));

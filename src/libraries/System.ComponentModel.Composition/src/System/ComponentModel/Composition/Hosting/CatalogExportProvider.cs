@@ -22,12 +22,8 @@ namespace System.ComponentModel.Composition.Hosting
         {
             private readonly CatalogExportProvider _outerExportProvider;
 
-            public InnerCatalogExportProvider(CatalogExportProvider outerExportProvider)
+            public InnerCatalogExportProvider(CatalogExportProvider outerExportProvider!!)
             {
-                if (outerExportProvider == null)
-                {
-                    throw new ArgumentNullException(nameof(outerExportProvider));
-                }
                 _outerExportProvider = outerExportProvider;
             }
 
@@ -566,13 +562,8 @@ namespace System.ComponentModel.Composition.Hosting
             DisposePart(exportedValue, catalogPart, atomicComposition);
         }
 
-        private void DisposePart(object? exportedValue, CatalogPart catalogPart, AtomicComposition? atomicComposition)
+        private void DisposePart(object? exportedValue, CatalogPart catalogPart!!, AtomicComposition? atomicComposition)
         {
-            if (catalogPart == null)
-            {
-                throw new ArgumentNullException(nameof(catalogPart));
-            }
-
             if (_isDisposed)
                 return;
 
@@ -620,18 +611,8 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private void PreventPartCollection(object exportedValue, ComposablePart part)
+        private void PreventPartCollection(object exportedValue!!, ComposablePart part!!)
         {
-            if (exportedValue == null)
-            {
-                throw new ArgumentNullException(nameof(exportedValue));
-            }
-
-            if (part == null)
-            {
-                throw new ArgumentNullException(nameof(part));
-            }
-
             using (_lock.LockStateForWrite())
             {
                 List<ComposablePart>? partList;
