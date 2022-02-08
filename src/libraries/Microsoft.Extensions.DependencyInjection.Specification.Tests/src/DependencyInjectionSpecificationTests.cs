@@ -122,6 +122,47 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             }
         }
 
+        [Theory]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Transient)]
+        public void NonSingletonService_WithInjectedProvider_ResolvesScopeProvider(ServiceLifetime lifetime)
+        {
+            // Arrange
+            var collection = new TestServiceCollection();
+            collection.AddScoped<IFakeService, FakeService>();
+            collection.Add(new ServiceDescriptor(typeof(ClassWithServiceProvider), typeof(ClassWithServiceProvider), lifetime));
+            var provider = CreateServiceProvider(collection);
+
+            // Act
+            IFakeService fakeServiceFromScope1 = null;
+            IFakeService otherFakeServiceFromScope1 = null;
+            IFakeService fakeServiceFromScope2 = null;
+            IFakeService otherFakeServiceFromScope2 = null;
+
+            using (var scope1 = provider.CreateScope())
+            {
+                var serviceWithProvider = scope1.ServiceProvider.GetRequiredService<ClassWithServiceProvider>();
+                fakeServiceFromScope1 = serviceWithProvider.ServiceProvider.GetRequiredService<IFakeService>();
+
+                serviceWithProvider = scope1.ServiceProvider.GetRequiredService<ClassWithServiceProvider>();
+                otherFakeServiceFromScope1 = serviceWithProvider.ServiceProvider.GetRequiredService<IFakeService>();
+            }
+
+            using (var scope2 = provider.CreateScope())
+            {
+                var serviceWithProvider = scope2.ServiceProvider.GetRequiredService<ClassWithServiceProvider>();
+                fakeServiceFromScope2 = serviceWithProvider.ServiceProvider.GetRequiredService<IFakeService>();
+
+                serviceWithProvider = scope2.ServiceProvider.GetRequiredService<ClassWithServiceProvider>();
+                otherFakeServiceFromScope2 = serviceWithProvider.ServiceProvider.GetRequiredService<IFakeService>();
+            }
+
+            // Assert
+            Assert.Same(fakeServiceFromScope1, otherFakeServiceFromScope1);
+            Assert.Same(fakeServiceFromScope2, otherFakeServiceFromScope2);
+            Assert.NotSame(fakeServiceFromScope1, fakeServiceFromScope2);
+        }
+
         [Fact]
         public void SingletonServiceCanBeResolvedFromScope()
         {

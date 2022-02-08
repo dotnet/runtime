@@ -584,6 +584,16 @@ int32_t InitializeSignalHandlingCore()
         return 0;
     }
 
+#ifdef HAS_CONSOLE_SIGNALS
+    // Unconditionally register signals for terminal configuration.
+    bool installed = InstallSignalHandler(SIGINT, SA_RESTART);
+    assert(installed);
+    installed = InstallSignalHandler(SIGQUIT, SA_RESTART);
+    assert(installed);
+    installed = InstallSignalHandler(SIGCONT, SA_RESTART);
+    assert(installed);
+#endif
+
     return 1;
 }
 
@@ -612,7 +622,12 @@ void SystemNative_DisablePosixSignalHandling(int signalCode)
     {
         g_hasPosixSignalRegistrations[signalCode - 1] = false;
 
-        if (!(g_consoleTtouHandler && signalCode == SIGTTOU) &&
+        // Don't restore handler when something other than posix handling needs the signal.
+        if (
+#ifdef HAS_CONSOLE_SIGNALS
+            signalCode != SIGINT && signalCode != SIGQUIT && signalCode != SIGCONT &&
+#endif
+            !(g_consoleTtouHandler && signalCode == SIGTTOU) &&
             !(g_sigChldCallback && signalCode == SIGCHLD) &&
             !(g_terminalInvalidationCallback && (signalCode == SIGCONT ||
                                                  signalCode == SIGCHLD ||
