@@ -5,20 +5,20 @@ The following pre-requisites need to be installed for building .NET 6 projects w
 
 # Windows
 
-* Install [Visual Studio 2019](https://visualstudio.microsoft.com/vs/community/), including Desktop development with C++ workload.
+* Install [Visual Studio 2022](https://visualstudio.microsoft.com/vs/community/), including Desktop development with C++ workload.
 
 ## Advanced Alternative: Minimum Visual C++ Build Tools Installation
-If you wish to save disk space and do not need Visual Studio IDE, you may use the [Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019)
-edition instead. First download the [bootstrapper](https://aka.ms/vs/16/release/vs_buildtools.exe) executable.
+If you wish to save disk space and do not need Visual Studio IDE, you may use the [Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)
+edition instead. First download the [bootstrapper](https://aka.ms/vs/17/release/vs_buildtools.exe) executable.
 On Windows 10 version 1803 or later you may use the `curl` tool:
 
 ```cmd
-curl -L https://aka.ms/vs/16/release/vs_buildtools.exe -o vs_buildtools.exe
+curl -L https://aka.ms/vs/17/release/vs_buildtools.exe -o vs_buildtools.exe
 ```
 
 Then launch the bootstrapper passing the installation path and the two required components (requires elevation):
 ```cmd
-vs_buildtools.exe --installPath C:\VS2019 --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 Microsoft.VisualStudio.Component.Windows10SDK.19041 --passive --norestart --nocache
+vs_buildtools.exe --installPath C:\VS2022 --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 Microsoft.VisualStudio.Component.Windows10SDK.19041 --passive --norestart --nocache
 ```
 Alternatively you may launch the bootstrapper without any options and use Visual Studio Installer UI to enable C++ x64/x86 build tools and Windows 10 SDK individual components.
 

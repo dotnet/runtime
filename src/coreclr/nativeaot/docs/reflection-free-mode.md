@@ -1,6 +1,6 @@
 # Reflection-free mode
 
-Reflection-free mode is a mode of the CoreRT compiler and runtime that greatly reduces the functionality of the reflection APIs and brings a couple interesting benefits as a result. The benefits of this mode are:
+Reflection-free mode is a mode of the NativeAOT compiler and runtime that greatly reduces the functionality of the reflection APIs and brings a couple interesting benefits as a result. The benefits of this mode are:
 
 * Greatly reduced size of self contained deployments - a fully self-contained "Hello world" style app compiles to a 1 MB file (on x64) with _no dependencies_.
 * Reduced working set and better code locality - parts of the program are more tightly packed together.
@@ -16,7 +16,7 @@ To enable reflection-free mode in a project that is already using CoreRT, add th
 </PropertyGroup>
 ```
 
-(More switches are documented in the [Optimizing CoreRT](optimizing.md) document.)
+(More switches are documented in the [Optimizing NativeAOT](optimizing.md) document.)
 
 ## What's different at compile time with reflection disabled
 
