@@ -68,6 +68,10 @@ namespace System
         public static bool IsReleaseRuntime => s_isReleaseRuntime.Value;
         public static bool IsDebugRuntime => s_isDebugRuntime.Value;
 
+        // For use as needed on tests that time out when run on a Debug runtime.
+        // Not relevant for timeouts on external activities, such as network timeouts.
+        public static int SlowRuntimeTimeoutModifier = (PlatformDetection.IsDebugRuntime ? 5 : 1);
+
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
 
 #if NETCOREAPP

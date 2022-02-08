@@ -309,7 +309,7 @@ namespace System.Text.RegularExpressions.Tests
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
                 yield return (@"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz");
                 yield return (@"\Aaaaaa\w+zzz\Z", "aaaa", RegexOptions.IgnoreCase, 0, 4, false, string.Empty);
-                if (!RegexHelpers.IsNonBacktracking(engine))
+                //if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     yield return (@"\Aaaaaa\w+zzz\Z", "aaaa", RegexOptions.RightToLeft, 0, 4, false, string.Empty);
                     yield return (@"\Aaaaaa\w+zzzzz\Z", "aaaa", RegexOptions.RightToLeft, 0, 4, false, string.Empty);
