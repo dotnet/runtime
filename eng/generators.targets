@@ -77,7 +77,7 @@
   </ItemGroup>
 
   <Target Name="ConfigureGenerators"
-          DependsOnTargets="ConfigureDllImportGenerator;ConfigureRegexGenerator"
+          DependsOnTargets="ConfigureDllImportGenerator"
           BeforeTargets="CoreCompile" />
 
   <!-- Microsoft.Interop.DllImportGenerator -->
