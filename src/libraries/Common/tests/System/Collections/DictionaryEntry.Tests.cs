@@ -32,7 +32,7 @@ namespace System.Collections.Tests
         public void ToString_FormatsKeyValue(object key, object? value, string expected)
         {
             var entry = new DictionaryEntry(key, value);
-            var result = entry.ToString();
+            string result = entry.ToString();
 
             Assert.Equal(expected, result);
         }
