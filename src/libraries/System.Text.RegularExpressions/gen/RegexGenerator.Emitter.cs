@@ -222,7 +222,7 @@ namespace System.Text.RegularExpressions.Generator
             DescribeExpression(writer, rm.Code.Tree.Root.Child(0), "            // ", rm.Code); // skip implicit root capture
             writer.WriteLine();
 
-            writer.WriteLine($"            protected override void Scan(global::System.Text.RegularExpressions.Regex regex, global::System.ReadOnlySpan<char> text, int textstart, int prevlen, bool quick)");
+            writer.WriteLine($"            protected override void Scan(global::System.ReadOnlySpan<char> text)");
             writer.WriteLine($"            {{");
             writer.Indent += 4;
             EmitScan(writer, rm, id);
@@ -309,68 +309,38 @@ namespace System.Text.RegularExpressions.Generator
 
         private static void EmitScan(IndentedTextWriter writer, RegexMethod rm, string id)
         {
-            EmitPrevLenCheck();
-            writer.WriteLine();
-
-            EmitMainSearchLoop();
-            writer.WriteLine();
-
-            return;
-
-            void EmitPrevLenCheck()
+            using (EmitBlock(writer, "while (true)"))
             {
-                writer.WriteLine("// If previous match was empty or failed, advance by one before matching.");
-                using (EmitBlock(writer, "if (prevlen == 0)"))
+                using (EmitBlock(writer, "if (FindFirstChar(text))"))
                 {
-                    using (EmitBlock(writer, "if (textstart == text.Length)"))
-                    {
-                        writer.WriteLine("base.runmatch = global::System.Text.RegularExpressions.Match.Empty;");
-                        writer.WriteLine("return;");
-                    }
-                    writer.WriteLine();
-                    writer.WriteLine("base.runtextpos++;");
-                }
-            }
-
-            void EmitMainSearchLoop()
-            {
-                using (EmitBlock(writer, "while (true)"))
-                {
-                    using (EmitBlock(writer, "if (FindFirstChar(text))"))
+                    if (rm.MatchTimeout != int.MaxValue)
                     {
                         writer.WriteLine("base.CheckTimeout();");
                         writer.WriteLine();
-
-                        writer.WriteLine("// If we got a match, we're done.");
-                        using (EmitBlock(writer, "if (Go(text))"))
-                        {
-                            using (EmitBlock(writer, "if (quick)"))
-                            {
-                                writer.WriteLine("base.runmatch = null;");
-                            }
-                            writer.WriteLine();
-
-                            writer.WriteLine("return;");
-                        }
-                        writer.WriteLine();
-
-                        writer.WriteLine("// Reset state for another iteration.");
-                        writer.WriteLine("base.runtrackpos = base.runtrack!.Length;");
-                        writer.WriteLine("base.runstackpos = base.runstack!.Length;");
-                        writer.WriteLine("base.runcrawlpos = base.runcrawl!.Length;");
                     }
-                    writer.WriteLine();
 
-                    writer.WriteLine("// We failed to find a match. If we're at the end of the input, then we are done.");
-                    using (EmitBlock(writer, "if (base.runtextpos == text.Length)"))
+                    writer.WriteLine("// If we got a match, we're done.");
+                    using (EmitBlock(writer, "if (Go(text))"))
                     {
-                        writer.WriteLine("base.runmatch = global::System.Text.RegularExpressions.Match.Empty;");
                         writer.WriteLine("return;");
                     }
                     writer.WriteLine();
 
-                    writer.WriteLine("base.runtextpos++;");
+                    writer.WriteLine("// Reset state for another iteration.");
+                    writer.WriteLine("base.runtrackpos = base.runtrack!.Length;");
+                    writer.WriteLine("base.runstackpos = base.runstack!.Length;");
+                    writer.WriteLine("base.runcrawlpos = base.runcrawl!.Length;");
                 }
+                writer.WriteLine();
+
+                writer.WriteLine("// We failed to find a match. If we're at the end of the input, then we are done.");
+                using (EmitBlock(writer, "if (base.runtextpos == text.Length)"))
+                {
+                    writer.WriteLine("return;");
+                }
+                writer.WriteLine();
+
+                writer.WriteLine("base.runtextpos++;");
             }
         }
 

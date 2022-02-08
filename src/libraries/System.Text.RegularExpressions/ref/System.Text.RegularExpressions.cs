@@ -347,7 +347,7 @@ namespace System.Text.RegularExpressions
         protected int Popcrawl() { throw null; }
         protected internal System.Text.RegularExpressions.Match? Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) { throw null; }
         protected internal System.Text.RegularExpressions.Match? Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, System.TimeSpan timeout) { throw null; }
-        protected internal virtual void Scan(System.Text.RegularExpressions.Regex regex, System.ReadOnlySpan<char> text, int textstart, int prevlen, bool quick) { throw null; }
+        protected internal virtual void Scan(System.ReadOnlySpan<char> text) { throw null; }
         protected void TransferCapture(int capnum, int uncapnum, int start, int end) { }
         protected void Uncapture() { }
     }

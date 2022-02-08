@@ -7,7 +7,7 @@ namespace System.Text.RegularExpressions
     {
         private readonly ScanDelegate _scanMethod;
 
-        internal delegate void ScanDelegate(RegexRunner runner, Regex regex, ReadOnlySpan<char> text, int textstart, int prevlen, bool quick);
+        internal delegate void ScanDelegate(RegexRunner runner, ReadOnlySpan<char> text);
 
         public CompiledRegexRunner(ScanDelegate scan, int trackCount)
         {
@@ -15,8 +15,8 @@ namespace System.Text.RegularExpressions
             runtrackcount = trackCount;
         }
 
-        protected internal override void Scan(Regex regex, ReadOnlySpan<char> text, int textstart, int prevlen, bool quick)
-            => _scanMethod(this, regex, text, textstart, prevlen, quick);
+        protected internal override void Scan(ReadOnlySpan<char> text)
+            => _scanMethod(this, text);
 
         protected override void InitTrackCount() { }
     }

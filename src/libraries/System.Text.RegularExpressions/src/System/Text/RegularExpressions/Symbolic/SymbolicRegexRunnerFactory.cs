@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions.Symbolic.Unicode;
 
@@ -83,42 +84,9 @@ namespace System.Text.RegularExpressions.Symbolic
 
             internal Runner(SymbolicRegexMatcher<TSetType> matcher) => _matcher = matcher;
 
-            protected internal override void Scan(Regex regex, ReadOnlySpan<char> text, int textstart, int prevlen, bool quick)
+            protected internal override void Scan(ReadOnlySpan<char> text)
             {
-                // Configure the additional value to "bump" the position along each time we loop around
-                // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
-                // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
-                // by -1 and stop at textbeg.
-                int stoppos = text.Length;
-                if (regex.RightToLeft)
-                {
-                    stoppos = 0;
-                }
-
-                // If previous match was empty or failed, advance by one before matching.
-                if (prevlen == 0)
-                {
-                    if (textstart == stoppos)
-                    {
-                        runmatch = Match.Empty;
-                        return;
-                    }
-
-                    runtextpos += regex.RightToLeft ? -1 : 1;
-                }
-
                 Go(text);
-
-                // If we got a match, we're done.
-                if (runmatch!._matchcount[0] > 0)
-                {
-                    if (quick)
-                    {
-                        runmatch = null;
-                    }
-                }
-
-                return;
             }
 
             private void Go(ReadOnlySpan<char> inputSpan)

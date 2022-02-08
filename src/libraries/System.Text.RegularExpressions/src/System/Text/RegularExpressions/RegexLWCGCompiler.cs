@@ -58,7 +58,7 @@ namespace System.Text.RegularExpressions
             DynamicMethod goMethod = DefineDynamicMethod($"Regex{regexNum}_Go{description}", null, typeof(CompiledRegexRunner), s_paramTypes);
             EmitGo();
 
-            DynamicMethod scanMethod = DefineDynamicMethod($"Regex{regexNum}_Scan{description}", null, typeof(CompiledRegexRunner), new[] { typeof(RegexRunner), typeof(Regex), typeof(ReadOnlySpan<char>), typeof(int), typeof(int), typeof(bool) });
+            DynamicMethod scanMethod = DefineDynamicMethod($"Regex{regexNum}_Scan{description}", null, typeof(CompiledRegexRunner), new[] { typeof(RegexRunner), typeof(ReadOnlySpan<char>) });
             EmitScan(findFirstCharMethod, goMethod);
 
             return new CompiledRegexRunnerFactory(scanMethod, code.TrackCount);

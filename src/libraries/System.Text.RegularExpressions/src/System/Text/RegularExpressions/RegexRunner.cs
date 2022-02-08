@@ -88,7 +88,7 @@ namespace System.Text.RegularExpressions
         protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
             Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
 
-        protected internal virtual void Scan(Regex regex, ReadOnlySpan<char> text, int textstart, int prevlen, bool quick)
+        protected internal virtual void Scan(ReadOnlySpan<char> text)
         {
             string? s = runtext;
             if (text != s)
@@ -97,14 +97,13 @@ namespace System.Text.RegularExpressions
                 runtext = s;
             }
 
-            Match? match = Scan(regex, s, 0, text.Length, textstart, prevlen, quick, regex.internalMatchTimeout);
+            Debug.Assert(runregex != null);
+            Match? match = Scan(runregex, s, 0, text.Length, runtextstart, -1, quick, runregex.internalMatchTimeout);
             runmatch = match;
         }
 
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
-            this.quick = quick;
-
             // Configure the additional value to "bump" the position along each time we loop around
             // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
             // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
@@ -114,17 +113,6 @@ namespace System.Text.RegularExpressions
             {
                 bump = -1;
                 stoppos = textbeg;
-            }
-
-            // If previous match was empty or failed, advance by one before matching.
-            if (prevlen == 0)
-            {
-                if (textstart == stoppos)
-                {
-                    return Match.Empty;
-                }
-
-                runtextpos += bump;
             }
 
             while (true)
@@ -186,7 +174,6 @@ namespace System.Text.RegularExpressions
             // Store remaining arguments into fields now that we're going to start the scan.
             // These are referenced by the derived runner.
             runregex = regex;
-            //runtext = text;
             runtextstart = textstart;
             runtextbeg = textbeg;
             runtextend = textend;

@@ -28,6 +28,7 @@ namespace System.Text.RegularExpressions
         private static readonly FieldInfo s_runstackposField = RegexRunnerField("runstackpos");
         private static readonly FieldInfo s_runcrawlField = RegexRunnerField("runcrawl");
         private static readonly FieldInfo s_runcrawlposField = RegexRunnerField("runcrawlpos");
+        private static readonly FieldInfo s_runregexField = RegexRunnerField("runregex");
 
         private static readonly FieldInfo s_matchMatchCountField = typeof(Match).GetField("_matchcount", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)!;
 
@@ -53,7 +54,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_regexGetRightToLeft = typeof(Regex).GetMethod("get_RightToLeft")!;
         private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
-        private static readonly MethodInfo s_matchGetEmptyMethod = typeof(Match).GetMethod("get_Empty")!;
         private static readonly MethodInfo s_memoryMarshalGetReference = typeof(MemoryMarshal).GetMethod("GetReference", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfChar = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfSpan = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
@@ -3944,6 +3944,7 @@ namespace System.Text.RegularExpressions
         {
             LocalBuilder bump = DeclareInt32();
             LocalBuilder stoppos = DeclareInt32();
+            Label returnLabel = DefineLabel();
 
             Label notRightToLeft = DefineLabel();
             // int bump = 1
@@ -3951,13 +3952,13 @@ namespace System.Text.RegularExpressions
             Stloc(bump);
 
             // int stoppos = text.Length
-            _ilg!.Emit(OpCodes.Ldarga_S, 2);
+            _ilg!.Emit(OpCodes.Ldarga_S, 1);
             Call(s_spanGetLengthMethod);
             Stloc(stoppos);
 
-            // if (regex.RightToLeft)
+            // if (runregex.RightToLeft)
             // {
-            Ldarg_1();
+            Ldthisfld(s_runregexField);
             Callvirt(s_regexGetRightToLeft);
             BrfalseFar(notRightToLeft);
 
@@ -3970,49 +3971,16 @@ namespace System.Text.RegularExpressions
             Stloc(stoppos);
             MarkLabel(notRightToLeft);
 
-            // if (prevlen == 0)
-            // {
-            Label prevelenIsNotZero = DefineLabel();
-            _ilg!.Emit(OpCodes.Ldarg_S, 4);
-            Ldc(0);
-            Ceq();
-            BrfalseFar(prevelenIsNotZero);
-
-            // if (textstart == stoppos)
-            // {
-            Label textstartNotEqualToStoppos = DefineLabel();
-            _ilg!.Emit(OpCodes.Ldarg_3);
-            Ldloc(stoppos);
-            Ceq();
-            BrfalseFar(textstartNotEqualToStoppos);
-
-            // runmatch = Match.Empty;
-            // return;
-            Label returnLabel = DefineLabel();
-            Ldthis();
-            Call(s_matchGetEmptyMethod);
-            Stfld(s_runmatchField);
-            BrFar(returnLabel);
-            MarkLabel(textstartNotEqualToStoppos);
-
-            // runtextpos += bump;
-            Ldthis();
-            Ldthisfld(s_runtextposField);
-            Ldloc(bump);
-            Add();
-            Stfld(s_runtextposField);
-            MarkLabel(prevelenIsNotZero);
-
             // while (true)
             Label whileLoopEnd = DefineLabel();
             Label whileLoopBody = DefineLabel();
             MarkLabel(whileLoopBody);
 
             // if (FindFirstChar(text))
-            Ldthis();
-            _ilg!.Emit(OpCodes.Ldarg_2);
-            Call(findFirstCharMethod);
             Label afterFindFirstCharLabel = DefineLabel();
+            Ldthis();
+            Ldarg_1();
+            Call(findFirstCharMethod);
             BrfalseFar(afterFindFirstCharLabel);
 
             // CheckTimeout();
@@ -4021,31 +3989,19 @@ namespace System.Text.RegularExpressions
 
             // Go(text);
             Ldthis();
-            _ilg!.Emit(OpCodes.Ldarg_2);
+            Ldarg_1();
             Call(goMethod);
 
             // if (runmatch!._matchcount[0] > 0)
+            //   return;
+            Label afterSuccessMatchLabel = DefineLabel();
             Ldthisfld(s_runmatchField);
             _ilg!.Emit(OpCodes.Ldfld, s_matchMatchCountField);
             Ldc(0);
             LdelemI4();
             Ldc(0);
             _ilg!.Emit(OpCodes.Cgt);
-            Label afterSuccessMatchLabel = DefineLabel();
             BrfalseFar(afterSuccessMatchLabel);
-
-            // if (quick)
-            _ilg!.Emit(OpCodes.Ldarg_S, 5);
-            Label afterQuickCheckLabel = DefineLabel();
-            BrfalseFar(afterQuickCheckLabel);
-
-            // runmatch = null;
-            Ldthis();
-            _ilg!.Emit(OpCodes.Ldnull);
-            Stfld(s_runmatchField);
-
-            // return;
-            MarkLabel(afterQuickCheckLabel);
             BrFar(returnLabel);
 
             // runtrackpos = runtrack!.Length;
@@ -4071,18 +4027,14 @@ namespace System.Text.RegularExpressions
             Stfld(s_runcrawlposField);
 
             // if (runtextpos == stoppos)
+            Label incrementRuntextPosLabel = DefineLabel();
             MarkLabel(afterFindFirstCharLabel);
             Ldthisfld(s_runtextposField);
             Ldloc(stoppos);
             Ceq();
-            Label incrementRuntextPosLabel = DefineLabel();
             BrfalseFar(incrementRuntextPosLabel);
 
-            // runmatch = Match.Empty;
             // return;
-            Ldthis();
-            Call(s_matchGetEmptyMethod);
-            Stfld(s_runmatchField);
             BrFar(returnLabel);
 
             // runtextpos += bump

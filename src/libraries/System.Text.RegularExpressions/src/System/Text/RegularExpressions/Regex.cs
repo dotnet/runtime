@@ -383,11 +383,47 @@ namespace System.Text.RegularExpressions
             RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
             try
             {
+                bool skipScan = false;
                 runner.InitializeTimeout(internalMatchTimeout);
                 ReadOnlySpan<char> span = input.AsSpan(beginning, length);
                 runner.InitializeForScan(this, span, 0, span.Length, startat - beginning, quick);
                 runner.InitializeForGo();
-                runner.Scan(this, span, startat - beginning, prevlen, quick);
+
+                int stoppos = RightToLeft ? 0 : span.Length;
+
+                // If previous match was empty or failed, advance by one before matching.
+                if (prevlen == 0)
+                {
+                    if (runner.runtextstart == stoppos)
+                    {
+                        skipScan = true;
+                        runner.runmatch = System.Text.RegularExpressions.Match.Empty;
+                    }
+
+                    runner.runtextpos += RightToLeft ? -1 : 1;
+                }
+
+                if (!skipScan)
+                {
+                    runner.Scan(span);
+
+                    // if we got a match, set runmatch to null if quick is true
+                    if (runner.runmatch!._matchcount[0] > 0)
+                    {
+                        if (quick)
+                        {
+                            runner.runmatch = null;
+                        }
+                    }
+                    else
+                    {
+                        if (runner.runtextpos == stoppos)
+                        {
+                            runner.runmatch = System.Text.RegularExpressions.Match.Empty;
+                        }
+                    }
+                }
+
                 Match? m = runner.runmatch;
                 runner.runmatch = null; // Reset runmatch
                 if (m is not null)
@@ -433,7 +469,7 @@ namespace System.Text.RegularExpressions
                 ReadOnlySpan<char> span = input.Slice(beginning, length);
                 runner.InitializeForScan(this, span, 0, span.Length, startat - beginning, quick);
                 runner.InitializeForGo();
-                runner.Scan(this, span, startat - beginning, prevlen, quick);
+                runner.Scan(span);
                 Match? m = runner.runmatch;
                 runner.runmatch = null; // Reset runmatch
                 return m;
@@ -452,79 +488,89 @@ namespace System.Text.RegularExpressions
             try
             {
                 runner.InitializeTimeout(internalMatchTimeout);
+                int runtextpos = startat;
                 while (true)
                 {
                     runner.InitializeForScan(this, input, 0, input.Length, startat, false);
+                    runner.runtextpos = runtextpos;
                     runner.InitializeForGo();
-                    runner.Scan(this, input, startat, -1, false);
+
+                    int stoppos = RightToLeft ? 0 : input.Length;
+                    runner.Scan(input);
                     Match? m = runner.runmatch;
 
-                    if (m is not null)
+                    // if we got a match, set runmatch to null if quick is true
+                    if (m is not null && m._matchcount[0] > 0)
                     {
-                        if (m._matchcount[0] > 0)
+                        if (m.Text != input)
                         {
-                            if (m.Text != input)
-                                m.Text = input;
-                            if (!reuseMatchObject)
+                            m.Text = input;
+                        }
+
+                        if (!reuseMatchObject)
+                        {
+                            // We're not reusing match objects, so null out our field reference to the instance.
+                            // It'll be recreated the next time one is needed.
+                            runner.runmatch = null;
+                        }
+                        m.Tidy(runner.runtextpos);
+                        if (!callback(ref state, m))
+                        {
+                            // If the callback returns false, we're done.
+                            // Drop reference to text to avoid keeping it alive in a cache.
+                            runner.runtext = null!;
+                            if (reuseMatchObject)
                             {
-                                // We're not reusing match objects, so null out our field reference to the instance.
-                                // It'll be recreated the next time one is needed.
-                                runner.runmatch = null;
+                                // We're reusing the single match instance, so clear out its text as well.
+                                // We don't do this if we're not reusing instances, as in that case we're
+                                // dropping the whole reference to the match, and we no longer own the instance
+                                // having handed it out to the callback.
+                                m.Text = null!;
                             }
-                            m.Tidy(runner.runtextpos);
-                            if (!callback(ref state, m))
+                            return;
+                        }
+
+                        // Now that we've matched successfully, update the starting position to reflect
+                        // the current position, just as Match.NextMatch() would pass in _textpos as textstart.
+                        runtextpos = startat = runner.runtextpos;
+
+
+                        // Reset state for another iteration.
+                        runner.runtrackpos = runner.runtrack!.Length;
+                        runner.runstackpos = runner.runstack!.Length;
+                        runner.runcrawlpos = runner.runcrawl!.Length;
+
+                        if (m.Length == 0)
+                        {
+                            if (runner.runtextpos == stoppos)
                             {
-                                // If the callback returns false, we're done.
                                 // Drop reference to text to avoid keeping it alive in a cache.
                                 runner.runtext = null!;
                                 if (reuseMatchObject)
                                 {
-                                    // We're reusing the single match instance, so clear out its text as well.
-                                    // We don't do this if we're not reusing instances, as in that case we're
-                                    // dropping the whole reference to the match, and we no longer own the instance
-                                    // having handed it out to the callback.
+                                    // See above comment.
                                     m.Text = null!;
                                 }
                                 return;
                             }
 
-                            // Now that we've matched successfully, update the starting position to reflect
-                            // the current position, just as Match.NextMatch() would pass in _textpos as textstart.
-                            runner.runtextstart = startat = runner.runtextpos;
-
-                            // Reset state for another iteration.
-                            runner.runtrackpos = runner.runtrack!.Length;
-                            runner.runstackpos = runner.runstack!.Length;
-                            runner.runcrawlpos = runner.runcrawl!.Length;
-                            if (m.Length == 0)
-                            {
-                                if (runner.runtextpos == input.Length)
-                                {
-                                    // Drop reference to text to avoid keeping it alive in a cache.
-                                    runner.runtext = null!;
-                                    if (reuseMatchObject)
-                                    {
-                                        // See above comment.
-                                        m.Text = null!;
-                                    }
-                                    return;
-                                }
-
-                                runner.runtextpos += ((this.Options & RegexOptions.RightToLeft) > 0) ? -1 : 1;
-                            }
-
-                            // Loop around to perform next match from where we left off.
-                            continue;
+                            runtextpos += RightToLeft ? -1 : 1;
                         }
-                        else
+
+                        // Loop around to perform next match from where we left off.
+                        continue;
+                    }
+                    else
+                    {
+                        // We failed to match at this position.  If we're at the stopping point, we're done.
+                        if (runner.runtextpos == stoppos)
                         {
-                            // if we are at the end of the input, just return.
-                            if (startat == input.Length)
+                            runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
+                            if (runner.runmatch != null)
                             {
-                                runner.runtext = null;
-                                runner.runmatch = null;
-                                return;
+                                runner.runmatch.Text = null!;
                             }
+                            return;
                         }
                     }
                 }

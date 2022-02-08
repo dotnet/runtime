@@ -324,29 +324,18 @@ namespace System.Text.RegularExpressions
 
         private void Backwardnext() => runtextpos += _rightToLeft ? 1 : -1;
 
-        protected internal override void Scan(Regex regex, ReadOnlySpan<char> text, int textstart, int prevlen, bool quick)
+        protected internal override void Scan(ReadOnlySpan<char> text)
         {
             // Configure the additional value to "bump" the position along each time we loop around
             // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
             // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
             // by -1 and stop at textbeg.
             int bump = 1, stoppos = text.Length;
-            if (regex.RightToLeft)
+            Debug.Assert(runregex != null);
+            if (runregex.RightToLeft)
             {
                 bump = -1;
                 stoppos = 0;
-            }
-
-            // If previous match was empty or failed, advance by one before matching.
-            if (prevlen == 0)
-            {
-                if (textstart == stoppos)
-                {
-                    runmatch = Match.Empty;
-                    return;
-                }
-
-                runtextpos += bump;
             }
 
             while (true)
@@ -360,11 +349,6 @@ namespace System.Text.RegularExpressions
                     // If we got a match, we're done.
                     if (runmatch!._matchcount[0] > 0)
                     {
-                        if (quick)
-                        {
-                            runmatch = null;
-                        }
-
                         return;
                     }
 
@@ -376,7 +360,6 @@ namespace System.Text.RegularExpressions
 
                 if (runtextpos == stoppos)
                 {
-                    runmatch = Match.Empty;
                     return;
                 }
 
