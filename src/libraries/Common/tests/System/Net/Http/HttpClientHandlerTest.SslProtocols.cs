@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Net.Security;
 using System.Net.Test.Common;
@@ -294,9 +295,10 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await serverTask;
                     }
-                    catch (Exception e) when (e is IOException || e is AuthenticationException)
+                    catch (Exception e) when (e is IOException || e is AuthenticationException || e is Win32Exception)
                     {
                         // Some SSL implementations simply close or reset connection after protocol mismatch.
+                        // The call may fail if neither of the requested protocols is available
                         // Newer OpenSSL sends Fatal Alert message before closing.
                         return;
                     }
