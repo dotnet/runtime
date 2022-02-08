@@ -19,6 +19,11 @@
 #define strncasecmp _strnicmp
 #endif
 
+#if defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS)
+    #define USE_APPLE_DECOMPRESSION
+    #include <compression.h>
+#endif
+
 static int32_t isLoaded = 0;
 static int32_t isDataSet = 0;
 
@@ -99,53 +104,158 @@ static int32_t load_icu_data(void* pData)
     }
 }
 
+#if defined(USE_APPLE_DECOMPRESSION)
+static int
+ends_with(const char *buf, size_t buf_len, const char *query, size_t query_len)
+{
+    if (query_len > buf_len) {
+        return 0;
+    }
+    return memcmp(buf + buf_len - query_len, query, query_len) == 0;
+}
+
+static char *
+apple_decompress(const char *src_buf, size_t src_len)
+{
+    int cs_init = 0;
+    compression_stream cs = { 0 };
+
+    // Why this magic number? This is the uncompressed size of the mobile
+    // icudt.dat as of 2022-02-05.
+    size_t dst_capacity = 2176304;
+    size_t dst_size = 0;
+    size_t alloc_bytes = sizeof(uint8_t) * dst_capacity;
+    uint8_t *dst_buf = malloc(alloc_bytes);
+    if (dst_buf == NULL) {
+        log_shim_error("apple_decompress: Failed to allocate %zu bytes for the ICU data decompression buffer.", alloc_bytes);
+        goto error;
+    }
+
+    compression_status status = compression_stream_init(&cs, COMPRESSION_STREAM_DECODE, COMPRESSION_LZFSE);
+    if (status == COMPRESSION_STATUS_ERROR) {
+        log_shim_error("apple_decompress: Failed to initialize decompression stream.");
+        goto error;
+    }
+    cs_init = 1;
+    cs.src_ptr = (const uint8_t *) src_buf;
+    cs.src_size = src_len;
+    cs.dst_ptr = dst_buf;
+    cs.dst_size = dst_capacity;
+
+    int flags = 0;
+    while (status == COMPRESSION_STATUS_OK) {
+        size_t old_sz = cs.dst_size;
+        status = compression_stream_process(&cs, flags);
+        if (status == COMPRESSION_STATUS_ERROR) {
+            log_shim_error("apple_decompress: Error while decompressing.");
+            goto error;
+        }
+
+        size_t delta = old_sz - cs.dst_size;
+        dst_size += delta;
+
+        if (cs.dst_size == 0) {
+            size_t old_sz = dst_capacity;
+            size_t new_sz = (dst_capacity * 3) >> 1;
+            uint8_t *next_dst_buf = realloc(dst_buf, new_sz);
+            if (next_dst_buf == NULL) {
+                log_shim_error("apple_decompress: Failed to allocate %zu bytes when resizing decompression buffer.", new_sz);
+                goto error;
+            }
+            dst_buf = next_dst_buf;
+            dst_capacity = new_sz;
+            cs.dst_ptr = dst_buf + old_sz;
+            cs.dst_size = new_sz - old_sz;
+        }
+
+        if (cs.src_size == 0) {
+            flags = COMPRESSION_STREAM_FINALIZE;
+        }
+    }
+    compression_stream_destroy(&cs);
+    return (char *) dst_buf;
+
+error:
+    if (dst_buf != NULL) {
+        free(dst_buf);
+    }
+    if (cs_init) {
+        compression_stream_destroy(&cs);
+    }
+    return NULL;
+}
+#endif
+
 int32_t GlobalizationNative_LoadICUData(const char* path)
 {
     int32_t ret = -1;
-    char* icu_data;
+    char *icu_data = NULL;
 
+    char *file_buf = NULL;
+    long file_buf_size = 0;
+    char *uncompressed_file_buf = NULL;
+
+    int use_lzfse = 0;
+    #if defined(USE_APPLE_DECOMPRESSION)
+    {
+        size_t path_len = strlen(path);
+        use_lzfse = ends_with(path, path_len, ".lzfse", sizeof(".lzfse") - 1);
+    }
+    #endif
     FILE *fp = fopen(path, "rb");
+
     if (fp == NULL) {
         log_shim_error("Unable to load ICU dat file '%s'.", path);
-        return ret;
+        goto error;
     }
 
     if (fseek(fp, 0L, SEEK_END) != 0) {
-        fclose(fp);
         log_shim_error("Unable to determine size of the dat file");
-        return ret;
+        goto error;
     }
 
-    long bufsize = ftell(fp);
+    file_buf_size = ftell(fp);
 
-    if (bufsize == -1) {
-        fclose(fp);
+    if (file_buf_size == -1) {
         log_shim_error("Unable to determine size of the ICU dat file.");
-        return ret;
+        goto error;
     }
 
-    icu_data = malloc(sizeof(char) * (bufsize + 1));
+    file_buf = malloc(sizeof(char) * (file_buf_size + 1));
 
-    if (icu_data == NULL) {
-        fclose(fp);
+    if (file_buf == NULL) {
         log_shim_error("Unable to allocate enough to read the ICU dat file");
-        return ret;
+        goto error;
     }
 
     if (fseek(fp, 0L, SEEK_SET) != 0) {
-        fclose(fp);
         log_shim_error("Unable to seek ICU dat file.");
-        return ret;
+        goto error;
     }
 
-    fread(icu_data, sizeof(char), bufsize, fp);
+    fread(file_buf, sizeof(char), file_buf_size, fp);
     if (ferror( fp ) != 0 ) {
-        fclose(fp);
         log_shim_error("Unable to read ICU dat file");
-        return ret;
+        goto error;
     }
 
     fclose(fp);
+    fp = NULL;
+
+    #if defined(USE_APPLE_DECOMPRESSION)
+    if (use_lzfse) {
+        uncompressed_file_buf = apple_decompress(file_buf, file_buf_size);
+        if (uncompressed_file_buf == NULL) {
+            goto error;
+        }
+        icu_data = uncompressed_file_buf;
+        free(file_buf);
+        file_buf = NULL;
+    }
+    #endif
+    if (icu_data == NULL) {
+        icu_data = file_buf;
+    }
 
     if (load_icu_data(icu_data) == 0) {
         log_shim_error("ICU BAD EXIT %d.", ret);
@@ -153,6 +263,18 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
     }
 
     return GlobalizationNative_LoadICU();
+
+error:
+    if (fp != NULL) {
+        fclose(fp);
+    }
+    if (file_buf != NULL) {
+        free(file_buf);
+    }
+    if (uncompressed_file_buf == NULL) {
+        free(uncompressed_file_buf);
+    }
+    return ret;
 }
 
 const char* GlobalizationNative_GetICUDTName(const char* culture)
