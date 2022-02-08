@@ -11,6 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\src\System.Text.RegularExpressions.csproj" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" />
     <ProjectReference Include="..\..\gen\System.Text.RegularExpressions.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />

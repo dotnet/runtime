@@ -511,14 +511,19 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <_AotInputAssemblies Include="@(_WasmAssembliesInternal)">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
-        <!-- Skip known-huge assembly. This takes over ten minutes on a top end PC to AOT, and consumes over 8GiB RAM in the process. -->
-        <AOT_InternalForceToInterpret Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_WasmAssembliesInternal.FullPath)', '.+Microsoft\.CodeAnalysis\.CSharp\.dll')) ">true</AOT_InternalForceToInterpret>
       </_AotInputAssemblies>
 
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
 
       <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
       <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net7.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Skip known-huge assemblies specified in csproj -->
+      <_AotInputAssemblies Condition="'%(Filename)' != '' and '@(_AotInputAssemblies->Metadata(`Filename`))' != '' and '@(HighAotMemoryUsageAssembly->Metadata(`Filename`))' != ''">
+        <AOT_InternalForceToInterpret>true</AOT_InternalForceToInterpret>
+      </_AotInputAssemblies>
     </ItemGroup>
 
     <PropertyGroup>

@@ -5,6 +5,10 @@
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
   </PropertyGroup>
 
+  <ItemGroup>
+    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
+  </ItemGroup>
+
   <Import Project="Microsoft.Extensions.Logging.Generators.targets"/>
 
   <ItemGroup>
