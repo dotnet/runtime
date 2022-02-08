@@ -142,7 +142,6 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     // Set the caller's assembly to be CoreLib
     DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
-    PEAssembly *pParentAssembly = pCallersAssembly->GetPEAssembly();
 
     // Initialize the AssemblySpec
     AssemblySpec spec;
@@ -168,7 +167,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
         COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
     }
 
-    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pParentAssembly, pAssembly->GetPEImage(), pAssembly));
+    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
     bindOperation.SetResult(pPEAssembly.GetValue());
 
     DomainAssembly *pDomainAssembly = pCurDomain->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);

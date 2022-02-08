@@ -5184,7 +5184,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     noway_assert(elemTyp != TYP_STRUCT || elemStructType != nullptr);
 
     // Fold "cns_str"[cns_index] to ushort constant
-    if (opts.OptimizationEnabled() && asIndex->Arr()->OperIs(GT_CNS_STR) && asIndex->Index()->IsIntCnsFitsInI32())
+    // NOTE: don't do it for empty string, the operation will fail anyway
+    if (opts.OptimizationEnabled() && asIndex->Arr()->OperIs(GT_CNS_STR) &&
+        !asIndex->Arr()->AsStrCon()->IsStringEmptyField() && asIndex->Index()->IsIntCnsFitsInI32())
     {
         const int cnsIndex = static_cast<int>(asIndex->Index()->AsIntConCommon()->IconValue());
         if (cnsIndex >= 0)
@@ -9433,9 +9435,16 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
 
     tree->gtFlags &= ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
 
-    if (tree->OperGet() != GT_CNS_STR)
+    if (!tree->OperIs(GT_CNS_STR))
     {
         return tree;
+    }
+
+    if (tree->AsStrCon()->IsStringEmptyField())
+    {
+        LPVOID         pValue;
+        InfoAccessType iat = info.compCompHnd->emptyStringLiteral(&pValue);
+        return fgMorphTree(gtNewStringLiteralNode(iat, pValue));
     }
 
     // TODO-CQ: Do this for compCurBB->isRunRarely(). Doing that currently will
@@ -9493,6 +9502,7 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
 //
 // Arguments:
 //    obj - the obj node.
+//    destroyNodes -- destroy nodes that are optimized away
 //
 // Return value:
 //    GenTreeLclVar if the obj can be replaced by it, null otherwise.
@@ -9503,7 +9513,7 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
 //    for some platforms does not expect struct `LCL_VAR` as a source, so
 //    it needs more work.
 //
-GenTreeLclVar* Compiler::fgMorphTryFoldObjAsLclVar(GenTreeObj* obj)
+GenTreeLclVar* Compiler::fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroyNodes)
 {
     if (opts.OptimizationEnabled())
     {
@@ -9536,8 +9546,12 @@ GenTreeLclVar* Compiler::fgMorphTryFoldObjAsLclVar(GenTreeObj* obj)
                     lclVar->gtFlags &= ~GTF_DONT_CSE;
                     lclVar->gtFlags |= (obj->gtFlags & GTF_DONT_CSE);
 
-                    DEBUG_DESTROY_NODE(obj);
-                    DEBUG_DESTROY_NODE(addr);
+                    if (destroyNodes)
+                    {
+                        DEBUG_DESTROY_NODE(obj);
+                        DEBUG_DESTROY_NODE(addr);
+                    }
+
                     return lclVar;
                 }
             }
@@ -11407,23 +11421,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             return fgMorphIntoHelperCall(tree, helper, gtNewCallArgs(op1, op2));
 
         case GT_RETURN:
-            // normalize small integer return values
-            if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (op1 != nullptr) && !op1->TypeIs(TYP_VOID) &&
-                fgCastNeeded(op1, info.compRetType))
-            {
-                // Small-typed return values are normalized by the callee
-                op1 = gtNewCastNode(TYP_INT, op1, false, info.compRetType);
-
-                // Propagate GTF_COLON_COND
-                op1->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
-
-                tree->AsOp()->gtOp1 = fgMorphTree(op1);
-
-                // Propagate side effect flags
-                tree->SetAllEffectsFlags(tree->AsOp()->gtGetOp1());
-
-                return tree;
-            }
             if (!tree->TypeIs(TYP_VOID))
             {
                 if (op1->OperIs(GT_OBJ, GT_BLK, GT_IND))
@@ -11456,6 +11453,24 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                         }
                     }
                 }
+            }
+
+            // normalize small integer return values
+            if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (op1 != nullptr) && !op1->TypeIs(TYP_VOID) &&
+                fgCastNeeded(op1, info.compRetType))
+            {
+                // Small-typed return values are normalized by the callee
+                op1 = gtNewCastNode(TYP_INT, op1, false, info.compRetType);
+
+                // Propagate GTF_COLON_COND
+                op1->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
+
+                tree->AsOp()->gtOp1 = fgMorphTree(op1);
+
+                // Propagate side effect flags
+                tree->SetAllEffectsFlags(tree->AsOp()->gtGetOp1());
+
+                return tree;
             }
             break;
 
@@ -11545,6 +11560,24 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
         case GT_PUTARG_TYPE:
             return fgMorphTree(tree->AsUnOp()->gtGetOp1());
+
+        case GT_NULLCHECK:
+        {
+            op1 = tree->AsUnOp()->gtGetOp1();
+            if (op1->IsCall())
+            {
+                GenTreeCall* const call = op1->AsCall();
+                if (call->IsHelperCall() && s_helperCallProperties.NonNullReturn(eeGetHelperNum(call->gtCallMethHnd)))
+                {
+                    JITDUMP("\nNULLCHECK on [%06u] will always succeed\n", dspTreeID(call));
+
+                    // TODO: Can we also remove the call?
+                    //
+                    return fgMorphTree(call);
+                }
+            }
+        }
+        break;
 
         default:
             break;
@@ -12559,28 +12592,20 @@ DONE_MORPHING_CHILDREN:
                         lclFld->SetLclOffs(lclFld->GetLclOffs() + static_cast<unsigned>(ival1));
                         lclFld->SetFieldSeq(GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeq));
                     }
-                    else // we have a GT_LCL_VAR
+                    else // We have a GT_LCL_VAR.
                     {
                         assert(temp->OperGet() == GT_LCL_VAR);
-                        temp->ChangeOper(GT_LCL_FLD); // Note that this typically makes the gtFieldSeq "NotAField",
-                        // unless there is a zero filed offset associated with 'temp'.
+                        temp->ChangeOper(GT_LCL_FLD); // Note that this makes the gtFieldSeq "NotAField".
                         lclFld = temp->AsLclFld();
                         lclFld->SetLclOffs(static_cast<unsigned>(ival1));
 
-                        if (lclFld->GetFieldSeq() == FieldSeqStore::NotAField())
+                        if (fieldSeq != nullptr)
                         {
-                            if (fieldSeq != nullptr)
-                            {
-                                // If it does represent a field, note that.
-                                lclFld->SetFieldSeq(fieldSeq);
-                            }
-                        }
-                        else
-                        {
-                            // Append 'fieldSeq' to the existing one
-                            lclFld->SetFieldSeq(GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeq));
+                            // If it does represent a field, note that.
+                            lclFld->SetFieldSeq(fieldSeq);
                         }
                     }
+
                     temp->gtType      = tree->gtType;
                     foldAndReturnTemp = true;
                 }
@@ -14263,11 +14288,26 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     for (GenTree** use : multiOp->UseEdges())
     {
         *use = fgMorphTree(*use);
-        multiOp->gtFlags |= ((*use)->gtFlags & GTF_ALL_EFFECT);
 
-        if (dontCseConstArguments && (*use)->OperIsConst())
+        GenTree* operand = *use;
+        multiOp->gtFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
+
+        if (dontCseConstArguments && operand->OperIsConst())
         {
-            (*use)->SetDoNotCSE();
+            operand->SetDoNotCSE();
+        }
+
+        // Promoted structs after morph must be in one of two states:
+        //  a) Fully eliminated from the IR (independent promotion) OR only be
+        //     used by "special" nodes (e. g. LHS of ASGs for multi-reg structs).
+        //  b) Marked as do-not-enregister (dependent promotion).
+        //
+        // So here we preserve this invariant and mark any promoted structs as do-not-enreg.
+        //
+        if (operand->OperIs(GT_LCL_VAR) && lvaGetDesc(operand->AsLclVar())->lvPromoted)
+        {
+            lvaSetVarDoNotEnregister(operand->AsLclVar()->GetLclNum()
+                                         DEBUGARG(DoNotEnregisterReason::SimdUserForcesDep));
         }
     }
 
@@ -17773,15 +17813,6 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
             addr->AsIntCon()->gtFieldSeq = fieldSeqUpdate;
             fieldSeqRecorded             = true;
             break;
-
-        case GT_LCL_FLD:
-        {
-            GenTreeLclFld* lclFld = addr->AsLclFld();
-            fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeqZero);
-            lclFld->SetFieldSeq(fieldSeqUpdate);
-            fieldSeqRecorded = true;
-            break;
-        }
 
         case GT_ADDR:
             if (addr->AsOp()->gtOp1->OperGet() == GT_LCL_FLD)

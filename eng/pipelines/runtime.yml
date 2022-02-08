@@ -211,7 +211,7 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: NativeAOT
-      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
+      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       condition: >-
         or(
@@ -233,7 +233,7 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: NativeAOT
-      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
+      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       condition: >-
         or(
@@ -242,7 +242,7 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# CoreCLR NativeAOT checked build and smoke tests
+# CoreCLR NativeAOT release build and smoke tests
 # Only when CoreCLR is changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -257,12 +257,40 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: NativeAOT
-      buildArgs: -s clr.jit+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
+      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# CoreCLR NativeAOT release build and libraries tests
+# Only when CoreCLR is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    platforms:
+    - windows_arm64
+    - Linux_arm64
+    jobParameters:
+      testGroup: innerloop
+      isSingleFile: true
+      nameSuffix: NativeAOT
+      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
+      timeoutInMinutes: 120
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 # Build and test clr tools

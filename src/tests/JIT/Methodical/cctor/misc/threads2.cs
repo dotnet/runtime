@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace Precise
 {
-    internal class Driver
+    internal class Driver_threads2
     {
         public static void f()
         {

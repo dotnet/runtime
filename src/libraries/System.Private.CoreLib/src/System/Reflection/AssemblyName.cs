@@ -165,11 +165,11 @@ namespace System.Reflection
         private static Func<string, AssemblyName>? s_getAssemblyName;
         private static Func<string, AssemblyName> InitGetAssemblyName()
         {
-            Type? readerType = Type.GetType(
+            Type readerType = Type.GetType(
                     "System.Reflection.Metadata.MetadataReader, System.Reflection.Metadata",
-                    throwOnError: true);
+                    throwOnError: true)!;
 
-            MethodInfo? getAssemblyNameMethod = readerType!.GetMethod(
+            MethodInfo? getAssemblyNameMethod = readerType.GetMethod(
                 "GetAssemblyName",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,

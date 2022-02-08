@@ -2311,34 +2311,76 @@ void CodeGen::genLclHeap(GenTree* tree)
         // We should reach here only for non-zero, constant size allocations.
         assert(amount > 0);
 
+        const int storePairRegsWritesBytes = 2 * REGSIZE_BYTES;
+
         // For small allocations we will generate up to four stp instructions, to zero 16 to 64 bytes.
-        static_assert_no_msg(STACK_ALIGN == (REGSIZE_BYTES * 2));
-        assert(amount % (REGSIZE_BYTES * 2) == 0); // stp stores two registers at a time
-        size_t stpCount = amount / (REGSIZE_BYTES * 2);
-        if (stpCount <= 4)
+        static_assert_no_msg(STACK_ALIGN == storePairRegsWritesBytes);
+        assert(amount % storePairRegsWritesBytes == 0); // stp stores two registers at a time
+
+        if (compiler->info.compInitMem)
         {
-            while (stpCount != 0)
+            if (amount <= LCLHEAP_UNROLL_LIMIT)
             {
-                // We can use pre-indexed addressing.
-                // stp ZR, ZR, [SP, #-16]!   // STACK_ALIGN is 16
-                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ZR, REG_ZR, REG_SPBASE, -16, INS_OPTS_PRE_INDEX);
-                stpCount -= 1;
+                // The following zeroes the last 16 bytes and probes the page containing [sp, #16] address.
+                // stp xzr, xzr, [sp, #-16]!
+                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_8BYTE, REG_ZR, REG_ZR, REG_SPBASE, -storePairRegsWritesBytes,
+                                              INS_OPTS_PRE_INDEX);
+
+                if (amount > storePairRegsWritesBytes)
+                {
+                    // The following sets SP to its final value and zeroes the first 16 bytes of the allocated space.
+                    // stp xzr, xzr, [sp, #-amount+16]!
+                    const ssize_t finalSpDelta = (ssize_t)amount - storePairRegsWritesBytes;
+                    GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_8BYTE, REG_ZR, REG_ZR, REG_SPBASE, -finalSpDelta,
+                                                  INS_OPTS_PRE_INDEX);
+
+                    // The following zeroes the remaining space in [finalSp+16, initialSp-16) interval
+                    // using a sequence of stp instruction with unsigned offset.
+                    for (ssize_t offset = storePairRegsWritesBytes; offset < finalSpDelta;
+                         offset += storePairRegsWritesBytes)
+                    {
+                        // stp xzr, xzr, [sp, #offset]
+                        GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_8BYTE, REG_ZR, REG_ZR, REG_SPBASE, offset);
+                    }
+                }
+
+                lastTouchDelta = 0;
+
+                goto ALLOC_DONE;
             }
-
-            lastTouchDelta = 0;
-
-            goto ALLOC_DONE;
         }
-        else if (!compiler->info.compInitMem && (amount < compiler->eeGetPageSize())) // must be < not <=
+        else if (amount < compiler->eeGetPageSize()) // must be < not <=
         {
             // Since the size is less than a page, simply adjust the SP value.
             // The SP might already be in the guard page, so we must touch it BEFORE
             // the alloc, not after.
 
-            // ldr wz, [SP, #0]
-            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SP, 0);
+            // Note the we check against the lower boundary of the post-index immediate range [-256, 256)
+            // since the offset is -amount.
+            const bool canEncodeLoadRegPostIndexOffset = amount <= 256;
 
-            genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, amount, rsGetRsvdReg());
+            if (canEncodeLoadRegPostIndexOffset)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, -(ssize_t)amount,
+                                            INS_OPTS_POST_INDEX);
+            }
+            else if (emitter::canEncodeLoadOrStorePairOffset(-(ssize_t)amount, EA_8BYTE))
+            {
+                // The following probes the page and allocates the local heap.
+                // ldp tmpReg, xzr, [sp], #-amount
+                // Note that we cannot use ldp xzr, xzr since
+                // the behaviour of ldp where two source registers are the same is unpredictable.
+                const regNumber tmpReg = targetReg;
+                GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tmpReg, REG_ZR, REG_SPBASE, -(ssize_t)amount,
+                                              INS_OPTS_POST_INDEX);
+            }
+            else
+            {
+                // ldr wzr, [sp]
+                // sub, sp, #amount
+                GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, amount);
+                genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, amount, rsGetRsvdReg());
+            }
 
             lastTouchDelta = amount;
 
