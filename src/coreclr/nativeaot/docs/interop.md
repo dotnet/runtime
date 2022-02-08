@@ -54,4 +54,4 @@ Examples:
 
 The native AOT compiler will export methods annotated with `UnmanagedCallersOnlyAttribute` and explicitly specified name as
 public C entrypoints. It makes it possible to either dynamically or statically link the AOT compiled modules into external
-programs. More details are in [NativeLibrary Sample](../../samples/NativeLibrary).
+programs. More details are in [NativeLibrary Sample](https://github.com/dotnet/samples/tree/main/core/nativeaot/NativeLibrary/README.md).

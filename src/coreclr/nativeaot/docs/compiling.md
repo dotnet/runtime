@@ -1,6 +1,6 @@
 # Compiling with Native AOT
 
-This document explains how to compile and publish your project using Native AOT toolchain. First, please _ensure that [pre-requisites](prerequisites.md) are installed_. If you are starting a new project, you may find the [HelloWorld sample](../../samples/HelloWorld/README.md) directions useful.
+This document explains how to compile and publish your project using Native AOT toolchain. First, please _ensure that [pre-requisites](prerequisites.md) are installed_. If you are starting a new project, you may find the [HelloWorld sample](https://github.com/dotnet/samples/tree/main/core/nativeaot/HelloWorld/README.md) directions useful.
 
 ## Add ILCompiler package reference
 
@@ -60,9 +60,9 @@ Similarly, to target linux-arm64 on a Linux x64 host, in addition to the `Micros
 <PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.linux-x64.Microsoft.DotNet.ILCompiler" Version="7.0.0-preview.2.22103.2" />
 ```
 
-You also need to specify the sysroot directory for Clang using the `SysRoot` property. For example, assuming you are using one of ARM64-targeting [Docker images](../workflow/building/coreclr/linux-instructions.md#Docker-Images) employed for cross-compilation by this repo, you may publish for linux-arm64 with the following command:
+You also need to specify the sysroot directory for Clang using the `SysRoot` property. For example, assuming you are using one of ARM64-targeting [Docker images](../../../../docs/workflow/building/coreclr/linux-instructions.md#Docker-Images) employed for cross-compilation by this repo, you may publish for linux-arm64 with the following command:
 ```bash
 > dotnet publish -r linux-arm64 -c Release -p:CppCompilerAndLinker=clang-9 -p:SysRoot=/crossrootfs/arm64
 ```
 
-You may also follow [cross-building instructions](../workflow/building/coreclr/cross-building.md) to create your own sysroot directory.
+You may also follow [cross-building instructions](../../../../docs/workflow/building/coreclr/cross-building.md) to create your own sysroot directory.
