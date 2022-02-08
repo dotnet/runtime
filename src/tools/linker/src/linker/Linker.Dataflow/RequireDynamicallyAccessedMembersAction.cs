@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Linker;
