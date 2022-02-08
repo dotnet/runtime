@@ -23,6 +23,10 @@
     <UsingToolXliff>false</UsingToolXliff>
     <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- The bands we want to produce workload manifests for -->
+    <WorkloadSdkBandVersions Include="6.0.100;6.0.200" />
+  </ItemGroup>
   <PropertyGroup>
     <!-- For source generator support we need to target multiple versions of Rolsyn in order to be able to run on older versions of Roslyn -->
     <MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11>3.11.0</MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11>
