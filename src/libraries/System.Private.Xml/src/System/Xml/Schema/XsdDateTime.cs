@@ -539,13 +539,14 @@ namespace System.Xml.Schema
         // Serialize year, month and day
         private void PrintDate(ref ValueStringBuilder vsb)
         {
+            Span<char> text = vsb.AppendSpan(s_lzyyyy_MM_dd);
             int year, month, day;
             GetYearMonthDay(out year, out month, out day);
-            vsb.AppendSpanFormattable(year, format: "D4", provider: null);
-            vsb.Append('-');
-            vsb.AppendSpanFormattable(month, format: "D2", provider: null);
-            vsb.Append('-');
-            vsb.AppendSpanFormattable(day, format: "D2", provider: null);
+            WriteXDigits(text, 0, year, 4);
+            text[s_lzyyyy] = '-';
+            Write2Digits(text, s_lzyyyy_, month);
+            text[s_lzyyyy_MM] = '-';
+            Write2Digits(text, s_lzyyyy_MM_, day);
         }
 
         // When printing the date, we need the year, month and the day. When
@@ -604,11 +605,12 @@ namespace System.Xml.Schema
         // Serialize hour, minute, second and fraction
         private void PrintTime(ref ValueStringBuilder vsb)
         {
-            vsb.AppendSpanFormattable(Hour, format: "D2", provider: null);
-            vsb.Append(':');
-            vsb.AppendSpanFormattable(Minute, format: "D2", provider: null);
-            vsb.Append(':');
-            vsb.AppendSpanFormattable(Second, format: "D2", provider: null);
+            Span<char> text = vsb.AppendSpan(s_lzHH_mm_ss);
+            Write2Digits(text, 0, Hour);
+            text[s_lzHH] = ':';
+            Write2Digits(text, s_lzHH_, Minute);
+            text[s_lzHH_mm] = ':';
+            Write2Digits(text, s_lzHH_mm_, Second);
             int fraction = Fraction;
             if (fraction != 0)
             {
@@ -619,35 +621,57 @@ namespace System.Xml.Schema
                     fraction /= 10;
                 }
 
-                vsb.Append('.');
-                vsb.AppendSpanFormattable(fraction, format: "D" + fractionDigits, provider: null);
+                text = vsb.AppendSpan(fractionDigits + 1);
+                text[0] = '.';
+                WriteXDigits(text, 1, fraction, fractionDigits);
             }
         }
 
         // Serialize time zone
         private void PrintZone(ref ValueStringBuilder vsb)
         {
+            Span<char> text;
             switch (InternalKind)
             {
                 case XsdDateTimeKind.Zulu:
                     vsb.Append('Z');
                     break;
                 case XsdDateTimeKind.LocalWestOfZulu:
-                    vsb.Append('-');
-                    vsb.AppendSpanFormattable(ZoneHour, format: "D2", provider: null);
-                    vsb.Append(':');
-                    vsb.AppendSpanFormattable(ZoneMinute, format: "D2", provider: null);
+                    text = vsb.AppendSpan(s_lz_zz_zz);
+                    text[0] = '-';
+                    Write2Digits(text, s_Lz_, ZoneHour);
+                    text[s_lz_zz] = ':';
+                    Write2Digits(text, s_lz_zz_, ZoneMinute);
                     break;
                 case XsdDateTimeKind.LocalEastOfZulu:
-                    vsb.Append('+');
-                    vsb.AppendSpanFormattable(ZoneHour, format: "D2", provider: null);
-                    vsb.Append(':');
-                    vsb.AppendSpanFormattable(ZoneMinute, format: "D2", provider: null);
+                    text = vsb.AppendSpan(s_lz_zz_zz);
+                    text[0] = '+';
+                    Write2Digits(text, s_Lz_, ZoneHour);
+                    text[s_lz_zz] = ':';
+                    Write2Digits(text, s_lz_zz_, ZoneMinute);
                     break;
                 default:
                     // do nothing
                     break;
             }
+        }
+
+        // Serialize integer into character Span starting with index [start].
+        // Number of digits is set by [digits]
+        private static void WriteXDigits(Span<char> text, int start, int value, int digits)
+        {
+            while (digits-- != 0)
+            {
+                text[start + digits] = (char)(value % 10 + '0');
+                value /= 10;
+            }
+        }
+
+        // Serialize two digit integer into character Span starting with index [start].
+        private static void Write2Digits(Span<char> text, int start, int value)
+        {
+            text[start] = (char)(value / 10 + '0');
+            text[start + 1] = (char)(value % 10 + '0');
         }
 
         private static readonly XmlTypeCode[] s_typeCodes = {
