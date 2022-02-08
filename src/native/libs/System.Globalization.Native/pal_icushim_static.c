@@ -89,10 +89,13 @@ static int32_t load_icu_data(void* pData)
     UErrorCode status = 0;
     udata_setCommonData(pData, &status);
 
-    if (U_FAILURE(status)) {
+    if (U_FAILURE(status))
+    {
         log_icu_error("udata_setCommonData", status);
         return 0;
-    } else {
+    }
+    else
+    {
 
 #if defined(ICU_TRACING)
         // see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
@@ -117,13 +120,15 @@ apple_decompress(const char *src_buf, size_t src_len)
     size_t dst_size = 0;
     size_t alloc_bytes = sizeof(uint8_t) * dst_capacity;
     uint8_t *dst_buf = malloc(alloc_bytes);
-    if (dst_buf == NULL) {
+    if (dst_buf == NULL)
+    {
         log_shim_error("apple_decompress: Failed to allocate %zu bytes for the ICU data decompression buffer.", alloc_bytes);
         goto error;
     }
 
     compression_status status = compression_stream_init(&cs, COMPRESSION_STREAM_DECODE, COMPRESSION_LZFSE);
-    if (status == COMPRESSION_STATUS_ERROR) {
+    if (status == COMPRESSION_STATUS_ERROR)
+    {
         log_shim_error("apple_decompress: Failed to initialize decompression stream.");
         goto error;
     }
@@ -134,10 +139,12 @@ apple_decompress(const char *src_buf, size_t src_len)
     cs.dst_size = dst_capacity;
 
     int flags = 0;
-    while (status == COMPRESSION_STATUS_OK) {
+    while (status == COMPRESSION_STATUS_OK)
+    {
         size_t old_sz = cs.dst_size;
         status = compression_stream_process(&cs, flags);
-        if (status == COMPRESSION_STATUS_ERROR) {
+        if (status == COMPRESSION_STATUS_ERROR)
+        {
             log_shim_error("apple_decompress: Error while decompressing.");
             goto error;
         }
@@ -145,11 +152,13 @@ apple_decompress(const char *src_buf, size_t src_len)
         size_t delta = old_sz - cs.dst_size;
         dst_size += delta;
 
-        if (cs.dst_size == 0) {
+        if (cs.dst_size == 0)
+        {
             size_t old_sz = dst_capacity;
             size_t new_sz = (dst_capacity * 3) >> 1;
             uint8_t *next_dst_buf = realloc(dst_buf, new_sz);
-            if (next_dst_buf == NULL) {
+            if (next_dst_buf == NULL)
+            {
                 log_shim_error("apple_decompress: Failed to allocate %zu bytes when resizing decompression buffer.", new_sz);
                 goto error;
             }
@@ -159,7 +168,8 @@ apple_decompress(const char *src_buf, size_t src_len)
             cs.dst_size = new_sz - old_sz;
         }
 
-        if (cs.src_size == 0) {
+        if (cs.src_size == 0)
+        {
             flags = COMPRESSION_STREAM_FINALIZE;
         }
     }
@@ -167,10 +177,12 @@ apple_decompress(const char *src_buf, size_t src_len)
     return (char *) dst_buf;
 
 error:
-    if (dst_buf != NULL) {
+    if (dst_buf != NULL)
+    {
         free(dst_buf);
     }
-    if (cs_init) {
+    if (cs_init)
+    {
         compression_stream_destroy(&cs);
     }
     return NULL;
@@ -188,37 +200,43 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
 
     FILE *fp = fopen(path, "rb");
 
-    if (fp == NULL) {
+    if (fp == NULL)
+    {
         log_shim_error("Unable to load ICU dat file '%s'.", path);
         goto error;
     }
 
-    if (fseek(fp, 0L, SEEK_END) != 0) {
+    if (fseek(fp, 0L, SEEK_END) != 0)
+    {
         log_shim_error("Unable to determine size of the dat file");
         goto error;
     }
 
     file_buf_size = ftell(fp);
 
-    if (file_buf_size == -1) {
+    if (file_buf_size == -1)
+    {
         log_shim_error("Unable to determine size of the ICU dat file.");
         goto error;
     }
 
     file_buf = malloc(sizeof(char) * (file_buf_size + 1));
 
-    if (file_buf == NULL) {
+    if (file_buf == NULL)
+    {
         log_shim_error("Unable to allocate enough to read the ICU dat file");
         goto error;
     }
 
-    if (fseek(fp, 0L, SEEK_SET) != 0) {
+    if (fseek(fp, 0L, SEEK_SET) != 0)
+    {
         log_shim_error("Unable to seek ICU dat file.");
         goto error;
     }
 
     fread(file_buf, sizeof(char), file_buf_size, fp);
-    if (ferror( fp ) != 0 ) {
+    if (ferror( fp ) != 0)
+    {
         log_shim_error("Unable to read ICU dat file");
         goto error;
     }
@@ -232,7 +250,8 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
         if (last_period && strcmp(last_period, ".lzfse") == 0)
         {
             uncompressed_file_buf = apple_decompress(file_buf, file_buf_size);
-            if (uncompressed_file_buf == NULL) {
+            if (uncompressed_file_buf == NULL)
+            {
                 goto error;
             }
             icu_data = uncompressed_file_buf;
@@ -241,11 +260,13 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
         }
     }
     #endif
-    if (icu_data == NULL) {
+    if (icu_data == NULL)
+    {
         icu_data = file_buf;
     }
 
-    if (load_icu_data(icu_data) == 0) {
+    if (load_icu_data(icu_data) == 0)
+    {
         log_shim_error("ICU BAD EXIT %d.", ret);
         return ret;
     }
@@ -253,13 +274,16 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
     return GlobalizationNative_LoadICU();
 
 error:
-    if (fp != NULL) {
+    if (fp != NULL)
+    {
         fclose(fp);
     }
-    if (file_buf != NULL) {
+    if (file_buf != NULL)
+    {
         free(file_buf);
     }
-    if (uncompressed_file_buf == NULL) {
+    if (uncompressed_file_buf == NULL)
+    {
         free(uncompressed_file_buf);
     }
     return ret;
@@ -296,7 +320,8 @@ const char* GlobalizationNative_GetICUDTName(const char* culture)
 
 int32_t GlobalizationNative_LoadICU(void)
 {
-    if (!isDataSet) {
+    if (!isDataSet)
+    {
         // don't try to locate icudt.dat automatically if mono_wasm_load_icu_data wasn't called
         // and fallback to invariant mode
         return 0;
@@ -307,7 +332,8 @@ int32_t GlobalizationNative_LoadICU(void)
     // whether it worked.
     ulocdata_getCLDRVersion(version, &status);
 
-    if (U_FAILURE(status)) {
+    if (U_FAILURE(status))
+    {
         log_icu_error("ulocdata_getCLDRVersion", status);
         return 0;
     }
