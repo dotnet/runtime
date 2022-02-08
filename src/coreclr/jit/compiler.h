@@ -5218,7 +5218,15 @@ public:
 
     void fgAddInternal();
 
-    bool fgFoldConditional(BasicBlock* block);
+    enum class FoldResult
+    {
+        FOLD_DID_NOTHING,
+        FOLD_CHANGED_CONTROL_FLOW,
+        FOLD_REMOVED_LAST_STMT,
+        FOLD_ALTERED_LAST_STMT,
+    };
+
+    FoldResult fgFoldConditional(BasicBlock* block);
 
     void fgMorphStmts(BasicBlock* block);
     void fgMorphBlocks();
