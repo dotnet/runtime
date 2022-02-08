@@ -128,7 +128,7 @@ steps:
 
   - script: |
       chmod -R a+r .
-      ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
+      ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release -p:AndroidPackageFormat=apk
       ls -l -R
       mv ./bin/Release/net6.0-android/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
     displayName: Build MAUI Android
