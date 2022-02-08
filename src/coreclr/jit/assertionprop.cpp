@@ -3050,7 +3050,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             conValTree = gtNewSimdZeroNode(tree->TypeGet(), vnInfo.m_simdBaseJitType, vnInfo.m_simdSize,
                                            true);
         }
-            break;
+        break;
 #endif
 
         case TYP_BYREF:
