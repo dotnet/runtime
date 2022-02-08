@@ -282,7 +282,7 @@ error:
     {
         free(file_buf);
     }
-    if (uncompressed_file_buf == NULL)
+    if (uncompressed_file_buf != NULL)
     {
         free(uncompressed_file_buf);
     }
