@@ -193,6 +193,9 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public DateTime StartTime
         {
             get
@@ -262,14 +265,16 @@ namespace System.Diagnostics
         {
             [UnsupportedOSPlatform("ios")]
             [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
             get
             {
                 EnsureWorkingSetLimits();
                 return _maxWorkingSet;
             }
-            [SupportedOSPlatform("windows")]
-            [SupportedOSPlatform("macos")]
             [SupportedOSPlatform("freebsd")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("maccatalyst")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetWorkingSetLimits(null, value);
@@ -284,14 +289,16 @@ namespace System.Diagnostics
         {
             [UnsupportedOSPlatform("ios")]
             [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
             get
             {
                 EnsureWorkingSetLimits();
                 return _minWorkingSet;
             }
-            [SupportedOSPlatform("windows")]
-            [SupportedOSPlatform("macos")]
             [SupportedOSPlatform("freebsd")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("maccatalyst")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetWorkingSetLimits(value, null);
@@ -1039,6 +1046,9 @@ namespace System.Diagnostics
         ///       local computer. These process resources share the specified process name.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName)
         {
             return GetProcessesByName(processName, ".");
@@ -1050,6 +1060,9 @@ namespace System.Diagnostics
         ///       component for each process resource on the local computer.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcesses()
         {
             return GetProcesses(".");
@@ -1062,6 +1075,9 @@ namespace System.Diagnostics
         ///       process resource on the specified computer.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcesses(string machineName)
         {
             bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
@@ -1205,6 +1221,7 @@ namespace System.Diagnostics
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public bool Start()
         {
             Close();
@@ -1248,6 +1265,7 @@ namespace System.Diagnostics
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process Start(string fileName)
         {
             // the underlying Start method can only return null on Windows platforms,
@@ -1266,6 +1284,7 @@ namespace System.Diagnostics
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process Start(string fileName, string arguments)
         {
             // the underlying Start method can only return null on Windows platforms,
@@ -1279,6 +1298,7 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process Start(string fileName, IEnumerable<string> arguments)
         {
             if (fileName == null)
@@ -1305,6 +1325,7 @@ namespace System.Diagnostics
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process? Start(ProcessStartInfo startInfo)
         {
             Process process = new Process();

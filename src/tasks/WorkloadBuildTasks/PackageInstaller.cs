@@ -63,7 +63,7 @@ namespace Microsoft.Workload.Build.Tasks
             (int exitCode, string output) = Utils.TryRunProcess(_logger, "dotnet", args, silent: false, debugMessageImportance: MessageImportance.Low);
             if (exitCode != 0)
             {
-                LogErrorOrWarning($"Restoring packages failed with exit code: {exitCode}. Output:{Environment.NewLine}{output}", stopOnMissing);
+                LogFailure($"Restoring packages failed with exit code: {exitCode}. Output:{Environment.NewLine}{output}", stopOnMissing);
                 return false;
             }
 
@@ -76,7 +76,7 @@ namespace Microsoft.Workload.Build.Tasks
             {
                 _logger.LogMessage(MessageImportance.Normal, output);
                 foreach ((PackageReference pkgRef, string pkgDir) in failedToRestore)
-                    LogErrorOrWarning($"Could not restore {pkgRef.Name}/{pkgRef.Version} (can't find {pkgDir})", stopOnMissing);
+                    LogFailure($"Could not restore {pkgRef.Name}/{pkgRef.Version} (can't find {pkgDir})", stopOnMissing);
 
                 return false;
             }
@@ -91,7 +91,7 @@ namespace Microsoft.Workload.Build.Tasks
                 var source = Path.Combine(_packagesDir, pkgRef.Name.ToLower(), pkgRef.Version, pkgRef.relativeSourceDir);
                 if (!Directory.Exists(source))
                 {
-                    LogErrorOrWarning($"Failed to restore {pkgRef.Name}/{pkgRef.Version} (could not find {source})", stopOnMissing);
+                    LogFailure($"Failed to restore {pkgRef.Name}/{pkgRef.Version} (could not find {source})", stopOnMissing);
                     if (stopOnMissing)
                         return false;
                 }
@@ -152,12 +152,12 @@ namespace Microsoft.Workload.Build.Tasks
             }
         }
 
-        private void LogErrorOrWarning(string msg, bool stopOnMissing)
+        private void LogFailure(string msg, bool asError)
         {
-            if (stopOnMissing)
+            if (asError)
                 _logger.LogError(msg);
             else
-                _logger.LogWarning(msg);
+                _logger.LogMessage(MessageImportance.High, $"warning: {msg}");
         }
     }
 }

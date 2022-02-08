@@ -2873,6 +2873,20 @@ namespace System.Tests
             Assert.Equal(new TimeSpan(2, 0, 0), customTimeZone.GetUtcOffset(new DateTime(2021, 3, 10, 2, 0, 0)));
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.Linux)]
+        public static void NoBackwardTimeZones()
+        {
+            ReadOnlyCollection<TimeZoneInfo> tzCollection = TimeZoneInfo.GetSystemTimeZones();
+            HashSet<String> tzDisplayNames = new HashSet<String>();
+
+            foreach (TimeZoneInfo timezone in tzCollection)
+            {
+                tzDisplayNames.Add(timezone.DisplayName);
+            }
+            Assert.Equal(tzCollection.Count, tzDisplayNames.Count);
+        }
+
         private static bool IsEnglishUILanguage => CultureInfo.CurrentUICulture.Name.Length == 0 || CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
 
         private static bool IsEnglishUILanguageAndRemoteExecutorSupported => IsEnglishUILanguage && RemoteExecutor.IsSupported;

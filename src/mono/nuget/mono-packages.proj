@@ -14,11 +14,18 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
-    <ProjectReference Include="Microsoft.NET.Workload.Mono.Toolchain.Manifest\Microsoft.NET.Workload.Mono.Toolchain.Manifest.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task\Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.MonoTargets.Sdk\Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj" />
   </ItemGroup>
+
+  <Target Name="_WorkloadPack" AfterTargets="Pack">
+    <!-- For now, the sdk needs us to publish a manifest per sdk band even if there are no differences between them -->
+    <MSBuild Condition="'$(TargetsMobile)' == 'true'"
+             Projects="Microsoft.NET.Workload.Mono.Toolchain.Manifest\Microsoft.NET.Workload.Mono.Toolchain.Manifest.pkgproj" 
+             Targets="Pack" 
+             Properties="SdkBandVersion=%(WorkloadSdkBandVersions.Identity)" />
+  </Target>
 </Project>
