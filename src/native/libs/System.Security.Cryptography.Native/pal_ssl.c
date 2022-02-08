@@ -411,7 +411,7 @@ static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
 
 int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
-#ifdef NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_1_1
     // TLS1.3 uses different API for renegotiation/delayed client cert request
     #ifndef TLS1_3_VERSION
     #define TLS1_3_VERSION 0x0304
@@ -756,7 +756,7 @@ void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set)
 
 void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val)
 {
-#ifdef NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_1_1
     if (API_EXISTS(SSL_set_post_handshake_auth))
     {
         SSL_set_post_handshake_auth(ssl, val);
