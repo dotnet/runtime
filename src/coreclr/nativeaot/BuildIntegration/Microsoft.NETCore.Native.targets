@@ -23,6 +23,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <IlcToolsPath Condition="'$(IlcPath)' != '' and '$(IlcToolsPath)' == ''">$(IlcPath)\tools\</IlcToolsPath>
     <IlcSdkPath Condition="'$(IlcPath)' != '' and '$(IlcSdkPath)' == ''">$(IlcPath)\sdk\</IlcSdkPath>
     <IlcFrameworkPath Condition="'$(IlcPath)' != '' and '$(IlcFrameworkPath)' == ''">$(IlcPath)\framework\</IlcFrameworkPath>
+    <IlcFrameworkNativePath Condition="'$(IlcPath)' != '' and '$(IlcFrameworkNativePath)' == ''">$(IlcPath)\framework\</IlcFrameworkNativePath>
+    <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == '' and '$(IlcFrameworkPath)' != ''">$(IlcFrameworkPath)</IlcFrameworkNativePath>
     <IlcMibcPath Condition="'$(IlcPath)' != '' and '$(IlcMibcPath)' == ''">$(IlcPath)\mibc\</IlcMibcPath>
     <TargetOS Condition="'$([MSBuild]::IsOSPlatform(Windows))' == 'true'">windows</TargetOS>
     <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>
@@ -119,7 +121,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <ItemDefinitionGroup>
     <ManagedBinary>
       <IlcRspFile>$(NativeIntermediateOutputPath)\%(Filename).ilc.rsp</IlcRspFile>
-      <IlcOutputFile>$(NativeIntermediateOutputPath)\%(Filename).$(IlcOutputFileExt)</IlcOutputFile>
+      <IlcOutputFile>$(NativeIntermediateOutputPath)\%(Filename)$(IlcOutputFileExt)</IlcOutputFile>
     </ManagedBinary>
   </ItemDefinitionGroup>
 
@@ -139,6 +141,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcToolsPath Condition="'$(IlcToolsPath)' == ''">$(IlcHostPackagePath)\tools\</IlcToolsPath>
       <IlcSdkPath Condition="'$(IlcSdkPath)' == ''">$(RuntimePackagePath)\sdk\</IlcSdkPath>
       <IlcFrameworkPath Condition="'$(IlcFrameworkPath)' == ''">$(RuntimePackagePath)\framework\</IlcFrameworkPath>
+      <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == ''">$(RuntimePackagePath)\framework\</IlcFrameworkNativePath>
       <IlcMibcPath Condition="'$(IlcMibcPath)' == ''">$(RuntimePackagePath)\mibc\</IlcMibcPath>
     </PropertyGroup>
 

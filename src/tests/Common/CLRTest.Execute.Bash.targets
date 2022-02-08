@@ -321,10 +321,6 @@ then
 else
     LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
 fi
-if [ ! -z "$RunNativeAot" ]
-then
-    LAUNCHER="$_DebuggerFullPath"
-fi
 
 $(BashIlrtTestLaunchCmds)
 
@@ -339,13 +335,6 @@ CLRTestExitCode=$?
 
 if [ ! -z ${RunCrossGen+x} ]%3B then
   ReleaseLock
-fi
-if [ ! -z "$RunNativeAot" ]
-then
-    if [ -z "$CLRTestNoCleanup" ];
-    then
-      rm -rf native
-    fi
 fi
 
 $(BashLinkerTestCleanupCmds)

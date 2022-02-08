@@ -18,6 +18,8 @@ The AOT compiler typically takes the app, core libraries, and framework librarie
 
 The executable looks like a native executable, in the sense that it can be debugged with native debuggers and have full-fidelity access to locals, and stepping information.
 
+The compiler also has a mode where each managed assembly can be compiled into a separate object file. The object files are later linked into a single executable using the platform linker. This mode is mostly used in testing (it's faster to compile this way because we don't need to recompiling the same code from e.g. CoreLib). It's not a shipping configuration and has many problems (requires exactly matching compilation settings, forfeits many optimizations, and has trouble around cross-module generic virtual method implementations).
+
 ## Building
 
 - [Install pre-requisites](../../README.md#build-requirements)
@@ -65,15 +67,12 @@ To run all the tests that got built, run `src\tests\run.cmd runnativeaottests [D
 
 To run an individual test (after it was built), navigate to the `artifacts\tests\coreclr\[Windows|Linux|OSX[.x64.[Debug|Release]\$path_to_test` directory. `$path_to_test` matches the subtree of `src\tests`. You should see a `[.cmd|.sh]` file there. This file is a script that will compile and launch the individual test for you. Before invoking the script, set the following environment variables:
 
-* CORE_ROOT=$repo_root\artifacts\tests\coreclr\[Windows|Linux|OSX[.x64.[Debug|Release]\Tests\Core_Root
-* RunNativeAot=1
-* __TestDotNetCmd=$repo_root\dotnet[.cmd|.sh]
+* CORE_ROOT=$repo_root\artifacts\tests\coreclr\[Windows|Linux|OSX].x64.[Debug|Release]\Tests\Core_Root
+* CLRCustomTestLauncher=$repo_root\src\tests\Common\scripts\nativeaottest[.cmd|.sh]
 
 `$repo_root` is the root of your clone of the repo.
 
-By default the test suite will delete the build artifacts (Native AOT images and response files) if the test compiled successfully. If you want to keep these files instead of deleting them after test run, set the following environment variables and make sure you'll have enough disk space (tens of MB per test):
-
-* CLRTestNoCleanup=1
+Sometimes it's handy to be able to rebuild the managed test manually or run the compilation under a debugger. A response file that was used to invoke the ahead of time compiler can be found in `$repo_root\artifacts\tests\coreclr\obj\[Windows|Linux|OSX].x64.[Debug|Release]\Managed`.
 
 For more advanced scenarios, look for at [Building Test Subsets](../../testing/coreclr/windows-test-instructions.md#building-test-subsets) and [Generating Core_Root](../../testing/coreclr/windows-test-instructions.md#generating-core_root)
 
