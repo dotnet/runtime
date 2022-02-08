@@ -38,7 +38,7 @@ namespace ILLink.RoslynAnalyzer
 
 			void AddRange (DiagnosticId first, DiagnosticId last)
 			{
-				Debug.Assert ((int)first < (int)last);
+				Debug.Assert ((int) first < (int) last);
 
 				for (int i = (int) first;
 					i <= (int) last; i++) {

@@ -7,13 +7,13 @@ namespace ILLink.RoslynAnalyzer.Tests.Warnings
 	{
 		protected override string TestSuiteName => "Warnings.WarningSuppression";
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2579")]
+		[Fact]
 		public Task SuppressWarningsInCompilerGeneratedCode ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2579")]
+		[Fact]
 		public Task SuppressWarningsInMembersAndTypesUsingTarget ()
 		{
 			return RunTest (allowMissingWarnings: true);

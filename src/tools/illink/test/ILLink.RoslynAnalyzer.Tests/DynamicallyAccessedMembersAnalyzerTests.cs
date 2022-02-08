@@ -166,13 +166,13 @@ class C
 			// The parameter 'type' of method 'C.M(Type)' does not have matching annotations.
 			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations
-							/*,
-							VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter)
-							.WithSpan (17, 9, 17, 30)
-							.WithArguments ("System.Type.GetMethod(String)",
-								"type",
-								"C.M(Type)",
-								"'DynamicallyAccessedMemberTypes.PublicMethods'")*/);
+										/*,
+										VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter)
+										.WithSpan (17, 9, 17, 30)
+										.WithArguments ("System.Type.GetMethod(String)",
+											"type",
+											"C.M(Type)",
+											"'DynamicallyAccessedMemberTypes.PublicMethods'")*/);
 		}
 		#endregion
 
@@ -463,12 +463,12 @@ class C
 			// The field 'C.f' does not have matching annotations.
 			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations
-							/*,
-							VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter)
-							.WithSpan (14, 9, 14, 27)
-							.WithArguments ("System.Type.GetMethod(String)",
-								"C.f",
-								"'DynamicallyAccessedMemberTypes.PublicMethods'")*/);
+										/*,
+										VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter)
+										.WithSpan (14, 9, 14, 27)
+										.WithArguments ("System.Type.GetMethod(String)",
+											"C.f",
+											"'DynamicallyAccessedMemberTypes.PublicMethods'")*/);
 		}
 		#endregion
 
