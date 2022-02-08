@@ -15225,20 +15225,25 @@ DONE:;
 #endif
 }
 
-/*****************************************************************************
- *
- *  Check and fold blocks of type BBJ_COND and BBJ_SWITCH on constants
- *  Returns true if we modified the flow graph
- */
-
-bool Compiler::fgFoldConditional(BasicBlock* block)
+//------------------------------------------------------------------------
+// fgFoldConditional: try and fold conditionals and optimize BBJ_COND or
+//   BBJ_SWITCH blocks.
+//
+// Argumetns:
+//   block - block to examine
+//
+// Returns:
+//   FoldResult indicating what changes were made, if any
+//
+Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 {
-    bool result = false;
+    FoldResult result = FoldResult::FOLD_DID_NOTHING;
 
     // We don't want to make any code unreachable
+    //
     if (opts.OptimizationDisabled())
     {
-        return false;
+        return result;
     }
 
     if (block->bbJumpKind == BBJ_COND)
@@ -15253,17 +15258,14 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         {
             noway_assert(fgRemoveRestOfBlock);
 
-            /* Unconditional throw - transform the basic block into a BBJ_THROW */
+            // Unconditional throw - transform the basic block into a BBJ_THROW
+            //
             fgConvertBBToThrowBB(block);
+            result = FoldResult::FOLD_CHANGED_CONTROL_FLOW;
+            JITDUMP("\nConditional folded at " FMT_BB "\n", block->bbNum);
+            JITDUMP(FMT_BB " becomes a BBJ_THROW\n", block->bbNum);
 
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a BBJ_THROW\n", block->bbNum);
-            }
-#endif
-            goto DONE_COND;
+            return result;
         }
 
         noway_assert(lastStmt->GetRootNode()->gtOper == GT_JTRUE);
@@ -15289,11 +15291,13 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 // Preserve any side effects
                 assert(condTree->OperIs(GT_COMMA));
                 lastStmt->SetRootNode(condTree);
+                result = FoldResult::FOLD_ALTERED_LAST_STMT;
             }
             else
             {
                 // no side effects, remove the jump entirely
                 fgRemoveStmt(block, lastStmt);
+                result = FoldResult::FOLD_REMOVED_LAST_STMT;
             }
             // block is a BBJ_COND that we are folding the conditional for.
             // bTaken is the path that will always be taken from block.
@@ -15461,8 +15465,6 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                     }
                 }
             }
-        DONE_COND:
-            result = true;
         }
     }
     else if (block->bbJumpKind == BBJ_SWITCH)
@@ -15477,17 +15479,14 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         {
             noway_assert(fgRemoveRestOfBlock);
 
-            /* Unconditional throw - transform the basic block into a BBJ_THROW */
+            // Unconditional throw - transform the basic block into a BBJ_THROW
+            //
             fgConvertBBToThrowBB(block);
+            result = FoldResult::FOLD_CHANGED_CONTROL_FLOW;
+            JITDUMP("\nConditional folded at " FMT_BB "\n", block->bbNum);
+            JITDUMP(FMT_BB " becomes a BBJ_THROW\n", block->bbNum);
 
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a BBJ_THROW\n", block->bbNum);
-            }
-#endif
-            goto DONE_SWITCH;
+            return result;
         }
 
         noway_assert(lastStmt->GetRootNode()->gtOper == GT_SWITCH);
@@ -15512,11 +15511,13 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 // Preserve any side effects
                 assert(condTree->OperIs(GT_COMMA));
                 lastStmt->SetRootNode(condTree);
+                result = FoldResult::FOLD_ALTERED_LAST_STMT;
             }
             else
             {
                 // no side effects, remove the switch entirely
                 fgRemoveStmt(block, lastStmt);
+                result = FoldResult::FOLD_REMOVED_LAST_STMT;
             }
 
             /* modify the flow graph */
@@ -15561,6 +15562,9 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                     fgRemoveRefPred(curJump, block);
                 }
             }
+
+            assert(foundVal);
+
 #ifdef DEBUG
             if (verbose)
             {
@@ -15574,8 +15578,6 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 printf("\n");
             }
 #endif
-        DONE_SWITCH:
-            result = true;
         }
     }
     return result;
@@ -15661,13 +15663,8 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
     // Or this is the last statement of a conditional branch that was just folded?
     if (!removedStmt && (stmt->GetNextStmt() == nullptr) && !fgRemoveRestOfBlock)
     {
-        if (fgFoldConditional(block))
-        {
-            if (block->bbJumpKind != BBJ_THROW)
-            {
-                removedStmt = true;
-            }
-        }
+        FoldResult const fr = fgFoldConditional(block);
+        removedStmt         = (fr == FoldResult::FOLD_REMOVED_LAST_STMT);
     }
 
     if (!removedStmt)
@@ -15869,7 +15866,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 
         /* Check if this block ends with a conditional branch that can be folded */
 
-        if (fgFoldConditional(block))
+        if (fgFoldConditional(block) != FoldResult::FOLD_DID_NOTHING)
         {
             continue;
         }
