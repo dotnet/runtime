@@ -611,14 +611,14 @@ struct HWIntrinsicInfo
 #if defined(FEATURE_HW_INTRINSICS)
         switch (id)
         {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH)
             case NI_BMI1_TrailingZeroCount:
             case NI_BMI1_X64_TrailingZeroCount:
             case NI_LZCNT_LeadingZeroCount:
             case NI_LZCNT_X64_LeadingZeroCount:
             case NI_POPCNT_PopCount:
             case NI_POPCNT_X64_PopCount:
-#elif TARGET_ARM64
+#elif defined(TARGET_ARM64)
             case NI_AdvSimd_PopCount:
             case NI_AdvSimd_LeadingZeroCount:
             case NI_AdvSimd_LeadingSignCount:
