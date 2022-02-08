@@ -2874,7 +2874,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
     ValueNum     vnCns  = vnStore->VNConservativeNormalValue(vnPair);
 
     // Check if node evaluates to a constant.
-    if (!vnStore->IsVNConstant(vnCns))
+    if (!vnStore->IsVNConstant(vnCns) && !vnStore->IsVNVectorZero(vnCns))
     {
         return nullptr;
     }
@@ -3032,6 +3032,19 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             }
         }
         break;
+
+#if FEATURE_HW_INTRINSICS
+        case TYP_SIMD8:
+        case TYP_SIMD12:
+        case TYP_SIMD16:
+        case TYP_SIMD32:
+        {
+            conValTree = gtNewSimdZeroNode(tree->TypeGet(), CorInfoType::CORINFO_TYPE_FLOAT, 16,
+                                           true); // gtGetSIMDZero(tree->TypeGet(), CorInfoType::CORINFO_TYPE_FLOAT,
+                                             // varDsc->GetStructHnd());
+        }
+            break;
+#endif
 
         case TYP_BYREF:
             // Do not support const byref optimization.
@@ -5412,7 +5425,8 @@ struct VNAssertionPropVisitorInfo
 //
 GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
 {
-    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
+    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)) ||
+           vnStore->IsVNVectorZero(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
 
     GenTree* sideEffList = nullptr;
 

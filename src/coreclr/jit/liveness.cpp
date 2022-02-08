@@ -2068,6 +2068,10 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_KEEPALIVE:
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
+                if (node->IsVectorZero())
+                {
+                    fgTryRemoveNonLocal(node, &blockRange);
+                }
 #endif // FEATURE_HW_INTRINSICS
                 // Never remove these nodes, as they are always side-effecting.
                 //

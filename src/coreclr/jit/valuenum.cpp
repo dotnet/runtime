@@ -4594,6 +4594,47 @@ bool ValueNumStore::IsVNConstant(ValueNum vn)
     }
 }
 
+bool ValueNumStore::IsVNVectorZero(ValueNum vn)
+{
+    if (vn == NoVN)
+    {
+        return false;
+    }
+#if FEATURE_HW_INTRINSICS
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    if (c->m_attribs == CEA_Func1)
+    {
+        VNDefFunc1Arg* const chunkSlots = reinterpret_cast<VNDefFunc1Arg*>(c->m_defs);
+        if (chunkSlots[vn - c->m_baseVN].m_func == VNF_HWI_Vector128_get_Zero)
+        {
+            return true;
+        }
+    }
+#endif
+    return false;
+}
+
+var_types ValueNumStore::GetVectorType(ValueNum vn)
+{
+    if (vn == NoVN)
+    {
+        return TYP_UNKNOWN;
+    }
+//#if FEATURE_HW_INTRINSICS
+//    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+//    if (c->m_attribs == CEA_Func1)
+//    {
+//        VNDefFunc1Arg* const chunkSlots = reinterpret_cast<VNDefFunc1Arg*>(c->m_defs);
+//
+//        ValueNum baseTypeVN    = chunkSlots[vn - c->m_baseVN].m_arg0;
+//        var_types simdBaseType = (CorInfoType)GetConstantInt32(baseTypeVN);
+//
+//        return simdBaseType;
+//    }
+//#endif
+    return TYP_UNKNOWN;
+}
+
 bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 {
     if (!IsVNConstant(vn))

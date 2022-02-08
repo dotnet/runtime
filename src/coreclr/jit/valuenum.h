@@ -714,6 +714,11 @@ public:
     // Returns true iff the VN represents a (non-handle) constant.
     bool IsVNConstant(ValueNum vn);
 
+    // Returns true iff the VN represents a (non-handle) constant.
+    bool IsVNVectorZero(ValueNum vn);
+
+    var_types GetVectorType(ValueNum vn);
+
     // Returns true iff the VN represents an integer constant.
     bool IsVNInt32Constant(ValueNum vn);
 
