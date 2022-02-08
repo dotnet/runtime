@@ -41,6 +41,7 @@
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
 
+    <!-- Copy node as a tar and than restore symbolic links that get broken on build machine -->
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit/bin:$PATH" />
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="mkdir -p $HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit &amp;&amp; tar -xf $HELIX_CORRELATION_PAYLOAD/build/emsdk/node-tar/node.tar -C $HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit" />
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export HELIX_NODEJS_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit" />
@@ -104,6 +105,7 @@
       <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
     </PropertyGroup>
     
+    <!-- Pack node as tar -->
     <Exec Condition="'$(WindowsShell)' != 'true' and '$(NeedsEMSDKNode)' == 'true'" Command="mkdir -p $(EmSdkDirForHelixPayload)node-tar &amp;&amp; tar -cf $(EmSdkDirForHelixPayload)node-tar/node.tar -C $(EmSdkDirForHelixPayload)node/14.15.5_64bit ." />
 
     <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ and find the closest one in
