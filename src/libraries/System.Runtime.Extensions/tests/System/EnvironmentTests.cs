@@ -96,6 +96,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Throws PNSE")]
         public void ProcessPath_MatchesExpectedValue()
         {
             string expectedProcessPath = PlatformDetection.IsBrowser ? null : Process.GetCurrentProcess().MainModule.FileName;
@@ -235,7 +236,7 @@ namespace System.Tests
         [Fact]
         public void WorkingSet_Valid()
         {
-            if (PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsBrowser || (PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst) || PlatformDetection.IstvOS)
                 Assert.Equal(0, Environment.WorkingSet);
             else
                 Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
