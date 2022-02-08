@@ -10,11 +10,20 @@ namespace System.Collections.Tests
     {
         public static IEnumerable<object?[]> ToString_Inputs()
         {
+            // Mainline scenarios
             yield return new object?[] { "key", "value", "[key, value]" };
             yield return new object?[] { 1, 2, "[1, 2]" };
+
+            // Types, nulls, and empty strings get standard ToString behavior
             yield return new object?[] { typeof(object), (object?)null, "[System.Object, ]" };
+            yield return new object?[] { (object?)null, (object?)null, "[, ]" };
+            yield return new object?[] { "", "", "[, ]" };
+
+            // There's no escaping; keys and values are emitted as-is
             yield return new object?[] { "[key, value", "]]", "[[key, value, ]]]" };
             yield return new object?[] { new DictionaryEntry("key", "key"), new DictionaryEntry("value", "value"), "[[key, key], [value, value]]" };
+
+            // There's no truncation; keys and values are emitted as-is
             yield return new object?[] { new String('K', 512), new String('V', 1024), $"[{new String('K', 512)}, {new String('V', 1024)}]" };
         }
 
