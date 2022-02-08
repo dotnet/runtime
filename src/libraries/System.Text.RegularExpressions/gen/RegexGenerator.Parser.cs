@@ -21,37 +21,35 @@ namespace System.Text.RegularExpressions.Generator
         private const string RegexName = "System.Text.RegularExpressions.Regex";
         private const string RegexGeneratorAttributeName = "System.Text.RegularExpressions.RegexGeneratorAttribute";
 
-        private static bool IsSyntaxTargetForGeneration(SyntaxNode node) =>
+        private static bool IsSyntaxTargetForGeneration(SyntaxNode node, CancellationToken cancellationToken) =>
             // We don't have a semantic model here, so the best we can do is say whether there are any attributes.
             node is MethodDeclarationSyntax { AttributeLists: { Count: > 0 } };
 
-        private static MethodDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+        private static bool IsSemanticTargetForGeneration(SemanticModel semanticModel, MethodDeclarationSyntax methodDeclarationSyntax, CancellationToken cancellationToken)
         {
-            var methodDeclarationSyntax = (MethodDeclarationSyntax)context.Node;
-
             foreach (AttributeListSyntax attributeListSyntax in methodDeclarationSyntax.AttributeLists)
             {
                 foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
                 {
-                    if (context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol is IMethodSymbol attributeSymbol &&
+                    if (semanticModel.GetSymbolInfo(attributeSyntax, cancellationToken).Symbol is IMethodSymbol attributeSymbol &&
                         attributeSymbol.ContainingType.ToDisplayString() == RegexGeneratorAttributeName)
                     {
-                        return methodDeclarationSyntax;
+                        return true;
                     }
                 }
             }
 
-            return null;
+            return false;
         }
 
         // Returns null if nothing to do, Diagnostic if there's an error to report, or RegexType if the type was analyzed successfully.
-        private static object? GetRegexTypeToEmit(Compilation compilation, MethodDeclarationSyntax methodSyntax, CancellationToken cancellationToken)
+        private static object? GetSemanticTargetForGeneration(GeneratorSyntaxContext context, CancellationToken cancellationToken)
         {
-            INamedTypeSymbol? regexSymbol = compilation.GetBestTypeByMetadataName(RegexName);
-            INamedTypeSymbol? regexGeneratorAttributeSymbol = compilation.GetBestTypeByMetadataName(RegexGeneratorAttributeName);
-            if (regexSymbol is null || regexGeneratorAttributeSymbol is null)
+            SemanticModel sm = context.SemanticModel;
+            var methodSyntax = (MethodDeclarationSyntax)context.Node;
+
+            if (!IsSemanticTargetForGeneration(sm, methodSyntax, cancellationToken))
             {
-                // Required types aren't available
                 return null;
             }
 
@@ -60,8 +58,6 @@ namespace System.Text.RegularExpressions.Generator
             {
                 return null;
             }
-
-            SemanticModel sm = compilation.GetSemanticModel(methodSyntax.SyntaxTree);
 
             IMethodSymbol? regexMethodSymbol = sm.GetDeclaredSymbol(methodSyntax, cancellationToken) as IMethodSymbol;
             if (regexMethodSymbol is null)
@@ -81,7 +77,7 @@ namespace System.Text.RegularExpressions.Generator
             int? matchTimeout = null;
             foreach (AttributeData attributeData in boundAttributes)
             {
-                if (attributeData.AttributeClass?.Equals(regexGeneratorAttributeSymbol) != true)
+                if (attributeData.AttributeClass?.ToDisplayString()?.Equals(RegexGeneratorAttributeName, StringComparison.Ordinal) != true)
                 {
                     continue;
                 }
@@ -127,7 +123,7 @@ namespace System.Text.RegularExpressions.Generator
             if (!regexMethodSymbol.IsPartialDefinition ||
                 regexMethodSymbol.Parameters.Length != 0 ||
                 regexMethodSymbol.Arity != 0 ||
-                !regexMethodSymbol.ReturnType.Equals(regexSymbol))
+                !regexMethodSymbol.ReturnType.ToDisplayString().Equals(RegexName, StringComparison.Ordinal))
             {
                 return Diagnostic.Create(DiagnosticDescriptors.RegexMethodMustHaveValidSignature, methodSyntax.GetLocation());
             }
