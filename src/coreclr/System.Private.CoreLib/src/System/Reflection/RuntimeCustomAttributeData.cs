@@ -1873,12 +1873,6 @@ namespace System.Reflection
             }
             type.GetRuntimeModule().MetadataImport.GetClassLayout(type.MetadataToken, out int pack, out int size);
 
-            // Metadata parameter checking should not have allowed 0 for packing size.
-            // The runtime later converts a packing size of 0 to 8 so do the same here
-            // because it's more useful from a user perspective.
-            if (pack == 0)
-                pack = 8; // DEFAULT_PACKING_SIZE
-
             StructLayoutAttribute attribute = new StructLayoutAttribute(layoutKind);
 
             attribute.Pack = pack;
