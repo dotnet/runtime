@@ -4605,7 +4605,6 @@ bool ValueNumStore::IsVNVectorZero(ValueNum vn)
     if (c->m_attribs == CEA_Func1)
     {
         VNDefFunc1Arg* const chunkSlots = reinterpret_cast<VNDefFunc1Arg*>(c->m_defs);
-        VNFunc vnFunc = chunkSlots[vn - c->m_baseVN].m_func;
         switch (chunkSlots[vn - c->m_baseVN].m_func)
         {
             case VNF_HWI_Vector128_get_Zero:
