@@ -11,14 +11,14 @@ void CryptoNative_ErrClearError()
 
 uint64_t CryptoNative_ErrGetErrorAlloc(int32_t* isAllocFailure)
 {
-    unsigned long err = ERR_get_error();
+    unsigned long err = ERR_peek_last_error();
 
     if (isAllocFailure)
     {
         *isAllocFailure = ERR_GET_REASON(err) == ERR_R_MALLOC_FAILURE;
     }
 
-    // We took the first, clear the rest.
+    // We took the one we want, clear the rest.
     ERR_clear_error();
     return err;
 }
