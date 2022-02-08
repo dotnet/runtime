@@ -17,16 +17,16 @@ public struct S0
     public static int s_result;
     public void M4(int arg0, sbyte[] arg1)
     {
-        Program.s_rt.WriteLine(arg0);
+        ForwardSubCallArgInterference3.s_rt.WriteLine(arg0);
         s_result = arg0 + 100;
     }
 
     public sbyte[] M6(ref int arg0, bool arg1, ref S0 arg2, ref byte arg3)
     {
-        var vr0 = Program.s_5;
-        Program.M7(arg2, vr0, ref Program.s_6, ref Program.s_10, arg0);
+        var vr0 = ForwardSubCallArgInterference3.s_5;
+        ForwardSubCallArgInterference3.M7(arg2, vr0, ref ForwardSubCallArgInterference3.s_6, ref ForwardSubCallArgInterference3.s_10, arg0);
         var vr1 = arg2.F6;
-        Program.M8(arg2, vr1);
+        ForwardSubCallArgInterference3.M8(arg2, vr1);
         arg0 = this.F2--;
         return new sbyte[]{1};
     }
