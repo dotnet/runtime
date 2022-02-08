@@ -4626,14 +4626,14 @@ bool ValueNumStore::IsVNVectorZero(ValueNum vn)
 #if FEATURE_SIMD
 VNFuncSimdTypeInfo ValueNumStore::GetFuncSimdTypeOfVN(ValueNum vn)
 {
-    VNFuncSimdTypeInfo vnFuncSimdType;
+    VNFuncSimdTypeInfo vnInfo;
 
     if (vn == NoVN)
     {
-        vnFuncSimdType.m_simdTypeVN      = NoVN;
-        vnFuncSimdType.m_simdSize        = 0;
-        vnFuncSimdType.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
-        return vnFuncSimdType;
+        vnInfo.m_simdTypeVN      = NoVN;
+        vnInfo.m_simdSize        = 0;
+        vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
+        return vnInfo;
     }
     Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
     if (c->m_attribs == CEA_Func1)
@@ -4649,17 +4649,17 @@ VNFuncSimdTypeInfo ValueNumStore::GetFuncSimdTypeOfVN(ValueNum vn)
 
             if (simdTypeSlot.m_func == VNF_SimdType)
             {
-                vnFuncSimdType.m_simdTypeVN      = simdTypeVN;
-                vnFuncSimdType.m_simdSize        = GetConstantInt32(simdTypeSlot.m_arg0);
-                vnFuncSimdType.m_simdBaseJitType = (CorInfoType)GetConstantInt32(simdTypeSlot.m_arg1);
-                return vnFuncSimdType;
+                vnInfo.m_simdTypeVN      = simdTypeVN;
+                vnInfo.m_simdSize        = GetConstantInt32(simdTypeSlot.m_arg0);
+                vnInfo.m_simdBaseJitType = (CorInfoType)GetConstantInt32(simdTypeSlot.m_arg1);
+                return vnInfo;
             }
         }
     }
-    vnFuncSimdType.m_simdTypeVN      = NoVN;
-    vnFuncSimdType.m_simdSize        = 0;
-    vnFuncSimdType.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
-    return vnFuncSimdType;
+    vnInfo.m_simdTypeVN      = NoVN;
+    vnInfo.m_simdSize        = 0;
+    vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
+    return vnInfo;
 }
 #endif // FEATURE_SIMD
 
