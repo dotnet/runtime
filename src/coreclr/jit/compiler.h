@@ -10858,10 +10858,8 @@ public:
 public:
     struct ShadowParamVarInfo
     {
-        static const unsigned NO_SHADOW_COPY = UINT_MAX;
-
         FixedBitVect* assignGroup; // the closure set of variables whose values depend on each other
-        unsigned      shadowCopy;  // Lcl var num, valid only if not set to NO_SHADOW_COPY
+        unsigned      shadowCopy;  // Lcl var num, if not valid set to BAD_VAR_NUM
 
         static bool mayNeedShadowCopy(LclVarDsc* varDsc)
         {

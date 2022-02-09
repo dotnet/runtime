@@ -366,7 +366,7 @@ void Compiler::gsParamsToShadows()
     for (UINT lclNum = 0; lclNum < lvaOldCount; lclNum++)
     {
         LclVarDsc* varDsc                  = lvaGetDesc(lclNum);
-        gsShadowVarInfo[lclNum].shadowCopy = ShadowParamVarInfo::NO_SHADOW_COPY;
+        gsShadowVarInfo[lclNum].shadowCopy = BAD_VAR_NUM;
 
         // Only care about params whose values are on the stack
         if (!ShadowParamVarInfo::mayNeedShadowCopy(varDsc))
@@ -450,7 +450,7 @@ void Compiler::gsParamsToShadows()
             unsigned int lclNum       = tree->AsLclVarCommon()->GetLclNum();
             unsigned int shadowLclNum = m_compiler->gsShadowVarInfo[lclNum].shadowCopy;
 
-            if (shadowLclNum != Compiler::ShadowParamVarInfo::NO_SHADOW_COPY)
+            if (shadowLclNum != BAD_VAR_NUM)
             {
                 LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
                 assert(ShadowParamVarInfo::mayNeedShadowCopy(varDsc));
@@ -490,7 +490,7 @@ void Compiler::gsParamsToShadows()
         const LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
         const unsigned shadowVarNum = gsShadowVarInfo[lclNum].shadowCopy;
-        if (shadowVarNum == ShadowParamVarInfo::NO_SHADOW_COPY)
+        if (shadowVarNum == BAD_VAR_NUM)
         {
             continue;
         }
@@ -542,7 +542,7 @@ void Compiler::gsParamsToShadows()
                 const LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
                 const unsigned shadowVarNum = gsShadowVarInfo[lclNum].shadowCopy;
-                if (shadowVarNum == ShadowParamVarInfo::NO_SHADOW_COPY)
+                if (shadowVarNum == BAD_VAR_NUM)
                 {
                     continue;
                 }
