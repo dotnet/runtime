@@ -41,7 +41,13 @@
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
 
+    <!-- Fix symbolic links that are broken already on build machine and also in the correlation payload -->
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit/bin:$PATH" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export HELIX_NODEJS_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="rm $HELIX_NODEJS_PATH/bin/npm" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="rm $HELIX_NODEJS_PATH/bin/npx" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="ln -s ../lib/node_modules/npm/bin/npm-cli.js $HELIX_NODEJS_PATH/bin/npm" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="ln -s ../lib/node_modules/npm/bin/npx-cli.js $HELIX_NODEJS_PATH/bin/npx" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
@@ -137,7 +143,7 @@
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)node"          Destination="build/emsdk/node" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser'">
+    <ItemGroup Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJS'">
       <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" Condition="Exists('$(TestEchoMiddleware)')" />
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" Condition="Exists('$(RemoteLoopMiddleware)')" />
     </ItemGroup>
