@@ -726,6 +726,28 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_MultiReg) != 0;
     }
 
+    static int GetMultiRegCount(NamedIntrinsic id)
+    {
+        assert(IsMultiReg(id));
+
+        switch (id)
+        {
+#ifdef TARGET_ARM64
+            // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector64:
+            case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector128:
+            case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+                return 2;
+#endif
+
+            default:
+                unreached();
+        }
+    }
+
 #ifdef TARGET_ARM64
     static bool SIMDScalar(NamedIntrinsic id)
     {
