@@ -78,9 +78,10 @@ namespace System.Net.NetworkInformation.Tests
                 ? TestSettings.PayloadAsBytes
                 : Array.Empty<byte>();
 
-        public static bool DoesNotUsePingUtility => !UsesPingUtility;
-
-        public static bool UsesPingUtility => (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) && !Capability.CanUseRawSockets(TestSettings.GetLocalIPAddress().AddressFamily);
+        public static bool DoesNotUsePingUtility => OperatingSystem.IsWindows() ||
+                                OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsWatchOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ||
+                                Capability.CanUseRawSockets(TestSettings.GetLocalIPAddress().AddressFamily);
+        public static bool UsesPingUtility => !DoesNotUsePingUtility;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsync_InvalidArgs()
