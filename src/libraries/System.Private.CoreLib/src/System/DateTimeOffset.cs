@@ -470,24 +470,14 @@ namespace System
             }
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             info.AddValue("DateTime", _dateTime); // Do not rename (binary serialization)
             info.AddValue("OffsetMinutes", _offsetMinutes); // Do not rename (binary serialization)
         }
 
-        private DateTimeOffset(SerializationInfo info, StreamingContext context)
+        private DateTimeOffset(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             _dateTime = (DateTime)info.GetValue("DateTime", typeof(DateTime))!; // Do not rename (binary serialization)
             _offsetMinutes = (short)info.GetValue("OffsetMinutes", typeof(short))!; // Do not rename (binary serialization)
         }

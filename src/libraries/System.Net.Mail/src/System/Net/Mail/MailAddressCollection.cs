@@ -23,23 +23,13 @@ namespace System.Net.Mail
             ParseValue(addresses);
         }
 
-        protected override void SetItem(int index, MailAddress item)
+        protected override void SetItem(int index, MailAddress item!!)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
-
             base.SetItem(index, item);
         }
 
-        protected override void InsertItem(int index, MailAddress item)
+        protected override void InsertItem(int index, MailAddress item!!)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
-
             base.InsertItem(index, item);
         }
 

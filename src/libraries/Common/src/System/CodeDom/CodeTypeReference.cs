@@ -42,13 +42,8 @@ namespace System.Runtime.Serialization
             ArrayElementType = null;
         }
 
-        public CodeTypeReference(Type type)
+        public CodeTypeReference(Type type!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
             if (type.IsArray)
             {
                 ArrayRank = type.GetArrayRank();

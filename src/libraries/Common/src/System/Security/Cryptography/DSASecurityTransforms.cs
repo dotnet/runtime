@@ -66,11 +66,8 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] CreateSignature(byte[] rgbHash)
+            public override byte[] CreateSignature(byte[] rgbHash!!)
             {
-                if (rgbHash == null)
-                    throw new ArgumentNullException(nameof(rgbHash));
-
                 SecKeyPair keys = GetKeys();
 
                 if (keys.PrivateKey == null)
@@ -93,13 +90,8 @@ namespace System.Security.Cryptography
                 return ieeeFormatSignature;
             }
 
-            public override bool VerifySignature(byte[] hash, byte[] signature)
+            public override bool VerifySignature(byte[] hash!!, byte[] signature!!)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
-                if (signature == null)
-                    throw new ArgumentNullException(nameof(signature));
-
                 return VerifySignature((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
 

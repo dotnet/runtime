@@ -11,10 +11,8 @@ namespace System.Security.Cryptography
         {
             private ECAndroid _key;
 
-            internal ECDiffieHellmanAndroidPublicKey(SafeEcKeyHandle ecKeyHandle)
+            internal ECDiffieHellmanAndroidPublicKey(SafeEcKeyHandle ecKeyHandle!!)
             {
-                if (ecKeyHandle == null)
-                    throw new ArgumentNullException(nameof(ecKeyHandle));
                 if (ecKeyHandle.IsInvalid)
                     throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(ecKeyHandle));
 

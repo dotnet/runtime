@@ -49,8 +49,8 @@ jobs:
         value: $(buildConfigUpper)
 
       - name: _runSmokeTestsOnlyArg
-        value: '/p:RunSmokeTestsOnly=$(isNotExtraPlatformsBuild)'
-      
+        value: '/p:RunSmokeTestsOnly=$(isRunSmokeTestsOnly)'
+
       - name: _hostedOs
         value: ${{ parameters.jobParameters.hostedOs }}
 

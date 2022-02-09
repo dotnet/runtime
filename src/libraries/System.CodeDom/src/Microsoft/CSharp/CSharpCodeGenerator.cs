@@ -516,13 +516,8 @@ namespace Microsoft.CSharp
             GenerateNamespaceEnd(e);
         }
 
-        private void GenerateStatement(CodeStatement e)
+        private void GenerateStatement(CodeStatement e!!)
         {
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
-
             if (e.StartDirectives.Count > 0)
             {
                 GenerateDirectives(e.StartDirectives);
@@ -2680,13 +2675,8 @@ namespace Microsoft.CSharp
             }
         }
 
-        public string CreateValidIdentifier(string name)
+        public string CreateValidIdentifier(string name!!)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             if (CSharpHelpers.IsPrefixTwoUnderscore(name))
             {
                 name = "_" + name;
@@ -2700,13 +2690,8 @@ namespace Microsoft.CSharp
             return name;
         }
 
-        public string CreateEscapedIdentifier(string name)
+        public string CreateEscapedIdentifier(string name!!)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             return CSharpHelpers.CreateEscapedIdentifier(name);
         }
 
@@ -2887,13 +2872,8 @@ namespace Microsoft.CSharp
             }
         }
 
-        CompilerResults ICodeCompiler.CompileAssemblyFromDom(CompilerParameters options, CodeCompileUnit e)
+        CompilerResults ICodeCompiler.CompileAssemblyFromDom(CompilerParameters options!!, CodeCompileUnit e)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
             try
             {
                 return FromDom(options, e);
@@ -2904,13 +2884,8 @@ namespace Microsoft.CSharp
             }
         }
 
-        CompilerResults ICodeCompiler.CompileAssemblyFromFile(CompilerParameters options, string fileName)
+        CompilerResults ICodeCompiler.CompileAssemblyFromFile(CompilerParameters options!!, string fileName)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
             try
             {
                 return FromFile(options, fileName);
@@ -2921,13 +2896,8 @@ namespace Microsoft.CSharp
             }
         }
 
-        CompilerResults ICodeCompiler.CompileAssemblyFromSource(CompilerParameters options, string source)
+        CompilerResults ICodeCompiler.CompileAssemblyFromSource(CompilerParameters options!!, string source)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
             try
             {
                 return FromSource(options, source);
@@ -2938,13 +2908,8 @@ namespace Microsoft.CSharp
             }
         }
 
-        CompilerResults ICodeCompiler.CompileAssemblyFromSourceBatch(CompilerParameters options, string[] sources)
+        CompilerResults ICodeCompiler.CompileAssemblyFromSourceBatch(CompilerParameters options!!, string[] sources)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
             try
             {
                 return FromSourceBatch(options, sources);
@@ -2955,17 +2920,8 @@ namespace Microsoft.CSharp
             }
         }
 
-        CompilerResults ICodeCompiler.CompileAssemblyFromFileBatch(CompilerParameters options, string[] fileNames)
+        CompilerResults ICodeCompiler.CompileAssemblyFromFileBatch(CompilerParameters options!!, string[] fileNames!!)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (fileNames == null)
-            {
-                throw new ArgumentNullException(nameof(fileNames));
-            }
-
             try
             {
                 // Try opening the files to make sure they exists.  This will throw an exception
@@ -2983,13 +2939,8 @@ namespace Microsoft.CSharp
             }
         }
 
-        CompilerResults ICodeCompiler.CompileAssemblyFromDomBatch(CompilerParameters options, CodeCompileUnit[] ea)
+        CompilerResults ICodeCompiler.CompileAssemblyFromDomBatch(CompilerParameters options!!, CodeCompileUnit[] ea)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
             try
             {
                 return FromDomBatch(options, ea);
@@ -3000,28 +2951,14 @@ namespace Microsoft.CSharp
             }
         }
 
-        private CompilerResults FromDom(CompilerParameters options, CodeCompileUnit e)
+        private CompilerResults FromDom(CompilerParameters options!!, CodeCompileUnit e)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
             return FromDomBatch(options, new CodeCompileUnit[1] { e });
         }
 
 
-        private CompilerResults FromFile(CompilerParameters options, string fileName)
+        private CompilerResults FromFile(CompilerParameters options!!, string fileName!!)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (fileName == null)
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
-
             // Try opening the file to make sure it exists.  This will throw an exception
             // if it doesn't
             File.OpenRead(fileName).Dispose();
@@ -3029,27 +2966,13 @@ namespace Microsoft.CSharp
             return FromFileBatch(options, new string[1] { fileName });
         }
 
-        private CompilerResults FromSource(CompilerParameters options, string source)
+        private CompilerResults FromSource(CompilerParameters options!!, string source)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
             return FromSourceBatch(options, new string[1] { source });
         }
 
-        private CompilerResults FromDomBatch(CompilerParameters options, CodeCompileUnit[] ea)
+        private CompilerResults FromDomBatch(CompilerParameters options!!, CodeCompileUnit[] ea!!)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (ea == null)
-            {
-                throw new ArgumentNullException(nameof(ea));
-            }
-
             string[] filenames = new string[ea.Length];
 
             for (int i = 0; i < ea.Length; i++)
@@ -3086,17 +3009,8 @@ namespace Microsoft.CSharp
             }
         }
 
-        private CompilerResults FromSourceBatch(CompilerParameters options, string[] sources)
+        private CompilerResults FromSourceBatch(CompilerParameters options!!, string[] sources!!)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (sources == null)
-            {
-                throw new ArgumentNullException(nameof(sources));
-            }
-
             string[] filenames = new string[sources.Length];
 
             for (int i = 0; i < sources.Length; i++)

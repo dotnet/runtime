@@ -100,13 +100,8 @@ namespace System.DirectoryServices.ActiveDirectory
                                               /* ReplicaLink */ new Syntax("2.5.5.10", 127, s_replicaLinkOMObjectClass)};
 
         #region constructors
-        public ActiveDirectorySchemaProperty(DirectoryContext context, string ldapDisplayName)
+        public ActiveDirectorySchemaProperty(DirectoryContext context!!, string ldapDisplayName)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             if ((context.Name == null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
@@ -278,15 +273,9 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion IDisposable
 
         #region public methods
-        public static ActiveDirectorySchemaProperty FindByName(DirectoryContext context, string ldapDisplayName)
+        public static ActiveDirectorySchemaProperty FindByName(DirectoryContext context!!, string ldapDisplayName)
         {
             ActiveDirectorySchemaProperty? schemaProperty = null;
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             if ((context.Name == null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));

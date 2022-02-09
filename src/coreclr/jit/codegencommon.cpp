@@ -661,6 +661,9 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
             return RBM_INIT_PINVOKE_FRAME_TRASH;
 
+        case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+            return RBM_VALIDATE_INDIRECT_CALL_TRASH;
+
         default:
             return RBM_CALLEE_TRASH;
     }
@@ -2202,6 +2205,11 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("; %u inlinees with PGO data; %u single block inlinees; %u inlinees without PGO data\n",
                    compiler->fgPgoInlineePgo, compiler->fgPgoInlineeNoPgoSingleBlock, compiler->fgPgoInlineeNoPgo);
+        }
+
+        if (compiler->opts.IsCFGEnabled())
+        {
+            printf("; control-flow guard enabled\n");
         }
 
         if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
@@ -4631,6 +4639,7 @@ void CodeGen::genCheckUseBlockInit()
         if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
         {
             noway_assert(varDsc->lvRefCnt() == 0);
+            varDsc->lvMustInit = 0;
             continue;
         }
 
@@ -4643,6 +4652,7 @@ void CodeGen::genCheckUseBlockInit()
 
         if (compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
+            varDsc->lvMustInit = 0;
             continue;
         }
 
@@ -4651,6 +4661,7 @@ void CodeGen::genCheckUseBlockInit()
             // For Compiler::PROMOTION_TYPE_DEPENDENT type of promotion, the whole struct should have been
             // initialized by the parent struct. No need to set the lvMustInit bit in the
             // field locals.
+            varDsc->lvMustInit = 0;
             continue;
         }
 

@@ -76,7 +76,15 @@ internal static partial class Interop
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherReset")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvpCipherReset(SafeEvpCipherCtxHandle ctx);
+        private static unsafe partial bool EvpCipherReset(SafeEvpCipherCtxHandle ctx, byte* pIv, int cIv);
+
+        internal static unsafe bool EvpCipherReset(SafeEvpCipherCtxHandle ctx, ReadOnlySpan<byte> iv)
+        {
+            fixed (byte* pIv = &MemoryMarshal.GetReference(iv))
+            {
+                return EvpCipherReset(ctx, pIv, iv.Length);
+            }
+        }
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherCtxSetPadding")]
         [return: MarshalAs(UnmanagedType.Bool)]

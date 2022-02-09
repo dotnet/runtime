@@ -171,9 +171,6 @@
   <data name="Argument_NewMMFTruncateModeNotAllowed" xml:space="preserve">
     <value>FileMode.Truncate is not permitted when creating new memory mapped files.</value>
   </data>
-  <data name="ArgumentNull_FileStream" xml:space="preserve">
-    <value>fileStream cannot be null.</value>
-  </data>
   <data name="ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed" xml:space="preserve">
     <value>The capacity cannot be greater than the size of the system's logical address space.</value>
   </data>

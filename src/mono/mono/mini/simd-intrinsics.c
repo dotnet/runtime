@@ -576,9 +576,11 @@ static guint16 sri_vector_methods [] = {
 	SN_AsVector256,
 	SN_AsVector3,
 	SN_AsVector4,
+	SN_Ceiling,
 	SN_Create,
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
+	SN_Floor,
 	SN_GetElement,
 	SN_GetLower,
 	SN_GetUpper,
@@ -649,6 +651,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (ret_type) || !MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+	}
+	case SN_Ceiling:
+	case SN_Floor: {
+#ifdef TARGET_ARM64
+		if ((arg0_type != MONO_TYPE_R4) && (arg0_type != MONO_TYPE_R8))
+			return NULL;
+		int ceil_or_floor = id == SN_Ceiling ? INTRINS_AARCH64_ADV_SIMD_FRINTP : INTRINS_AARCH64_ADV_SIMD_FRINTM;
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, ceil_or_floor, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
 	}
 	case SN_Create: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);

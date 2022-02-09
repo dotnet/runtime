@@ -427,13 +427,8 @@ namespace System.Reflection.Metadata
 
         /// <exception cref="ArgumentNullException"><paramref name="suffix"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void LinkSuffix(BlobBuilder suffix)
+        public void LinkSuffix(BlobBuilder suffix!!)
         {
-            if (suffix == null)
-            {
-                throw new ArgumentNullException(nameof(suffix));
-            }
-
             // TODO: consider copying data from right to left while there is space
 
             if (!IsHead || !suffix.IsHead)
@@ -678,13 +673,8 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is negative.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         /// <returns>Bytes successfully written from the <paramref name="source" />.</returns>
-        public int TryWriteBytes(Stream source, int byteCount)
+        public int TryWriteBytes(Stream source!!, int byteCount)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
             if (byteCount < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(byteCount));
@@ -1026,13 +1016,8 @@ namespace System.Reflection.Metadata
         /// The 1 signifies Unicode characters that require handling beyond that normally provided for 8-bit encoding sets.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void WriteUserString(string value)
+        public void WriteUserString(string value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             WriteCompressedInteger(BlobUtilities.GetUserStringByteLength(value.Length));
             WriteUTF16(value);
             WriteByte(BlobUtilities.GetUserStringTrailingByte(value));

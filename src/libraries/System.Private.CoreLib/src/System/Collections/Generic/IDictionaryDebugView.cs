@@ -9,11 +9,8 @@ namespace System.Collections.Generic
     {
         private readonly IDictionary<K, V> _dict;
 
-        public IDictionaryDebugView(IDictionary<K, V> dictionary)
+        public IDictionaryDebugView(IDictionary<K, V> dictionary!!)
         {
-            if (dictionary == null)
-                throw new ArgumentNullException(nameof(dictionary));
-
             _dict = dictionary;
         }
 
@@ -33,11 +30,8 @@ namespace System.Collections.Generic
     {
         private readonly ICollection<TKey> _collection;
 
-        public DictionaryKeyCollectionDebugView(ICollection<TKey> collection)
+        public DictionaryKeyCollectionDebugView(ICollection<TKey> collection!!)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
-
             _collection = collection;
         }
 
@@ -57,11 +51,8 @@ namespace System.Collections.Generic
     {
         private readonly ICollection<TValue> _collection;
 
-        public DictionaryValueCollectionDebugView(ICollection<TValue> collection)
+        public DictionaryValueCollectionDebugView(ICollection<TValue> collection!!)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
-
             _collection = collection;
         }
 

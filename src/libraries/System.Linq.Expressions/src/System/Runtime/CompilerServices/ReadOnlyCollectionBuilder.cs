@@ -46,11 +46,8 @@ namespace System.Runtime.CompilerServices
         /// Constructs a <see cref="ReadOnlyCollectionBuilder{T}"/>, copying contents of the given collection.
         /// </summary>
         /// <param name="collection">The collection whose elements to copy to the builder.</param>
-        public ReadOnlyCollectionBuilder(IEnumerable<T> collection)
+        public ReadOnlyCollectionBuilder(IEnumerable<T> collection!!)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
-
             if (collection is ICollection<T> c)
             {
                 int count = c.Count;
@@ -382,10 +379,8 @@ namespace System.Runtime.CompilerServices
 
         #region ICollection Members
 
-        void ICollection.CopyTo(Array array, int index)
+        void ICollection.CopyTo(Array array!!, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(nameof(array));
 

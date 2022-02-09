@@ -17,6 +17,12 @@ variables:
   value: ${{ eq(variables['Build.DefinitionName'], 'runtime-extra-platforms') }}
 - name: isNotExtraPlatformsBuild
   value: ${{ ne(variables['Build.DefinitionName'], 'runtime-extra-platforms') }}
+- name: isWasmOnlyBuild
+  value: ${{ eq(variables['Build.DefinitionName'], 'runtime-wasm') }}
+- name: isRunSmokeTestsOnly
+  value: ${{ and(ne(variables['Build.DefinitionName'], 'runtime-extra-platforms'), ne(variables['Build.DefinitionName'], 'runtime-wasm')) }}
+- name: isNotSpecificPlatformOnlyBuild
+  value: ${{ ne(variables['Build.DefinitionName'], 'runtime-wasm') }}
 
 # We only run evaluate paths on runtime, runtime-staging and runtime-community pipelines on PRs
 # keep in sync with /eng/pipelines/common/xplat-setup.yml

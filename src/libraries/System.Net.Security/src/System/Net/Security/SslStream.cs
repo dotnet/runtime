@@ -282,13 +282,8 @@ namespace System.Net.Security
             AuthenticateAsClient(options);
         }
 
-        public void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions)
+        public void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions!!)
         {
-            if (sslClientAuthenticationOptions == null)
-            {
-                throw new ArgumentNullException(nameof(sslClientAuthenticationOptions));
-            }
-
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
@@ -320,13 +315,8 @@ namespace System.Net.Security
             AuthenticateAsServer(options);
         }
 
-        public void AuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        public void AuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions!!)
         {
-            if (sslServerAuthenticationOptions == null)
-            {
-                throw new ArgumentNullException(nameof(sslServerAuthenticationOptions));
-            }
-
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
 
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
@@ -353,13 +343,8 @@ namespace System.Net.Security
             return AuthenticateAsClientAsync(options);
         }
 
-        public Task AuthenticateAsClientAsync(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
+        public Task AuthenticateAsClientAsync(SslClientAuthenticationOptions sslClientAuthenticationOptions!!, CancellationToken cancellationToken = default)
         {
-            if (sslClientAuthenticationOptions == null)
-            {
-                throw new ArgumentNullException(nameof(sslClientAuthenticationOptions));
-            }
-
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
@@ -408,13 +393,8 @@ namespace System.Net.Security
             return AuthenticateAsServerAsync(options);
         }
 
-        public Task AuthenticateAsServerAsync(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken = default)
+        public Task AuthenticateAsServerAsync(SslServerAuthenticationOptions sslServerAuthenticationOptions!!, CancellationToken cancellationToken = default)
         {
-            if (sslServerAuthenticationOptions == null)
-            {
-                throw new ArgumentNullException(nameof(sslServerAuthenticationOptions));
-            }
-
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 

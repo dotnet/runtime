@@ -406,13 +406,8 @@ namespace System.ComponentModel.DataAnnotations
         ///     is thrown when <see cref="IsValid(object, ValidationContext)" />
         ///     has not been implemented by a derived class.
         /// </exception>
-        public ValidationResult? GetValidationResult(object? value, ValidationContext validationContext)
+        public ValidationResult? GetValidationResult(object? value, ValidationContext validationContext!!)
         {
-            if (validationContext == null)
-            {
-                throw new ArgumentNullException(nameof(validationContext));
-            }
-
             var result = IsValid(value, validationContext);
 
             // If validation fails, we want to ensure we have a ValidationResult that guarantees it has an ErrorMessage
@@ -476,13 +471,8 @@ namespace System.ComponentModel.DataAnnotations
         ///     is thrown when <see cref="IsValid(object, ValidationContext)" />
         ///     has not been implemented by a derived class.
         /// </exception>
-        public void Validate(object? value, ValidationContext validationContext)
+        public void Validate(object? value, ValidationContext validationContext!!)
         {
-            if (validationContext == null)
-            {
-                throw new ArgumentNullException(nameof(validationContext));
-            }
-
             ValidationResult? result = GetValidationResult(value, validationContext);
 
             if (result != null)

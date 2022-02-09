@@ -28,14 +28,9 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance.</param>
         /// <param name="createOptions">The func used to create the new instance.</param>
         /// <returns>The options instance.</returns>
-        public virtual TOptions GetOrAdd(string name, Func<TOptions> createOptions)
+        public virtual TOptions GetOrAdd(string name, Func<TOptions> createOptions!!)
         {
-            if (createOptions == null)
-            {
-                throw new ArgumentNullException(nameof(createOptions));
-            }
-
-            name = name ?? Options.DefaultName;
+            name ??= Options.DefaultName;
             Lazy<TOptions> value;
 
 #if NETSTANDARD2_1
@@ -74,13 +69,8 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance.</param>
         /// <param name="options">The options instance.</param>
         /// <returns>Whether anything was added.</returns>
-        public virtual bool TryAdd(string name, TOptions options)
+        public virtual bool TryAdd(string name, TOptions options!!)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
             return _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
 #if !NETSTANDARD2_1
                 () =>

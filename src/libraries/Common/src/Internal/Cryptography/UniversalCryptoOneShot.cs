@@ -50,6 +50,11 @@ namespace Internal.Cryptography
                 {
                     int transformWritten = cipher.TransformFinal(input, buffer);
                     decryptedBuffer = buffer.Slice(0, transformWritten);
+
+                    // This intentionally passes in BlockSizeInBytes instead of PaddingSizeInBytes. This is so that
+                    // "extra padded" CFB data can still be decrypted. The .NET Framework always padded CFB8 to the
+                    // block size, not the feedback size. We want the one-shot to be able to continue to decrypt
+                    // those ciphertexts, so for CFB8 we are more lenient on the number of allowed padding bytes.
                     int unpaddedLength = SymmetricPadding.GetPaddingLength(decryptedBuffer, paddingMode, cipher.BlockSizeInBytes); // validates padding
 
                     if (unpaddedLength > output.Length)

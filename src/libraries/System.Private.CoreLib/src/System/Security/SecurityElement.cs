@@ -31,22 +31,16 @@ namespace System.Security
 
         //-------------------------- Constructors ---------------------------
 
-        public SecurityElement(string tag)
+        public SecurityElement(string tag!!)
         {
-            if (tag == null)
-                throw new ArgumentNullException(nameof(tag));
-
             if (!IsValidTag(tag))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
             _tag = tag;
         }
 
-        public SecurityElement(string tag, string? text)
+        public SecurityElement(string tag!!, string? text)
         {
-            if (tag == null)
-                throw new ArgumentNullException(nameof(tag));
-
             if (!IsValidTag(tag))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
@@ -191,14 +185,8 @@ namespace System.Security
             _attributes.Add(value);
         }
 
-        public void AddAttribute(string name, string value)
+        public void AddAttribute(string name!!, string value!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             if (!IsValidAttributeName(name))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementName, name));
 
@@ -208,11 +196,8 @@ namespace System.Security
             AddAttributeSafe(name, value);
         }
 
-        public void AddChild(SecurityElement child)
+        public void AddChild(SecurityElement child!!)
         {
-            if (child == null)
-                throw new ArgumentNullException(nameof(child));
-
             _children ??= new ArrayList(ChildrenTypical);
 
             _children.Add(child);
@@ -497,11 +482,8 @@ namespace System.Security
             }
         }
 
-        public string? Attribute(string name)
+        public string? Attribute(string name!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             // Note: we don't check for validity here because an
             // if an invalid name is passed we simply won't find it.
             if (_attributes == null)
@@ -529,12 +511,10 @@ namespace System.Security
             return null;
         }
 
-        public SecurityElement? SearchForChildByTag(string tag)
+        public SecurityElement? SearchForChildByTag(string tag!!)
         {
             // Go through all the children and see if we can
             // find the ones that are asked for (matching tags)
-            if (tag == null)
-                throw new ArgumentNullException(nameof(tag));
 
             // Note: we don't check for a valid tag here because
             // an invalid tag simply won't be found.
@@ -548,12 +528,10 @@ namespace System.Security
             return null;
         }
 
-        public string? SearchForTextOfTag(string tag)
+        public string? SearchForTextOfTag(string tag!!)
         {
             // Search on each child in order and each
             // child's child, depth-first
-            if (tag == null)
-                throw new ArgumentNullException(nameof(tag));
 
             // Note: we don't check for a valid tag here because
             // an invalid tag simply won't be found.
@@ -571,12 +549,6 @@ namespace System.Security
             return null;
         }
 
-        public static SecurityElement? FromString(string xml)
-        {
-            if (xml == null)
-                throw new ArgumentNullException(nameof(xml));
-
-            return default;
-        }
+        public static SecurityElement? FromString(string xml!!) => default;
     }
 }

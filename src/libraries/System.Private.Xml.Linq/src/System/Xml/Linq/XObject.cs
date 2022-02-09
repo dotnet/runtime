@@ -77,9 +77,8 @@ namespace System.Xml.Linq
         /// Adds an object to the annotation list of this <see cref="XObject"/>.
         /// </summary>
         /// <param name="annotation">The annotation to add.</param>
-        public void AddAnnotation(object annotation)
+        public void AddAnnotation(object annotation!!)
         {
-            if (annotation == null) throw new ArgumentNullException(nameof(annotation));
             if (annotations == null)
             {
                 annotations = annotation is object[]? new object[] { annotation } : annotation;

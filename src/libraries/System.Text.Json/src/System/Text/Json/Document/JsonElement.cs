@@ -111,11 +111,8 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public JsonElement GetProperty(string propertyName)
+        public JsonElement GetProperty(string propertyName!!)
         {
-            if (propertyName == null)
-                throw new ArgumentNullException(nameof(propertyName));
-
             if (TryGetProperty(propertyName, out JsonElement property))
             {
                 return property;
@@ -232,11 +229,8 @@ namespace System.Text.Json
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
         /// <seealso cref="EnumerateObject"/>
-        public bool TryGetProperty(string propertyName, out JsonElement value)
+        public bool TryGetProperty(string propertyName!!, out JsonElement value)
         {
-            if (propertyName == null)
-                throw new ArgumentNullException(nameof(propertyName));
-
             return TryGetProperty(propertyName.AsSpan(), out value);
         }
 
@@ -1300,13 +1294,8 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public void WriteTo(Utf8JsonWriter writer)
+        public void WriteTo(Utf8JsonWriter writer!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             CheckValidInstance();
 
             _parent.WriteElementTo(_idx, writer);

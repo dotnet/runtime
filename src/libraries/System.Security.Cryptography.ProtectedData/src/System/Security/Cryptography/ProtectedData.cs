@@ -14,19 +14,13 @@ namespace System.Security.Cryptography
     {
         private static readonly byte[] s_nonEmpty = new byte[1];
 
-        public static byte[] Protect(byte[] userData, byte[]? optionalEntropy, DataProtectionScope scope)
+        public static byte[] Protect(byte[] userData!!, byte[]? optionalEntropy, DataProtectionScope scope)
         {
-            if (userData == null)
-                throw new ArgumentNullException(nameof(userData));
-
             return ProtectOrUnprotect(userData, optionalEntropy, scope, protect: true);
         }
 
-        public static byte[] Unprotect(byte[] encryptedData, byte[]? optionalEntropy, DataProtectionScope scope)
+        public static byte[] Unprotect(byte[] encryptedData!!, byte[]? optionalEntropy, DataProtectionScope scope)
         {
-            if (encryptedData == null)
-                throw new ArgumentNullException(nameof(encryptedData));
-
             return ProtectOrUnprotect(encryptedData, optionalEntropy, scope, protect: false);
         }
 

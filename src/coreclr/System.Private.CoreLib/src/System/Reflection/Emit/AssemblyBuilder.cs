@@ -1,29 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// For each dynamic assembly there will be two AssemblyBuilder objects: the "internal"
-// AssemblyBuilder object and the "external" AssemblyBuilder object.
-//  1.  The "internal" object is the real assembly object that the VM creates and knows about. However,
-//      you can perform RefEmit operations on it only if you have its granted permission. From the AppDomain
-//      and other "internal" objects like the "internal" ModuleBuilders and runtime types, you can only
-//      get the "internal" objects. This is to prevent low-trust code from getting a hold of the dynamic
-//      AssemblyBuilder/ModuleBuilder/TypeBuilder/MethodBuilder/etc other people have created by simply
-//      enumerating the AppDomain and inject code in it.
-//  2.  The "external" object is merely an wrapper of the "internal" object and all operations on it
-//      are directed to the internal object. This is the one you get by calling DefineDynamicAssembly
-//      on AppDomain and the one you can always perform RefEmit operations on. You can get other "external"
-//      objects from the "external" AssemblyBuilder, ModuleBuilder, TypeBuilder, MethodBuilder, etc. Note
-//      that VM doesn't know about this object. So every time we call into the VM we need to pass in the
-//      "internal" object.
-//
-// "internal" and "external" ModuleBuilders are similar
-
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -73,19 +57,25 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        internal AssemblyBuilder(AssemblyName name,
+        internal AssemblyBuilder(AssemblyName name!!,
                                  AssemblyBuilderAccess access,
-                                 ref StackCrawlMark stackMark,
+                                 Assembly? callingAssembly,
                                  AssemblyLoadContext? assemblyLoadContext,
                                  IEnumerable<CustomAttributeBuilder>? unsafeAssemblyAttributes)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
             if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)access), nameof(access));
+            }
+            if (callingAssembly == null)
+            {
+                // Called either from interop or async delegate invocation. Rejecting because we don't
+                // know how to set the correct context of the new dynamic assembly.
+                throw new InvalidOperationException();
+            }
+            if (assemblyLoadContext == null)
+            {
+                assemblyLoadContext = AssemblyLoadContext.GetLoadContext(callingAssembly);
             }
 
             // Clone the name in case the caller modifies it underneath us.
@@ -104,7 +94,6 @@ namespace System.Reflection.Emit
 
             RuntimeAssembly? retAssembly = null;
             CreateDynamicAssembly(ObjectHandleOnStack.Create(ref name),
-                                  new StackCrawlMarkHandle(ref stackMark),
                                   (int)access,
                                   ObjectHandleOnStack.Create(ref assemblyLoadContext),
                                   ObjectHandleOnStack.Create(ref retAssembly));
@@ -150,39 +139,31 @@ namespace System.Reflection.Emit
 
         #region DefineDynamicAssembly
 
-        /// <summary>
-        /// If an AssemblyName has a public key specified, the assembly is assumed
-        /// to have a strong name and a hash will be computed when the assembly
-        /// is saved.
-        /// </summary>
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
+        [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalDefineDynamicAssembly(name,
                                                  access,
-                                                 ref stackMark,
+                                                 Assembly.GetCallingAssembly(),
                                                  AssemblyLoadContext.CurrentContextualReflectionContext,
                                                  null);
         }
 
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
+        [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalDefineDynamicAssembly(name,
                                                  access,
-                                                 ref stackMark,
+                                                 Assembly.GetCallingAssembly(),
                                                  AssemblyLoadContext.CurrentContextualReflectionContext,
                                                  assemblyAttributes);
         }
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
         private static partial void CreateDynamicAssembly(ObjectHandleOnStack name,
-                                                         StackCrawlMarkHandle stackMark,
                                                          int access,
                                                          ObjectHandleOnStack assemblyLoadContext,
                                                          ObjectHandleOnStack retAssembly);
@@ -192,7 +173,7 @@ namespace System.Reflection.Emit
         internal static AssemblyBuilder InternalDefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access,
-            ref StackCrawlMark stackMark,
+            Assembly? callingAssembly,
             AssemblyLoadContext? assemblyLoadContext,
             IEnumerable<CustomAttributeBuilder>? unsafeAssemblyAttributes)
         {
@@ -201,7 +182,7 @@ namespace System.Reflection.Emit
                 // We can only create dynamic assemblies in the current domain
                 return new AssemblyBuilder(name,
                                            access,
-                                           ref stackMark,
+                                           callingAssembly,
                                            assemblyLoadContext,
                                            unsafeAssemblyAttributes);
             }
@@ -215,7 +196,6 @@ namespace System.Reflection.Emit
         /// modules within an Assembly with the same name. This dynamic module is
         /// a transient module.
         /// </summary>
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public ModuleBuilder DefineDynamicModule(string name)
         {
             lock (SyncRoot)
@@ -387,17 +367,8 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client decides to form the custom attribute blob themselves.
         /// </summary>
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
         {
-            if (con == null)
-            {
-                throw new ArgumentNullException(nameof(con));
-            }
-            if (binaryAttribute == null)
-            {
-                throw new ArgumentNullException(nameof(binaryAttribute));
-            }
-
             lock (SyncRoot)
             {
                 TypeBuilder.DefineCustomAttribute(
@@ -411,13 +382,8 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder.
         /// </summary>
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
         {
-            if (customBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(customBuilder));
-            }
-
             lock (SyncRoot)
             {
                 customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyBuilderData.AssemblyDefToken);

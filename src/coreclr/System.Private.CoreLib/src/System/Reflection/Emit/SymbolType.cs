@@ -224,11 +224,8 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Members
-        internal void SetElementType(Type baseType)
+        internal void SetElementType(Type baseType!!)
         {
-            if (baseType is null)
-                throw new ArgumentNullException(nameof(baseType));
-
             m_baseType = baseType;
         }
 

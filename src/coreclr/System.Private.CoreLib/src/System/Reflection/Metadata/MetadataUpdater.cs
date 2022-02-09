@@ -36,7 +36,7 @@ namespace System.Reflection.Metadata
         {
             if (assembly is not RuntimeAssembly runtimeAssembly)
             {
-                if (assembly is null) throw new ArgumentNullException(nameof(assembly));
+                ArgumentNullException.ThrowIfNull(assembly);
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
             }
 
