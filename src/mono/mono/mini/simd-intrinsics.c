@@ -668,6 +668,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 }
 	case SN_Add:
+	case SN_Max:
+	case SN_Min:
 	case SN_Multiply:
 	case SN_Subtract: {
 		int instc0 = -1;
@@ -675,6 +677,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			switch (id) {
 			case SN_Add:
 				instc0 = OP_FADD;
+				break;
+			case SN_Max:
+				instc0 = OP_FMAX;
+				break;
+			case SN_Min:
+				instc0 = OP_FMIN;
 				break;
 			case SN_Multiply:
 				instc0 = OP_FMUL;
@@ -689,6 +697,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			switch (id) {
 			case SN_Add:
 				instc0 = OP_IADD;
+				break;
+			case SN_Max:
+				instc0 = OP_IMAX;
+				break;
+			case SN_Min:
+				instc0 = OP_IMIN;
 				break;
 			case SN_Multiply:
 				instc0 = OP_IMUL;
@@ -791,52 +805,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		int op = id == SN_GetLower ? OP_XLOWER : OP_XUPPER;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
-	}
-	case SN_Max:
-	case SN_Min: {
-#ifdef TARGET_ARM64
-		int instc0 = -1;
-		if (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8) {
-			switch (id) {
-			case SN_Max:
-				instc0 = INTRINS_AARCH64_ADV_SIMD_FMAX;
-				break;
-			case SN_Min:
-				instc0 = INTRINS_AARCH64_ADV_SIMD_FMIN;
-				break;
-			default:
-				g_assert_not_reached ();
-			}
-		} else {
-			gboolean is_unsigned = arg0_type == MONO_TYPE_U1 || arg0_type == MONO_TYPE_U2 || arg0_type == MONO_TYPE_U4 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_U;
-			if (is_unsigned) {
-				switch (id) {
-				case SN_Max:
-					instc0 = INTRINS_AARCH64_ADV_SIMD_UMAX;
-					break;
-				case SN_Min:
-					instc0 = INTRINS_AARCH64_ADV_SIMD_UMIN;
-					break;
-				default:
-					g_assert_not_reached ();
-				}
-			} else {
-				switch (id) {
-				case SN_Max:
-					instc0 = INTRINS_AARCH64_ADV_SIMD_SMAX;
-					break;
-				case SN_Min:
-					instc0 = INTRINS_AARCH64_ADV_SIMD_SMIN;
-					break;
-				default:
-					g_assert_not_reached ();
-				}
-			}
-		}
-		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, instc0, arg0_type, fsig, args);
-#else
-		return NULL;
-#endif
 	}
 	case SN_ToScalar: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
