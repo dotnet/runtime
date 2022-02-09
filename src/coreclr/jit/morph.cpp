@@ -14163,6 +14163,24 @@ GenTree* Compiler::fgOptimizeBitwiseXor(GenTreeOp* xorOp)
         DEBUG_DESTROY_NODE(op2);
         return op1;
     }
+    else if (op2->IsIntegralConst(-1))
+    {
+        /* "x ^ -1" is "~x" */
+        xorOp->ChangeOper(GT_NOT);
+        xorOp->gtOp2 = nullptr;
+        DEBUG_DESTROY_NODE(op2);
+
+        return xorOp;
+    }
+    else if (op2->IsIntegralConst(1) && op1->OperIsCompare())
+    {
+        /* "binaryVal ^ 1" is "!binaryVal" */
+        gtReverseCond(op1);
+        DEBUG_DESTROY_NODE(op2);
+        DEBUG_DESTROY_NODE(xorOp);
+
+        return op1;
+    }
 
     return nullptr;
 }
@@ -14554,30 +14572,6 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                     op1->ChangeOper(GT_LSH);
 
                     cns->AsIntConCommon()->SetIconValue(ishf);
-                }
-            }
-
-            break;
-
-        case GT_XOR:
-
-            if (!optValnumCSE_phase)
-            {
-                /* "x ^ -1" is "~x" */
-
-                if (op2->IsIntegralConst(-1))
-                {
-                    tree->ChangeOper(GT_NOT);
-                    tree->gtOp2 = nullptr;
-                    DEBUG_DESTROY_NODE(op2);
-                }
-                else if (op2->IsIntegralConst(1) && op1->OperIsCompare())
-                {
-                    /* "binaryVal ^ 1" is "!binaryVal" */
-                    gtReverseCond(op1);
-                    DEBUG_DESTROY_NODE(op2);
-                    DEBUG_DESTROY_NODE(tree);
-                    return op1;
                 }
             }
 
