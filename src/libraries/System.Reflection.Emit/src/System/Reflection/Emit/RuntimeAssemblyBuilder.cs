@@ -84,15 +84,11 @@ namespace System.Reflection.Emit
         }
 
         public static AssemblyBuilder DefineDynamicAssembly(
-            AssemblyName name,
+            AssemblyName name!!,
             AssemblyBuilderAccess access,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes,
             Assembly? callingAssembly)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
             if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)access), nameof(access));
@@ -183,27 +179,13 @@ namespace System.Reflection.Emit
             throw new NotImplementedException(); // TODO
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
         {
-            if (con == null)
-            {
-                throw new ArgumentNullException(nameof(con));
-            }
-            if (binaryAttribute == null)
-            {
-                throw new ArgumentNullException(nameof(binaryAttribute));
-            }
-
             throw new NotImplementedException(); // TODO
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
         {
-            if (customBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(customBuilder));
-            }
-
             throw new NotImplementedException(); // TODO
         }
     }
