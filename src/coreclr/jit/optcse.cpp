@@ -3210,7 +3210,7 @@ public:
                 // Move the information about the CSE def to the assignment; it
                 // now indicates a completed CSE def instead of just a
                 // candidate. optCSE_canSwap uses this information to reason
-                // about evaluation order inbetween substitutions of CSE
+                // about evaluation order in between substitutions of CSE
                 // defs/uses.
                 asg->gtCSEnum = exp->gtCSEnum;
                 exp->gtCSEnum = NO_CSE;
