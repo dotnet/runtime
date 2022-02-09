@@ -13,6 +13,8 @@ namespace System.IO.Strategies
 
         internal abstract SafeFileHandle SafeFileHandle { get; }
 
+        internal abstract bool RequiresFinalizer { get; }
+
         internal IntPtr Handle => SafeFileHandle.DangerousGetHandle();
 
         internal abstract bool IsClosed { get; }
@@ -23,6 +25,6 @@ namespace System.IO.Strategies
 
         internal abstract void Flush(bool flushToDisk);
 
-        internal abstract void DisposeInternal(bool disposing);
+        internal void DisposeInternal(bool disposing) => Dispose(disposing);
     }
 }

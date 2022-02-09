@@ -31,21 +31,6 @@ namespace System.IO.Strategies
             _bufferSize = bufferSize;
         }
 
-        ~BufferedFileStreamStrategy()
-        {
-            try
-            {
-                // the finalizer must at least try to flush the write buffer
-                // so we enforce it by passing always true
-                Dispose(true);
-            }
-            catch (Exception e) when (FileStreamHelpers.IsIoRelatedException(e))
-            {
-                // On finalization, ignore failures from trying to flush the write buffer,
-                // e.g. if this stream is wrapping a pipe and the pipe is now broken.
-            }
-        }
-
         public override bool CanRead => _strategy.CanRead;
 
         public override bool CanWrite => _strategy.CanWrite;
@@ -111,6 +96,9 @@ namespace System.IO.Strategies
             }
         }
 
+        // buffering is enabled by default and users might not expect that data is not immediately passed to the OS
+        internal override bool RequiresFinalizer => true;
+
         public override async ValueTask DisposeAsync()
         {
             try
@@ -137,31 +125,21 @@ namespace System.IO.Strategies
             }
         }
 
-        internal override void DisposeInternal(bool disposing)
+        protected sealed override void Dispose(bool disposing)
         {
-            Dispose(disposing);
-
-            if (disposing)
+            if (_strategy.IsClosed)
             {
-                GC.SuppressFinalize(this);
+                return;
             }
-        }
 
-        protected override void Dispose(bool disposing)
-        {
             try
             {
-                if (disposing && !_strategy.IsClosed)
-                {
-                    try
-                    {
-                        Flush();
-                    }
-                    finally
-                    {
-                        _strategy.Dispose();
-                    }
-                }
+                Flush();
+            }
+            catch (Exception e) when (!disposing && FileStreamHelpers.IsIoRelatedException(e))
+            {
+                // On finalization, ignore failures from trying to flush the write buffer,
+                // e.g. if this stream is wrapping a pipe and the pipe is now broken.
             }
             finally
             {
@@ -171,6 +149,8 @@ namespace System.IO.Strategies
 
                 // There is no need to call base.Dispose as it's empty
                 _writePos = 0;
+
+                _strategy.DisposeInternal(disposing);
             }
         }
 

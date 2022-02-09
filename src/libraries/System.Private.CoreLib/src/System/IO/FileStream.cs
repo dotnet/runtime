@@ -49,6 +49,11 @@ namespace System.IO
                 ValidateHandle(safeHandle, access, bufferSize, isAsync);
 
                 _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, bufferSize, isAsync);
+
+                if (!_strategy.RequiresFinalizer)
+                {
+                    GC.SuppressFinalize(this);
+                }
             }
             catch
             {
@@ -147,6 +152,14 @@ namespace System.IO
         {
         }
 
+        ~FileStream()
+        {
+            // Preserved for compatibility since FileStream has defined a
+            // finalizer in past releases and derived classes may depend
+            // on Dispose(false) call.
+            Dispose(false);
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="System.IO.FileStream" /> class with the specified path, creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size,  additional file options and the allocation size.
         /// </summary>
@@ -206,6 +219,11 @@ namespace System.IO
 
             _strategy = FileStreamHelpers.ChooseStrategy(
                 this, path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize);
+
+            if (!_strategy.RequiresFinalizer)
+            {
+                GC.SuppressFinalize(this);
+            }
         }
 
         private FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
@@ -213,6 +231,11 @@ namespace System.IO
             FileStreamHelpers.ValidateArguments(path, mode, access, share, bufferSize, options, preallocationSize);
 
             _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize);
+
+            if (!_strategy.RequiresFinalizer)
+            {
+                GC.SuppressFinalize(this);
+            }
         }
 
         [Obsolete("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property instead.")]
@@ -496,9 +519,8 @@ namespace System.IO
         /// <param name="value">The byte to write to the stream.</param>
         public override void WriteByte(byte value) => _strategy.WriteByte(value);
 
-        protected override void Dispose(bool disposing) => _strategy.DisposeInternal(disposing);
-
-        internal void DisposeInternal(bool disposing) => Dispose(disposing);
+        // _strategy can be null only when ctor has thrown
+        protected override void Dispose(bool disposing) => _strategy?.DisposeInternal(disposing);
 
         public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
 
