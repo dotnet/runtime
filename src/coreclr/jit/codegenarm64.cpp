@@ -2378,7 +2378,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             {
                 // ldr wzr, [sp]
                 // sub, sp, #amount
-                GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, amount);
+                GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, 0);
                 genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, amount, rsGetRsvdReg());
             }
 
