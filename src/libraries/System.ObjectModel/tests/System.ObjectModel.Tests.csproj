@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerableTest.cs"
-             Link="Common\System\CollectionsIEnumerableTest.cs" />
+         Link="Common\System\CollectionsIEnumerableTest.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\ICollectionTest.cs"
              Link="Common\System\CollectionsICollectionTest.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\IListTest.cs"
@@ -16,6 +16,7 @@
     <Compile Include="$(CommonTestPath)System\Collections\IDictionaryTest.cs"
              Link="Common\System\CollectionsIDictionaryTest.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_RangeTest.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_MethodsTest.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_ReentrancyTests.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_Serialization.cs" />

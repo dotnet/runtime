@@ -134,6 +134,26 @@ namespace System.Collections.ObjectModel
             bool ignore = _skipRaisingEvents;
             if (!ignore)
             {
+                if (Items.IsReadOnly)
+                {
+                    throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+                }
+
+                if ((uint)index > (uint)Items.Count)
+                {
+                    throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_InvalidThreshold);
+                }
+
+                if (count < 0)
+                {
+                    throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_NeedNonNegNum);
+                }
+
+                if (index > Items.Count - count)
+                {
+                    throw new ArgumentException(SR.Argument_ItemNotExist);
+                }
+
                 _skipRaisingEvents = true;
 
                 if (count > 0)
