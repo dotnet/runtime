@@ -19,13 +19,22 @@ namespace System.Reflection.Emit
 
         // https://docs.microsoft.com/en-us/dotnet/api/system.reflection.metadata.ecma335.metadatabuilder
 
+        // TODO: Create a new method for loading the assembly as dynamic and attached to the original load context
+        private class ReflectionEmitLoadContext : AssemblyLoadContext
+        {
+            public ReflectionEmitLoadContext(bool isCollectible)
+                : base(isCollectible)
+            {
+            }
+        }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Reflection.Emit can only reference existing code.")]
         private RuntimeAssemblyBuilder(
             AssemblyName name,
             AssemblyBuilderAccess access,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes,
-            AssemblyLoadContext asssemblyLoadContext)
+            AssemblyLoadContext assemblyLoadContext)
         {
             var metadata = new MetadataBuilder();
 
@@ -80,7 +89,11 @@ namespace System.Reflection.Emit
             peBlob.WriteContentTo(ms);
 
             ms.Position = 0;
-            _internalAssembly = asssemblyLoadContext.LoadFromStream(ms);
+
+            // TODO: Create a new method for loading the assembly as dynamic and attached to the original load context
+            assemblyLoadContext = new ReflectionEmitLoadContext(isCollectible: access == AssemblyBuilderAccess.RunAndCollect);
+
+            _internalAssembly = assemblyLoadContext.LoadFromStream(ms);
         }
 
         public static AssemblyBuilder DefineDynamicAssembly(
