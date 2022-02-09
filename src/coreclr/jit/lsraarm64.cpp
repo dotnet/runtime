@@ -329,6 +329,7 @@ int LinearScan::BuildNode(GenTree* tree)
             noway_assert((tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs) ||
                          (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Ceiling) ||
                          (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Floor) ||
+                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Truncate) ||
                          (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round) ||
                          (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Sqrt));
 
