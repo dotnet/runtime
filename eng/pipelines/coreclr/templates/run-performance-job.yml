@@ -108,8 +108,7 @@ jobs:
       clean: all
     pool:
       ${{ parameters.pool }}
-    ${{ if ne(parameters.runtimeType, 'wasm') }}:
-      container: ${{ parameters.container }}
+    container: ${{ parameters.container }}
     strategy:
       matrix:
         ${{ each framework in parameters.frameworks }}:

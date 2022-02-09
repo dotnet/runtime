@@ -79,7 +79,7 @@ jobs:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
       runtimeFlavor: mono
-      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
+      container: ubuntu-18.04-webassembly-20211208134944-544b18c
       platforms:
       - Browser_wasm
       jobParameters:
@@ -114,7 +114,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
-      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
+      container: ubuntu-18.04-webassembly-20211208134944-544b18c
       runtimeFlavor: mono
       platforms:
       - Browser_wasm
