@@ -43,16 +43,8 @@
 	</xsd:complexType>
 
 	<xsd:complexType name="argument" mixed="true">
-		<xsd:choice minOccurs="0" maxOccurs="1">
-			<xsd:element name="argument">
-				<xsd:complexType>
-					<xsd:simpleContent>
-						<xsd:extension base="xsd:string">
-							<xsd:attribute name="type" />
-						</xsd:extension>
-					</xsd:simpleContent>
-				</xsd:complexType>
-			</xsd:element>
+		<xsd:choice minOccurs="0" maxOccurs="unbounded">
+			<xsd:element name="argument" type="argument" />
 		</xsd:choice>
 		<xsd:attribute name="type" />
 	</xsd:complexType>
