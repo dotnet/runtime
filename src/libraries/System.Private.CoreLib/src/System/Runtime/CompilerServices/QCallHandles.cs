@@ -57,7 +57,7 @@ namespace System.Runtime.CompilerServices
             _module = module.GetUnderlyingNativeHandle();
         }
 
-        internal QCallModule(ref System.Reflection.Emit.ModuleBuilder module)
+        internal QCallModule(ref System.Reflection.Emit.RuntimeModuleBuilder module)
         {
             _ptr = Unsafe.AsPointer(ref module);
             _module = module.InternalModule.GetUnderlyingNativeHandle();

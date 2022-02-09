@@ -98,7 +98,7 @@ namespace System.Reflection.Emit
 
         internal readonly AssemblyBuilderAccess _access;
         private readonly RuntimeAssembly _internalAssembly;
-        private readonly ModuleBuilder _manifestModuleBuilder;
+        private readonly RuntimeModuleBuilder _manifestModuleBuilder;
         // Set to true if the manifest module was returned by code:DefineDynamicModule to the user
         private bool _isManifestModuleUsedAsDefinedModule;
 
@@ -153,31 +153,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region DefineDynamicAssembly
-
-        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
-        [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
-        public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
-        {
-            return InternalDefineDynamicAssembly(name,
-                                                 access,
-                                                 Assembly.GetCallingAssembly(),
-                                                 AssemblyLoadContext.CurrentContextualReflectionContext,
-                                                 null);
-        }
-
-        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
-        [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
-        public static AssemblyBuilder DefineDynamicAssembly(
-            AssemblyName name,
-            AssemblyBuilderAccess access,
-            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
-        {
-            return InternalDefineDynamicAssembly(name,
-                                                 access,
-                                                 Assembly.GetCallingAssembly(),
-                                                 AssemblyLoadContext.CurrentContextualReflectionContext,
-                                                 assemblyAttributes);
-        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
         private static unsafe partial void CreateDynamicAssembly(ObjectHandleOnStack assemblyLoadContext,
@@ -344,15 +319,6 @@ namespace System.Reflection.Emit
         /// <param name="name">The name of module for the look up.</param>
         /// <returns>Dynamic module with the specified name.</returns>
         public override ModuleBuilder? GetDynamicModule(string name)
-        {
-            lock (SyncRoot)
-            {
-                return GetDynamicModuleNoLock(name);
-            }
-        }
-
-        /// <param name="name">The name of module for the look up.</param>
-        private ModuleBuilder? GetDynamicModuleNoLock(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 

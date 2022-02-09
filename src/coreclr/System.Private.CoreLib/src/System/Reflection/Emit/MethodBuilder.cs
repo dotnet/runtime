@@ -17,7 +17,7 @@ namespace System.Reflection.Emit
         // Identity
         internal string m_strName; // The name of the method
         private int m_token; // The token of this method
-        private readonly ModuleBuilder m_module;
+        private readonly RuntimeModuleBuilder m_module;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         internal TypeBuilder m_containingType;
@@ -59,7 +59,7 @@ namespace System.Reflection.Emit
         internal MethodBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
-            ModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type)
+            RuntimeModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
@@ -146,7 +146,7 @@ namespace System.Reflection.Emit
             int[] type;
             int numCatch;
             int start, end;
-            ModuleBuilder dynMod = (ModuleBuilder)m_module;
+            RuntimeModuleBuilder dynMod = (RuntimeModuleBuilder)m_module;
 
             m_containingType.ThrowIfCreated();
 
@@ -353,7 +353,7 @@ namespace System.Reflection.Emit
             return m_containingType;
         }
 
-        internal ModuleBuilder GetModuleBuilder()
+        internal RuntimeModuleBuilder GetModuleBuilder()
         {
             return m_module;
         }
@@ -600,7 +600,7 @@ namespace System.Reflection.Emit
             Debug.Assert(m_token == 0, "m_token should not have been initialized");
 
             byte[] sigBytes = GetMethodSignature().InternalGetSignature(out int sigLength);
-            ModuleBuilder module = m_module;
+            RuntimeModuleBuilder module = m_module;
 
             int token = TypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataToken, m_strName, sigBytes, sigLength, Attributes);
             m_token = token;
@@ -677,7 +677,7 @@ namespace System.Reflection.Emit
 
             m_canBeRuntimeImpl = true;
 
-            ModuleBuilder module = m_module;
+            RuntimeModuleBuilder module = m_module;
             TypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes);
         }
 
@@ -730,7 +730,7 @@ namespace System.Reflection.Emit
             ThrowIfGeneric();
 
             TypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
-                ((ModuleBuilder)m_module).GetConstructorToken(con),
+                ((RuntimeModuleBuilder)m_module).GetConstructorToken(con),
                 binaryAttribute);
 
             if (IsKnownCA(con))
@@ -743,7 +743,7 @@ namespace System.Reflection.Emit
 
             ThrowIfGeneric();
 
-            customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, MetadataToken);
+            customBuilder.CreateCustomAttribute((RuntimeModuleBuilder)m_module, MetadataToken);
 
             if (IsKnownCA(customBuilder.m_con))
                 ParseCA(customBuilder.m_con);

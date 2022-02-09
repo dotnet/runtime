@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
             TypeBuilder.DefineCustomAttribute(
                 _methodBuilder.GetModuleBuilder(),
                 _token,
-                ((ModuleBuilder)_methodBuilder.GetModule()).GetConstructorToken(con),
+                ((RuntimeModuleBuilder)_methodBuilder.GetModule()).GetConstructorToken(con),
                 binaryAttribute);
         }
 
@@ -35,7 +35,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
-            customBuilder.CreateCustomAttribute((ModuleBuilder)(_methodBuilder.GetModule()), _token);
+            customBuilder.CreateCustomAttribute((RuntimeModuleBuilder)(_methodBuilder.GetModule()), _token);
         }
 
         internal ParameterBuilder(
@@ -48,7 +48,7 @@ namespace System.Reflection.Emit
             _name = paramName;
             _methodBuilder = methodBuilder;
             _attributes = attributes;
-            ModuleBuilder module = _methodBuilder.GetModuleBuilder();
+            RuntimeModuleBuilder module = _methodBuilder.GetModuleBuilder();
             _token = TypeBuilder.SetParamInfo(
                         new QCallModule(ref module),
                         _methodBuilder.MetadataToken,

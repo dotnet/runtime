@@ -345,7 +345,7 @@ namespace System.Reflection.Emit
             string name,                       // name of type
             Type underlyingType,             // underlying type for an Enum
             TypeAttributes visibility,              // any bits on TypeAttributes.VisibilityMask)
-            ModuleBuilder module)                     // module containing this type
+            RuntimeModuleBuilder module)                     // module containing this type
         {
             // Client should not set any bits other than the visibility bits.
             if ((visibility & ~TypeAttributes.VisibilityMask) != 0)

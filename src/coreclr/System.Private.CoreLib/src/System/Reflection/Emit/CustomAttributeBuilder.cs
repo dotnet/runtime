@@ -515,7 +515,7 @@ namespace System.Reflection.Emit
         }
 
         // return the byte interpretation of the custom attribute
-        internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner)
+        internal void CreateCustomAttribute(RuntimeModuleBuilder mod, int tkOwner)
         {
             TypeBuilder.DefineCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con), m_blob);
         }

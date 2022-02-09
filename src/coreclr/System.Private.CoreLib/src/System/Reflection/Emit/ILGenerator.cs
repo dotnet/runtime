@@ -157,7 +157,7 @@ namespace System.Reflection.Emit
 
         private int GetMethodToken(MethodBase method, Type[]? optionalParameterTypes, bool useMethodDef)
         {
-            return ((ModuleBuilder)m_methodBuilder.Module).GetMethodTokenInternal(method, optionalParameterTypes, useMethodDef);
+            return ((RuntimeModuleBuilder)m_methodBuilder.Module).GetMethodTokenInternal(method, optionalParameterTypes, useMethodDef);
         }
 
         internal SignatureHelper GetMemberRefSignature(
@@ -177,7 +177,7 @@ namespace System.Reflection.Emit
         private SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
             Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, Type[]? optionalParameterTypes, int cGenericParameters)
         {
-            return ((ModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, cGenericParameters);
+            return ((RuntimeModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, cGenericParameters);
         }
 
         internal byte[]? BakeByteArray()
@@ -698,19 +698,9 @@ namespace System.Reflection.Emit
             // by cls.  The location of cls is recorded so that the token can be
             // patched if necessary when persisting the module to a PE.
 
-            int tempVal;
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            if (opcode == OpCodes.Ldtoken && cls != null && cls.IsGenericTypeDefinition)
-            {
-                // This gets the token for the generic type definition if cls is one.
-                tempVal = modBuilder.GetTypeToken(cls);
-            }
-            else
-            {
-                // This gets the token for the generic type instantiated on the formal parameters
-                // if cls is a generic type definition.
-                tempVal = modBuilder.GetTypeTokenInternal(cls!);
-            }
+            bool getGenericDefinition = (opcode == OpCodes.Ldtoken && cls != null && cls.IsGenericTypeDefinition);
+            int tempVal = modBuilder.GetTypeToken(cls!, getGenericDefinition);
 
             EnsureCapacity(7);
             InternalEmit(opcode);

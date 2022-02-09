@@ -25,7 +25,7 @@ namespace System.Reflection.Emit
         // Constructs a EventBuilder.
         //
         internal EventBuilder(
-            ModuleBuilder mod,                    // the module containing this EventBuilder
+            RuntimeModuleBuilder mod,                    // the module containing this EventBuilder
             string name,                    // Event name
             EventAttributes attr,                    // event attribute such as Public, Private, and Protected defined above
                                                      // int            eventType,                // event type
@@ -51,7 +51,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(mdBuilder);
 
             m_type.ThrowIfCreated();
-            ModuleBuilder module = m_module;
+            RuntimeModuleBuilder module = m_module;
             TypeBuilder.DefineMethodSemantics(
                 new QCallModule(ref module),
                 m_evToken,
@@ -107,7 +107,7 @@ namespace System.Reflection.Emit
         // These are package private so that TypeBuilder can access them.
         private string m_name;         // The name of the event
         private int m_evToken;      // The token of this event
-        private ModuleBuilder m_module;
+        private RuntimeModuleBuilder m_module;
         private EventAttributes m_attributes;
         private TypeBuilder m_type;
     }

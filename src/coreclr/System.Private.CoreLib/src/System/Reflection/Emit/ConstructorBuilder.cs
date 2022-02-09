@@ -14,7 +14,7 @@ namespace System.Reflection.Emit
         #region Constructor
 
         internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
-            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, ModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type)
+            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, RuntimeModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type)
         {
             m_methodBuilder = new MethodBuilder(name, attributes, callingConvention, null, null, null,
                 parameterTypes, requiredCustomModifiers, optionalCustomModifiers, mod, type);
@@ -27,7 +27,7 @@ namespace System.Reflection.Emit
         }
 
         internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
-            Type[]? parameterTypes, ModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type) :
+            Type[]? parameterTypes, RuntimeModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type) :
             this(name, attributes, callingConvention, parameterTypes, null, null, mod, type)
         {
         }

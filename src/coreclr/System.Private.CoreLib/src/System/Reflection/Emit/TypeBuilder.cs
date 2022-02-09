@@ -41,7 +41,7 @@ namespace System.Reflection.Emit
                 m_customBuilder = customBuilder;
             }
 
-            public void Bake(ModuleBuilder module, int token)
+            public void Bake(RuntimeModuleBuilder module, int token)
             {
                 if (m_customBuilder == null)
                 {
@@ -172,7 +172,7 @@ namespace System.Reflection.Emit
         private static partial void DefineCustomAttribute(QCallModule module, int tkAssociate, int tkConstructor,
             byte[]? attr, int attrLength);
 
-        internal static void DefineCustomAttribute(ModuleBuilder module, int tkAssociate, int tkConstructor,
+        internal static void DefineCustomAttribute(RuntimeModuleBuilder module, int tkAssociate, int tkConstructor,
             byte[]? attr)
         {
             byte[]? localAttr = null;
@@ -270,7 +270,7 @@ namespace System.Reflection.Emit
             return false;
         }
 
-        internal static unsafe void SetConstantValue(ModuleBuilder module, int tk, Type destType, object? value)
+        internal static unsafe void SetConstantValue(RuntimeModuleBuilder module, int tk, Type destType, object? value)
         {
             // This is a helper function that is used by ParameterBuilder, PropertyBuilder,
             // and FieldBuilder to validate a default value and save it in the meta-data.
@@ -395,7 +395,7 @@ namespace System.Reflection.Emit
         #region Private Data Members
         private List<CustAttr>? m_ca;
         private int m_tdType;
-        private readonly ModuleBuilder m_module;
+        private readonly RuntimeModuleBuilder m_module;
         private readonly string? m_strName;
         private readonly string? m_strNameSpace;
         private string? m_strFullQualName;
@@ -430,7 +430,7 @@ namespace System.Reflection.Emit
 
         #region Constructor
         // ctor for the global (module) type
-        internal TypeBuilder(ModuleBuilder module)
+        internal TypeBuilder(RuntimeModuleBuilder module)
         {
             m_tdType = ((int)MetadataTokenType.TypeDef);
             m_isHiddenGlobalType = true;
@@ -469,7 +469,7 @@ namespace System.Reflection.Emit
         }
 
         internal TypeBuilder(
-            string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, ModuleBuilder module,
+            string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, RuntimeModuleBuilder module,
             PackingSize iPackingSize, int iTypeSize, TypeBuilder? enclosingType)
         {
             ArgumentException.ThrowIfNullOrEmpty(fullname);
@@ -657,7 +657,7 @@ namespace System.Reflection.Emit
 
         internal object SyncRoot => m_module.SyncRoot;
 
-        internal ModuleBuilder GetModuleBuilder()
+        internal RuntimeModuleBuilder GetModuleBuilder()
         {
             return m_module;
         }
@@ -1213,7 +1213,7 @@ namespace System.Reflection.Emit
             int tkBody = m_module.GetMethodToken(methodInfoBody);
             int tkDecl = m_module.GetMethodToken(methodInfoDeclaration);
 
-            ModuleBuilder module = m_module;
+            RuntimeModuleBuilder module = m_module;
             DefineMethodImpl(new QCallModule(ref module), m_tdType, tkBody, tkDecl);
         }
 
@@ -1343,7 +1343,7 @@ namespace System.Reflection.Emit
                         break;
                 }
 
-                ModuleBuilder module = m_module;
+                RuntimeModuleBuilder module = m_module;
                 SetPInvokeData(new QCallModule(ref module),
                     dllName,
                     entryName,
@@ -1615,7 +1615,7 @@ namespace System.Reflection.Emit
             // get the signature in byte form
             sigBytes = sigHelper.InternalGetSignature(out int sigLength);
 
-            ModuleBuilder module = m_module;
+            RuntimeModuleBuilder module = m_module;
 
             int prToken = DefineProperty(
                 new QCallModule(ref module),
@@ -1657,7 +1657,7 @@ namespace System.Reflection.Emit
             tkType = m_module.GetTypeTokenInternal(eventtype);
 
             // Internal helpers to define property records
-            ModuleBuilder module = m_module;
+            RuntimeModuleBuilder module = m_module;
             evToken = DefineEvent(
                 new QCallModule(ref module),
                 m_tdType,
@@ -1719,7 +1719,7 @@ namespace System.Reflection.Emit
                 tkParent = m_module.GetTypeTokenInternal(m_typeParent);
             }
 
-            ModuleBuilder module = m_module;
+            RuntimeModuleBuilder module = m_module;
 
             if (IsGenericParameter)
             {
@@ -1926,7 +1926,7 @@ namespace System.Reflection.Emit
             ThrowIfCreated();
 
             int tkInterface = m_module.GetTypeTokenInternal(interfaceType);
-            ModuleBuilder module = m_module;
+            RuntimeModuleBuilder module = m_module;
             AddInterfaceImpl(new QCallModule(ref module), m_tdType, tkInterface);
 
             m_typeInterfaces!.Add(interfaceType);
@@ -1948,14 +1948,15 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
 
-            DefineCustomAttribute(m_module, m_tdType, ((ModuleBuilder)m_module).GetConstructorToken(con), binaryAttribute);
+            DefineCustomAttribute(m_module, m_tdType, ((RuntimeModuleBuilder)m_module).GetConstructorToken(con),
+                binaryAttribute);
         }
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
-            customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, m_tdType);
+            customBuilder.CreateCustomAttribute((RuntimeModuleBuilder)m_module, m_tdType);
         }
 
         #endregion

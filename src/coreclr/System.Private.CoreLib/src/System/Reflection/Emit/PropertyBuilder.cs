@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
         // Constructs a PropertyBuilder.
         //
         internal PropertyBuilder(
-            ModuleBuilder mod, // the module containing this PropertyBuilder
+            RuntimeModuleBuilder mod, // the module containing this PropertyBuilder
             string name, // property name
             PropertyAttributes attr, // property attribute such as DefaultProperty, Bindable, DisplayBind, etc
             Type returnType, // return type of the property.
@@ -71,7 +71,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(mdBuilder);
 
             m_containingType.ThrowIfCreated();
-            ModuleBuilder module = m_moduleBuilder;
+            RuntimeModuleBuilder module = m_moduleBuilder;
             TypeBuilder.DefineMethodSemantics(
                 new QCallModule(ref module),
                 m_tkProperty,
@@ -209,7 +209,7 @@ namespace System.Reflection.Emit
         // These are package private so that TypeBuilder can access them.
         private string m_name; // The name of the property
         private int m_tkProperty; // The token of this property
-        private ModuleBuilder m_moduleBuilder;
+        private RuntimeModuleBuilder m_moduleBuilder;
         private PropertyAttributes m_attributes; // property's attribute flags
         private Type m_returnType; // property's return type
         private MethodInfo? m_getMethod;
