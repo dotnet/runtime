@@ -9,7 +9,7 @@
 .assembly extern GenericContextCommonCs {}
 .assembly extern GenericContextCommonAndImplementation {}
 .assembly GenericContextTest {}
-.class public auto ansi GenericContextTest
+.class public auto ansi TestEntrypoint
        extends [System.Runtime]System.Object
 {
   .method public static void Test_Call_NonGenericNonGenericClass_NonGeneric_NonGeneric_NormalMethod() cil managed noinlining
@@ -39510,4 +39510,4 @@ CreateDelegate_GenericOverTypeParameterGenericValuetype_GenericOverString_Curiou
     call int32 [GenericContextCommonCs]Statics::ReportResults()
     ret
   } // end of method Main
-} // end of class GenericContextTest
+} // end of class TestEntrypoint

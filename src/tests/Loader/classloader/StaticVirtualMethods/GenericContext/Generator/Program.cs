@@ -783,7 +783,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                 ClassDesc mainClass = new ClassDesc();
                 mainClass.BaseType = "[System.Runtime]System.Object";
                 mainClass.ClassFlags = "public auto ansi";
-                mainClass.Name = TestAssemblyName;
+                mainClass.Name = "TestEntrypoint";
 
                 EmitClass(twOutputTest, mainClass);
 
