@@ -366,12 +366,10 @@ namespace System.Globalization
         private const int FIND_FROMSTART = 0x00400000;
         private const int FIND_FROMEND = 0x00800000;
 
-        private unsafe SortKey NlsCreateSortKey(string source, CompareOptions options)
+        private unsafe SortKey NlsCreateSortKey(string source!!, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-
-            if (source == null) { throw new ArgumentNullException(nameof(source)); }
 
             if ((options & ValidCompareMaskOffFlags) != 0)
             {

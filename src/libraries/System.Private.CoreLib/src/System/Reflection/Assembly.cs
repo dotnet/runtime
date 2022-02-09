@@ -233,11 +233,8 @@ namespace System.Reflection
         // an emitted assembly. The assembly is loaded into a fully isolated ALC with resolution fully deferred to the AssemblyLoadContext.Default.
         // The second parameter is the raw bytes representing the symbol store that matches the assembly.
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public static Assembly Load(byte[] rawAssembly, byte[]? rawSymbolStore)
+        public static Assembly Load(byte[] rawAssembly!!, byte[]? rawSymbolStore)
         {
-            if (rawAssembly == null)
-                throw new ArgumentNullException(nameof(rawAssembly));
-
             if (rawAssembly.Length == 0)
                 throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
 
@@ -249,11 +246,8 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public static Assembly LoadFile(string path)
+        public static Assembly LoadFile(string path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             if (PathInternal.IsPartiallyQualified(path))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_AbsolutePathRequired, path), nameof(path));
@@ -335,11 +329,8 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public static Assembly LoadFrom(string assemblyFile)
+        public static Assembly LoadFrom(string assemblyFile!!)
         {
-            if (assemblyFile == null)
-                throw new ArgumentNullException(nameof(assemblyFile));
-
             string fullPath = Path.GetFullPath(assemblyFile);
 
             if (!s_loadFromHandlerSet)

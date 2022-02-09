@@ -109,13 +109,8 @@ namespace System.Net.Mime
             return Encoding.GetEncoding(charSet);
         }
 
-        internal static bool IsAscii(string value, bool permitCROrLF)
+        internal static bool IsAscii(string value!!, bool permitCROrLF)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             foreach (char c in value)
             {
                 if (c > 0x7f)
@@ -192,10 +187,7 @@ namespace System.Net.Mime
             get { return _contentType ??= new ContentType(); }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 _contentType = value;
                 _contentType.PersistIfNeeded((HeaderCollection)Headers, true);
@@ -225,13 +217,8 @@ namespace System.Net.Mime
             throw new NotImplementedException();
         }
 
-        internal void EndSend(IAsyncResult asyncResult)
+        internal void EndSend(IAsyncResult asyncResult!!)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
             LazyAsyncResult? castedAsyncResult = asyncResult as MimePartAsyncResult;
 
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)

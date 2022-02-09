@@ -56,15 +56,13 @@ namespace System
         #region Static Members
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
-            string typeName,
+            string typeName!!,
             Func<AssemblyName, Assembly?>? assemblyResolver,
             Func<Assembly?, string, bool, Type?>? typeResolver,
             bool throwOnError,
             bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
             if (typeName.Length > 0 && typeName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
 

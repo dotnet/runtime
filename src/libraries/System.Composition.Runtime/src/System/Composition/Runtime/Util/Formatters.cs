@@ -9,11 +9,8 @@ namespace System.Composition.Runtime.Util
 {
     internal static class Formatters
     {
-        public static string Format(object value)
+        public static string Format(object value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             if (value is string)
                 return "\"" + value + "\"";
 

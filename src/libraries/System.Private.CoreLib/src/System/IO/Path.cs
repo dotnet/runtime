@@ -303,11 +303,8 @@ namespace System.IO
         /// <exception cref="ArgumentNullException">
         /// Thrown if <paramref name="path"/> is null.
         /// </exception>
-        public static bool IsPathFullyQualified(string path)
+        public static bool IsPathFullyQualified(string path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             return IsPathFullyQualified(path.AsSpan());
         }
 
@@ -368,13 +365,8 @@ namespace System.IO
             return CombineInternal(path1, path2, path3, path4);
         }
 
-        public static string Combine(params string[] paths)
+        public static string Combine(params string[] paths!!)
         {
-            if (paths == null)
-            {
-                throw new ArgumentNullException(nameof(paths));
-            }
-
             int maxSize = 0;
             int firstComponent = 0;
 
@@ -383,10 +375,7 @@ namespace System.IO
 
             for (int i = 0; i < paths.Length; i++)
             {
-                if (paths[i] == null)
-                {
-                    throw new ArgumentNullException(nameof(paths));
-                }
+                ArgumentNullException.ThrowIfNull(paths[i], nameof(paths));
 
                 if (paths[i].Length == 0)
                 {
@@ -496,13 +485,8 @@ namespace System.IO
             return Join(path1.AsSpan(), path2.AsSpan(), path3.AsSpan(), path4.AsSpan());
         }
 
-        public static string Join(params string?[] paths)
+        public static string Join(params string?[] paths!!)
         {
-            if (paths == null)
-            {
-                throw new ArgumentNullException(nameof(paths));
-            }
-
             if (paths.Length == 0)
             {
                 return string.Empty;
@@ -867,17 +851,10 @@ namespace System.IO
             return GetRelativePath(relativeTo, path, PathInternal.StringComparison);
         }
 
-        private static string GetRelativePath(string relativeTo, string path, StringComparison comparisonType)
+        private static string GetRelativePath(string relativeTo!!, string path!!, StringComparison comparisonType)
         {
-            if (relativeTo == null)
-                throw new ArgumentNullException(nameof(relativeTo));
-
             if (PathInternal.IsEffectivelyEmpty(relativeTo.AsSpan()))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(relativeTo));
-
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 

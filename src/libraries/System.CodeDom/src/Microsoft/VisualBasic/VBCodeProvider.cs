@@ -20,13 +20,8 @@ namespace Microsoft.VisualBasic
             _generator = new VBCodeGenerator();
         }
 
-        public VBCodeProvider(IDictionary<string, string> providerOptions)
+        public VBCodeProvider(IDictionary<string, string> providerOptions!!)
         {
-            if (providerOptions == null)
-            {
-                throw new ArgumentNullException(nameof(providerOptions));
-            }
-
             _generator = new VBCodeGenerator(providerOptions);
         }
 

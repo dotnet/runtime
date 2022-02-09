@@ -409,9 +409,12 @@ mono_seq_point_data_read (SeqPointData *data, char *path)
 	fseek(f, 0, SEEK_SET);
 
 	buffer_orig = buffer = (guint8 *)g_malloc (fsize + 1);
-	size_t items = fread(buffer_orig, fsize, 1, f);
-	if (items != 1)
+	size_t len = fread(buffer_orig, fsize, 1, f);
+	if (ferror(f)) {
+		fclose(f);
 		return FALSE;
+	}
+	g_assert (len == fsize || (len < fsize && feof(f)));
 
 	fclose(f);
 

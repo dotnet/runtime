@@ -433,13 +433,8 @@ namespace System.CodeDom.Compiler
         {
         }
 
-        private void ValidateStatement(CodeStatement e)
+        private void ValidateStatement(CodeStatement e!!)
         {
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
-
             ValidateCodeDirectives(e.StartDirectives);
             ValidateCodeDirectives(e.EndDirectives);
 

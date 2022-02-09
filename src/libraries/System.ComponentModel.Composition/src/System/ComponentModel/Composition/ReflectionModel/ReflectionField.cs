@@ -10,13 +10,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private readonly FieldInfo _field;
 
-        public ReflectionField(FieldInfo field)
+        public ReflectionField(FieldInfo field!!)
         {
-            if (field == null)
-            {
-                throw new ArgumentNullException(nameof(field));
-            }
-
             _field = field;
         }
 

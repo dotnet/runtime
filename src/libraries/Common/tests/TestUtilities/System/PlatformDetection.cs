@@ -465,7 +465,7 @@ namespace System
                 // assume no if positive entry is missing on older Windows
                 // Latest insider builds have TLS 1.3 enabled by default.
                 // The build number is approximation.
-                bool defaultProtocolSupport = IsWindows10Version2004Build19573OrGreater;
+                bool defaultProtocolSupport = IsWindows10Version20348OrGreater;
 
 #if NETFRAMEWORK
                 return false;

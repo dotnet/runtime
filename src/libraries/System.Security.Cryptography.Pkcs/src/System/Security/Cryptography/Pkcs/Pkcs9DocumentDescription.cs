@@ -62,11 +62,8 @@ namespace System.Security.Cryptography.Pkcs
             return octets.OctetStringToUnicode();
         }
 
-        private static byte[] Encode(string documentDescription)
+        private static byte[] Encode(string documentDescription!!)
         {
-            if (documentDescription == null)
-                throw new ArgumentNullException(nameof(documentDescription));
-
             byte[] octets = documentDescription.UnicodeToOctetString();
             return PkcsHelpers.EncodeOctetString(octets);
         }

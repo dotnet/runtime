@@ -22,9 +22,9 @@ namespace Microsoft.Extensions.Configuration
         /// Constructor.
         /// </summary>
         /// <param name="source">The source.</param>
-        public StreamConfigurationProvider(StreamConfigurationSource source)
+        public StreamConfigurationProvider(StreamConfigurationSource source!!)
         {
-            Source = source ?? throw new ArgumentNullException(nameof(source));
+            Source = source;
         }
 
         /// <summary>

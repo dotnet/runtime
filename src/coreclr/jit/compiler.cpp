@@ -8848,6 +8848,20 @@ void dTreeLIR(GenTree* tree)
     cTreeLIR(JitTls::GetCompiler(), tree);
 }
 
+void dTreeRange(GenTree* first, GenTree* last)
+{
+    Compiler* comp = JitTls::GetCompiler();
+    GenTree*  cur  = first;
+    while (true)
+    {
+        cTreeLIR(comp, cur);
+        if (cur == last)
+            break;
+
+        cur = cur->gtNext;
+    }
+}
+
 void dTrees()
 {
     cTrees(JitTls::GetCompiler());

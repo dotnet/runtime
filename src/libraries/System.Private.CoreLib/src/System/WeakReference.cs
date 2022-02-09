@@ -24,25 +24,16 @@ namespace System
             Create(target, trackResurrection);
         }
 
-        protected WeakReference(SerializationInfo info, StreamingContext context)
+        protected WeakReference(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             object? target = info.GetValue("TrackedObject", typeof(object)); // Do not rename (binary serialization)
             bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
 
             Create(target, trackResurrection);
         }
 
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        public virtual void GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
             info.AddValue("TrackedObject", Target, typeof(object)); // Do not rename (binary serialization)
             info.AddValue("TrackResurrection", IsTrackResurrection()); // Do not rename (binary serialization)
         }

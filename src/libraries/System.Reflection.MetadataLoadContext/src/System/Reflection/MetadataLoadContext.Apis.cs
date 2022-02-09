@@ -103,11 +103,8 @@ namespace System.Reflection
         /// <param name="coreAssemblyName">
         /// The name of the assembly that contains the core types such as System.Object. Typically, this would be "mscorlib".
         /// </param>
-        public MetadataLoadContext(MetadataAssemblyResolver resolver, string? coreAssemblyName = null)
+        public MetadataLoadContext(MetadataAssemblyResolver resolver!!, string? coreAssemblyName = null)
         {
-            if (resolver == null)
-                throw new ArgumentNullException(nameof(resolver));
-
             this.resolver = resolver;
 
             if (coreAssemblyName != null)
@@ -125,14 +122,10 @@ namespace System.Reflection
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         /// </summary>
-        public Assembly LoadFromAssemblyPath(string assemblyPath)
+        public Assembly LoadFromAssemblyPath(string assemblyPath!!)
         {
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
-
-            if (assemblyPath == null)
-                throw new ArgumentNullException(nameof(assemblyPath));
-
             return LoadFromStreamCore(File.OpenRead(assemblyPath));
         }
 
@@ -141,14 +134,10 @@ namespace System.Reflection
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         /// </summary>
-        public Assembly LoadFromByteArray(byte[] assembly)
+        public Assembly LoadFromByteArray(byte[] assembly!!)
         {
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
-
-            if (assembly == null)
-                throw new ArgumentNullException(nameof(assembly));
-
             return LoadFromStreamCore(new MemoryStream(assembly));
         }
 
@@ -160,14 +149,10 @@ namespace System.Reflection
         /// The MetadataLoadContext takes ownership of the Stream passed into this method. The original owner must not mutate its position, dispose the Stream or
         /// assume that its position will stay unchanged.
         /// </summary>
-        public Assembly LoadFromStream(Stream assembly)
+        public Assembly LoadFromStream(Stream assembly!!)
         {
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
-
-            if (assembly == null)
-                throw new ArgumentNullException(nameof(assembly));
-
             assembly.Position = 0;
             return LoadFromStreamCore(assembly);
         }
@@ -179,14 +164,10 @@ namespace System.Reflection
         /// Note that this behavior matches the behavior of AssemblyLoadContext.LoadFromAssemblyName() but does not match the behavior of
         /// Assembly.ReflectionOnlyLoad(). (the latter gives up without raising its resolve event.)
         /// </summary>
-        public Assembly LoadFromAssemblyName(string assemblyName)
+        public Assembly LoadFromAssemblyName(string assemblyName!!)
         {
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
-
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
-
             AssemblyName assemblyNameObject = new AssemblyName(assemblyName);
             RoAssemblyName refName = assemblyNameObject.ToRoAssemblyName();
             return ResolveAssembly(refName);
@@ -199,14 +180,10 @@ namespace System.Reflection
         /// Note that this behavior matches the behavior of AssemblyLoadContext.LoadFromAssemblyName() resolve event but does not match the behavior of
         /// Assembly.ReflectionOnlyLoad(). (the latter gives up without raising its resolve event.)
         /// </summary>
-        public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
+        public Assembly LoadFromAssemblyName(AssemblyName assemblyName!!)
         {
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
-
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
-
             RoAssemblyName refName = assemblyName.ToRoAssemblyName();
             return ResolveAssembly(refName);
         }

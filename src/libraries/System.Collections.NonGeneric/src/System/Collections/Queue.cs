@@ -66,11 +66,8 @@ namespace System.Collections
         // Fills a Queue with the elements of an ICollection.  Uses the enumerator
         // to get each of the elements.
         //
-        public Queue(ICollection col) : this((col == null ? 32 : col.Count))
+        public Queue(ICollection col!!) : this(col.Count)
         {
-            if (col == null)
-                throw new ArgumentNullException(nameof(col));
-
             IEnumerator en = col.GetEnumerator();
             while (en.MoveNext())
                 Enqueue(en.Current);
@@ -129,10 +126,8 @@ namespace System.Collections
         // CopyTo copies a collection into an Array, starting at a particular
         // index into the array.
         //
-        public virtual void CopyTo(Array array, int index)
+        public virtual void CopyTo(Array array!!, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (index < 0)
@@ -210,11 +205,8 @@ namespace System.Collections
         // class around the queue - the caller must not use references to the
         // original queue.
         //
-        public static Queue Synchronized(Queue queue)
+        public static Queue Synchronized(Queue queue!!)
         {
-            if (queue == null)
-                throw new ArgumentNullException(nameof(queue));
-
             return new SynchronizedQueue(queue);
         }
 
@@ -490,11 +482,8 @@ namespace System.Collections
         {
             private readonly Queue _queue;
 
-            public QueueDebugView(Queue queue)
+            public QueueDebugView(Queue queue!!)
             {
-                if (queue == null)
-                    throw new ArgumentNullException(nameof(queue));
-
                 _queue = queue;
             }
 

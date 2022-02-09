@@ -20,9 +20,9 @@ namespace System.Collections.ObjectModel
         [NonSerialized]
         private ValueCollection? _values;
 
-        public ReadOnlyDictionary(IDictionary<TKey, TValue> dictionary)
+        public ReadOnlyDictionary(IDictionary<TKey, TValue> dictionary!!)
         {
-            m_dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
+            m_dictionary = dictionary;
         }
 
         protected IDictionary<TKey, TValue> Dictionary => m_dictionary;
@@ -105,13 +105,8 @@ namespace System.Collections.ObjectModel
             return ((IEnumerable)m_dictionary).GetEnumerator();
         }
 
-        private static bool IsCompatibleKey(object key)
+        private static bool IsCompatibleKey(object key!!)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             return key is TKey;
         }
 
@@ -254,9 +249,9 @@ namespace System.Collections.ObjectModel
         {
             private readonly ICollection<TKey> _collection;
 
-            internal KeyCollection(ICollection<TKey> collection)
+            internal KeyCollection(ICollection<TKey> collection!!)
             {
-                _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+                _collection = collection;
             }
 
             void ICollection<TKey>.Add(TKey item)
@@ -308,9 +303,9 @@ namespace System.Collections.ObjectModel
         {
             private readonly ICollection<TValue> _collection;
 
-            internal ValueCollection(ICollection<TValue> collection)
+            internal ValueCollection(ICollection<TValue> collection!!)
             {
-                _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+                _collection = collection;
             }
 
             void ICollection<TValue>.Add(TValue item)

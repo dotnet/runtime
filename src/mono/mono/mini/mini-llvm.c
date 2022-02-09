@@ -1460,12 +1460,10 @@ sig_to_llvm_sig_no_cinfo (EmitContext *ctx, MonoMethodSignature *sig)
 	LLVMTypeRef *param_types = NULL;
 	LLVMTypeRef res;
 	int i, pindex;
-	MonoType *rtype;
 
 	ret_type = type_to_llvm_type (ctx, sig->ret);
 	if (!ctx_ok (ctx))
 		return NULL;
-	rtype = mini_get_underlying_type (sig->ret);
 
 	param_types = g_new0 (LLVMTypeRef, (sig->param_count * 8) + 3);
 	pindex = 0;
@@ -2001,10 +1999,6 @@ get_aotconst (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data, LLVMT
 	LLVMValueRef load;
 
 	cfg = ctx->cfg;
-
-	MonoJumpInfo tmp_ji;
-	tmp_ji.type = type;
-	tmp_ji.data.target = data;
 
 	load = get_aotconst_module (ctx->module, ctx->builder, type, data, llvm_type, &got_offset, &ji);
 
@@ -3805,13 +3799,11 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	 */
 	for (i = 0; i < cfg->num_varinfo; ++i) {
 		MonoInst *var = cfg->varinfo [i];
-		LLVMTypeRef vtype;
 
 		if ((var->opcode == OP_GSHAREDVT_LOCAL || var->opcode == OP_GSHAREDVT_ARG_REGOFFSET))
 			continue;
 
 		if (var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (mini_type_is_vtype (var->inst_vtype) && !MONO_CLASS_IS_SIMD (ctx->cfg, var->klass))) {
-			vtype = type_to_llvm_type (ctx, var->inst_vtype);
 			if (!ctx_ok (ctx))
 				return;
 			/* Could be already created by an OP_VPHI */
@@ -4016,6 +4008,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			rgctx_alloc = ctx->addresses [cfg->rgctx_var->dreg];
 			/* This volatile store will keep the alloca alive */
 			store = mono_llvm_build_store (builder, convert (ctx, ctx->rgctx_arg, IntPtrType ()), rgctx_alloc, TRUE, LLVM_BARRIER_NONE);
+			(void)store; /* unused */
 
 			set_metadata_flag (rgctx_alloc, "mono.this");
 		}
@@ -4867,7 +4860,6 @@ static const char *default_personality_name = "__gxx_personality_v0";
 static LLVMTypeRef
 default_cpp_lpad_exc_signature (void)
 {
-	static gboolean inited = FALSE;
 	static LLVMTypeRef sig;
 
 	if (!sig) {
@@ -4875,7 +4867,6 @@ default_cpp_lpad_exc_signature (void)
 		signature [0] = LLVMPointerType (LLVMInt8Type (), 0);
 		signature [1] = LLVMInt32Type ();
 		sig = LLVMStructType (signature, 2, FALSE);
-		inited = TRUE;
 	}
 
 	return sig;
@@ -5495,7 +5486,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	BBInfo *bblocks = ctx->bblocks;
 	MonoInst *ins;
 	LLVMBasicBlockRef cbb;
-	LLVMBuilderRef builder, starting_builder;
+	LLVMBuilderRef builder;
 	gboolean has_terminator;
 	LLVMValueRef v;
 	LLVMValueRef lhs, rhs, arg3;
@@ -5610,7 +5601,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	}
 
 	has_terminator = FALSE;
-	starting_builder = builder;
 	for (ins = bb->code; ins; ins = ins->next) {
 		const char *spec = LLVM_INS_INFO (ins->opcode);
 		char *dname = NULL;
@@ -12219,10 +12209,8 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
 	MonoInst *in;
 	MonoMethodSignature *sig;
-	int i, n, stack_size;
+	int i, n;
 	LLVMArgInfo *ainfo;
-
-	stack_size = 0;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;

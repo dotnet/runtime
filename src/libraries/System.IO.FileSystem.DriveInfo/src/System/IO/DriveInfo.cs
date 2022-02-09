@@ -9,13 +9,8 @@ namespace System.IO
     {
         private readonly string _name;
 
-        public DriveInfo(string driveName)
+        public DriveInfo(string driveName!!)
         {
-            if (driveName == null)
-            {
-                throw new ArgumentNullException(nameof(driveName));
-            }
-
             _name = NormalizeDriveName(driveName);
         }
 

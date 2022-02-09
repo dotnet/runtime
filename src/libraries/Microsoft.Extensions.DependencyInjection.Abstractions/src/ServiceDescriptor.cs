@@ -20,21 +20,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="implementationType">The <see cref="Type"/> implementing the service.</param>
         /// <param name="lifetime">The <see cref="ServiceLifetime"/> of the service.</param>
         public ServiceDescriptor(
-            Type serviceType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType,
+            Type serviceType!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType!!,
             ServiceLifetime lifetime)
             : this(serviceType, lifetime)
         {
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (implementationType == null)
-            {
-                throw new ArgumentNullException(nameof(implementationType));
-            }
-
             ImplementationType = implementationType;
         }
 
@@ -45,20 +35,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">The <see cref="Type"/> of the service.</param>
         /// <param name="instance">The instance implementing the service.</param>
         public ServiceDescriptor(
-            Type serviceType,
-            object instance)
+            Type serviceType!!,
+            object instance!!)
             : this(serviceType, ServiceLifetime.Singleton)
         {
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
-
             ImplementationInstance = instance;
         }
 
@@ -69,21 +49,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="factory">A factory used for creating service instances.</param>
         /// <param name="lifetime">The <see cref="ServiceLifetime"/> of the service.</param>
         public ServiceDescriptor(
-            Type serviceType,
-            Func<IServiceProvider, object> factory,
+            Type serviceType!!,
+            Func<IServiceProvider, object> factory!!,
             ServiceLifetime lifetime)
             : this(serviceType, lifetime)
         {
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (factory == null)
-            {
-                throw new ArgumentNullException(nameof(factory));
-            }
-
             ImplementationFactory = factory;
         }
 
@@ -169,19 +139,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="implementationType">The type of the implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
         public static ServiceDescriptor Transient(
-            Type service,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
+            Type service!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType!!)
         {
-            if (service == null)
-            {
-                throw new ArgumentNullException(nameof(service));
-            }
-
-            if (implementationType == null)
-            {
-                throw new ArgumentNullException(nameof(implementationType));
-            }
-
             return Describe(service, implementationType, ServiceLifetime.Transient);
         }
 
@@ -196,15 +156,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="implementationFactory">A factory to create new instances of the service implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
         public static ServiceDescriptor Transient<TService, TImplementation>(
-            Func<IServiceProvider, TImplementation> implementationFactory)
+            Func<IServiceProvider, TImplementation> implementationFactory!!)
             where TService : class
             where TImplementation : class, TService
         {
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return Describe(typeof(TService), implementationFactory, ServiceLifetime.Transient);
         }
 
@@ -216,14 +171,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TService">The type of the service.</typeparam>
         /// <param name="implementationFactory">A factory to create new instances of the service implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Transient<TService>(Func<IServiceProvider, TService> implementationFactory)
+        public static ServiceDescriptor Transient<TService>(Func<IServiceProvider, TService> implementationFactory!!)
             where TService : class
         {
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return Describe(typeof(TService), implementationFactory, ServiceLifetime.Transient);
         }
 
@@ -235,18 +185,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="service">The type of the service.</param>
         /// <param name="implementationFactory">A factory to create new instances of the service implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Transient(Type service, Func<IServiceProvider, object> implementationFactory)
+        public static ServiceDescriptor Transient(Type service!!, Func<IServiceProvider, object> implementationFactory!!)
         {
-            if (service == null)
-            {
-                throw new ArgumentNullException(nameof(service));
-            }
-
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return Describe(service, implementationFactory, ServiceLifetime.Transient);
         }
 
@@ -291,15 +231,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="implementationFactory">A factory to create new instances of the service implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
         public static ServiceDescriptor Scoped<TService, TImplementation>(
-            Func<IServiceProvider, TImplementation> implementationFactory)
+            Func<IServiceProvider, TImplementation> implementationFactory!!)
             where TService : class
             where TImplementation : class, TService
         {
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return Describe(typeof(TService), implementationFactory, ServiceLifetime.Scoped);
         }
 
@@ -311,14 +246,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TService">The type of the service.</typeparam>
         /// <param name="implementationFactory">A factory to create new instances of the service implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Scoped<TService>(Func<IServiceProvider, TService> implementationFactory)
+        public static ServiceDescriptor Scoped<TService>(Func<IServiceProvider, TService> implementationFactory!!)
             where TService : class
         {
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return Describe(typeof(TService), implementationFactory, ServiceLifetime.Scoped);
         }
 
@@ -330,18 +260,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="service">The type of the service.</param>
         /// <param name="implementationFactory">A factory to create new instances of the service implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Scoped(Type service, Func<IServiceProvider, object> implementationFactory)
+        public static ServiceDescriptor Scoped(Type service!!, Func<IServiceProvider, object> implementationFactory!!)
         {
-            if (service == null)
-            {
-                throw new ArgumentNullException(nameof(service));
-            }
-
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return Describe(service, implementationFactory, ServiceLifetime.Scoped);
         }
 
@@ -369,19 +289,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="implementationType">The type of the implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
         public static ServiceDescriptor Singleton(
-            Type service,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
+            Type service!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType!!)
         {
-            if (service == null)
-            {
-                throw new ArgumentNullException(nameof(service));
-            }
-
-            if (implementationType == null)
-            {
-                throw new ArgumentNullException(nameof(implementationType));
-            }
-
             return Describe(service, implementationType, ServiceLifetime.Singleton);
         }
 
@@ -396,15 +306,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="implementationFactory">A factory to create new instances of the service implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
         public static ServiceDescriptor Singleton<TService, TImplementation>(
-            Func<IServiceProvider, TImplementation> implementationFactory)
+            Func<IServiceProvider, TImplementation> implementationFactory!!)
             where TService : class
             where TImplementation : class, TService
         {
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return Describe(typeof(TService), implementationFactory, ServiceLifetime.Singleton);
         }
 
@@ -416,14 +321,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TService">The type of the service.</typeparam>
         /// <param name="implementationFactory">A factory to create new instances of the service implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Singleton<TService>(Func<IServiceProvider, TService> implementationFactory)
+        public static ServiceDescriptor Singleton<TService>(Func<IServiceProvider, TService> implementationFactory!!)
             where TService : class
         {
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return Describe(typeof(TService), implementationFactory, ServiceLifetime.Singleton);
         }
 
@@ -436,19 +336,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="implementationFactory">A factory to create new instances of the service implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
         public static ServiceDescriptor Singleton(
-            Type serviceType,
-            Func<IServiceProvider, object> implementationFactory)
+            Type serviceType!!,
+            Func<IServiceProvider, object> implementationFactory!!)
         {
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (implementationFactory == null)
-            {
-                throw new ArgumentNullException(nameof(implementationFactory));
-            }
-
             return Describe(serviceType, implementationFactory, ServiceLifetime.Singleton);
         }
 
@@ -460,14 +350,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TService">The type of the service.</typeparam>
         /// <param name="implementationInstance">The instance of the implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Singleton<TService>(TService implementationInstance)
+        public static ServiceDescriptor Singleton<TService>(TService implementationInstance!!)
             where TService : class
         {
-            if (implementationInstance == null)
-            {
-                throw new ArgumentNullException(nameof(implementationInstance));
-            }
-
             return Singleton(typeof(TService), implementationInstance);
         }
 
@@ -480,19 +365,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="implementationInstance">The instance of the implementation.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
         public static ServiceDescriptor Singleton(
-            Type serviceType,
-            object implementationInstance)
+            Type serviceType!!,
+            object implementationInstance!!)
         {
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (implementationInstance == null)
-            {
-                throw new ArgumentNullException(nameof(implementationInstance));
-            }
-
             return new ServiceDescriptor(serviceType, implementationInstance);
         }
 

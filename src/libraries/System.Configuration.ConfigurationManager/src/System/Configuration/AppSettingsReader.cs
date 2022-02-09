@@ -28,11 +28,8 @@ namespace System.Configuration
         /// throw an exception with a descriptive message so the user can make the appropriate
         /// change
         /// </summary>
-        public object GetValue(string key, Type type)
+        public object GetValue(string key!!, Type type!!)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key));
-            if (type == null) throw new ArgumentNullException(nameof(type));
-
             string val = _map[key];
 
             if (val == null) throw new InvalidOperationException(SR.Format(SR.AppSettingsReaderNoKey, key));

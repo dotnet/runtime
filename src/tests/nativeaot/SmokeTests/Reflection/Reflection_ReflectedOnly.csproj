@@ -6,19 +6,13 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- Look for MULTIMODULE_BUILD #define for the more specific incompatible parts -->
-    <NativeAotMultimoduleIncompatible>true</NativeAotMultimoduleIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Reflection.cs" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <NativeAotProjectLines>
-      <![CDATA[
   <ItemGroup>
     <IlcArg Include="--reflectedonly" />
   </ItemGroup>
-      ]]>
-    </NativeAotProjectLines>
-  </PropertyGroup>
 </Project>

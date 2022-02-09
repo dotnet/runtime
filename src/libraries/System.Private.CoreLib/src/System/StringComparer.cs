@@ -42,23 +42,13 @@ namespace System
             };
         }
 
-        public static StringComparer Create(CultureInfo culture, bool ignoreCase)
+        public static StringComparer Create(CultureInfo culture!!, bool ignoreCase)
         {
-            if (culture == null)
-            {
-                throw new ArgumentNullException(nameof(culture));
-            }
-
             return new CultureAwareComparer(culture, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
-        public static StringComparer Create(CultureInfo culture, CompareOptions options)
+        public static StringComparer Create(CultureInfo culture!!, CompareOptions options)
         {
-            if (culture == null)
-            {
-                throw new ArgumentNullException(nameof(culture));
-            }
-
             return new CultureAwareComparer(culture, options);
         }
 
@@ -195,13 +185,8 @@ namespace System
             return x.Equals(y);
         }
 
-        public int GetHashCode(object obj)
+        public int GetHashCode(object obj!!)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             if (obj is string s)
             {
                 return GetHashCode(s);
@@ -269,12 +254,8 @@ namespace System
             return _compareInfo.Compare(x, y, _options) == 0;
         }
 
-        public override int GetHashCode(string obj)
+        public override int GetHashCode(string obj!!)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
             return _compareInfo.GetHashCode(obj, _options);
         }
 

@@ -119,10 +119,14 @@ private:
     void LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);
 
+    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive);
+
     // ------------------------------
     // Call Lowering
     // ------------------------------
     void LowerCall(GenTree* call);
+    void LowerCFGCall(GenTreeCall* call);
+    void MoveCFGCallArg(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
 #endif

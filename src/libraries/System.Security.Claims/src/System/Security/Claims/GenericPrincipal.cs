@@ -12,11 +12,8 @@ namespace System.Security.Principal
         private readonly IIdentity m_identity;
         private readonly string[]? m_roles;
 
-        public GenericPrincipal(IIdentity identity, string[]? roles)
+        public GenericPrincipal(IIdentity identity!!, string[]? roles)
         {
-            if (identity == null)
-                throw new ArgumentNullException(nameof(identity));
-
             m_identity = identity;
             if (roles != null)
             {

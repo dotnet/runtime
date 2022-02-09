@@ -197,6 +197,9 @@ jobs:
     - ${{ if in(parameters.testGroup, 'pgo') }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
+    - ${{ if in(parameters.testGroup, 'jit-cfg') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 120
 
     - ${{ if eq(parameters.compositeBuildMode, true) }}:
       - name: crossgenArg
@@ -210,7 +213,7 @@ jobs:
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
       timeoutInMinutes: 200
-    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental', 'pgo') }}:
+    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental', 'pgo', 'jit-cfg') }}:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
@@ -551,6 +554,12 @@ jobs:
           - jitpartialcompilation_osr
           - jitpartialcompilation_osr_pgo
           - jitobjectstackallocation
+        ${{ if in(parameters.testGroup, 'jit-cfg') }}:
+          scenarios:
+          - jitcfg
+          - jitcfg_dispatcher_always
+          - jitcfg_dispatcher_never
+          - jitcfg_gcstress0xc
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:
           - ilasmroundtrip

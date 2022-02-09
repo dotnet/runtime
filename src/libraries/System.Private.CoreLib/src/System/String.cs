@@ -81,11 +81,8 @@ namespace System
         [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
         public extern String(char[] value, int startIndex, int length);
 
-        private static string Ctor(char[] value, int startIndex, int length)
+        private static string Ctor(char[] value!!, int startIndex, int length)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
 
@@ -308,11 +305,8 @@ namespace System
             return result;
         }
 
-        public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
+        public static string Create<TState>(int length, TState state, SpanAction<char, TState> action!!)
         {
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
-
             if (length <= 0)
             {
                 if (length == 0)
@@ -371,11 +365,8 @@ namespace System
             return this;
         }
 
-        public static unsafe string Copy(string str)
+        public static unsafe string Copy(string str!!)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
-
             string result = FastAllocateString(str.Length);
 
             Buffer.Memmove(
@@ -391,10 +382,8 @@ namespace System
         // sourceIndex + count - 1 to the character array buffer, beginning
         // at destinationIndex.
         //
-        public unsafe void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
+        public unsafe void CopyTo(int sourceIndex, char[] destination!!, int destinationIndex, int count)
         {
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
             if (sourceIndex < 0)
