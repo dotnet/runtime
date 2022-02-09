@@ -13698,6 +13698,10 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
         {
             optimizedTree = fgOptimizeBitwiseAnd(tree);
         }
+        else if (tree->OperIs(GT_XOR))
+        {
+            optimizedTree = fgOptimizeBitwiseXor(tree);
+        }
 
         if (optimizedTree != nullptr)
         {
@@ -14133,6 +14137,36 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
         JITDUMP("\n")
     }
     return cmp;
+}
+
+// fgOptimizeBitwiseXor: optimizes the "xor" operation.
+//
+// Arguments:
+//   xorOp - the GT_XOR tree to optimize.
+//
+// Return Value:
+//   The optimized tree, currently always a local variable, in case any transformations
+//   were performed. Otherwise, "nullptr", guaranteeing no state change.
+//
+GenTree* Compiler::fgOptimizeBitwiseXor(GenTreeOp* xorOp)
+{
+    assert(xorOp->OperIs(GT_XOR));
+    assert(!optValnumCSE_phase);
+
+    if (!gtIsActiveCSE_Candidate(xorOp))
+    {
+        GenTree* op1 = xorOp->gtGetOp1();
+        GenTree* op2 = xorOp->gtGetOp2();
+
+        if (op1->OperIs(GT_LCL_VAR) && op2->IsIntegralConst(0) && !gtIsActiveCSE_Candidate(op2))
+        {
+            DEBUG_DESTROY_NODE(xorOp);
+            DEBUG_DESTROY_NODE(op2);
+            return op1;
+        }
+    }
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------

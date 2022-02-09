@@ -173,23 +173,6 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_XOR))
-    {
-        LIR::Use binOpUse;
-        GenTree* op1 = binOp->gtGetOp1();
-        GenTree* op2 = binOp->gtGetOp2();
-
-        if (op1->OperIs(GT_LCL_VAR) && op2->IsIntegralConst(0) && BlockRange().TryGetUse(binOp, &binOpUse))
-        {
-            binOpUse.ReplaceWith(op1);
-
-            BlockRange().Remove(op2);
-            BlockRange().Remove(binOp);
-
-            return op1;
-        }
-    }
-
 #ifdef FEATURE_HW_INTRINSICS
     if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) && varTypeIsIntegral(binOp))
     {
