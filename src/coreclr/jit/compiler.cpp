@@ -9754,8 +9754,16 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     tree->ChangeOper(GT_NULLCHECK);
     if (!varTypeIsIntegralOrI(tree))
     {
+        // For non-primitives let's only probe a byte-wide area to avoid potential AVEs
+        tree->ChangeType(TYP_BYTE);
+    }
+#if defined(TARGET_XARCH)
+    else if (varTypeIsLong(tree))
+    {
+        // Use smaller instruction on XARCH for 8-byte wide nullcheck
         tree->ChangeType(TYP_INT);
     }
+#endif
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
