@@ -93,7 +93,7 @@ IF NOT "%RunTieringTest%"=="" (
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
-      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'">
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true' And '$(RuntimeFlavor)' != 'mono'">
     <![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 REM JitOptimizationSensitive includes our set of tests which cannot run under:
