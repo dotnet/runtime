@@ -23,14 +23,6 @@ namespace System.IO.Strategies
             _strategy = strategy;
         }
 
-        ~DerivedFileStreamStrategy()
-        {
-            // Preserved for compatibility since FileStream has defined a
-            // finalizer in past releases and derived classes may depend
-            // on Dispose(false) call.
-            _fileStream.DisposeInternal(false);
-        }
-
         public override bool CanRead => _strategy.CanRead;
 
         public override bool CanWrite => _strategy.CanWrite;
@@ -57,6 +49,9 @@ namespace System.IO.Strategies
                 return _strategy.SafeFileHandle;
             }
         }
+
+        // derived classes may depend on Dispose(false) call
+        internal override bool RequiresFinalizer => true;
 
         internal override bool IsClosed => _strategy.IsClosed;
 
@@ -156,14 +151,6 @@ namespace System.IO.Strategies
 
         public override ValueTask DisposeAsync() => _fileStream.BaseDisposeAsync();
 
-        internal override void DisposeInternal(bool disposing)
-        {
-            _strategy.DisposeInternal(disposing);
-
-            if (disposing)
-            {
-                GC.SuppressFinalize(this);
-            }
-        }
+        protected sealed override void Dispose(bool disposing) => _strategy.DisposeInternal(disposing);
     }
 }

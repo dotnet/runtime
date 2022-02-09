@@ -364,7 +364,7 @@ namespace System.IO.Tests
 
             if (type == typeof(DerivedFileStreamWithFinalizer))
             {
-                // derived type finalizer implicitly calss base type finalizer, hence +2
+                // derived type finalizer implicitly calls base type finalizer, hence +2
                 Assert.Equal(beforeWithFinalizer + 2, DerivedFileStreamWithFinalizer.DisposeFalseCalled);
                 Assert.Equal(0, DerivedFileStreamWithFinalizer.DisposeTrueCalled);
             }
