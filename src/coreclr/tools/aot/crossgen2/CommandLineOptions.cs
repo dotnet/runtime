@@ -65,6 +65,7 @@ namespace ILCompiler
         public string FileLayout;
         public bool VerifyTypeAndFieldLayout;
         public string CallChainProfileFile;
+        public string ImageBase;
 
         public string SingleMethodTypeName;
         public string SingleMethodName;
@@ -143,6 +144,7 @@ namespace ILCompiler
                 syntax.DefineOption("waitfordebugger", ref WaitForDebugger, SR.WaitForDebuggerOption);
                 syntax.DefineOptionList("codegenopt|codegen-options", ref CodegenOptions, SR.CodeGenOptions);
                 syntax.DefineOption("resilient", ref Resilient, SR.ResilientOption);
+                syntax.DefineOption("imagebase", ref ImageBase, SR.ImageBase);
 
                 syntax.DefineOption("targetarch", ref TargetArch, SR.TargetArchOption);
                 syntax.DefineOption("targetos", ref TargetOS, SR.TargetOSOption);

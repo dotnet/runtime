@@ -673,14 +673,12 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="subsystem">Targeting subsystem</param>
         /// <param name="target">Target architecture to set in the header</param>
-        public static PEHeaderBuilder Create(Subsystem subsystem, TargetDetails target)
+        public static PEHeaderBuilder Create(Subsystem subsystem, TargetDetails target, ulong imageBase)
         {
             bool is64BitTarget = target.PointerSize == sizeof(long);
 
             Characteristics imageCharacteristics = Characteristics.ExecutableImage | Characteristics.Dll;
             imageCharacteristics |= is64BitTarget ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine;
-
-            ulong imageBase = is64BitTarget ? PE64HeaderConstants.DllImageBase : PE32HeaderConstants.ImageBase;
 
             int fileAlignment = 0x200;
             bool isWindowsOr32bit = target.IsWindows || !is64BitTarget;
