@@ -38,6 +38,7 @@ namespace Internal.Cryptography
                     // block size, not the feedback size. We want the one-shot to be able to continue to decrypt
                     // those ciphertexts, so for CFB8 we are more lenient on the number of allowed padding bytes.
                     bytesWritten = SymmetricPadding.GetPaddingLength(transformBuffer, paddingMode, cipher.BlockSizeInBytes);
+                    CryptographicOperations.ZeroMemory(transformBuffer.Slice(bytesWritten));
                     return true;
                 }
                 catch (CryptographicException)
