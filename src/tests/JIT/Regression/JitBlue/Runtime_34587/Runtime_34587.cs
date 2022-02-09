@@ -257,6 +257,11 @@ class Runtime_34587
                 succeeded &= Vector.IsHardwareAccelerated;
                 succeeded &= Vector<byte>.Count == 16;
             }
+            else
+            {
+                succeeded &= !Vector.IsHardwareAccelerated;
+                succeeded &= Vector<byte>.Count == 16;
+            }
 
             return succeeded;
         }
@@ -268,6 +273,11 @@ class Runtime_34587
             if (AdvSimd.IsSupported)
             {
                 succeeded &= Vector64.IsHardwareAccelerated;
+                succeeded &= Vector64<byte>.Count == 8;
+            }
+            else
+            {
+                succeeded &= !Vector64.IsHardwareAccelerated;
                 succeeded &= Vector64<byte>.Count == 8;
             }
 
@@ -283,6 +293,11 @@ class Runtime_34587
                 succeeded &= Vector128.IsHardwareAccelerated;
                 succeeded &= Vector128<byte>.Count == 16;
             }
+            else
+            {
+                succeeded &= !Vector128.IsHardwareAccelerated;
+                succeeded &= Vector128<byte>.Count == 16;
+            }
 
             return succeeded;
         }
@@ -291,11 +306,8 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (AdvSimd.IsSupported)
-            {
-                succeeded &= !Vector256.IsHardwareAccelerated;
-                succeeded &= Vector256<byte>.Count == 32;
-            }
+            succeeded &= !Vector256.IsHardwareAccelerated;
+            succeeded &= Vector256<byte>.Count == 32;
 
             return succeeded;
         }
@@ -630,6 +642,11 @@ class Runtime_34587
                 succeeded &= Vector.IsHardwareAccelerated;
                 succeeded &= Vector<byte>.Count == 16;
             }
+            else
+            {
+                succeeded &= !Vector.IsHardwareAccelerated;
+                succeeded &= Vector<byte>.Count == 16;
+            }
 
             return succeeded;
         }
@@ -638,11 +655,8 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Sse.IsSupported)
-            {
-                succeeded &= !Vector64.IsHardwareAccelerated;
-                succeeded &= Vector64<byte>.Count == 8;
-            }
+            succeeded &= !Vector64.IsHardwareAccelerated;
+            succeeded &= Vector64<byte>.Count == 8;
 
             return succeeded;
         }
@@ -651,7 +665,7 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Sse.IsSupported)
+            if (Sse2.IsSupported)
             {
                 succeeded &= Vector128.IsHardwareAccelerated;
                 succeeded &= Vector128<byte>.Count == 16;
@@ -669,7 +683,7 @@ class Runtime_34587
                 succeeded &= Vector256.IsHardwareAccelerated;
                 succeeded &= Vector256<byte>.Count == 32;
             }
-            else if (Sse.IsSupported)
+            else
             {
                 succeeded &= !Vector256.IsHardwareAccelerated;
                 succeeded &= Vector256<byte>.Count == 32;
