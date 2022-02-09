@@ -150,18 +150,21 @@ steps:
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiAndroid binlog'
+    condition: always()
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
       artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiiOS binlog'
+    condition: always()
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiiOS.binlog
       artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiMacCatalyst binlog'
+    condition: always()
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog
       artifactName:  ${{ parameters.artifactName }}
