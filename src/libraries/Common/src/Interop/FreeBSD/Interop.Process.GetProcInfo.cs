@@ -164,9 +164,9 @@ internal static partial class Interop
             public int ki_numthreads;                   /* XXXKSE number of threads in total */
             public int ki_tid;                          /* XXXKSE thread id */
             private fixed byte ki_pri[4];               /* process priority */
-            public rusage ki_rusage;                    /* process @rusage statistics */
+            public rusage ki_rusage;                    /* process rusage statistics */
             /* XXX - most fields in ki_rusage_ch are not (yet) filled in */
-            private rusage ki_rusage_ch;                /* @rusage of children processes */
+            private rusage ki_rusage_ch;                /* rusage of children processes */
             private void* ki_pcb;                       /* kernel virtual addr of pcb */
             private void* ki_kstack;                    /* kernel virtual addr of stack */
             private void* ki_udata;                     /* User convenience pointer */
