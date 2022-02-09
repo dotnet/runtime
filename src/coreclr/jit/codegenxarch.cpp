@@ -3548,8 +3548,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
 void CodeGen::genStructPutArgRepMovs(GenTreePutArgStk* putArgNode)
 {
     GenTree* src = putArgNode->gtGetOp1();
-    assert(src->TypeGet() == TYP_STRUCT);
-    assert(!src->AsObj()->GetLayout()->HasGCPtr());
+    assert(src->TypeIs(TYP_STRUCT) && !src->GetLayout(compiler)->HasGCPtr());
 
     // Make sure we got the arguments of the cpblk operation in the right registers, and that
     // 'src' is contained as expected.
