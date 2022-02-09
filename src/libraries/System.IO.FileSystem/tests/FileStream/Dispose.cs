@@ -252,27 +252,84 @@ namespace System.IO.Tests
             }
         }
 
+        public class DerivedFileStreamWithoutFinalizer : FileStream
+        {
+            public static int DisposeTrueCalled = 0;
+            public static int DisposeFalseCalled = 0;
+
+            public DerivedFileStreamWithoutFinalizer(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+                : base(path, mode, access, share, bufferSize, options)
+            {
+            }
+
+            public DerivedFileStreamWithoutFinalizer(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+                : base(handle, access, bufferSize, isAsync)
+            {
+            }
+
+            public DerivedFileStreamWithoutFinalizer(IntPtr handle, FileAccess access, bool ownsHandle)
+#pragma warning disable CS0618 // Type or member is obsolete
+                : base(handle, access, ownsHandle)
+#pragma warning restore CS0618 // Type or member is obsolete
+            {
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    DisposeTrueCalled++;
+                }
+                else
+                {
+                    DisposeFalseCalled++;
+                }
+
+                base.Dispose(disposing);
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void FinalizeFlushesWriteBuffer()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, useAsync: false));
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        public void FinalizeFlushesWriteBufferForDerivedFileStreamCreatedFromPath()
+        public void FinalizeFlushesWriteBufferForDerivedFileStreamWithFinalizerCreatedFromPath()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithFinalizer(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, FileOptions.None));
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        public void FinalizeFlushesWriteBufferForDerivedFileStreamCreatedFromSafeFileHandle()
+        public void FinalizeFlushesWriteBufferForDerivedFileStreamWithFinalizerCreatedFromSafeFileHandle()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithFinalizer(
                     File.OpenHandle(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, FileOptions.None),
                     FileAccess.Write, bufferSize: 4096, isAsync: false));
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        public void FinalizeFlushesWriteBufferForDerivedFileStreamCreatedFromIntPtr()
+        public void FinalizeFlushesWriteBufferForDerivedFileStreamWithFinalizerCreatedFromIntPtr()
              => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithFinalizer(
+                    File.OpenHandle(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, FileOptions.None).DangerousGetHandle(),
+                    FileAccess.Write,
+                    ownsHandle: true));
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        public void FinalizeFlushesWriteBufferForDerivedFileStreamWithoutFinalizerCreatedFromPath()
+            => VerifyFlushedBufferOnFinalization(
+                filePath => new DerivedFileStreamWithoutFinalizer(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, FileOptions.None));
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        public void FinalizeFlushesWriteBufferForDerivedFileStreamWithoutFinalizerCreatedFromSafeFileHandle()
+            => VerifyFlushedBufferOnFinalization(
+                filePath => new DerivedFileStreamWithoutFinalizer(
+                    File.OpenHandle(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, FileOptions.None),
+                    FileAccess.Write, bufferSize: 4096, isAsync: false));
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        public void FinalizeFlushesWriteBufferForDerivedFileStreamWithoutFinalizerCreatedFromIntPtr()
+             => VerifyFlushedBufferOnFinalization(
+                filePath => new DerivedFileStreamWithoutFinalizer(
                     File.OpenHandle(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, FileOptions.None).DangerousGetHandle(),
                     FileAccess.Write,
                     ownsHandle: true));
@@ -282,16 +339,17 @@ namespace System.IO.Tests
             string fileName = GetTestFilePath();
 
             // use a separate method to be sure that fs isn't rooted at time of GC.
-            Func<string, bool> leakFs = filePath =>
+            Func<string, Type> leakFs = filePath =>
             {
                 // we must specify useAsync:false, otherwise the finalizer just kicks off an async write.
                 FileStream fs = factory(filePath);
                 fs.Write(TestBuffer, 0, TestBuffer.Length);
-                return fs.GetType() == typeof(DerivedFileStreamWithFinalizer);
+                return fs.GetType();
             };
 
-            int before = DerivedFileStreamWithFinalizer.DisposeFalseCalled;
-            bool isDerivedFileStream = leakFs(fileName);
+            int beforeWithFinalizer = DerivedFileStreamWithFinalizer.DisposeFalseCalled;
+            int beforeWithoutFinalizer = DerivedFileStreamWithoutFinalizer.DisposeFalseCalled;
+            Type type = leakFs(fileName);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -304,10 +362,16 @@ namespace System.IO.Tests
                 Assert.Equal(TestBuffer, buffer);
             }
 
-            if (isDerivedFileStream)
+            if (type == typeof(DerivedFileStreamWithFinalizer))
             {
-                Assert.Equal(before + 1, DerivedFileStreamWithFinalizer.DisposeFalseCalled);
+                // derived type finalizer implicitly calss base type finalizer, hence +2
+                Assert.Equal(beforeWithFinalizer + 2, DerivedFileStreamWithFinalizer.DisposeFalseCalled);
                 Assert.Equal(0, DerivedFileStreamWithFinalizer.DisposeTrueCalled);
+            }
+            else if (type == typeof(DerivedFileStreamWithoutFinalizer))
+            {
+                Assert.Equal(beforeWithoutFinalizer + 1, DerivedFileStreamWithoutFinalizer.DisposeFalseCalled);
+                Assert.Equal(0, DerivedFileStreamWithoutFinalizer.DisposeTrueCalled);
             }
         }
 
