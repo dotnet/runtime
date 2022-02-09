@@ -1474,22 +1474,18 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                if (RegexHelpers.IsNonBacktracking(engine))
-                {
-                    continue;
-                }
-
-                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
+                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline, RegexOptions.Singleline | RegexOptions.Multiline })
                 {
                     // Anchors
                     yield return new object[] { engine, @"^.*", "abc", options, 0, true, true };
                     yield return new object[] { engine, @"^.*", "abc", options, 1, false, true };
+                }
 
-                    // Positive Lookbehinds
-                    yield return new object[] { engine, @"(?<=abc)def", "abcdef", options, 3, true, false };
-
-                    // Negative Lookbehinds
-                    yield return new object[] { engine, @"(?<!abc)def", "abcdef", options, 3, false, true };
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    // Positive and negative lookbehinds
+                    yield return new object[] { engine, @"(?<=abc)def", "abcdef", RegexOptions.None, 3, true, false };
+                    yield return new object[] { engine, @"(?<!abc)def", "abcdef", RegexOptions.None, 3, false, true };
                 }
             }
         }

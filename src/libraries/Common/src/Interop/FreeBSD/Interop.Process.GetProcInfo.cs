@@ -34,18 +34,18 @@ internal static partial class Interop
 
         // From sys/_sigset.h
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct sigset_t
+        internal unsafe struct @sigset_t
         {
             private fixed int bits[4];
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct uid_t
+        internal struct @uid_t
         {
             public uint id;
         }
         [StructLayout(LayoutKind.Sequential)]
-        internal struct gid_t
+        internal struct @gid_t
         {
             public uint id;
         }
@@ -87,7 +87,7 @@ internal static partial class Interop
 
         // From  sys/user.h
         [StructLayout(LayoutKind.Sequential)]
-        public unsafe struct kinfo_proc
+        public unsafe struct @kinfo_proc
         {
             public int ki_structsize;                   /* size of this structure */
             private int ki_layout;                      /* reserved: layout identifier */

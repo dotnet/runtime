@@ -8848,6 +8848,20 @@ void dTreeLIR(GenTree* tree)
     cTreeLIR(JitTls::GetCompiler(), tree);
 }
 
+void dTreeRange(GenTree* first, GenTree* last)
+{
+    Compiler* comp = JitTls::GetCompiler();
+    GenTree*  cur  = first;
+    while (true)
+    {
+        cTreeLIR(comp, cur);
+        if (cur == last)
+            break;
+
+        cur = cur->gtNext;
+    }
+}
+
 void dTrees()
 {
     cTrees(JitTls::GetCompiler());
@@ -9893,6 +9907,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_returnSpCheck++;
                 break;
 
+            case DoNotEnregisterReason::SimdUserForcesDep:
+                m_simdUserForcesDep++;
+                break;
+
             default:
                 unreached();
                 break;
@@ -10014,6 +10032,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);
+    PRINT_STATS(m_simdUserForcesDep, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)

@@ -263,13 +263,8 @@ namespace System
             _Revision == -1 ? 3 :
             4;
 
-        public static Version Parse(string input)
+        public static Version Parse(string input!!)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-
             return ParseVersion(input.AsSpan(), throwOnFailure: true)!;
         }
 

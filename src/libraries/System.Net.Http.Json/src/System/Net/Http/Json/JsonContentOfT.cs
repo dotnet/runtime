@@ -19,9 +19,9 @@ namespace System.Net.Http.Json
 
         private readonly TValue _typedValue;
 
-        public JsonContent(TValue inputValue, JsonTypeInfo<TValue> jsonTypeInfo)
+        public JsonContent(TValue inputValue, JsonTypeInfo<TValue> jsonTypeInfo!!)
         {
-            _typeInfo = jsonTypeInfo ?? throw new ArgumentNullException(nameof(jsonTypeInfo));
+            _typeInfo = jsonTypeInfo;
             _typedValue = inputValue;
             Headers.ContentType = JsonHelpers.GetDefaultMediaType();
         }

@@ -26,9 +26,8 @@ namespace System.Xml.Linq
         /// <exception cref="ArgumentNullException">
         /// Thrown if either the target or data parameter are null.
         /// </exception>
-        public XProcessingInstruction(string target, string data)
+        public XProcessingInstruction(string target, string data!!)
         {
-            if (data == null) throw new ArgumentNullException(nameof(data));
             ValidateName(target);
             this.target = target;
             this.data = data;
@@ -39,9 +38,8 @@ namespace System.Xml.Linq
         /// from another XML processing instruction.
         /// </summary>
         /// <param name="other">XML processing instruction to copy from.</param>
-        public XProcessingInstruction(XProcessingInstruction other)
+        public XProcessingInstruction(XProcessingInstruction other!!)
         {
-            if (other == null) throw new ArgumentNullException(nameof(other));
             this.target = other.target;
             this.data = other.data;
         }
@@ -115,9 +113,8 @@ namespace System.Xml.Linq
         /// <param name="writer">
         /// The <see cref="XmlWriter"/> to write this <see cref="XProcessingInstruction"/> to.
         /// </param>
-        public override void WriteTo(XmlWriter writer)
+        public override void WriteTo(XmlWriter writer!!)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
             writer.WriteProcessingInstruction(target, data);
         }
 
@@ -128,10 +125,8 @@ namespace System.Xml.Linq
         /// The <see cref="XmlWriter"/> to write this <see cref="XProcessingInstruction"/> to.
         /// </param>
         /// <param name="cancellationToken">A cancellation token.</param>
-        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
+        public override Task WriteToAsync(XmlWriter writer!!, CancellationToken cancellationToken)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
             return writer.WriteProcessingInstructionAsync(target, data);

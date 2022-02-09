@@ -85,10 +85,8 @@ namespace System.Security.Cryptography
             Initialize();
         }
 
-        internal Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword)
+        internal Rfc2898DeriveBytes(byte[] password, byte[] salt!!, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword)
         {
-            if (salt is null)
-                throw new ArgumentNullException(nameof(salt));
             if (iterations <= 0)
                 throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
             if (password is null)

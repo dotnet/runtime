@@ -153,9 +153,8 @@ namespace System.Xml.Linq
         /// Save the contents of an <see cref="XStreamingElement"/> to an XML writer, not preserving whitespace
         /// </summary>
         /// <param name="writer"><see cref="XmlWriter"/> to write to </param>
-        public void Save(XmlWriter writer)
+        public void Save(XmlWriter writer!!)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
             writer.WriteStartDocument();
             WriteTo(writer);
             writer.WriteEndDocument();
@@ -214,9 +213,8 @@ namespace System.Xml.Linq
         /// Write this <see cref="XStreamingElement"/> to an <see cref="XmlWriter"/>
         /// </summary>
         /// <param name="writer"></param>
-        public void WriteTo(XmlWriter writer)
+        public void WriteTo(XmlWriter writer!!)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
             new StreamingElementWriter(writer).WriteStreamingElement(this);
         }
 

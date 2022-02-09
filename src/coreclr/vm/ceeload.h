@@ -2174,7 +2174,6 @@ class ReflectionModule : public Module
  protected:
     ICeeGenInternal * m_pCeeFileGen;
 private:
-    Assembly             *m_pCreatingAssembly;
     RefClassWriter       *m_pInMemoryWriter;
 
 
@@ -2210,20 +2209,6 @@ public:
     // Overrides functions to access sections
     virtual TADDR GetIL(RVA target);
     virtual PTR_VOID GetRvaField(RVA rva);
-
-    Assembly* GetCreatingAssembly( void )
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_pCreatingAssembly;
-    }
-
-    void SetCreatingAssembly( Assembly* assembly )
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_pCreatingAssembly = assembly;
-    }
 
     ICeeGenInternal *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
 

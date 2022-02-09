@@ -474,11 +474,8 @@ namespace System.Reflection.Emit
             PutInteger4(arg);
         }
 
-        public virtual void Emit(OpCode opcode, MethodInfo meth)
+        public virtual void Emit(OpCode opcode, MethodInfo meth!!)
         {
-            if (meth == null)
-                throw new ArgumentNullException(nameof(meth));
-
             if (opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj))
             {
                 EmitCall(opcode, meth, null);
@@ -586,11 +583,8 @@ namespace System.Reflection.Emit
             PutInteger4(modBuilder.GetSignatureToken(sig));
         }
 
-        public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
+        public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo!!, Type[]? optionalParameterTypes)
         {
-            if (methodInfo == null)
-                throw new ArgumentNullException(nameof(methodInfo));
-
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
 
@@ -621,11 +615,8 @@ namespace System.Reflection.Emit
             PutInteger4(tk);
         }
 
-        public virtual void Emit(OpCode opcode, SignatureHelper signature)
+        public virtual void Emit(OpCode opcode, SignatureHelper signature!!)
         {
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
-
             int stackchange = 0;
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
             int sig = modBuilder.GetSignatureToken(signature);
@@ -655,11 +646,8 @@ namespace System.Reflection.Emit
             PutInteger4(tempVal);
         }
 
-        public virtual void Emit(OpCode opcode, ConstructorInfo con)
+        public virtual void Emit(OpCode opcode, ConstructorInfo con!!)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-
             int stackchange = 0;
 
             // Constructors cannot be generic so the value of UseMethodDef doesn't matter.
@@ -772,11 +760,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        public virtual void Emit(OpCode opcode, Label[] labels)
+        public virtual void Emit(OpCode opcode, Label[] labels!!)
         {
-            if (labels == null)
-                throw new ArgumentNullException(nameof(labels));
-
             // Emitting a switch table
 
             int i;
@@ -818,14 +803,9 @@ namespace System.Reflection.Emit
             PutInteger4(tempVal);
         }
 
-        public virtual void Emit(OpCode opcode, LocalBuilder local)
+        public virtual void Emit(OpCode opcode, LocalBuilder local!!)
         {
             // Puts the opcode onto the IL stream followed by the information for local variable local.
-
-            if (local == null)
-            {
-                throw new ArgumentNullException(nameof(local));
-            }
             int tempVal = local.GetLocalIndex();
             if (local.GetMethodBuilder() != m_methodBuilder)
             {
@@ -1022,10 +1002,7 @@ namespace System.Reflection.Emit
             else
             {
                 // execute this branch if previous clause is Catch or Fault
-                if (exceptionType == null)
-                {
-                    throw new ArgumentNullException(nameof(exceptionType));
-                }
+                ArgumentNullException.ThrowIfNull(exceptionType);
 
                 Emit(OpCodes.Leave, current.GetEndLabel());
             }
@@ -1188,17 +1165,12 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Callvirt, mi);
         }
 
-        public virtual void EmitWriteLine(FieldInfo fld)
+        public virtual void EmitWriteLine(FieldInfo fld!!)
         {
             // Emits the IL necessary to call WriteLine with fld.  It is
             // an error to call EmitWriteLine with a fld which is not of
             // one of the types for which Console.WriteLine implements overloads. (e.g.
             // we do *not* call ToString on the fields.
-
-            if (fld == null)
-            {
-                throw new ArgumentNullException(nameof(fld));
-            }
 
             Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
             MethodInfo prop = consoleType.GetMethod("get_Out")!;
@@ -1252,10 +1224,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
             }
 
-            if (localType == null)
-            {
-                throw new ArgumentNullException(nameof(localType));
-            }
+            ArgumentNullException.ThrowIfNull(localType);
 
             if (methodBuilder.m_bIsBaked)
             {

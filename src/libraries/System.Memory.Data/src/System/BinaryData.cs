@@ -33,9 +33,9 @@ namespace System
         /// provided byte array.
         /// </summary>
         /// <param name="data">The array to wrap.</param>
-        public BinaryData(byte[] data)
+        public BinaryData(byte[] data!!)
         {
-            _bytes = data ?? throw new ArgumentNullException(nameof(data));
+            _bytes = data;
         }
 
         /// <summary>
@@ -70,13 +70,8 @@ namespace System
         /// the string to bytes using the UTF-8 encoding.
         /// </summary>
         /// <param name="data">The string data.</param>
-        public BinaryData(string data)
+        public BinaryData(string data!!)
         {
-            if (data == null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
-
             _bytes = Encoding.UTF8.GetBytes(data);
         }
 
@@ -110,13 +105,8 @@ namespace System
         /// </summary>
         /// <param name="stream">Stream containing the data.</param>
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
-        public static BinaryData FromStream(Stream stream)
+        public static BinaryData FromStream(Stream stream!!)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             return FromStreamAsync(stream, async: false).GetAwaiter().GetResult();
         }
 
@@ -127,13 +117,8 @@ namespace System
         /// <param name="stream">Stream containing the data.</param>
         /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
-        public static Task<BinaryData> FromStreamAsync(Stream stream, CancellationToken cancellationToken = default)
+        public static Task<BinaryData> FromStreamAsync(Stream stream!!, CancellationToken cancellationToken = default)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             return FromStreamAsync(stream, async: true, cancellationToken);
         }
 

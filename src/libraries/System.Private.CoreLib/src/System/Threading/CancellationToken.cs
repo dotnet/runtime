@@ -281,11 +281,8 @@ namespace System.Threading
         /// <exception cref="System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         /// <exception cref="System.ObjectDisposedException">The associated <see
         /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
-        private CancellationTokenRegistration Register(Delegate callback, object? state, bool useSynchronizationContext, bool useExecutionContext)
+        private CancellationTokenRegistration Register(Delegate callback!!, object? state, bool useSynchronizationContext, bool useExecutionContext)
         {
-            if (callback == null)
-                throw new ArgumentNullException(nameof(callback));
-
             CancellationTokenSource? source = _source;
             return source != null ?
                 source.Register(callback, state, useSynchronizationContext ? SynchronizationContext.Current : null, useExecutionContext ? ExecutionContext.Capture() : null) :

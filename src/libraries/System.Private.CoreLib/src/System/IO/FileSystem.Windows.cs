@@ -154,7 +154,7 @@ namespace System.IO
             return data.ftLastWriteTime.ToDateTimeOffset();
         }
 
-        public static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool sameDirectoryDifferentCase)
         {
             if (!Interop.Kernel32.MoveFile(sourceFullPath, destFullPath, overwrite: false))
             {
