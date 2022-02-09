@@ -1644,76 +1644,105 @@ namespace System
 
         private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
-            ref ushort source = ref Unsafe.As<char, ushort>(ref _firstChar);
-
             nuint offset = 0;
             nuint lengthToExamine = (nuint)(uint)Length;
 
-            if (Vector256.IsHardwareAccelerated && lengthToExamine >= (nuint)Vector256<ushort>.Count)
+            ref ushort source = ref Unsafe.As<char, ushort>(ref _firstChar);
+
+            if (Vector256.IsHardwareAccelerated)
             {
-                Vector256<ushort> v1 = Vector256.Create((ushort)c);
-                Vector256<ushort> v2 = Vector256.Create((ushort)c2);
-                Vector256<ushort> v3 = Vector256.Create((ushort)c3);
-
-                while (offset <= lengthToExamine - (nuint)Vector256<ushort>.Count)
+                if (lengthToExamine >= (nuint)Vector256<ushort>.Count)
                 {
-                    Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, offset);
-                    Vector256<ushort> vector1 = Vector256.Equals(vector, v1);
-                    Vector256<ushort> vector2 = Vector256.Equals(vector, v2);
-                    Vector256<ushort> vector3 = Vector256.Equals(vector, v3);
-                    Vector256<byte> cmp = (vector1 | vector2 | vector3).AsByte();
+                    Vector256<ushort> v1 = Vector256.Create((ushort)c);
+                    Vector256<ushort> v2 = Vector256.Create((ushort)c2);
+                    Vector256<ushort> v3 = Vector256.Create((ushort)c3);
 
-                    if (cmp != Vector256<byte>.Zero)
+                    do
                     {
-                        uint mask = cmp.ExtractMostSignificantBits() & 0x55555555u;
-                        do
-                        {
-                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                            sepListBuilder.Append((int)(offset + bitPos));
-                            mask = BitOperations.ResetLowestSetBit(mask);
-                        } while (mask != 0);
-                    }
+                        Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, offset);
+                        Vector256<ushort> v1Eq = Vector256.Equals(vector, v1);
+                        Vector256<ushort> v2Eq = Vector256.Equals(vector, v2);
+                        Vector256<ushort> v3Eq = Vector256.Equals(vector, v3);
+                        Vector256<byte> cmp = (v1Eq | v2Eq | v3Eq).AsByte();
 
-                    offset += (nuint)Vector256<ushort>.Count;
+                        if (cmp != Vector256<byte>.Zero)
+                        {
+                            uint mask = cmp.ExtractMostSignificantBits() & 0x55555555;
+                            do
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                                sepListBuilder.Append((int)(offset + bitPos));
+                                mask = BitOperations.ResetLowestSetBit(mask);
+                            } while (mask != 0);
+                        }
+
+                        offset += (nuint)Vector256<ushort>.Count;
+                    } while (offset <= lengthToExamine - (nuint)Vector256<ushort>.Count);
+
+                    // See if we fit another 128 bit vector
+                    if (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count)
+                    {
+                        Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
+                        Vector128<ushort> v1Eq = Vector128.Equals(vector, v1.GetLower());
+                        Vector128<ushort> v2Eq = Vector128.Equals(vector, v2.GetLower());
+                        Vector128<ushort> v3Eq = Vector128.Equals(vector, v3.GetLower());
+                        Vector128<byte> cmp = (v1Eq | v2Eq | v3Eq).AsByte();
+
+                        if (cmp != Vector128<byte>.Zero)
+                        {
+                            uint mask = cmp.ExtractMostSignificantBits() & 0x5555;
+                            do
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                                sepListBuilder.Append((int)(offset + bitPos));
+                                mask = BitOperations.ResetLowestSetBit(mask);
+                            } while (mask != 0);
+                        }
+
+                        offset += (nuint)Vector128<ushort>.Count;
+                    }
+                }
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                if (lengthToExamine >= (nuint)Vector128<ushort>.Count * 2)
+                {
+                    Vector128<ushort> v1 = Vector128.Create((ushort)c);
+                    Vector128<ushort> v2 = Vector128.Create((ushort)c2);
+                    Vector128<ushort> v3 = Vector128.Create((ushort)c3);
+
+                    do
+                    {
+                        Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
+                        Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
+                        Vector128<ushort> v2Eq = Vector128.Equals(vector, v2);
+                        Vector128<ushort> v3Eq = Vector128.Equals(vector, v3);
+                        Vector128<byte> cmp = (v1Eq | v2Eq | v3Eq).AsByte();
+
+                        if (cmp != Vector128<byte>.Zero)
+                        {
+                            uint mask = cmp.ExtractMostSignificantBits() & 0x5555;
+                            do
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                                sepListBuilder.Append((int)(offset + bitPos));
+                                mask = BitOperations.ResetLowestSetBit(mask);
+                            } while (mask != 0);
+                        }
+
+                        offset += (nuint)Vector128<ushort>.Count;
+                    } while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count);
                 }
             }
 
-            if (Vector128.IsHardwareAccelerated && lengthToExamine >= (nuint)Vector128<ushort>.Count)
+            while (offset < lengthToExamine)
             {
-                Vector128<ushort> v1 = Vector128.Create((ushort)c);
-                Vector128<ushort> v2 = Vector128.Create((ushort)c2);
-                Vector128<ushort> v3 = Vector128.Create((ushort)c3);
-
-                while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count)
-                {
-                    Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
-                    Vector128<ushort> vector1 = Vector128.Equals(vector, v1);
-                    Vector128<ushort> vector2 = Vector128.Equals(vector, v2);
-                    Vector128<ushort> vector3 = Vector128.Equals(vector, v3);
-                    Vector128<byte> cmp = (vector1 | vector2 | vector3).AsByte();
-
-                    if (cmp != Vector128<byte>.Zero)
-                    {
-                        uint mask = cmp.ExtractMostSignificantBits() & 0x5555u;
-                        do
-                        {
-                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                            sepListBuilder.Append((int)(offset + bitPos));
-                            mask = BitOperations.ResetLowestSetBit(mask);
-                        } while (mask != 0);
-                    }
-
-                    offset += (nuint)Vector128<ushort>.Count;
-                }
-            }
-
-            for (int j = (int)offset; j < Length; j++)
-            {
-                char curr = this[j];
+                char curr = (char)Unsafe.Add(ref source, (nint)offset);
                 if (curr == c || curr == c2 || curr == c3)
                 {
-                    sepListBuilder.Append(j);
+                    sepListBuilder.Append((int)offset);
                 }
+                offset++;
             }
         }
 

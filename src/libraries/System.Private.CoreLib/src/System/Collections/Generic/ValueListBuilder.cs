@@ -43,11 +43,10 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append(T item)
         {
-            Span<T> span = _span;
             int pos = _pos;
-            if ((uint)pos < (uint)span.Length)
+            if ((uint)pos < (uint)_span.Length)
             {
-                span[pos] = item;
+                _span[pos] = item;
                 _pos = pos + 1;
             }
             else

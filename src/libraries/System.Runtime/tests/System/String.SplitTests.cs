@@ -530,6 +530,7 @@ namespace System.Tests
         [InlineData("this, is, a, string, with some spaces", new[] { ',', 's', 'a' }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "thi", " i", " ", " ", "tring", " with ", "ome ", "p", "ce" })]
         [InlineData("this, is, a, string, with some spaces", new[] { ',', 's', 'a' }, M, StringSplitOptions.TrimEntries, new[] { "thi", "", "i", "", "", "", "", "tring", "with", "ome", "p", "ce", "" })]
         [InlineData("this, is, a, string, with some spaces", new[] { ',', 's', 'a' }, M, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new[] { "thi", "i", "tring", "with", "ome", "p", "ce" })]
+        [InlineData("this, is, a, very long string, with some spaces, commas and more spaces", new[] { ',', 's' }, M, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new[] { "thi", "i", "a", "very long", "tring", "with", "ome", "pace", "comma", "and more", "pace" })]
         public static void SplitCharArraySeparator(string value, char[] separators, int count, StringSplitOptions options, string[] expected)
         {
             Assert.Equal(expected, value.Split(separators, count, options));
