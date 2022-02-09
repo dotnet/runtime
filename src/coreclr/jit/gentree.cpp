@@ -17710,12 +17710,6 @@ bool GenTree::isContainableHWIntrinsic() const
     {
         case NI_Vector64_get_Zero:
         case NI_Vector128_get_Zero:
-        case NI_AdvSimd_Arm64_LoadPairScalarVector64:
-        case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
-        case NI_AdvSimd_Arm64_LoadPairVector64:
-        case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
-        case NI_AdvSimd_Arm64_LoadPairVector128:
-        case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
         {
             return true;
         }
