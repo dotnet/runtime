@@ -19,12 +19,12 @@ namespace Internal.Cryptography
             if (input.Length % cipher.PaddingSizeInBytes != 0)
                 throw new CryptographicException(SR.Cryptography_PartialBlock);
 
-            // The internal implementation of the one-shots are never expected to grow decrypt
-            // to a plaintext larger than the ciphertext. If the buffer supplied is large enough
+            // The internal implementation of the one-shots are never expected to create
+            // a plaintext larger than the ciphertext. If the buffer supplied is large enough
             // to do the transform, use it directly.
             // This does mean that the TransformFinal will write more than what is reported in
             // bytesWritten when padding needs to be removed. The padding is "removed" simply
-            // by reporting less of the amount written.
+            // by reporting less of the amount written, then zeroing out the extra padding.
             if (output.Length >= input.Length)
             {
                 int bytesTransformed = cipher.TransformFinal(input, output);
@@ -38,6 +38,8 @@ namespace Internal.Cryptography
                     // block size, not the feedback size. We want the one-shot to be able to continue to decrypt
                     // those ciphertexts, so for CFB8 we are more lenient on the number of allowed padding bytes.
                     bytesWritten = SymmetricPadding.GetPaddingLength(transformBuffer, paddingMode, cipher.BlockSizeInBytes);
+
+                    // Zero out the padding so that the buffer does not contain the padding data "after" the bytesWritten.
                     CryptographicOperations.ZeroMemory(transformBuffer.Slice(bytesWritten));
                     return true;
                 }
