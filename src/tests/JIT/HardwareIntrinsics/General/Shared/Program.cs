@@ -12,6 +12,7 @@ namespace JIT.HardwareIntrinsics.General
     {
         private const int PASS = 100;
         private const int FAIL = 0;
+        private const int MaximumTestCountGCStress = 30;
 
         private static readonly IDictionary<string, Action> TestList;
 
@@ -61,7 +62,17 @@ namespace JIT.HardwareIntrinsics.General
                 testsToRun.Add(testName);
             }
 
-            return (testsToRun.Count == 0) ? TestList.Keys : testsToRun;
+            if (testsToRun.Count != 0)
+            {
+                return testsToRun;
+            }
+
+            if (TestLibrary.Utilities.IsGCStress)
+            {
+                return TestList.Keys.Take(MaximumTestCountGCStress).ToArray();
+            }
+
+            return TestList.Keys;
         }
 
         private static void PrintUsage()
