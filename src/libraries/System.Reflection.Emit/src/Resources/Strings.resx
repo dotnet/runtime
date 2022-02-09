@@ -60,4 +60,7 @@
   <data name="Arg_EnumIllegalVal" xml:space="preserve">
     <value>Illegal enum value: {0}.</value>
   </data>
+  <data name="ArgumentNull_AssemblyNameName" xml:space="preserve">
+    <value>AssemblyName.Name cannot be null or an empty string.</value>
+  </data>
 </root>

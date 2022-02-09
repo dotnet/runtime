@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.Loader;
 
@@ -13,21 +15,72 @@ namespace System.Reflection.Emit
 {
     public sealed class RuntimeAssemblyBuilder : AssemblyBuilder
     {
+        private Assembly _internalAssembly;
+
+        // https://docs.microsoft.com/en-us/dotnet/api/system.reflection.metadata.ecma335.metadatabuilder
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Reflection.Emit can only reference existing code.")]
         private RuntimeAssemblyBuilder(
             AssemblyName name,
             AssemblyBuilderAccess access,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes,
-            AssemblyLoadContext? asssemblyLoadContext)
+            AssemblyLoadContext asssemblyLoadContext)
         {
-#if false
-            // https://docs.microsoft.com/en-us/dotnet/api/system.reflection.metadata.ecma335.metadatabuilder
+            var metadata = new MetadataBuilder();
 
-            var peHeaderBuilder = new PEHeaderBuilder(
-                imageCharacteristics: Characteristics.ExecutableImage
-            );
+            string? simpleName = name.Name;
+            if (string.IsNullOrEmpty(simpleName))
+            {
+                throw new ArgumentException(SR.ArgumentNull_AssemblyNameName);
+            }
 
-            peHeaderBuilder.ToString();
-#endif
+            Version? version = name.Version;
+            string? cultureName = name.CultureName;
+            byte[]? publicKey = name.GetPublicKey();
+
+            AssemblyFlags flags = (AssemblyFlags)name.Flags;
+
+#pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
+            AssemblyHashAlgorithm hashAlgorithm = (AssemblyHashAlgorithm)name.HashAlgorithm;
+#pragma warning restore
+
+            metadata.AddAssembly(
+                metadata.GetOrAddString(simpleName),
+                version: (version != null) ? version : new Version(0, 0, 0, 0),
+                culture: (cultureName != null) ? metadata.GetOrAddString(cultureName) : default,
+                publicKey: (publicKey != null) ? metadata.GetOrAddBlob(publicKey) : default,
+                flags: flags,
+                hashAlgorithm: hashAlgorithm);
+
+            metadata.AddModule(
+                0,
+                metadata.GetOrAddString("RefEmit_InMemoryManifestModule"),
+                metadata.GetOrAddGuid(Guid.NewGuid()),
+                default(GuidHandle),
+                default(GuidHandle));
+
+            if (assemblyAttributes != null)
+            {
+                foreach (CustomAttributeBuilder assemblyAttribute in assemblyAttributes)
+                {
+                    SetCustomAttribute(assemblyAttribute);
+                }
+            }
+
+            var pe = new ManagedPEBuilder(
+                new PEHeaderBuilder(imageCharacteristics: Characteristics.ExecutableImage),
+                new MetadataRootBuilder(metadata),
+                new BlobBuilder());
+
+            var peBlob = new BlobBuilder();
+            pe.Serialize(peBlob);
+
+            var ms = new MemoryStream();
+            peBlob.WriteContentTo(ms);
+
+            ms.Position = 0;
+            _internalAssembly = asssemblyLoadContext.LoadFromStream(ms);
         }
 
         public static AssemblyBuilder DefineDynamicAssembly(
@@ -63,13 +116,7 @@ namespace System.Reflection.Emit
             return new RuntimeAssemblyBuilder(name, access, assemblyAttributes, assemblyLoadContext);
         }
 
-        internal Assembly InternalAssembly
-        {
-            get
-            {
-                throw new NotImplementedException(); // TODO
-            }
-        }
+        internal Assembly InternalAssembly => _internalAssembly;
 
         #region Assembly overrides
         public override object[] GetCustomAttributes(bool inherit)
@@ -149,6 +196,7 @@ namespace System.Reflection.Emit
 
             throw new NotImplementedException(); // TODO
         }
+
         public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             if (customBuilder == null)
