@@ -160,15 +160,14 @@ try_load (const char* dir, const MonoComponentEntry *component, const char* comp
 	void *iter = NULL;
 
 	while (lib == NULL && (path = mono_dl_build_platform_path (dir, component_base_lib, &iter))) {
-		char *error_msg = NULL;
-		lib = mono_dl_open (path, MONO_DL_EAGER | MONO_DL_LOCAL, &error_msg);
-		if (!lib) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component library %s not found at %s: %s", component_base_lib, path, error_msg);
-			g_free (error_msg);
-		} else {
+		ERROR_DECL (load_error);
+		lib = mono_dl_open (path, MONO_DL_EAGER | MONO_DL_LOCAL, load_error);
+		if (!lib)
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component library %s not found at %s: %s", component_base_lib, path, mono_error_get_message_without_fields (load_error));
+		else
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component library %s found at %s", component_base_lib, path);
-		}
 		g_free (path);
+		mono_error_cleanup (load_error);
 	}
 
 	return lib;
