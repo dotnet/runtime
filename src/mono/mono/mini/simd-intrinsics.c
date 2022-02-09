@@ -560,6 +560,7 @@ type_to_extract_op (MonoTypeEnum type)
 }
 
 static guint16 sri_vector_methods [] = {
+	SN_Abs,
 	SN_As,
 	SN_AsByte,
 	SN_AsDouble,
@@ -635,6 +636,18 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
 
 	switch (id) {
+	case SN_Abs: {
+#ifdef TARGET_ARM64
+        MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+			return NULL;
+		gboolean is_float = type_is_float (fsig->params [0]);	
+		int iid = is_float ? INTRINS_AARCH64_ADV_SIMD_FABS : INTRINS_AARCH64_ADV_SIMD_ABS;			        
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, iid, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
+}
 	case SN_As:
 	case SN_AsByte:
 	case SN_AsDouble:
