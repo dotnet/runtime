@@ -4,10 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Text;
 using ILLink.Shared.DataFlow;
-using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Linker;
 using Mono.Linker.Dataflow;
@@ -85,56 +83,6 @@ namespace ILLink.Shared.TrimAnalysis
 
 			return foundCycle;
 		}
-
-		public static int? AsConstInt (this SingleValue value)
-		{
-			if (value is ConstIntValue constInt)
-				return constInt.Value;
-
-			return null;
-		}
-
-		public static int? AsConstInt (this in MultiValue value)
-		{
-			if (value.AsSingleValue () is ConstIntValue constInt)
-				return constInt.Value;
-
-			return null;
-		}
-
-		public static SingleValue? AsSingleValue (this in MultiValue node)
-		{
-			if (node.Count () != 1)
-				return null;
-
-			return node.Single ();
-		}
-	}
-
-	/// <summary>
-	/// This is a known System.Type value. TypeRepresented is the 'value' of the System.Type.
-	/// </summary>
-	partial record SystemTypeValue
-	{
-		public SystemTypeValue (TypeDefinition typeRepresented) => TypeRepresented = typeRepresented;
-
-		public readonly TypeDefinition TypeRepresented;
-
-		public partial TypeProxy GetRepresentedType () => new (TypeRepresented);
-
-		public override string ToString () => this.ValueToString (TypeRepresented);
-	}
-
-	/// <summary>
-	/// This is the System.RuntimeTypeHandle equivalent to a <see cref="SystemTypeValue"/> node.
-	/// </summary>
-	partial record RuntimeTypeHandleValue
-	{
-		public RuntimeTypeHandleValue (TypeDefinition typeRepresented) => TypeRepresented = typeRepresented;
-
-		public readonly TypeDefinition TypeRepresented;
-
-		public override string ToString () => this.ValueToString (TypeRepresented);
 	}
 
 	/// <summary>
@@ -145,32 +93,18 @@ namespace ILLink.Shared.TrimAnalysis
 	{
 		public GenericParameterValue (GenericParameter genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
-			GenericParameter = genericParameter;
+			GenericParameter = new (genericParameter);
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
-		public readonly GenericParameter GenericParameter;
-
-		public partial bool HasDefaultConstructorConstraint () => GenericParameter.HasDefaultConstructorConstraint;
+		public partial bool HasDefaultConstructorConstraint () => GenericParameter.GenericParameter.HasDefaultConstructorConstraint;
 
 		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
 		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { GenericParameter.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (GenericParameter) };
+			=> new string[] { GenericParameter.GenericParameter.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (GenericParameter.GenericParameter) };
 
 		public override string ToString () => this.ValueToString (GenericParameter, DynamicallyAccessedMemberTypes);
-	}
-
-	/// <summary>
-	/// This is the System.RuntimeTypeHandle equivalent to a <see cref="GenericParameterValue"/> node.
-	/// </summary>
-	partial record RuntimeTypeHandleForGenericParameterValue
-	{
-		public RuntimeTypeHandleForGenericParameterValue (GenericParameter genericParameter) => GenericParameter = genericParameter;
-
-		public readonly GenericParameter GenericParameter;
-
-		public override string ToString () => this.ValueToString (GenericParameter);
 	}
 
 	/// <summary>

@@ -19,7 +19,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (ApplyTypeAnnotations));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task AssemblyQualifiedNameDataflow ()
 		{
 			return RunTest (nameof (AssemblyQualifiedNameDataflow));
@@ -85,7 +85,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (MakeGenericDataFlow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task GetInterfaceDataFlow ()
 		{
 			return RunTest (nameof (GetInterfaceDataFlow));
@@ -113,6 +113,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public Task TypeInfoAsTypeDataFlow ()
 		{
 			return RunTest (nameof (TypeInfoAsTypeDataFlow));
+		}
+
+		[Fact]
+		public Task TypeHandleDataFlow ()
+		{
+			return RunTest (nameof (TypeHandleDataFlow));
 		}
 
 		[Fact]

@@ -260,19 +260,24 @@ namespace Mono.Linker.Dataflow
 			returnValueDynamicallyAccessedMemberTypes = requiresDataFlowAnalysis ?
 				_context.Annotations.FlowAnnotations.GetReturnParameterAnnotation (calledMethodDefinition) : 0;
 
-			var handleCallAction = new HandleCallAction (_context, callingMethodDefinition);
+			var handleCallAction = new HandleCallAction (_context, this, analysisContext, callingMethodDefinition);
 			switch (Intrinsics.GetIntrinsicIdForMethod (calledMethodDefinition)) {
 			case IntrinsicId.IntrospectionExtensions_GetTypeInfo:
-			case IntrinsicId.TypeInfo_AsType: {
+			case IntrinsicId.TypeInfo_AsType:
+			case IntrinsicId.Type_get_UnderlyingSystemType:
+			case IntrinsicId.Type_GetTypeFromHandle:
+			case IntrinsicId.Type_get_TypeHandle:
+			case IntrinsicId.Type_GetInterface:
+			case IntrinsicId.Type_get_AssemblyQualifiedName:
+			case IntrinsicId.RuntimeHelpers_RunClassConstructor: {
 					var instanceValue = MultiValueLattice.Top;
 					IReadOnlyList<MultiValue> parameterValues = methodParams;
 					if (calledMethodDefinition.HasImplicitThis ()) {
 						instanceValue = methodParams[0];
 						parameterValues = parameterValues.Skip (1).ToImmutableList ();
 					}
-					handleCallAction.Invoke (calledMethodDefinition, instanceValue, parameterValues, out methodReturnValue);
+					return handleCallAction.Invoke (calledMethodDefinition, instanceValue, parameterValues, out methodReturnValue);
 				}
-				break;
 
 			case IntrinsicId.TypeDelegator_Ctor: {
 					// This is an identity function for analysis purposes
@@ -283,30 +288,6 @@ namespace Mono.Linker.Dataflow
 
 			case IntrinsicId.Array_Empty: {
 					methodReturnValue = ArrayValue.Create (0, ((GenericInstanceMethod) calledMethod).GenericArguments[0]);
-				}
-				break;
-
-			case IntrinsicId.Type_GetTypeFromHandle: {
-					// Infrastructure piece to support "typeof(Foo)"
-					if (methodParams[0].AsSingleValue () is RuntimeTypeHandleValue typeHandle)
-						methodReturnValue = new SystemTypeValue (typeHandle.TypeRepresented);
-					else if (methodParams[0].AsSingleValue () is RuntimeTypeHandleForGenericParameterValue typeHandleForGenericParameter) {
-						methodReturnValue = new GenericParameterValue (
-							typeHandleForGenericParameter.GenericParameter,
-							_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (typeHandleForGenericParameter.GenericParameter));
-					}
-				}
-				break;
-
-			case IntrinsicId.Type_get_TypeHandle: {
-					foreach (var value in methodParams[0]) {
-						if (value is SystemTypeValue typeValue)
-							methodReturnValue = MultiValueLattice.Meet (methodReturnValue, new RuntimeTypeHandleValue (typeValue.TypeRepresented));
-						else if (value == NullValue.Instance)
-							methodReturnValue = MultiValueLattice.Meet (methodReturnValue, value);
-						else
-							methodReturnValue = MultiValueLattice.Meet (methodReturnValue, UnknownValue.Instance);
-					}
 				}
 				break;
 
@@ -327,11 +308,11 @@ namespace Mono.Linker.Dataflow
 			case IntrinsicId.Type_MakeGenericType: {
 					foreach (var value in methodParams[0]) {
 						if (value is SystemTypeValue typeValue) {
-							if (!AnalyzeGenericInstantiationTypeArray (analysisContext, methodParams[1], calledMethodDefinition, typeValue.TypeRepresented.GenericParameters)) {
+							if (!AnalyzeGenericInstantiationTypeArray (analysisContext, methodParams[1], calledMethodDefinition, typeValue.RepresentedType.Type.GenericParameters)) {
 								bool hasUncheckedAnnotation = false;
-								foreach (var genericParameter in typeValue.TypeRepresented.GenericParameters) {
+								foreach (var genericParameter in typeValue.RepresentedType.Type.GenericParameters) {
 									if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None ||
-										(genericParameter.HasDefaultConstructorConstraint && !typeValue.TypeRepresented.IsTypeOf ("System", "Nullable`1"))) {
+										(genericParameter.HasDefaultConstructorConstraint && !typeValue.RepresentedType.Type.IsTypeOf ("System", "Nullable`1"))) {
 										// If we failed to analyze the array, we go through the analyses again
 										// and intentionally ignore one particular annotation:
 										// Special case: Nullable<T> where T : struct
@@ -392,16 +373,16 @@ namespace Mono.Linker.Dataflow
 								if (stringParam is KnownStringValue stringValue) {
 									switch (getRuntimeMember) {
 									case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent:
-										MarkEventsOnTypeHierarchy (analysisContext, systemTypeValue.TypeRepresented, e => e.Name == stringValue.Contents, bindingFlags);
+										MarkEventsOnTypeHierarchy (analysisContext, systemTypeValue.RepresentedType.Type, e => e.Name == stringValue.Contents, bindingFlags);
 										break;
 									case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField:
-										MarkFieldsOnTypeHierarchy (analysisContext, systemTypeValue.TypeRepresented, f => f.Name == stringValue.Contents, bindingFlags);
+										MarkFieldsOnTypeHierarchy (analysisContext, systemTypeValue.RepresentedType.Type, f => f.Name == stringValue.Contents, bindingFlags);
 										break;
 									case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod:
-										ProcessGetMethodByName (analysisContext, systemTypeValue.TypeRepresented, stringValue.Contents, bindingFlags, ref methodReturnValue);
+										ProcessGetMethodByName (analysisContext, systemTypeValue.RepresentedType.Type, stringValue.Contents, bindingFlags, ref methodReturnValue);
 										break;
 									case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty:
-										MarkPropertiesOnTypeHierarchy (analysisContext, systemTypeValue.TypeRepresented, p => p.Name == stringValue.Contents, bindingFlags);
+										MarkPropertiesOnTypeHierarchy (analysisContext, systemTypeValue.RepresentedType.Type, p => p.Name == stringValue.Contents, bindingFlags);
 										break;
 									default:
 										throw new InternalErrorException ($"Error processing reflection call '{calledMethod.GetDisplayName ()}' inside {callingMethodDefinition.GetDisplayName ()}. Unexpected member kind.");
@@ -435,7 +416,7 @@ namespace Mono.Linker.Dataflow
 						if (value is SystemTypeValue systemTypeValue) {
 							foreach (var stringParam in methodParams[1]) {
 								if (stringParam is KnownStringValue stringValue) {
-									foreach (var method in systemTypeValue.TypeRepresented.GetMethodsOnTypeHierarchy (_context, m => m.Name == stringValue.Contents, bindingFlags)) {
+									foreach (var method in systemTypeValue.RepresentedType.Type.GetMethodsOnTypeHierarchy (_context, m => m.Name == stringValue.Contents, bindingFlags)) {
 										ValidateGenericMethodInstantiation (analysisContext, method, methodParams[2], calledMethodDefinition);
 										MarkMethod (analysisContext, method);
 									}
@@ -514,9 +495,9 @@ namespace Mono.Linker.Dataflow
 								if (stringParam is KnownStringValue stringValue) {
 									BindingFlags bindingFlags = methodParams[0].AsSingleValue () is NullValue ? BindingFlags.Static : BindingFlags.Default;
 									if (fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property) {
-										MarkPropertiesOnTypeHierarchy (analysisContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, bindingFlags);
+										MarkPropertiesOnTypeHierarchy (analysisContext, systemTypeValue.RepresentedType.Type, filter: p => p.Name == stringValue.Contents, bindingFlags);
 									} else {
-										MarkFieldsOnTypeHierarchy (analysisContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents, bindingFlags);
+										MarkFieldsOnTypeHierarchy (analysisContext, systemTypeValue.RepresentedType.Type, filter: f => f.Name == stringValue.Contents, bindingFlags);
 									}
 								} else {
 									RequireDynamicallyAccessedMembers (analysisContext, value, targetValue);
@@ -538,7 +519,7 @@ namespace Mono.Linker.Dataflow
 					var targetValue = GetMethodParameterValue (calledMethodDefinition, 0, DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
 					foreach (var value in methodParams[0]) {
 						if (value is SystemTypeValue systemTypeValue) {
-							MarkConstructorsOnType (analysisContext, systemTypeValue.TypeRepresented, null, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+							MarkConstructorsOnType (analysisContext, systemTypeValue.RepresentedType.Type, null, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 						} else {
 							RequireDynamicallyAccessedMembers (analysisContext, value, targetValue);
 						}
@@ -673,9 +654,9 @@ namespace Mono.Linker.Dataflow
 						if (value is SystemTypeValue systemTypeValue && !BindingFlagsAreUnsupported (bindingFlags)) {
 							if (HasBindingFlag (bindingFlags, BindingFlags.Public) && !HasBindingFlag (bindingFlags, BindingFlags.NonPublic)
 								&& ctorParameterCount == 0) {
-								MarkConstructorsOnType (analysisContext, systemTypeValue.TypeRepresented, m => m.IsPublic && m.Parameters.Count == 0, bindingFlags);
+								MarkConstructorsOnType (analysisContext, systemTypeValue.RepresentedType.Type, m => m.IsPublic && m.Parameters.Count == 0, bindingFlags);
 							} else {
-								MarkConstructorsOnType (analysisContext, systemTypeValue.TypeRepresented, null, bindingFlags);
+								MarkConstructorsOnType (analysisContext, systemTypeValue.RepresentedType.Type, null, bindingFlags);
 							}
 						} else {
 							// Otherwise fall back to the bitfield requirements
@@ -719,7 +700,7 @@ namespace Mono.Linker.Dataflow
 						if (value is SystemTypeValue systemTypeValue) {
 							foreach (var stringParam in methodParams[1]) {
 								if (stringParam is KnownStringValue stringValue && !BindingFlagsAreUnsupported (bindingFlags)) {
-									ProcessGetMethodByName (analysisContext, systemTypeValue.TypeRepresented, stringValue.Contents, bindingFlags, ref methodReturnValue);
+									ProcessGetMethodByName (analysisContext, systemTypeValue.RepresentedType.Type, stringValue.Contents, bindingFlags, ref methodReturnValue);
 								} else {
 									// Otherwise fall back to the bitfield requirements
 									RequireDynamicallyAccessedMembers (analysisContext, value, targetValue);
@@ -751,7 +732,7 @@ namespace Mono.Linker.Dataflow
 						if (value is SystemTypeValue systemTypeValue) {
 							foreach (var stringParam in methodParams[1]) {
 								if (stringParam is KnownStringValue stringValue && !BindingFlagsAreUnsupported (bindingFlags)) {
-									TypeDefinition[]? matchingNestedTypes = MarkNestedTypesOnType (analysisContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
+									TypeDefinition[]? matchingNestedTypes = MarkNestedTypesOnType (analysisContext, systemTypeValue.RepresentedType.Type, m => m.Name == stringValue.Contents, bindingFlags);
 
 									if (matchingNestedTypes != null) {
 										for (int i = 0; i < matchingNestedTypes.Length; i++)
@@ -791,39 +772,6 @@ namespace Mono.Linker.Dataflow
 				break;
 
 			//
-			// AssemblyQualifiedName
-			//
-			case IntrinsicId.Type_get_AssemblyQualifiedName: {
-					MultiValue transformedResult = new ();
-					foreach (var value in methodParams[0]) {
-						if (value is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers) {
-							// Currently we don't need to track the difference between Type and String annotated values
-							// that only matters when we use them, so Type.GetType is the difference really.
-							// For diagnostics we actually don't want to track the Type.AssemblyQualifiedName
-							// as the annotation does not come from that call, but from its input.
-							transformedResult = MultiValueLattice.Meet (transformedResult, valueWithDynamicallyAccessedMembers);
-						} else {
-							transformedResult = new ();
-							break;
-						}
-					}
-
-					if (!transformedResult.IsEmpty ()) {
-						methodReturnValue = transformedResult;
-					}
-				}
-				break;
-
-			//
-			// UnderlyingSystemType
-			//
-			case IntrinsicId.Type_get_UnderlyingSystemType: {
-					// This is identity for the purposes of the analysis.
-					methodReturnValue = methodParams[0];
-				}
-				break;
-
-			//
 			// Type.BaseType
 			//
 			case IntrinsicId.Type_get_BaseType: {
@@ -857,7 +805,7 @@ namespace Mono.Linker.Dataflow
 
 							methodReturnValue = MultiValueLattice.Meet (methodReturnValue, GetMethodReturnValue (calledMethodDefinition, propagatedMemberTypes));
 						} else if (value is SystemTypeValue systemTypeValue) {
-							if (systemTypeValue.TypeRepresented.BaseType is TypeReference baseTypeRef && _context.TryResolve (baseTypeRef) is TypeDefinition baseTypeDefinition)
+							if (systemTypeValue.RepresentedType.Type.BaseType is TypeReference baseTypeRef && _context.TryResolve (baseTypeRef) is TypeDefinition baseTypeDefinition)
 								methodReturnValue = MultiValueLattice.Meet (methodReturnValue, new SystemTypeValue (baseTypeDefinition));
 							else
 								methodReturnValue = MultiValueLattice.Meet (methodReturnValue, GetMethodReturnValue (calledMethodDefinition));
@@ -912,13 +860,13 @@ namespace Mono.Linker.Dataflow
 								if (stringParam is KnownStringValue stringValue && !BindingFlagsAreUnsupported (bindingFlags)) {
 									switch (fieldPropertyOrEvent) {
 									case IntrinsicId.Type_GetEvent:
-										MarkEventsOnTypeHierarchy (analysisContext, systemTypeValue.TypeRepresented, filter: e => e.Name == stringValue.Contents, bindingFlags);
+										MarkEventsOnTypeHierarchy (analysisContext, systemTypeValue.RepresentedType.Type, filter: e => e.Name == stringValue.Contents, bindingFlags);
 										break;
 									case IntrinsicId.Type_GetField:
-										MarkFieldsOnTypeHierarchy (analysisContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents, bindingFlags);
+										MarkFieldsOnTypeHierarchy (analysisContext, systemTypeValue.RepresentedType.Type, filter: f => f.Name == stringValue.Contents, bindingFlags);
 										break;
 									case IntrinsicId.Type_GetProperty:
-										MarkPropertiesOnTypeHierarchy (analysisContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, bindingFlags);
+										MarkPropertiesOnTypeHierarchy (analysisContext, systemTypeValue.RepresentedType.Type, filter: p => p.Name == stringValue.Contents, bindingFlags);
 										break;
 									default:
 										Debug.Fail ("Unreachable.");
@@ -1032,32 +980,6 @@ namespace Mono.Linker.Dataflow
 				break;
 
 			//
-			// GetInterface (String)
-			// GetInterface (String, bool)
-			//
-			case IntrinsicId.Type_GetInterface: {
-					var targetValue = GetMethodParameterValue (calledMethodDefinition, 0, DynamicallyAccessedMemberTypesOverlay.Interfaces);
-					foreach (var value in methodParams[0]) {
-						// For now no support for marking a single interface by name. We would have to correctly support
-						// mangled names for generics to do that correctly. Simply mark all interfaces on the type for now.
-
-						// Require Interfaces annotation
-						RequireDynamicallyAccessedMembers (analysisContext, value, targetValue);
-
-						// Interfaces is transitive, so the return values will always have at least Interfaces annotation
-						DynamicallyAccessedMemberTypes returnMemberTypes = DynamicallyAccessedMemberTypesOverlay.Interfaces;
-
-						// Propagate All annotation across the call - All is a superset of Interfaces
-						if (value is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers
-							&& valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.All)
-							returnMemberTypes = DynamicallyAccessedMemberTypes.All;
-
-						methodReturnValue = MultiValueLattice.Meet (methodReturnValue, GetMethodReturnValue (calledMethodDefinition, returnMemberTypes));
-					}
-				}
-				break;
-
-			//
 			// System.Activator
 			//
 			// static CreateInstance (System.Type type)
@@ -1113,7 +1035,7 @@ namespace Mono.Linker.Dataflow
 					foreach (var value in methodParams[0]) {
 						if (value is SystemTypeValue systemTypeValue) {
 							// Special case known type values as we can do better by applying exact binding flags and parameter count.
-							MarkConstructorsOnType (analysisContext, systemTypeValue.TypeRepresented,
+							MarkConstructorsOnType (analysisContext, systemTypeValue.RepresentedType.Type,
 								ctorParameterCount == null ? null : m => m.Parameters.Count == ctorParameterCount, bindingFlags);
 						} else {
 							// Otherwise fall back to the bitfield requirements
@@ -1214,24 +1136,6 @@ namespace Mono.Linker.Dataflow
 			case IntrinsicId.Assembly_CreateInstance:
 				// For now always fail since we don't track assemblies (dotnet/linker/issues/1947)
 				analysisContext.ReportWarning (DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed, calledMethodDefinition.GetDisplayName ());
-				break;
-
-			//
-			// System.Runtime.CompilerServices.RuntimeHelpers
-			//
-			// RunClassConstructor (RuntimeTypeHandle type)
-			//
-			case IntrinsicId.RuntimeHelpers_RunClassConstructor: {
-					foreach (var typeHandleValue in methodParams[0]) {
-						if (typeHandleValue is RuntimeTypeHandleValue runtimeTypeHandleValue) {
-							_markStep.MarkStaticConstructorVisibleToReflection (runtimeTypeHandleValue.TypeRepresented, new DependencyInfo (DependencyKind.AccessedViaReflection, analysisContext.Origin.Provider));
-						} else if (typeHandleValue == NullValue.Instance) {
-							// Nothing to do
-						} else {
-							analysisContext.ReportWarning (DiagnosticId.UnrecognizedTypeInRuntimeHelpersRunClassConstructor, calledMethodDefinition.GetDisplayName ());
-						}
-					}
-				}
 				break;
 
 			//
@@ -1631,6 +1535,11 @@ namespace Mono.Linker.Dataflow
 		{
 			foreach (var @event in type.GetEventsOnTypeHierarchy (_context, filter, bindingFlags))
 				MarkEvent (analysisContext, @event);
+		}
+
+		internal void MarkStaticConstructor (in AnalysisContext analysisContext, TypeDefinition type)
+		{
+			_markStep.MarkStaticConstructorVisibleToReflection (type, new DependencyInfo (DependencyKind.AccessedViaReflection, analysisContext.Origin.Provider));
 		}
 
 		void ValidateGenericMethodInstantiation (

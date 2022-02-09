@@ -9,6 +9,7 @@ using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
+using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -27,14 +28,23 @@ namespace ILLink.RoslynAnalyzer
 		{
 			var diagDescriptorsArrayBuilder = ImmutableArray.CreateBuilder<DiagnosticDescriptor> (26);
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresUnreferencedCode));
-			for (int i = (int) DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter;
-				i <= (int) DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter; i++) {
-				diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor ((DiagnosticId) i));
-			}
+			AddRange (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter, DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter);
+			AddRange (DiagnosticId.MethodParameterCannotBeStaticallyDetermined, DiagnosticId.TypePassedToGenericParameterCannotBeStaticallyDetermined);
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnrecognizedTypeInRuntimeHelpersRunClassConstructor));
 
 			return diagDescriptorsArrayBuilder.ToImmutable ();
+
+			void AddRange (DiagnosticId first, DiagnosticId last)
+			{
+				Debug.Assert ((int) first < (int) last);
+
+				for (int i = (int) first;
+					i <= (int) last; i++) {
+					diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor ((DiagnosticId) i));
+				}
+			}
 		}
 
 		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => GetSupportedDiagnostics ();
@@ -119,9 +129,9 @@ namespace ILLink.RoslynAnalyzer
 				SymbolKind.TypeParameter => new GenericParameterValue ((ITypeParameterSymbol) type),
 				// Technically this should be a new value node type as it's not a System.Type instance representation, but just the generic parameter
 				// That said we only use it to perform the dynamically accessed members checks and for that purpose treating it as System.Type is perfectly valid.
-				SymbolKind.NamedType => new SystemTypeValue ((INamedTypeSymbol) type),
+				SymbolKind.NamedType => new SystemTypeValue (new TypeProxy ((INamedTypeSymbol) type)),
 				SymbolKind.ErrorType => UnknownValue.Instance,
-				SymbolKind.ArrayType => new SystemTypeValue (context.Compilation.GetTypeByMetadataName ("System.Array")!),
+				SymbolKind.ArrayType => new SystemTypeValue (new TypeProxy (context.Compilation.GetTypeByMetadataName ("System.Array")!)),
 				// What about things like PointerType and so on. Linker treats these as "named types" since it can resolve them to concrete type
 				_ => throw new NotImplementedException ()
 			};
