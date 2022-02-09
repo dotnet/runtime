@@ -44,6 +44,7 @@ namespace System
         public static bool IsAppleMobile => IsMacCatalyst || IsiOS || IstvOS;
         public static bool IsNotAppleMobile => !IsAppleMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
+        public static bool IsBsdLike => IsOSXLike || IsFreeBSD || IsNetBSD;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
