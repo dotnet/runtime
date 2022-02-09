@@ -34,37 +34,42 @@ namespace Mono.Linker.Steps
 			ProcessXml (stripLinkAttributes, _context.IgnoreLinkAttributes);
 		}
 
+		static bool IsRemoveAttributeInstances (string attributeName) => attributeName == "RemoveAttributeInstances" || attributeName == "RemoveAttributeInstancesAttribute";
+
 		CustomAttribute[]? ProcessAttributes (XPathNavigator nav, ICustomAttributeProvider provider)
 		{
 			var builder = new ArrayBuilder<CustomAttribute> ();
-			foreach (XPathNavigator argumentNav in nav.SelectChildren ("attribute", string.Empty)) {
-				if (!ShouldProcessElement (argumentNav))
+			foreach (XPathNavigator attributeNav in nav.SelectChildren ("attribute", string.Empty)) {
+				if (!ShouldProcessElement (attributeNav))
 					continue;
 
 				TypeDefinition? attributeType;
-				string internalAttribute = GetAttribute (argumentNav, "internal");
+				string internalAttribute = GetAttribute (attributeNav, "internal");
 				if (!string.IsNullOrEmpty (internalAttribute)) {
+					if (!IsRemoveAttributeInstances (internalAttribute)) {
+						LogWarning (attributeNav, DiagnosticId.UnrecognizedInternalAttribute, internalAttribute);
+						continue;
+					}
+					if (provider is not TypeDefinition) {
+						LogWarning (attributeNav, DiagnosticId.XmlRemoveAttributeInstancesCanOnlyBeUsedOnType, nameof (RemoveAttributeInstancesAttribute));
+						continue;
+					}
+
 					attributeType = GenerateRemoveAttributeInstancesAttribute ();
 					if (attributeType == null)
 						continue;
-
-					// TODO: Replace with IsAttributeType check once we have it
-					if (provider is not TypeDefinition) {
-						LogWarning (argumentNav, DiagnosticId.XmlRemoveAttributeInstancesCanOnlyBeUsedOnType, attributeType.Name);
-						continue;
-					}
 				} else {
-					string attributeFullName = GetFullName (argumentNav);
+					string attributeFullName = GetFullName (attributeNav);
 					if (string.IsNullOrEmpty (attributeFullName)) {
-						LogWarning (argumentNav, DiagnosticId.XmlElementDoesNotContainRequiredAttributeFullname);
+						LogWarning (attributeNav, DiagnosticId.XmlElementDoesNotContainRequiredAttributeFullname);
 						continue;
 					}
 
-					if (!GetAttributeType (argumentNav, attributeFullName, out attributeType))
+					if (!GetAttributeType (attributeNav, attributeFullName, out attributeType))
 						continue;
 				}
 
-				CustomAttribute? customAttribute = CreateCustomAttribute (argumentNav, attributeType);
+				CustomAttribute? customAttribute = CreateCustomAttribute (attributeNav, attributeType);
 				if (customAttribute != null) {
 					_context.LogMessage ($"Assigning external custom attribute '{FormatCustomAttribute (customAttribute)}' instance to '{provider}'.");
 					builder.Add (customAttribute);
@@ -90,11 +95,13 @@ namespace Mono.Linker.Steps
 				return sb.ToString ();
 			}
 		}
-
 		TypeDefinition? GenerateRemoveAttributeInstancesAttribute ()
 		{
-			if (_context.MarkedKnownMembers.RemoveAttributeInstancesAttributeDefinition != null)
-				return _context.MarkedKnownMembers.RemoveAttributeInstancesAttributeDefinition;
+			TypeDefinition? td = null;
+
+			if (_context.MarkedKnownMembers.RemoveAttributeInstancesAttributeDefinition is TypeDefinition knownTypeDef) {
+				return knownTypeDef;
+			}
 
 			var voidType = BCL.FindPredefinedType ("System", "Void", _context);
 			if (voidType == null)
@@ -107,6 +114,9 @@ namespace Mono.Linker.Steps
 			var objectType = BCL.FindPredefinedType ("System", "Object", _context);
 			if (objectType == null)
 				return null;
+			var objectArrayType = new ArrayType (objectType);
+			if (objectArrayType == null)
+				return null;
 
 			//
 			// Generates metadata information for internal type
@@ -114,19 +124,25 @@ namespace Mono.Linker.Steps
 			// public sealed class RemoveAttributeInstancesAttribute : Attribute
 			// {
 			//		public RemoveAttributeInstancesAttribute () {}
-			//		public RemoveAttributeInstancesAttribute (object value1) {}
+			//		public RemoveAttributeInstancesAttribute (object values) {} // For legacy uses
+			//		public RemoveAttributeInstancesAttribute (params object[] values) {}
 			// }
 			//
-			var td = new TypeDefinition ("", "RemoveAttributeInstancesAttribute", TypeAttributes.Public);
+			const MethodAttributes ctorAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName | MethodAttributes.Final;
+
+			td = new TypeDefinition ("", nameof (RemoveAttributeInstancesAttribute), TypeAttributes.Public);
 			td.BaseType = attributeType;
 
-			const MethodAttributes ctorAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName | MethodAttributes.Final;
 			var ctor = new MethodDefinition (".ctor", ctorAttributes, voidType);
 			td.Methods.Add (ctor);
+			var ctor1 = new MethodDefinition (".ctor", ctorAttributes, voidType);
+			var param = new ParameterDefinition (objectType);
+			td.Methods.Add (ctor1);
 
-			ctor = new MethodDefinition (".ctor", ctorAttributes, voidType);
-			ctor.Parameters.Add (new ParameterDefinition (objectType));
-			td.Methods.Add (ctor);
+			var ctorN = new MethodDefinition (".ctor", ctorAttributes, voidType);
+			var paramN = new ParameterDefinition (objectArrayType);
+			ctorN.Parameters.Add (paramN);
+			td.Methods.Add (ctorN);
 
 			return _context.MarkedKnownMembers.RemoveAttributeInstancesAttributeDefinition = td;
 		}
@@ -154,26 +170,26 @@ namespace Mono.Linker.Steps
 		{
 			var methods = attributeType.Methods;
 			for (int i = 0; i < attributeType.Methods.Count; ++i) {
-				var m = methods[i];
-				if (!m.IsInstanceConstructor ())
+				var method = methods[i];
+				if (!method.IsInstanceConstructor ())
 					continue;
 
-				var p = m.Parameters;
-				if (args.Length != p.Count)
+				var parameters = method.Parameters;
+				if (args.Length != parameters.Count)
 					continue;
 
 				bool match = true;
-				for (int ii = 0; match && ii != args.Length; ++ii) {
+				for (int ii = 0; match && ii < args.Length; ++ii) {
 					//
 					// No candidates betterness, only exact matches are supported
 					//
-					var parameterType = _context.TryResolve (p[ii].ParameterType);
+					var parameterType = _context.TryResolve (parameters[ii].ParameterType);
 					if (parameterType == null || parameterType != _context.TryResolve (args[ii].Type))
 						match = false;
 				}
 
 				if (match)
-					return m;
+					return method;
 			}
 
 			return null;
@@ -280,8 +296,38 @@ namespace Mono.Linker.Steps
 				}
 
 				return new CustomAttributeArgument (typeref, type);
+			case MetadataType.Array:
+				if (typeref is ArrayType arrayTypeRef) {
+					var elementType = arrayTypeRef.ElementType;
+					var arrayArgumentIterator = nav.SelectChildren ("argument", string.Empty);
+					ArrayBuilder<CustomAttributeArgument> elements = new ArrayBuilder<CustomAttributeArgument> ();
+					foreach (XPathNavigator elementNav in arrayArgumentIterator) {
+						if (ReadCustomAttributeArgument (elementNav, memberWithAttribute) is CustomAttributeArgument arg) {
+							// To match Cecil, elements of a list that are subclasses of the list type must be boxed in the base type
+							//	e.g. object[] { 73 } translates to Cecil.CAA { Type: object[] : Value: CAA{ Type: object, Value: CAA{ Type: int, Value: 73} } }
+							if (arg.Type == elementType) {
+								elements.Add (arg);
+							}
+							// This check allows the xml to be less verbose by allowing subtypes to not be boxed in the Array's element type
+							// e.g. here string doesn't need to be boxed in an "object" argument
+							// <argument type="System.Object[]">
+							//   <argument type="System.String">hello</argument>
+							// </argument>
+							//
+							else if (arg.Type.IsSubclassOf (elementType.Namespace, elementType.Name, _context)) {
+								elements.Add (new CustomAttributeArgument (elementType, arg));
+							} else {
+								_context.LogError (GetMessageOriginForPosition (nav), DiagnosticId.UnexpectedAttributeArgumentType, typeref.GetDisplayName ());
+							}
+						} else {
+							return null;
+						}
+					}
+					return new CustomAttributeArgument (arrayTypeRef, elements.ToArray ());
+				}
+				goto default;
 			default:
-				// No support for null and arrays, consider adding - dotnet/linker/issues/1957
+				// No support for null, consider adding - dotnet/linker/issues/1957
 				_context.LogError (GetMessageOriginForPosition (nav), DiagnosticId.UnexpectedAttributeArgumentType, typeref.GetDisplayName ());
 				return null;
 			}

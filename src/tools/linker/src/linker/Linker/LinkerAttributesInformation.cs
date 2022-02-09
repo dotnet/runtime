@@ -57,7 +57,7 @@ namespace Mono.Linker
 					if (context.Annotations.TryGetPreserve (td, out TypePreserve preserve) && preserve != TypePreserve.Nothing)
 						continue;
 
-					attributeValue = BuildRemoveAttributeInstancesAttribute (context, td, customAttribute);
+					attributeValue = new RemoveAttributeInstancesAttribute (customAttribute.ConstructorArguments);
 					break;
 				default:
 					continue;
@@ -122,20 +122,6 @@ namespace Mono.Linker
 
 			context.LogWarning ((IMemberDefinition) provider, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, typeof (RequiresUnreferencedCodeAttribute).FullName ?? "");
 			return null;
-		}
-
-		static RemoveAttributeInstancesAttribute? BuildRemoveAttributeInstancesAttribute (LinkContext context, TypeDefinition attributeContext, CustomAttribute ca)
-		{
-			switch (ca.ConstructorArguments.Count) {
-			case 0:
-				return new RemoveAttributeInstancesAttribute ();
-			case 1:
-				// Argument is always boxed
-				return new RemoveAttributeInstancesAttribute ((CustomAttributeArgument) ca.ConstructorArguments[0].Value);
-			default:
-				context.LogWarning (attributeContext, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, ca.AttributeType.GetDisplayName ());
-				return null;
-			};
 		}
 	}
 }
