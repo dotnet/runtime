@@ -448,8 +448,7 @@ namespace Tracing.Tests.Common
             }
             else if (OperatingSystem.IsAndroid())
             {
-                Int32 port = 9000;
-                TcpClient client = new TcpClient("127.0.0.1", port);
+                TcpClient client = new TcpClient("127.0.0.1", 9000);
                 return client.GetStream();
             }
             else
