@@ -42,12 +42,8 @@ namespace System.IO
         {
         }
 
-        public BinaryWriter(Stream output, Encoding encoding, bool leaveOpen)
+        public BinaryWriter(Stream output!!, Encoding encoding!!, bool leaveOpen)
         {
-            if (output == null)
-                throw new ArgumentNullException(nameof(output));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
             if (!output.CanWrite)
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
 
@@ -154,10 +150,8 @@ namespace System.IO
         // This default implementation calls the Write(Object, int, int)
         // method to write the byte array.
         //
-        public virtual void Write(byte[] buffer)
+        public virtual void Write(byte[] buffer!!)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
             OutStream.Write(buffer, 0, buffer.Length);
         }
 
@@ -215,11 +209,8 @@ namespace System.IO
         // This default implementation calls the Write(Object, int, int)
         // method to write the character array.
         //
-        public virtual void Write(char[] chars)
+        public virtual void Write(char[] chars!!)
         {
-            if (chars == null)
-                throw new ArgumentNullException(nameof(chars));
-
             WriteCharsCommonWithoutLengthPrefix(chars, useThisWriteOverride: false);
         }
 
@@ -228,10 +219,8 @@ namespace System.IO
         // This default implementation calls the Write(Object, int, int)
         // method to write the character array.
         //
-        public virtual void Write(char[] chars, int index, int count)
+        public virtual void Write(char[] chars!!, int index, int count)
         {
-            if (chars == null)
-                throw new ArgumentNullException(nameof(chars));
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
@@ -347,11 +336,8 @@ namespace System.IO
         // an encoded unsigned integer with variable length, and then writes that many characters
         // to the stream.
         //
-        public virtual void Write(string value)
+        public virtual void Write(string value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             // Common: UTF-8, small string, avoid 2-pass calculation
             // Less common: UTF-8, large string, avoid 2-pass calculation
             // Uncommon: excessively large string or not UTF-8

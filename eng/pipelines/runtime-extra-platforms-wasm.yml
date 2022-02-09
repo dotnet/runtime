@@ -1,0 +1,233 @@
+# This contains only wasm-specific jobs
+# These are run as part of runtime-extra-platforms by default.
+# But can also be triggered manually via `runtime-wasm` name
+#   /azp run runtime-wasm
+
+parameters:
+  isExtraPlatformsBuild: ''
+
+jobs:
+
+#
+# Build for Browser/wasm and test it on v8, browser, and nodejs
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    - Browser_wasm_win
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: LibraryTests
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs)
+      timeoutInMinutes: 180
+      # always run for runtime-wasm builds (triggered manually)
+      # Always run for rolling builds
+      # Else run on path changes
+      condition: >-
+        or(
+          eq(variables['isWasmOnlyBuild'], true),
+          eq(variables['isRollingBuild'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+        scenarios:
+        - normal
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJs
+
+#
+# Build for Browser/wasm, with EnableAggressiveTrimming=true
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: LibraryTests_EAT
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=false
+      timeoutInMinutes: 180
+      # always run for runtime-wasm builds (triggered manually)
+      # Always run for rolling builds
+      # Else run on path changes
+      condition: >-
+        or(
+          eq(variables['isWasmOnlyBuild'], true),
+          eq(variables['isRollingBuild'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true $(_runSmokeTestsOnlyArg)
+        scenarios:
+        - normal
+
+#
+# Build for Browser/wasm with RunAOTCompilation=true
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    - Browser_wasm_win
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: LibraryTests_AOT
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true /p:BrowserHost=$(_hostedOs)
+      timeoutInMinutes: 180
+      # always run for runtime-wasm builds (triggered manually)
+      # Always run for rolling builds
+      # Else run on path changes
+      condition: >-
+        or(
+          eq(variables['isWasmOnlyBuild'], true),
+          eq(variables['isRollingBuild'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_AOT_$(_BuildConfig)_$(_hostedOs)
+        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true $(_runSmokeTestsOnlyArg) /p:BrowserHost=$(_hostedOs)
+        scenarios:
+        - normal
+
+## WebAssembly legs, run only when runtime-wasm is triggered
+
+#
+# runtime-wasm: Build the whole product using Mono and run libraries tests, for Wasm.Build.Tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    - Browser_wasm_win
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: WasmBuildTests
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
+      timeoutInMinutes: 180
+      # always run for runtime-wasm builds (triggered manually)
+      condition: >-
+        eq(variables['isWasmOnlyBuild'], true)
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
+        extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+        scenarios:
+        - buildwasmapps
+
+#
+# runtime-wasm: Build the whole product using Mono and run libraries tests, for wasm debugger tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    - Browser_wasm_win
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: Mono_DebuggerTests
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
+      timeoutInMinutes: 180
+      # always run for runtime-wasm builds (triggered manually)
+      condition: >-
+        eq(variables['isWasmOnlyBuild'], true)
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
+        extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+        scenarios:
+        - wasmdebuggertests
+
+#
+# runtime-wasm: Build the whole product using Mono and run runtime tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    variables:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: pr/dotnet/runtime/$(Build.SourceBranch)
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: ci/dotnet/runtime/$(Build.SourceBranch)
+      - name: timeoutPerTestInMinutes
+        value: 10
+      - name: timeoutPerTestCollectionInMinutes
+        value: 200
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_RuntimeTests
+      buildArgs: -s mono+libs -c $(_BuildConfig)
+      timeoutInMinutes: 180
+      # always run for runtime-wasm builds (triggered manually)
+      condition: >-
+        eq(variables['isWasmOnlyBuild'], true)
+      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/wasm-runtime-and-send-to-helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+

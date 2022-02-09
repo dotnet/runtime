@@ -12,13 +12,8 @@ namespace System.Security.Authentication.ExtendedProtection
 {
     public class ServiceNameCollection : ReadOnlyCollectionBase
     {
-        public ServiceNameCollection(ICollection items)
+        public ServiceNameCollection(ICollection items!!)
         {
-            if (items == null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
-
             // Normalize and filter for duplicates.
             AddIfNew(items, expectStrings: true);
         }

@@ -659,10 +659,7 @@ namespace System.Net
             try
             {
                 CheckDisposed();
-                if (asyncResult == null)
-                {
-                    throw new ArgumentNullException(nameof(asyncResult));
-                }
+                ArgumentNullException.ThrowIfNull(asyncResult);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"asyncResult: {asyncResult}");
                 if (!(asyncResult is ListenerAsyncResult castedAsyncResult) || !(castedAsyncResult.AsyncObject is HttpListenerSession session) || session.Listener != this)
                 {

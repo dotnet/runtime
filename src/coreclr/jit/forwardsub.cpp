@@ -258,6 +258,11 @@ public:
                     }
                 }
             }
+        }
+
+        if (node->OperIsLocal())
+        {
+            unsigned const lclNum = node->AsLclVarCommon()->GetLclNum();
 
             // Uses of address-exposed locals are modelled as global refs.
             //
@@ -370,7 +375,7 @@ public:
         GenTree* const node = *use;
         m_flags |= node->gtFlags & GTF_ALL_EFFECT;
 
-        if (node->OperIs(GT_LCL_VAR))
+        if (node->OperIsLocal())
         {
             unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
             LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);

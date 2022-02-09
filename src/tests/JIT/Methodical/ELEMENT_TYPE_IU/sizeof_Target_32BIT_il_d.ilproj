@@ -7,6 +7,6 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="sizeof-i386.il" />
+    <Compile Include="sizeof_Target_32BIT.il" />
   </ItemGroup>
 </Project>

@@ -273,7 +273,6 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.cs" />
-    <Compile Include="System\Security\Cryptography\AeadCommon.cs" />
     <Compile Include="System\Security\Cryptography\Aes.cs" />
     <Compile Include="System\Security\Cryptography\AesAEAD.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.cs" />

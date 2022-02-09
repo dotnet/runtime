@@ -57,11 +57,8 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] SignHash(byte[] hash)
+            public override byte[] SignHash(byte[] hash!!)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
-
                 SecKeyPair keys = GetKeys();
 
                 if (keys.PrivateKey == null)
@@ -111,13 +108,8 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override bool VerifyHash(byte[] hash, byte[] signature)
+            public override bool VerifyHash(byte[] hash!!, byte[] signature!!)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
-                if (signature == null)
-                    throw new ArgumentNullException(nameof(signature));
-
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
 

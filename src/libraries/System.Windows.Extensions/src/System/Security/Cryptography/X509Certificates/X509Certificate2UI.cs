@@ -17,17 +17,13 @@ namespace System.Security.Cryptography.X509Certificates
         internal const int ERROR_SUCCESS = 0;
         internal const int ERROR_CANCELLED = 1223;
 
-        public static void DisplayCertificate(X509Certificate2 certificate)
+        public static void DisplayCertificate(X509Certificate2 certificate!!)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
             DisplayX509Certificate(certificate, IntPtr.Zero);
         }
 
-        public static void DisplayCertificate(X509Certificate2 certificate, IntPtr hwndParent)
+        public static void DisplayCertificate(X509Certificate2 certificate!!, IntPtr hwndParent)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
             DisplayX509Certificate(certificate, hwndParent);
         }
 
@@ -82,10 +78,8 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static X509Certificate2Collection SelectFromCollectionHelper(X509Certificate2Collection certificates, string? title, string? message, X509SelectionFlag selectionFlag, IntPtr hwndParent)
+        private static X509Certificate2Collection SelectFromCollectionHelper(X509Certificate2Collection certificates!!, string? title, string? message, X509SelectionFlag selectionFlag, IntPtr hwndParent)
         {
-            if (certificates == null)
-                throw new ArgumentNullException(nameof(certificates));
             if (selectionFlag < X509SelectionFlag.SingleSelection || selectionFlag > X509SelectionFlag.MultiSelection)
                 throw new ArgumentException(SR.Format(SR.Enum_InvalidValue, nameof(selectionFlag)));
 

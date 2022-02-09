@@ -27,11 +27,8 @@ namespace MS.Internal.Xml.XPath
             this.type = type;
         }
 
-        public XPathAxisIterator(XPathNavigator nav, string name, string namespaceURI, bool matchSelf) : this(nav, matchSelf)
+        public XPathAxisIterator(XPathNavigator nav, string name!!, string namespaceURI!!, bool matchSelf) : this(nav, matchSelf)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
-            if (namespaceURI == null) throw new ArgumentNullException(nameof(namespaceURI));
-
             this.name = name;
             this.uri = namespaceURI;
         }

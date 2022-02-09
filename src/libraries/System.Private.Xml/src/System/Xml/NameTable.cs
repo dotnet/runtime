@@ -51,13 +51,8 @@ namespace System.Xml
         ///      Add the given string to the NameTable or return
         ///      the existing string if it is already in the NameTable.
         /// </devdoc>
-        public override string Add(string key)
+        public override string Add(string key!!)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             int len = key.Length;
             if (len == 0)
             {
@@ -118,13 +113,8 @@ namespace System.Xml
         /// <devdoc>
         ///      Find the matching string in the NameTable.
         /// </devdoc>
-        public override string? Get(string value)
+        public override string? Get(string value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             if (value.Length == 0)
             {
                 return string.Empty;

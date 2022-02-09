@@ -20,11 +20,8 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">if <paramref name="key" /> is not an DSA key</exception>
         /// <exception cref="ArgumentNullException">if <paramref name="key" /> is null.</exception>
         [SupportedOSPlatform("windows")]
-        public DSACng(CngKey key)
+        public DSACng(CngKey key!!)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             if (key.AlgorithmGroup != CngAlgorithmGroup.Dsa)
                 throw new ArgumentException(SR.Cryptography_ArgDSARequiresDSAKey, nameof(key));
 

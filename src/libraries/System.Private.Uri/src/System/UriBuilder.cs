@@ -38,9 +38,9 @@ namespace System
             SetFieldsFromUri();
         }
 
-        public UriBuilder(Uri uri)
+        public UriBuilder(Uri uri!!)
         {
-            _uri = uri ?? throw new ArgumentNullException(nameof(uri));
+            _uri = uri;
             SetFieldsFromUri();
         }
 

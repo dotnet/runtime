@@ -209,7 +209,7 @@ namespace System.Globalization.Tests
                     Assert.NotNull(exception);
                     Assert.IsType<ArgumentNullException>(exception);
                     Assert.Equal("collection", (exception as ArgumentNullException).ParamName);
-                    Assert.Equal("The collection argument is null. (Parameter 'collection')", exception.Message);
+                    Assert.Equal("Value cannot be null. (Parameter 'collection')", exception.Message);
                 }
                 else
                 {

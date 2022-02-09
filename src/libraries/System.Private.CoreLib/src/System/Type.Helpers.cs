@@ -115,11 +115,8 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public virtual Type[] FindInterfaces(TypeFilter filter, object? filterCriteria)
+        public virtual Type[] FindInterfaces(TypeFilter filter!!, object? filterCriteria)
         {
-            if (filter == null)
-                throw new ArgumentNullException(nameof(filter));
-
             Type?[] c = GetInterfaces();
             int cnt = 0;
             for (int i = 0; i < c.Length; i++)

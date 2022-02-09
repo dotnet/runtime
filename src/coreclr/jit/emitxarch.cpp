@@ -2784,17 +2784,15 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
 #ifdef TARGET_AMD64
-    // 64-bit immediates are only supported on mov r64, imm64
-    // As per manual:
-    // Support for 64-bit immediate operands is accomplished by expanding
-    // the semantics of the existing move (MOV reg, imm16/32) instructions.
-    if ((valSize > sizeof(INT32)) && (ins != INS_mov))
-        valSize = sizeof(INT32);
-#else
-    // occasionally longs get here on x86
+    // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
+    // all other opcodes take a sign-extended 4-byte immediate
+    noway_assert(valSize <= sizeof(INT32) || !id->idIsCnsReloc());
+#endif // TARGET_AMD64
+
     if (valSize > sizeof(INT32))
+    {
         valSize = sizeof(INT32);
-#endif // !TARGET_AMD64
+    }
 
     if (id->idIsCnsReloc())
     {

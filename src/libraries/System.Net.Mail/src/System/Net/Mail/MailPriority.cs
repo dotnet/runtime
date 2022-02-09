@@ -85,10 +85,7 @@ namespace System.Net.Mail
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 _from = value;
             }
         }
@@ -234,11 +231,7 @@ namespace System.Net.Mail
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
+                ArgumentNullException.ThrowIfNull(value);
                 _content = value;
             }
         }
@@ -303,13 +296,8 @@ namespace System.Net.Mail
             }
         }
 
-        internal void EndSend(IAsyncResult asyncResult)
+        internal void EndSend(IAsyncResult asyncResult!!)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
             if (Content != null)
             {
                 Content.EndSend(asyncResult);

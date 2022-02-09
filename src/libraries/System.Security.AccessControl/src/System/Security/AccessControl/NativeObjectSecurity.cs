@@ -343,13 +343,8 @@ namespace System.Security.AccessControl
             Persist(name, includeSections, _exceptionContext);
         }
 
-        protected void Persist(string name, AccessControlSections includeSections, object? exceptionContext)
+        protected void Persist(string name!!, AccessControlSections includeSections, object? exceptionContext)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             Persist(name, null, includeSections, exceptionContext);
         }
 
@@ -364,13 +359,8 @@ namespace System.Security.AccessControl
             Persist(handle, includeSections, _exceptionContext);
         }
 
-        protected void Persist(SafeHandle handle, AccessControlSections includeSections, object? exceptionContext)
+        protected void Persist(SafeHandle handle!!, AccessControlSections includeSections, object? exceptionContext)
         {
-            if (handle == null)
-            {
-                throw new ArgumentNullException(nameof(handle));
-            }
-
             Persist(null, handle, includeSections, exceptionContext);
         }
         #endregion

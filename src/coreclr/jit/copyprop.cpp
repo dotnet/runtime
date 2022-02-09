@@ -177,7 +177,8 @@ void Compiler::optCopyProp(Statement*               stmt,
             continue;
         }
 
-        if (newLclDefVN != tree->gtVNPair.GetConservative())
+        ValueNum lclDefVN = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
+        if (newLclDefVN != lclDefVN)
         {
             continue;
         }
@@ -230,9 +231,9 @@ void Compiler::optCopyProp(Statement*               stmt,
         {
             JITDUMP("VN based copy assertion for ");
             printTreeID(tree);
-            printf(" V%02d " FMT_VN " by ", lclNum, tree->GetVN(VNK_Conservative));
+            printf(" V%02d " FMT_VN " by ", lclNum, lclDefVN);
             printTreeID(newLclDefNode);
-            printf(" V%02d " FMT_VN ".\n", newLclNum, newLclDefNode->GetVN(VNK_Conservative));
+            printf(" V%02d " FMT_VN ".\n", newLclNum, newLclDefVN);
             DISPNODE(tree);
         }
 #endif

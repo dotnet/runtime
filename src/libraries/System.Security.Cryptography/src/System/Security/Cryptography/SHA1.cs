@@ -47,11 +47,8 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         /// <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        public static byte[] HashData(byte[] source)
+        public static byte[] HashData(byte[] source!!)
         {
-            if (source is null)
-                throw new ArgumentNullException(nameof(source));
-
             return HashData(new ReadOnlySpan<byte>(source));
         }
 
@@ -133,10 +130,8 @@ namespace System.Security.Cryptography
         ///   <paramref name="source" /> does not support reading.
         ///   </p>
         /// </exception>
-        public static int HashData(Stream source, Span<byte> destination)
+        public static int HashData(Stream source!!, Span<byte> destination)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
             if (destination.Length < HashSizeInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
@@ -157,10 +152,8 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
-        public static byte[] HashData(Stream source)
+        public static byte[] HashData(Stream source!!)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
@@ -182,10 +175,8 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
-        public static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
+        public static ValueTask<byte[]> HashDataAsync(Stream source!!, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
@@ -216,12 +207,10 @@ namespace System.Security.Cryptography
         ///   </p>
         /// </exception>
         public static ValueTask<int> HashDataAsync(
-            Stream source,
+            Stream source!!,
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
             if (destination.Length < HashSizeInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 

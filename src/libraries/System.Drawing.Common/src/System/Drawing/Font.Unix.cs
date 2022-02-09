@@ -262,12 +262,9 @@ namespace System.Drawing
         {
         }
 
-        public Font(FontFamily family, float emSize, FontStyle style,
+        public Font(FontFamily family!!, float emSize, FontStyle style,
                 GraphicsUnit unit, byte gdiCharSet, bool gdiVerticalFont)
         {
-            if (family == null)
-                throw new ArgumentNullException(nameof(family));
-
             int status;
             Initialize(family, emSize, style, unit, gdiCharSet, gdiVerticalFont);
             status = Gdip.GdipCreateFont(new HandleRef(this, family.NativeFamily), emSize, style, unit, out _nativeFont);

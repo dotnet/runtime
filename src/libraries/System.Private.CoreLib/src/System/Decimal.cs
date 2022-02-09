@@ -182,21 +182,15 @@ namespace System
             DecCalc.VarDecFromR8(value, out AsMutable(ref this));
         }
 
-        private Decimal(SerializationInfo info, StreamingContext context)
+        private Decimal(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
             _flags = info.GetInt32("flags");
             _hi32 = (uint)info.GetInt32("hi");
             _lo64 = (uint)info.GetInt32("lo") + ((ulong)info.GetInt32("mid") << 32);
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
             // Serialize both the old and the new format
             info.AddValue("flags", _flags);
             info.AddValue("hi", (int)High);
