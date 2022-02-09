@@ -395,6 +395,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public void SendPingWithHostAndTimeoutAndBuffer()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
@@ -410,6 +411,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -425,6 +427,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public void SendPingWithHostAndTimeoutAndBufferAndPingOptions()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
@@ -440,6 +443,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
