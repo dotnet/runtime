@@ -25,13 +25,8 @@ namespace System.Text.Json.Nodes
             _converter = converter;
         }
 
-        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
+        public override void WriteTo(Utf8JsonWriter writer!!, JsonSerializerOptions? options = null)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             if (_converter != null)
             {
                 options ??= JsonSerializerOptions.Default;

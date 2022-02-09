@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
@@ -33,12 +34,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     internal static class Requires
     {
         [System.Diagnostics.Conditional("DEBUG")]
-        internal static void NotNull(object value, string paramName)
+        internal static void NotNull(object value, [CallerArgumentExpression("value")] string? paramName = null)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
+            ArgumentNullException.ThrowIfNull(value, paramName);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]

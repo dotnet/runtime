@@ -157,13 +157,8 @@ namespace System.Collections.Generic
         ///  Constructs the heap using a heapify operation,
         ///  which is generally faster than enqueuing individual elements sequentially.
         /// </remarks>
-        public PriorityQueue(IEnumerable<(TElement Element, TPriority Priority)> items, IComparer<TPriority>? comparer)
+        public PriorityQueue(IEnumerable<(TElement Element, TPriority Priority)> items!!, IComparer<TPriority>? comparer)
         {
-            if (items is null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
-
             _nodes = EnumerableHelpers.ToArray(items, out _size);
             _comparer = InitializeComparer(comparer);
 
@@ -351,13 +346,8 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentNullException">
         ///  The specified <paramref name="items"/> argument was <see langword="null"/>.
         /// </exception>
-        public void EnqueueRange(IEnumerable<(TElement Element, TPriority Priority)> items)
+        public void EnqueueRange(IEnumerable<(TElement Element, TPriority Priority)> items!!)
         {
-            if (items is null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
-
             int count = 0;
             var collection = items as ICollection<(TElement Element, TPriority Priority)>;
             if (collection is not null && (count = collection.Count) > _nodes.Length - _size)
@@ -417,13 +407,8 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentNullException">
         ///  The specified <paramref name="elements"/> argument was <see langword="null"/>.
         /// </exception>
-        public void EnqueueRange(IEnumerable<TElement> elements, TPriority priority)
+        public void EnqueueRange(IEnumerable<TElement> elements!!, TPriority priority)
         {
-            if (elements is null)
-            {
-                throw new ArgumentNullException(nameof(elements));
-            }
-
             int count;
             if (elements is ICollection<(TElement Element, TPriority Priority)> collection &&
                 (count = collection.Count) > _nodes.Length - _size)
@@ -815,13 +800,8 @@ namespace System.Collections.Generic
             object ICollection.SyncRoot => this;
             bool ICollection.IsSynchronized => false;
 
-            void ICollection.CopyTo(Array array, int index)
+            void ICollection.CopyTo(Array array!!, int index)
             {
-                if (array is null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
-
                 if (array.Rank != 1)
                 {
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));

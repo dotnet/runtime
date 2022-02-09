@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 
@@ -82,11 +83,8 @@ namespace System.Reflection.Emit
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Module m)
+                             Module m!!)
         {
-            if (m == null)
-                throw new ArgumentNullException(nameof(m));
-
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -101,12 +99,9 @@ namespace System.Reflection.Emit
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Module m,
+                             Module m!!,
                              bool skipVisibility)
         {
-            if (m == null)
-                throw new ArgumentNullException(nameof(m));
-
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -123,12 +118,9 @@ namespace System.Reflection.Emit
                              CallingConventions callingConvention,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Module m,
+                             Module m!!,
                              bool skipVisibility)
         {
-            if (m == null)
-                throw new ArgumentNullException(nameof(m));
-
             Init(name,
                 attributes,
                 callingConvention,
@@ -143,11 +135,8 @@ namespace System.Reflection.Emit
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Type owner)
+                             Type owner!!)
         {
-            if (owner == null)
-                throw new ArgumentNullException(nameof(owner));
-
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -162,12 +151,9 @@ namespace System.Reflection.Emit
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Type owner,
+                             Type owner!!,
                              bool skipVisibility)
         {
-            if (owner == null)
-                throw new ArgumentNullException(nameof(owner));
-
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -184,12 +170,9 @@ namespace System.Reflection.Emit
                              CallingConventions callingConvention,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Type owner,
+                             Type owner!!,
                              bool skipVisibility)
         {
-            if (owner == null)
-                throw new ArgumentNullException(nameof(owner));
-
             Init(name,
                 attributes,
                 callingConvention,
@@ -234,12 +217,11 @@ namespace System.Reflection.Emit
                     return s_anonymouslyHostedDynamicMethodsModule;
 
                 AssemblyName assemblyName = new AssemblyName("Anonymously Hosted DynamicMethods Assembly");
-                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
 
                 AssemblyBuilder assembly = AssemblyBuilder.InternalDefineDynamicAssembly(
                     assemblyName,
                     AssemblyBuilderAccess.Run,
-                    ref stackMark,
+                    typeof(object).Assembly,
                     null,
                     null);
 
@@ -253,17 +235,17 @@ namespace System.Reflection.Emit
         [MemberNotNull(nameof(m_parameterTypes))]
         [MemberNotNull(nameof(m_returnType))]
         [MemberNotNull(nameof(m_dynMethod))]
-        private void Init(string name,
-                                 MethodAttributes attributes,
-                                 CallingConventions callingConvention,
-                                 Type? returnType,
-                                 Type[]? signature,
-                                 Type? owner,
-                                 Module? m,
-                                 bool skipVisibility,
-                                 bool transparentMethod)
+        private void Init(string name!!,
+                          MethodAttributes attributes,
+                          CallingConventions callingConvention,
+                          Type? returnType,
+                          Type[]? signature,
+                          Type? owner,
+                          Module? m,
+                          bool skipVisibility,
+                          bool transparentMethod)
         {
-            DynamicMethod.CheckConsistency(attributes, callingConvention);
+            CheckConsistency(attributes, callingConvention);
 
             // check and store the signature
             if (signature != null)
@@ -329,10 +311,6 @@ namespace System.Reflection.Emit
             m_ilGenerator = null;
             m_fInitLocals = true;
             m_methodHandle = null;
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             m_dynMethod = new RTDynamicMethod(this, name, attributes, callingConvention);
         }
 
@@ -655,11 +633,8 @@ namespace System.Reflection.Emit
                 return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
             }
 
-            public override bool IsDefined(Type attributeType, bool inherit)
+            public override bool IsDefined(Type attributeType!!, bool inherit)
             {
-                if (attributeType == null)
-                    throw new ArgumentNullException(nameof(attributeType));
-
                 if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
                     return true;
                 else

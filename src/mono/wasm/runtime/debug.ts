@@ -6,7 +6,8 @@ import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 
-let commands_received: CommandResponse;
+const commands_received : any = new Map<number, CommandResponse>();
+commands_received.remove = function (key: number) : CommandResponse { const value = this.get(key); this.delete(key); return value;};
 let _call_function_res_cache: any = {};
 let _next_call_function_res_id = 0;
 let _debugger_buffer_len = -1;
@@ -43,7 +44,9 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
             value: base64String
         }
     };
-    commands_received = buffer_obj;
+    if (commands_received.has(id))
+        console.warn("Addind an id that already exists in commands_received");
+    commands_received.set(id, buffer_obj);
 }
 
 function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
@@ -63,7 +66,7 @@ export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: n
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
     cwraps.mono_wasm_send_dbg_command_with_parms(id, command_set, command, _debugger_buffer, length, valtype, newvalue.toString());
 
-    const { res_ok, res } = commands_received;
+    const { res_ok, res } = commands_received.remove(id);
     if (!res_ok)
         throw new Error("Failed on mono_wasm_invoke_method_debugger_agent_with_parms");
     return res;
@@ -73,7 +76,8 @@ export function mono_wasm_send_dbg_command(id: number, command_set: number, comm
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
     cwraps.mono_wasm_send_dbg_command(id, command_set, command, _debugger_buffer, command_parameters.length);
 
-    const { res_ok, res } = commands_received;
+    const { res_ok, res } = commands_received.remove(id);
+
     if (!res_ok)
         throw new Error("Failed on mono_wasm_send_dbg_command");
     return res;
@@ -81,7 +85,8 @@ export function mono_wasm_send_dbg_command(id: number, command_set: number, comm
 }
 
 export function mono_wasm_get_dbg_command_info(): CommandResponseResult {
-    const { res_ok, res } = commands_received;
+    const { res_ok, res } = commands_received.remove(0);
+
     if (!res_ok)
         throw new Error("Failed on mono_wasm_get_dbg_command_info");
     return res;
@@ -138,10 +143,10 @@ function _create_proxy_from_object_id(objectId: string, details: any) {
                 prop.name,
                 {
                     get() {
-                        return mono_wasm_send_dbg_command(-1, prop.get.commandSet, prop.get.command, prop.get.buffer);
+                        return mono_wasm_send_dbg_command(prop.get.id, prop.get.commandSet, prop.get.command, prop.get.buffer);
                     },
                     set: function (newValue) {
-                        mono_wasm_send_dbg_command_with_parms(-1, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return commands_received.res_ok;
+                        mono_wasm_send_dbg_command_with_parms(prop.set.id, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return true;
                     }
                 }
             );
@@ -153,7 +158,7 @@ function _create_proxy_from_object_id(objectId: string, details: any) {
                         return prop.value;
                     },
                     set: function (newValue) {
-                        mono_wasm_send_dbg_command_with_parms(-1, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return commands_received.res_ok;
+                        mono_wasm_send_dbg_command_with_parms(prop.set.id, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return true;
                     }
                 }
             );

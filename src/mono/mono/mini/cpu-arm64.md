@@ -218,7 +218,6 @@ float_clt_un: dest:i src1:f src2:f len:20
 float_cneq: dest:i src1:f src2:f len:20
 float_cge: dest:i src1:f src2:f len:20
 float_cle: dest:i src1:f src2:f len:20
-float_conv_to_u: dest:i src1:f len:36
 setfret: src1:f len:12
 
 # R4 opcodes

@@ -32,18 +32,8 @@ namespace System.ComponentModel.Design
         /// anything into the component parameter of the property descriptor will be
         /// ignored and the value object will be substituted.
         /// </summary>
-        protected DesignerOptionCollection CreateOptionCollection(DesignerOptionCollection parent, string name, object value)
+        protected DesignerOptionCollection CreateOptionCollection(DesignerOptionCollection parent!!, string name!!, object value)
         {
-            if (parent == null)
-            {
-                throw new ArgumentNullException(nameof(parent));
-            }
-
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, "name.Length"), nameof(name));
@@ -57,18 +47,8 @@ namespace System.ComponentModel.Design
         /// null if the property couldn't be found.
         /// </summary>
         [RequiresUnreferencedCode("The Type of DesignerOptionCollection's value cannot be statically discovered.")]
-        private PropertyDescriptor? GetOptionProperty(string pageName, string valueName)
+        private PropertyDescriptor? GetOptionProperty(string pageName!!, string valueName!!)
         {
-            if (pageName == null)
-            {
-                throw new ArgumentNullException(nameof(pageName));
-            }
-
-            if (valueName == null)
-            {
-                throw new ArgumentNullException(nameof(valueName));
-            }
-
             string[] optionNames = pageName.Split('\\');
 
             DesignerOptionCollection? options = Options;

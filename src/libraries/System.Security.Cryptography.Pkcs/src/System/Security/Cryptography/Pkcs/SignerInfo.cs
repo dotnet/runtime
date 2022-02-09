@@ -433,11 +433,8 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public void RemoveCounterSignature(SignerInfo counterSignerInfo)
+        public void RemoveCounterSignature(SignerInfo counterSignerInfo!!)
         {
-            if (counterSignerInfo == null)
-                throw new ArgumentNullException(nameof(counterSignerInfo));
-
             SignerInfoCollection docSigners = _document.SignerInfos;
             int index = docSigners.FindIndexForSigner(this);
 
@@ -460,11 +457,8 @@ namespace System.Security.Cryptography.Pkcs
         public void CheckSignature(bool verifySignatureOnly) =>
             CheckSignature(new X509Certificate2Collection(), verifySignatureOnly);
 
-        public void CheckSignature(X509Certificate2Collection extraStore, bool verifySignatureOnly)
+        public void CheckSignature(X509Certificate2Collection extraStore!!, bool verifySignatureOnly)
         {
-            if (extraStore == null)
-                throw new ArgumentNullException(nameof(extraStore));
-
             X509Certificate2? certificate = Certificate;
 
             if (certificate == null)

@@ -1286,6 +1286,11 @@ public:
         return OperIsPutArgStk() || OperIsPutArgReg() || OperIsPutArgSplit();
     }
 
+    bool OperIsFieldList() const
+    {
+        return OperIs(GT_FIELD_LIST);
+    }
+
     bool OperIsMultiRegOp() const
     {
 #if !defined(TARGET_64BIT)
@@ -3979,6 +3984,7 @@ enum class NonStandardArgKind : unsigned
     FixedRetBuffer,
     VirtualStubCell,
     R2RIndirectionCell,
+    ValidateIndirectCallTarget,
 
     // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate in fgArgInfo
 };
@@ -3986,6 +3992,12 @@ enum class NonStandardArgKind : unsigned
 #ifdef DEBUG
 const char* getNonStandardArgKindName(NonStandardArgKind kind);
 #endif
+
+enum class CFGCallKind
+{
+    ValidateAndCall,
+    Dispatch,
+};
 
 struct GenTreeCall final : public GenTree
 {
@@ -4687,6 +4699,42 @@ struct GenTreeCall final : public GenTree
 #endif
 
         return NonStandardArgKind::None;
+    }
+
+    CFGCallKind GetCFGCallKind()
+    {
+#if defined(TARGET_AMD64)
+        // On x64 the dispatcher is more performant, but we cannot use it when
+        // we need to pass indirection cells as those go into registers that
+        // are clobbered by the dispatch helper.
+        bool mayUseDispatcher    = GetIndirectionCellArgKind() == NonStandardArgKind::None;
+        bool shouldUseDispatcher = true;
+#elif defined(TARGET_AMD64)
+        bool mayUseDispatcher = true;
+        // Branch predictors on ARM64 generally do not handle the dispatcher as
+        // well as on x64 hardware, so only use the validator by default.
+        bool       shouldUseDispatcher = false;
+#else
+        // Other platforms do not even support the dispatcher.
+        bool mayUseDispatcher    = false;
+        bool shouldUseDispatcher = false;
+#endif
+
+#ifdef DEBUG
+        switch (JitConfig.JitCFGUseDispatcher())
+        {
+            case 0:
+                shouldUseDispatcher = false;
+                break;
+            case 1:
+                shouldUseDispatcher = true;
+                break;
+            default:
+                break;
+        }
+#endif
+
+        return mayUseDispatcher && shouldUseDispatcher ? CFGCallKind::Dispatch : CFGCallKind::ValidateAndCall;
     }
 
     void ResetArgInfo();

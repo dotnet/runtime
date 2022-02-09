@@ -94,13 +94,8 @@ namespace Microsoft.Extensions.Configuration
         ///     If no matching sub-section is found with the specified key, an exception is raised.
         /// </remarks>
         /// <exception cref="System.InvalidOperationException">There is no section with key <paramref name="key"/>.</exception>
-        public static IConfigurationSection GetRequiredSection(this IConfiguration configuration, string key)
+        public static IConfigurationSection GetRequiredSection(this IConfiguration configuration!!, string key)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
             IConfigurationSection section = configuration.GetSection(key);
             if (section.Exists())
             {
