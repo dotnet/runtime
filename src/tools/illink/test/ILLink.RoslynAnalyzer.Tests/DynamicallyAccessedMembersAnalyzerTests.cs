@@ -165,14 +165,14 @@ class C
 			// (17,9): warning IL2070: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethod(String)'.
 			// The parameter 'type' of method 'C.M(Type)' does not have matching annotations.
 			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations
-										/*,
-										VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter)
-										.WithSpan (17, 9, 17, 30)
-										.WithArguments ("System.Type.GetMethod(String)",
-											"type",
-											"C.M(Type)",
-											"'DynamicallyAccessedMemberTypes.PublicMethods'")*/);
+			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations);
+			/*,
+			VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter)
+			.WithSpan (17, 9, 17, 30)
+			.WithArguments ("System.Type.GetMethod(String)",
+				"type",
+				"C.M(Type)",
+				"'DynamicallyAccessedMemberTypes.PublicMethods'")*/
 		}
 		#endregion
 
@@ -462,13 +462,13 @@ class C
 			// (14,9): warning IL2080: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethod(String)'.
 			// The field 'C.f' does not have matching annotations.
 			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations
-										/*,
-										VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter)
-										.WithSpan (14, 9, 14, 27)
-										.WithArguments ("System.Type.GetMethod(String)",
-											"C.f",
-											"'DynamicallyAccessedMemberTypes.PublicMethods'")*/);
+			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations);
+			/*,
+			VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter)
+			.WithSpan (14, 9, 14, 27)
+			.WithArguments ("System.Type.GetMethod(String)",
+				"C.f",
+				"'DynamicallyAccessedMemberTypes.PublicMethods'")*/
 		}
 		#endregion
 
