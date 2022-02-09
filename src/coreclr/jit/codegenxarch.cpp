@@ -3581,27 +3581,22 @@ void CodeGen::genStructPutArgPush(GenTreePutArgStk* putArgNode)
     // future.
     assert(m_pushStkArg);
 
-    GenTree* src     = putArgNode->Data();
-    GenTree* srcAddr = putArgNode->Data()->AsObj()->Addr();
-
-    regNumber  srcAddrReg   = srcAddr->GetRegNum();
-    const bool srcAddrInReg = srcAddrReg != REG_NA;
-
-    unsigned srcLclNum    = 0;
-    unsigned srcLclOffset = 0;
-    if (srcAddrInReg)
+    GenTree*  src        = putArgNode->Data();
+    regNumber srcAddrReg = REG_NA;
+    unsigned  srcLclNum  = BAD_VAR_NUM;
+    unsigned  srcLclOffs = BAD_LCL_OFFSET;
+    if (src->OperIsLocalRead())
     {
-        srcAddrReg = genConsumeReg(srcAddr);
+        assert(src->isContained());
+        srcLclNum  = src->AsLclVarCommon()->GetLclNum();
+        srcLclOffs = src->AsLclVarCommon()->GetLclOffs();
     }
     else
     {
-        assert(srcAddr->OperIsLocalAddr());
-
-        srcLclNum    = srcAddr->AsLclVarCommon()->GetLclNum();
-        srcLclOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
+        srcAddrReg = genConsumeReg(src->AsObj()->Addr());
     }
 
-    ClassLayout*   layout   = src->AsObj()->GetLayout();
+    ClassLayout*   layout   = src->GetLayout(compiler);
     const unsigned loadSize = putArgNode->GetArgLoadSize();
     assert(((loadSize < XMM_REGSIZE_BYTES) || layout->HasGCPtr()) && ((loadSize % TARGET_POINTER_SIZE) == 0));
     const unsigned numSlots = loadSize / TARGET_POINTER_SIZE;
@@ -3610,13 +3605,13 @@ void CodeGen::genStructPutArgPush(GenTreePutArgStk* putArgNode)
     {
         emitAttr       slotAttr   = emitTypeSize(layout->GetGCPtrType(i));
         const unsigned byteOffset = i * TARGET_POINTER_SIZE;
-        if (srcAddrInReg)
+        if (srcAddrReg != REG_NA)
         {
             GetEmitter()->emitIns_AR_R(INS_push, slotAttr, REG_NA, srcAddrReg, byteOffset);
         }
         else
         {
-            GetEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffset + byteOffset);
+            GetEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffs + byteOffset);
         }
 
         AddStackLevel(TARGET_POINTER_SIZE);
@@ -8306,14 +8301,11 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
 
     assert(targetType == TYP_STRUCT);
 
-    ClassLayout* layout = source->AsObj()->GetLayout();
-
     switch (putArgStk->gtPutArgStkKind)
     {
         case GenTreePutArgStk::Kind::RepInstr:
             genStructPutArgRepMovs(putArgStk);
             break;
-
 #ifndef TARGET_X86
         case GenTreePutArgStk::Kind::PartialRepInstr:
             genStructPutArgPartialRepMovs(putArgStk);
