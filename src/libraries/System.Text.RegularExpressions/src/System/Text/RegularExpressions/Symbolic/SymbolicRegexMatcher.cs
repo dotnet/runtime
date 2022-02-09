@@ -302,43 +302,6 @@ namespace System.Text.RegularExpressions.Symbolic
             };
         }
 
-        private HashSet<DfaMatchingState<TSetType>> _seenCapturingStates = new(); // TODO: should this be a member?
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void CapturingDelta(ReadOnlySpan<char> input, int i, List<(DfaMatchingState<TSetType>, Registers)> sourceStates, List<(DfaMatchingState<TSetType>, Registers)> targetStates)
-        {
-            Debug.Assert(targetStates.Count == 0);
-
-            TSetType[]? minterms = _builder._minterms;
-            Debug.Assert(minterms is not null);
-
-            int c = input[i];
-
-            _seenCapturingStates.Clear();
-            foreach (var (sourceState, sourceRegisters) in sourceStates)
-            {
-                int mintermId = c == '\n' && i == input.Length - 1 && sourceState.StartsWithLineAnchor ?
-                    minterms.Length : // mintermId = minterms.Length represents \Z (last \n)
-                    _partitions.GetMintermID(c);
-
-                TSetType minterm = (uint)mintermId < (uint)minterms.Length ?
-                    minterms[mintermId] :
-                    _builder._solver.False; // minterm=False represents \Z
-
-                int offset = (sourceState.Id << _builder._mintermsCount) | mintermId;
-                Debug.Assert(_builder._capturingDelta is not null);
-                var transitions = Volatile.Read(ref _builder._capturingDelta[offset]) ?? CreateNewCapturingTransitions(sourceState, minterm, offset);
-
-                foreach (var (targetState, effects) in transitions) {
-                    if (!_seenCapturingStates.Contains(targetState))
-                    {
-                        Registers newRegisters = sourceRegisters.Clone(); // TODO: avoid this the last time
-                        newRegisters.ApplyEffects(effects, i);
-                        targetStates.Add((targetState, newRegisters));
-                    }
-                }
-            }
-        }
-
         /// <summary>Transition for Brzozowski-style derivatives (i.e. a DFA).</summary>
         private readonly struct BrzozowskiTransition : ITransition
         {
@@ -601,52 +564,69 @@ namespace System.Text.RegularExpressions.Symbolic
                 i_end = i - 1;
                 endRegisters = initialRegisters.Clone();
                 state.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i), CharKind.Context(state.PrevCharKind, GetCharKind(input, i)));
-
-                // Stop here if q is lazy.
-                if (state.IsLazy)
-                {
-                    resultRegisters = endRegisters;
-                    return i_end;
-                }
             }
 
-            List<(DfaMatchingState<TSetType>, Registers)> current = new(), next = new();
-            current.Add((state, initialRegisters));
+            SparseIntMap<Registers> current = new(), next = new();
+            current.Add(state.Id, initialRegisters);
 
             while (i < exclusiveEnd)
             {
-                CapturingDelta(input, i, current, next);
-                var tmp = current;
-                current = next;
-                next = tmp;
-                next.Clear();
+                Debug.Assert(next.Count == 0);
 
-                for (int m = 0; m < current.Count; ++m)
+                TSetType[]? minterms = _builder._minterms;
+                Debug.Assert(minterms is not null);
+
+                int c = input[i];
+                int normalMintermId = _partitions.GetMintermID(c);
+
+                foreach (var (sourceId, sourceRegisters) in current.Values)
                 {
-                    var (q, registers) = current[m];
-                    if (q.IsNullable(GetCharKind(input, i + 1)))
-                    {
-                        // Accepting state has been reached. Record the position.
-                        i_end = i;
-                        endRegisters = registers.Clone();
-                        q.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i + 1), CharKind.Context(q.PrevCharKind, GetCharKind(input, i + 1)));
+                    Debug.Assert(_builder._statearray is not null);
+                    DfaMatchingState<TSetType> sourceState = _builder._statearray[sourceId];
+                    int mintermId = c == '\n' && i == input.Length - 1 && sourceState.StartsWithLineAnchor ?
+                        minterms.Length : normalMintermId; // mintermId = minterms.Length represents \Z (last \n)
 
-                        // Remove any lower priority states
-                        current.RemoveRange(m + 1, current.Count - m - 1);
-                        break;
-                    }
-                    else if (q.IsDeadend)
+                    TSetType minterm = (uint)mintermId < (uint)minterms.Length ?
+                        minterms[mintermId] :
+                        _builder._solver.False; // minterm=False represents \Z
+
+                    int offset = (sourceId << _builder._mintermsCount) | mintermId;
+                    Debug.Assert(_builder._capturingDelta is not null);
+                    var transitions = Volatile.Read(ref _builder._capturingDelta[offset]) ?? CreateNewCapturingTransitions(sourceState, minterm, offset);
+
+                    for (int j = 0; j < transitions.Count; ++j)
                     {
-                        current.RemoveAt(m);
-                        --m;
+                        var (targetState, effects) = transitions[j];
+                        if (targetState.IsDeadend)
+                            continue;
+                        if (next.Add(targetState.Id, out int index))
+                        {
+                            Registers newRegisters = j != transitions.Count - 1 ? sourceRegisters.Clone() : sourceRegisters;
+                            newRegisters.ApplyEffects(effects, i);
+                            next.Update(index, targetState.Id, newRegisters);
+                            if (targetState.IsNullable(GetCharKind(input, i + 1)))
+                            {
+                                // Accepting state has been reached. Record the position.
+                                i_end = i;
+                                endRegisters = newRegisters.Clone();
+                                targetState.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i + 1), CharKind.Context(targetState.PrevCharKind, GetCharKind(input, i + 1)));
+                                goto BREAK_NULLABLE;
+                            }
+                        }
                     }
                 }
-                if (current.Count == 0)
+            BREAK_NULLABLE:
+                if (next.Count == 0)
                 {
                     Debug.Assert(i_end != exclusiveEnd);
                     resultRegisters = endRegisters;
                     return i_end;
                 }
+
+                var tmp = current;
+                current = next;
+                next = tmp;
+                next.Clear();
 
                 i++;
             }

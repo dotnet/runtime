@@ -8,6 +8,7 @@
     <Compile Include="System\Collections\HashtableExtensions.cs" />
     <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DerivativeEffect.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SparseIntMap.cs" />
     <Compile Include="System\Threading\StackHelper.cs" />
     <Compile Include="System\Text\SegmentStringBuilder.cs" />
     <Compile Include="System\Text\RegularExpressions\Capture.cs" />
