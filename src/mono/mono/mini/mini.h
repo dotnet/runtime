@@ -1909,7 +1909,7 @@ realloc_code (MonoCompile *cfg, int size)
 	const int EXTRA_CODE_SPACE = 16;
 	const int code_len = cfg->code_len;
 
-	if (G_UNLIKELY (code_len + size > (cfg->code_size - EXTRA_CODE_SPACE)))
+	if (G_UNLIKELY ((guint)(code_len + size) > (cfg->code_size - EXTRA_CODE_SPACE)))
 		return mini_realloc_code_slow (cfg, size);
 	return cfg->native_code + code_len;
 }
@@ -1917,7 +1917,7 @@ realloc_code (MonoCompile *cfg, int size)
 static inline void
 set_code_len (MonoCompile *cfg, int len)
 {
-	g_assert (len <= cfg->code_size);
+	g_assert ((guint)len <= cfg->code_size);
 	cfg->code_len = len;
 }
 

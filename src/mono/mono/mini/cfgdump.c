@@ -70,21 +70,23 @@ create_socket (const char *hostname, const int port)
 static void
 write_byte (MonoCompile *cfg, unsigned char b)
 {
-	write (cfg->gdump_ctx->fd, &b, 1);
+	int ret;
+	while ((ret = write (cfg->gdump_ctx->fd, &b, 1)) < 0 && errno == EINTR);
 }
 
 static void
 write_short (MonoCompile *cfg, short s)
 {
 	short swap = htons (s);
-	write (cfg->gdump_ctx->fd, &swap, 2);
+	int ret;
+	while ((ret = write (cfg->gdump_ctx->fd, &swap, 2)) < 0 && errno == EINTR);
 }
 
 static void
 write_int (MonoCompile *cfg, int v)
 {
-	int swap = htonl (v);
-	write (cfg->gdump_ctx->fd, &swap, 4);
+	int swap = htonl (v), ret;
+	while ((ret = write (cfg->gdump_ctx->fd, &swap, 4)) < 0 && errno == EINTR);
 }
 
 static void
