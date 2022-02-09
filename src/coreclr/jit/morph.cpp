@@ -14153,17 +14153,15 @@ GenTree* Compiler::fgOptimizeBitwiseXor(GenTreeOp* xorOp)
     assert(xorOp->OperIs(GT_XOR));
     assert(!optValnumCSE_phase);
 
-    if (!gtIsActiveCSE_Candidate(xorOp))
-    {
-        GenTree* op1 = xorOp->gtGetOp1();
-        GenTree* op2 = xorOp->gtGetOp2();
+    GenTree* op1 = xorOp->gtGetOp1();
+    GenTree* op2 = xorOp->gtGetOp2();
 
-        if (op1->OperIs(GT_LCL_VAR) && op2->IsIntegralConst(0) && !gtIsActiveCSE_Candidate(op2))
-        {
-            DEBUG_DESTROY_NODE(xorOp);
-            DEBUG_DESTROY_NODE(op2);
-            return op1;
-        }
+    if (op2->IsIntegralConst(0))
+    {
+        /* "x ^ 0" is "x" */
+        DEBUG_DESTROY_NODE(xorOp);
+        DEBUG_DESTROY_NODE(op2);
+        return op1;
     }
 
     return nullptr;
