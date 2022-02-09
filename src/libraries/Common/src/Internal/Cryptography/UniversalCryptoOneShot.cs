@@ -53,43 +53,90 @@ namespace Internal.Cryptography
 
             // If no padding is going to removed, then we already know the buffer is too small
             // since that requires a buffer at-least the size of the ciphertext. Bail out early.
-            if (!SymmetricPadding.DepaddingRequired(paddingMode))
+            // The second condition is where the output length is short by more than a whole block.
+            // All valid padding is at most one complete block. If the difference between the
+            // output and the input is more than a whole block then we know the output is too small.
+            if (!SymmetricPadding.DepaddingRequired(paddingMode) ||
+                input.Length - cipher.BlockSizeInBytes > output.Length)
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            // At this point the output is smaller than the input, but after padding removal
-            // it might fit in the output. Decrypt in to a temporary buffer and copy it if
-            // after padding removal it would fit.
-            byte[] rentedBuffer = CryptoPool.Rent(input.Length);
-            Span<byte> buffer = rentedBuffer.AsSpan(0, input.Length);
-            Span<byte> decryptedBuffer = default;
+            // At this point the destination might be big enough but we don't know until we've
+            // transformed the last block, and input is within one block of being the right
+            // size.
+            // For sufficiently small ciphertexts, do them on the stack.
+            const int MaxInStackDecryptionBuffer = 128;
+            Span<byte> stackBuffer = stackalloc byte[MaxInStackDecryptionBuffer];
 
-            fixed (byte* pBuffer = buffer)
+            if (input.Length <= MaxInStackDecryptionBuffer)
             {
-                try
+                int stackTransformFinal = cipher.TransformFinal(input, stackBuffer);
+                int depaddedLength = SymmetricPadding.GetPaddingLength(
+                    stackBuffer.Slice(0, stackTransformFinal),
+                    paddingMode,
+                    cipher.BlockSizeInBytes);
+
+                if (output.Length < depaddedLength)
                 {
-                    int transformWritten = cipher.TransformFinal(input, buffer);
-                    decryptedBuffer = buffer.Slice(0, transformWritten);
-
-                    int unpaddedLength = SymmetricPadding.GetPaddingLength(decryptedBuffer, paddingMode, cipher.BlockSizeInBytes); // validates padding
-
-                    if (unpaddedLength > output.Length)
-                    {
-                        bytesWritten = 0;
-                        return false;
-                    }
-
-                    decryptedBuffer.Slice(0, unpaddedLength).CopyTo(output);
-                    bytesWritten = unpaddedLength;
-                    return true;
+                    bytesWritten = 0;
+                    return false;
                 }
-                finally
+
+                stackBuffer.Slice(0, depaddedLength).CopyTo(output);
+                bytesWritten = depaddedLength;
+                return true;
+            }
+
+            // At this point we know that we have multiple blocks that need to be decrypted.
+            // So we decrypt all but the last block directly in to the buffer. The final
+            // block we decrypt in to a stack buffer, and if it fits, copy the last block to
+            // the output.
+
+            // We should only get here if we have multiple blocks to transform. The single
+            // block case should have happened on the stack.
+            Debug.Assert(input.Length > cipher.BlockSizeInBytes);
+
+            int writtenToOutput = 0;
+
+            // CFB8 means this may not be an exact multiple of the block size.
+            // If the an AES CFB8 ciphertext length is 129 with PKCS7 padding, then
+            // we'll have 113 bytes in the unpaddedBlocks and 16 in the paddedBlock.
+            // We still need to do this on block size, not padding size. The CFB8
+            // padding byte might be block size. We don't want unpaddedBlocks to
+            // contain removable padding, so split on block size.
+            ReadOnlySpan<byte> unpaddedBlocks = input[..^cipher.BlockSizeInBytes];
+            ReadOnlySpan<byte> paddedBlock = input[^cipher.BlockSizeInBytes..];
+            Debug.Assert(paddedBlock.Length % cipher.BlockSizeInBytes == 0);
+            Debug.Assert(paddedBlock.Length <= MaxInStackDecryptionBuffer);
+
+            try
+            {
+                writtenToOutput = cipher.Transform(unpaddedBlocks, output);
+                int finalTransformWritten = cipher.TransformFinal(paddedBlock, stackBuffer);
+
+                // This will throw on invalid padding.
+                int depaddedLength = SymmetricPadding.GetPaddingLength(
+                    stackBuffer.Slice(0, finalTransformWritten),
+                    paddingMode,
+                    cipher.BlockSizeInBytes);
+
+                if (output.Length - writtenToOutput < depaddedLength)
                 {
-                    CryptographicOperations.ZeroMemory(decryptedBuffer);
-                    CryptoPool.Return(rentedBuffer, clearSize: 0); // ZeroMemory clears the part of the buffer that was written to.
+                    CryptographicOperations.ZeroMemory(output.Slice(0, writtenToOutput));
+                    bytesWritten = 0;
+                    return false;
                 }
+
+                stackBuffer.Slice(0, depaddedLength).CopyTo(output.Slice(writtenToOutput));
+                bytesWritten = writtenToOutput + depaddedLength;
+                return true;
+            }
+            catch (CryptographicException)
+            {
+                CryptographicOperations.ZeroMemory(output.Slice(0, writtenToOutput));
+                throw;
             }
         }
 
