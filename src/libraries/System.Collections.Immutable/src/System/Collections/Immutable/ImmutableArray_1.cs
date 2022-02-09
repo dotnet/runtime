@@ -7,8 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.Versioning;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Collections.Immutable
 {
@@ -883,73 +881,17 @@ namespace System.Collections.Immutable
                 return self.Remove(items[0], equalityComparer);
             }
 
-#nullable disable
-            var itemsMultiSet = new Dictionary<T, int>(equalityComparer);
-#nullable restore
-            int nullValueCount = 0;
-            foreach (ref readonly T item in items)
+            var indicesToRemove = new SortedSet<int>();
+            foreach (var item in items)
             {
-                if (item == null)
+                int index = -1;
+                do
                 {
-                    nullValueCount++;
-                }
-                else
-                {
-#if NET6_0_OR_GREATER
-#nullable disable
-                    ref int count = ref CollectionsMarshal.GetValueRefOrAddDefault(itemsMultiSet, item, out _);
-#nullable restore
-                    count++;
-#else
-                    if (itemsMultiSet.TryGetValue(item, out int count))
-                    {
-                        itemsMultiSet[item] = count + 1;
-                    }
-                    else
-                    {
-                        itemsMultiSet[item] = 1;
-                    }
-#endif
-                }
+                    index = self.IndexOf(item, index + 1, equalityComparer);
+                } while (index >= 0 && !indicesToRemove.Add(index) && index < self.Length - 1);
             }
 
-            List<int>? indicesToRemove = null;
-            T[] selfArray = self.array!;
-            for (int i = 0; i < selfArray.Length; i++)
-            {
-                if (selfArray[i] == null)
-                {
-                    if (nullValueCount == 0)
-                    {
-                        continue;
-                    }
-                    nullValueCount--;
-                }
-                else
-                {
-#if NET6_0_OR_GREATER
-#nullable disable
-                    ref int count = ref CollectionsMarshal.GetValueRefOrNullRef(itemsMultiSet, selfArray[i]);
-#nullable restore
-                    if (Unsafe.IsNullRef(ref count) || count == 0)
-                    {
-                        continue;
-                    }
-                    count--;
-#else
-                    if (!itemsMultiSet.TryGetValue(selfArray[i], out int count) || count == 0)
-                    {
-                        continue;
-                    }
-                    itemsMultiSet[selfArray[i]] = count - 1;
-#endif
-                }
-
-                indicesToRemove ??= new();
-                indicesToRemove.Add(i);
-            }
-
-            return indicesToRemove == null ? self : self.RemoveAtRange(indicesToRemove);
+            return self.RemoveAtRange(indicesToRemove);
         }
 
         /// <summary>
@@ -985,7 +927,7 @@ namespace System.Collections.Immutable
             return ImmutableArray.Create(self, start, length);
         }
 
-#region Explicit interface methods
+        #region Explicit interface methods
 
         void IList<T>.Insert(int index, T item)
         {
@@ -1398,7 +1340,7 @@ namespace System.Collections.Immutable
             throw new ArgumentException(SR.ArrayLengthsNotEqual, nameof(other));
         }
 
-#endregion
+        #endregion
 
 
         /// <summary>
