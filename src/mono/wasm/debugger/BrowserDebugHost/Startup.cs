@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -40,8 +41,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             ProxyOptions options = optionsAccessor.CurrentValue;
             applicationLifetime.ApplicationStarted.Register(() => {
-                var uri = new Uri(app.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First());
-                Console.WriteLine($"Now listening on: {(uri.Scheme == "http" ? "ws" : "wss")}://{uri.Authority}");
+                foreach (var address in app.ServerFeatures.Get<IServerAddressesFeature>().Addresses)
+                {
+                    Console.WriteLine($"    Now listening on: {Regex.Replace(address, "^http(s?):", "ws$1:")}");
+                }
                 Console.WriteLine("Application started. Press Ctrl+C to shut down.");
             });
 
@@ -128,7 +131,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                             context.Response.ContentLength = response.Content.Headers.ContentLength;
                         byte[] bytes = await response.Content.ReadAsByteArrayAsync();
                         await context.Response.Body.WriteAsync(bytes);
-
                     }
                 }
 
