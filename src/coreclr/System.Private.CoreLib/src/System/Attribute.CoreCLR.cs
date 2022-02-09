@@ -450,14 +450,8 @@ namespace System
             return GetCustomAttributes(element, attributeType, true);
         }
 
-        public static Attribute[] GetCustomAttributes(MemberInfo element, Type attributeType, bool inherit)
+        public static Attribute[] GetCustomAttributes(MemberInfo element!!, Type attributeType!!, bool inherit)
         {
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
 
@@ -474,11 +468,8 @@ namespace System
             return GetCustomAttributes(element, true);
         }
 
-        public static Attribute[] GetCustomAttributes(MemberInfo element, bool inherit)
+        public static Attribute[] GetCustomAttributes(MemberInfo element!!, bool inherit)
         {
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
             return element.MemberType switch
             {
                 MemberTypes.Property => InternalGetCustomAttributes((PropertyInfo)element, typeof(Attribute), inherit),
@@ -492,15 +483,9 @@ namespace System
             return IsDefined(element, attributeType, true);
         }
 
-        public static bool IsDefined(MemberInfo element, Type attributeType, bool inherit)
+        public static bool IsDefined(MemberInfo element!!, Type attributeType!!, bool inherit)
         {
             // Returns true if a custom attribute subclass of attributeType class/interface with inheritance walk
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
 
@@ -543,14 +528,8 @@ namespace System
             return GetCustomAttributes(element, attributeType, true);
         }
 
-        public static Attribute[] GetCustomAttributes(ParameterInfo element, Type attributeType, bool inherit)
+        public static Attribute[] GetCustomAttributes(ParameterInfo element!!, Type attributeType!!, bool inherit)
         {
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
 
@@ -565,11 +544,8 @@ namespace System
             return (element.GetCustomAttributes(attributeType, inherit) as Attribute[])!;
         }
 
-        public static Attribute[] GetCustomAttributes(ParameterInfo element, bool inherit)
+        public static Attribute[] GetCustomAttributes(ParameterInfo element!!, bool inherit)
         {
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
             if (element.Member == null)
                 throw new ArgumentException(SR.Argument_InvalidParameterInfo, nameof(element));
 
@@ -586,14 +562,9 @@ namespace System
             return IsDefined(element, attributeType, true);
         }
 
-        public static bool IsDefined(ParameterInfo element, Type attributeType, bool inherit)
+        public static bool IsDefined(ParameterInfo element!!, Type attributeType!!, bool inherit)
         {
             // Returns true is a custom attribute subclass of attributeType class/interface with inheritance walk
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
@@ -653,22 +624,13 @@ namespace System
             return GetCustomAttributes(element, true);
         }
 
-        public static Attribute[] GetCustomAttributes(Module element, bool inherit)
+        public static Attribute[] GetCustomAttributes(Module element!!, bool inherit)
         {
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
             return (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit);
         }
 
-        public static Attribute[] GetCustomAttributes(Module element, Type attributeType, bool inherit)
+        public static Attribute[] GetCustomAttributes(Module element!!, Type attributeType!!, bool inherit)
         {
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
 
@@ -680,14 +642,9 @@ namespace System
             return IsDefined(element, attributeType, false);
         }
 
-        public static bool IsDefined(Module element, Type attributeType, bool inherit)
+        public static bool IsDefined(Module element!!, Type attributeType!!, bool inherit)
         {
             // Returns true is a custom attribute subclass of attributeType class/interface with no inheritance walk
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
@@ -723,14 +680,8 @@ namespace System
             return GetCustomAttributes(element, attributeType, true);
         }
 
-        public static Attribute[] GetCustomAttributes(Assembly element, Type attributeType, bool inherit)
+        public static Attribute[] GetCustomAttributes(Assembly element!!, Type attributeType!!, bool inherit)
         {
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
 
@@ -742,11 +693,8 @@ namespace System
             return GetCustomAttributes(element, true);
         }
 
-        public static Attribute[] GetCustomAttributes(Assembly element, bool inherit)
+        public static Attribute[] GetCustomAttributes(Assembly element!!, bool inherit)
         {
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
             return (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit);
         }
 
@@ -755,14 +703,9 @@ namespace System
             return IsDefined(element, attributeType, true);
         }
 
-        public static bool IsDefined(Assembly element, Type attributeType, bool inherit)
+        public static bool IsDefined(Assembly element!!, Type attributeType!!, bool inherit)
         {
             // Returns true is a custom attribute subclass of attributeType class/interface with no inheritance walk
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);

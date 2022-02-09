@@ -250,13 +250,8 @@ namespace System.Drawing
             GC.SuppressFinalize(this);
         }
 
-        public void DrawBeziers(Pen pen, Point[] points)
+        public void DrawBeziers(Pen pen!!, Point[] points!!)
         {
-            if (pen == null)
-                throw new ArgumentNullException(nameof(pen));
-            if (points == null)
-                throw new ArgumentNullException(nameof(points));
-
             int length = points.Length;
             int status;
 
@@ -278,13 +273,8 @@ namespace System.Drawing
             }
         }
 
-        public void DrawBeziers(Pen pen, PointF[] points)
+        public void DrawBeziers(Pen pen!!, PointF[] points!!)
         {
-            if (pen == null)
-                throw new ArgumentNullException(nameof(pen));
-            if (points == null)
-                throw new ArgumentNullException(nameof(points));
-
             int length = points.Length;
             int status;
 
@@ -306,34 +296,23 @@ namespace System.Drawing
             }
         }
 
-        public void DrawIcon(Icon icon, Rectangle targetRect)
+        public void DrawIcon(Icon icon!!, Rectangle targetRect)
         {
-            if (icon == null)
-                throw new ArgumentNullException(nameof(icon));
-
             DrawImage(icon.GetInternalBitmap(), targetRect);
         }
 
-        public void DrawIcon(Icon icon, int x, int y)
+        public void DrawIcon(Icon icon!!, int x, int y)
         {
-            if (icon == null)
-                throw new ArgumentNullException(nameof(icon));
-
             DrawImage(icon.GetInternalBitmap(), x, y);
         }
 
-        public void DrawIconUnstretched(Icon icon, Rectangle targetRect)
+        public void DrawIconUnstretched(Icon icon!!, Rectangle targetRect)
         {
-            if (icon == null)
-                throw new ArgumentNullException(nameof(icon));
-
             DrawImageUnscaled(icon.GetInternalBitmap(), targetRect);
         }
 
-        public void DrawLine(Pen pen, float x1, float y1, float x2, float y2)
+        public void DrawLine(Pen pen!!, float x1, float y1, float x2, float y2)
         {
-            if (pen == null)
-                throw new ArgumentNullException(nameof(pen));
             if (!float.IsNaN(x1) && !float.IsNaN(y1) &&
                 !float.IsNaN(x2) && !float.IsNaN(y2))
             {
@@ -342,10 +321,8 @@ namespace System.Drawing
             }
         }
 
-        public void EndContainer(GraphicsContainer container)
+        public void EndContainer(GraphicsContainer container!!)
         {
-            if (container == null)
-                throw new ArgumentNullException(nameof(container));
             int status = Gdip.GdipEndContainer(new HandleRef(this, NativeGraphics), container.nativeGraphicsContainer);
             Gdip.CheckStatus(status);
         }
@@ -410,24 +387,14 @@ namespace System.Drawing
             throw new NotImplementedException();
         }
 
-        public void FillPath(Brush brush, GraphicsPath path)
+        public void FillPath(Brush brush!!, GraphicsPath path!!)
         {
-            if (brush == null)
-                throw new ArgumentNullException(nameof(brush));
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             int status = Gdip.GdipFillPath(NativeGraphics, brush.NativeBrush, path._nativePath);
             Gdip.CheckStatus(status);
         }
 
-        public void FillRegion(Brush brush, Region region)
+        public void FillRegion(Brush brush!!, Region region!!)
         {
-            if (brush == null)
-                throw new ArgumentNullException(nameof(brush));
-            if (region == null)
-                throw new ArgumentNullException(nameof(region));
-
             int status = (int)Gdip.GdipFillRegion(new HandleRef(this, NativeGraphics), new HandleRef(brush, brush.NativeBrush), new HandleRef(region, region.NativeRegion));
             Gdip.CheckStatus(status);
         }
@@ -494,16 +461,12 @@ namespace System.Drawing
             return FromHwnd(hwnd);
         }
 
-        public static Graphics FromImage(Image image)
+        public static Graphics FromImage(Image image!!)
         {
-            IntPtr graphics;
-
-            if (image == null)
-                throw new ArgumentNullException(nameof(image));
-
             if ((image.PixelFormat & PixelFormat.Indexed) != 0)
                 throw new ArgumentException(SR.CannotCreateGraphics, nameof(image));
 
+            IntPtr graphics;
             int status = Gdip.GdipGetImageGraphicsContext(image.nativeImage, out graphics);
             Gdip.CheckStatus(status);
             Graphics result = new Graphics(graphics, image);

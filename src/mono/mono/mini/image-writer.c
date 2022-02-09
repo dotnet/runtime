@@ -77,7 +77,7 @@
 #elif defined(TARGET_ASM_GAS) && defined(TARGET_WIN32)
 #define AS_INT16_DIRECTIVE ".word"
 #elif defined(TARGET_ASM_GAS)
-#define AS_INT16_DIRECTIVE ".hword"
+#define AS_INT16_DIRECTIVE ".short"
 #else
 #define AS_INT16_DIRECTIVE ".word"
 #endif

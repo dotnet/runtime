@@ -74,7 +74,7 @@ namespace System.Reflection.Emit
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;
-        private bool is_byreflike_set;
+        private int is_byreflike_set;
 
         private int state;
 #endregion
@@ -1534,7 +1534,7 @@ namespace System.Reflection.Emit
             }
             else if (attrname == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
             {
-                is_byreflike_set = true;
+                is_byreflike_set = 1;
             }
 
             if (cattrs != null)

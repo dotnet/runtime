@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class procfs
+    internal static partial class @procfs
     {
         /// <summary>
         /// Attempts to get status info for the specified process ID.

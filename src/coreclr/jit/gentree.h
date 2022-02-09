@@ -1286,6 +1286,11 @@ public:
         return OperIsPutArgStk() || OperIsPutArgReg() || OperIsPutArgSplit();
     }
 
+    bool OperIsFieldList() const
+    {
+        return OperIs(GT_FIELD_LIST);
+    }
+
     bool OperIsMultiRegOp() const
     {
 #if !defined(TARGET_64BIT)
@@ -3240,10 +3245,18 @@ struct GenTreeDblCon : public GenTree
 
 /* gtStrCon -- string  constant (GT_CNS_STR) */
 
+#define EMPTY_STRING_SCON (unsigned)-1
+
 struct GenTreeStrCon : public GenTree
 {
     unsigned              gtSconCPX;
     CORINFO_MODULE_HANDLE gtScpHnd;
+
+    // Returns true if this GT_CNS_STR was imported for String.Empty field
+    bool IsStringEmptyField()
+    {
+        return gtSconCPX == EMPTY_STRING_SCON && gtScpHnd == nullptr;
+    }
 
     // Because this node can come from an inlined method we need to
     // have the scope handle, since it will become a helper call.
@@ -3971,6 +3984,7 @@ enum class NonStandardArgKind : unsigned
     FixedRetBuffer,
     VirtualStubCell,
     R2RIndirectionCell,
+    ValidateIndirectCallTarget,
 
     // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate in fgArgInfo
 };
@@ -3978,6 +3992,12 @@ enum class NonStandardArgKind : unsigned
 #ifdef DEBUG
 const char* getNonStandardArgKindName(NonStandardArgKind kind);
 #endif
+
+enum class CFGCallKind
+{
+    ValidateAndCall,
+    Dispatch,
+};
 
 struct GenTreeCall final : public GenTree
 {
@@ -4679,6 +4699,42 @@ struct GenTreeCall final : public GenTree
 #endif
 
         return NonStandardArgKind::None;
+    }
+
+    CFGCallKind GetCFGCallKind()
+    {
+#if defined(TARGET_AMD64)
+        // On x64 the dispatcher is more performant, but we cannot use it when
+        // we need to pass indirection cells as those go into registers that
+        // are clobbered by the dispatch helper.
+        bool mayUseDispatcher    = GetIndirectionCellArgKind() == NonStandardArgKind::None;
+        bool shouldUseDispatcher = true;
+#elif defined(TARGET_AMD64)
+        bool mayUseDispatcher = true;
+        // Branch predictors on ARM64 generally do not handle the dispatcher as
+        // well as on x64 hardware, so only use the validator by default.
+        bool       shouldUseDispatcher = false;
+#else
+        // Other platforms do not even support the dispatcher.
+        bool mayUseDispatcher    = false;
+        bool shouldUseDispatcher = false;
+#endif
+
+#ifdef DEBUG
+        switch (JitConfig.JitCFGUseDispatcher())
+        {
+            case 0:
+                shouldUseDispatcher = false;
+                break;
+            case 1:
+                shouldUseDispatcher = true;
+                break;
+            default:
+                break;
+        }
+#endif
+
+        return mayUseDispatcher && shouldUseDispatcher ? CFGCallKind::Dispatch : CFGCallKind::ValidateAndCall;
     }
 
     void ResetArgInfo();
@@ -6420,7 +6476,6 @@ public:
         , m_lastILOffset(BAD_IL_OFFSET)
         , m_stmtID(stmtID)
 #endif
-        , m_compilerAdded(false)
     {
     }
 
@@ -6507,16 +6562,6 @@ public:
         m_prev = prevStmt;
     }
 
-    bool IsCompilerAdded() const
-    {
-        return m_compilerAdded;
-    }
-
-    void SetCompilerAdded()
-    {
-        m_compilerAdded = true;
-    }
-
     bool IsPhiDefnStmt() const
     {
         return m_rootNode->IsPhiDefn();
@@ -6553,8 +6598,6 @@ private:
     IL_OFFSET m_lastILOffset; // The instr offset at the end of this statement.
     unsigned  m_stmtID;
 #endif
-
-    bool m_compilerAdded; // Was the statement created by optimizer?
 };
 
 // StatementList: adapter class for forward iteration of the statement linked list using range-based `for`,

@@ -35,13 +35,8 @@ namespace System.Xml.Xsl.Xslt
 
         public int Add(CompilerError value) => List.Add(value);
 
-        public void AddRange(CompilerError[] value)
+        public void AddRange(CompilerError[] value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             for (int i = 0; i < value.Length; i++)
             {
                 this.Add(value[i]);

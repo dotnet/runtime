@@ -306,9 +306,6 @@ IF NOT "%CLRCustomTestLauncher%"=="" (
 ) ELSE (
   set LAUNCHER=%_DebuggerFullPath% $(CLRTestRunFile)
 )
-IF NOT "%RunNativeAot%"=="" (
-  set LAUNCHER=%_DebuggerFullPath%
-)
 
 $(BatchIlrtTestLaunchCmds)
 
@@ -320,11 +317,6 @@ ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 set CLRTestExitCode=!ERRORLEVEL!
 if defined RunCrossGen (
   call :ReleaseLock
-)
-if defined RunNativeAot (
-  if not defined CLRTestNoCleanup (
-    IF EXIST native rmdir /s /q native
-  )
 )
 $(BatchLinkerTestCleanupCmds)
       ]]></BatchCLRTestLaunchCmds>

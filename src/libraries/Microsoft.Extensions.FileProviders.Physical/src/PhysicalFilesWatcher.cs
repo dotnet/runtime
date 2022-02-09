@@ -131,13 +131,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <param name="filter">A globbing pattern for files and directories to watch</param>
         /// <returns>A change token for all files that match the filter</returns>
         /// <exception cref="ArgumentNullException">When <paramref name="filter" /> is null</exception>
-        public IChangeToken CreateFileChangeToken(string filter)
+        public IChangeToken CreateFileChangeToken(string filter!!)
         {
-            if (filter == null)
-            {
-                throw new ArgumentNullException(nameof(filter));
-            }
-
             filter = NormalizePath(filter);
 
             // Absolute paths and paths traversing above root not permitted.

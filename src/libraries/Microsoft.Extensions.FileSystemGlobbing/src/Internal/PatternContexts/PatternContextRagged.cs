@@ -9,9 +9,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
 {
     public abstract class PatternContextRagged : PatternContext<PatternContextRagged.FrameData>
     {
-        public PatternContextRagged(IRaggedPattern pattern)
+        public PatternContextRagged(IRaggedPattern pattern!!)
         {
-            Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
+            Pattern = pattern;
         }
 
         public override PatternTestResult Test(FileInfoBase file)

@@ -66,23 +66,13 @@ namespace System.Security.Principal
             }
         }
 
-        public void Add(IdentityReference identity)
+        public void Add(IdentityReference identity!!)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
-
             _identities.Add(identity);
         }
 
-        public bool Remove(IdentityReference identity)
+        public bool Remove(IdentityReference identity!!)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
-
             if (Contains(identity))
             {
                 return _identities.Remove(identity);
@@ -96,13 +86,8 @@ namespace System.Security.Principal
             _identities.Clear();
         }
 
-        public bool Contains(IdentityReference identity)
+        public bool Contains(IdentityReference identity!!)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
-
             return _identities.Contains(identity);
         }
 
@@ -154,13 +139,8 @@ namespace System.Security.Principal
             return Translate(targetType, false);
         }
 
-        public IdentityReferenceCollection Translate(Type targetType, bool forceSuccess)
+        public IdentityReferenceCollection Translate(Type targetType!!, bool forceSuccess)
         {
-            if (targetType == null)
-            {
-                throw new ArgumentNullException(nameof(targetType));
-            }
-
             //
             // Target type must be a subclass of IdentityReference
             //
@@ -394,12 +374,8 @@ namespace System.Security.Principal
 
         #region Constructors
 
-        internal IdentityReferenceEnumerator(IdentityReferenceCollection collection)
+        internal IdentityReferenceEnumerator(IdentityReferenceCollection collection!!)
         {
-            if (collection is null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
             _collection = collection;
             _current = -1;
         }

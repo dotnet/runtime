@@ -67,13 +67,8 @@ namespace System.Net.Http.Json
         public override int Read(byte[] buffer, int offset, int count)
             => throw new NotSupportedException();
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer!!, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));

@@ -361,10 +361,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_writestarted);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 Uri? hostUri;
                 if ((value.Contains('/')) || (!TryGetHostUri(value, out hostUri)))
@@ -1427,16 +1424,8 @@ namespace System.Net
             AddRange(rangeSpecifier, (long)from, (long)to);
         }
 
-        public void AddRange(string rangeSpecifier, long from, long to)
+        public void AddRange(string rangeSpecifier!!, long from, long to)
         {
-            //
-            // Do some range checking before assembling the header
-            //
-
-            if (rangeSpecifier == null)
-            {
-                throw new ArgumentNullException(nameof(rangeSpecifier));
-            }
             if ((from < 0) || (to < 0))
             {
                 throw new ArgumentOutOfRangeException(from < 0 ? nameof(from) : nameof(to), SR.net_rangetoosmall);
@@ -1460,12 +1449,8 @@ namespace System.Net
             AddRange(rangeSpecifier, (long)range);
         }
 
-        public void AddRange(string rangeSpecifier, long range)
+        public void AddRange(string rangeSpecifier!!, long range)
         {
-            if (rangeSpecifier == null)
-            {
-                throw new ArgumentNullException(nameof(rangeSpecifier));
-            }
             if (!HttpValidationHelpers.IsValidToken(rangeSpecifier))
             {
                 throw new ArgumentException(SR.net_nottoken, nameof(rangeSpecifier));

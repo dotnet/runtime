@@ -115,7 +115,12 @@ binary_protocol_open_file (gboolean assert_on_failure)
 #endif
 		} else {
 			/* We have acquired the lock. Truncate the file */
-			ftruncate (binary_protocol_file, 0);
+			int ret;
+			while ((ret = ftruncate (binary_protocol_file, 0)) < 0 && errno == EINTR);
+			if (ret < 0) {
+				binary_protocol_file = -1;
+				break;
+			}
 		}
 	} while (binary_protocol_file == -1);
 #else

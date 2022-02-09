@@ -94,10 +94,7 @@ namespace System.Runtime.Serialization.Json
             _indent = indent;
             if (indent)
             {
-                if (indentChars == null)
-                {
-                    throw new ArgumentNullException(nameof(indentChars));
-                }
+                ArgumentNullException.ThrowIfNull(indentChars);
                 _indentChars = indentChars;
             }
             InitializeWriter();
@@ -231,12 +228,8 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.Flush();
         }
 
-        public override string? LookupPrefix(string ns)
+        public override string? LookupPrefix(string ns!!)
         {
-            if (ns == null)
-            {
-                throw new ArgumentNullException(nameof(ns));
-            }
             if (ns == Globals.XmlnsNamespace)
             {
                 return Globals.XmlnsPrefix;
@@ -252,16 +245,8 @@ namespace System.Runtime.Serialization.Json
             return null;
         }
 
-        public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
+        public void SetOutput(Stream stream!!, Encoding encoding!!, bool ownsStream)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-            if (encoding == null)
-            {
-                throw new ArgumentNullException(nameof(encoding));
-            }
             if (encoding.WebName != Encoding.UTF8.WebName)
             {
                 stream = new JsonEncodingStreamWrapper(stream, encoding, false);
@@ -379,13 +364,8 @@ namespace System.Runtime.Serialization.Json
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteBase64(byte[] buffer, int index, int count)
+        public override void WriteBase64(byte[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
             if (index < 0)
             {
@@ -405,13 +385,8 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.WriteBase64Text(buffer, 0, buffer, index, count);
         }
 
-        public override void WriteBinHex(byte[] buffer, int index, int count)
+        public override void WriteBinHex(byte[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
             if (index < 0)
             {
@@ -441,13 +416,8 @@ namespace System.Runtime.Serialization.Json
             WriteString(ch.ToString());
         }
 
-        public override void WriteChars(char[] buffer, int index, int count)
+        public override void WriteChars(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
             if (index < 0)
             {
@@ -723,12 +693,8 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override void WriteQualifiedName(string localName, string? ns)
+        public override void WriteQualifiedName(string localName!!, string? ns)
         {
-            if (localName == null)
-            {
-                throw new ArgumentNullException(nameof(localName));
-            }
             if (localName.Length == 0)
             {
                 throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, nameof(localName));
@@ -746,13 +712,8 @@ namespace System.Runtime.Serialization.Json
             WriteString(data);
         }
 
-        public override void WriteRaw(char[] buffer, int index, int count)
+        public override void WriteRaw(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
             if (index < 0)
             {
@@ -814,10 +775,7 @@ namespace System.Runtime.Serialization.Json
                     throw new ArgumentException(SR.Format(SR.JsonNamespaceMustBeEmpty, ns), nameof(ns));
                 }
             }
-            if (localName == null)
-            {
-                throw new ArgumentNullException(nameof(localName));
-            }
+            ArgumentNullException.ThrowIfNull(localName);
             if (localName.Length == 0)
             {
                 throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, nameof(localName));
@@ -899,12 +857,8 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override void WriteStartElement(string? prefix, string localName, string? ns)
+        public override void WriteStartElement(string? prefix, string localName!!, string? ns)
         {
-            if (localName == null)
-            {
-                throw new ArgumentNullException(nameof(localName));
-            }
             if (localName.Length == 0)
             {
                 throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, nameof(localName));
@@ -1096,27 +1050,17 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.WriteTimeSpanText(value);
         }
 
-        public override void WriteValue(UniqueId value)
+        public override void WriteValue(UniqueId value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             StartText();
             _nodeWriter.WriteUniqueIdText(value);
         }
 
-        public override void WriteValue(object value)
+        public override void WriteValue(object value!!)
         {
             if (IsClosed)
             {
                 ThrowClosed();
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
             }
 
             if (value is Array)
@@ -1139,10 +1083,7 @@ namespace System.Runtime.Serialization.Json
             {
                 ThrowClosed();
             }
-            if (ws == null)
-            {
-                throw new ArgumentNullException(nameof(ws));
-            }
+            ArgumentNullException.ThrowIfNull(ws);
 
             for (int i = 0; i < ws.Length; ++i)
             {
@@ -1461,16 +1402,11 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.WriteText(JsonGlobals.QuoteChar);
         }
 
-        private void WritePrimitiveValue(object value)
+        private void WritePrimitiveValue(object value!!)
         {
             if (IsClosed)
             {
                 ThrowClosed();
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
             }
 
             if (value is ulong)

@@ -320,7 +320,7 @@ namespace System
         /// This function will either return a valid TimeZoneInfo instance or
         /// it will throw 'InvalidTimeZoneException' / 'TimeZoneNotFoundException'.
         /// </summary>
-        public static TimeZoneInfo FindSystemTimeZoneById(string id)
+        public static TimeZoneInfo FindSystemTimeZoneById(string id!!)
         {
             // Special case for Utc to avoid having TryGetTimeZone creating a new Utc object
             if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
@@ -328,10 +328,6 @@ namespace System
                 return Utc;
             }
 
-            if (id == null)
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
             if (id.Length == 0 || id.Length > MaxKeyLength || id.Contains('\0'))
             {
                 throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));

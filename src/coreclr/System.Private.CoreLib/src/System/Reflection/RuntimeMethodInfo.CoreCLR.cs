@@ -205,22 +205,16 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!, inherit);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
 
-        public override bool IsDefined(Type attributeType, bool inherit)
+        public override bool IsDefined(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -417,12 +411,9 @@ namespace System.Reflection
                 DelegateBindingFlags.RelaxedSignature);
         }
 
-        private Delegate CreateDelegateInternal(Type delegateType, object? firstArgument, DelegateBindingFlags bindingFlags)
+        private Delegate CreateDelegateInternal(Type delegateType!!, object? firstArgument, DelegateBindingFlags bindingFlags)
         {
             // Validate the parameters.
-            if (delegateType == null)
-                throw new ArgumentNullException(nameof(delegateType));
-
             RuntimeType? rtType = delegateType as RuntimeType;
             if (rtType == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
@@ -443,11 +434,8 @@ namespace System.Reflection
 
         #region Generics
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public override MethodInfo MakeGenericMethod(params Type[] methodInstantiation)
+        public override MethodInfo MakeGenericMethod(params Type[] methodInstantiation!!)
         {
-            if (methodInstantiation == null)
-                throw new ArgumentNullException(nameof(methodInstantiation));
-
             RuntimeType[] methodInstantionRuntimeType = new RuntimeType[methodInstantiation.Length];
 
             if (!IsGenericMethodDefinition)
@@ -457,9 +445,7 @@ namespace System.Reflection
             for (int i = 0; i < methodInstantiation.Length; i++)
             {
                 Type methodInstantiationElem = methodInstantiation[i];
-
-                if (methodInstantiationElem == null)
-                    throw new ArgumentNullException();
+                ArgumentNullException.ThrowIfNull(methodInstantiationElem, null);
 
                 RuntimeType? rtMethodInstantiationElem = methodInstantiationElem as RuntimeType;
 

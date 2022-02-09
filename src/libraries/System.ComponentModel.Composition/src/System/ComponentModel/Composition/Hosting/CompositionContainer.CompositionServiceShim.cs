@@ -11,12 +11,8 @@ namespace System.ComponentModel.Composition.Hosting
         {
             private readonly CompositionContainer _innerContainer;
 
-            public CompositionServiceShim(CompositionContainer innerContainer)
+            public CompositionServiceShim(CompositionContainer innerContainer!!)
             {
-                if (innerContainer == null)
-                {
-                    throw new ArgumentNullException(nameof(innerContainer));
-                }
                 _innerContainer = innerContainer;
             }
 

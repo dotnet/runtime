@@ -1338,7 +1338,10 @@ public:
     CheckLclVarSemanticsHelper(Compiler*         compiler,
                                const LIR::Range* range,
                                SmallHashTable<GenTree*, bool, 32U>& unusedDefs)
-        : compiler(compiler), range(range), unusedDefs(unusedDefs), unusedLclVarReads(compiler->getAllocator())
+        : compiler(compiler)
+        , range(range)
+        , unusedDefs(unusedDefs)
+        , unusedLclVarReads(compiler->getAllocator(CMK_DebugOnly))
     {
     }
 
@@ -1358,13 +1361,45 @@ public:
             AliasSet::NodeInfo nodeInfo(compiler, node);
             if (nodeInfo.IsLclVarRead() && !unusedDefs.Contains(node))
             {
-                int count = 0;
-                unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &count);
-                unusedLclVarReads.AddOrUpdate(nodeInfo.LclNum(), count + 1);
+                jitstd::list<GenTree*>* reads;
+                if (!unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
+                {
+                    reads = new (compiler, CMK_DebugOnly) jitstd::list<GenTree*>(compiler->getAllocator(CMK_DebugOnly));
+                    unusedLclVarReads.AddOrUpdate(nodeInfo.LclNum(), reads);
+                }
+
+                reads->push_back(node);
             }
 
-            // If this node is a lclVar write, it must be to a lclVar that does not have an outstanding read.
-            assert(!nodeInfo.IsLclVarWrite() || !unusedLclVarReads.Contains(nodeInfo.LclNum()));
+            if (nodeInfo.IsLclVarWrite())
+            {
+                // If this node is a lclVar write, it must be not alias a lclVar with an outstanding read
+                jitstd::list<GenTree*>* reads;
+                if (unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
+                {
+                    for (GenTree* read : *reads)
+                    {
+                        AliasSet::NodeInfo readInfo(compiler, read);
+                        assert(readInfo.IsLclVarRead() && readInfo.LclNum() == nodeInfo.LclNum());
+                        unsigned readStart  = readInfo.LclOffs();
+                        unsigned readEnd    = readStart + genTypeSize(read->TypeGet());
+                        unsigned writeStart = nodeInfo.LclOffs();
+                        unsigned writeEnd   = writeStart + genTypeSize(node->TypeGet());
+                        if ((readEnd > writeStart) && (writeEnd > readStart))
+                        {
+                            JITDUMP(
+                                "Write to unaliased local overlaps outstanding read (write: %u..%u, read: %u..%u)\n",
+                                writeStart, writeEnd, readStart, readEnd);
+                            JITDUMP("Read:\n");
+                            DISPTREERANGE(const_cast<LIR::Range&>(*range), read);
+                            JITDUMP("Write:\n");
+                            DISPTREERANGE(const_cast<LIR::Range&>(*range), node);
+                            assert(!"Write to unaliased local overlaps outstanding read");
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         return true;
@@ -1393,14 +1428,22 @@ private:
             AliasSet::NodeInfo operandInfo(compiler, operand);
             if (operandInfo.IsLclVarRead())
             {
-                int        count;
-                const bool removed = unusedLclVarReads.TryRemove(operandInfo.LclNum(), &count);
-                assert(removed);
+                jitstd::list<GenTree*>* reads;
+                const bool              foundList = unusedLclVarReads.TryGetValue(operandInfo.LclNum(), &reads);
+                assert(foundList);
 
-                if (count > 1)
+                bool found = false;
+                for (jitstd::list<GenTree*>::iterator it = reads->begin(); it != reads->end(); ++it)
                 {
-                    unusedLclVarReads.AddOrUpdate(operandInfo.LclNum(), count - 1);
+                    if (*it == operand)
+                    {
+                        reads->erase(it);
+                        found = true;
+                        break;
+                    }
                 }
+
+                assert(found || !"Could not find consumed local in unusedLclVarReads");
             }
         }
     }
@@ -1408,8 +1451,8 @@ private:
 private:
     Compiler*         compiler;
     const LIR::Range* range;
-    SmallHashTable<GenTree*, bool, 32U>& unusedDefs;
-    SmallHashTable<int, int, 32U>        unusedLclVarReads;
+    SmallHashTable<GenTree*, bool, 32U>&              unusedDefs;
+    SmallHashTable<int, jitstd::list<GenTree*>*, 16U> unusedLclVarReads;
 };
 
 //------------------------------------------------------------------------

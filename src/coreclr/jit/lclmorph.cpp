@@ -442,14 +442,15 @@ public:
 #endif // DEBUG
     }
 
-    // Morph promoted struct fields and count implicit byref argument occurrences.
+    // Morph promoted struct fields and count local occurrences.
+    //
     // Also create and push the value produced by the visited node. This is done here
     // rather than in PostOrderVisit because it makes it easy to handle nodes with an
     // arbitrary number of operands - just pop values until the value corresponding
     // to the visited node is encountered.
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
-        GenTree* node = *use;
+        GenTree* const node = *use;
 
         if (node->OperIs(GT_FIELD))
         {
@@ -462,19 +463,29 @@ public:
 
         if (node->OperIsLocal())
         {
-            unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
+            unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
 
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+            UpdateEarlyRefCount(lclNum);
+
             if (varDsc->lvIsStructField)
             {
-                // Promoted field, increase counter for the parent lclVar.
+                // Promoted field, increase count for the parent lclVar.
+                //
                 assert(!m_compiler->lvaIsImplicitByRefLocal(lclNum));
                 unsigned parentLclNum = varDsc->lvParentLcl;
-                UpdateEarlyRefCountForImplicitByRef(parentLclNum);
+                UpdateEarlyRefCount(parentLclNum);
             }
-            else
+
+            if (varDsc->lvPromoted)
             {
-                UpdateEarlyRefCountForImplicitByRef(lclNum);
+                // Promoted struct, increase count for each promoted field.
+                //
+                for (unsigned childLclNum = varDsc->lvFieldLclStart;
+                     childLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++childLclNum)
+                {
+                    UpdateEarlyRefCount(childLclNum);
+                }
             }
         }
 
@@ -1162,7 +1173,7 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // UpdateEarlyRefCountForImplicitByRef: updates the ref count for implicit byref params.
+    // UpdateEarlyRefCount: updates the ref count for locals
     //
     // Arguments:
     //    lclNum - the local number to update the count for.
@@ -1171,18 +1182,23 @@ private:
     //    fgMakeOutgoingStructArgCopy checks the ref counts for implicit byref params when it decides
     //    if it's legal to elide certain copies of them;
     //    fgRetypeImplicitByRefArgs checks the ref counts when it decides to undo promotions.
+    //    fgForwardSub uses ref counts to decide when to forward sub.
     //
-    void UpdateEarlyRefCountForImplicitByRef(unsigned lclNum)
+    void UpdateEarlyRefCount(unsigned lclNum)
     {
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+
+        // Note we don't need accurate counts when the values are large.
+        //
+        if (varDsc->lvRefCnt(RCS_EARLY) < USHRT_MAX)
+        {
+            varDsc->incLvRefCnt(1, RCS_EARLY);
+        }
+
         if (!m_compiler->lvaIsImplicitByRefLocal(lclNum))
         {
             return;
         }
-
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-        JITDUMP("LocalAddressVisitor incrementing ref count from %d to %d for implicit by-ref V%02d\n",
-                varDsc->lvRefCnt(RCS_EARLY), varDsc->lvRefCnt(RCS_EARLY) + 1, lclNum);
-        varDsc->incLvRefCnt(1, RCS_EARLY);
 
         // See if this struct is an argument to a call. This information is recorded
         // via the weighted early ref count for the local, and feeds the undo promotion

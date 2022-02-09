@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
+using System.Collections.Generic;
 
 namespace System.ComponentModel.Design.Serialization
 {
@@ -23,7 +23,7 @@ namespace System.ComponentModel.Design.Serialization
     /// </summary>
     public sealed class ContextStack
     {
-        private ArrayList? _contextStack;
+        private List<object>? _contextStack;
 
         /// <summary>
         /// Retrieves the current object on the stack, or null
@@ -66,15 +66,10 @@ namespace System.ComponentModel.Design.Serialization
         /// inherits from or implements the given type, or
         /// null if no object on the stack implements the type.
         /// </summary>
-        public object? this[Type type]
+        public object? this[Type type!!]
         {
             get
             {
-                if (type == null)
-                {
-                    throw new ArgumentNullException(nameof(type));
-                }
-
                 if (_contextStack != null)
                 {
                     int level = _contextStack.Count;
@@ -99,16 +94,11 @@ namespace System.ComponentModel.Design.Serialization
         /// be popped in order. There is no way to remove an object that was
         /// appended to the end of the stack without popping all other objects.
         /// </summary>
-        public void Append(object context)
+        public void Append(object context!!)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             if (_contextStack == null)
             {
-                _contextStack = new ArrayList();
+                _contextStack = new List<object>();
             }
             _contextStack.Insert(0, context);
         }
@@ -134,16 +124,11 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Pushes the given object onto the stack.
         /// </summary>
-        public void Push(object context)
+        public void Push(object context!!)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             if (_contextStack == null)
             {
-                _contextStack = new ArrayList();
+                _contextStack = new List<object>();
             }
             _contextStack.Add(context);
         }
