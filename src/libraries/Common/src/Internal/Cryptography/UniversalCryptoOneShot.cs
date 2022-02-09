@@ -19,27 +19,46 @@ namespace Internal.Cryptography
             if (input.Length % cipher.PaddingSizeInBytes != 0)
                 throw new CryptographicException(SR.Cryptography_PartialBlock);
 
-            // If there is no padding that needs to be removed, and the output buffer is large enough to hold
-            // the resulting plaintext, we can decrypt directly in to the output buffer.
-            // We do not do this for modes that require padding removal.
-            //
-            // This is not done for padded ciphertexts because we don't know if the padding is valid
-            // until it's been decrypted. We don't want to decrypt in to a user-supplied buffer and then throw
-            // a padding exception after we've already filled the user buffer with plaintext. We should only
-            // release the plaintext to the caller once we know the padding is valid.
-            if (!SymmetricPadding.DepaddingRequired(paddingMode))
+            // The internal implementation of the one-shots are never expected to grow decrypt
+            // to a plaintext larger than the ciphertext. If the buffer supplied is large enough
+            // to do the transform, use it directly.
+            // This does mean that the TransformFinal will write more than what is reported in
+            // bytesWritten when padding needs to be removed. The padding is "removed" simply
+            // by reporting less of the amount written.
+            if (output.Length >= input.Length)
             {
-                if (output.Length >= input.Length)
+                int bytesTransformed = cipher.TransformFinal(input, output);
+                Span<byte> transformBuffer = output.Slice(0, bytesTransformed);
+
+                try
                 {
-                    bytesWritten = cipher.TransformFinal(input, output);
+                    // validates padding
+                    // This intentionally passes in BlockSizeInBytes instead of PaddingSizeInBytes. This is so that
+                    // "extra padded" CFB data can still be decrypted. The .NET Framework always padded CFB8 to the
+                    // block size, not the feedback size. We want the one-shot to be able to continue to decrypt
+                    // those ciphertexts, so for CFB8 we are more lenient on the number of allowed padding bytes.
+                    bytesWritten = SymmetricPadding.GetPaddingLength(transformBuffer, paddingMode, cipher.BlockSizeInBytes);
                     return true;
                 }
+                catch (CryptographicException)
+                {
+                    // The padding is invalid, but don't leave the plaintext in the buffer.
+                    CryptographicOperations.ZeroMemory(transformBuffer);
+                    throw;
+                }
+            }
 
-                // If no padding is going to be removed, we know the buffer is too small and we can bail out.
+            // If no padding is going to removed, then we already know the buffer is too small
+            // since that requires a buffer at-least the size of the ciphertext. Bail out early.
+            if (!SymmetricPadding.DepaddingRequired(paddingMode))
+            {
                 bytesWritten = 0;
                 return false;
             }
 
+            // At this point the output is smaller than the input, but after padding removal
+            // it might fit in the output. Decrypt in to a temporary buffer and copy it if
+            // after padding removal it would fit.
             byte[] rentedBuffer = CryptoPool.Rent(input.Length);
             Span<byte> buffer = rentedBuffer.AsSpan(0, input.Length);
             Span<byte> decryptedBuffer = default;
@@ -51,10 +70,6 @@ namespace Internal.Cryptography
                     int transformWritten = cipher.TransformFinal(input, buffer);
                     decryptedBuffer = buffer.Slice(0, transformWritten);
 
-                    // This intentionally passes in BlockSizeInBytes instead of PaddingSizeInBytes. This is so that
-                    // "extra padded" CFB data can still be decrypted. The .NET Framework always padded CFB8 to the
-                    // block size, not the feedback size. We want the one-shot to be able to continue to decrypt
-                    // those ciphertexts, so for CFB8 we are more lenient on the number of allowed padding bytes.
                     int unpaddedLength = SymmetricPadding.GetPaddingLength(decryptedBuffer, paddingMode, cipher.BlockSizeInBytes); // validates padding
 
                     if (unpaddedLength > output.Length)
