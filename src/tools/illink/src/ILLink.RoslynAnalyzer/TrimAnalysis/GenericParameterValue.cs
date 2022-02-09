@@ -14,19 +14,19 @@ namespace ILLink.Shared.TrimAnalysis
 	/// </summary>
 	partial record GenericParameterValue
 	{
-		public GenericParameterValue (ITypeParameterSymbol typeParameterSymbol)
-			=> TypeParameterSymbol = typeParameterSymbol;
+		public GenericParameterValue (ITypeParameterSymbol typeParameterSymbol) => GenericParameter = new (typeParameterSymbol);
 
-		public readonly ITypeParameterSymbol TypeParameterSymbol;
+		public partial bool HasDefaultConstructorConstraint () =>
+			GenericParameter.TypeParameterSymbol.HasConstructorConstraint |
+			GenericParameter.TypeParameterSymbol.HasValueTypeConstraint |
+			GenericParameter.TypeParameterSymbol.HasUnmanagedTypeConstraint;
 
-		public partial bool HasDefaultConstructorConstraint () => TypeParameterSymbol.HasConstructorConstraint | TypeParameterSymbol.HasValueTypeConstraint | TypeParameterSymbol.HasUnmanagedTypeConstraint;
-
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes => TypeParameterSymbol.GetDynamicallyAccessedMemberTypes ();
+		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes => GenericParameter.TypeParameterSymbol.GetDynamicallyAccessedMemberTypes ();
 
 		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { TypeParameterSymbol.Name, TypeParameterSymbol.ContainingSymbol.GetDisplayName () };
+			=> new string[] { GenericParameter.TypeParameterSymbol.Name, GenericParameter.TypeParameterSymbol.ContainingSymbol.GetDisplayName () };
 
 		public override string ToString ()
-			=> this.ValueToString (TypeParameterSymbol, DynamicallyAccessedMemberTypes);
+			=> this.ValueToString (GenericParameter.TypeParameterSymbol, DynamicallyAccessedMemberTypes);
 	}
 }

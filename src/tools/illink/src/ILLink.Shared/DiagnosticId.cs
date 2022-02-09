@@ -115,6 +115,8 @@ namespace ILLink.Shared
 		UnrecognizedTypeInRuntimeHelpersRunClassConstructor = 2059,
 		MakeGenericMethod = 2060,
 		UnresolvedAssemblyInCreateInstance = 2061,
+
+		// Unknown value used in a place which requires annotation
 		MethodParameterCannotBeStaticallyDetermined = 2062,
 		MethodReturnValueCannotBeStaticallyDetermined = 2063,
 		FieldValueCannotBeStaticallyDetermined = 2064,

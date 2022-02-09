@@ -1,10 +1,9 @@
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Reflection.Metadata;
+using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
@@ -33,7 +32,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		// |                         |                      |                                            | ILLink.RoslynAnalyzer.Tests.Interop     |
 		public readonly Dictionary<string, HashSet<string>> Suites = new ();
 
-		public void Add (string suiteName, string name) 
+		public void Add (string suiteName, string name)
 		{
 			if (!Suites.TryGetValue (suiteName, out var testCases)) {
 				testCases = new HashSet<string> ();
@@ -48,7 +47,8 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		public const string TestNamespace = "ILLink.RoslynAnalyzer.Tests";
 
-		public static string GenerateClassHeader (string suiteName, bool newTestSuite) {
+		public static string GenerateClassHeader (string suiteName, bool newTestSuite)
+		{
 			int idx = suiteName.LastIndexOf ('.');
 			// Test suite class from innermost namespace part
 			var suiteClassName = suiteName.Substring (idx + 1);
@@ -72,7 +72,8 @@ namespace {TestNamespace}{suiteNamespacePart}
 			return header;
 		}
 
-		public static string GenerateFact (string testCase) {
+		public static string GenerateFact (string testCase)
+		{
 			return $@"
 		[Fact]
 		public Task {testCase} ()
@@ -82,7 +83,8 @@ namespace {TestNamespace}{suiteNamespacePart}
 ";
 		}
 
-		public static string GenerateClassFooter () {
+		public static string GenerateClassFooter ()
+		{
 			return $@"
 	}}
 }}";
@@ -186,7 +188,7 @@ namespace {TestNamespace}{suiteNamespacePart}
 			if (context.SemanticModel.GetDeclaredSymbol (classSyntax) is not INamedTypeSymbol typeSymbol)
 				return;
 
-			var displayFormat = new SymbolDisplayFormat(
+			var displayFormat = new SymbolDisplayFormat (
 				typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
 			string typeFullName = typeSymbol.ToDisplayString (displayFormat);
 

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Linq;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -84,15 +85,21 @@ namespace ILLink.RoslynAnalyzer
 				incompatibleMembers.AddRange (methodInfoType.GetMembers ("MakeGenericMethod").OfType<IMethodSymbol> ());
 			}
 
+			var expressionCallType = compilation.GetTypeByMetadataName ("System.Linq.Expressions.Expression");
+			if (expressionCallType != null) {
+				incompatibleMembers.AddRange (expressionCallType.GetMembers ("Call").OfType<IMethodSymbol> ()
+					.Where (m => m.Parameters.Length == 4 && m.Parameters[0] is IParameterSymbol parameterSymbol
+					&& parameterSymbol.Type?.ContainingNamespace?.Name == "System" && parameterSymbol.Type?.Name == "Type"));
+			}
+
 			return incompatibleMembers.ToImmutable ();
 		}
 
 		protected override bool ReportSpecialIncompatibleMembersDiagnostic (OperationAnalysisContext operationContext, ImmutableArray<ISymbol> specialIncompatibleMembers, ISymbol member)
 		{
-			if (member is IMethodSymbol method && ImmutableArrayOperations.Contains (specialIncompatibleMembers, member, SymbolEqualityComparer.Default) &&
-				(method.Name == "MakeGenericMethod" || method.Name == "MakeGenericType")) {
-				// These two RUC-annotated APIs are intrinsically handled by the trimmer, which will not produce any
-				// RUC warning related to them. For unrecognized reflection patterns realted to generic type/method
+			if (member is IMethodSymbol && ImmutableArrayOperations.Contains (specialIncompatibleMembers, member, SymbolEqualityComparer.Default)) {
+				// These RUC-annotated APIs are intrinsically handled by the trimmer, which will not produce any
+				// RUC warning related to them. For unrecognized reflection patterns related to generic type/method
 				// creation IL2055/IL2060 should be used instead.
 				return true;
 			}
