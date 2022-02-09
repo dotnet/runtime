@@ -257,7 +257,7 @@ class Runtime_34587
                 succeeded &= Vector.IsHardwareAccelerated;
                 succeeded &= Vector<byte>.Count == 16;
             }
-            else
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
                 succeeded &= !Vector.IsHardwareAccelerated;
                 succeeded &= Vector<byte>.Count == 16;
@@ -275,7 +275,7 @@ class Runtime_34587
                 succeeded &= Vector64.IsHardwareAccelerated;
                 succeeded &= Vector64<byte>.Count == 8;
             }
-            else
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
                 succeeded &= !Vector64.IsHardwareAccelerated;
                 succeeded &= Vector64<byte>.Count == 8;
@@ -293,7 +293,7 @@ class Runtime_34587
                 succeeded &= Vector128.IsHardwareAccelerated;
                 succeeded &= Vector128<byte>.Count == 16;
             }
-            else
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
                 succeeded &= !Vector128.IsHardwareAccelerated;
                 succeeded &= Vector128<byte>.Count == 16;
@@ -306,8 +306,11 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            succeeded &= !Vector256.IsHardwareAccelerated;
-            succeeded &= Vector256<byte>.Count == 32;
+            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+            {
+                succeeded &= !Vector256.IsHardwareAccelerated;
+                succeeded &= Vector256<byte>.Count == 32;
+            }
 
             return succeeded;
         }
@@ -642,7 +645,7 @@ class Runtime_34587
                 succeeded &= Vector.IsHardwareAccelerated;
                 succeeded &= Vector<byte>.Count == 16;
             }
-            else
+            else if ((RuntimeInformation.ProcessArchitecture == Architecture.X86) || (RuntimeInformation.ProcessArchitecture == Architecture.X64))
             {
                 succeeded &= !Vector.IsHardwareAccelerated;
                 succeeded &= Vector<byte>.Count == 16;
@@ -655,8 +658,11 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            succeeded &= !Vector64.IsHardwareAccelerated;
-            succeeded &= Vector64<byte>.Count == 8;
+            if ((RuntimeInformation.ProcessArchitecture == Architecture.X86) || (RuntimeInformation.ProcessArchitecture == Architecture.X64))
+            {
+                succeeded &= !Vector64.IsHardwareAccelerated;
+                succeeded &= Vector64<byte>.Count == 8;
+            }
 
             return succeeded;
         }
@@ -683,7 +689,7 @@ class Runtime_34587
                 succeeded &= Vector256.IsHardwareAccelerated;
                 succeeded &= Vector256<byte>.Count == 32;
             }
-            else
+            else if ((RuntimeInformation.ProcessArchitecture == Architecture.X86) || (RuntimeInformation.ProcessArchitecture == Architecture.X64))
             {
                 succeeded &= !Vector256.IsHardwareAccelerated;
                 succeeded &= Vector256<byte>.Count == 32;
