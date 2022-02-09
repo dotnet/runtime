@@ -352,45 +352,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     }
 #endif // FEATURE_TYPEEQUIVALENCE
 
-    if (pOldMT->IsInterface() && IsImplicitInterfaceOfSZArray(pOldMT))
-    {
-        // Determine if we are creating an interface methodtable that may be used to dispatch through VSD
-        // on an array object using a generic interface (such as IList<T>).
-        // Please read comments in IsArray block of code:MethodTable::FindDispatchImpl.
-        //
-        // Arrays are special because we use the same method table (object[]) for all arrays of reference
-        // classes (eg string[]). This means that the method table for an array is not a complete description of
-        // the type of the array and thus the target of if something list IList<T>::IndexOf can not be determined
-        // simply by looking at the method table of T[] (which might be the method table of object[], if T is a
-        // reference type).
-        //
-        // This is done to minimize MethodTables, but as a side-effect of this optimization,
-        // we end up using a domain-shared type (object[]) with a domain-specific dispatch token.
-        // This is a problem because the same domain-specific dispatch token value can appear in
-        // multiple unshared domains (VSD takes advantage of the fact that in general a shared type
-        // cannot implement an unshared interface). This means that the same <token, object[]> pair
-        // value can mean different things in different domains (since the token could represent
-        // IList<Foo> in one domain and IEnumerable<Bar> in another). This is a problem because the
-        // VSD polymorphic lookup mechanism relies on a process-wide cache table, and as a result
-        // these duplicate values would collide if we didn't use fat dispatch token to ensure uniqueness
-        // and the interface methodtable is not in the shared domain.
-        //
-        // Of note: there is also some interesting array-specific behaviour where if B inherits from A
-        // and you have an array of B (B[]) then B[] implements IList<B> and IList<A>, but a dispatch
-        // on an IList<A> reference results in a dispatch to SZArrayHelper<A> rather than
-        // SZArrayHelper<B> (i.e., the variance implemention is not done like virtual methods).
-        //
-        // For example If Sub inherits from Super inherits from Object, then
-        //     * Sub[] implements IList<Super>
-        //     * Sub[] implements IList<Sub>
-        //
-        // And as a result we have the following mappings:
-        //     * IList<Super>::IndexOf for Sub[] goes to SZArrayHelper<Super>::IndexOf
-        //     * IList<Sub>::IndexOf for Sub[] goes to SZArrayHelper<Sub>::IndexOf
-        //
-        pMT->SetRequiresFatDispatchTokens();
-    }
-
     // Number of slots only includes vtable slots
     pMT->SetNumVirtuals(cSlots);
 

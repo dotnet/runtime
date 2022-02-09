@@ -155,7 +155,7 @@ private:
     // IMPORTANT: This is the ONLY member of this class.
     UINT_PTR     m_token;
 
-#ifndef HOST_64BIT
+#ifndef TARGET_64BIT
     // NOTE: On 32-bit, we use the uppermost bit to indicate that the
     // token is really a DispatchTokenFat*, and to recover the pointer
     // we just shift left by 1; correspondingly, when storing a
@@ -171,19 +171,21 @@ private:
 #endif // FAT_DISPATCH_TOKENS
 
     static const UINT_PTR INVALID_TOKEN      = 0x7FFFFFFF;
-#else //HOST_64BIT
-    static const UINT_PTR MASK_TYPE_ID       = UI64(0x000000007FFFFFFF);
+#else //TARGET_64BIT
     static const UINT_PTR MASK_SLOT_NUMBER   = UI64(0x000000000000FFFF);
 
     static const UINT_PTR SHIFT_TYPE_ID      = 0x20;
     static const UINT_PTR SHIFT_SLOT_NUMBER  = 0x0;
 
 #ifdef FAT_DISPATCH_TOKENS
+    static const UINT_PTR MASK_TYPE_ID       = UI64(0x000000007FFFFFFF);
     static const UINT_PTR FAT_TOKEN_FLAG     = UI64(0x8000000000000000);
+#else
+    static const UINT_PTR MASK_TYPE_ID       = UI64(0x00000000FFFFFFFF);
 #endif // FAT_DISPATCH_TOKENS
 
     static const UINT_PTR INVALID_TOKEN      = 0x7FFFFFFFFFFFFFFF;
-#endif //HOST_64BIT
+#endif //TARGET_64BIT
 
 #ifdef FAT_DISPATCH_TOKENS
     //------------------------------------------------------------------------
@@ -241,7 +243,7 @@ private:
 public:
 
 #ifdef FAT_DISPATCH_TOKENS
-#if !defined(HOST_64BIT)
+#if !defined(TARGET_64BIT)
     static const UINT32   MAX_TYPE_ID_SMALL  = 0x00007FFF;
 #else
     static const UINT32   MAX_TYPE_ID_SMALL  = 0x7FFFFFFF;
@@ -370,8 +372,9 @@ class TypeIDProvider
 {
 protected:
     UINT32 m_nextID;
-    UINT32 m_incSize;
+#ifdef FAT_DISPATCH_TOKENS
     UINT32 m_nextFatID;
+#endif
 
 public:
     // This is used for an invalid type ID.
@@ -383,25 +386,11 @@ public:
     //------------------------------------------------------------------------
     // Ctor
     TypeIDProvider()
-        : m_nextID(0), m_incSize(0), m_nextFatID(0)
+        : m_nextID(2)
+#ifdef FAT_DISPATCH_TOKENS
+        , m_nextFatID(DispatchToken::MAX_TYPE_ID_SMALL + 1)
+#endif
     { LIMITED_METHOD_CONTRACT; }
-
-
-    //------------------------------------------------------------------------
-    void Init(UINT32 idStartValue, UINT32 idIncrementValue)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_nextID = idStartValue;
-        m_incSize = idIncrementValue;
-        m_nextFatID = DispatchToken::MAX_TYPE_ID_SMALL + 1;
-        if (m_incSize != 0)
-        {
-            while (!OwnsID(m_nextFatID))
-            {
-                m_nextFatID++;
-            }
-        }
-    }
 
     //------------------------------------------------------------------------
     // Returns the next available ID
@@ -413,16 +402,17 @@ public:
             MODE_ANY;
             INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(m_nextID != 0);
-            PRECONDITION(m_incSize != 0);
         } CONTRACTL_END;
         UINT32 id = m_nextID;
 
+#ifdef FAT_DISPATCH_TOKENS
         if (id > DispatchToken::MAX_TYPE_ID_SMALL)
         {
             return GetNextFatID();
         }
+#endif // FAT_DISPATCH_TOKENS
 
-        if (!ClrSafeInt<UINT32>::addition(m_nextID, m_incSize, m_nextID) ||
+        if (!ClrSafeInt<UINT32>::addition(m_nextID, 1, m_nextID) ||
             m_nextID == INVALID_TYPE_ID)
         {
             ThrowOutOfMemory();
@@ -430,6 +420,7 @@ public:
         return id;
     }
 
+#ifdef FAT_DISPATCH_TOKENS
     //------------------------------------------------------------------------
     // Returns the next available ID
     inline UINT32 GetNextFatID()
@@ -440,23 +431,16 @@ public:
             MODE_ANY;
             INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(m_nextFatID != 0);
-            PRECONDITION(m_incSize != 0);
         } CONTRACTL_END;
         UINT32 id = m_nextFatID;
-        if (!ClrSafeInt<UINT32>::addition(m_nextFatID, m_incSize, m_nextFatID) ||
+        if (!ClrSafeInt<UINT32>::addition(m_nextFatID, 1, m_nextFatID) ||
             m_nextID == INVALID_TYPE_ID)
         {
             ThrowOutOfMemory();
         }
         return id;
     }
-
-    //------------------------------------------------------------------------
-    inline BOOL OwnsID(UINT32 id)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((id % m_incSize) == (m_nextID % m_incSize));
-    }
+#endif // FAT_DISPATCH_TOKENS
 };  // class TypeIDProvider
 
 // ===========================================================================
@@ -480,27 +464,9 @@ protected:
         return id;
     }
 
-    //------------------------------------------------------------------------
-    // Returns the next available FAT ID
-    inline UINT32 GetNextFatID()
-    {
-        WRAPPER_NO_CONTRACT;
-        CONSISTENCY_CHECK(m_lock.OwnedByCurrentThread());
-        UINT32 id = m_idProvider.GetNextFatID();
-        CONSISTENCY_CHECK(id != TYPE_ID_THIS_CLASS);
-        return id;
-    }
-
 public:
-    // Starting values for shared and unshared domains
-    enum
-    {
-        STARTING_SHARED_DOMAIN_ID = 0x2,
-        STARTING_UNSHARED_DOMAIN_ID = 0x3,
-    };
-
     //------------------------------------------------------------------------
-    void Init(UINT32 idStartValue, UINT32 idIncrementValue);
+    void Init();
 
     //------------------------------------------------------------------------
     // Ctor
@@ -538,18 +504,6 @@ public:
     //------------------------------------------------------------------------
     inline UINT32 GetCount()
         { LIMITED_METHOD_CONTRACT; return m_entryCount; }
-
-    //------------------------------------------------------------------------
-    void Clear()
-    {
-        CONTRACTL {
-            NOTHROW;
-            GC_NOTRIGGER;
-        } CONTRACTL_END;
-        m_idMap.Clear();
-        m_mtMap.Clear();
-        m_idProvider.Init(0, 0);
-    }
 
     //------------------------------------------------------------------------
     class Iterator
