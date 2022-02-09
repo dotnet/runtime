@@ -126,13 +126,13 @@ steps:
     displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
 
-  - script: |
-      chmod -R a+r .
-      ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release -p:RunAOTCompilation=false -p:AndroidEnableProfiledAot=false
-      ls -l -R
-      mv ./bin/Release/net6.0-android/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
-    displayName: Build MAUI Android
-    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+  #- script: |
+  #    chmod -R a+r .
+  #    ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release -p:RunAOTCompilation=false -p:AndroidEnableProfiledAot=false
+  #    ls -l -R
+  #    mv ./bin/Release/net6.0-android/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
+  #  displayName: Build MAUI Android
+  #  workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - script: |
       chmod -R a+r .
@@ -148,12 +148,12 @@ steps:
     displayName: Build MAUI MacCatalyst
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
-  - task: PublishBuildArtifacts@1
-    displayName: 'Publish MauiAndroid binlog'
-    condition: always()
-    inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
-      artifactName:  ${{ parameters.artifactName }}
+  #- task: PublishBuildArtifacts@1
+  #  displayName: 'Publish MauiAndroid binlog'
+  #  condition: always()
+  #  inputs:
+  #    pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
+  #    artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiiOS binlog'
