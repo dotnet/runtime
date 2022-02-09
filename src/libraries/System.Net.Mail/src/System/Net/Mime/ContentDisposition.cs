@@ -54,12 +54,8 @@ namespace System.Net.Mime
             // no need to parse disposition since there's nothing to parse
         }
 
-        public ContentDisposition(string disposition)
+        public ContentDisposition(string disposition!!)
         {
-            if (disposition == null)
-            {
-                throw new ArgumentNullException(nameof(disposition));
-            }
             _isChanged = true;
             _disposition = disposition;
             ParseValue();

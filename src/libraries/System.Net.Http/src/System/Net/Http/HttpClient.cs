@@ -553,13 +553,8 @@ namespace System.Net.Http
             }
         }
 
-        private void CheckRequestBeforeSend(HttpRequestMessage request)
+        private void CheckRequestBeforeSend(HttpRequestMessage request!!)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
-
             CheckDisposed();
             CheckRequestMessage(request);
 

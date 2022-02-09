@@ -167,6 +167,7 @@ namespace System.Net.Quic.Tests
                     if (retry == 0)
                     {
                         Debug.Fail($"ConnectAsync to {clientConnection.RemoteEndPoint} failed with {ex.Message}");
+                        throw ex;
                     }
                 }
             }

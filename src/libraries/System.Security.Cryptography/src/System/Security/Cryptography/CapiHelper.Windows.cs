@@ -1048,11 +1048,8 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Helper for signing and verifications that accept a string/Type/HashAlgorithm to specify a hashing algorithm.
         /// </summary>
-        public static int ObjToHashAlgId(object hashAlg)
+        public static int ObjToHashAlgId(object hashAlg!!)
         {
-            if (hashAlg == null)
-                throw new ArgumentNullException(nameof(hashAlg));
-
             string? hashAlgString = hashAlg as string;
             if (hashAlgString != null)
             {

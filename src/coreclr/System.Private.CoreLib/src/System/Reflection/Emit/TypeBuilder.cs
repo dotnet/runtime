@@ -25,23 +25,14 @@ namespace System.Reflection.Emit
             private readonly byte[]? m_binaryAttribute;
             private readonly CustomAttributeBuilder? m_customBuilder;
 
-            public CustAttr(ConstructorInfo con, byte[] binaryAttribute)
+            public CustAttr(ConstructorInfo con!!, byte[] binaryAttribute!!)
             {
-                if (con is null)
-                    throw new ArgumentNullException(nameof(con));
-
-                if (binaryAttribute is null)
-                    throw new ArgumentNullException(nameof(binaryAttribute));
-
                 m_con = con;
                 m_binaryAttribute = binaryAttribute;
             }
 
-            public CustAttr(CustomAttributeBuilder customBuilder)
+            public CustAttr(CustomAttributeBuilder customBuilder!!)
             {
-                if (customBuilder is null)
-                    throw new ArgumentNullException(nameof(customBuilder));
-
                 m_customBuilder = customBuilder;
             }
 
@@ -509,11 +500,8 @@ namespace System.Reflection.Emit
             {
                 for (i = 0; i < interfaces.Length; i++)
                 {
-                    if (interfaces[i] == null)
-                    {
-                        // cannot contain null in the interface list
-                        throw new ArgumentNullException(nameof(interfaces));
-                    }
+                    // cannot contain null in the interface list
+                    ArgumentNullException.ThrowIfNull(interfaces[i], nameof(interfaces));
                 }
                 interfaceTokens = new int[interfaces.Length + 1];
                 for (i = 0; i < interfaces.Length; i++)
@@ -1120,8 +1108,7 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
@@ -1134,8 +1121,7 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
@@ -1161,17 +1147,13 @@ namespace System.Reflection.Emit
             }
         }
 
-        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names!!)
         {
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
-
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
             for (int i = 0; i < names.Length; i++)
-                if (names[i] == null)
-                    throw new ArgumentNullException(nameof(names));
+                ArgumentNullException.ThrowIfNull(names[i], nameof(names));
 
             if (m_inst != null)
                 throw new InvalidOperationException();
@@ -1214,14 +1196,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void DefineMethodOverrideNoLock(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
+        private void DefineMethodOverrideNoLock(MethodInfo methodInfoBody!!, MethodInfo methodInfoDeclaration!!)
         {
-            if (methodInfoBody == null)
-                throw new ArgumentNullException(nameof(methodInfoBody));
-
-            if (methodInfoDeclaration == null)
-                throw new ArgumentNullException(nameof(methodInfoDeclaration));
-
             ThrowIfCreated();
 
             if (!ReferenceEquals(methodInfoBody.DeclaringType, this))
@@ -1700,11 +1676,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        private FieldBuilder DefineInitializedDataNoLock(string name, byte[] data, FieldAttributes attributes)
+        private FieldBuilder DefineInitializedDataNoLock(string name, byte[] data!!, FieldAttributes attributes)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-
             // This method will define an initialized Data in .sdata.
             // We will create a fake TypeDef to represent the data with size. This TypeDef
             // will be the signature for the Field.
@@ -2096,13 +2069,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType!!)
         {
-            if (interfaceType == null)
-            {
-                throw new ArgumentNullException(nameof(interfaceType));
-            }
-
             AssemblyBuilder.CheckContext(interfaceType);
 
             ThrowIfCreated();
@@ -2125,23 +2093,14 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
-
             DefineCustomAttribute(m_module, m_tdType, ((ModuleBuilder)m_module).GetConstructorToken(con),
                 binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
-
             customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, m_tdType);
         }
 

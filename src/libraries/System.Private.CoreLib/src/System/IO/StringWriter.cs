@@ -35,13 +35,8 @@ namespace System.IO
         {
         }
 
-        public StringWriter(StringBuilder sb, IFormatProvider? formatProvider) : base(formatProvider)
+        public StringWriter(StringBuilder sb!!, IFormatProvider? formatProvider) : base(formatProvider)
         {
-            if (sb == null)
-            {
-                throw new ArgumentNullException(nameof(sb), SR.ArgumentNull_Buffer);
-            }
-
             _sb = sb;
             _isOpen = true;
         }
@@ -98,12 +93,8 @@ namespace System.IO
         // StringWriter from the buffer character array starting at position
         // index.
         //
-        public override void Write(char[] buffer, int index, int count)
+        public override void Write(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);

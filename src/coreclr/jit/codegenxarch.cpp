@@ -5218,9 +5218,6 @@ void CodeGen::genCall(GenTreeCall* call)
     // that won't be restored by epilog sequence.
     if (call->IsFastTailCall())
     {
-        // Don't support fast tail calling JIT helpers
-        assert(call->gtCallType != CT_HELPER);
-
         GenTree* target = getCallTarget(call, nullptr);
         if (target != nullptr)
         {
@@ -5272,22 +5269,28 @@ void CodeGen::genCall(GenTreeCall* call)
 
     genCallInstruction(call X86_ARG(stackArgBytes));
 
-    // if it was a pinvoke or intrinsic we may have needed to get the address of a label
-    if (genPendingCallLabel)
+    // for pinvoke/intrinsic/tailcalls we may have needed to get the address of
+    // a label. In case it is indirect with CFG enabled make sure we do not get
+    // the address after the validation but only after the actual call that
+    // comes after.
+    if (genPendingCallLabel && !call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
     {
         genDefineInlineTempLabel(genPendingCallLabel);
         genPendingCallLabel = nullptr;
     }
 
-    // Update GC info:
-    // All Callee arg registers are trashed and no longer contain any GC pointers.
-    // TODO-XArch-Bug?: As a matter of fact shouldn't we be killing all of callee trashed regs here?
-    // For now we will assert that other than arg regs gc ref/byref set doesn't contain any other
-    // registers from RBM_CALLEE_TRASH.
-    assert((gcInfo.gcRegGCrefSetCur & (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)) == 0);
-    assert((gcInfo.gcRegByrefSetCur & (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)) == 0);
-    gcInfo.gcRegGCrefSetCur &= ~RBM_ARG_REGS;
-    gcInfo.gcRegByrefSetCur &= ~RBM_ARG_REGS;
+#ifdef DEBUG
+    // Killed registers should no longer contain any GC pointers.
+    regMaskTP killMask = RBM_CALLEE_TRASH;
+    if (call->IsHelperCall())
+    {
+        CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
+        killMask                 = compiler->compHelperCallKillSet(helpFunc);
+    }
+
+    assert((gcInfo.gcRegGCrefSetCur & killMask) == 0);
+    assert((gcInfo.gcRegByrefSetCur & killMask) == 0);
+#endif
 
     var_types returnType = call->TypeGet();
     if (returnType != TYP_VOID)
@@ -5563,6 +5566,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 #endif
             if (target->isContainedIndir())
         {
+            // When CFG is enabled we should not be emitting any non-register indirect calls.
+            assert(!compiler->opts.IsCFGEnabled() ||
+                   call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
+                   call->IsHelperCall(compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL));
+
             if (target->AsIndir()->HasBase() && target->AsIndir()->Base()->isContainedIntOrIImmed())
             {
                 // Note that if gtControlExpr is an indir of an absolute address, we mark it as

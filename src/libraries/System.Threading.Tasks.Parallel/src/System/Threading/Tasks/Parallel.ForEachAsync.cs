@@ -15,17 +15,8 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">The exception that is thrown when the <paramref name="source"/> argument or <paramref name="body"/> argument is null.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
         /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
-        public static Task ForEachAsync<TSource>(IEnumerable<TSource> source, Func<TSource, CancellationToken, ValueTask> body)
+        public static Task ForEachAsync<TSource>(IEnumerable<TSource> source!!, Func<TSource, CancellationToken, ValueTask> body!!)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (body is null)
-            {
-                throw new ArgumentNullException(nameof(body));
-            }
-
             return ForEachAsync(source, DefaultDegreeOfParallelism, TaskScheduler.Default, default(CancellationToken), body);
         }
 
@@ -37,17 +28,8 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">The exception that is thrown when the <paramref name="source"/> argument or <paramref name="body"/> argument is null.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
         /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
-        public static Task ForEachAsync<TSource>(IEnumerable<TSource> source, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body)
+        public static Task ForEachAsync<TSource>(IEnumerable<TSource> source!!, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body!!)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (body is null)
-            {
-                throw new ArgumentNullException(nameof(body));
-            }
-
             return ForEachAsync(source, DefaultDegreeOfParallelism, TaskScheduler.Default, cancellationToken, body);
         }
 
@@ -58,21 +40,8 @@ namespace System.Threading.Tasks
         /// <param name="body">An asynchronous delegate that is invoked once per element in the data source.</param>
         /// <exception cref="System.ArgumentNullException">The exception that is thrown when the <paramref name="source"/> argument or <paramref name="body"/> argument is null.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
-        public static Task ForEachAsync<TSource>(IEnumerable<TSource> source, ParallelOptions parallelOptions, Func<TSource, CancellationToken, ValueTask> body)
+        public static Task ForEachAsync<TSource>(IEnumerable<TSource> source!!, ParallelOptions parallelOptions!!, Func<TSource, CancellationToken, ValueTask> body!!)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (parallelOptions is null)
-            {
-                throw new ArgumentNullException(nameof(parallelOptions));
-            }
-            if (body is null)
-            {
-                throw new ArgumentNullException(nameof(body));
-            }
-
             return ForEachAsync(source, parallelOptions.EffectiveMaxConcurrencyLevel, parallelOptions.EffectiveTaskScheduler, parallelOptions.CancellationToken, body);
         }
 
@@ -190,17 +159,8 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">The exception that is thrown when the <paramref name="source"/> argument or <paramref name="body"/> argument is null.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
         /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
-        public static Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source, Func<TSource, CancellationToken, ValueTask> body)
+        public static Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source!!, Func<TSource, CancellationToken, ValueTask> body!!)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (body is null)
-            {
-                throw new ArgumentNullException(nameof(body));
-            }
-
             return ForEachAsync(source, DefaultDegreeOfParallelism, TaskScheduler.Default, default(CancellationToken), body);
         }
 
@@ -212,17 +172,8 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">The exception that is thrown when the <paramref name="source"/> argument or <paramref name="body"/> argument is null.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
         /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
-        public static Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body)
+        public static Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source!!, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body!!)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (body is null)
-            {
-                throw new ArgumentNullException(nameof(body));
-            }
-
             return ForEachAsync(source, DefaultDegreeOfParallelism, TaskScheduler.Default, cancellationToken, body);
         }
 
@@ -233,21 +184,8 @@ namespace System.Threading.Tasks
         /// <param name="body">An asynchronous delegate that is invoked once per element in the data source.</param>
         /// <exception cref="System.ArgumentNullException">The exception that is thrown when the <paramref name="source"/> argument or <paramref name="body"/> argument is null.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
-        public static Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source, ParallelOptions parallelOptions, Func<TSource, CancellationToken, ValueTask> body)
+        public static Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source!!, ParallelOptions parallelOptions!!, Func<TSource, CancellationToken, ValueTask> body!!)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (parallelOptions is null)
-            {
-                throw new ArgumentNullException(nameof(parallelOptions));
-            }
-            if (body is null)
-            {
-                throw new ArgumentNullException(nameof(body));
-            }
-
             return ForEachAsync(source, parallelOptions.EffectiveMaxConcurrencyLevel, parallelOptions.EffectiveTaskScheduler, parallelOptions.CancellationToken, body);
         }
 

@@ -162,18 +162,13 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public static Rfc3161TimestampRequest CreateFromSignerInfo(
-            SignerInfo signerInfo,
+            SignerInfo signerInfo!!,
             HashAlgorithmName hashAlgorithm,
             Oid? requestedPolicyId = null,
             ReadOnlyMemory<byte>? nonce = null,
             bool requestSignerCertificates = false,
             X509ExtensionCollection? extensions = null)
         {
-            if (signerInfo == null)
-            {
-                throw new ArgumentNullException(nameof(signerInfo));
-            }
-
             // https://tools.ietf.org/html/rfc3161, Appendix A.
             //
             // The value of messageImprint field within TimeStampToken shall be a

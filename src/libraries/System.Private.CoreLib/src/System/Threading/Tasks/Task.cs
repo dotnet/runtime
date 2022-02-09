@@ -260,7 +260,21 @@ namespace System.Threading.Tasks
             internal void SetCompleted()
             {
                 ManualResetEventSlim? mres = m_completionEvent;
-                if (mres != null) mres.Set();
+                if (mres != null) SetEvent(mres);
+            }
+
+            internal static void SetEvent(ManualResetEventSlim mres)
+            {
+                try
+                {
+                    mres.Set();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // The event may have been exposed to external code, in which case it could have been disposed
+                    // prematurely / erroneously.  To avoid that causing problems for the unrelated stack trying to
+                    // set the event, eat any disposed exceptions.
+                }
             }
 
             /// <summary>
@@ -1483,7 +1497,7 @@ namespace System.Threading.Tasks
                     {
                         // We published the event as unset, but the task has subsequently completed.
                         // Set the event's state properly so that callers don't deadlock.
-                        newMre.Set();
+                        ContingentProperties.SetEvent(newMre);
                     }
                 }
 
@@ -1619,7 +1633,7 @@ namespace System.Threading.Tasks
                         // will deadlock; an ensuing Set() will not wake them up.  In the event of an AppDomainUnload,
                         // there is no guarantee that anyone else is going to signal the event, and it does no harm to
                         // call Set() twice on m_completionEvent.
-                        if (!ev.IsSet) ev.Set();
+                        ContingentProperties.SetEvent(ev);
 
                         // Finally, dispose of the event
                         ev.Dispose();

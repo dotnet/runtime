@@ -124,10 +124,6 @@ public:
 
     LPCWSTR GetPathForErrorMessages();
 
-    // This returns a non-empty path representing the source of the assembly; it may
-    // be the parent assembly for dynamic or memory assemblies
-    const SString& GetEffectivePath();
-
     // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
     // Note this may be obtained from the parent PEAssembly if we don't have a path or fusion
     // assembly.
@@ -339,9 +335,7 @@ public:
     // Creation entry points
     // ------------------------------------------------------------
 
-    // CoreCLR's PrivBinder PEAssembly creation entrypoint
     static PEAssembly* Open(
-        PEAssembly* pParent,
         PEImage* pPEImageIL,
         BINDER_SPACE::Assembly* pHostAssembly);
 
@@ -350,9 +344,7 @@ public:
 
     static PEAssembly* Open(BINDER_SPACE::Assembly* pBindResult);
 
-    static PEAssembly* Create(
-        PEAssembly* pParentAssembly,
-        IMetaDataAssemblyEmit* pEmit);
+    static PEAssembly* Create(IMetaDataAssemblyEmit* pEmit);
 
       // ------------------------------------------------------------
       // Utility functions
@@ -382,7 +374,6 @@ private:
     PEAssembly(
         BINDER_SPACE::Assembly* pBindResultInfo,
         IMetaDataEmit* pEmit,
-        PEAssembly* creator,
         BOOL isSystem,
         PEImage* pPEImageIL = NULL,
         BINDER_SPACE::Assembly* pHostAssembly = NULL
@@ -409,7 +400,6 @@ private:
     // IL image, NULL if dynamic
     PTR_PEImage              m_PEImage;
 
-    PTR_PEAssembly           m_creator;
     // This flag is not updated atomically with m_pMDImport. Its fine for debugger usage
     // but don't rely on it in the runtime. In runtime try QI'ing the m_pMDImport for
     // IID_IMDInternalImportENC

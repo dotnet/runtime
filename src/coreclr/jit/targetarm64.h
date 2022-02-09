@@ -15,6 +15,7 @@
   #define CPBLK_LCL_UNROLL_LIMIT   128    // Upper bound to let the code generator to loop unroll CpBlk (when both srcAddr and dstAddr point to the stack)
   #define INITBLK_UNROLL_LIMIT     64     // Upper bound to let the code generator to loop unroll InitBlk
   #define INITBLK_LCL_UNROLL_LIMIT 128    // Upper bound to let the code generator to loop unroll InitBlk (when dstAddr points to the stack)
+  #define LCLHEAP_UNROLL_LIMIT     128    // Upper bound to let the code generator to loop unroll LclHeap (when zeroing is required)
 
 #ifdef FEATURE_SIMD
   #define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
@@ -249,6 +250,10 @@
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
   #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
+
+  #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R15))
+  #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_R15
+  #define REG_DISPATCH_INDIRECT_CALL_ADDR REG_R9
 
   #define REG_FPBASE               REG_FP
   #define RBM_FPBASE               RBM_FP
