@@ -580,7 +580,6 @@ static guint16 sri_vector_methods [] = {
 	SN_Create,
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
-	SN_Floor,
 	SN_GetElement,
 	SN_GetLower,
 	SN_GetUpper,
