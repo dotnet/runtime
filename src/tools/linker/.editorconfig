@@ -146,6 +146,10 @@ dotnet_diagnostic.CA1822.severity = none
 # IDE0060: Remove unused parameter
 dotnet_diagnostic.IDE0060.severity = none
 
+[test/**/*.cs]
+
+dotnet_diagnostic.IDE0060.severity = none
+
 [external**]
 dotnet_analyzer_diagnostic.severity = none
 generated_code = true

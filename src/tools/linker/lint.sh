@@ -14,3 +14,4 @@ done
 
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 "$scriptroot/eng/dotnet.sh" format illink.sln --exclude external $@
+"$scriptroot/eng/dotnet.sh" format illink.sln --exclude external --verify-no-changes $@
