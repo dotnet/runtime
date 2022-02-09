@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
@@ -15,7 +16,7 @@ namespace System.ComponentModel
         internal const string PropertyDescriptorPropertyTypeMessage = "PropertyDescriptor's PropertyType cannot be statically discovered.";
 
         private TypeConverter? _converter;
-        private Hashtable? _valueChangedHandlers;
+        private Dictionary<object, EventHandler?>? _valueChangedHandlers;
         private object?[]? _editors;
         private Type[]? _editorTypes;
         private int _editorCount;
@@ -125,11 +126,11 @@ namespace System.ComponentModel
         {
             if (_valueChangedHandlers == null)
             {
-                _valueChangedHandlers = new Hashtable();
+                _valueChangedHandlers = new Dictionary<object, EventHandler?>();
             }
 
-            EventHandler? h = (EventHandler?)_valueChangedHandlers[component];
-            _valueChangedHandlers[component] = Delegate.Combine(h, handler);
+            EventHandler? h = _valueChangedHandlers.GetValueOrDefault(component, defaultValue: null);
+            _valueChangedHandlers[component] = (EventHandler?)Delegate.Combine(h, handler);
         }
 
         /// <summary>
@@ -383,7 +384,7 @@ namespace System.ComponentModel
         {
             if (component != null)
             {
-                ((EventHandler?)_valueChangedHandlers?[component])?.Invoke(component, e);
+                _valueChangedHandlers?.GetValueOrDefault(component, defaultValue: null)?.Invoke(component, e);
             }
         }
 
@@ -394,7 +395,7 @@ namespace System.ComponentModel
         {
             if (_valueChangedHandlers != null)
             {
-                EventHandler? h = (EventHandler?)_valueChangedHandlers[component];
+                EventHandler? h = _valueChangedHandlers.GetValueOrDefault(component, defaultValue: null);
                 h = (EventHandler?)Delegate.Remove(h, handler);
                 if (h != null)
                 {
@@ -416,7 +417,7 @@ namespace System.ComponentModel
         {
             if (component != null && _valueChangedHandlers != null)
             {
-                return (EventHandler?)_valueChangedHandlers[component];
+                return _valueChangedHandlers.GetValueOrDefault(component, defaultValue: null);
             }
             else
             {

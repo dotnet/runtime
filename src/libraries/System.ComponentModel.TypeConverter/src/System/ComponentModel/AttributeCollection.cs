@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
@@ -19,7 +20,7 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly AttributeCollection Empty = new AttributeCollection(null);
 
-        private static Hashtable? s_defaultAttributes;
+        private static Dictionary<Type, Attribute?>? s_defaultAttributes;
 
         private readonly Attribute[] _attributes;
 
@@ -247,13 +248,13 @@ namespace System.ComponentModel
             {
                 if (s_defaultAttributes == null)
                 {
-                    s_defaultAttributes = new Hashtable();
+                    s_defaultAttributes = new Dictionary<Type, Attribute?>();
                 }
 
                 // If we have already encountered this, use what's in the table.
-                if (s_defaultAttributes.ContainsKey(attributeType))
+                if (s_defaultAttributes.TryGetValue(attributeType, out Attribute? defaultAttribute))
                 {
-                    return (Attribute?)s_defaultAttributes[attributeType];
+                    return defaultAttribute;
                 }
 
                 Attribute? attr = null;

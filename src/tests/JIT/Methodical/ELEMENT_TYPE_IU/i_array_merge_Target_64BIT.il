@@ -9,10 +9,10 @@
 
 .assembly extern mscorlib
 { }
-.assembly 'u_array_merge-ia64'
+.assembly 'i_array_merge_Target_64BIT'
 { }
 .assembly extern xunit.core {}
-.class private auto ansi Test_u_array_merge_ia64 extends [mscorlib]System.Object
+.class public auto ansi Test_i_array_merge_Target_64BIT extends [mscorlib]System.Object
 {
 .method private hidebysig static int32 Main() il managed
 {
@@ -21,12 +21,12 @@
 	)
 	.entrypoint
 	.maxstack  8
-	.locals (unsigned int64[0...], native unsigned int[0...], native unsigned int, native unsigned int)
+	.locals (int64[0...], native int[0...], native int, native int)
 	ldc.i4 16
-	newobj instance void native unsigned int[0...]::.ctor(int32)
+	newobj instance void native int[0...]::.ctor(int32)
 	stloc.0
 	ldc.i4 16
-	newobj instance void unsigned int64[0...]::.ctor(int32)
+	newobj instance void int64[0...]::.ctor(int32)
 	stloc.1
 
 	ldc.i4 0x12345678
