@@ -7180,18 +7180,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
-    if (!varTypeIsIntegralOrI(ind))
-    {
-        // For non-primitives let's only probe a byte-wide area to avoid potential AVEs
-        ind->ChangeType(TYP_BYTE);
-    }
-#if defined(TARGET_XARCH)
-    else if (varTypeIsLong(ind))
-    {
-        // Use smaller instruction on XARCH for 8-byte wide nullcheck
-        ind->ChangeType(TYP_INT);
-    }
-#endif
+    ind->ChangeType(comp->gtTypeForNullCheck(ind));
 
 #ifdef TARGET_ARM64
     bool useNullCheck = true;
