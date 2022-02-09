@@ -255,7 +255,7 @@
         Lines="MergedTestAssembly" />
 
     <WriteLinesToFile
-        Condition="'$(RequiresProcessIsolation)' == 'true'"
+        Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAsStandalone)' != 'true'"
         File="$(OutputPath)\$(MSBuildProjectName).OutOfProcessTest"
         Lines="OutOfProcessTest" />
   </Target>
