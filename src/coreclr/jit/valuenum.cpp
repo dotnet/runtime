@@ -6230,10 +6230,10 @@ void ValueNumStore::vnDumpSimdType(Compiler* comp, VNFuncApp* simdType)
     assert(IsVNConstant(simdType->m_args[0]));
     assert(IsVNConstant(simdType->m_args[1]));
 
-    int       simdSize = ConstantValue<int>(simdType->m_args[0]);
-    var_types baseType = (var_types)ConstantValue<int>(simdType->m_args[1]);
+    int         simdSize    = ConstantValue<int>(simdType->m_args[0]);
+    CorInfoType baseJitType = (CorInfoType)ConstantValue<int>(simdType->m_args[1]);
 
-    printf("%s(simd%d, %s)", VNFuncName(simdType->m_func), simdSize, varTypeName(baseType));
+    printf("%s(simd%d, %s)", VNFuncName(simdType->m_func), simdSize, varTypeName(JitType2PreciseVarType(baseJitType)));
 }
 #endif // FEATURE_SIMD
 
