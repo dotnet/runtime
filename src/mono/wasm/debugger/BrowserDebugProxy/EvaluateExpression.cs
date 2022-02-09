@@ -289,7 +289,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 JObject value = await resolver.Resolve(var.Identifier.Text, token);
                 if (value == null)
-                   throw new ReturnAsErrorException($"The name {var.Identifier.Text} does not exist in the current context", "ReferenceError");
+                    throw new ReturnAsErrorException($"The name {var.Identifier.Text} does not exist in the current context", "ReferenceError");
 
                 values.Add(value);
             }
@@ -392,15 +392,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
             try {
-                var newScript = script.ContinueWith(string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
+                var newScript = script.ContinueWith(
+                    string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
 
                 var state = await newScript.RunAsync(cancellationToken: token);
 
                 return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw new ReturnAsErrorException($"Cannot evaluate '{expression}'. Error: {ex.Message}", "CompilationError");
+                throw new ReturnAsErrorException($"Cannot evaluate '{expression}'.", "CompilationError");
             }
         }
 

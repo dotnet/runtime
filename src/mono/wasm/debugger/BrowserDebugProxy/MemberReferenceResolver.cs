@@ -423,13 +423,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (method.ArgumentList != null)
                     {
                         var methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
-                        if (methodInfo?.Info == null)
-                            return null;
-                        var methodParamsInfo = methodInfo.Info.GetMethodParams();
-                        commandParamsObjWriter.Write(methodParamsInfo.Count + isTryingLinq);
+                        int passedParamCnt = method.ArgumentList.Arguments.Count;
+                        var methodParamsInfo = new List<ParameterInfo>();
+                        if (methodInfo?.Info != null)
+                        {
+                            methodParamsInfo = methodInfo.Info.GetMethodParams();
+                            // if less params then the function has was passed then some of them may be optional
+                            // if more, it will ensure to produce an error
+                            var optionalParamsCnt = methodParamsInfo.Count(p => p.HasDefaultValue);
+                            if (passedParamCnt <= methodParamsInfo.Count &&
+                                passedParamCnt + optionalParamsCnt >= methodParamsInfo.Count)
+                                passedParamCnt = methodParamsInfo.Count;
+                        }
+                        commandParamsObjWriter.Write(passedParamCnt + isTryingLinq);
                         if (isTryingLinq == 1)
                             commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
-                        for (var i = 0; i < methodParamsInfo.Count; i++)
+                        for (var i = 0; i < passedParamCnt; i++)
                         {
                             // explicitly passed arguments
                             if (i < method.ArgumentList.Arguments.Count)
@@ -457,9 +466,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 return null;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw new Exception($"Unable to evaluate method '{methodName}. {ex.Message}'");
+                throw new Exception($"Unable to evaluate method '{methodName}'");
             }
         }
     }

@@ -562,16 +562,20 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public byte[] Value { get; private set; }
 
+        public bool HasDefaultValue { get; private set; }
+
         internal ParameterInfo(string name, ConstantTypeCode typeCode, byte[] value)
         {
             Name = name;
             TypeCode = typeCode;
             Value = value;
+            HasDefaultValue = true;
         }
 
         internal ParameterInfo(string name)
         {
             Name = name;
+            HasDefaultValue = false;
         }
     }
 
