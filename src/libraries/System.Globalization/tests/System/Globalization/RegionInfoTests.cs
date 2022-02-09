@@ -259,7 +259,7 @@ namespace System.Globalization.Tests
         public void ValidateThrowingWhenUsingCustomUnspecifiedLcid()
         {
             // When trying to create RegionInfo using Lcid, we call LcidToLocaleName to map the Lcid to the culture name.
-            // LOCALE_CUSTOM_UNSPECIFIED (0x1000) is considered invalid Lcid to create cultures with. Sometime Windows can
+            // LOCALE_CUSTOM_UNSPECIFIED (0x1000) is considered invalid Lcid to create cultures with. Sometimes Windows can
             // map which is wrong. This happen if we enumerate the cultures before trying to create the RegionInfo object.
             // This test is to ensure we'll not allow this creation in .NET.
 
