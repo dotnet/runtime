@@ -21,43 +21,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-// MVID: {D664E737-135B-4517-AFBA-875EBEA1C810}
-.imagebase 0x00400000
-.subsystem 0x00000003
-.file alignment 512
-.corflags 0x00000001
-// Image base: 0x076c0000
-//
-// ============== CLASS STRUCTURE DECLARATION ==================
-//
-.class private auto ansi beforefieldinit measure
-       extends [mscorlib]System.Object
-{
-} // end of class measure
-
-.class private auto ansi test
-       extends [mscorlib]System.Object
-{
-} // end of class test
-
-.class private auto ansi beforefieldinit Driver
-       extends [mscorlib]System.Object
-{
-} // end of class Driver
-
-
-// =============================================================
-
-
-// =============== GLOBAL FIELDS AND METHODS ===================
-
-
-// =============================================================
-
-
-// =============== CLASS MEMBERS DECLARATION ===================
-//   note that class flags, 'extends' and 'implements' clauses
-//          are provided here for information only
 
 .class private auto ansi beforefieldinit measure
        extends [mscorlib]System.Object
@@ -85,7 +48,7 @@
 
 } // end of class measure
 
-.class private auto ansi  beforefieldinit test
+.class private auto ansi test
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  f(unsigned int8& b) cil managed
