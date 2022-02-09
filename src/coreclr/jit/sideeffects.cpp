@@ -164,7 +164,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         isWrite = true;
         node    = node->gtGetOp1();
     }
-    else if (node->OperIsStore())
+    else if (node->OperIsStore() || node->OperIs(GT_MEMORYBARRIER))
     {
         isWrite = true;
     }
