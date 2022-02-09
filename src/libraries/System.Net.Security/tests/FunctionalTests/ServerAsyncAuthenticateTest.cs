@@ -423,7 +423,7 @@ namespace System.Net.Security.Tests
                     await clientAuthentication.WaitAsync(TestConfiguration.PassingTestTimeout);
                     _logVerbose.WriteLine("ServerAsyncAuthenticateTest.clientAuthentication complete.");
                 }
-                catch (Exception ex)
+                catch (AuthenticationException ex)
                 {
                     // Ignore client-side errors: we're only interested in server-side behavior.
                     _log.WriteLine("Client exception : " + ex);
