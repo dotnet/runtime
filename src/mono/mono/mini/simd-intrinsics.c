@@ -717,8 +717,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IAND, arg0_type, fsig, args);
 	case SN_BitwiseOr:
 		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IOR, arg0_type, fsig, args);
-	case SN_Xor:
+	case SN_Xor: {
+		if ((arg0_type == MONO_TYPE_R4) || (arg0_type == MONO_TYPE_R8))
+			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IXOR, arg0_type, fsig, args);
+	}
 	case SN_As:
 	case SN_AsByte:
 	case SN_AsDouble:
