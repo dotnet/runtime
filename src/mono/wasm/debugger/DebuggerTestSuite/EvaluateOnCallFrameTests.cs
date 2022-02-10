@@ -1056,7 +1056,7 @@ namespace DebuggerTests
                    ("test.GetUInt32()", TNumber(1)),
                    ("test.GetInt64()", TNumber(1)),
                    ("test.GetUInt64()", TNumber(1)),
-                //    ("test.GetChar()", TString("A")), //fails, Evaluate of this datatype symbol not implemented yet (for non optional parameters either)
+                   ("test.GetChar()", TString("T")),
                    ("test.GetString()", TString("1.23")),
                    ("test.GetSingle()", JObject.FromObject( new { type = "number", value = 1.23, description = "1,23" })),
                    ("test.GetDouble()", JObject.FromObject( new { type = "number", value = 1.23, description = "1,23" })),
