@@ -140,9 +140,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		// Analyzer doesn't support intrinsics: https://github.com/dotnet/linker/issues/2374
-		[ExpectedWarning ("IL2026", "System.Type.GetType(String)",
-			ProducedBy = ProducedBy.Analyzer)]
 		// Analyzer doesn't track known types: https://github.com/dotnet/linker/issues/2273
 		[ExpectedWarning ("IL2072", "'type'", nameof (ComplexTypeHandling) + "." + nameof (RequirePublicMethods) + "(Type)", "System.Type.GetType(String)",
 			ProducedBy = ProducedBy.Analyzer)]
@@ -160,9 +157,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		// Analyzer doesn't support intrinsics: https://github.com/dotnet/linker/issues/2374
-		[ExpectedWarning ("IL2026", "Activator.CreateInstance(String, String)",
-			ProducedBy = ProducedBy.Analyzer)]
 		static void TestArrayCreateInstanceByName ()
 		{
 			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayCreateInstanceByNameElement[]");

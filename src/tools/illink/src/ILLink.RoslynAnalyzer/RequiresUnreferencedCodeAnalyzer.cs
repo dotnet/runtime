@@ -3,8 +3,9 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Linq;
 using ILLink.Shared;
+using ILLink.Shared.TrimAnalysis;
+using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -72,35 +73,10 @@ namespace ILLink.RoslynAnalyzer
 		protected override bool IsAnalyzerEnabled (AnalyzerOptions options, Compilation compilation) =>
 			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer, compilation);
 
-		protected override ImmutableArray<ISymbol> GetSpecialIncompatibleMembers (Compilation compilation)
-		{
-			var incompatibleMembers = ImmutableArray.CreateBuilder<ISymbol> ();
-			var typeType = compilation.GetTypeByMetadataName ("System.Type");
-			if (typeType != null) {
-				incompatibleMembers.AddRange (typeType.GetMembers ("MakeGenericType").OfType<IMethodSymbol> ());
-			}
-
-			var methodInfoType = compilation.GetTypeByMetadataName ("System.Reflection.MethodInfo");
-			if (methodInfoType != null) {
-				incompatibleMembers.AddRange (methodInfoType.GetMembers ("MakeGenericMethod").OfType<IMethodSymbol> ());
-			}
-
-			var expressionCallType = compilation.GetTypeByMetadataName ("System.Linq.Expressions.Expression");
-			if (expressionCallType != null) {
-				incompatibleMembers.AddRange (expressionCallType.GetMembers ("Call").OfType<IMethodSymbol> ()
-					.Where (m => m.Parameters.Length == 4 && m.Parameters[0] is IParameterSymbol parameterSymbol
-					&& parameterSymbol.Type?.ContainingNamespace?.Name == "System" && parameterSymbol.Type?.Name == "Type"));
-			}
-
-			return incompatibleMembers.ToImmutable ();
-		}
-
 		protected override bool ReportSpecialIncompatibleMembersDiagnostic (OperationAnalysisContext operationContext, ImmutableArray<ISymbol> specialIncompatibleMembers, ISymbol member)
 		{
-			if (member is IMethodSymbol && ImmutableArrayOperations.Contains (specialIncompatibleMembers, member, SymbolEqualityComparer.Default)) {
-				// These RUC-annotated APIs are intrinsically handled by the trimmer, which will not produce any
-				// RUC warning related to them. For unrecognized reflection patterns related to generic type/method
-				// creation IL2055/IL2060 should be used instead.
+			// Some RUC-annotated APIs are intrinsically handled by the trimmer
+			if (member is IMethodSymbol method && Intrinsics.GetIntrinsicIdForMethod (new MethodProxy (method)) != IntrinsicId.None) {
 				return true;
 			}
 
