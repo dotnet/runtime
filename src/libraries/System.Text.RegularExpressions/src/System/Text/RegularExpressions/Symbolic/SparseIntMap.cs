@@ -8,10 +8,10 @@ namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>An insertion-ordered map that supports small int keys.</summary>
     /// <remarks>Uses a sparse array of the same size as the space of keys for efficient lookups.</remarks>
-    internal class SparseIntMap<T> where T : struct
+    internal sealed class SparseIntMap<T> where T : struct
     {
         private const int InitialCapacity = 16;
-        private List<(int, T)> _dense = new();
+        private readonly List<KeyValuePair<int, T>> _dense = new();
         private int[] _sparse = new int[InitialCapacity];
 
         private void Grow(int maxValue)
@@ -29,27 +29,30 @@ namespace System.Text.RegularExpressions.Symbolic
         public void Clear() => _dense.Clear();
 
         /// <summary>Number of entries in the map.</summary>
-        public int Count { get => _dense.Count; }
+        public int Count => _dense.Count;
 
         /// <summary>Get the internal list of entries. Do not modify.</summary>
-        public List<(int, T)> Values { get => _dense; }
+        public List<(int, T)> Values => _dense;
 
         /// <summary>Return the index of the entry with the key, or -1 if none exists.</summary>
         public int Find(int key)
         {
-            if (key < _sparse.Length)
+            int[] sparse = _sparse;
+            if ((uint)key < (int)sparse.Length)
             {
-                int idx = _sparse[key];
-                if (idx < _dense.Count)
+                List<(int, T)> dense = _dense;
+                int idx = sparse[key];
+                if (idx < dense.Count)
                 {
-                    var entry = _dense[idx];
-                    Debug.Assert(entry.Item1 < _sparse.Length);
-                    if (key == entry.Item1)
+                    int entryKey = dense[idx].Item1;
+                    Debug.Assert(entryKey < _sparse.Length);
+                    if (key == entryKey)
                     {
                         return idx;
                     }
                 }
             }
+            
             return -1;
         }
 
