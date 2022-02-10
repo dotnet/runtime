@@ -154,7 +154,7 @@ namespace System.IO
             return data.ftLastWriteTime.ToDateTimeOffset();
         }
 
-        internal static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectoryCore(string sourceFullPath, string destFullPath)
         {
             // Source and destination must have the same root.
             ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(sourceFullPath);
@@ -166,17 +166,6 @@ namespace System.IO
 
             if (!Interop.Kernel32.MoveFile(sourceFullPath, destFullPath, overwrite: false))
             {
-                // Source and destination must not be the same file.
-                // We don't check upfront, but handle this as a MoveFile failure.
-                // MoveFile will fail because it requires the source to exist and the destination to not exist.
-                // That is not possible if they are the same file.
-                ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
-                ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
-                if (srcNoDirectorySeparator.Equals(destNoDirectorySeparator, PathInternal.StringComparison))
-                {
-                    throw new IOException(SR.IO_SourceDestMustBeDifferent);
-                }
-
                 int errorCode = Marshal.GetLastWin32Error();
 
                 if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)

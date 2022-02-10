@@ -387,7 +387,7 @@ namespace System.IO
             }
         }
 
-        internal static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectoryCore(string sourceFullPath, string destFullPath)
         {
             ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
             ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
@@ -399,7 +399,7 @@ namespace System.IO
                 throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
             }
 
-            // The destination must not exist.
+            // The destination must not exist (unless it is a case-sensitive rename).
             // On Unix 'rename' will overwrite the destination file if it already exists, we need to manually check.
             if (Interop.Sys.LStat(destNoDirectorySeparator, out Interop.Sys.FileStatus destFileStatus) >= 0)
             {
@@ -410,11 +410,17 @@ namespace System.IO
                 {
                     throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
                 }
-                // Source and destination must not be the same file.
+                // Source and destination must not be the same file unless it is a case-sensitive rename.
                 else if (sourceFileStatus.Dev == destFileStatus.Dev &&
                          sourceFileStatus.Ino == destFileStatus.Ino)
                 {
-                    throw new IOException(SR.IO_SourceDestMustBeDifferent);
+                    // Assume the file system is case-insensitive, and allow a Rename when the FileName casing changes.
+                    if (!srcNoDirectorySeparator.Equals(destNoDirectorySeparator, StringComparison.OrdinalIgnoreCase) ||
+                        Path.GetFileName(srcNoDirectorySeparator).SequenceEqual(Path.GetFileName(destNoDirectorySeparator)))
+                    {
+                        throw new IOException(SR.IO_SourceDestMustBeDifferent);
+                    }
+                    // Fall through to Rename.
                 }
                 // When the path ends with a directory separator, it must be a directory.
                 else if ((sourceFileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFDIR
@@ -422,18 +428,14 @@ namespace System.IO
                 {
                     throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
                 }
-
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+                else
+                {
+                    throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+                }
             }
 
             if (Interop.Sys.Rename(sourceFullPath, destNoDirectorySeparator) < 0)
             {
-                // Source and destination must not be the same file.
-                if (srcNoDirectorySeparator.Equals(destNoDirectorySeparator, PathInternal.StringComparison))
-                {
-                    throw new IOException(SR.IO_SourceDestMustBeDifferent);
-                }
-
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
                 {
