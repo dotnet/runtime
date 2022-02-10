@@ -78,9 +78,10 @@ namespace System.Net.NetworkInformation.Tests
                 ? TestSettings.PayloadAsBytes
                 : Array.Empty<byte>();
 
-        public static bool DoesNotUsePingUtility => !UsesPingUtility;
-
-        public static bool UsesPingUtility => (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) && !Capability.CanUseRawSockets(TestSettings.GetLocalIPAddress().AddressFamily);
+        public static bool DoesNotUsePingUtility => OperatingSystem.IsWindows() ||
+                                OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsWatchOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ||
+                                Capability.CanUseRawSockets(TestSettings.GetLocalIPAddress().AddressFamily);
+        public static bool UsesPingUtility => !DoesNotUsePingUtility;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsync_InvalidArgs()
@@ -395,6 +396,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public void SendPingWithHostAndTimeoutAndBuffer()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
@@ -410,6 +412,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -425,6 +428,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public void SendPingWithHostAndTimeoutAndBufferAndPingOptions()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
@@ -440,6 +444,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();

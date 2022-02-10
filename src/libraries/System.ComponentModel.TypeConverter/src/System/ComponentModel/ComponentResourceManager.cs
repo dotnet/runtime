@@ -17,7 +17,7 @@ namespace System.ComponentModel
     /// </summary>
     public class ComponentResourceManager : ResourceManager
     {
-        private Hashtable? _resourceSets;
+        private Dictionary<CultureInfo, SortedList<string, object?>?>? _resourceSets;
         private CultureInfo? _neutralResourcesCulture;
 
         public ComponentResourceManager()
@@ -85,13 +85,13 @@ namespace System.ComponentModel
 
             if (_resourceSets == null)
             {
-                _resourceSets = new Hashtable();
+                _resourceSets = new Dictionary<CultureInfo, SortedList<string, object?>?>();
                 resources = FillResources(culture, out _);
                 _resourceSets[culture] = resources;
             }
             else
             {
-                resources = (SortedList<string, object?>?)_resourceSets[culture];
+                resources = _resourceSets.GetValueOrDefault(culture, defaultValue: null);
                 if (resources == null || (resources.Comparer.Equals(StringComparer.OrdinalIgnoreCase) != IgnoreCase))
                 {
                     resources = FillResources(culture, out _);

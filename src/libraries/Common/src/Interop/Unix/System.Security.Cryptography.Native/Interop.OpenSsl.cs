@@ -327,6 +327,14 @@ internal static partial class Interop
                         Crypto.ErrClearError();
                     }
 
+                    // relevant to TLS 1.3 only: if user supplied a client cert or cert callback,
+                    // advertise that we are willing to send the certificate post-handshake.
+                    if (sslAuthenticationOptions.ClientCertificates?.Count > 0 ||
+                        sslAuthenticationOptions.CertSelectionDelegate != null)
+                    {
+                        Ssl.SslSetPostHandshakeAuth(sslHandle, 1);
+                    }
+
                     // Set client cert callback, this will interrupt the handshake with SecurityStatusPalErrorCode.CredentialsNeeded
                     // if server actually requests a certificate.
                     Ssl.SslSetClientCertCallback(sslHandle, 1);
@@ -504,9 +512,16 @@ internal static partial class Interop
 
                 case Ssl.SslErrorCode.SSL_ERROR_WANT_READ:
                     // update error code to renegotiate if renegotiate is pending, otherwise make it SSL_ERROR_WANT_READ
-                    errorCode = Ssl.IsSslRenegotiatePending(context) ?
-                                Ssl.SslErrorCode.SSL_ERROR_RENEGOTIATE :
-                                Ssl.SslErrorCode.SSL_ERROR_WANT_READ;
+                    errorCode = Ssl.IsSslRenegotiatePending(context)
+                        ? Ssl.SslErrorCode.SSL_ERROR_RENEGOTIATE
+                        : Ssl.SslErrorCode.SSL_ERROR_WANT_READ;
+                    break;
+
+                case Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP:
+                    // This happens in TLS 1.3 when server requests post-handshake authentication
+                    // but no certificate is provided by client. We can process it the same way as
+                    // renegotiation on older TLS versions
+                    errorCode = Ssl.SslErrorCode.SSL_ERROR_RENEGOTIATE;
                     break;
 
                 default:
