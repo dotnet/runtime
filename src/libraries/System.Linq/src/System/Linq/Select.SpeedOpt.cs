@@ -22,9 +22,7 @@ namespace System.Linq
         {
             public TResult[] ToArray()
             {
-#pragma warning disable SA1129 // Do not use default value type constructor
                 LargeArrayBuilder<TResult> builder = new();
-#pragma warning restore SA1129 // Do not use default value type constructor
 
                 foreach (TSource item in _source)
                 {
@@ -587,9 +585,8 @@ namespace System.Linq
             {
                 Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
 
-#pragma warning disable SA1129 // Do not use default value type constructor
                 LargeArrayBuilder<TResult> builder = new();
-#pragma warning restore SA1129 // Do not use default value type constructor
+
                 foreach (TSource input in _source)
                 {
                     builder.Add(_selector(input));

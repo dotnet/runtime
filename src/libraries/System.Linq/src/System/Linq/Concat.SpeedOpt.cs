@@ -38,9 +38,7 @@ namespace System.Linq
 
             public override TSource[] ToArray()
             {
-#pragma warning disable SA1129 // Do not use default value type constructor
                 SparseArrayBuilder<TSource> builder = new();
-#pragma warning restore SA1129 // Do not use default value type constructor
 
                 bool reservedFirst = builder.ReserveOrAdd(_first);
                 bool reservedSecond = builder.ReserveOrAdd(_second);
@@ -104,9 +102,7 @@ namespace System.Linq
             {
                 Debug.Assert(!_hasOnlyCollections);
 
-#pragma warning disable SA1129 // Do not use default value type constructor
                 SparseArrayBuilder<TSource> builder = new();
-#pragma warning restore SA1129 // Do not use default value type constructor
                 ArrayBuilder<int> deferredCopies = default;
 
                 for (int i = 0; ; i++)

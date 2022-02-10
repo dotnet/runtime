@@ -34,9 +34,7 @@ namespace System.Linq
 
             public TSource[] ToArray()
             {
-#pragma warning disable SA1129 // Do not use default value type constructor
                 LargeArrayBuilder<TSource> builder = new();
-#pragma warning restore SA1129 // Do not use default value type constructor
 
                 foreach (TSource item in _source)
                 {
@@ -334,9 +332,7 @@ namespace System.Linq
 
             public TResult[] ToArray()
             {
-#pragma warning disable SA1129 // Do not use default value type constructor
                 LargeArrayBuilder<TResult> builder = new();
-#pragma warning restore SA1129 // Do not use default value type constructor
 
                 foreach (TSource item in _source)
                 {

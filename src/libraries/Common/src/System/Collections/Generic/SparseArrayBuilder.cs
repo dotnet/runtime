@@ -74,9 +74,7 @@ namespace System.Collections.Generic
         public SparseArrayBuilder()
         {
             this = default;
-#pragma warning disable SA1129 // Do not use default value type constructor
             _builder = new LargeArrayBuilder<T>();
-#pragma warning restore SA1129 // Do not use default value type constructor
         }
 
         /// <summary>
