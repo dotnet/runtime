@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Metadata
     {
         private static readonly ReflectionEmitMemberAccessor s_sourceAccessor = new();
         private static readonly Cache<(string id, Type declaringType, MemberInfo? member)> s_cache =
-            new(slidingExpiration: TimeSpan.FromSeconds(5), evictionInterval: TimeSpan.FromSeconds(1));
+            new(slidingExpiration: TimeSpan.FromMilliseconds(1000), evictionInterval: TimeSpan.FromMilliseconds(200));
 
         public static void Clear() => s_cache.Clear();
 
