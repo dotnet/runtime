@@ -65,6 +65,10 @@ namespace System
 
         public static int TickCount => (int)TickCount64;
 
-        public static string[] GetCommandLineArgs() => (string[])s_commandLineArgs.Clone();
+        public static string[] GetCommandLineArgs()
+        {
+            Debug.Assert(s_commandLineArgs != null, "VM did not properly setup application.");
+            return (string[])s_commandLineArgs.Clone();
+        }
     }
 }

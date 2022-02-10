@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -13,7 +14,7 @@ namespace Internal.Runtime.CompilerHelpers
     internal static class StartupDebug
     {
         [Conditional("DEBUG")]
-        public static void Assert(bool condition)
+        public static void Assert([DoesNotReturnIf(false)] bool condition)
         {
             if (!condition)
                 unsafe { *(int*)0 = 0; }
