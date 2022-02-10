@@ -1133,10 +1133,26 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                 case SymbolicRegexKind.Or:
+                    Debug.Assert(_alts is not null);
+                    transition = TransitionRegex<S>.Leaf(_builder._nothing);
+                    foreach (SymbolicRegexNode<S> elem in _alts)
+                    {
+                        transition = transition | elem.MkDerivativeWithEffects(eager);
+                    }
+                    break;
+
                 case SymbolicRegexKind.And:
+                    Debug.Assert(_alts is not null);
+                    transition = TransitionRegex<S>.Leaf(_builder._anyStar);
+                    foreach (SymbolicRegexNode<S> elem in _alts)
+                    {
+                        transition = transition & elem.MkDerivativeWithEffects(eager);
+                    }
+                    break;
+
                 case SymbolicRegexKind.Not:
-                    // Semantics of effects are not clear for these
-                    Debug.Fail($"{nameof(MkDerivativeWithEffects)}:{_kind}");
+                    Debug.Assert(_left is not null);
+                    transition = ~_left.MkDerivativeWithEffects(eager);
                     break;
 
                 default:
@@ -1227,10 +1243,30 @@ namespace System.Text.RegularExpressions.Symbolic
                     break;
 
                 case SymbolicRegexKind.Or:
+                    Debug.Assert(_alts is not null);
+                    foreach (SymbolicRegexNode<S> elem in _alts)
+                    {
+                        if (elem.CanBeNullable)
+                            transition = elem.IsNullable ?
+                                elem.WrapEffects(transition) :
+                                TransitionRegex<S>.Lookaround(elem.ExtractNullabilityTest(),
+                                    elem.WrapEffects(transition),
+                                    transition);
+                    }
+                    break;
+
                 case SymbolicRegexKind.And:
+                    Debug.Assert(_alts is not null);
+                    foreach (SymbolicRegexNode<S> elem in _alts)
+                    {
+                        Debug.Assert(elem.CanBeNullable);
+                        transition = elem.WrapEffects(transition);
+                    }
+                    break;
+
                 case SymbolicRegexKind.Not:
-                    // Semantics of effects are not clear for these
-                    Debug.Fail($"{nameof(WrapEffects)}:{_kind}");
+                    Debug.Assert(_left is not null);
+                    transition = _left.WrapEffects(transition);
                     break;
             }
             return transition;
@@ -1295,10 +1331,26 @@ namespace System.Text.RegularExpressions.Symbolic
                     break;
 
                 case SymbolicRegexKind.Or:
+                    Debug.Assert(_alts is not null);
+                    foreach (SymbolicRegexNode<S> elem in _alts)
+                    {
+                        if (elem.IsNullableFor(context))
+                            elem.ApplyEffects(apply, context);
+                    }
+                    break;
+
                 case SymbolicRegexKind.And:
+                    Debug.Assert(_alts is not null);
+                    foreach (SymbolicRegexNode<S> elem in _alts)
+                    {
+                        Debug.Assert(elem.IsNullableFor(context));
+                        elem.ApplyEffects(apply, context);
+                    }
+                    break;
+
                 case SymbolicRegexKind.Not:
-                    // Semantics of effects are not clear for these
-                    Debug.Fail($"{nameof(ApplyEffects)}:{_kind}");
+                    Debug.Assert(_left is not null);
+                    _left.ApplyEffects(apply, context);
                     break;
             }
         }
