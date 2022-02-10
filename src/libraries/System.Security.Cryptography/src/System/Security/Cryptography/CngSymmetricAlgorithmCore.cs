@@ -133,25 +133,55 @@ namespace System.Security.Cryptography
             return CreatePersistedCryptoTransformCore(ProduceCngKey, iv, encrypting, padding, mode, feedbackSizeInBits);
         }
 
+        public ILiteSymmetricCipher CreateLiteSymmetricCipher(ReadOnlySpan<byte> iv, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
+        {
+            if (KeyInPlainText)
+            {
+                return CreateLiteSymmetricCipher(_outer.BaseKey, iv, encrypting, padding, mode, feedbackSizeInBits);
+            }
+
+            return CreatePersistedLiteSymmetricCipher(ProduceCngKey, iv, encrypting, padding, mode, feedbackSizeInBits);
+        }
+
+        private ILiteSymmetricCipher CreateLiteSymmetricCipher(
+            byte[] key!!,
+            ReadOnlySpan<byte> iv,
+            bool encrypting,
+            PaddingMode padding,
+            CipherMode mode,
+            int feedbackSizeInBits)
+        {
+            ValidateFeedbackSize(mode, feedbackSizeInBits);
+            byte[] processedKey = CopyAndValidateKey(key);
+
+            if (!iv.IsEmpty && iv.Length != AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BlockSize))
+            {
+                throw new ArgumentException(SR.Cryptography_InvalidIVSize, nameof(iv));
+            }
+
+            if (mode.UsesIv() && iv.IsEmpty)
+            {
+                throw new CryptographicException(SR.Cryptography_MissingIV);
+            }
+
+            int blockSizeInBytes = AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BlockSize);
+            SafeAlgorithmHandle algorithmModeHandle = _outer.GetEphemeralModeHandle(mode, feedbackSizeInBits);
+
+            return new BasicSymmetricCipherLiteBCrypt(
+                algorithmModeHandle,
+                mode,
+                blockSizeInBytes,
+                _outer.GetPaddingSize(mode, feedbackSizeInBits),
+                processedKey,
+                ownsParentHandle: false,
+                iv,
+                encrypting);
+        }
+
         private UniversalCryptoTransform CreateCryptoTransform(byte[] rgbKey!!, byte[]? rgbIV, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
         {
             ValidateFeedbackSize(mode, feedbackSizeInBits);
-
-            byte[] key = rgbKey.CloneByteArray();
-
-            long keySize = key.Length * (long)BitsPerByte;
-            if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(_outer.LegalKeySizes))
-            {
-                throw new ArgumentException(SR.Cryptography_InvalidKeySize, nameof(rgbKey));
-            }
-
-            if (_outer.IsWeakKey(key))
-            {
-                throw new CryptographicException(
-                    SR.Format(
-                        SR.Cryptography_InvalidKey_Weak,
-                        _outer.GetNCryptAlgorithmIdentifier()));
-            }
+            byte[] key = CopyAndValidateKey(rgbKey);
 
             if (rgbIV != null && rgbIV.Length != AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BlockSize))
             {
@@ -161,8 +191,6 @@ namespace System.Security.Cryptography
             // CloneByteArray is null-preserving. So even when GetCipherIv returns null the iv variable
             // is correct, and detached from the input parameter.
             byte[]? iv = mode.GetCipherIv(rgbIV).CloneByteArray();
-
-            key = _outer.PreprocessKey(key);
 
             return CreateEphemeralCryptoTransformCore(key, iv, encrypting, padding, mode, feedbackSizeInBits);
         }
@@ -183,6 +211,27 @@ namespace System.Security.Cryptography
                 encrypting);
 
             return UniversalCryptoTransform.Create(padding, cipher, encrypting);
+        }
+
+        private ILiteSymmetricCipher CreatePersistedLiteSymmetricCipher(
+            Func<CngKey> cngKeyFactory,
+            ReadOnlySpan<byte> iv,
+            bool encrypting,
+            PaddingMode padding,
+            CipherMode mode,
+            int feedbackSizeInBits)
+        {
+            ValidateFeedbackSize(mode, feedbackSizeInBits);
+            Debug.Assert(mode == CipherMode.CFB ? feedbackSizeInBits == 8 : true);
+            int blockSizeInBytes = AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BlockSize);
+
+            return new BasicSymmetricCipherLiteNCrypt(
+                cngKeyFactory,
+                mode,
+                blockSizeInBytes,
+                iv,
+                encrypting,
+                _outer.GetPaddingSize(mode, feedbackSizeInBits));
         }
 
         private UniversalCryptoTransform CreatePersistedCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
@@ -233,6 +282,27 @@ namespace System.Security.Cryptography
                 // so require the feedback size to be set to 8.
                 throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedbackSizeInBits, CipherMode.CFB));
             }
+        }
+
+        private byte[] CopyAndValidateKey(byte[] rgbKey)
+        {
+            byte[] key = rgbKey.CloneByteArray();
+
+            long keySize = key.Length * (long)BitsPerByte;
+            if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(_outer.LegalKeySizes))
+            {
+                throw new ArgumentException(SR.Cryptography_InvalidKeySize, nameof(rgbKey));
+            }
+
+            if (_outer.IsWeakKey(key))
+            {
+                throw new CryptographicException(
+                    SR.Format(
+                        SR.Cryptography_InvalidKey_Weak,
+                        _outer.GetNCryptAlgorithmIdentifier()));
+            }
+
+            return _outer.PreprocessKey(key);
         }
 
         private readonly ICngSymmetricAlgorithm _outer;
