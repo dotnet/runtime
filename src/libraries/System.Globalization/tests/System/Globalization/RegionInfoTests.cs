@@ -265,7 +265,7 @@ namespace System.Globalization.Tests
 
             CultureInfo [] cultures = CultureInfo.GetCultures(CultureTypes.SpecificCultures);
 
-            AssertExtensions.Throws<ArgumentException>(() => new RegionInfo(4096));
+            AssertExtensions.Throws<ArgumentException>("culture", () => new RegionInfo(4096));
         }
     }
 }
