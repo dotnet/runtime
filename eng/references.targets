@@ -15,7 +15,7 @@
   </ItemDefinitionGroup>
 
   <ItemGroup Condition="'@(ProjectReference)' != ''">
-    <ProjectReference Update="@(ProjectReference->WithMetadataValue('Filename', 'System.Private.CoreLib'))">
+    <ProjectReference Update="@(ProjectReference->WithMetadataValue('Identity', '$(CoreLibProject)'))">
       <!-- Don't flow TargetFramework and Platform to use same inputs and outputs as the CoreLib's build as part of the runtime. -->
       <UndefineProperties>$(UndefineProperties);TargetFramework;Platform</UndefineProperties>
       <SetConfiguration Condition="'$(RuntimeFlavor)' == 'CoreCLR' and
@@ -27,13 +27,13 @@
     <!-- If a CoreLib ProjectReference is present, make all P2P assets non transitive. -->
     <ProjectReference Update="@(ProjectReference)"
                       PrivateAssets="all"
-                      Condition="@(ProjectReference->AnyHaveMetadataValue('Filename', 'System.Private.CoreLib'))" />
+                      Condition="@(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))" />
   </ItemGroup>
 
   <!-- Disable TargetArchitectureMismatch warning when we reference CoreLib as it is platform specific. -->
   <Target Name="DisableProjectReferenceArchitectureMismatchWarningForCoreLib"
           Condition="'@(ProjectReference)' != '' and
-                     @(ProjectReference->AnyHaveMetadataValue('Filename', 'System.Private.CoreLib'))"
+                     @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))"
           BeforeTargets="ResolveAssemblyReferences">
     <PropertyGroup>
       <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
