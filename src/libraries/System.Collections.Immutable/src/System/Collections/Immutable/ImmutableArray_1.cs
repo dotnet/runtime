@@ -356,7 +356,7 @@ namespace System.Collections.Immutable
             if (!items.TryCopyTo(tmp, index))
             {
                 int sequenceIndex = index;
-                foreach (var item in items)
+                foreach (T item in items)
                 {
                     tmp[sequenceIndex++] = item;
                 }
@@ -1364,7 +1364,7 @@ namespace System.Collections.Immutable
             int copied = 0;
             int removed = 0;
             int lastIndexRemoved = -1;
-            foreach (var indexToRemove in indicesToRemove)
+            foreach (int indexToRemove in indicesToRemove)
             {
                 int copyLength = lastIndexRemoved == -1 ? indexToRemove : (indexToRemove - lastIndexRemoved - 1);
                 Debug.Assert(indexToRemove > lastIndexRemoved); // We require that the input be a sorted set.
