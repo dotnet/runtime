@@ -358,7 +358,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Select_NullOrEmptyLists_Throws_ArgumentNull_TimeSpan()
         {
-            TimeSpan infinity = TimeSpan.FromMilliseconds(-1);
+            TimeSpan infinity = Timeout.InfiniteTimeSpan;
             var emptyList = new List<Socket>();
 
             Assert.Throws<ArgumentNullException>(() => Socket.Select(null, null, null, infinity));
@@ -384,7 +384,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Select_LargeList_Throws_ArgumentOutOfRange_TimeSpan()
         {
-            TimeSpan infinity = TimeSpan.FromMilliseconds(-1);
+            TimeSpan infinity = Timeout.InfiniteTimeSpan;
             var largeList = new LargeList();
 
             Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(largeList, null, null, infinity));
