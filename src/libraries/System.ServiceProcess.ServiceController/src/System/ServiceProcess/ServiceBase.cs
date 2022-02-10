@@ -81,20 +81,7 @@ namespace System.ServiceProcess
         public unsafe void RequestAdditionalTime(TimeSpan time)
         {
             int milliseconds = (int)time.TotalMilliseconds;
-            fixed (SERVICE_STATUS* pStatus = &_status)
-            {
-                if (_status.currentState != ServiceControlStatus.STATE_CONTINUE_PENDING &&
-                    _status.currentState != ServiceControlStatus.STATE_START_PENDING &&
-                    _status.currentState != ServiceControlStatus.STATE_STOP_PENDING &&
-                    _status.currentState != ServiceControlStatus.STATE_PAUSE_PENDING)
-                {
-                    throw new InvalidOperationException(SR.NotInPendingState);
-                }
-
-                _status.waitHint = milliseconds;
-                _status.checkPoint++;
-                SetServiceStatus(_statusHandle, pStatus);
-            }
+            RequestAdditionalTime(milliseconds);
         }
 
         /// <summary>
