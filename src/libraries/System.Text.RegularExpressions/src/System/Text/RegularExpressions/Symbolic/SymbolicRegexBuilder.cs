@@ -151,17 +151,14 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 if (elem.IsNothing)
                     continue;
-                if (or == null)
-                    or = elem;
-                else
-                    or = SymbolicRegexNode<TElement>.MkOrderedOr(this, or, elem);
+
+                or = or is null ? elem :  SymbolicRegexNode<TElement>.MkOrderedOr(this, or, elem);
+
                 if (elem.IsAnyStar)
                     break; // .* is the absorbing element
             }
-            if (or == null)
-                return _nothing;
-            else
-                return or;
+            
+            return or ?? _nothing;
         }
 
         /// <summary>

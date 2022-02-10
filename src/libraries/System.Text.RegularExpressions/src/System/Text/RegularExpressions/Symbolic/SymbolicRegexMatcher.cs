@@ -390,7 +390,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (p is null)
                 {
                     // this is the only place in code where the Next method is called in the matcher
-                    _builder._capturingDelta[offset] = p = new List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)>(state.AntimirovEagerNextWithEffects(minterm));
+                    p = new List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)>(state.AntimirovEagerNextWithEffects(minterm));
+                    Volatile.Write(ref _builder._capturingDelta[offset], p);
                 }
 
                 return p;
