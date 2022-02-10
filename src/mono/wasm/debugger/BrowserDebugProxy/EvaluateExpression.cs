@@ -238,7 +238,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                          break;
                      }
                     case "number":
-                        valueRet = value?.Value<double>();
+                        //casting to double and back to string would loose precision; so casting straight to string
+                        valueRet = value?.Value<string>();
                         typeRet = "double";
                         break;
                     case "boolean":

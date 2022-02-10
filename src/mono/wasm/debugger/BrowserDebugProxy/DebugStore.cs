@@ -406,6 +406,31 @@ namespace Microsoft.WebAssembly.Diagnostics
             localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
         }
 
+        public List<ParameterInfo> GetMethodParams()
+        {
+            var paramsInfo = new List<ParameterInfo>();
+            foreach (var parameterHandle in methodDef.GetParameters())
+            {
+                var parameter = Assembly.asmMetadataReader.GetParameter(parameterHandle);
+                var paramName = Assembly.asmMetadataReader.GetString(parameter.Name);
+                var isOptional = parameter.Attributes.HasFlag(ParameterAttributes.Optional) && parameter.Attributes.HasFlag(ParameterAttributes.HasDefault);
+                if (!isOptional)
+                {
+                    paramsInfo.Add(new ParameterInfo(paramName));
+                    continue;
+                }
+                var constantHandle = parameter.GetDefaultValue();
+                var blobHandle = Assembly.asmMetadataReader.GetConstant(constantHandle);
+                var paramBytes = Assembly.asmMetadataReader.GetBlobBytes(blobHandle.Value);
+                paramsInfo.Add(new ParameterInfo(
+                    paramName,
+                    blobHandle.TypeCode,
+                    paramBytes
+                ));
+            }
+            return paramsInfo;
+        }
+
         public void UpdateEnC(MetadataReader asmMetadataReader, MetadataReader pdbMetadataReaderParm, int method_idx)
         {
             this.DebugInformation = pdbMetadataReaderParm.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(method_idx));
@@ -527,6 +552,31 @@ namespace Microsoft.WebAssembly.Diagnostics
                     (StartLocation.Line == containerMethod.StartLocation.Line && StartLocation.Column > containerMethod.StartLocation.Column)) &&
                 (EndLocation.Line < containerMethod.EndLocation.Line ||
                     (EndLocation.Line == containerMethod.EndLocation.Line && EndLocation.Column < containerMethod.EndLocation.Column));
+    }
+
+    internal class ParameterInfo
+    {
+        public string Name { get; private set; }
+
+        public ConstantTypeCode TypeCode { get; private set; }
+
+        public byte[] Value { get; private set; }
+
+        public bool HasDefaultValue { get; private set; }
+
+        internal ParameterInfo(string name, ConstantTypeCode typeCode, byte[] value)
+        {
+            Name = name;
+            TypeCode = typeCode;
+            Value = value;
+            HasDefaultValue = true;
+        }
+
+        internal ParameterInfo(string name)
+        {
+            Name = name;
+            HasDefaultValue = false;
+        }
     }
 
     internal class TypeInfo
