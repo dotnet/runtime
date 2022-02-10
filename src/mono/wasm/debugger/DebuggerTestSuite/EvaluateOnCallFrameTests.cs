@@ -1039,60 +1039,32 @@ namespace DebuggerTests
                 Assert.Equal(getterProps[0]?["value"]?["value"]?.Value<int>(), 123);
             });
 
-        [Theory]
-        [InlineData("GetBool", "object", "System.Boolean")]
-        // [InlineData("GetChar", "char")] // fails, Evaluate of this datatype symbol not implemented yet (for non optional parameters either)
-        [InlineData("GetByte", "number")]
-        [InlineData("GetSByte", "number")]
-        [InlineData("GetInt16", "number")]
-        [InlineData("GetUInt16", "number")]
-        [InlineData("GetInt32", "number")]
-        [InlineData("GetUInt32", "number")]
-        [InlineData("GetInt64", "number")]
-        [InlineData("GetUInt64", "number")]
-        [InlineData("GetSingle", "number")]
-        [InlineData("GetDouble", "number")]
-        [InlineData("GetString", "string")]
-        [InlineData("GetNull", "object", "System.Boolean")]
-        public async Task EvaluateMethodWithDefaultParamCheckTypes(string methodName, string returnType, string className = null) => await CheckInspectLocalsAtBreakpointSite(
+        [Fact]
+        public async Task EvaluateMethodWithDefaultParam() => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.DefaultParamMethods:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var test = await EvaluateOnCallFrame(id, $"test.{methodName}()");
-                Assert.Equal(returnType, test.Item1["type"].Value<string>());
-                if (className != null)
-                    Assert.Equal(test.Item1["className"].Value<string>(), className);
-                switch (returnType)
-                {
-                    case "object":
-                        Assert.Equal("True", test.Item1["value"].Value<string>());
-                        break;
-                    case "number":
-                        Assert.Equal(1, test.Item1["value"].Value<int>());
-                        break;
-                    case "string":
-                        Assert.Equal("1.23", test.Item1["value"].Value<string>());
-                        break;
-                    default:
-                        Assert.Equal("true", "false");
-                        break;
-                }
-           });
-
-        [Theory]
-        [InlineData("GetInt32TwoParams(2)")]
-        [InlineData("GetInt32TwoParams(3, 2)")]
-        public async Task EvaluateMethodWithDefaultParamAndRequiredParam(string methodName) => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "Evaluate",
-            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.DefaultParamMethods:Evaluate'); 1 }})",
-            wait_for_event_fn: async (pause_location) =>
-            {
-                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var test = await EvaluateOnCallFrame(id, $"test.{methodName}");
-                Assert.Equal(test.Item1["type"].Value<string>(), "number");
-                Assert.Equal(5, test.Item1["value"].Value<int>());
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("test.GetByte()", TNumber(1)),
+                   ("test.GetSByte()", TNumber(1)),
+                   ("test.GetInt16()", TNumber(1)),
+                   ("test.GetUInt16()", TNumber(1)),
+                   ("test.GetInt32()", TNumber(1)),
+                   ("test.GetUInt32()", TNumber(1)),
+                   ("test.GetInt64()", TNumber(1)),
+                   ("test.GetUInt64()", TNumber(1)),
+                //    ("test.GetChar()", TString("A")), //fails, Evaluate of this datatype symbol not implemented yet (for non optional parameters either)
+                   ("test.GetString()", TString("1.23")),
+                   ("test.GetSingle()", JObject.FromObject( new { type = "number", value = 1.23, description = "1,23" })),
+                   ("test.GetDouble()", JObject.FromObject( new { type = "number", value = 1.23, description = "1,23" })),
+                   ("test.GetBool()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
+                   ("test.GetNull()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
+                   
+                   ("test.GetInt32TwoParams(2)", TNumber(5)),
+                   ("test.GetInt32TwoParams(3, 2)", TNumber(5))
+                   );
            });
     }
 
