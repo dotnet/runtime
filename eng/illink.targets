@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
     <PrepareResourcesDependsOn>
       _EmbedILLinkXmls;
       $(PrepareResourcesDependsOn)
