@@ -356,7 +356,8 @@ namespace System.Text
                     }
                     else if (AdvSimd.Arm64.IsSupported)
                     {
-                        (Vector128<byte> firstVector, Vector128<byte> secondVector) = AdvSimd.Arm64.LoadPairVector128(pBuffer);
+                        Vector128<byte> firstVector = AdvSimd.LoadVector128(pBuffer);
+                        Vector128<byte> secondVector = AdvSimd.LoadVector128(pBuffer + SizeOfVector128);
 
                         currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(firstVector, bitmask);
                         secondAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(secondVector, bitmask);
