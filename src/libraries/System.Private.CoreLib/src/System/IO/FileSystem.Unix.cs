@@ -387,8 +387,11 @@ namespace System.IO
             }
         }
 
-        private static void MoveDirectoryCore(string sourceFullPath, string destFullPath)
+        private static void MoveDirectoryCore(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
         {
+            // isCaseSensitiveRename is only set for case-insensitive systems (like macOS).
+            Debug.Assert(!isCaseSensitiveRename || !PathInternal.IsCaseSensitive);
+
             ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
             ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
 
@@ -401,7 +404,7 @@ namespace System.IO
 
             // The destination must not exist (unless it is a case-sensitive rename).
             // On Unix 'rename' will overwrite the destination file if it already exists, we need to manually check.
-            if (Interop.Sys.LStat(destNoDirectorySeparator, out Interop.Sys.FileStatus destFileStatus) >= 0)
+            if (!isCaseSensitiveRename && Interop.Sys.LStat(destNoDirectorySeparator, out Interop.Sys.FileStatus destFileStatus) >= 0)
             {
                 // Maintain order of exceptions as on Windows.
 
@@ -414,13 +417,15 @@ namespace System.IO
                 else if (sourceFileStatus.Dev == destFileStatus.Dev &&
                          sourceFileStatus.Ino == destFileStatus.Ino)
                 {
-                    // Assume the file system is case-insensitive, and allow a Rename when the FileName casing changes.
-                    if (!srcNoDirectorySeparator.Equals(destNoDirectorySeparator, StringComparison.OrdinalIgnoreCase) ||
-                        Path.GetFileName(srcNoDirectorySeparator).SequenceEqual(Path.GetFileName(destNoDirectorySeparator)))
+                    // isCaseSensitiveRename is only true when the system is case-insensitive (like macOS).
+                    // On a case-sensitive system (like Linux), there can stil be case-insensitive filesystems mounted.
+                    // When both paths refer to the same file and they differ only in casing, we fall through to Rename.
+                    if (!PathInternal.IsCaseSensitive && // handled by isCaseSensitiveRename.
+                        !srcNoDirectorySeparator.Equals(destNoDirectorySeparator, StringComparison.OrdinalIgnoreCase) ||     // different paths.
+                        Path.GetFileName(srcNoDirectorySeparator).SequenceEqual(Path.GetFileName(destNoDirectorySeparator))) // same names.
                     {
                         throw new IOException(SR.IO_SourceDestMustBeDifferent);
                     }
-                    // Fall through to Rename.
                 }
                 // When the path ends with a directory separator, it must be a directory.
                 else if ((sourceFileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFDIR

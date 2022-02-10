@@ -20,17 +20,18 @@ namespace System.IO
             ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
 
             // Don't allow the same path, except for changing the casing of the filename.
+            bool isCaseSensitiveRename = false;
             if (srcNoDirectorySeparator.Equals(destNoDirectorySeparator, PathInternal.StringComparison))
             {
-                ReadOnlySpan<char> srcFileName = Path.GetFileName(srcNoDirectorySeparator);
-                ReadOnlySpan<char> destFileName = Path.GetFileName(destNoDirectorySeparator);
-                if (srcFileName.SequenceEqual(destFileName))
+                if (PathInternal.IsCaseSensitive || // FileNames will be equal because paths are equal.
+                    Path.GetFileName(srcNoDirectorySeparator).SequenceEqual(Path.GetFileName(destNoDirectorySeparator)))
                 {
                     throw new IOException(SR.IO_SourceDestMustBeDifferent);
                 }
+                isCaseSensitiveRename = true;
             }
 
-            MoveDirectoryCore(sourceFullPath, destFullPath);
+            MoveDirectoryCore(sourceFullPath, destFullPath, isCaseSensitiveRename);
         }
     }
 }
