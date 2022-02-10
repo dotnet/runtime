@@ -95,7 +95,8 @@ namespace System.Security.Cryptography
             {
                 int bytesWritten;
 
-                using (SafeNCryptKeyHandle keyHandle = _key!.Handle)
+                // The Handle property duplicates the handle.
+                using (SafeNCryptKeyHandle keyHandle = _key.Handle)
                 {
                     unsafe
                     {
@@ -120,16 +121,20 @@ namespace System.Security.Cryptography
             {
                 fixed (byte* pIv = &MemoryMarshal.GetReference(iv))
                 {
-                    ErrorCode errorCode = Interop.NCrypt.NCryptSetProperty(
-                        _key.Handle,
-                        KeyPropertyName.InitializationVector,
-                        pIv,
-                        iv.Length,
-                        CngPropertyOptions.None);
-
-                    if (errorCode != ErrorCode.ERROR_SUCCESS)
+                    // The Handle property duplicates the handle.
+                    using (SafeNCryptKeyHandle keyHandle = _key.Handle)
                     {
-                        throw errorCode.ToCryptographicException();
+                        ErrorCode errorCode = Interop.NCrypt.NCryptSetProperty(
+                            keyHandle,
+                            KeyPropertyName.InitializationVector,
+                            pIv,
+                            iv.Length,
+                            CngPropertyOptions.None);
+
+                        if (errorCode != ErrorCode.ERROR_SUCCESS)
+                        {
+                            throw errorCode.ToCryptographicException();
+                        }
                     }
                 }
             }
