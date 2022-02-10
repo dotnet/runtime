@@ -331,12 +331,26 @@ namespace System.Net.NetworkInformation
         }
 
         public Task<PingReply> SendPingAsync(IPAddress address, TimeSpan timeout, byte[]? buffer = null,
-            PingOptions? options = null, CancellationToken cancellationToken = default) =>
-            SendPingAsync(address, checked((int)timeout.TotalMilliseconds), buffer ?? DefaultSendBuffer, options);
+            PingOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            int milliseconds = checked((int)timeout.TotalMilliseconds);
+
+            cancellationToken.ThrowIfCancellationRequested();
+            Task<PingReply> task = SendPingAsync(address, milliseconds, buffer ?? DefaultSendBuffer, options);
+
+            return task.WaitAsync(cancellationToken);
+        }
 
         public Task<PingReply> SendPingAsync(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null,
-            PingOptions? options = null, CancellationToken cancellationToken = default) =>
-            SendPingAsync(hostNameOrAddress, checked((int)timeout.TotalMilliseconds), buffer ?? DefaultSendBuffer, options);
+            PingOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            int milliseconds = checked((int)timeout.TotalMilliseconds);
+
+            cancellationToken.ThrowIfCancellationRequested();
+            Task<PingReply> task = SendPingAsync(hostNameOrAddress, milliseconds, buffer ?? DefaultSendBuffer, options);
+
+            return task.WaitAsync(cancellationToken);
+        }
 
         private async Task<PingReply> SendPingAsyncInternal(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
         {
