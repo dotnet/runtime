@@ -237,17 +237,11 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public PingReply Send(IPAddress address, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null)
-        {
-            int milliseconds = (int)timeout.TotalMilliseconds;
-            return Send(address, milliseconds, buffer ?? DefaultSendBuffer, options);
-        }
+        public PingReply Send(IPAddress address, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null) =>
+            Send(address, checked((int)timeout.TotalMilliseconds), buffer ?? DefaultSendBuffer, options);
 
-        public PingReply Send(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null)
-        {
-            int milliseconds = (int)timeout.TotalMilliseconds;
-            return Send(hostNameOrAddress, milliseconds, buffer ?? DefaultSendBuffer, options);
-        }
+        public PingReply Send(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null,
+            PingOptions? options = null) => Send(hostNameOrAddress, checked((int)timeout.TotalMilliseconds), buffer ?? DefaultSendBuffer, options);
 
         public void SendAsync(string hostNameOrAddress, object? userToken)
         {
@@ -337,26 +331,12 @@ namespace System.Net.NetworkInformation
         }
 
         public Task<PingReply> SendPingAsync(IPAddress address, TimeSpan timeout, byte[]? buffer = null,
-            PingOptions? options = null, CancellationToken cancellationToken = default)
-        {
-            int milliseconds = (int)timeout.TotalMilliseconds;
-
-            cancellationToken.ThrowIfCancellationRequested();
-            Task<PingReply> task = SendPingAsync(address, milliseconds, buffer ?? DefaultSendBuffer, options);
-
-            return task.WaitAsync(cancellationToken);
-        }
+            PingOptions? options = null, CancellationToken cancellationToken = default) =>
+            SendPingAsync(address, checked((int)timeout.TotalMilliseconds), buffer ?? DefaultSendBuffer, options);
 
         public Task<PingReply> SendPingAsync(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null,
-            PingOptions? options = null, CancellationToken cancellationToken = default)
-        {
-            int milliseconds = (int)timeout.TotalMilliseconds;
-
-            cancellationToken.ThrowIfCancellationRequested();
-            Task<PingReply> task = SendPingAsync(hostNameOrAddress, milliseconds, buffer ?? DefaultSendBuffer, options);
-
-            return task.WaitAsync(cancellationToken);
-        }
+            PingOptions? options = null, CancellationToken cancellationToken = default) =>
+            SendPingAsync(hostNameOrAddress, checked((int)timeout.TotalMilliseconds), buffer ?? DefaultSendBuffer, options);
 
         private async Task<PingReply> SendPingAsyncInternal(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
         {
