@@ -13,9 +13,9 @@ namespace System.Text.Json.Serialization.Metadata
     {
         private sealed class Cache<TKey> where TKey : notnull
         {
-            private int _lock;
-            private long _lastEvictedTicks; // tracks total number of invocations to the cache; can be allowed to overflow.
-            private readonly long _evictionIntervalTicks; // number of cache invocations needed before triggering an eviction run.
+            private int _evictLock;
+            private long _lastEvictedTicks; // timestamp of latest eviction operation.
+            private readonly long _evictionIntervalTicks; // min timespan needed to trigger a new evict operation.
             private readonly long _slidingExpirationTicks; // max timespan allowed for cache entries to remain inactive.
             private readonly ConcurrentDictionary<TKey, CacheEntry> _cache = new();
 
@@ -28,7 +28,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             public TValue GetOrAdd<TValue>(TKey key, Func<TKey, TValue> valueFactory) where TValue : class?
             {
-                CacheEntry entry = _cache.GetOrAdd(key,
+                CacheEntry entry = _cache.GetOrAdd(
+                    key,
 #if NETCOREAPP
                     static (TKey key, Func<TKey, TValue> valueFactory) => new(valueFactory(key)),
                     valueFactory);
@@ -40,14 +41,15 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (utcNowTicks - Volatile.Read(ref _lastEvictedTicks) >= _evictionIntervalTicks)
                 {
-                    if (Interlocked.CompareExchange(ref _lock, 1, 0) == 0)
+                    if (Interlocked.CompareExchange(ref _evictLock, 1, 0) == 0)
                     {
                         if (utcNowTicks - _lastEvictedTicks >= _evictionIntervalTicks)
                         {
                             EvictStaleCacheEntries(utcNowTicks);
                             Volatile.Write(ref _lastEvictedTicks, utcNowTicks);
-                            Volatile.Write(ref _lock, 0);
                         }
+
+                        Volatile.Write(ref _evictLock, 0);
                     }
                 }
 

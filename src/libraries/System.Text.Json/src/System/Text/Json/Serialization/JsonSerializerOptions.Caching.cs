@@ -73,11 +73,7 @@ namespace System.Text.Json
 
         private void InitializeCachingContext()
         {
-#if NETCOREAPP
             _cachingContext = TrackedCachingContexts.GetOrCreate(this);
-#else
-            _cachingContext = new CachingContext(this);
-#endif
         }
 
         /// <summary>
@@ -111,7 +107,6 @@ namespace System.Text.Json
             }
         }
 
-#if NETCOREAPP
         /// <summary>
         /// Defines a cache of CachingContexts; instead of using a ConditionalWeakTable which can be slow to traverse
         /// this approach uses a regular dictionary pointing to weak references of <see cref="CachingContext"/>.
@@ -226,7 +221,7 @@ namespace System.Text.Json
 
                         // - If avgEvictionsPerRun >= 1 we skip no subsequent eviction calls.
                         // - If avgEvictionsPerRun < 1 we skip ~ `1 / avgEvictionsPerRun` calls.
-                        int runsPerEviction = (int)Math.Round(1 / Math.Clamp(avgEvictionsPerRun, 0.1, 1));
+                        int runsPerEviction = (int)Math.Round(1 / Math.Min(Math.Max(avgEvictionsPerRun, 0.1), 1));
                         Debug.Assert(runsPerEviction >= 1 && runsPerEviction <= 10);
                         return runsPerEviction - 1;
                     }
@@ -315,7 +310,18 @@ namespace System.Text.Json
 
                 return hc.ToHashCode();
             }
-        }
+
+#if !NETCOREAPP
+            /// <summary>
+            /// Polyfill for System.HashCode.
+            /// </summary>
+            private struct HashCode
+            {
+                private int _hashCode;
+                public void Add<T>(T? value) => _hashCode = (_hashCode, value).GetHashCode();
+                public int ToHashCode() => _hashCode;
+            }
 #endif
+        }
     }
 }

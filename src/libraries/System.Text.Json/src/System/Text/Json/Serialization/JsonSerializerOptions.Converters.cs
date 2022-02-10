@@ -93,7 +93,7 @@ namespace System.Text.Json
         /// </remarks>
         public IList<JsonConverter> Converters { get; }
 
-        internal JsonConverter GetConverterForMember(Type? parentClassType, Type runtimePropertyType, MemberInfo? memberInfo)
+        internal JsonConverter GetConverterFromMember(Type? parentClassType, Type runtimePropertyType, MemberInfo? memberInfo)
         {
             JsonConverter converter = null!;
 

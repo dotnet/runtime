@@ -600,7 +600,7 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(type != null);
             ValidateType(type, parentClassType, memberInfo, options);
 
-            JsonConverter converter = options.GetConverterForMember(parentClassType, type, memberInfo);
+            JsonConverter converter = options.GetConverterFromMember(parentClassType, type, memberInfo);
 
             // The runtimeType is the actual value being assigned to the property.
             // There are three types to consider for the runtimeType:
