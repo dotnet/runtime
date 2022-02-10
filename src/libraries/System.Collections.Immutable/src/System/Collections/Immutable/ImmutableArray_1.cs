@@ -1242,5 +1242,24 @@ namespace System.Collections.Immutable
 
             return new ImmutableArray<T>(newArray);
         }
+
+        private struct MultiSet
+        {
+            private readonly IEqualityComparer<T>? _equalityComparer;
+
+            public MultiSet(IEqualityComparer<T>? equalityComparer)
+            {
+                _equalityComparer = equalityComparer;
+            }
+
+            public void Add(T item)
+            {
+            }
+
+            public bool TryRemove(T item)
+            {
+                return true;
+            }
+        }
     }
 }
