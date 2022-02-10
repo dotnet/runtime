@@ -10,13 +10,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		protected override string TestSuiteName => "Reflection";
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task ActivatorCreateInstance ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task AssemblyImportedViaReflectionWithSweptReferences ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -28,7 +28,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task ConstructorUsedViaReflection ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -40,19 +40,19 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task ExpressionCallString ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task ExpressionNewType ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task ExpressionPropertyMethodInfo ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -112,13 +112,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task TypeUsedViaReflection ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task TypeUsedViaReflectionTypeDoesntExist ()
 		{
 			return RunTest (allowMissingWarnings: true);
