@@ -23,11 +23,12 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 schedules:
-- cron: "30 2 * * *"
-  displayName: Every night at 2:30AM
+- cron: "30 2,14 * * *"
+  displayName: Every day at 2:30 AM and PM
   branches:
     include:
     - main
+    - release/6.0
   always: true
 
 jobs:
@@ -111,6 +112,156 @@ jobs:
         runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptengine: 'javascriptcore'
+
+  # build mono Android scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Android_arm64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: AndroidMono
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: Android Mono Artifacts
+          artifactName: AndroidMonoarm64
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+    
+  # build mono iOS scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - iOS_arm64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: iOSMono
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: iOS Mono Artifacts
+          artifactName: iOSMonoarm64
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+
+  # run mono and maui android scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - Windows_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: AndroidMono
+        projectFile: android_scenarios.proj
+        runKind: android_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfpixel4a'
+
+  # run mono iOS scenarios and maui iOS scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - Windows_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfpixel4a'
+        iosLlvmBuild: False
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - Windows_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfpixel4a'
+        iosLlvmBuild: True
+
+    # build maui runtime packs
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Android_x86
+      - Android_x64
+      - Android_arm
+      - Android_arm64
+      - MacCatalyst_x64
+      - iOSSimulator_x64
+      - iOS_arm64
+      - iOS_arm
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: Maui_Packs_Mono
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
+  
+  # build maui app
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - iOS_arm64
+      jobParameters:
+        dependsOn:
+          - Build_Android_arm_release_Maui_Packs_Mono
+          - Build_Android_arm64_release_Maui_Packs_Mono
+          - Build_Android_x86_release_Maui_Packs_Mono
+          - Build_Android_x64_release_Maui_Packs_Mono
+          - Build_MacCatalyst_x64_release_Maui_Packs_Mono
+          - Build_iOSSimulator_x64_release_Maui_Packs_Mono
+          - Build_iOS_arm_release_Maui_Packs_Mono
+          - Build_iOS_arm64_release_Maui_Packs_Mono
+        buildArgs: -s mono -c $(_BuildConfig)
+        nameSuffix: MACiOSAndroidMaui
+        isOfficialBuild: false
+        pool:
+          vmImage: 'macos-11'
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: MAC, iOS, and Android Maui Artifacts
+          artifactName: MACiOSAndroidMauiArm
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
