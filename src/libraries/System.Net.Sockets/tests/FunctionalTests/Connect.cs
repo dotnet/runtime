@@ -369,7 +369,6 @@ namespace System.Net.Sockets.Tests
             // Connect to port 1 where we expect no server to be listening.
             SocketException se = await Assert.ThrowsAnyAsync<SocketException>(() => ConnectAsync(socket, new IPEndPoint(IPAddress.Loopback, 1)));
 
-
             if (se.SocketErrorCode != SocketError.ConnectionRefused)
             {
                 Assert.Equal(SocketError.WouldBlock, se.SocketErrorCode);
