@@ -806,14 +806,8 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUN
 
     TypeHandle typeHandle = refType->GetType();
 
-    if (typeHandle.IsTypeDesc()) {
-
-        if (typeHandle.IsGenericVariable()) {
-            return tdPublic;
-        }
-
-        return 0;
-    }
+    if (typeHandle.IsTypeDesc())
+        return typeHandle.GetElementTypeAttributes();
 
 #ifdef FEATURE_COMINTEROP
     // __ComObject types are always public.

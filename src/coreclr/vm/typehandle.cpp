@@ -244,6 +244,26 @@ TypeHandle TypeHandle::GetTypeParam() const
     return TypeHandle();
 }
 
+// Obtain attributes of the element type from a byref or pointer type, returns tdPublic for generic type variables, 0 otherwise
+INT32 TypeHandle::GetElementTypeAttributes() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (IsGenericVariable())
+        return tdPublic;
+
+    if (IsPointer() || IsByRef()) {
+        TypeHandle elementType = GetTypeParam();
+
+        if (elementType.IsTypeDesc())
+            return elementType.GetElementTypeAttributes();
+
+        return (INT32)elementType.GetMethodTable()->GetAttrClass();
+    }
+
+    return 0;
+}
+
 #ifndef DACCESS_COMPILE
 TypeHandle TypeHandle::Instantiate(Instantiation inst) const
 {

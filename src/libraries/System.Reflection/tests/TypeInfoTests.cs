@@ -1173,6 +1173,28 @@ namespace System.Reflection.Tests
             Assert.True(pointerType.IsPointer);
         }
 
+        public static IEnumerable<object[]> TypeDescTypesIsPublic_TestData()
+        {
+            yield return new object[] { typeof(int).MakeByRefType(), true };
+            yield return new object[] { typeof(int).MakePointerType(), true };
+            yield return new object[] { typeof(int).MakeArrayType(), true };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakeByRefType(), false };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakePointerType(), false };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakeArrayType(), true };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedGenericClass<>).MakeGenericType(typeof(string)), false };
+            yield return new object[] { typeof(TI_BaseClass).MakeByRefType(), true };
+            yield return new object[] { typeof(TI_BaseClass).MakePointerType(), true };
+            yield return new object[] { typeof(TI_BaseClass).MakeArrayType(), true };
+        }
+
+        [Theory]
+        [MemberData(nameof(TypeDescTypesIsPublic_TestData))]
+        public void TypeDescTypesIsPublic(Type type, bool expected)
+        {
+            Assert.Equal(expected, type.GetTypeInfo().IsPublic);
+            Assert.Equal(!expected, type.GetTypeInfo().IsNestedAssembly);
+        }
+
         [Fact]
         public void MakePointerType_TypeAlreadyByRef_ThrowsTypeLoadException()
         {
@@ -1828,6 +1850,7 @@ namespace System.Reflection.Tests
         public class PublicNestedClass2 { }
         private class PrivateNestedClass { } // Private, so not inherited
         internal class InternalNestedClass { } // Internal members are not inherited
+        internal class InternalNestedGenericClass<T>{ }
         protected class ProtectedNestedClass { }
 
         public string StringProperty1 { get { return ""; } set { } }
