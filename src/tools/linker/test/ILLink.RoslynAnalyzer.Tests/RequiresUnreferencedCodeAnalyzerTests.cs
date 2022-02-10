@@ -404,7 +404,7 @@ class C
 			return VerifyRequiresUnreferencedCodeAnalyzer (source);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2557")]
+		[Fact]
 		public Task TestMakeGenericTypeUsage ()
 		{
 			var source = @"

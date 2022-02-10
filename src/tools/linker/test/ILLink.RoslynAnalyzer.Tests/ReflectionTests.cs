@@ -22,27 +22,31 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task ConstructorsUsedViaReflection ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact]
 		public Task ConstructorUsedViaReflection ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task EventsUsedViaReflection ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact]
 		public Task ExpressionCallString ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
@@ -58,57 +62,66 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task FieldsUsedViaReflection ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task MembersUsedViaReflection ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task MemberUsedViaReflection ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task MethodsUsedViaReflection ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task NestedTypesUsedViaReflection ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task ObjectGetType ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task PropertiesUsedViaReflection ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task TypeHierarchyReflectionWarnings ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2578")]
+		[Fact]
 		public Task TypeHierarchySuppressions ()
 		{
+			// https://github.com/dotnet/linker/issues/2578
 			return RunTest (allowMissingWarnings: true);
 		}
 
