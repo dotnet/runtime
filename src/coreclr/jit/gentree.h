@@ -4709,7 +4709,7 @@ struct GenTreeCall final : public GenTree
         // are clobbered by the dispatch helper.
         bool mayUseDispatcher    = GetIndirectionCellArgKind() == NonStandardArgKind::None;
         bool shouldUseDispatcher = true;
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_ARM64)
         bool mayUseDispatcher = true;
         // Branch predictors on ARM64 generally do not handle the dispatcher as
         // well as on x64 hardware, so only use the validator by default.

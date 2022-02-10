@@ -475,9 +475,14 @@ namespace System.Net.Security.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58927", TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate)
         {
+            if (PlatformDetection.IsWindows10Version22000OrGreater)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/58927")]
+                throw new SkipTestException("Unstable on Windows 11");
+            }
+
             bool negotiateClientCertificateCalled = false;
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(TestConfiguration.PassingTestTimeout);

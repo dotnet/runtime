@@ -172,7 +172,8 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(IsDesktopOS)' == 'true' " >
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libcoreclr$(LibSuffix)" TargetDir=""  />
+      <RuntimeDependencyCopyLocal Condition="'$(TargetOS)' != 'windows'" Include="$(MonoArtifactsPath)/libcoreclr$(LibSuffix)" TargetDir=""  />
+      <RuntimeDependencyCopyLocal Condition="'$(TargetOS)' == 'windows'" Include="$(MonoArtifactsPath)coreclr$(LibSuffix)" TargetDir=""  />
       <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libmono-component-*" TargetDir=""  />
        <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="/"  />
     </ItemGroup>

@@ -577,6 +577,7 @@ static guint16 sri_vector_methods [] = {
 	SN_AsVector3,
 	SN_AsVector4,
 	SN_Ceiling,
+	SN_ConditionalSelect,
 	SN_Create,
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
@@ -659,6 +660,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		int ceil_or_floor = id == SN_Ceiling ? INTRINS_AARCH64_ADV_SIMD_FRINTP : INTRINS_AARCH64_ADV_SIMD_FRINTM;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, ceil_or_floor, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
+	}
+	case SN_ConditionalSelect: {
+#ifdef TARGET_ARM64
+		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BSL, -1, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif
