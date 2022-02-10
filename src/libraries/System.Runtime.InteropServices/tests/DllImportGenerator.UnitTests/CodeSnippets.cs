@@ -194,7 +194,6 @@ partial class Test
         CharSet = CharSet.Unicode,
         EntryPoint = ""UserDefinedEntryPoint"",
         ExactSpelling = true,
-        PreserveSig = false,
         SetLastError = true)]
     public static partial void Method();
 }
@@ -217,7 +216,6 @@ partial class Test
         CharSet = (CharSet)2,
         EntryPoint = EntryPointName,
         ExactSpelling = 0 != 1,
-        PreserveSig = IsTrue,
         SetLastError = IsFalse)]
     public static partial void Method1();
 
@@ -225,7 +223,6 @@ partial class Test
         CharSet = (CharSet)Two,
         EntryPoint = EntryPointName,
         ExactSpelling = One != Two,
-        PreserveSig = !IsFalse,
         SetLastError = !IsTrue)]
     public static partial void Method2();
 }
@@ -491,29 +488,15 @@ partial class Test
         /// <summary>
         /// Declaration with PreserveSig = false.
         /// </summary>
-        public static string PreserveSigFalse(string typeName) => @$"
+        public static string SetLastErrorTrue(string typeName) => @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
-    public static partial {typeName} Method1();
-
-    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
-    public static partial {typeName} Method2({typeName} p);
+    [GeneratedDllImport(""DoesNotExist"", SetLastError = true)]
+    public static partial {typeName} Method({typeName} p);
 }}";
 
-        public static string PreserveSigFalse<T>() => PreserveSigFalse(typeof(T).ToString());
-
-        /// <summary>
-        /// Declaration with PreserveSig = false and void return.
-        /// </summary>
-        public static readonly string PreserveSigFalseVoidReturn = @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
-    public static partial void Method();
-}}";
+        public static string SetLastErrorTrue<T>() => SetLastErrorTrue(typeof(T).ToString());
 
         public static string DelegateParametersAndModifiers = BasicParametersAndModifiers("MyDelegate") + @"
 delegate int MyDelegate(int a);";
@@ -584,22 +567,6 @@ partial class Test
 }}";
 
         public static string MarshalAsArrayParameterWithNestedMarshalInfo<T>(UnmanagedType nestedMarshalType, string preDeclaration = "") => MarshalAsArrayParameterWithNestedMarshalInfo(typeof(T).ToString(), nestedMarshalType, preDeclaration);
-        
-        public static string ArrayPreserveSigFalse(string elementType, string preDeclaration = "") => $@"
-using System.Runtime.InteropServices;
-{preDeclaration}
-partial class Test
-{{
-    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
-    [return:MarshalAs(UnmanagedType.LPArray, SizeConst=10)]
-    public static partial {elementType}[] Method1();
-
-    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
-    [return:MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)]
-    public static partial {elementType}[] Method2(int i);
-}}";
-
-        public static string ArrayPreserveSigFalse<T>(string preDeclaration = "") => ArrayPreserveSigFalse(typeof(T).ToString(), preDeclaration);
 
         /// <summary>
         /// Declaration with parameters with MarshalAs.
@@ -1133,7 +1100,7 @@ partial class Test
         out int pOutSize
         );
 }}";
-        
+
         public static string CustomCollectionWithMarshaller(bool enableDefaultMarshalling)
         {
             string nativeMarshallingAttribute = enableDefaultMarshalling ? "[NativeMarshalling(typeof(Marshaller<>))]" : string.Empty;

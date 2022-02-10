@@ -145,36 +145,6 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.SafeHandleWithCustomDefaultConstructorAccessibility(privateCtor: false) };
             yield return new[] { CodeSnippets.SafeHandleWithCustomDefaultConstructorAccessibility(privateCtor: true) };
 
-            // PreserveSig
-            yield return new[] { CodeSnippets.PreserveSigFalseVoidReturn };
-            yield return new[] { CodeSnippets.PreserveSigFalse<byte>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<sbyte>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<short>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<ushort>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<int>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<uint>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<long>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<ulong>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<float>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<double>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<bool>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<IntPtr>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<UIntPtr>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse("Microsoft.Win32.SafeHandles.SafeFileHandle") };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<byte>(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<sbyte>(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<short>(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<ushort>(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<int>(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<uint>(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<long>(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<ulong>(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<float>(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<double>(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<bool>(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<IntPtr>(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<UIntPtr>(CodeSnippets.DisableRuntimeMarshalling) };
-
             // Custom type marshalling
             yield return new[] { CodeSnippets.CustomStructMarshallingParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshallingStackallocParametersAndModifiersNoRef };
@@ -404,7 +374,7 @@ namespace DllImportGenerator.UnitTests
         {
             yield return new[] { CodeSnippets.AllGeneratedDllImportNamedArguments };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<int>() };
-            yield return new[] { CodeSnippets.PreserveSigFalse<int>() };
+            yield return new[] { CodeSnippets.SetLastErrorTrue<int>() };
         }
 
         [ConditionalTheory]
