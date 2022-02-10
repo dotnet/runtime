@@ -157,7 +157,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (elem.IsAnyStar)
                     break; // .* is the absorbing element
             }
-            
+
             return or ?? _nothing;
         }
 

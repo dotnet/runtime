@@ -55,6 +55,15 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>If true then state starts with a ^ or $ or \A or \z or \Z</summary>
         internal bool StartsWithLineAnchor => Node._info.StartsWithLineAnchor;
 
+        /// <summary>
+        /// Translates a minterm predicate to a character kind, which is a general categorization of characters used
+        /// for cheaply deciding the nullability of anchors.
+        /// </summary>
+        /// <remarks>
+        /// A False predicate is handled as a special case to indicate the very last \n.
+        /// </remarks>
+        /// <param name="minterm">the minterm to translate</param>
+        /// <returns>the character kind of the minterm</returns>
         private uint GetNextCharKind(ref T minterm)
         {
             ICharAlgebra<T> alg = Node._builder._solver;

@@ -305,9 +305,9 @@ namespace System.Text.RegularExpressions.Symbolic
                     switch (_effect?.Kind)
                     {
                         case DerivativeEffect.EffectKind.CaptureStart:
-                            return $"captureStart({_effect?.IntArg0},{_first})";
+                            return $"captureStart({_effect?.CaptureNumber},{_first})";
                         default:
-                            return $"captureEnd({_effect?.IntArg0},{_first})";
+                            return $"captureEnd({_effect?.CaptureNumber},{_first})";
                     }
                 default:
                     return $"if(IsNull({_node}),{_first},{_second})";

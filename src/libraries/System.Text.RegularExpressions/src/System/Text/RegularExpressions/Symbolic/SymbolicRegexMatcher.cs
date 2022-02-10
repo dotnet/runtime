@@ -186,7 +186,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Create the dot-star pattern (a concatenation of any* with the original pattern)
             // and all of its initial states.
-            var unorderedPattern = _pattern.IgnoreOrOrder();
+            SymbolicRegexNode<TSetType> unorderedPattern = _pattern.IgnoreOrOrder();
             _dotStarredPattern = _builder.MkConcat(_builder._anyStar, unorderedPattern);
             var dotstarredInitialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < dotstarredInitialStates.Length; i++)
@@ -269,36 +269,57 @@ namespace System.Text.RegularExpressions.Symbolic
             return default(TTransition).TakeTransition(this, sourceState, mintermId, minterm);
         }
 
+        /// <summary>
+        /// Stores additional data for tracking capture start and end positions.
+        /// </summary>
+        /// <remarks>
+        /// The NFA simulation based third phase has one of these for each current state in the current set of live states.
+        /// </remarks>
         private struct Registers
         {
-            public int[] captureStarts;
-            public int[] captureEnds;
+            public int[] CaptureStarts;
+            public int[] CaptureEnds;
 
-            public void ApplyEffects(List<DerivativeEffect> effects, int i)
+            /// <summary>
+            /// Applies a list of effects in order to these registers at the provided input position. The order of effects
+            /// should not matter though, as multiple effects to the same capture start or end do not arise.
+            /// </summary>
+            /// <param name="effects">list of effects to be applied</param>
+            /// <param name="pos">the current input position to record</param>
+            public void ApplyEffects(List<DerivativeEffect> effects, int pos)
             {
                 foreach (DerivativeEffect effect in effects)
                 {
-                    ApplyEffect(effect, i);
+                    ApplyEffect(effect, pos);
                 }
             }
 
-            public void ApplyEffect(DerivativeEffect effect, int i)
+            /// <summary>
+            /// Apply a single effect to these registers at the provided input position.
+            /// </summary>
+            /// <param name="effect">the effecto to be applied</param>
+            /// <param name="pos">the current input position to record</param>
+            public void ApplyEffect(DerivativeEffect effect, int pos)
             {
                 switch (effect.Kind)
                 {
                     case DerivativeEffect.EffectKind.CaptureStart:
-                        captureStarts[effect.IntArg0] = i;
+                        CaptureStarts[effect.CaptureNumber] = pos;
                         break;
                     case DerivativeEffect.EffectKind.CaptureEnd:
-                        captureEnds[effect.IntArg0] = i;
+                        CaptureEnds[effect.CaptureNumber] = pos;
                         break;
                 }
             }
 
+            /// <summary>
+            /// Make a copy of this set of registers.
+            /// </summary>
+            /// <returns>Registers pointing to copies of this set of registers</returns>
             public Registers Clone() => new Registers
             {
-                captureStarts = (int[])captureStarts.Clone(),
-                captureEnds = (int[])captureEnds.Clone(),
+                CaptureStarts = (int[])CaptureStarts.Clone(),
+                CaptureEnds = (int[])CaptureEnds.Clone(),
             };
         }
 
@@ -466,7 +487,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             int i_end = FindEndPositionCapturing(input, i_start, out Registers endRegisters);
-            return new SymbolicMatch(i_start, i_end + 1 - i_start, endRegisters.captureStarts, endRegisters.captureEnds);
+            return new SymbolicMatch(i_start, i_end + 1 - i_start, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
         }
 
         /// <summary>Find match end position using the original pattern, end position is known to exist.</summary>
@@ -559,11 +580,11 @@ namespace System.Text.RegularExpressions.Symbolic
             // Initialize registers with -1, which means "not seen yet"
             Registers initialRegisters = new Registers
             {
-                captureStarts = new int[_capsize],
-                captureEnds = new int[_capsize],
+                CaptureStarts = new int[_capsize],
+                CaptureEnds = new int[_capsize],
             };
-            Array.Fill(initialRegisters.captureStarts, -1);
-            Array.Fill(initialRegisters.captureEnds, -1);
+            Array.Fill(initialRegisters.CaptureStarts, -1);
+            Array.Fill(initialRegisters.CaptureEnds, -1);
 
             if (state.IsNullable(GetCharKind(input, i)))
             {

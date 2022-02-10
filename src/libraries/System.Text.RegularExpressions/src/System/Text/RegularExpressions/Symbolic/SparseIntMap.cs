@@ -17,8 +17,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private void Grow(int maxValue)
         {
             int newLength = maxValue + 1;
-            if (newLength <= _sparse.Length)
-                return;
+            Debug.Assert(newLength > _sparse.Length);
             // At least double the size to amortize memory allocations
             newLength = Math.Max(2 * _sparse.Length, newLength);
             Array.Resize(ref _sparse, newLength);
@@ -32,7 +31,7 @@ namespace System.Text.RegularExpressions.Symbolic
         public int Count => _dense.Count;
 
         /// <summary>Get the internal list of entries. Do not modify.</summary>
-        public List<(int, T)> Values => _dense;
+        public List<KeyValuePair<int, T>> Values => _dense;
 
         /// <summary>Return the index of the entry with the key, or -1 if none exists.</summary>
         public int Find(int key)
@@ -40,11 +39,11 @@ namespace System.Text.RegularExpressions.Symbolic
             int[] sparse = _sparse;
             if ((uint)key < (int)sparse.Length)
             {
-                List<(int, T)> dense = _dense;
+                List<KeyValuePair<int, T>> dense = _dense;
                 int idx = sparse[key];
                 if (idx < dense.Count)
                 {
-                    int entryKey = dense[idx].Item1;
+                    int entryKey = dense[idx].Key;
                     Debug.Assert(entryKey < _sparse.Length);
                     if (key == entryKey)
                     {
@@ -52,7 +51,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
                 }
             }
-            
+
             return -1;
         }
 
@@ -73,7 +72,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             index = _dense.Count;
             _sparse[key] = index;
-            _dense.Add((key, default(T)));
+            _dense.Add(new KeyValuePair<int, T>(key, default(T)));
             return true;
         }
 
@@ -89,8 +88,8 @@ namespace System.Text.RegularExpressions.Symbolic
         public void Update(int index, int key, T value)
         {
             Debug.Assert(0 <= index && index < _dense.Count);
-            Debug.Assert(_dense[index].Item1 == key);
-            _dense[index] = (key, value);
+            Debug.Assert(_dense[index].Key == key);
+            _dense[index] = new KeyValuePair<int, T>(key, value);
         }
     }
 }

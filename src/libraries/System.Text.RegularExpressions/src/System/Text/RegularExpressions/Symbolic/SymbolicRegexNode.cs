@@ -1263,11 +1263,6 @@ namespace System.Text.RegularExpressions.Symbolic
                         transition = elem.WrapEffects(transition);
                     }
                     break;
-
-                case SymbolicRegexKind.Not:
-                    Debug.Assert(_left is not null);
-                    transition = _left.WrapEffects(transition);
-                    break;
             }
             return transition;
         }
@@ -1346,11 +1341,6 @@ namespace System.Text.RegularExpressions.Symbolic
                         Debug.Assert(elem.IsNullableFor(context));
                         elem.ApplyEffects(apply, context);
                     }
-                    break;
-
-                case SymbolicRegexKind.Not:
-                    Debug.Assert(_left is not null);
-                    _left.ApplyEffects(apply, context);
                     break;
             }
         }
