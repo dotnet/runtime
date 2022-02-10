@@ -199,11 +199,27 @@ namespace Microsoft.Interop
             }
             else
             {
-                generatorFactory = new DefaultMarshallingGeneratorFactory(options);
-                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, options);
+                if (env.TargetFramework != TargetFramework.Net || env.TargetFrameworkVersion.Major < 7)
+                {
+                    // If we're using our downstream support, fall back to the Forwarder marshaller when the TypePositionInfo is unhandled.
+                    generatorFactory = new ForwarderMarshallingGeneratorFactory();
+                }
+                else
+                {
+                    // If we're in a "supported" scenario, then emit a diagnostic as our final fallback.
+                    generatorFactory = new UnsupportedMarshallingFactory();
+                }
+
+                generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);
+
+                IAssemblySymbol coreLibraryAssembly = env.Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
+                ITypeSymbol disabledRuntimeMarshallingAttributeType = coreLibraryAssembly.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute);
+                bool runtimeMarshallingDisabled = env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
+
+                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(options, runtimeMarshallingDisabled));
                 // We don't need to include the later generator factories for collection elements
                 // as the later generator factories only apply to parameters or to the synthetic return value for PreserveSig support.
-                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, options);
+                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(options, runtimeMarshallingDisabled));
                 if (!dllImportData.PreserveSig)
                 {
                     // Create type info for native out param

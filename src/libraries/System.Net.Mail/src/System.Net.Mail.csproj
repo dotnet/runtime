@@ -66,6 +66,8 @@
     <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
     <Compile Include="System\Net\DelegatedStream.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
              Link="Common\System\Net\LazyAsyncResult.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
@@ -96,10 +98,8 @@
     <Compile Include="System\Net\Mail\NetEventSource.Mail.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
              Link="Common\System\Net\ContextAwareResult.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs" />
+    <Compile Include="$(CommonPath)System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs"
+             Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
              Link="Common\System\Net\DebugSafeHandle.cs" />
     <Compile Include="$(CommonPath)System\Net\TlsStream.cs"

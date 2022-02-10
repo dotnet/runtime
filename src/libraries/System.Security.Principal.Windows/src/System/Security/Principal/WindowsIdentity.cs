@@ -132,10 +132,9 @@ namespace System.Security.Principal
                 {
                     if (!Interop.Advapi32.AllocateLocallyUniqueId(&sourceContext.SourceIdentifier))
                         throw new SecurityException(new Win32Exception().Message);
-                }
 
-                sourceContext.SourceName = new byte[TOKEN_SOURCE.TOKEN_SOURCE_LENGTH];
-                Buffer.BlockCopy(sourceName, 0, sourceContext.SourceName, 0, sourceName.Length);
+                    sourceName.AsSpan().CopyTo(new Span<byte>(sourceContext.SourceName, TOKEN_SOURCE.TOKEN_SOURCE_LENGTH));
+                }
 
                 if (sUserPrincipalName == null)
                     throw new ArgumentNullException(nameof(sUserPrincipalName));
@@ -179,13 +178,13 @@ namespace System.Security.Principal
 
                             int ntStatus = Interop.SspiCli.LsaLogonUser(
                                 lsaHandle,
-                                ref lsaOriginName,
+                                lsaOriginName,
                                 SECURITY_LOGON_TYPE.Network,
                                 packageId,
                                 authenticationInfo.DangerousGetHandle(),
                                 authenticationInfoLength,
                                 IntPtr.Zero,
-                                ref sourceContext,
+                                sourceContext,
                                 out SafeLsaReturnBufferHandle profileBuffer,
                                 out int profileBufferLength,
                                 out LUID logonId,

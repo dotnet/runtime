@@ -7185,7 +7185,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * FIXME: This is very slow, need to create a wrapper at JIT time
 				 * instead based on the signature.
 				 */
-				EMIT_NEW_IMAGECONST (cfg, args [0], m_class_get_image (method->klass));
+				EMIT_NEW_IMAGECONST (cfg, args [0], ((MonoDynamicMethod*)method)->assembly->image);
 				EMIT_NEW_PCONST (cfg, args [1], fsig);
 				args [2] = addr;
 				// FIXME tailcall?

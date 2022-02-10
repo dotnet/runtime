@@ -21,6 +21,8 @@
     <Compile Include="System\IO\CachedConsoleStream.cs" />
     <Compile Include="System\IO\SyncTextReader.cs" />
     <Compile Include="System\IO\Error.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Text\ConsoleEncoding.cs"
              Link="Common\System\Text\ConsoleEncoding.cs" />
   </ItemGroup>

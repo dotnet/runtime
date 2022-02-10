@@ -11,6 +11,8 @@
     <NoWarn Condition="'$(TargetsWindows)' != 'true'">$(NoWarn);CA1823</NoWarn> <!-- Avoid unused fields warnings in Unix build -->
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegistryConstants.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.RegistryConstants.cs" />
     <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs"

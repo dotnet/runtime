@@ -102,8 +102,8 @@ namespace DllImportGenerator.UnitTests
 
             // [In, Out] attributes
             // By value non-blittable array
-            yield return new[] { CodeSnippets.ByValueParameterWithModifier<bool[]>("Out") };
-            yield return new[] { CodeSnippets.ByValueParameterWithModifier<bool[]>("In, Out") };
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier<bool[]>("Out", CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier<bool[]>("In, Out", CodeSnippets.DisableRuntimeMarshalling) };
 
             // Enums
             yield return new[] { CodeSnippets.EnumParameters };
@@ -161,19 +161,19 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.PreserveSigFalse<IntPtr>() };
             yield return new[] { CodeSnippets.PreserveSigFalse<UIntPtr>() };
             yield return new[] { CodeSnippets.PreserveSigFalse("Microsoft.Win32.SafeHandles.SafeFileHandle") };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<byte>() };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<sbyte>() };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<short>() };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<ushort>() };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<int>() };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<uint>() };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<long>() };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<ulong>() };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<float>() };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<double>() };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<bool>() };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<IntPtr>() };
-            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<UIntPtr>() };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<byte>(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<sbyte>(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<short>(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<ushort>(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<int>(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<uint>(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<long>(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<ulong>(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<float>(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<double>(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<bool>(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<IntPtr>(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ArrayPreserveSigFalse<UIntPtr>(CodeSnippets.DisableRuntimeMarshalling) };
 
             // Custom type marshalling
             yield return new[] { CodeSnippets.CustomStructMarshallingParametersAndModifiers };
@@ -205,12 +205,6 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<double>() };
             yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<IntPtr>() };
             yield return new[] { CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<UIntPtr>() };
-
-            // Implicit blittable types
-            yield return new[] { CodeSnippets.ImplicitlyBlittableStructParametersAndModifiers() };
-            yield return new[] { CodeSnippets.ImplicitlyBlittableStructParametersAndModifiers("internal") };
-            yield return new[] { CodeSnippets.ImplicitlyBlittableGenericTypeParametersAndModifiers<int>() };
-            yield return new[] { CodeSnippets.ImplicitlyBlittableGenericTypeParametersAndModifiers<int>("internal") };
 
             // Custom collection marshalling
             yield return new[] { CodeSnippets.CollectionByValue<byte>() };
@@ -480,7 +474,7 @@ namespace DllImportGenerator.UnitTests
         {
             yield return new object[] { new[] { CodeSnippets.BasicParametersAndModifiers<int>(), CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.Bool) } };
             yield return new object[] { new[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<int>(CharSet.Unicode), CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.Bool) } };
-            yield return new object[] { new[] { CodeSnippets.BasicParameterByValue("int[]"), CodeSnippets.BasicParameterWithByRefModifier("ref", "int") } };
+            yield return new object[] { new[] { CodeSnippets.BasicParameterByValue("int[]", CodeSnippets.DisableRuntimeMarshalling), CodeSnippets.BasicParameterWithByRefModifier("ref", "int") } };
         }
 
         [ConditionalTheory]
