@@ -129,56 +129,6 @@ namespace System.Net.NetworkInformation.Tests
             AssertExtensions.Throws<ArgumentException>("buffer", () => { p.Send(TestSettings.LocalHost, 1, new byte[65501]); });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task SendPingAsync_InvalidArgs_TimeSpan()
-        {
-            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
-            Ping p = new Ping();
-
-            // Null address
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { p.SendPingAsync((IPAddress)null); });
-            AssertExtensions.Throws<ArgumentNullException>("hostNameOrAddress", () => { p.SendPingAsync((string)null); });
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { p.SendAsync((IPAddress)null, null); });
-            AssertExtensions.Throws<ArgumentNullException>("hostNameOrAddress", () => { p.SendAsync((string)null, null); });
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { p.Send((IPAddress)null); });
-            AssertExtensions.Throws<ArgumentNullException>("hostNameOrAddress", () => { p.Send((string)null); });
-
-            // Invalid address
-            AssertExtensions.Throws<ArgumentException>("address", () => { p.SendPingAsync(IPAddress.Any); });
-            AssertExtensions.Throws<ArgumentException>("address", () => { p.SendPingAsync(IPAddress.IPv6Any); });
-            AssertExtensions.Throws<ArgumentException>("address", () => { p.SendAsync(IPAddress.Any, null); });
-            AssertExtensions.Throws<ArgumentException>("address", () => { p.SendAsync(IPAddress.IPv6Any, null); });
-            AssertExtensions.Throws<ArgumentException>("address", () => { p.Send(IPAddress.Any); });
-            AssertExtensions.Throws<ArgumentException>("address", () => { p.Send(IPAddress.IPv6Any); });
-
-            // Negative timeout
-            TimeSpan negativeTimeout = TimeSpan.FromMilliseconds(-1);
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.SendPingAsync(localIpAddress, negativeTimeout); });
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.SendPingAsync(TestSettings.LocalHost, negativeTimeout); });
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.SendAsync(localIpAddress, negativeTimeout, null); });
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.SendAsync(TestSettings.LocalHost, negativeTimeout, null); });
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.Send(localIpAddress, negativeTimeout); });
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { p.Send(TestSettings.LocalHost, negativeTimeout); });
-
-            // Null byte[]
-            TimeSpan zeroTimeout = TimeSpan.FromMilliseconds(0);
-            AssertExtensions.Throws<ArgumentNullException>("buffer", () => { p.SendPingAsync(localIpAddress, zeroTimeout, null); });
-            AssertExtensions.Throws<ArgumentNullException>("buffer", () => { p.SendPingAsync(TestSettings.LocalHost, zeroTimeout, null); });
-            AssertExtensions.Throws<ArgumentNullException>("buffer", () => { p.SendAsync(localIpAddress, zeroTimeout, null, null); });
-            AssertExtensions.Throws<ArgumentNullException>("buffer", () => { p.SendAsync(TestSettings.LocalHost, zeroTimeout, null, null); });
-            AssertExtensions.Throws<ArgumentNullException>("buffer", () => { p.Send(localIpAddress, zeroTimeout, null); });
-            AssertExtensions.Throws<ArgumentNullException>("buffer", () => { p.Send(TestSettings.LocalHost, zeroTimeout, null); });
-
-            // Too large byte[]
-            TimeSpan oneTimeout = TimeSpan.FromMilliseconds(1);
-            AssertExtensions.Throws<ArgumentException>("buffer", () => { p.SendPingAsync(localIpAddress, oneTimeout, new byte[65501]); });
-            AssertExtensions.Throws<ArgumentException>("buffer", () => { p.SendPingAsync(TestSettings.LocalHost, oneTimeout, new byte[65501]); });
-            AssertExtensions.Throws<ArgumentException>("buffer", () => { p.SendAsync(localIpAddress, oneTimeout, new byte[65501], null); });
-            AssertExtensions.Throws<ArgumentException>("buffer", () => { p.SendAsync(TestSettings.LocalHost, oneTimeout, new byte[65501], null); });
-            AssertExtensions.Throws<ArgumentException>("buffer", () => { p.Send(localIpAddress, oneTimeout, new byte[65501]); });
-            AssertExtensions.Throws<ArgumentException>("buffer", () => { p.Send(TestSettings.LocalHost, oneTimeout, new byte[65501]); });
-        }
-
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
@@ -202,7 +152,7 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
-        public void SendPingWithIPAddress(AddressFamily addressFamily)
+        public void SendPingWithIPAddress_TimeSpan(AddressFamily addressFamily)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
             if (localIpAddress == null)
