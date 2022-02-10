@@ -3362,12 +3362,20 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else
     {
-        // If we have no target and this is a call with indirection cell
-        // then we do an optimization where we load the call address directly
-        // from the indirection cell instead of duplicating the tree.
-        // In BuildCall we ensure that get an extra register for the purpose.
-        regNumber indirCellReg = getCallIndirectionCellReg(call);
-        if (indirCellReg != REG_NA)
+        // If we have no target and this is a call with indirection cell then
+        // we do an optimization where we load the call address directly from
+        // the indirection cell instead of duplicating the tree. In BuildCall
+        // we ensure that get an extra register for the purpose. Note that for
+        // CFG the call might have changed to
+        // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
+        // indirection cell but we should not try to optimize.
+        regNumber callThroughIndirReg = REG_NA;
+        if (!call->IsHelperCall(compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        {
+            callThroughIndirReg = getCallIndirectionCellReg(call);
+        }
+
+        if (callThroughIndirReg != REG_NA)
         {
             assert(call->IsR2ROrVirtualStubRelativeIndir());
             regNumber targetAddrReg = call->GetSingleTempReg();
@@ -3375,7 +3383,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             if (!call->IsFastTailCall())
             {
                 GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
-                                          indirCellReg);
+                                          callThroughIndirReg);
             }
             else
             {
