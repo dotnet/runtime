@@ -378,17 +378,37 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void SerializationFormat_Binary_does_not_work_by_default_on_DataTable()
+        public void SerializationFormat_Binary_does_not_work_by_default()
         {
             DataTable dt = new DataTable("MyTable");
             Assert.Throws<InvalidEnumArgumentException>(() => dt.RemotingFormat = SerializationFormat.Binary);
         }
 
         [Fact]
-        public void SerializationFormat_Binary_does_not_work_by_default_on_DataSet()
+        public void SerializationFormat_Binary_works_with_appconfig_switch()
         {
-            DataSet ds = new DataSet();
-            Assert.Throws<InvalidEnumArgumentException>(() => ds.RemotingFormat = SerializationFormat.Binary);
+            RemoteExecutor.Invoke(RunTest).Dispose();
+
+            static void RunTest()
+            {
+                AppContext.SetSwitch("Switch.System.Data.AllowUnsafeSerializationFormatBinary", true);
+
+                DataTable dt = new DataTable("MyTable");
+                DataColumn dc = new DataColumn("dc", typeof(int));
+                dt.Columns.Add(dc);
+                dt.RemotingFormat = SerializationFormat.Binary;
+
+                DataTable dtDeserialized;
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    BinaryFormatter bf = new BinaryFormatter();
+                    bf.Serialize(ms, dt);
+                    ms.Seek(0, SeekOrigin.Begin);
+                    dtDeserialized = (DataTable)bf.Deserialize(ms);
+                }
+
+                Assert.Equal(dc.DataType, dtDeserialized.Columns[0].DataType);
+            }
         }
 
         [Fact]
