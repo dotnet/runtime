@@ -217,6 +217,14 @@ namespace System
 
         /// <summary>
         /// Returns the status of a registered notification about whether a blocking garbage collection
+        /// is imminent. May wait up to a given timeout for a full collection.
+        /// </summary>
+        /// <param name="timeout">The timeout on waiting for a full collection</param>
+        /// <returns>The status of a registered full GC notification</returns>
+        public static GCNotificationStatus WaitForFullGCApproach(TimeSpan timeout) => WaitForFullGCApproach(checked((int)timeout.TotalMilliseconds));
+
+        /// <summary>
+        /// Returns the status of a registered notification about whether a blocking garbage collection
         /// has completed. May wait indefinitely for a full collection.
         /// </summary>
         /// <returns>The status of a registered full GC notification</returns>
@@ -242,6 +250,14 @@ namespace System
 
             return (GCNotificationStatus)RuntimeImports.RhWaitForFullGCComplete(millisecondsTimeout);
         }
+
+        /// <summary>
+        /// Returns the status of a registered notification about whether a blocking garbage collection
+        /// has completed. May wait up to a specified timeout for a full collection.
+        /// </summary>
+        /// <param name="timeout">The timeout on waiting for a full collection</param>
+        /// <returns></returns>
+        public static GCNotificationStatus WaitForFullGCComplete(TimeSpan timeout) => WaitForFullGCComplete(checked((int)timeout.TotalMilliseconds));
 
         /// <summary>
         /// Cancels an outstanding full GC notification.
