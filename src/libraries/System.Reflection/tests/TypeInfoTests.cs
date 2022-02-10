@@ -1191,8 +1191,16 @@ namespace System.Reflection.Tests
         [MemberData(nameof(TypeDescTypesIsPublic_TestData))]
         public void TypeDescTypesIsPublic(Type type, bool expected)
         {
-            Assert.Equal(expected, type.GetTypeInfo().IsPublic);
-            Assert.Equal(!expected, type.GetTypeInfo().IsNestedAssembly);
+            Assert.Equal(expected, type.IsPublic);
+            Assert.Equal(!expected, type.IsNestedAssembly);
+        }
+
+        [Fact]
+        public void NestedPointerIsPublic()
+        {
+            Type pointerType = typeof(int***);
+            Assert.True(pointerType.IsPointer);
+            Assert.True(pointerType.IsPublic);
         }
 
         [Fact]
