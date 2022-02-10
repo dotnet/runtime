@@ -3448,21 +3448,20 @@ void CodeGen::genFnPrologCalleeRegArgs()
             }
             else
             {
-                if (tmp_reg == REG_NA)
+                assert(tmp_reg == REG_NA);
+
+                tmp_offset = base;
+                tmp_reg    = REG_R21;
+                if ((0 < base) && (base <= 0xfff))
                 {
-                    regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-                    tmp_offset     = base;
-                    tmp_reg        = REG_R21;
-                    GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
-                    GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
-                    GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_R21, REG_R21, reg2);
-                    GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, -8);
+                    GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R0, tmp_offset);
                 }
                 else
                 {
-                    baseOffset = -(base - tmp_offset) - 8;
-                    GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, baseOffset);
+                    GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset>>12);
+                    GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
                 }
+                GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, -8);
             }
 
             regArgMaskLive &= ~genRegMask(srcRegNum);
@@ -3503,18 +3502,24 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     {
                         if (tmp_reg == REG_NA)
                         {
-                            regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-                            tmp_offset     = base;
-                            tmp_reg        = REG_R21;
-                            GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
-                            GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
-                            GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_R21, REG_R21, reg2);
-                            GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, -8);
+                            tmp_offset = base;
+                            tmp_reg    = REG_R21;
+                            if ((0 < base) && (base <= 0xfff))
+                            {
+                                GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R0, tmp_offset);
+                            }
+                            else
+                            {
+                                GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset>>12);
+                                GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
+                            }
+                            GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, -8);
                         }
                         else
                         {
                             baseOffset = -(base - tmp_offset) - 8;
-                            GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, baseOffset);
+                            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R21, 8);
+                            GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, baseOffset);
                         }
                     }
                     regArgMaskLive &= ~genRegMask(srcRegNum); // maybe do this later is better!
@@ -3535,18 +3540,24 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     {
                         if (tmp_reg == REG_NA)
                         {
-                            regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-                            tmp_offset     = base;
-                            tmp_reg        = REG_R21;
-                            GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
-                            GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
-                            GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_R21, REG_R21, reg2);
-                            GetEmitter()->emitIns_S_R(INS_st_d, size, REG_ARG_LAST, varNum, -8);
+                            tmp_offset = base;
+                            tmp_reg    = REG_R21;
+                            if ((0 < base) && (base <= 0xfff))
+                            {
+                                GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R0, tmp_offset);
+                            }
+                            else
+                            {
+                                GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset>>12);
+                                GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
+                            }
+                            GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_ARG_LAST, varNum, -8);
                         }
                         else
                         {
                             baseOffset = -(base - tmp_offset) - 8;
-                            GetEmitter()->emitIns_S_R(INS_st_d, size, REG_ARG_LAST, varNum, baseOffset);
+                            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R21, 8);
+                            GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_ARG_LAST, varNum, baseOffset);
                         }
                     }
                 }

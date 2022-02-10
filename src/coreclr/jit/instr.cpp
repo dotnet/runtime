@@ -1917,6 +1917,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
  *  Parameters
  *      dstType   - destination type
  *      aligned   - whether destination is properly aligned if dstType is a SIMD type
+ *                - for LoongArch64 aligned is used for store-index.
  */
 instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false*/)
 {
@@ -1977,11 +1978,11 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     {
         if (dstType == TYP_DOUBLE)
         {
-            return INS_fst_d;
+            return aligned ? INS_fstx_d : INS_fst_d;
         }
         else if (dstType == TYP_FLOAT)
         {
-            return INS_fst_s;
+            return aligned ? INS_fstx_s : INS_fst_s;
         }
     }
 #else
@@ -2000,13 +2001,13 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         ins = INS_strh;
 #elif defined(TARGET_LOONGARCH64)
     if (varTypeIsByte(dstType))
-        ins = INS_st_b;
+        ins = aligned ? INS_stx_b : INS_st_b;
     else if (varTypeIsShort(dstType))
-        ins = INS_st_h;
+        ins = aligned ? INS_stx_h : INS_st_h;
     else if ((TYP_INT == dstType) || (TYP_UINT == dstType))
-        ins = INS_st_w;
-    else                // if ((TYP_LONG == dstType) || (TYP_ULONG == dstType) || (TYP_REF == dstType))
-        ins = INS_st_d; // default st_d.
+        ins = aligned ? INS_stx_w : INS_st_w;
+    else // if ((TYP_LONG == dstType) || (TYP_ULONG == dstType) || (TYP_REF == dstType))
+        ins = aligned ? INS_stx_d : INS_st_d;
 #else
     NYI("ins_Store");
 #endif

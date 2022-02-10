@@ -1944,11 +1944,7 @@ private:
 
 #elif defined(TARGET_LOONGARCH64)
 
-#ifdef DEBUG
-#define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
-#else
 #define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 20 * SMALL_IDSC_SIZE)
-#endif
 
 #else // !TARGET_LOONGARCH64
 #define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
