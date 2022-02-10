@@ -14,22 +14,24 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a symbol that is defined externally and statically linked to the output obj file.
     /// </summary>
     public class ExternSymbolNode : SortableDependencyNode, ISortableSymbolNode
-    {
-        private Utf8String _name;
+    {        
+        private readonly Utf8String _name;
+        private readonly bool _isIndirection;
 
-        public ExternSymbolNode(Utf8String name)
+        public ExternSymbolNode(Utf8String name, bool isIndirection = false)
         {
             _name = name;
+            _isIndirection = isIndirection;
         }
 
-        protected override string GetName(NodeFactory factory) => $"ExternSymbol {_name.ToString()}";
+        protected override string GetName(NodeFactory factory) => $"ExternSymbol {_name.ToString()}{(_isIndirection ? " (indirected)" : "")}";
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(_name);
         }
         public int Offset => 0;
-        public virtual bool RepresentsIndirectionCell => false;
+        public virtual bool RepresentsIndirectionCell => _isIndirection;
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;

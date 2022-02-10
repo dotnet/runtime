@@ -6,7 +6,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class
+public class
 #if XASSEM
 Test1_xassem
 #else

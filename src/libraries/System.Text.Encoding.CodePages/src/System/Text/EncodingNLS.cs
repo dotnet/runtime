@@ -69,12 +69,8 @@ namespace System.Text
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
         // parent method is safe
-        public override unsafe int GetByteCount(string s)
+        public override unsafe int GetByteCount(string s!!)
         {
-            // Validate input
-            if (s == null)
-                throw new ArgumentNullException(nameof(s));
-
             fixed (char* pChars = s)
                 return GetByteCount(pChars, s.Length, null);
         }

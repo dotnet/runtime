@@ -21,13 +21,8 @@ namespace System.Runtime.Caching
         private DiagnosticCounter[] _counters;
         private long[] _counterValues;
 
-        internal Counters(string cacheName) : base(EVENT_SOURCE_NAME_ROOT + cacheName)
+        internal Counters(string cacheName!!) : base(EVENT_SOURCE_NAME_ROOT + cacheName)
         {
-            if (cacheName == null)
-            {
-                throw new ArgumentNullException(nameof(cacheName));
-            }
-
             InitDisposableMembers(cacheName);
         }
 
