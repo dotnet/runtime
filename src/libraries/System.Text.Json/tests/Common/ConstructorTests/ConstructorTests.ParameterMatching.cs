@@ -1357,11 +1357,6 @@ namespace System.Text.Json.Serialization.Tests
             public StructWithPropertyInit() { B = 0; }
             public long A { get; set; } = 42;
             public long B { get; set; }
-
-            public StructWithPropertyInit()
-            {
-                B = default;
-            }
         }
 
         [Fact]
@@ -1378,11 +1373,6 @@ namespace System.Text.Json.Serialization.Tests
             public StructWithFieldInit() { A = 0; }
             public long A;
             public long B = 42;
-
-            public StructWithFieldInit()
-            {
-                A = default;
-            }
         }
 
         [Fact]
