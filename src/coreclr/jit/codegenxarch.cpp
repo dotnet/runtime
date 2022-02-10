@@ -3967,7 +3967,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 
     assert(tree->gtOp1->isUsedFromReg());
     regNumber reg = genConsumeReg(tree->gtOp1);
-    GetEmitter()->emitIns_AR_R(INS_cmp, EA_4BYTE, reg, reg, 0);
+    GetEmitter()->emitIns_AR_R(INS_cmp, emitTypeSize(tree), reg, reg, 0);
 }
 
 //------------------------------------------------------------------------

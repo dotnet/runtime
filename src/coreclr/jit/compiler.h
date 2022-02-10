@@ -3361,6 +3361,7 @@ public:
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
+    var_types gtTypeForNullCheck(GenTree* tree);
     void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
 
     static fgArgTabEntry* gtArgEntryByArgNum(GenTreeCall* call, unsigned argNum);
