@@ -67,4 +67,7 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\ServiceModel\Syndication\UnconditinalSuppressMessageAttribute.cs" />
+  </ItemGroup>
 </Project>

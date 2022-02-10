@@ -128,9 +128,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-#if !NETSTANDARD2_0
         [UnconditionalSuppressMessage("ILLink", "IL2077")]
-#endif
         protected override ServiceDocument CreateDocumentInstance()
         {
             if (_documentType == typeof(ServiceDocument))

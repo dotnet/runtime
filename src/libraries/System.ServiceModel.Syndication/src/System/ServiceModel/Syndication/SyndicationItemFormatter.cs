@@ -39,9 +39,7 @@ namespace System.ServiceModel.Syndication
             _item = item;
         }
 
-#if !NETSTANDARD2_0
         [UnconditionalSuppressMessage("ILLink", "IL2067")]
-#endif
         internal static SyndicationItem CreateItemInstance(Type itemType)
         {
             if (itemType.Equals(typeof(SyndicationItem)))

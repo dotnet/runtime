@@ -328,9 +328,7 @@ namespace System.ServiceModel.Syndication
             extWriter.WriteNode(reader, false);
         }
 
-#if !NETSTANDARD2_0
         [UnconditionalSuppressMessage("ILLink", "IL2067")]
-#endif
         internal static SyndicationFeed CreateFeedInstance(Type feedType)
         {
             if (feedType.Equals(typeof(SyndicationFeed)))

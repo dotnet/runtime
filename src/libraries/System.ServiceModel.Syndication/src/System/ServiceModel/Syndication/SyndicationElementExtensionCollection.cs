@@ -71,9 +71,7 @@ namespace System.ServiceModel.Syndication
             base.Add(new SyndicationElementExtension(outerName, outerNamespace, dataContractExtension, dataContractSerializer));
         }
 
-#if !NETSTANDARD2_0
         [UnconditionalSuppressMessage("ILLink", "IL2026")]
-#endif
         public void Add(object xmlSerializerExtension!!, XmlSerializer serializer)
         {
             if (serializer == null)
@@ -83,9 +81,7 @@ namespace System.ServiceModel.Syndication
             base.Add(new SyndicationElementExtension(xmlSerializerExtension, serializer));
         }
 
-#if !NETSTANDARD2_0
         [UnconditionalSuppressMessage("ILLink", "IL2026")]
-#endif
         public void Add(XmlReader xmlReader!!)
         {
             base.Add(new SyndicationElementExtension(xmlReader));
