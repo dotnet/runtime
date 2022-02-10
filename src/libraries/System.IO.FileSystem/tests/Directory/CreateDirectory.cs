@@ -270,8 +270,10 @@ namespace System.IO.Tests
         {
             var paths = IOInputs.GetPathsLongerThanMaxLongPath(GetTestFilePath(), useExtendedSyntax: true);
 
+            // Ideally this should be PathTooLongException or DirectoryNotFoundException but on some machines
+            // windows gives us ERROR_INVALID_NAME, producing IOException.
             Assert.All(paths, path =>
-                AssertExtensions.ThrowsAny<PathTooLongException, DirectoryNotFoundException>(() => Create(path)));
+                AssertExtensions.ThrowsAny<PathTooLongException, DirectoryNotFoundException, IOException>(() => Create(path)));
         }
 
         [ConditionalFact(nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
