@@ -186,8 +186,8 @@ namespace System.Text.RegularExpressions.Tests
 
         #region Tests involving Intersection and Complement
         // Currently only run in DEBUG mode in the NonBacktracking engine
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        public void SRMTest_ConjuctionIsMatch()
+        //[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        private void SRMTest_ConjuctionIsMatch()
         {
             try
             {
@@ -204,8 +204,8 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        public void SRMTest_ConjuctionFindMatch()
+        //[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        private void SRMTest_ConjuctionFindMatch()
         {
             try
             {
@@ -223,8 +223,8 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        public void SRMTest_ComplementFindMatch()
+        //[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        private void SRMTest_ComplementFindMatch()
         {
             try
             {
@@ -243,8 +243,8 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        public void PasswordSearch()
+        //[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        private void PasswordSearch()
         {
             try
             {
@@ -327,8 +327,8 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        public void PasswordSearchDual()
+        //[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        private void PasswordSearchDual()
         {
             try
             {
@@ -413,10 +413,10 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        [InlineData("[abc]{0,10}", "a[abc]{0,3}", "xxxabbbbbbbyyy", true, "abbb")]
-        [InlineData("[abc]{0,10}?", "a[abc]{0,3}?", "xxxabbbbbbbyyy", true, "a")]
-        public void TestConjunctionOverCounting(string conjunct1, string conjunct2, string input, bool success, string match)
+        //[ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        //[InlineData("[abc]{0,10}", "a[abc]{0,3}", "xxxabbbbbbbyyy", true, "abbb")]
+        //[InlineData("[abc]{0,10}?", "a[abc]{0,3}?", "xxxabbbbbbbyyy", true, "a")]
+        private void TestConjunctionOverCounting(string conjunct1, string conjunct2, string input, bool success, string match)
         {
             try
             {
