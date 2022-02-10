@@ -341,11 +341,7 @@ namespace System.Net.Sockets
             Dispose();
         }
 
-        public void Close(TimeSpan timeout)
-        {
-            int milliseconds = (int)timeout.TotalMilliseconds;
-            Close(milliseconds);
-        }
+        public void Close(TimeSpan timeout) => Close(checked((int)timeout.TotalMilliseconds))
 
         protected override void Dispose(bool disposing)
         {

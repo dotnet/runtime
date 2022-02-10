@@ -2220,13 +2220,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, TimeSpan timeout)
-        {
-            int milliseconds = (int)timeout.TotalMilliseconds;
-            int microseconds = milliseconds / 1000;
-
-            Select(checkRead, checkWrite, checkError, microseconds);
-        }
+        public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, TimeSpan timeout) => Select(checkRead, checkWrite, checkError, timeout.TotalMilliseconds / 1000);
 
         public IAsyncResult BeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state) =>
             TaskToApm.Begin(ConnectAsync(remoteEP), callback, state);
