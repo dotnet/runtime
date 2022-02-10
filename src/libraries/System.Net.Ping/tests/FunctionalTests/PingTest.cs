@@ -163,7 +163,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             SendBatchPing(
-                ping => ping.Send(localIpAddress, pingTimeout),
+                ping => ping.Send(localIpAddress, pingTimeout, default, default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
@@ -243,7 +243,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             SendBatchPing(
-                ping => ping.Send(localIpAddress, pingTimeout),
+                ping => ping.Send(localIpAddress, pingTimeout, default, default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
@@ -270,7 +270,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             await SendBatchPingAsync(
-                ping => ping.SendPingAsync(localIpAddress, pingTimeout),
+                ping => ping.SendPingAsync(localIpAddress, pingTimeout, default, default, default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
@@ -300,7 +300,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             SendBatchPing(
-                ping => ping.Send(localIpAddress, pingTimeout, buffer),
+                ping => ping.Send(localIpAddress, pingTimeout, buffer, default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
@@ -331,7 +331,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             await SendBatchPingAsync(
-                ping => ping.SendPingAsync(localIpAddress, pingTimeout, buffer),
+                ping => ping.SendPingAsync(localIpAddress, pingTimeout, buffer, default, default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
@@ -406,7 +406,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             await SendBatchPingAsync(
-                ping => ping.SendPingAsync(localIpAddress, pingTimeout, buffer, options),
+                ping => ping.SendPingAsync(localIpAddress, pingTimeout, buffer, options, default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
@@ -505,7 +505,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             await SendBatchPingAsync(
-                ping => ping.SendPingAsync(localIpAddress, pingTimeout, buffer, new PingOptions()),
+                ping => ping.SendPingAsync(localIpAddress, pingTimeout, buffer, new PingOptions(), default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
@@ -559,7 +559,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             SendBatchPing(
-                ping => ping.Send(TestSettings.LocalHost, pingTimeout),
+                ping => ping.Send(TestSettings.LocalHost, pingTimeout, default, default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddresses);
@@ -586,7 +586,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             await SendBatchPingAsync(
-                ping => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout),
+                ping => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, default, default, default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddresses);
@@ -616,7 +616,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             SendBatchPing(
-                ping => ping.Send(TestSettings.LocalHost, pingTimeout, buffer),
+                ping => ping.Send(TestSettings.LocalHost, pingTimeout, buffer, default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
@@ -647,7 +647,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             await SendBatchPingAsync(
-                ping => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, buffer),
+                ping => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, buffer, default, default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
@@ -710,7 +710,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             await SendBatchPingAsync(
-                ping => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, buffer, new PingOptions()),
+                ping => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, buffer, new PingOptions(), default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
@@ -751,7 +751,7 @@ namespace System.Net.NetworkInformation.Tests
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
 
             // Assert.DoesNotThrow
-            PingReply pingReply = await p.SendPingAsync(localIpAddress, pingTimeout, new byte[10001]);
+            PingReply pingReply = await p.SendPingAsync(localIpAddress, pingTimeout, new byte[10001], default, default);
 
             // Depending on platform the call may either succeed, report timeout or report too big packet. It
             // should not throw wrapped SocketException though which is what this test guards.
@@ -961,7 +961,7 @@ namespace System.Net.NetworkInformation.Tests
 
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             await SendBatchPingAsync(
-                ping => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, buffer, options),
+                ping => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, buffer, options, default),
                 pingReply =>
                 {
                     PingResultValidator(pingReply, localIpAddresses);
@@ -1012,7 +1012,7 @@ namespace System.Net.NetworkInformation.Tests
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             for (int i = 0; i < s_pingcount; i++)
             {
-                pingReply = await ping.SendPingAsync(host, pingTimeout, TestSettings.PayloadAsBytesShort);
+                pingReply = await ping.SendPingAsync(host, pingTimeout, TestSettings.PayloadAsBytesShort, default, default);
                 if (pingReply.Status != IPStatus.Success)
                 {
                     continue;
@@ -1028,7 +1028,7 @@ namespace System.Net.NetworkInformation.Tests
 
             options.Ttl = 1;
             // This should always fail unless host is one IP hop away.
-            pingReply = await ping.SendPingAsync(host, pingTimeout, TestSettings.PayloadAsBytesShort, options);
+            pingReply = await ping.SendPingAsync(host, pingTimeout, TestSettings.PayloadAsBytesShort, options, default);
             Assert.True(pingReply.Status is IPStatus.TimeExceeded or IPStatus.TtlExpired);
             Assert.NotEqual(IPAddress.Any, pingReply.Address);
         }
@@ -1174,7 +1174,7 @@ namespace System.Net.NetworkInformation.Tests
             RemoteExecutor.Invoke(address =>
             {
                 SendBatchPing(
-                    ping => ping.Send(address, pingTimeout),
+                    ping => ping.Send(address, pingTimeout, default, default),
                     (pingReply) =>
                     {
                         PingResultValidator(pingReply, new[] { IPAddress.Parse(address) }, null);
@@ -1234,7 +1234,7 @@ namespace System.Net.NetworkInformation.Tests
             byte[] buffer = TestSettings.PayloadAsBytes;
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             Ping ping = new();
-            Assert.Throws<PlatformNotSupportedException>(() => ping.Send(TestSettings.LocalHost, pingTimeout, buffer));
+            Assert.Throws<PlatformNotSupportedException>(() => ping.Send(TestSettings.LocalHost, pingTimeout, buffer, default));
         }
 
         [ConditionalFact(nameof(UsesPingUtility))]
@@ -1255,7 +1255,7 @@ namespace System.Net.NetworkInformation.Tests
             byte[] buffer = TestSettings.PayloadAsBytes;
             TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
             Ping ping = new();
-            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, buffer));
+            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => ping.SendPingAsync(TestSettings.LocalHost, pingTimeout, buffer, default, default));
         }
     }
 }
