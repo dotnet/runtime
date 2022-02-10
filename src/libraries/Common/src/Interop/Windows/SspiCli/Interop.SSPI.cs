@@ -61,6 +61,7 @@ internal static partial class Interop
             SECPKG_ATTR_APPLICATION_PROTOCOL = 35,
 
             // minschannel.h
+            SECPKG_ATTR_REMOTE_CERT_CONTEXT = 0x53,    // returns PCCERT_CONTEXT
             SECPKG_ATTR_LOCAL_CERT_CONTEXT = 0x54,     // returns PCCERT_CONTEXT
             SECPKG_ATTR_ROOT_STORE = 0x55,             // returns HCERTCONTEXT to the root store
             SECPKG_ATTR_ISSUER_LIST_EX = 0x59,         // returns SecPkgContext_IssuerListInfoEx

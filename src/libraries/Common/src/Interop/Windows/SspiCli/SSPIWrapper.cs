@@ -425,13 +425,12 @@ namespace System.Net
                 return result;
             }
         }
-
-        public static SafeFreeCertContext? QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CHAIN(ISSPIInterface secModule, SafeDeleteContext securityContext)
+        private static SafeFreeCertContext? QueryCertContextAttribute(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute attribute)
         {
             Span<IntPtr> buffer = stackalloc IntPtr[1];
             int errorCode = secModule.QueryContextAttributes(
                 securityContext,
-                Interop.SspiCli.ContextAttribute.SECPKG_ATTR_REMOTE_CERT_CHAIN,
+                attribute,
                 MemoryMarshal.AsBytes(buffer),
                 typeof(SafeFreeCertContext),
                 out SafeHandle? sspiHandle);
@@ -443,9 +442,14 @@ namespace System.Net
                 return null;
             }
 
-            var result = (SafeFreeCertContext)sspiHandle!;
-            return result;
+            return (SafeFreeCertContext) sspiHandle!;
         }
+
+        public static SafeFreeCertContext? QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(ISSPIInterface secModule, SafeDeleteContext securityContext)
+            => QueryCertContextAttribute(secModule, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_REMOTE_CERT_CONTEXT);
+
+        public static SafeFreeCertContext? QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CHAIN(ISSPIInterface secModule, SafeDeleteContext securityContext)
+            => QueryCertContextAttribute(secModule, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_REMOTE_CERT_CHAIN);
 
         public static bool QueryContextAttributes_SECPKG_ATTR_ISSUER_LIST_EX(ISSPIInterface secModule, SafeDeleteContext securityContext, ref Interop.SspiCli.SecPkgContext_IssuerListInfoEx ctx, out SafeHandle? sspiHandle)
         {
