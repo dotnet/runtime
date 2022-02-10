@@ -104,6 +104,9 @@ namespace System.ServiceModel.Syndication
             writer.WriteEndElement();
         }
 
+#if !NETSTANDARD2_0
+        [UnconditionalSuppressMessage("ILLink", "IL2077")]
+#endif
         protected override InlineCategoriesDocument CreateInlineCategoriesDocument()
         {
             if (_inlineDocumentType == typeof(InlineCategoriesDocument))
@@ -116,6 +119,9 @@ namespace System.ServiceModel.Syndication
             }
         }
 
+#if !NETSTANDARD2_0
+        [UnconditionalSuppressMessage("ILLink", "IL2077")]
+#endif
         protected override ReferencedCategoriesDocument CreateReferencedCategoriesDocument()
         {
             if (_referencedDocumentType == typeof(ReferencedCategoriesDocument))

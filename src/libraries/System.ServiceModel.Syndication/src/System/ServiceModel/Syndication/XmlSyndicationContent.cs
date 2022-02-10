@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ServiceModel.Syndication
 {
@@ -88,6 +89,9 @@ namespace System.ServiceModel.Syndication
 
         public TContent ReadContent<TContent>() => ReadContent<TContent>((DataContractSerializer)null);
 
+#if !NETSTANDARD2_0
+        [UnconditionalSuppressMessage("ILLink", "IL2026")]
+#endif
         public TContent ReadContent<TContent>(XmlObjectSerializer dataContractSerializer)
         {
             if (dataContractSerializer == null)
@@ -110,6 +114,9 @@ namespace System.ServiceModel.Syndication
             }
         }
 
+#if !NETSTANDARD2_0
+        [UnconditionalSuppressMessage("ILLink", "IL2026")]
+#endif
         public TContent ReadContent<TContent>(XmlSerializer serializer)
         {
             if (serializer == null)
