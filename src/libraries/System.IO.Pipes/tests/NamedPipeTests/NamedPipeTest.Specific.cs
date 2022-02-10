@@ -30,9 +30,10 @@ namespace System.IO.Pipes.Tests
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream("client1"))
             {
+                var ctx = new CancellationTokenSource();
                 TimeSpan negativeTimeout = TimeSpan.FromMilliseconds(-111);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(negativeTimeout));
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(negativeTimeout); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(negativeTimeout, ctx.Token); });
             }
         }
 
@@ -55,7 +56,7 @@ namespace System.IO.Pipes.Tests
             {
                 var ctx = new CancellationTokenSource();
                 Assert.Throws<TimeoutException>(() => client.Connect(TimeSpan.FromMilliseconds(60)));  // 60 to be over internal 50 interval
-                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(TimeSpan.FromMilliseconds(50)));
+                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(TimeSpan.FromMilliseconds(50), ctx.Token));
                 await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(TimeSpan.FromMilliseconds(60), ctx.Token)); // testing Token overload; ctx is not canceled in this test
             }
         }
@@ -660,10 +661,11 @@ namespace System.IO.Pipes.Tests
             using (NamedPipeClientStream firstClient = new NamedPipeClientStream(pipeName))
             using (NamedPipeClientStream secondClient = new NamedPipeClientStream(pipeName))
             {
+                var ctx = new CancellationTokenSource();
                 TimeSpan timeout = TimeSpan.FromMilliseconds(10_000);
                 Task[] clientAndServerTasks = new[]
                     {
-                        firstClient.ConnectAsync(timeout),
+                        firstClient.ConnectAsync(timeout, ctx.Token),
                         Task.Run(() => server.WaitForConnection())
                     };
 
@@ -688,7 +690,7 @@ namespace System.IO.Pipes.Tests
                 TimeSpan timeout = TimeSpan.FromMilliseconds(10_000);
                 Task[] clientAndServerTasks = new[]
                     {
-                        firstClient.ConnectAsync(timeout),
+                        firstClient.ConnectAsync(timeout, cancellationToken),
                         Task.Run(() => server.WaitForConnection())
                     };
 
