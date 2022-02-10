@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -144,22 +144,16 @@ namespace ILLink.Shared.TrimAnalysis
 				}
 				break;
 
-
-			// Disable Type_GetMethod, Type_GetProperty, Type_GetField, Type_GetConstructor, Type_GetEvent, Activator_CreateInstance_Type
-			// These calls have annotations on the runtime by default, trying to analyze the annotations without intrinsic handling
-			// might end up generating unnecessary warnings. So we disable handling these calls until a proper intrinsic handling is made
-			case IntrinsicId.Type_GetMethod:
-			case IntrinsicId.Type_GetProperty:
-			case IntrinsicId.Type_GetField:
-			case IntrinsicId.Type_GetConstructor:
-			case IntrinsicId.Type_GetEvent:
-			case IntrinsicId.Activator_CreateInstance_Type:
-				methodReturnValue = MultiValueLattice.Top;
-				return true;
-
-			default:
+			case IntrinsicId.None:
 				methodReturnValue = MultiValueLattice.Top;
 				return false;
+
+			// Disable warnings for all unimplemented intrinsics. Some intrinsic methods have annotations, but analyzing them
+			// would produce unnecessary warnings even for cases that are intrinsically handled. So we disable handling these calls
+			// until a proper intrinsic handling is made
+			default:
+				methodReturnValue = MultiValueLattice.Top;
+				return true;
 			}
 
 			if (returnValue.IsEmpty () && !calledMethod.ReturnsVoid ()) {

@@ -16,7 +16,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[Fact]
 		public Task ApplyTypeAnnotations ()
 		{
-			return RunTest (nameof (ApplyTypeAnnotations));
+			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact]
@@ -52,7 +52,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[Fact]
 		public Task ComplexTypeHandling ()
 		{
-			return RunTest (nameof (ComplexTypeHandling));
+			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact]
@@ -61,10 +61,11 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (DynamicDependencyDataflow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task EmptyArrayIntrinsicsDataFlow ()
 		{
-			return RunTest (nameof (EmptyArrayIntrinsicsDataFlow));
+			// https://github.com/dotnet/linker/issues/2273
+			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact]
@@ -79,22 +80,24 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (GenericParameterDataFlow));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task MakeGenericDataFlow ()
 		{
-			return RunTest (nameof (MakeGenericDataFlow));
+			// https://github.com/dotnet/linker/issues/2273
+			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact]
 		public Task GetInterfaceDataFlow ()
 		{
-			return RunTest (nameof (GetInterfaceDataFlow));
+			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task GetNestedTypeOnAllAnnotatedType ()
 		{
-			return RunTest (nameof (GetNestedTypeOnAllAnnotatedType));
+			// https://github.com/dotnet/linker/issues/2273
+			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
@@ -194,16 +197,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (SuppressWarningWithLinkAttributes));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task TypeBaseTypeDataFlow ()
 		{
-			return RunTest (nameof (TypeBaseTypeDataFlow));
+			// https://github.com/dotnet/linker/issues/2273
+			return RunTest (allowMissingWarnings: true);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
+		[Fact]
 		public Task UnresolvedMembers ()
 		{
-			return RunTest (nameof (UnresolvedMembers));
+			// https://github.com/dotnet/linker/issues/2273
+			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact (Skip = "https://github.com/dotnet/linker/issues/2273")]
