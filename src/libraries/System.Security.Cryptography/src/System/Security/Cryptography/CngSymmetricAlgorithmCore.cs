@@ -123,16 +123,6 @@ namespace System.Security.Cryptography
             return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
         }
 
-        public UniversalCryptoTransform CreateCryptoTransform(byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
-        {
-            if (KeyInPlainText)
-            {
-                return CreateCryptoTransform(_outer.BaseKey, iv, encrypting, padding, mode, feedbackSizeInBits);
-            }
-
-            return CreatePersistedCryptoTransformCore(ProduceCngKey, iv, encrypting, padding, mode, feedbackSizeInBits);
-        }
-
         public ILiteSymmetricCipher CreateLiteSymmetricCipher(ReadOnlySpan<byte> iv, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
         {
             if (KeyInPlainText)
