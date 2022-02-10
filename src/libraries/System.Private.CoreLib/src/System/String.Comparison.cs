@@ -689,9 +689,9 @@ namespace System
             if (RuntimeHelpers.IsKnownConstant(b) && !RuntimeHelpers.IsKnownConstant(a) && b != null)
             {
                 // Unroll using SWAR
-                if (b.Length <= 8)
+                if (b.Length <= 7)
                 {
-                    return EqualsUnrolled_0_to_8(a, b);
+                    return EqualsUnrolled_0_to_7(a, b);
                 }
                 // Unroll using two Vector128s
                 else if (b.Length <= 16 && Vector128.IsHardwareAccelerated)
@@ -704,7 +704,7 @@ namespace System
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool EqualsUnrolled_0_to_8(string? a, string b)
+            static bool EqualsUnrolled_0_to_7(string? a, string b)
             {
                 if (a != null)
                 {
@@ -746,7 +746,7 @@ namespace System
                         return a.Length == 4 && v1 == cns1;
                     }
 
-                    // Handle Length [5..8] via two ulong (overlapped)
+                    // Handle Length [5..7] via two ulong (overlapped)
                     return a.Length == b.Length && v1 == cns1 &&
                         ReadUInt64(a, b.Length - 4) == (((ulong)b[b.Length - 1] << 48) |
                                                         ((ulong)b[b.Length - 2] << 32) |
