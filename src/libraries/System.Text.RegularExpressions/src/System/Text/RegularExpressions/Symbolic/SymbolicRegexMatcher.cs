@@ -464,7 +464,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     FindStartPosition(input, i, i_q0_A1); // Walk in reverse to locate the start position of the match
             }
 
-            int i_end = FindEndPositionCapturing(input, end, i_start, out Registers endRegisters);
+            int i_end = FindEndPositionCapturing(input, i_start, out Registers endRegisters);
             return new SymbolicMatch(i_start, i_end + 1 - i_start, endRegisters.captureStarts, endRegisters.captureEnds);
         }
 
@@ -544,13 +544,12 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Find match end position using the original pattern, end position is known to exist. This version also produces captures.</summary>
         /// <param name="input">input span</param>
-        /// <param name="exclusiveEnd">exclusive end position</param>
         /// <param name="i">inclusive start position</param>
         /// <param name="resultRegisters">out parameter for the final register values, which indicate capture starts and ends</param>
         /// <returns></returns>
-        private int FindEndPositionCapturing(ReadOnlySpan<char> input, int exclusiveEnd, int i, out Registers resultRegisters)
+        private int FindEndPositionCapturing(ReadOnlySpan<char> input, int i, out Registers resultRegisters)
         {
-            int i_end = exclusiveEnd;
+            int i_end = input.Length;
             Registers endRegisters = default(Registers);
 
             // Pick the correct start state based on previous character kind.
@@ -580,7 +579,7 @@ namespace System.Text.RegularExpressions.Symbolic
             SparseIntMap<Registers> current = new(), next = new();
             current.Add(state.Id, initialRegisters);
 
-            while (i < exclusiveEnd)
+            while (i < input.Length)
             {
                 Debug.Assert(next.Count == 0);
 
@@ -643,7 +642,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (next.Count == 0)
                 {
                     // If all states died out some nullable state must have been seen before. Return that match.
-                    Debug.Assert(i_end != exclusiveEnd);
+                    Debug.Assert(i_end != input.Length);
                     resultRegisters = endRegisters;
                     return i_end;
                 }
@@ -656,7 +655,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 i++;
             }
 
-            Debug.Assert(i_end != exclusiveEnd);
+            Debug.Assert(i_end != input.Length);
             resultRegisters = endRegisters;
             return i_end;
         }
