@@ -302,38 +302,31 @@ namespace System.Threading.Tasks.Tests
             bool t1Ran = false;
             bool t3Ran = false;
 
-            Task t1 = new Task(delegate { t1Ran = true; });
+            Task t1 = new(delegate { t1Ran = true; });
 
-            CancellationTokenSource ctsForT2 = new CancellationTokenSource();
-            Task t2 = t1.ContinueWith((ContinuedTask) =>
+            CancellationTokenSource ctsForT2 = new();
+            Task t2 = t1.ContinueWith(_ =>
             {
-                Assert.True(false, string.Format("RunContinuationCancelTest: > Failed!  t2 should not have run."));
+                Assert.True(false, "t2 should not have run.");
             }, ctsForT2.Token);
 
-            Task t3 = t2.ContinueWith((ContinuedTask) =>
+            Task t3 = t2.ContinueWith(_ =>
             {
                 t3Ran = true;
             });
 
-            // Cancel the middle task in the chain.  Should fire off t3.
+            // Cancel the middle task in the chain. Should fire off t3.
             ctsForT2.Cancel();
 
-            // Start the first task in the chain.  Should hold off from kicking off (canceled) t2.
+            // Start the first task in the chain. Should hold off from kicking off (canceled) t2.
             t1.Start();
 
             TimeSpan timeout = TimeSpan.FromMilliseconds(5000);
             t1.Wait(timeout); // should be more than enough time for either of these
             t3.Wait(timeout);
 
-            if (!t1Ran)
-            {
-                Assert.True(false, string.Format("RunContinuationCancelTest: > Failed!  t1 should have run."));
-            }
-
-            if (!t3Ran)
-            {
-                Assert.True(false, string.Format("RunContinuationCancelTest: > Failed!  t3 should have run."));
-            }
+            Assert.True(t1Ran, "t1 should have run.");
+            Assert.True(t3Ran, "t3 should have run.");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
