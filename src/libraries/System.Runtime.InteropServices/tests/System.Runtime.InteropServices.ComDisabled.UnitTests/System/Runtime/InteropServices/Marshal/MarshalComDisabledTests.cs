@@ -6,88 +6,89 @@ using Xunit;
 namespace System.Runtime.InteropServices.Tests
 {
     [PlatformSpecific(TestPlatforms.Windows)]
+    [SkipOnMono("COM Interop not supported on Mono")]
     public partial class MarshalComDisabledTests
     {
         [Fact]
-        public void GetTypeFromCLSID_ThrowsPlatformNotSupportedException()
+        public void GetTypeFromCLSID_ThrowsNotSupportedException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetTypeFromCLSID(Guid.Empty));
+            Assert.Throws<NotSupportedException>(() => Marshal.GetTypeFromCLSID(Guid.Empty));
         }
 
         [Fact]
-        public void CreateAggregatedObject_ThrowsPlatformNotSupportedException()
+        public void CreateAggregatedObject_ThrowsNotSupportedException()
         {
             object value = new object();
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.CreateAggregatedObject(IntPtr.Zero, value));
+            Assert.Throws<NotSupportedException>(() => Marshal.CreateAggregatedObject(IntPtr.Zero, value));
         }
 
         [Fact]
-        public void CreateAggregatedObject_T_ThrowsPlatformNotSupportedException()
+        public void CreateAggregatedObject_T_ThrowsNotSupportedException()
         {
             object value = new object();
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.CreateAggregatedObject<object>(IntPtr.Zero, value));
+            Assert.Throws<NotSupportedException>(() => Marshal.CreateAggregatedObject<object>(IntPtr.Zero, value));
         }
 
 
         [Fact]
-        public void ReleaseComObject_ThrowsPlatformNotSupportedException()
+        public void ReleaseComObject_ThrowsNotSupportedException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.ReleaseComObject(new object()));
+            Assert.Throws<NotSupportedException>(() => Marshal.ReleaseComObject(new object()));
         }
         
         [Fact]
-        public void FinalReleaseComObject_ThrowsPlatformNotSupportedException()
+        public void FinalReleaseComObject_ThrowsNotSupportedException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.FinalReleaseComObject(new object()));
+            Assert.Throws<NotSupportedException>(() => Marshal.FinalReleaseComObject(new object()));
         }        
 
         [Fact]
-        public void GetComObjectData_ThrowsPlatformNotSupportedException()
+        public void GetComObjectData_ThrowsNotSupportedException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetComObjectData("key", "value"));
+            Assert.Throws<NotSupportedException>(() => Marshal.GetComObjectData("key", "value"));
         }        
 
         [Fact]
-        public void SetComObjectData_ThrowsPlatformNotSupportedException()
+        public void SetComObjectData_ThrowsNotSupportedException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.SetComObjectData(new object(), "key", "value"));
+            Assert.Throws<NotSupportedException>(() => Marshal.SetComObjectData(new object(), "key", "value"));
         }        
 
         [Fact]
-        public void CreateWrapperOfType_ThrowsPlatformNotSupportedException()
+        public void CreateWrapperOfType_ThrowsNotSupportedException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.CreateWrapperOfType(new object(), typeof(object)));
+            Assert.Throws<NotSupportedException>(() => Marshal.CreateWrapperOfType(new object(), typeof(object)));
         }        
 
         [Fact]
-        public void CreateWrapperOfType_T_TWrapper_ThrowsPlatformNotSupportedException()
+        public void CreateWrapperOfType_T_TWrapper_ThrowsNotSupportedException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.CreateWrapperOfType<object, object>(new object()));
+            Assert.Throws<NotSupportedException>(() => Marshal.CreateWrapperOfType<object, object>(new object()));
         }        
 
         [Fact]
-        public void GetNativeVariantForObject_ThrowsPlatformNotSupportedException()
+        public void GetNativeVariantForObject_ThrowsNotSupportedException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetNativeVariantForObject(99, IntPtr.Zero));
+            Assert.Throws<NotSupportedException>(() => Marshal.GetNativeVariantForObject(99, IntPtr.Zero));
         }
 
         [Fact]
-        public void GetNativeVariantForObject_T_ThrowsPlatformNotSupportedException()
+        public void GetNativeVariantForObject_T_ThrowsNotSupportedException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetNativeVariantForObject<double>(99, IntPtr.Zero));
+            Assert.Throws<NotSupportedException>(() => Marshal.GetNativeVariantForObject<double>(99, IntPtr.Zero));
         }
 
         public struct NativeVariant{}
 
         [Fact]
-        public void GetObjectForNativeVariant_ThrowsPlatformNotSupportedException()
+        public void GetObjectForNativeVariant_ThrowsNotSupportedException()
         {
             NativeVariant variant = new NativeVariant();
             IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<NativeVariant>());
             try
             {
                 Marshal.StructureToPtr(variant, ptr, fDeleteOld: false);
-                Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetObjectForNativeVariant(ptr));
+                Assert.Throws<NotSupportedException>(() => Marshal.GetObjectForNativeVariant(ptr));
             }
             finally
             {
@@ -99,14 +100,14 @@ namespace System.Runtime.InteropServices.Tests
         public struct NativeVariant_T{}
 
         [Fact]
-        public void GetObjectForNativeVariant_T_ThrowsPlatformNotSupportedException()
+        public void GetObjectForNativeVariant_T_ThrowsNotSupportedException()
         {
             NativeVariant_T variant = new NativeVariant_T();
             IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<NativeVariant_T>());
             try
             {
                 Marshal.StructureToPtr(variant, ptr, fDeleteOld: false);
-                Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetObjectForNativeVariant<NativeVariant_T>(ptr));
+                Assert.Throws<NotSupportedException>(() => Marshal.GetObjectForNativeVariant<NativeVariant_T>(ptr));
             }
             finally
             {
@@ -116,12 +117,12 @@ namespace System.Runtime.InteropServices.Tests
         }        
 
         [Fact]
-        public void GetObjectsForNativeVariants_ThrowsPlatformNotSupportedException()
+        public void GetObjectsForNativeVariants_ThrowsNotSupportedException()
         {
             IntPtr ptr = Marshal.AllocHGlobal(2 * Marshal.SizeOf<NativeVariant>());
             try
             {
-                Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetObjectsForNativeVariants(ptr, 2));
+                Assert.Throws<NotSupportedException>(() => Marshal.GetObjectsForNativeVariants(ptr, 2));
             }
             finally
             {
@@ -130,12 +131,12 @@ namespace System.Runtime.InteropServices.Tests
         }        
 
         [Fact]
-        public void GetObjectsForNativeVariants_T_ThrowsPlatformNotSupportedException()
+        public void GetObjectsForNativeVariants_T_ThrowsNotSupportedException()
         {
             IntPtr ptr = Marshal.AllocHGlobal(2 * Marshal.SizeOf<NativeVariant_T>());
             try
             {
-                Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetObjectsForNativeVariants<sbyte>(ptr, 2));
+                Assert.Throws<NotSupportedException>(() => Marshal.GetObjectsForNativeVariants<sbyte>(ptr, 2));
             }
             finally
             {
@@ -144,34 +145,34 @@ namespace System.Runtime.InteropServices.Tests
         }        
 
         [Fact]
-        public void BindToMoniker_ThrowsPlatformNotSupportedException()
+        public void BindToMoniker_ThrowsNotSupportedException()
         {            
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.BindToMoniker("test"));
+            Assert.Throws<NotSupportedException>(() => Marshal.BindToMoniker("test"));
         }        
 
         [Fact]
-        public void GetIUnknownForObject_ThrowsPlatformNotSupportedException()
+        public void GetIUnknownForObject_ThrowsNotSupportedException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetIUnknownForObject(new object()));
+            Assert.Throws<NotSupportedException>(() => Marshal.GetIUnknownForObject(new object()));
         }        
 
         [Fact]
-        public void GetIDispatchForObject_ThrowsPlatformNotSupportedException()
+        public void GetIDispatchForObject_ThrowsNotSupportedException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetIDispatchForObject(new object()));
+            Assert.Throws<NotSupportedException>(() => Marshal.GetIDispatchForObject(new object()));
         }        
 
         public struct StructForIUnknown{}
 
         [Fact]
-        public void GetObjectForIUnknown_ThrowsPlatformNotSupportedException()
+        public void GetObjectForIUnknown_ThrowsNotSupportedException()
         {
             StructForIUnknown test = new StructForIUnknown();
             IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<StructForIUnknown>());
             try
             {
                 Marshal.StructureToPtr(test, ptr, fDeleteOld: false);
-                Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetObjectForIUnknown(ptr));
+                Assert.Throws<NotSupportedException>(() => Marshal.GetObjectForIUnknown(ptr));
             }
             finally
             {
