@@ -2181,13 +2181,8 @@ namespace System.Net.Sockets
             return status;
         }
 
-        public bool Poll(TimeSpan timeout, SelectMode mode)
-        {
-            int milliseconds = (int)timeout.TotalMilliseconds;
-            int microseconds = milliseconds / 1000;
-
-            return Poll(microseconds, mode);
-        }
+        public bool Poll(TimeSpan timeout, SelectMode mode) =>
+            Poll(checked((int)timeout.TotalMilliseconds) / 1000, mode);
 
         // Determines the status of a socket.
         public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, int microSeconds)
@@ -2220,7 +2215,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, TimeSpan timeout) => Select(checkRead, checkWrite, checkError, timeout.TotalMilliseconds / 1000);
+        public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, TimeSpan timeout) => Select(checkRead, checkWrite, checkError, checked((int)timeout.TotalMilliseconds) / 1000);
 
         public IAsyncResult BeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state) =>
             TaskToApm.Begin(ConnectAsync(remoteEP), callback, state);
