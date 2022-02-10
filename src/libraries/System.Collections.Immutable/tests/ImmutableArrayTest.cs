@@ -1476,22 +1476,22 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(RemoveRangeEnumerableData))]
-        public void RemoveRangeEnumerable(IEnumerable<int> source, IEnumerable<int> items, IEqualityComparer<int> comparer)
+        public void RemoveRangeEnumerable(IEnumerable<int?> source, IEnumerable<int?> items, IEqualityComparer<int?> comparer)
         {
-            ImmutableArray<int> immutableArray = source.ToImmutableArray();
-            IEnumerable<int> expected = items.Aggregate(
+            ImmutableArray<int?> immutableArray = source.ToImmutableArray();
+            IEnumerable<int?> expected = items.Aggregate(
                 seed: source.ToImmutableArray(),
                 func: (a, i) => a.Remove(i, comparer));
 
             Assert.Equal(expected, immutableArray.RemoveRange(items, comparer)); // Enumerable overload
             Assert.Equal(expected, immutableArray.RemoveRange(items.ToImmutableArray(), comparer)); // ImmutableArray overload
 
-            int[] array = items.ToArray();
+            int?[] array = items.ToArray();
             Assert.Equal(expected, immutableArray.RemoveRange(array, comparer)); // Array overload
-            ReadOnlySpan<int> span = new ReadOnlySpan<int>(array);
+            ReadOnlySpan<int?> span = new ReadOnlySpan<int?>(array);
             Assert.Equal(expected, immutableArray.RemoveRange(span, comparer)); // Span overload
 
-            Assert.Equal(expected, ((IImmutableList<int>)immutableArray).RemoveRange(items, comparer));
+            Assert.Equal(expected, ((IImmutableList<int?>)immutableArray).RemoveRange(items, comparer));
 
             if (comparer == null || comparer == EqualityComparer<int>.Default)
             {
@@ -1499,33 +1499,36 @@ namespace System.Collections.Immutable.Tests
                 Assert.Equal(expected, immutableArray.RemoveRange(items.ToImmutableArray())); // ImmutableArray overload
                 Assert.Equal(expected, immutableArray.RemoveRange(array)); // Array overload
                 Assert.Equal(expected, immutableArray.RemoveRange(span)); // Span overload
-                Assert.Equal(expected, ((IImmutableList<int>)immutableArray).RemoveRange(items));
+                Assert.Equal(expected, ((IImmutableList<int?>)immutableArray).RemoveRange(items));
             }
         }
 
         public static IEnumerable<object[]> RemoveRangeEnumerableData()
         {
-            return SharedEqualityComparers<int>().SelectMany(comparer =>
+            return SharedEqualityComparers<int?>().SelectMany(comparer =>
                 new[]
                 {
-                    new object[] { s_empty, s_empty, comparer },
-                    new object[] { s_empty, s_oneElement, comparer },
-                    new object[] { s_oneElement, s_empty, comparer },
-                    new object[] { new[] { 1, 2, 3 }, new[] { 2, 3, 4 }, comparer },
-                    new object[] { Enumerable.Range(1, 5), Enumerable.Range(6, 5), comparer },
-                    new object[] { new[] { 1, 2, 3 }, new[] { 2 }, comparer },
-                    new object[] { s_empty, new int[] { }, comparer },
-                    new object[] { new[] { 1, 2, 3 }, new[] { 2 }, comparer },
-                    new object[] { new[] { 1, 2, 3 }, new[] { 1, 3, 5 }, comparer },
-                    new object[] { Enumerable.Range(1, 10), new[] { 2, 4, 5, 7, 10 }, comparer },
-                    new object[] { Enumerable.Range(1, 10), new[] { 1, 2, 4, 5, 7, 10 }, comparer },
-                    new object[] { new[] { 1, 2, 3 }, new[] { 5 }, comparer },
-                    new object[] { new[] { 1, 2, 2, 3 }, new[] { 2 }, comparer },
-                    new object[] { new[] { 1, 2, 2, 3 }, new[] { 2, 2 }, comparer },
-                    new object[] { new[] { 1, 2, 2, 3 }, new[] { 2, 2, 2 }, comparer },
-                    new object[] { new[] { 1, 2, 3 }, new[] { 42 }, comparer },
-                    new object[] { new[] { 1, 2, 3 }, new[] { 42, 42 }, comparer },
-                    new object[] { new[] { 1, 2, 3 }, new[] { 42, 42, 42 }, comparer },
+                    new object[] { Array.Empty<int?>(), Array.Empty<int?>(), comparer },
+                    new object[] { Array.Empty<int?>(), new int?[] { 1 }, comparer },
+                    new object[] { new int?[] { 1 }, Array.Empty<int?>(), comparer },
+                    new object[] { new int?[] { 1, 2, 3 }, new int?[] { 2, 3, 4 }, comparer },
+                    new object[] { Enumerable.Range(1, 5).Cast<int?>(), Enumerable.Range(6, 5).Cast<int?>(), comparer },
+                    new object[] { new int?[] { 1, 2, 3 }, new int?[] { 2 }, comparer },
+                    new object[] { new int?[] { 1, 2, 3 }, new int?[] { 1, 3, 5 }, comparer },
+                    new object[] { Enumerable.Range(1, 10).Cast<int?>(), new int?[] { 2, 4, 5, 7, 10 }, comparer },
+                    new object[] { Enumerable.Range(1, 10).Cast<int?>(), new int?[] { 1, 2, 4, 5, 7, 10 }, comparer },
+                    new object[] { new int?[] { 1, 2, 3 }, new int?[] { 5 }, comparer },
+                    new object[] { new int?[] { 1, 2, 2, 3 }, new int?[] { 2 }, comparer },
+                    new object[] { new int?[] { 1, 2, 2, 3 }, new int?[] { 2, 2 }, comparer },
+                    new object[] { new int?[] { 1, 2, 2, 3 }, new int?[] { 2, 2, 2 }, comparer },
+                    new object[] { new int?[] { 1, 2, 3 }, new int?[] { 42 }, comparer },
+                    new object[] { new int?[] { 1, 2, 3 }, new int?[] { 42, 42 }, comparer },
+                    new object[] { new int?[] { 1, 2, 3 }, new int?[] { 42, 42, 42 }, comparer },
+                    new object[] { new int?[] { null }, new int?[] { 1 }, comparer },
+                    new object[] { new int?[] { 1 }, new int?[] { null}, comparer },
+                    new object[] { new int?[] { 1, null, 2, null }, new int?[] { 1, null}, comparer },
+                    new object[] { new int?[] { 1, null, 2 }, new int?[] { 1, null, null}, comparer },
+                    new object[] { new int?[] { 1, null, 2, null }, new int?[] { 1, null, null}, comparer },
                 });
         }
 

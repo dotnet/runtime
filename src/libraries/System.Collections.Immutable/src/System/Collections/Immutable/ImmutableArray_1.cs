@@ -576,7 +576,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(items, nameof(items));
 
             var indicesToRemove = new SortedSet<int>();
-            foreach (var item in items)
+            foreach (T item in items)
             {
                 int index = -1;
                 do
@@ -882,7 +882,7 @@ namespace System.Collections.Immutable
             }
 
             var indicesToRemove = new SortedSet<int>();
-            foreach (var item in items)
+            foreach (T item in items)
             {
                 int index = -1;
                 do
