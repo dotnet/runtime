@@ -1588,7 +1588,7 @@ namespace System.Data.Tests
             Assert.Throws<InvalidEnumArgumentException>(() => ds.RemotingFormat = SerializationFormat.Binary);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SerializationFormat_Binary_works_with_appconfig_switch()
         {
             RemoteExecutor.Invoke(RunTest).Dispose();
