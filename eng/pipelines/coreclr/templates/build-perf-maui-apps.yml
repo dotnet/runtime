@@ -169,15 +169,15 @@ steps:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog
       artifactName:  ${{ parameters.artifactName }}
 
-  - template: /eng/pipelines/common/upload-artifact-step.yml
-    parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk
-        includeRootFolder: true
-        displayName: Maui Android App
-        artifactName: MauiAndroidApp
-        archiveExtension: '.tar.gz'
-        archiveType: tar
-        tarCompression: gz
+  #- template: /eng/pipelines/common/upload-artifact-step.yml
+  #  parameters:
+  #      rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk
+  #      includeRootFolder: true
+  #      displayName: Maui Android App
+  #      artifactName: MauiAndroidApp
+  #      archiveExtension: '.tar.gz'
+  #      archiveType: tar
+  #      tarCompression: gz
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
