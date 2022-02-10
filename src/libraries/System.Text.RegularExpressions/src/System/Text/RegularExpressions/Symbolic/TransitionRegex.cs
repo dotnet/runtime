@@ -479,7 +479,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public IEnumerable<(SymbolicRegexNode<S>, List<DerivativeEffect>)> TransitionsWithEffects(S minterm, uint context)
         {
-            // Collect the union of all target leaves
+            // Collect all target leaves with their effects
             Stack<(TransitionRegex<S>, List<DerivativeEffect>)> todo = new();
             todo.Push((this, new List<DerivativeEffect>()));
             while (todo.Count > 0)
@@ -511,7 +511,6 @@ namespace System.Text.RegularExpressions.Symbolic
                         break;
 
                     case TransitionRegexKind.Union:
-                        // Observe that without Union Transition returns excatly one of the leaves
                         Debug.Assert(top._first is not null && top._second is not null);
                         todo.Push((top._second, new List<DerivativeEffect>(effects)));
                         todo.Push((top._first, effects));

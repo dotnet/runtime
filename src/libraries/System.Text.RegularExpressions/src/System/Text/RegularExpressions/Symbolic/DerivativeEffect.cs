@@ -3,6 +3,9 @@
 
 namespace System.Text.RegularExpressions.Symbolic
 {
+    /// <summary>
+    /// Describes effects to be applied to registers.
+    /// </summary>
     internal struct DerivativeEffect
     {
         public enum EffectKind

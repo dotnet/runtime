@@ -22,7 +22,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal readonly SymbolicRegexBuilder<S> _builder;
         internal readonly SymbolicRegexKind _kind;
-        internal readonly int _lower;
+        internal readonly int _lowerOrCapNum;
         internal readonly int _upper;
         internal readonly S? _set;
         internal readonly SymbolicRegexNode<S>? _left;
@@ -53,7 +53,7 @@ namespace System.Text.RegularExpressions.Symbolic
             _kind = kind;
             _left = left;
             _right = right;
-            _lower = lower;
+            _lowerOrCapNum = lower;
             _upper = upper;
             _set = set;
             _alts = alts;
@@ -206,7 +206,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     case SymbolicRegexKind.Loop:
                         Debug.Assert(_left is not null);
-                        is_nullable = _lower == 0 || _left.IsNullableFor(context);
+                        is_nullable = _lowerOrCapNum == 0 || _left.IsNullableFor(context);
                         break;
 
                     case SymbolicRegexKind.Concat:
@@ -354,10 +354,10 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Returns true iff this is a loop whose lower bound is 0 and upper bound is max</summary>
-        public bool IsStar => _lower == 0 && _upper == int.MaxValue;
+        public bool IsStar => _lowerOrCapNum == 0 && _upper == int.MaxValue;
 
         /// <summary>Returns true iff this is a loop whose lower bound is 0 and upper bound is 1</summary>
-        public bool IsMaybe => _lower == 0 && _upper == 1;
+        public bool IsMaybe => _lowerOrCapNum == 0 && _upper == 1;
 
         /// <summary>Returns true if this is Epsilon</summary>
         public bool IsEpsilon => _kind == SymbolicRegexKind.Epsilon;
@@ -368,7 +368,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Returns true iff this is a loop whose lower bound is 1 and upper bound is max
         /// </summary>
-        public bool IsPlus => _lower == 1 && _upper == int.MaxValue;
+        public bool IsPlus => _lowerOrCapNum == 1 && _upper == int.MaxValue;
 
         #region called only once, in the constructor of SymbolicRegexBuilder
 
@@ -636,12 +636,12 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.Loop:
                     {
                         Debug.Assert(_left is not null);
-                        if (_lower == _upper)
+                        if (_lowerOrCapNum == _upper)
                         {
                             int body_length = _left.GetFixedLength();
                             if (body_length >= 0)
                             {
-                                return _lower * body_length;
+                                return _lowerOrCapNum * body_length;
                             }
                         }
                         break;
@@ -764,7 +764,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         }
 
                         int newupper = _upper == int.MaxValue ? int.MaxValue : _upper - 1;
-                        int newlower = _lower == 0 ? 0 : _lower - 1;
+                        int newlower = _lowerOrCapNum == 0 ? 0 : _lowerOrCapNum - 1;
                         SymbolicRegexNode<S> rest = _builder.MkLoop(_left, IsLazy, newlower, newupper);
                         deriv = _builder.MkConcat(step, rest);
                         break;
@@ -927,7 +927,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     else
                     {
                         int newupper = _upper == int.MaxValue ? int.MaxValue : _upper - 1;
-                        int newlower = _lower == 0 ? 0 : _lower - 1;
+                        int newlower = _lowerOrCapNum == 0 ? 0 : _lowerOrCapNum - 1;
                         SymbolicRegexNode<S> rest = _builder.MkLoop(_left, IsLazy, newlower, newupper);
                         _transitionRegex = step.Concat(rest);
                     }
@@ -968,62 +968,123 @@ namespace System.Text.RegularExpressions.Symbolic
             return _transitionRegex;
         }
 
+        // These are the cache for transition regexes with effects
+        private TransitionRegex<S>? _transitionRegexWithEffectsEager;
+        private TransitionRegex<S>? _transitionRegexWithEffectsAny;
+        private ref TransitionRegex<S>? TransitionRegexWithEffects(bool eager) => ref eager ? ref _transitionRegexWithEffectsEager : ref _transitionRegexWithEffectsAny;
+
         /// <summary>
         /// Computes the symbolic derivative as a transition regex.
         /// Transitions are in the tree left to right in the order the backtracking engine would explore them.
+        /// The transitions also include the effects (e.g. capture starts and ends) along their paths.
         /// </summary>
-        internal TransitionRegex<S> MkDerivativeWithEffects(uint context, bool eager)
+        /// <param name="eager">whether to only include paths before the first time the backtracking matchers would hit nullability</param>
+        /// <returns>the derivative as a TransitionRegex/></returns>
+        internal TransitionRegex<S> MkDerivativeWithEffects(bool eager)
         {
+            // Get a reference to the correct variable to cache on based on eagerness
+            ref TransitionRegex<S>? transition = ref TransitionRegexWithEffects(eager);
+            if (transition is not null)
+            {
+                return transition;
+            }
+
             if (IsNothing || IsEpsilon)
             {
-                return TransitionRegex<S>.Leaf(_builder._nothing);
+                transition = TransitionRegex<S>.Leaf(_builder._nothing);
+                return transition;
             }
 
             if (IsAnyStar || IsAnyPlus)
             {
-                return TransitionRegex<S>.Leaf(_builder._anyStar);
+                transition = TransitionRegex<S>.Leaf(_builder._anyStar);
+                return transition;
             }
 
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                return StackHelper.CallOnEmptyStack(MkDerivativeWithEffects, context, eager);
+                return StackHelper.CallOnEmptyStack(MkDerivativeWithEffects, eager);
             }
 
             switch (_kind)
             {
                 case SymbolicRegexKind.Singleton:
                     Debug.Assert(_set is not null);
-                    return TransitionRegex<S>.Conditional(_set, TransitionRegex<S>.Leaf(_builder._epsilon), TransitionRegex<S>.Leaf(_builder._nothing));
+                    transition = TransitionRegex<S>.Conditional(_set, TransitionRegex<S>.Leaf(_builder._epsilon), TransitionRegex<S>.Leaf(_builder._nothing));
+                    break;
 
                 case SymbolicRegexKind.Concat:
-                    Debug.Assert(_left is not null && _right is not null);
+                    {
+                        // The Concat case below explicitly handles cases where the left side is an alternation or a loop.
+                        // This is required for properly maintaining transition ordering and handling eagerness.
 
-                    if (!_left.IsNullableFor(context))
-                    {
-                        return _left.MkDerivativeWithEffects(context, eager).Concat(_right);
-                    }
-                    else if (_left._kind == SymbolicRegexKind.OrderedOr)
-                    {
-                        Debug.Assert(_left._left is not null && _left._right is not null);
-                        if (eager && _right.IsNullableFor(context) && _left._left.IsNullableFor(context))
-                            return _builder.MkConcat(_left._left, _right).MkDerivativeWithEffects(context, eager);
-                        else
-                            return _builder.MkConcat(_left._left, _right).MkDerivativeWithEffects(context, eager) |
-                                _builder.MkConcat(_left._right, _right).MkDerivativeWithEffects(context, eager);
-                    }
-                    else
-                    {
-                        bool leftEager = eager && _right.IsNullableFor(context);
-                        TransitionRegex<S> mainTransition = _left.MkDerivativeWithEffects(context, leftEager).Concat(_right);
-                        TransitionRegex<S> nullTransition = _right.MkDerivativeWithEffects(context, eager);
-                        _left.ApplyEffects(effect =>
+                        Debug.Assert(_left is not null && _right is not null);
+
+                        TransitionRegex<S> leftTransition = _left.MkDerivativeWithEffects(eager).Concat(_right);
+                        if (!_left.CanBeNullable)
                         {
-                            nullTransition = TransitionRegex<S>.Effect(nullTransition, effect);
-                        }, context);
-                        if (_left._kind == SymbolicRegexKind.Loop && _left.IsLazy && _left._lower == 0)
-                            return nullTransition | mainTransition;
+                            // If the left side can't be nullable then the character must be consumed there
+                            transition = leftTransition;
+                        }
+                        else if (_left._kind == SymbolicRegexKind.OrderedOr)
+                        {
+                            Debug.Assert(_left._left is not null && _left._right is not null);
+
+                            // This pattern is for the path where the backtracking matcher would find the match from the first alternative
+                            SymbolicRegexNode<S> leftLeftPath = _builder.MkConcat(_left._left, _right);
+                            // The eager derivative of that path will be used when the pattern is nullable, i.e., the backtracking matcher
+                            // would end the match rather than go onto paths in the second alternative.
+                            TransitionRegex<S> leftLeftTransition = leftLeftPath.MkDerivativeWithEffects(eager);
+                            // When the path through the first alternative is not nullable, this transition that includes all derivatives from
+                            // it is used.
+                            TransitionRegex<S> orTransition = leftLeftPath.MkDerivativeWithEffects(false)
+                                | _builder.MkConcat(_left._right, _right).MkDerivativeWithEffects(eager);
+
+                            // Based on the nullability of the path thorugh the first alternative, select or construct the transition for when
+                            // the left side of the concatenation is nullable.
+                            TransitionRegex<S> leftNullableTransition = eager && leftLeftPath.CanBeNullable ?
+                                (leftLeftPath.IsNullable ?
+                                    leftLeftTransition :
+                                    TransitionRegex<S>.Lookaround(leftLeftPath.ExtractNullabilityTest(),
+                                        leftLeftTransition,
+                                        orTransition)) :
+                                orTransition;
+                            // Select or construct the transition based on whether the left side is nullable
+                            transition = _left.IsNullable ?
+                                leftNullableTransition :
+                                TransitionRegex<S>.Lookaround(_left.ExtractNullabilityTest(),
+                                    leftNullableTransition,
+                                    leftTransition);
+                        }
                         else
-                            return mainTransition | nullTransition;
+                        {
+                            // The full derivative through the left side is used when the right side is not nullable or the derivative is not eager
+                            TransitionRegex<S> leftAnyTransition = _left.MkDerivativeWithEffects(false).Concat(_right);
+                            // Select or construct the case where the left side consumes the character
+                            TransitionRegex<S> mainTransition = eager ?
+                                (_right.CanBeNullable ?
+                                    (_right.IsNullable ?
+                                        leftTransition :
+                                        TransitionRegex<S>.Lookaround(_right.ExtractNullabilityTest(),
+                                            leftTransition,
+                                            leftAnyTransition)) :
+                                    leftAnyTransition) :
+                                leftAnyTransition;
+                            // Construct the case where the right side consumes the character. Any effects from the left side are applied
+                            TransitionRegex<S> nullTransition = _left.WrapEffects(_right.MkDerivativeWithEffects(eager));
+                            // Order the transitions. If the left side is a lazy loop that is nullable due to its lower bound then prefer the right side
+                            TransitionRegex<S> orTransition = _left._kind == SymbolicRegexKind.Loop && _left.IsLazy && _left._lowerOrCapNum == 0 ?
+                                nullTransition | mainTransition :
+                                mainTransition | nullTransition;
+
+                            // Select or construct the transition based on whether the left side is nullable
+                            transition = _left.IsNullable ?
+                                orTransition :
+                                TransitionRegex<S>.Lookaround(_left.ExtractNullabilityTest(),
+                                    orTransition,
+                                    leftTransition);
+                        }
+                        break;
                     }
 
                 case SymbolicRegexKind.Loop:
@@ -1031,65 +1092,164 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(_left is not null);
                     Debug.Assert(_upper > 0);
 
-                    if (eager && IsLazy && _lower == 0)
+                    if (eager && IsLazy && _lowerOrCapNum == 0)
                     {
-                        return TransitionRegex<S>.Leaf(_builder._nothing);
+                        // This is nothing because the backtracking matcher would prefer to exit the loop
+                        transition = TransitionRegex<S>.Leaf(_builder._nothing);
                     }
                     else
                     {
-                        TransitionRegex<S> step = _left.MkDerivativeWithEffects(context, eager);
+                        TransitionRegex<S> step = _left.MkDerivativeWithEffects(eager);
                         if (IsStar || IsPlus)
                         {
-                            return step.Concat(_builder.MkLoop(_left, IsLazy));
+                            transition = step.Concat(_builder.MkLoop(_left, IsLazy));
                         }
                         else
                         {
                             int newupper = _upper == int.MaxValue ? int.MaxValue : _upper - 1;
-                            int newlower = _lower == 0 ? 0 : _lower - 1;
+                            int newlower = _lowerOrCapNum == 0 ? 0 : _lowerOrCapNum - 1;
                             SymbolicRegexNode<S> rest = _builder.MkLoop(_left, IsLazy, newlower, newupper);
-                            return step.Concat(rest);
+                            transition = step.Concat(rest);
                         }
+                    }
+                    break;
+
+                case SymbolicRegexKind.OrderedOr:
+                    {
+                        Debug.Assert(_left is not null && _right is not null);
+                        // The transition when the first alternative is nullable
+                        TransitionRegex<S> leftTransition = _left.MkDerivativeWithEffects(eager);
+                        // The transition when the backtracking engines could continue to the second alternative
+                        TransitionRegex<S> orTransition = _left.MkDerivativeWithEffects(false) | _right.MkDerivativeWithEffects(eager);
+                        // Select or construct the transition based on whether the first alternative is nullable
+                        transition = eager && _left.CanBeNullable ?
+                            (_left.IsNullable ?
+                                leftTransition :
+                                TransitionRegex<S>.Lookaround(_left.ExtractNullabilityTest(),
+                                    leftTransition,
+                                    orTransition)) :
+                            orTransition;
+                        break;
                     }
 
                 case SymbolicRegexKind.Or:
-                    Debug.Assert(_alts is not null);
-                    TransitionRegex<S> orTr = TransitionRegex<S>.Leaf(_builder._nothing);
-                    foreach (SymbolicRegexNode<S> elem in _alts)
+                case SymbolicRegexKind.And:
+                case SymbolicRegexKind.Not:
+                    // Semantics of effects are not clear for these
+                    Debug.Fail($"{nameof(MkDerivativeWithEffects)}:{_kind}");
+                    break;
+
+                default:
+                    transition = TransitionRegex<S>.Leaf(_builder._nothing);
+                    break;
+            }
+            return transition;
+        }
+
+        /// <summary>
+        /// Wrap a TransitionRegex with the effects under this node. The effects are valid when this node is nullable.
+        /// </summary>
+        /// <remarks>
+        /// The construction follows the paths that the backtracking matcher would take. For example in ()|() only the effects for the first
+        /// alternative will be included.
+        /// </remarks>
+        internal TransitionRegex<S> WrapEffects(TransitionRegex<S> transition)
+        {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(WrapEffects, transition);
+            }
+
+            switch (_kind)
+            {
+                case SymbolicRegexKind.Concat:
+                    Debug.Assert(_left is not null && _right is not null);
+                    Debug.Assert(_left.CanBeNullable && _right.CanBeNullable);
+                    transition = _left.WrapEffects(transition);
+                    transition = _right.WrapEffects(transition);
+                    break;
+
+                case SymbolicRegexKind.Loop:
+                    Debug.Assert(_left is not null);
+                    // Apply effect when backtracking engine would enter loop
+                    if (_lowerOrCapNum != 0)
                     {
-                        orTr = orTr | elem.MkDerivativeWithEffects(context, eager);
+                        Debug.Assert(_left.CanBeNullable);
+                        transition = _left.WrapEffects(transition);
                     }
-                    return orTr;
+                    else if (_upper != 0 && !IsLazy && _left.CanBeNullable)
+                    {
+                        TransitionRegex<S> bodyTransition = _left.WrapEffects(transition);
+                        transition = _left.IsNullable ?
+                            bodyTransition :
+                            TransitionRegex<S>.Lookaround(_left.ExtractNullabilityTest(),
+                                bodyTransition,
+                                transition);
+                    }
+                    break;
 
                 case SymbolicRegexKind.OrderedOr:
                     Debug.Assert(_left is not null && _right is not null);
-                    if (eager && _left.IsNullableFor(context))
-                        return _left.MkDerivativeWithEffects(context, eager);
-                    else
-                        return _left.MkDerivativeWithEffects(context, eager) | _right.MkDerivativeWithEffects(context, eager);
-
-                case SymbolicRegexKind.And:
-                    Debug.Assert(_alts is not null);
-                    TransitionRegex<S> andTr = TransitionRegex<S>.Leaf(_builder._anyStar);
-                    foreach (SymbolicRegexNode<S> elem in _alts)
+                    if (!_left.CanBeNullable)
                     {
-                        andTr = andTr & elem.MkDerivativeWithEffects(context, eager);
+                        // Left can't be nullable so right must be visited
+                        Debug.Assert(_right.CanBeNullable);
+                        transition = _right.WrapEffects(transition);
                     }
-                    return andTr;
+                    else if (!_right.CanBeNullable)
+                    {
+                        // Right can't be nullable so left must be visited
+                        Debug.Assert(_left.CanBeNullable);
+                        transition = _left.WrapEffects(transition);
+                    }
+                    else
+                    {
+                        // Prefer left side if it is nullable, otherwise right side
+                        TransitionRegex<S> leftTransition = _left.WrapEffects(transition);
+                        transition = _left.IsNullable ?
+                            leftTransition :
+                            TransitionRegex<S>.Lookaround(_left.ExtractNullabilityTest(),
+                                leftTransition,
+                                _right.WrapEffects(transition));
+                    }
+                    break;
 
+                case SymbolicRegexKind.CaptureStart:
+                    // Add the effect to record the capture start
+                    transition = TransitionRegex<S>.Effect(transition,
+                        new DerivativeEffect(DerivativeEffect.EffectKind.CaptureStart, _lowerOrCapNum));
+                    break;
+
+                case SymbolicRegexKind.CaptureEnd:
+                    // Add the effect to record the capture start
+                    transition = TransitionRegex<S>.Effect(transition,
+                        new DerivativeEffect(DerivativeEffect.EffectKind.CaptureEnd, _lowerOrCapNum));
+                    break;
+
+                case SymbolicRegexKind.Or:
+                case SymbolicRegexKind.And:
                 case SymbolicRegexKind.Not:
-                    Debug.Assert(_left is not null);
-                    return ~_left.MkDerivativeWithEffects(context, eager);
-
-                default:
-                    return TransitionRegex<S>.Leaf(_builder._nothing);
+                    // Semantics of effects are not clear for these
+                    Debug.Fail($"{nameof(WrapEffects)}:{_kind}");
+                    break;
             }
+            return transition;
         }
 
+        /// <summary>
+        /// Find all effects under this node and supply them to the callback.
+        /// </summary>
+        /// <remarks>
+        /// The construction is similar to WrapEffects.
+        /// </remarks>
+        /// <param name="apply">action called for each effect</param>
+        /// <param name="context">the current context to determine nullability</param>
         internal void ApplyEffects(Action<DerivativeEffect> apply, uint context)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 StackHelper.CallOnEmptyStack(ApplyEffects, apply, context);
+                return;
             }
 
             switch (_kind)
@@ -1104,22 +1264,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.Loop:
                     Debug.Assert(_left is not null);
                     // Apply effect when backtracking engine would enter loop
-                    if (_lower != 0 || (_upper != 0 && !IsLazy && _left.IsNullableFor(context)))
+                    if (_lowerOrCapNum != 0 || (_upper != 0 && !IsLazy && _left.IsNullableFor(context)))
                     {
                         Debug.Assert(_left.IsNullableFor(context));
                         _left.ApplyEffects(apply, context);
-                    }
-                    break;
-
-                case SymbolicRegexKind.Or:
-                case SymbolicRegexKind.And:
-                    Debug.Assert(_alts is not null);
-                    foreach (SymbolicRegexNode<S> elem in _alts)
-                    {
-                        if (elem.IsNullableFor(context))
-                        {
-                            elem.ApplyEffects(apply, context);
-                        }
                     }
                     break;
 
@@ -1127,26 +1275,30 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(_left is not null && _right is not null);
                     if (_left.IsNullableFor(context))
                     {
+                        // Prefer the left side
                         _left.ApplyEffects(apply, context);
                     }
                     else
                     {
+                        // Otherwise right side must be nullable
                         Debug.Assert(_right.IsNullableFor(context));
                         _right.ApplyEffects(apply, context);
                     }
                     break;
 
-                case SymbolicRegexKind.Not:
-                    Debug.Assert(_left is not null);
-                    _left.ApplyEffects(apply, context);
-                    break;
-
                 case SymbolicRegexKind.CaptureStart:
-                    apply(new DerivativeEffect(DerivativeEffect.EffectKind.CaptureStart, _lower));
+                    apply(new DerivativeEffect(DerivativeEffect.EffectKind.CaptureStart, _lowerOrCapNum));
                     break;
 
                 case SymbolicRegexKind.CaptureEnd:
-                    apply(new DerivativeEffect(DerivativeEffect.EffectKind.CaptureEnd, _lower));
+                    apply(new DerivativeEffect(DerivativeEffect.EffectKind.CaptureEnd, _lowerOrCapNum));
+                    break;
+
+                case SymbolicRegexKind.Or:
+                case SymbolicRegexKind.And:
+                case SymbolicRegexKind.Not:
+                    // Semantics of effects are not clear for these
+                    Debug.Fail($"{nameof(ApplyEffects)}:{_kind}");
                     break;
             }
         }
@@ -1245,10 +1397,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.WatchDog:
                 case SymbolicRegexKind.CaptureStart:
                 case SymbolicRegexKind.CaptureEnd:
-                    return HashCode.Combine(_kind, _lower);
+                    return HashCode.Combine(_kind, _lowerOrCapNum);
 
                 case SymbolicRegexKind.Loop:
-                    return HashCode.Combine(_kind, _left, _lower, _upper, _info);
+                    return HashCode.Combine(_kind, _left, _lowerOrCapNum, _upper, _info);
 
                 case SymbolicRegexKind.Or or SymbolicRegexKind.And:
                     return HashCode.Combine(_kind, _alts, _info);
@@ -1424,7 +1576,7 @@ namespace System.Text.RegularExpressions.Symbolic
                             sb.Append('?');
                         }
                     }
-                    else if (_lower == 0 && _upper == 0)
+                    else if (_lowerOrCapNum == 0 && _upper == 0)
                     {
                         sb.Append("()");
                     }
@@ -1432,16 +1584,16 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         _left.ToStringForLoop(sb);
                         sb.Append('{');
-                        sb.Append(_lower);
+                        sb.Append(_lowerOrCapNum);
                         sb.Append(",}");
                         if (IsLazy)
                             sb.Append('?');
                     }
-                    else if (_lower == _upper)
+                    else if (_lowerOrCapNum == _upper)
                     {
                         _left.ToStringForLoop(sb);
                         sb.Append('{');
-                        sb.Append(_lower);
+                        sb.Append(_lowerOrCapNum);
                         sb.Append('}');
                         if (IsLazy)
                             sb.Append('?');
@@ -1450,7 +1602,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         _left.ToStringForLoop(sb);
                         sb.Append('{');
-                        sb.Append(_lower);
+                        sb.Append(_lowerOrCapNum);
                         sb.Append(',');
                         sb.Append(_upper);
                         sb.Append('}');
@@ -1598,7 +1750,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 case SymbolicRegexKind.Loop:
                     Debug.Assert(_left is not null);
-                    return _builder.MkLoop(_left.Reverse(), IsLazy, _lower, _upper);
+                    return _builder.MkLoop(_left.Reverse(), IsLazy, _lowerOrCapNum, _upper);
 
                 case SymbolicRegexKind.Concat:
                     {
@@ -1661,10 +1813,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     return _builder._endAnchorZ;
 
                 case SymbolicRegexKind.CaptureStart:
-                    return MkCaptureEnd(_builder, _lower);
+                    return MkCaptureEnd(_builder, _lowerOrCapNum);
 
                 case SymbolicRegexKind.CaptureEnd:
-                    return MkCaptureStart(_builder, _lower);
+                    return MkCaptureStart(_builder, _lowerOrCapNum);
 
                 default:
                     // Remaining cases map to themselves:
@@ -1695,7 +1847,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         SymbolicRegexNode<S> body = _left.IgnoreOrOrder();
                         return body == _left ?
                             this :
-                            MkLoop(_builder, body, _lower, _upper, IsLazy);
+                            MkLoop(_builder, body, _lowerOrCapNum, _upper, IsLazy);
                     }
 
                 case SymbolicRegexKind.Concat:
@@ -1904,7 +2056,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     SymbolicRegexNode<S> body = _left.PruneAnchors(prevKind, contWithWL, contWithNWL);
                     return body == _left ?
                         this :
-                        MkLoop(_builder, body, _lower, _upper, IsLazy);
+                        MkLoop(_builder, body, _lowerOrCapNum, _upper, IsLazy);
 
                 case SymbolicRegexKind.Concat:
                     {

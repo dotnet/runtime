@@ -83,9 +83,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 // after reading c and the maximal one is taken
                 // in a conjuctive setting this is undefined and the watchdog remains -1
                 if (kind == SymbolicRegexKind.Or &&
-                    elem._kind == SymbolicRegexKind.WatchDog && elem._lower > watchdog)
+                    elem._kind == SymbolicRegexKind.WatchDog && elem._lowerOrCapNum > watchdog)
                 {
-                    watchdog = elem._lower;
+                    watchdog = elem._lowerOrCapNum;
                 }
 
                 #region start foreach
@@ -117,13 +117,13 @@ namespace System.Text.RegularExpressions.Symbolic
                                 // Flatten the inner set
                                 foreach (SymbolicRegexNode<S> alt in elem._alts)
                                 {
-                                    if (alt._kind == SymbolicRegexKind.Loop && alt._lower == 0)
+                                    if (alt._kind == SymbolicRegexKind.Loop && alt._lowerOrCapNum == 0)
                                     {
                                         AddLoopElement(builder, loops, other, alt, builder._epsilon, kind);
                                     }
                                     else
                                     {
-                                        if (alt._kind == SymbolicRegexKind.Concat && alt._left!._kind == SymbolicRegexKind.Loop && alt._left._lower == 0)
+                                        if (alt._kind == SymbolicRegexKind.Concat && alt._left!._kind == SymbolicRegexKind.Loop && alt._left._lowerOrCapNum == 0)
                                         {
                                             Debug.Assert(alt._right is not null);
                                             AddLoopElement(builder, loops, other, alt._left, alt._right, kind);
@@ -161,7 +161,7 @@ namespace System.Text.RegularExpressions.Symbolic
                             break;
 
                         case SymbolicRegexKind.Loop:
-                            if (elem._lower == 0)
+                            if (elem._lowerOrCapNum == 0)
                             {
                                 AddLoopElement(builder, loops, other, elem, builder._epsilon, kind);
                             }
@@ -173,7 +173,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                         case SymbolicRegexKind.Concat:
                             Debug.Assert(elem._left is not null && elem._right is not null);
-                            if (elem._kind == SymbolicRegexKind.Concat && elem._left._kind == SymbolicRegexKind.Loop && elem._left._lower == 0)
+                            if (elem._kind == SymbolicRegexKind.Concat && elem._left._kind == SymbolicRegexKind.Loop && elem._left._lowerOrCapNum == 0)
                             {
                                 AddLoopElement(builder, loops, other, elem._left, elem._right, kind);
                             }

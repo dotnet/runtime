@@ -36,7 +36,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 if (Node._kind == SymbolicRegexKind.WatchDog)
                 {
-                    return Node._lower;
+                    return Node._lowerOrCapNum;
                 }
 
                 if (Node._kind == SymbolicRegexKind.Or)
@@ -55,12 +55,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>If true then state starts with a ^ or $ or \A or \z or \Z</summary>
         internal bool StartsWithLineAnchor => Node._info.StartsWithLineAnchor;
 
-        /// <summary>
-        /// Compute the target state for the given input minterm.
-        /// If <paramref name="minterm"/> is False this means that this is \n and it is the last character of the input.
-        /// </summary>
-        /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
-        internal DfaMatchingState<T> Next(T minterm)
+        private uint GetNextCharKind(ref T minterm)
         {
             ICharAlgebra<T> alg = Node._builder._solver;
             T wordLetterPredicate = Node._builder._wordLetterPredicateForAnchors;
@@ -86,6 +81,17 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 nextCharKind = CharKind.WordLetter;
             }
+            return nextCharKind;
+        }
+
+        /// <summary>
+        /// Compute the target state for the given input minterm.
+        /// If <paramref name="minterm"/> is False this means that this is \n and it is the last character of the input.
+        /// </summary>
+        /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
+        internal DfaMatchingState<T> Next(T minterm)
+        {
+            uint nextCharKind = GetNextCharKind(ref minterm);
 
             // Combined character context
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
@@ -99,39 +105,21 @@ namespace System.Text.RegularExpressions.Symbolic
             return Node._builder.MkState(derivative, nextCharKind);
         }
 
+        /// <summary>
+        /// Compute a set of transitions for the given minterm.
+        /// </summary>
+        /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
+        /// <returns>an enumeration of the transitions as pairs of the target state and a list of effects to be applied</returns>
         internal IEnumerable<(DfaMatchingState<T>, List<DerivativeEffect>)> AntimirovEagerNextWithEffects(T minterm)
         {
-            ICharAlgebra<T> alg = Node._builder._solver;
-            T wordLetterPredicate = Node._builder._wordLetterPredicateForAnchors;
-            T newLinePredicate = Node._builder._newLinePredicate;
-
-            // minterm == solver.False is used to represent the very last \n
-            uint nextCharKind = 0;
-            if (alg.False.Equals(minterm))
-            {
-                nextCharKind = CharKind.NewLineS;
-                minterm = newLinePredicate;
-            }
-            else if (newLinePredicate.Equals(minterm))
-            {
-                // If the previous state was the start state, mark this as the very FIRST \n.
-                // Essentially, this looks the same as the very last \n and is used to nullify
-                // rev(\Z) in the conext of a reversed automaton.
-                nextCharKind = PrevCharKind == CharKind.StartStop ?
-                    CharKind.NewLineS :
-                    CharKind.Newline;
-            }
-            else if (alg.IsSatisfiable(alg.And(wordLetterPredicate, minterm)))
-            {
-                nextCharKind = CharKind.WordLetter;
-            }
+            uint nextCharKind = GetNextCharKind(ref minterm);
 
             // Combined character context
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
-            // Compute the derivative of the node for the given context
+            // Compute the transitions for the given context
             IEnumerable<(SymbolicRegexNode<T>, List<DerivativeEffect>)> derivativesAndEffects =
-                Node.MkDerivativeWithEffects(context, eager: true).TransitionsWithEffects(minterm, context);
+                Node.MkDerivativeWithEffects(eager: true).TransitionsWithEffects(minterm, context);
 
             foreach (var (derivative, effects) in derivativesAndEffects)
             {

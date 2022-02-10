@@ -34,6 +34,14 @@ namespace System.Text.RegularExpressions.Tests
         private static string DgmlOutputDirectoryPath => Path.Combine(s_tmpWorkingDir, "dgml");
 
         [Fact]
+        public void GroupsTest()
+        {
+            var r = new Regex("b*?bc", RegexOptions.NonBacktracking);
+            var m = r.Match("bbc");
+            Debug.Assert(m.Success);
+        }
+
+        [Fact]
         public void RegenerateUnicodeTables()
         {
             if (!Enabled)
