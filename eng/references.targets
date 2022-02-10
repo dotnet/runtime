@@ -27,11 +27,13 @@
           Condition="'$(DisableTransitiveProjectReferences)' != 'true' and
                      '@(DefaultReferenceExclusion)' != ''">
     <ItemGroup>
-      <_transitiveProjectReferenceWithExclusion Include="@(ProjectReference)">
-        <Exclusion>%(DefaultReferenceExclusion.Identity)</Exclusion>
-      </_transitiveProjectReferenceWithExclusion>
-      <ProjectReference Remove="@(_transitiveProjectReferenceWithExclusion)"
-                        Condition="'%(_transitiveProjectReferenceWithExclusion.NuGetPackageId)' == '%(_transitiveProjectReferenceWithExclusion.Exclusion)'" />
+      <_transitiveProjectReferenceWithProjectName Include="@(ProjectReference->Metadata('NuGetPackageId'))"
+                                                  OriginalIdentity="%(Identity)" />
+      <_transitiveIncludedProjectReferenceWithProjectName Include="@(_transitiveProjectReferenceWithProjectName)"
+                                                          Exclude="@(DefaultReferenceExclusion)" />
+      <_transitiveExcludedProjectReferenceWithProjectName Include="@(_transitiveProjectReferenceWithProjectName)"
+                                                          Exclude="@(_transitiveIncludedProjectReferenceWithProjectName)" />
+      <ProjectReference Remove="@(_transitiveExcludedProjectReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
   </Target>
 
