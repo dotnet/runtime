@@ -619,11 +619,8 @@ namespace System.IO
                 WaitForChangedResult.TimedOutResult;
         }
 
-        public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType, TimeSpan timeout)
-        {
-            int milliseconds = (int)timeout.TotalMilliseconds;
-            return WaitForChanged(changeType, milliseconds);
-        }
+        public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType, TimeSpan timeout) =>
+            WaitForChanged(changeType, checked((int)timeout.TotalMilliseconds));
 
         /// <devdoc>
         ///     Stops and starts this object.
