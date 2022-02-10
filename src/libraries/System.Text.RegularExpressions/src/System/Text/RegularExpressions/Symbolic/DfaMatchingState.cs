@@ -106,7 +106,7 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            SymbolicRegexNode<T> derivative = Node.MkDerivative(minterm, context);
+            SymbolicRegexNode<T> derivative = Node.MkDerivativeWithEffects(eager: true).TransitionOrdered(minterm, context);
 
             // nextCharKind will be the PrevCharKind of the target state
             // use an existing state instead if one exists already

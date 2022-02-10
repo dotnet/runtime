@@ -186,7 +186,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Create the dot-star pattern (a concatenation of any* with the original pattern)
             // and all of its initial states.
-            SymbolicRegexNode<TSetType> unorderedPattern = _pattern.IgnoreOrOrder();
+            SymbolicRegexNode<TSetType> unorderedPattern = _pattern.IgnoreOrOrderAndLazyness();
             _dotStarredPattern = _builder.MkConcat(_builder._anyStar, unorderedPattern);
             var dotstarredInitialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < dotstarredInitialStates.Length; i++)
@@ -486,8 +486,16 @@ namespace System.Text.RegularExpressions.Symbolic
                     FindStartPosition(input, i, i_q0_A1); // Walk in reverse to locate the start position of the match
             }
 
-            int i_end = FindEndPositionCapturing(input, i_start, out Registers endRegisters);
-            return new SymbolicMatch(i_start, i_end + 1 - i_start, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
+            if (_capsize == 1)
+            {
+                int i_end = FindEndPosition(input, i_start);
+                return new SymbolicMatch(i_start, i_end + 1 - i_start);
+            }
+            else
+            {
+                int i_end = FindEndPositionCapturing(input, i_start, out Registers endRegisters);
+                return new SymbolicMatch(i_start, i_end + 1 - i_start, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
+            }
         }
 
         /// <summary>Find match end position using the original pattern, end position is known to exist.</summary>
@@ -506,12 +514,6 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 // Empty match exists because the initial state is accepting.
                 i_end = i - 1;
-
-                // Stop here if q is lazy.
-                if (state.IsLazy)
-                {
-                    return i_end;
-                }
             }
 
             while (i < input.Length)
@@ -543,12 +545,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     // Accepting state has been reached. Record the position.
                     i_end = i;
-
-                    // Stop here if q is lazy.
-                    if (q.IsLazy)
-                    {
-                        return true;
-                    }
                 }
                 else if (q.IsDeadend)
                 {

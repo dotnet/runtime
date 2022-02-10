@@ -1037,8 +1037,8 @@ namespace System.Text.RegularExpressions.Symbolic
                             TransitionRegex<S> leftLeftTransition = leftLeftPath.MkDerivativeWithEffects(eager);
                             // When the path through the first alternative is not nullable, this transition that includes all derivatives from
                             // it is used.
-                            TransitionRegex<S> orTransition = leftLeftPath.MkDerivativeWithEffects(false)
-                                | _builder.MkConcat(_left._right, _right).MkDerivativeWithEffects(eager);
+                            TransitionRegex<S> orTransition = TransitionRegex<S>.Union(leftLeftPath.MkDerivativeWithEffects(false),
+                                _builder.MkConcat(_left._right, _right).MkDerivativeWithEffects(eager), ordered: true);
 
                             // Based on the nullability of the path thorugh the first alternative, select or construct the transition for when
                             // the left side of the concatenation is nullable.
@@ -1074,8 +1074,8 @@ namespace System.Text.RegularExpressions.Symbolic
                             TransitionRegex<S> nullTransition = _left.WrapEffects(_right.MkDerivativeWithEffects(eager));
                             // Order the transitions. If the left side is a lazy loop that is nullable due to its lower bound then prefer the right side
                             TransitionRegex<S> orTransition = _left._kind == SymbolicRegexKind.Loop && _left.IsLazy && _left._lower == 0 ?
-                                nullTransition | mainTransition :
-                                mainTransition | nullTransition;
+                                TransitionRegex<S>.Union(nullTransition, mainTransition, ordered: true) :
+                                TransitionRegex<S>.Union(mainTransition, nullTransition, ordered: true);
 
                             // Select or construct the transition based on whether the left side is nullable
                             transition = _left.IsNullable ?
@@ -1120,7 +1120,8 @@ namespace System.Text.RegularExpressions.Symbolic
                         // The transition when the first alternative is nullable
                         TransitionRegex<S> leftTransition = _left.MkDerivativeWithEffects(eager);
                         // The transition when the backtracking engines could continue to the second alternative
-                        TransitionRegex<S> orTransition = _left.MkDerivativeWithEffects(false) | _right.MkDerivativeWithEffects(eager);
+                        TransitionRegex<S> orTransition = TransitionRegex<S>.Union(_left.MkDerivativeWithEffects(false),
+                            _right.MkDerivativeWithEffects(eager), ordered: true);
                         // Select or construct the transition based on whether the first alternative is nullable
                         transition = eager && _left.CanBeNullable ?
                             (_left.IsNullable ?
@@ -1871,14 +1872,18 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Transform OrderdOr to Or nodes
+        /// Transform OrderdOr to Or nodes and any lazy loops to eager ones.
         /// </summary>
-        public SymbolicRegexNode<S> IgnoreOrOrder()
+        /// <remarks>
+        /// This transformation allows the second reverse pass to use the same derivative function as the third pass,
+        /// which must respect the backtracking engines alternation and lazyness semantics.
+        /// </remarks>
+        public SymbolicRegexNode<S> IgnoreOrOrderAndLazyness()
         {
             // Guard against stack overflow due to deep recursion
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                return StackHelper.CallOnEmptyStack(IgnoreOrOrder);
+                return StackHelper.CallOnEmptyStack(IgnoreOrOrderAndLazyness);
             }
 
             switch (_kind)
@@ -1886,17 +1891,17 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.Loop:
                     {
                         Debug.Assert(_left is not null);
-                        SymbolicRegexNode<S> body = _left.IgnoreOrOrder();
-                        return body == _left ?
+                        SymbolicRegexNode<S> body = _left.IgnoreOrOrderAndLazyness();
+                        return body == _left && !IsLazy?
                             this :
-                            MkLoop(_builder, body, _lower, _upper, IsLazy);
+                            MkLoop(_builder, body, _lower, _upper, isLazy: false);
                     }
 
                 case SymbolicRegexKind.Concat:
                     {
                         Debug.Assert(_left is not null && _right is not null);
-                        SymbolicRegexNode<S> left1 = _left.IgnoreOrOrder();
-                        SymbolicRegexNode<S> right1 = _right.IgnoreOrOrder();
+                        SymbolicRegexNode<S> left1 = _left.IgnoreOrOrderAndLazyness();
+                        SymbolicRegexNode<S> right1 = _right.IgnoreOrOrderAndLazyness();
 
                         Debug.Assert(left1 is not null && right1 is not null);
                         return left1 == _left && right1 == _right ?
@@ -1913,7 +1918,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         bool someChanged = false;
                         foreach (SymbolicRegexNode<S> alt in _alts)
                         {
-                            elements[i] = alt.IgnoreOrOrder();
+                            elements[i] = alt.IgnoreOrOrderAndLazyness();
                             someChanged |= alt != elements[i];
                             i += 1;
                         }
@@ -1926,7 +1931,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.Not:
                     {
                         Debug.Assert(_left is not null);
-                        SymbolicRegexNode<S> body = _left.IgnoreOrOrder();
+                        SymbolicRegexNode<S> body = _left.IgnoreOrOrderAndLazyness();
                         return body == _left ?
                             this :
                             MkNot(_builder, body);
@@ -1935,7 +1940,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.OrderedOr:
                     {
                         Debug.Assert(_left is not null && _right is not null);
-                        return MkOr(_builder, _left.IgnoreOrOrder(), _right.IgnoreOrOrder());
+                        return MkOr(_builder, _left.IgnoreOrOrderAndLazyness(), _right.IgnoreOrOrderAndLazyness());
                     }
 
                 default:
