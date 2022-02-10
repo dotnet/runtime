@@ -74,8 +74,10 @@
     </TargetPathWithTargetPlatformMoniker>
   </ItemDefinitionGroup>
 
-  <Target Name="ValidateReferenceAssemblyProjectReferences" Condition="'$(IsReferenceAssembly)' == 'true'" AfterTargets="ResolveReferences">
-    <Error Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' AND '%(ReferencePath.IsReferenceAssembly)' != 'true' AND '%(ReferencePath.ReferenceAssembly)' == ''"
+  <Target Name="ValidateReferenceAssemblyProjectReferences"
+          AfterTargets="ResolveReferences"
+          Condition="'$(IsReferenceAssembly)' == 'true'">
+    <Error Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IsReferenceAssembly)' != 'true' and '%(ReferencePath.ReferenceAssembly)' == ''"
            Text="Reference assemblies must only reference other reference assemblies and '%(ReferencePath.ProjectReferenceOriginalItemSpec)' is not a reference assembly project and does not set 'ProduceReferenceAssembly'." />
   </Target>
 </Project>
