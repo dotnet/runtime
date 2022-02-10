@@ -12,4 +12,8 @@
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\tests\System\Runtime\InteropServices\NFloatTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- it's a reference assembly, but the project system doesn't know that - include it during compilation, but don't publish it -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.Experimental\ref\System.Runtime.InteropServices.Experimental.csproj" IncludeAssets="compile" Private="false" />
+  </ItemGroup>
 </Project>
