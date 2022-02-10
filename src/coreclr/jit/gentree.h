@@ -1747,10 +1747,10 @@ public:
     inline bool IsMultiRegLclVar() const;
 
     // Returns true if it is a node returning its value in more than one register
-    inline bool IsMultiRegNode() const;
+    bool IsMultiRegNode() const;
 
     // Returns the number of registers defined by a multireg node.
-    unsigned GetMultiRegCount();
+    unsigned GetMultiRegCount() const;
 
     // Returns the regIndex'th register defined by a possibly-multireg node.
     regNumber GetRegByIndex(int regIndex);
@@ -7149,7 +7149,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 #endif
     }
 
-    unsigned GetRegCount()
+    unsigned GetRegCount() const
     {
 #if FEATURE_MULTIREG_RET
         // We need to return the highest index for which we have a valid register.
@@ -7999,117 +7999,6 @@ inline bool GenTree::IsMultiRegLclVar() const
 }
 
 //-----------------------------------------------------------------------------------
-// IsMultiRegNode: whether a node returning its value in more than one register
-//
-// Arguments:
-//     None
-//
-// Return Value:
-//     Returns true if this GenTree is a multi-reg node.
-//
-// Notes:
-//     All targets that support multi-reg ops of any kind also support multi-reg return
-//     values for calls. Should that change with a future target, this method will need
-//     to change accordingly.
-//
-inline bool GenTree::IsMultiRegNode() const
-{
-#if FEATURE_MULTIREG_RET
-    if (IsMultiRegCall())
-    {
-        return true;
-    }
-
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return true;
-    }
-#endif
-
-#if !defined(TARGET_64BIT)
-    if (OperIsMultiRegOp())
-    {
-        return true;
-    }
-#endif
-
-    if (OperIs(GT_COPY, GT_RELOAD))
-    {
-        return true;
-    }
-#endif // FEATURE_MULTIREG_RET
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
-    {
-        return (TypeGet() == TYP_STRUCT);
-    }
-#endif
-    if (IsMultiRegLclVar())
-    {
-        return true;
-    }
-    return false;
-}
-//-----------------------------------------------------------------------------------
-// GetMultiRegCount: Return the register count for a multi-reg node.
-//
-// Arguments:
-//     None
-//
-// Return Value:
-//     Returns the number of registers defined by this node.
-//
-inline unsigned GenTree::GetMultiRegCount()
-{
-#if FEATURE_MULTIREG_RET
-    if (IsMultiRegCall())
-    {
-        return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
-    }
-
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return AsPutArgSplit()->gtNumRegs;
-    }
-#endif
-
-#if !defined(TARGET_64BIT)
-    if (OperIsMultiRegOp())
-    {
-        return AsMultiRegOp()->GetRegCount();
-    }
-#endif
-
-    if (OperIs(GT_COPY, GT_RELOAD))
-    {
-        return AsCopyOrReload()->GetRegCount();
-    }
-#endif // FEATURE_MULTIREG_RET
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
-    {
-        assert(TypeGet() == TYP_STRUCT);
-        return 2;
-    }
-#endif
-    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
-    {
-        assert((gtFlags & GTF_VAR_MULTIREG) != 0);
-        // The register count for a multireg lclVar requires looking at the LclVarDsc,
-        // which requires a Compiler instance. The caller must handle this separately.
-        // The register count for a multireg lclVar requires looking at the LclVarDsc,
-        // which requires a Compiler instance. The caller must use the GetFieldCount
-        // method on GenTreeLclVar.
-
-        assert(!"MultiRegCount for LclVar");
-    }
-    assert(!"GetMultiRegCount called with non-multireg node");
-    return 1;
-}
-
-//-----------------------------------------------------------------------------------
 // GetRegByIndex: Get a specific register, based on regIndex, that is produced
 //                by this node.
 //
@@ -8156,13 +8045,14 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
         return AsCopyOrReload()->GetRegNumByIdx(regIndex);
     }
 #endif // FEATURE_MULTIREG_RET
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#ifdef FEATURE_HW_INTRINSICS
     if (OperIs(GT_HWINTRINSIC))
     {
         assert(regIndex == 1);
+        // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
         return AsHWIntrinsic()->GetOtherReg();
     }
-#endif
+#endif // FEATURE_HW_INTRINSICS
     if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
     {
         return AsLclVar()->GetRegNumByIdx(regIndex);
@@ -8213,15 +8103,26 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex)
 
 #endif // FEATURE_MULTIREG_RET
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
+    if (OperIsHWIntrinsic())
     {
+        assert(TypeGet() == TYP_STRUCT);
+#ifdef TARGET_ARM64
+        if (AsHWIntrinsic()->GetSimdSize() == 16)
+        {
+            return TYP_SIMD16;
+        }
+        else
+        {
+            assert(AsHWIntrinsic()->GetSimdSize() == 8);
+            return TYP_SIMD8;
+        }
+#elif defined(TARGET_XARCH)
         // At this time, the only multi-reg HW intrinsics all return the type of their
         // arguments. If this changes, we will need a way to record or determine this.
-        assert(TypeGet() == TYP_STRUCT);
         return gtGetOp1()->TypeGet();
-    }
 #endif
+    }
+
     if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
     {
         if (TypeGet() == TYP_LONG)
