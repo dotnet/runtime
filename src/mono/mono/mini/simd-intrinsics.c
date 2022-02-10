@@ -580,10 +580,15 @@ static guint16 sri_vector_methods [] = {
 	SN_Create,
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
+	SN_Equals,
 	SN_Floor,
 	SN_GetElement,
 	SN_GetLower,
 	SN_GetUpper,
+	SN_GreaterThan,
+	SN_GreaterThanOrEqual,
+	SN_LessThan,
+	SN_LessThanOrEqual,
 	SN_ToScalar,
 	SN_ToVector128,
 	SN_ToVector128Unsafe,
@@ -697,6 +702,33 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		int op = id == SN_GetLower ? OP_XLOWER : OP_XUPPER;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+	}
+	case SN_Equals:
+	case SN_GreaterThan:
+	case SN_GreaterThanOrEqual:
+	case SN_LessThan:
+	case SN_LessThanOrEqual: {
+		gboolean is_unsigned = type_is_unsigned (fsig->params [0]);
+		MonoInst *ins = emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
+		switch (id) {
+		case SN_Equals:
+			break;
+		case SN_GreaterThan:
+			ins->inst_c0 = is_unsigned ? CMP_GT_UN : CMP_GT;
+			break;
+		case SN_GreaterThanOrEqual:
+			ins->inst_c0 = is_unsigned ? CMP_GE_UN : CMP_GE;
+			break;
+		case SN_LessThan:
+			ins->inst_c0 = is_unsigned ? CMP_LT_UN : CMP_LT;
+			break;
+		case SN_LessThanOrEqual:
+			ins->inst_c0 = is_unsigned ? CMP_LE_UN : CMP_LE;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+		return ins;
 	}
 	case SN_ToScalar: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
