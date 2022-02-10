@@ -726,7 +726,8 @@ public:
     bool IsVNVectorZero(ValueNum vn);
 
 #if FEATURE_SIMD
-    /// Returns VNFuncSimdTypeInfo(NoVN, 0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type on a function.
+    /// Returns VNFuncSimdTypeInfo(NoVN, 0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type
+    /// on a function.
     VNFuncSimdTypeInfo GetFuncSimdTypeOfVN(ValueNum vn);
 #endif
 
