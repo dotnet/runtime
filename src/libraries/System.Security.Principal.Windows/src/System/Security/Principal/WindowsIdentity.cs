@@ -137,8 +137,7 @@ namespace System.Security.Principal
                 sourceContext.SourceName = new byte[TOKEN_SOURCE.TOKEN_SOURCE_LENGTH];
                 Buffer.BlockCopy(sourceName, 0, sourceContext.SourceName, 0, sourceName.Length);
 
-                if (sUserPrincipalName == null)
-                    throw new ArgumentNullException(nameof(sUserPrincipalName));
+                ArgumentNullException.ThrowIfNull(sUserPrincipalName);
 
                 byte[] upnBytes = Encoding.Unicode.GetBytes(sUserPrincipalName);
                 if (upnBytes.Length > ushort.MaxValue)

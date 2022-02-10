@@ -22,12 +22,8 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public AtomPub10ServiceDocumentFormatter(Type documentTypeToCreate) : base()
+        public AtomPub10ServiceDocumentFormatter(Type documentTypeToCreate!!) : base()
         {
-            if (documentTypeToCreate == null)
-            {
-                throw new ArgumentNullException(nameof(documentTypeToCreate));
-            }
             if (!typeof(ServiceDocument).IsAssignableFrom(documentTypeToCreate))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(documentTypeToCreate), nameof(ServiceDocument)), nameof(documentTypeToCreate));
