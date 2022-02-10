@@ -428,11 +428,7 @@ namespace System
             return (GCNotificationStatus)_WaitForFullGCApproach(millisecondsTimeout);
         }
 
-        public static GCNotificationStatus WaitForFullGCApproach(TimeSpan timeout)
-        {
-            int millisecondsTimeout = (int)timeout.TotalMilliseconds;
-            return (GCNotificationStatus)_WaitForFullGCApproach(millisecondsTimeout);
-        }
+        public static GCNotificationStatus WaitForFullGCApproach(TimeSpan timeout) => WaitForFullGCApproach(checked((int)timeout.TotalMilliseconds));
 
         public static GCNotificationStatus WaitForFullGCComplete()
         {
@@ -446,11 +442,7 @@ namespace System
             return (GCNotificationStatus)_WaitForFullGCComplete(millisecondsTimeout);
         }
 
-        public static GCNotificationStatus WaitForFullGCComplete(TimeSpan timeout)
-        {
-            int millisecondsTimeout = (int)timeout.TotalMilliseconds;
-            return (GCNotificationStatus)_WaitForFullGCComplete(millisecondsTimeout);
-        }
+        public static GCNotificationStatus WaitForFullGCComplete(TimeSpan timeout) => WaitForFullGCComplete(checked((int)timeout.TotalMilliseconds));
 
         private enum StartNoGCRegionStatus
         {
