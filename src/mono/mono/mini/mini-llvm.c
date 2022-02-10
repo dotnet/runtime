@@ -7720,11 +7720,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					result = call_intrins (ctx, is_r4 ? INTRINS_SSE_MAXPS : INTRINS_SSE_MAXPD, args, dname);
 				else
 					result = call_intrins (ctx, is_r4 ? INTRINS_SSE_MINPS : INTRINS_SSE_MINPD, args, dname);
-#else
+#elif defined(TARGET_ARM64)
 				int instc0_arm64 = ins->inst_c0 == OP_FMAX ? INTRINS_AARCH64_ADV_SIMD_FMAX : INTRINS_AARCH64_ADV_SIMD_FMIN;
 				IntrinsicId iid = (IntrinsicId) instc0_arm64;
 				llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 				result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+#else
+				NOT_IMPLEMENTED;
 #endif
 				break;
 			}
@@ -7742,10 +7744,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				default:
 					g_assert_not_reached ();
 				}
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-				LLVMValueRef cmp = LLVMBuildICmp (builder, op, l, r, "");
-				result = LLVMBuildSelect (builder, cmp, l, r, "");
-#else
+#if defined(TARGET_ARM64)
 				if ((ins->inst_c1 == MONO_TYPE_U8) || (ins->inst_c1 == MONO_TYPE_I8)) {
 					LLVMValueRef cmp = LLVMBuildICmp (builder, op, l, r, "");
 					result = LLVMBuildSelect (builder, cmp, l, r, "");
@@ -7766,6 +7765,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 					result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 				}
+#else
+				LLVMValueRef cmp = LLVMBuildICmp (builder, op, l, r, "");
+				result = LLVMBuildSelect (builder, cmp, l, r, "");
 #endif
 				break;
 			}
