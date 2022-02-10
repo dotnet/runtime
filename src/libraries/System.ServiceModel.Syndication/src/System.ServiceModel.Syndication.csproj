@@ -64,7 +64,7 @@
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XmlSerializer" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="System\ServiceModel\Syndication\Class1.cs" />
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.ServiceModel" />
   </ItemGroup>
 </Project>
