@@ -116,7 +116,7 @@ stub_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, gpo
 
 static gboolean
 stub_run_clause_with_il_state (gpointer il_state, int clause_index, gpointer handler_ip, gpointer handler_ip_end, MonoObject *ex,
-							   gboolean is_catch)
+							   gboolean *filtered, MonoExceptionEnum clause_type)
 {
 	g_assert_not_reached ();
 }

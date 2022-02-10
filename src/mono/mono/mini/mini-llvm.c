@@ -2383,8 +2383,6 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 
 		// FIXME: Use an invoke only for calls inside try-catch blocks
 		if (clause && (!cfg->deopt || ctx->has_catch)) {
-			g_assert (clause->flags == MONO_EXCEPTION_CLAUSE_NONE || clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY || clause->flags == MONO_EXCEPTION_CLAUSE_FAULT);
-
 			/*
 			 * Have to use an invoke instead of a call, branching to the
 			 * handler bblock of the clause containing this bblock.
@@ -11270,6 +11268,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			has_terminator = TRUE;
 			break;
 		}
+		case OP_ENDFILTER: {
+			g_assert (cfg->llvm_only && cfg->deopt);
+			LLVMBuildUnreachable (builder);
+			has_terminator = TRUE;
+			break;
+		}
 		case OP_IL_SEQ_POINT:
 			break;
 		default: {
@@ -11834,7 +11838,7 @@ emit_method_inner (EmitContext *ctx)
 		clause = &header->clauses [i];
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE) {
 			if (cfg->llvm_only) {
-				if (!cfg->interp_entry_only)
+				if (!cfg->deopt && !cfg->interp_entry_only)
 					llvmonly_fail = TRUE;
 			} else {
 				set_failure (ctx, "non-finally/catch/fault clause.");
@@ -11848,7 +11852,7 @@ emit_method_inner (EmitContext *ctx)
 
 	for (int i = 0; i < cfg->header->num_clauses; i++) {
 		MonoExceptionClause *clause = &cfg->header->clauses [i];
-		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE)
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE || clause->flags == MONO_EXCEPTION_CLAUSE_FILTER)
 			ctx->has_catch = TRUE;
 	}
 
@@ -12062,6 +12066,9 @@ emit_method_inner (EmitContext *ctx)
 		char name [128];
 
 		if (ctx->cfg->interp_entry_only || !(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
+			continue;
+
+		if (ctx->cfg->deopt && MONO_REGION_FLAGS (bb->region) == MONO_EXCEPTION_CLAUSE_FILTER)
 			continue;
 
 		clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);

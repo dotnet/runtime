@@ -3083,9 +3083,6 @@ can_deopt (MonoCompile *cfg)
 	for (int i = 0; i < header->num_clauses; ++i) {
 		MonoExceptionClause *clause = &header->clauses [i];
 
-		// FIXME: Support filter clauses
-		if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER)
-			return FALSE;
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE)
 			has_catch = TRUE;
 	}

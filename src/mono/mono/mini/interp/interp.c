@@ -7399,7 +7399,7 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 
 static gboolean
 interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, gpointer handler_ip, gpointer handler_ip_end,
-								 MonoObject *ex, gboolean is_catch)
+								 MonoObject *ex, gboolean *filtered, MonoExceptionEnum clause_type)
 {
 	MonoMethodILState *il_state = (MonoMethodILState*)il_state_ptr;
 	MonoMethodSignature *sig;
@@ -7409,8 +7409,6 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, gpoint
 	InterpMethod *imethod;
 	FrameClauseArgs clause_args;
 	ERROR_DECL (error);
-
-	// FIXME: Optimize this ? Its only used during EH
 
 	sig = mono_method_signature_internal (il_state->method);
 	g_assert (sig);
@@ -7470,13 +7468,13 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, gpoint
 
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
 	clause_args.start_with_ip = (const guint16*)handler_ip;
-	if (is_catch)
+	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE || clause_type == MONO_EXCEPTION_CLAUSE_FILTER)
 		clause_args.end_at_ip = (const guint16*)clause_args.start_with_ip + 0xffffff;
 	else
 		clause_args.end_at_ip = (const guint16*)handler_ip_end;
 	clause_args.exec_frame = &frame;
 
-	if (is_catch)
+	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE || clause_type == MONO_EXCEPTION_CLAUSE_FILTER)
 		*(MonoObject**)(frame_locals (&frame) + imethod->jinfo->clauses [clause_index].exvar_offset) = ex;
 	else
 		// this informs MINT_ENDFINALLY to return to EH
@@ -7510,9 +7508,14 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, gpoint
 	}
 	mono_metadata_free_mh (header);
 
-	if (is_catch && ret_addr)
+	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE && ret_addr) {
 		stackval_to_data (sig->ret, frame.retval, ret_addr, FALSE);
+	} else if (clause_type == MONO_EXCEPTION_CLAUSE_FILTER) {
+		g_assert (filtered);
+		*filtered = frame.retval->data.i;
+	}
 
+	memset (orig_sp, 0, (guint8*)context->stack_pointer - (guint8*)orig_sp);
 	context->stack_pointer = (guchar*)orig_sp;
 
 	if (context->has_resume_state)

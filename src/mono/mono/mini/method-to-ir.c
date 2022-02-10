@@ -6493,6 +6493,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			for (int i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 				/* Finally clauses are checked after the remove_finally pass */
+
 				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 					cfg->interp_entry_only = TRUE;
 			}

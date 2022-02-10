@@ -2013,7 +2013,13 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 						g_free (name);
 					}
 
-					if (ji->is_interp) {
+					if (frame.type == FRAME_TYPE_IL_STATE) {
+						if (mono_trace_is_enabled () && mono_trace_eval (method))
+							g_print ("EXCEPTION: filter clause found in AOTed code, running it with the interpreter.\n");
+						gboolean res = mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ei->data.filter, NULL, ex_obj, &filtered, MONO_EXCEPTION_CLAUSE_FILTER);
+						// FIXME:
+						g_assert (!res);
+					} else if (ji->is_interp) {
 						/* The filter ends where the exception handler starts */
 						filtered = mini_get_interp_callbacks ()->run_filter (&frame, (MonoException*)ex_obj, i, ei->data.filter, ei->handler_start);
 					} else {
@@ -2575,7 +2581,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						if (frame.type == FRAME_TYPE_IL_STATE) {
 							if (mono_trace_is_enabled () && mono_trace_eval (method))
 								g_print ("EXCEPTION: finally/fault clause found in AOTed code, running it with the interpreter.\n");
-							mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ei->handler_start, ei->data.handler_end, NULL, FALSE);
+							mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ei->handler_start, ei->data.handler_end, NULL, NULL, MONO_EXCEPTION_CLAUSE_FINALLY);
 						} else if (in_interp) {
 							gboolean has_ex = mini_get_interp_callbacks ()->run_finally (&frame, i, ei->handler_start, ei->data.handler_end);
 							if (has_ex) {
@@ -3590,7 +3596,7 @@ mono_llvm_resume_exception_il_state (MonoLMF *lmf, gpointer info)
 	MonoJitInfo *ji = jit_tls->resume_state.ji;
 	int clause_index = jit_tls->resume_state.clause_index;
 	MonoJitExceptionInfo *ei = &ji->clauses [clause_index];
-	gboolean r = mini_get_interp_callbacks ()->run_clause_with_il_state (il_state, clause_index, ei->handler_start, NULL, jit_tls->resume_state.ex_obj, TRUE);
+	gboolean r = mini_get_interp_callbacks ()->run_clause_with_il_state (il_state, clause_index, ei->handler_start, NULL, jit_tls->resume_state.ex_obj, NULL, MONO_EXCEPTION_CLAUSE_NONE);
 	if (r)
 		/* Another exception thrown, continue unwinding */
 		mono_llvm_cpp_throw_exception ();
