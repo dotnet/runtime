@@ -230,6 +230,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         typeRet = "string";
                         break;
                     }
+                    case "symbol":
+                     {
+                         var str = value?.Value<string>()?.Replace("\'", "")?.LastOrDefault();
+                         valueRet = $"\"{str}\"";
+                         typeRet = "string";
+                         break;
+                     }
                     case "number":
                         valueRet = value?.Value<double>();
                         typeRet = "double";
@@ -398,9 +405,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new ReturnAsErrorException($"Cannot evaluate '{expression}'.", "CompilationError");
+                throw new ReturnAsErrorException($"Cannot evaluate '{expression}'. {ex.Message}", "CompilationError");
             }
         }
 

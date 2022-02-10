@@ -528,6 +528,7 @@ namespace DebuggerTests
                await EvaluateOnCallFrameAndCheck(id,
                    ("this.CallMethod()", TNumber(1)),
                    ("this.CallMethod()", TNumber(1)),
+                   ("this.CallMethodReturningChar()", TString("A")),
                    ("this.ParmToTestObj.MyMethod()", TString("methodOK")),
                    ("this.ParmToTestObj.ToString()", TString("DebuggerTests.EvaluateMethodTestsClass+ParmToTest")),
                    ("this.objToTest.MyMethod()", TString("methodOK")));
