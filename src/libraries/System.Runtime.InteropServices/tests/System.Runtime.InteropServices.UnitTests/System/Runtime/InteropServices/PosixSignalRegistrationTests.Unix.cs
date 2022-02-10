@@ -161,6 +161,7 @@ namespace System.Tests
 
         [ConditionalFact(nameof(NotMobileAndRemoteExecutable))]
         [OuterLoop("SIGQUIT will generate a coredump")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65000", TestPlatforms.OSX)] // large (~6 GB) coredump on OSX leads to timeout on upload
         public void SignalCanCancelTermination_ExpectedCrash()
         {
             SignalCanCancelTermination(PosixSignal.SIGQUIT, false, 131);
