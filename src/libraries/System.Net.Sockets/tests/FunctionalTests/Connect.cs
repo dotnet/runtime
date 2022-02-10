@@ -363,7 +363,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task FailedConnect_ConnectedReturnsFalse_TimeSpan()
         {
-            TimeSpan timeSpan = TimeSpan.FromMilliseconds(5_000_000L * 1000);
+            TimeSpan timeSpan = TimeSpan.FromSeconds(30);
             using Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             // Connect to port 1 where we expect no server to be listening.
