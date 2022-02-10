@@ -3068,36 +3068,6 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
 	return MONO_RGCTX_ACCESS_THIS;
 }
 
-static gboolean
-can_deopt (MonoCompile *cfg)
-{
-	MonoMethodHeader *header = cfg->header;
-	gboolean has_catch = FALSE;
-	MonoMethodSignature *sig;
-
-	if (!header->num_clauses)
-		return FALSE;
-
-	sig = mono_method_signature_internal (cfg->method);
-
-	for (int i = 0; i < header->num_clauses; ++i) {
-		MonoExceptionClause *clause = &header->clauses [i];
-
-		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE)
-			has_catch = TRUE;
-	}
-
-	/*
-	 * FIXME: The code after the call to mono_llvm_resume_exception_il_state doesn't support
-	 * all return conventions.
-	 */
-	MonoType *t = mini_get_underlying_type (sig->ret);
-	if (has_catch && t->type != MONO_TYPE_VOID && !MONO_TYPE_IS_PRIMITIVE (t) && !MONO_TYPE_IS_REFERENCE (t))
-		return FALSE;
-
-	return TRUE;
-}
-
 /*
  * mini_method_compile:
  * @method: the method to compile
@@ -3320,7 +3290,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		return cfg;
 	}
 
-	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses && can_deopt (cfg)) {
+	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses) {
 		cfg->deopt = TRUE;
 		/* Can't reconstruct inlined state */
 		cfg->disable_inline = TRUE;

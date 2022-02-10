@@ -4971,36 +4971,53 @@ emit_landing_pad (EmitContext *ctx, int group_index, int group_size)
 		emit_call (ctx, NULL, &ctx->builder, callee, args, 2);
 
 		/* Return the value set in ctx->il_state_ret */
+
+		LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (ctx->lmethod)));
 		LLVMBuilderRef builder = ctx->builder;
+		LLVMValueRef addr, retval, gep, indexes [2];
+
 		switch (ctx->linfo->ret.storage) {
 		case LLVMArgNone:
 			LLVMBuildRetVoid (builder);
 			break;
-		case LLVMArgNormal: {
-			LLVMValueRef addr, retval, gep, indexes [2];
-
+		case LLVMArgNormal:
+		case LLVMArgWasmVtypeAsScalar: {
 			if (ctx->sig->ret->type == MONO_TYPE_VOID) {
 				LLVMBuildRetVoid (builder);
 				break;
 			}
 
-			g_assert (cfg->ret);
 			addr = ctx->il_state_ret;
 			g_assert (addr);
-			LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (ctx->lmethod)));
 
+			addr = convert (ctx, ctx->il_state_ret, LLVMPointerType (ret_type, 0));
+			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			gep = LLVMBuildGEP (builder, addr, indexes, 1, "");
+
+			LLVMBuildRet (builder, LLVMBuildLoad (builder, gep, ""));
+			break;
+		}
+		case LLVMArgVtypeRetAddr: {
+			LLVMValueRef ret_addr;
+
+			g_assert (cfg->vret_addr);
+			ret_addr = ctx->values [cfg->vret_addr->dreg];
+
+			addr = ctx->il_state_ret;
+			g_assert (addr);
+
+			/* The ret value is in il_state_ret, copy it to the memory pointed to by the vret arg */
+			ret_type = type_to_llvm_type (ctx, ctx->sig->ret);
 			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 			indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 			gep = LLVMBuildGEP (builder, addr, indexes, 1, "");
 			retval = convert (ctx, LLVMBuildLoad (builder, gep, ""), ret_type);
-			LLVMBuildRet (builder, retval);
+
+			LLVMBuildStore (builder, retval, convert (ctx, ret_addr, LLVMPointerType (ret_type, 0)));
+			LLVMBuildRetVoid (builder);
 			break;
 		}
-		case LLVMArgWasmVtypeAsScalar:
-		case LLVMArgVtypeRetAddr:
-			// FIXME:
-			g_assert_not_reached ();
-			break;
 		default:
 			g_assert_not_reached ();
 			break;
