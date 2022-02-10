@@ -36,7 +36,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 if (Node._kind == SymbolicRegexKind.WatchDog)
                 {
-                    return Node._lowerOrCapNum;
+                    return Node._lower;
                 }
 
                 if (Node._kind == SymbolicRegexKind.Or)

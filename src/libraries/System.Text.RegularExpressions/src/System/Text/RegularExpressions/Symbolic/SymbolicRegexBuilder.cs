@@ -360,7 +360,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return builderT._nwbAnchor;
 
                 case SymbolicRegexKind.WatchDog:
-                    return builderT.MkWatchDog(sr._lowerOrCapNum);
+                    return builderT.MkWatchDog(sr._lower);
 
                 case SymbolicRegexKind.Epsilon:
                     return builderT._epsilon;
@@ -371,7 +371,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case SymbolicRegexKind.Loop:
                     Debug.Assert(sr._left is not null);
-                    return builderT.MkLoop(Transform(sr._left, builderT, predicateTransformer), sr.IsLazy, sr._lowerOrCapNum, sr._upper);
+                    return builderT.MkLoop(Transform(sr._left, builderT, predicateTransformer), sr.IsLazy, sr._lower, sr._upper);
 
                 case SymbolicRegexKind.Or:
                     Debug.Assert(sr._alts is not null);
@@ -386,10 +386,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     return builderT.MkAnd(sr._alts.Transform(builderT, predicateTransformer));
 
                 case SymbolicRegexKind.CaptureStart:
-                    return builderT.MkCaptureStart(sr._lowerOrCapNum);
+                    return builderT.MkCaptureStart(sr._lower);
 
                 case SymbolicRegexKind.CaptureEnd:
-                    return builderT.MkCaptureEnd(sr._lowerOrCapNum);
+                    return builderT.MkCaptureEnd(sr._lower);
 
                 case SymbolicRegexKind.Concat:
                     {

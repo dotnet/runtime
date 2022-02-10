@@ -22,7 +22,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal readonly SymbolicRegexBuilder<S> _builder;
         internal readonly SymbolicRegexKind _kind;
-        internal readonly int _lowerOrCapNum;
+        internal readonly int _lower;
         internal readonly int _upper;
         internal readonly S? _set;
         internal readonly SymbolicRegexNode<S>? _left;
@@ -53,7 +53,7 @@ namespace System.Text.RegularExpressions.Symbolic
             _kind = kind;
             _left = left;
             _right = right;
-            _lowerOrCapNum = lower;
+            _lower = lower;
             _upper = upper;
             _set = set;
             _alts = alts;
@@ -206,7 +206,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     case SymbolicRegexKind.Loop:
                         Debug.Assert(_left is not null);
-                        is_nullable = _lowerOrCapNum == 0 || _left.IsNullableFor(context);
+                        is_nullable = _lower == 0 || _left.IsNullableFor(context);
                         break;
 
                     case SymbolicRegexKind.Concat:
@@ -354,10 +354,10 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Returns true iff this is a loop whose lower bound is 0 and upper bound is max</summary>
-        public bool IsStar => _lowerOrCapNum == 0 && _upper == int.MaxValue;
+        public bool IsStar => _lower == 0 && _upper == int.MaxValue;
 
         /// <summary>Returns true iff this is a loop whose lower bound is 0 and upper bound is 1</summary>
-        public bool IsMaybe => _lowerOrCapNum == 0 && _upper == 1;
+        public bool IsMaybe => _lower == 0 && _upper == 1;
 
         /// <summary>Returns true if this is Epsilon</summary>
         public bool IsEpsilon => _kind == SymbolicRegexKind.Epsilon;
@@ -368,7 +368,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Returns true iff this is a loop whose lower bound is 1 and upper bound is max
         /// </summary>
-        public bool IsPlus => _lowerOrCapNum == 1 && _upper == int.MaxValue;
+        public bool IsPlus => _lower == 1 && _upper == int.MaxValue;
 
         #region called only once, in the constructor of SymbolicRegexBuilder
 
@@ -636,12 +636,12 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.Loop:
                     {
                         Debug.Assert(_left is not null);
-                        if (_lowerOrCapNum == _upper)
+                        if (_lower == _upper)
                         {
                             int body_length = _left.GetFixedLength();
                             if (body_length >= 0)
                             {
-                                return _lowerOrCapNum * body_length;
+                                return _lower * body_length;
                             }
                         }
                         break;
@@ -764,7 +764,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         }
 
                         int newupper = _upper == int.MaxValue ? int.MaxValue : _upper - 1;
-                        int newlower = _lowerOrCapNum == 0 ? 0 : _lowerOrCapNum - 1;
+                        int newlower = _lower == 0 ? 0 : _lower - 1;
                         SymbolicRegexNode<S> rest = _builder.MkLoop(_left, IsLazy, newlower, newupper);
                         deriv = _builder.MkConcat(step, rest);
                         break;
@@ -927,7 +927,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     else
                     {
                         int newupper = _upper == int.MaxValue ? int.MaxValue : _upper - 1;
-                        int newlower = _lowerOrCapNum == 0 ? 0 : _lowerOrCapNum - 1;
+                        int newlower = _lower == 0 ? 0 : _lower - 1;
                         SymbolicRegexNode<S> rest = _builder.MkLoop(_left, IsLazy, newlower, newupper);
                         _transitionRegex = step.Concat(rest);
                     }
@@ -1073,7 +1073,7 @@ namespace System.Text.RegularExpressions.Symbolic
                             // Construct the case where the right side consumes the character. Any effects from the left side are applied
                             TransitionRegex<S> nullTransition = _left.WrapEffects(_right.MkDerivativeWithEffects(eager));
                             // Order the transitions. If the left side is a lazy loop that is nullable due to its lower bound then prefer the right side
-                            TransitionRegex<S> orTransition = _left._kind == SymbolicRegexKind.Loop && _left.IsLazy && _left._lowerOrCapNum == 0 ?
+                            TransitionRegex<S> orTransition = _left._kind == SymbolicRegexKind.Loop && _left.IsLazy && _left._lower == 0 ?
                                 nullTransition | mainTransition :
                                 mainTransition | nullTransition;
 
@@ -1092,7 +1092,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(_left is not null);
                     Debug.Assert(_upper > 0);
 
-                    if (eager && IsLazy && _lowerOrCapNum == 0)
+                    if (eager && IsLazy && _lower == 0)
                     {
                         // This is nothing because the backtracking matcher would prefer to exit the loop
                         transition = TransitionRegex<S>.Leaf(_builder._nothing);
@@ -1107,7 +1107,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         else
                         {
                             int newupper = _upper == int.MaxValue ? int.MaxValue : _upper - 1;
-                            int newlower = _lowerOrCapNum == 0 ? 0 : _lowerOrCapNum - 1;
+                            int newlower = _lower == 0 ? 0 : _lower - 1;
                             SymbolicRegexNode<S> rest = _builder.MkLoop(_left, IsLazy, newlower, newupper);
                             transition = step.Concat(rest);
                         }
@@ -1172,7 +1172,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.Loop:
                     Debug.Assert(_left is not null);
                     // Apply effect when backtracking engine would enter loop
-                    if (_lowerOrCapNum != 0)
+                    if (_lower != 0)
                     {
                         Debug.Assert(_left.CanBeNullable);
                         transition = _left.WrapEffects(transition);
@@ -1217,13 +1217,13 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.CaptureStart:
                     // Add the effect to record the capture start
                     transition = TransitionRegex<S>.Effect(transition,
-                        new DerivativeEffect(DerivativeEffect.EffectKind.CaptureStart, _lowerOrCapNum));
+                        new DerivativeEffect(DerivativeEffect.EffectKind.CaptureStart, _lower));
                     break;
 
                 case SymbolicRegexKind.CaptureEnd:
                     // Add the effect to record the capture start
                     transition = TransitionRegex<S>.Effect(transition,
-                        new DerivativeEffect(DerivativeEffect.EffectKind.CaptureEnd, _lowerOrCapNum));
+                        new DerivativeEffect(DerivativeEffect.EffectKind.CaptureEnd, _lower));
                     break;
 
                 case SymbolicRegexKind.Or:
@@ -1264,7 +1264,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.Loop:
                     Debug.Assert(_left is not null);
                     // Apply effect when backtracking engine would enter loop
-                    if (_lowerOrCapNum != 0 || (_upper != 0 && !IsLazy && _left.IsNullableFor(context)))
+                    if (_lower != 0 || (_upper != 0 && !IsLazy && _left.IsNullableFor(context)))
                     {
                         Debug.Assert(_left.IsNullableFor(context));
                         _left.ApplyEffects(apply, context);
@@ -1287,11 +1287,11 @@ namespace System.Text.RegularExpressions.Symbolic
                     break;
 
                 case SymbolicRegexKind.CaptureStart:
-                    apply(new DerivativeEffect(DerivativeEffect.EffectKind.CaptureStart, _lowerOrCapNum));
+                    apply(new DerivativeEffect(DerivativeEffect.EffectKind.CaptureStart, _lower));
                     break;
 
                 case SymbolicRegexKind.CaptureEnd:
-                    apply(new DerivativeEffect(DerivativeEffect.EffectKind.CaptureEnd, _lowerOrCapNum));
+                    apply(new DerivativeEffect(DerivativeEffect.EffectKind.CaptureEnd, _lower));
                     break;
 
                 case SymbolicRegexKind.Or:
@@ -1397,10 +1397,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.WatchDog:
                 case SymbolicRegexKind.CaptureStart:
                 case SymbolicRegexKind.CaptureEnd:
-                    return HashCode.Combine(_kind, _lowerOrCapNum);
+                    return HashCode.Combine(_kind, _lower);
 
                 case SymbolicRegexKind.Loop:
-                    return HashCode.Combine(_kind, _left, _lowerOrCapNum, _upper, _info);
+                    return HashCode.Combine(_kind, _left, _lower, _upper, _info);
 
                 case SymbolicRegexKind.Or or SymbolicRegexKind.And:
                     return HashCode.Combine(_kind, _alts, _info);
@@ -1576,7 +1576,7 @@ namespace System.Text.RegularExpressions.Symbolic
                             sb.Append('?');
                         }
                     }
-                    else if (_lowerOrCapNum == 0 && _upper == 0)
+                    else if (_lower == 0 && _upper == 0)
                     {
                         sb.Append("()");
                     }
@@ -1584,16 +1584,16 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         _left.ToStringForLoop(sb);
                         sb.Append('{');
-                        sb.Append(_lowerOrCapNum);
+                        sb.Append(_lower);
                         sb.Append(",}");
                         if (IsLazy)
                             sb.Append('?');
                     }
-                    else if (_lowerOrCapNum == _upper)
+                    else if (_lower == _upper)
                     {
                         _left.ToStringForLoop(sb);
                         sb.Append('{');
-                        sb.Append(_lowerOrCapNum);
+                        sb.Append(_lower);
                         sb.Append('}');
                         if (IsLazy)
                             sb.Append('?');
@@ -1602,7 +1602,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         _left.ToStringForLoop(sb);
                         sb.Append('{');
-                        sb.Append(_lowerOrCapNum);
+                        sb.Append(_lower);
                         sb.Append(',');
                         sb.Append(_upper);
                         sb.Append('}');
@@ -1750,7 +1750,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 case SymbolicRegexKind.Loop:
                     Debug.Assert(_left is not null);
-                    return _builder.MkLoop(_left.Reverse(), IsLazy, _lowerOrCapNum, _upper);
+                    return _builder.MkLoop(_left.Reverse(), IsLazy, _lower, _upper);
 
                 case SymbolicRegexKind.Concat:
                     {
@@ -1813,10 +1813,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     return _builder._endAnchorZ;
 
                 case SymbolicRegexKind.CaptureStart:
-                    return MkCaptureEnd(_builder, _lowerOrCapNum);
+                    return MkCaptureEnd(_builder, _lower);
 
                 case SymbolicRegexKind.CaptureEnd:
-                    return MkCaptureStart(_builder, _lowerOrCapNum);
+                    return MkCaptureStart(_builder, _lower);
 
                 default:
                     // Remaining cases map to themselves:
@@ -1847,7 +1847,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         SymbolicRegexNode<S> body = _left.IgnoreOrOrder();
                         return body == _left ?
                             this :
-                            MkLoop(_builder, body, _lowerOrCapNum, _upper, IsLazy);
+                            MkLoop(_builder, body, _lower, _upper, IsLazy);
                     }
 
                 case SymbolicRegexKind.Concat:
@@ -2056,7 +2056,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     SymbolicRegexNode<S> body = _left.PruneAnchors(prevKind, contWithWL, contWithNWL);
                     return body == _left ?
                         this :
-                        MkLoop(_builder, body, _lowerOrCapNum, _upper, IsLazy);
+                        MkLoop(_builder, body, _lower, _upper, IsLazy);
 
                 case SymbolicRegexKind.Concat:
                     {
