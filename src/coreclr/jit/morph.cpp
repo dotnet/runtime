@@ -14480,6 +14480,10 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     GenTree* const mul                    = gtNewOperNode(GT_MUL, type, tree, copyOfDenominatorValue);
     GenTree* const sub                    = gtNewOperNode(GT_SUB, type, copyOfNumeratorValue, mul);
 
+    // Ensure "sub" does not evaluate "copyOfNumeratorValue" before it is defined by "mul".
+    //
+    sub->gtFlags |= GTF_REVERSE_OPS;
+
 #ifdef DEBUG
     sub->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
