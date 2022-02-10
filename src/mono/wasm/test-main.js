@@ -361,14 +361,20 @@ if (is_node) {
     if (modulesToLoad) {
         modulesToLoad.split(',').forEach(module => {
             const parts = module.split(':');
+            const nameParts = parts[0].split(".");
 
-            let message = `Loading npm '${parts[0]}'`;
-            const moduleExport = require(parts[0]);
+            let message = `Loading npm '${nameParts[0]}'`;
+            let moduleExport = require(nameParts[0]);
+            if (nameParts.length == 2) {
+                message += `, taking the '${nameParts[1]}'`;
+                moduleExport = moduleExport[nameParts[1]];
+            }
+
             if (parts.length == 2) {
                 message += ` and attaching to global as '${parts[1]}'.`;
                 globalThis[parts[1]] = moduleExport;
             }
-
+            
             console.log(message);
         });
     }
