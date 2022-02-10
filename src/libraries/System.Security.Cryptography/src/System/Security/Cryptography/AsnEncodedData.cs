@@ -32,10 +32,8 @@ namespace System.Security.Cryptography
             Reset(null, rawData);
         }
 
-        public AsnEncodedData(AsnEncodedData asnEncodedData)
+        public AsnEncodedData(AsnEncodedData asnEncodedData!!)
         {
-            if (asnEncodedData == null)
-                throw new ArgumentNullException(nameof(asnEncodedData));
             Reset(asnEncodedData._oid, asnEncodedData._rawData);
         }
 
@@ -102,10 +100,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        public virtual void CopyFrom(AsnEncodedData asnEncodedData)
+        public virtual void CopyFrom(AsnEncodedData asnEncodedData!!)
         {
-            if (asnEncodedData == null)
-                throw new ArgumentNullException(nameof(asnEncodedData));
             Reset(asnEncodedData._oid, asnEncodedData._rawData);
         }
 

@@ -11,8 +11,10 @@
 **
 ===========================================================*/
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System
@@ -99,10 +101,7 @@ namespace System
             {
                 if ((uint)destination.Length > 3) // uint cast, per https://github.com/dotnet/runtime/issues/10596
                 {
-                    destination[0] = 'T';
-                    destination[1] = 'r';
-                    destination[2] = 'u';
-                    destination[3] = 'e';
+                    BinaryPrimitives.WriteUInt64LittleEndian(MemoryMarshal.AsBytes(destination), 0x65007500720054); // "True"
                     charsWritten = 4;
                     return true;
                 }
@@ -111,10 +110,7 @@ namespace System
             {
                 if ((uint)destination.Length > 4)
                 {
-                    destination[0] = 'F';
-                    destination[1] = 'a';
-                    destination[2] = 'l';
-                    destination[3] = 's';
+                    BinaryPrimitives.WriteUInt64LittleEndian(MemoryMarshal.AsBytes(destination), 0x73006C00610046); // "Fals"
                     destination[4] = 'e';
                     charsWritten = 5;
                     return true;
@@ -191,30 +187,19 @@ namespace System
 
         // Custom string compares for early application use by config switches, etc
         //
-        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
-        {
-            return value.Length == 4 &&
-                    (value[0] == 't' || value[0] == 'T') &&
-                    (value[1] == 'r' || value[1] == 'R') &&
-                    (value[2] == 'u' || value[2] == 'U') &&
-                    (value[3] == 'e' || value[3] == 'E');
-        }
+        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value) =>
+            value.Length == 4 &&
+            (BinaryPrimitives.ReadUInt64LittleEndian(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == 0x65007500720074; // "true" as a ulong, each char |'d with 0x0020 for case-insensitivity
 
-        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
-        {
-            return value.Length == 5 &&
-                    (value[0] == 'f' || value[0] == 'F') &&
-                    (value[1] == 'a' || value[1] == 'A') &&
-                    (value[2] == 'l' || value[2] == 'L') &&
-                    (value[3] == 's' || value[3] == 'S') &&
-                    (value[4] == 'e' || value[4] == 'E');
-        }
+        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value) =>
+            value.Length == 5 &&
+            (((BinaryPrimitives.ReadUInt64LittleEndian(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == 0x73006C00610066) & // "fals" as a ulong, each char |'d with 0x0020 for case-insensitivity
+             ((value[4] | 0x20) == 'e'));
 
         // Determines whether a String represents true or false.
         //
-        public static bool Parse(string value)
+        public static bool Parse(string value!!)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
             return Parse(value.AsSpan());
         }
 
@@ -223,33 +208,17 @@ namespace System
 
         // Determines whether a String represents true or false.
         //
-        public static bool TryParse([NotNullWhen(true)] string? value, out bool result)
-        {
-            if (value == null)
-            {
-                result = false;
-                return false;
-            }
-
-            return TryParse(value.AsSpan(), out result);
-        }
+        public static bool TryParse([NotNullWhen(true)] string? value, out bool result) =>
+            TryParse(value.AsSpan(), out result);
 
         public static bool TryParse(ReadOnlySpan<char> value, out bool result)
         {
-            if (IsTrueStringIgnoreCase(value))
-            {
-                result = true;
-                return true;
-            }
-
-            if (IsFalseStringIgnoreCase(value))
-            {
-                result = false;
-                return true;
-            }
-
-            // Special case: Trim whitespace as well as null characters.
-            value = TrimWhiteSpaceAndNull(value);
+            // Boolean.{Try}Parse allows for optional whitespace/null values before and
+            // after the case-insensitive "true"/"false", but we don't expect those to
+            // be the common case. We check for "true"/"false" case-insensitive in the
+            // fast, inlined call path, and then only if neither match do we fall back
+            // to trimming and making a second post-trimming attempt at matching those
+            // same strings.
 
             if (IsTrueStringIgnoreCase(value))
             {
@@ -263,18 +232,41 @@ namespace System
                 return true;
             }
 
-            result = false;
-            return false;
+            return TryParseUncommon(value, out result);
+
+            static bool TryParseUncommon(ReadOnlySpan<char> value, out bool result)
+            {
+                // With "true" being 4 characters, even if we trim something from <= 4 chars,
+                // it can't possibly match "true" or "false".
+                int originalLength = value.Length;
+                if (originalLength >= 5)
+                {
+                    value = TrimWhiteSpaceAndNull(value);
+                    if (value.Length != originalLength)
+                    {
+                        // Something was trimmed.  Try matching again.
+                        if (IsTrueStringIgnoreCase(value))
+                        {
+                            result = true;
+                            return true;
+                        }
+
+                        result = false;
+                        return IsFalseStringIgnoreCase(value);
+                    }
+                }
+
+                result = false;
+                return false;
+            }
         }
 
         private static ReadOnlySpan<char> TrimWhiteSpaceAndNull(ReadOnlySpan<char> value)
         {
-            const char nullChar = (char)0x0000;
-
             int start = 0;
             while (start < value.Length)
             {
-                if (!char.IsWhiteSpace(value[start]) && value[start] != nullChar)
+                if (!char.IsWhiteSpace(value[start]) && value[start] != '\0')
                 {
                     break;
                 }
@@ -284,7 +276,7 @@ namespace System
             int end = value.Length - 1;
             while (end >= start)
             {
-                if (!char.IsWhiteSpace(value[end]) && value[end] != nullChar)
+                if (!char.IsWhiteSpace(value[end]) && value[end] != '\0')
                 {
                     break;
                 }

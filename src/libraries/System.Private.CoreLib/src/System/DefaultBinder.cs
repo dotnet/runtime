@@ -432,13 +432,8 @@ namespace System
 
         // Given a set of fields that match the base criteria, select a field.
         // if value is null then we have no way to select a field
-        public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo? cultureInfo)
+        public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match!!, object value, CultureInfo? cultureInfo)
         {
-            if (match == null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
-
             int i;
             // Find the method that match...
             int CurIdx = 0;
@@ -773,11 +768,8 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types, ParameterModifier[]? modifiers)
+        public static MethodBase? ExactBinding(MethodBase[] match!!, Type[] types, ParameterModifier[]? modifiers)
         {
-            if (match == null)
-                throw new ArgumentNullException(nameof(match));
-
             MethodBase[] aExactMatches = new MethodBase[match.Length];
             int cExactMatches = 0;
 
@@ -816,11 +808,8 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
+        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match!!, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (match == null)
-                throw new ArgumentNullException(nameof(match));
-
             PropertyInfo? bestMatch = null;
             int typesLength = (types != null) ? types.Length : 0;
             for (int i = 0; i < match.Length; i++)

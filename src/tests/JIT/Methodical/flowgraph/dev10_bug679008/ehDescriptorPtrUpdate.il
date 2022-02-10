@@ -11,6 +11,7 @@
 .assembly extern System { auto }
 .assembly 'ehDescriptorPtrUpdate' {}
 .assembly extern xunit.core {}
+.namespace Test_ehDescriptorPtrUpdate {
 .class public EHTest
 {
 
@@ -27,12 +28,12 @@
   }
   .method public static int32 GetInt32_tailcall()
   {
-  	tail. call   int32 EHTest::GetInt32()
+  	tail. call   int32 Test_ehDescriptorPtrUpdate.EHTest::GetInt32()
   	ret
   }
   .method public static int64 GetInt64_tailcall()
   {
-  	tail. call   int64 EHTest::GetInt64()
+  	tail. call   int64 Test_ehDescriptorPtrUpdate.EHTest::GetInt64()
   	ret
   }
 
@@ -60,7 +61,7 @@ nop
 	TARGET_2_3:
 	TARGET_2_4:
 	  ldc.i8 1
-	  ldftn int32 EHTest::GetInt32_tailcall()
+	  ldftn int32 Test_ehDescriptorPtrUpdate.EHTest::GetInt32_tailcall()
 	  calli int32 ()
 	  newarr     [mscorlib]System.Int64
 	  ldc.i4 24
@@ -78,13 +79,13 @@ leave OUT0
 end_try1: 
 
 OUT0:
-call void EHTest::f2()
+call void Test_ehDescriptorPtrUpdate.EHTest::f2()
 br start_try2
 start_fault2: 
 br fault2_br
 start_catch1: 
 catch1_out:
-call void EHTest::f2()
+call void Test_ehDescriptorPtrUpdate.EHTest::f2()
 pop
 newobj instance void [mscorlib]System.ArithmeticException::.ctor()
 throw
@@ -107,7 +108,7 @@ end_finally1:
 
 
 catch2_out:
-call void EHTest::f2()
+call void Test_ehDescriptorPtrUpdate.EHTest::f2()
 newobj instance void [mscorlib]System.StackOverflowException::.ctor()
 throw
 end_catch2: 
@@ -124,7 +125,7 @@ end_filter1:
 
 fault2_br: 
 start_try3: 
-call void EHTest::f2()
+call void Test_ehDescriptorPtrUpdate.EHTest::f2()
 try3_out:
 leave fault2_out
 end_try3: 
@@ -135,7 +136,7 @@ ldc.i4.0
 endfilter
 start_filter2: 
 pop
-call void EHTest::f2()
+call void Test_ehDescriptorPtrUpdate.EHTest::f2()
 filter2_out: leave fault2_out
 end_filter2: 
 
@@ -145,17 +146,17 @@ ldc.i4.0
 endfilter
 start_filter3: 
 pop
-call void EHTest::f2()
+call void Test_ehDescriptorPtrUpdate.EHTest::f2()
 filter3_out: leave fault2_out
 end_filter3: 
 
-call void EHTest::f2()
+call void Test_ehDescriptorPtrUpdate.EHTest::f2()
 fault2_out: endfault
 end_fault2: 
 
 
 start_try2: 
-call void EHTest::f2()
+call void Test_ehDescriptorPtrUpdate.EHTest::f2()
 try2_out:
 newobj instance void [mscorlib]System.ArgumentOutOfRangeException::.ctor()
 throw
@@ -195,7 +196,7 @@ ret
 		int32 V_4)
 .try
 {
-call int32 EHTest::f1()
+call int32 Test_ehDescriptorPtrUpdate.EHTest::f1()
 leave RET
 }
 catch [mscorlib]System.Exception
@@ -208,4 +209,5 @@ call void [System.Console]System.Console::WriteLine(string)
 ret
 }
 
+}
 }

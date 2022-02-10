@@ -747,12 +747,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, localEP);
             ThrowIfDisposed();
-
-            // Validate input parameters.
-            if (localEP == null)
-            {
-                throw new ArgumentNullException(nameof(localEP));
-            }
+            ArgumentNullException.ThrowIfNull(localEP);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"localEP:{localEP}");
 
@@ -793,12 +788,7 @@ namespace System.Net.Sockets
         public void Connect(EndPoint remoteEP)
         {
             ThrowIfDisposed();
-
-            // Validate input parameters.
-            if (remoteEP == null)
-            {
-                throw new ArgumentNullException(nameof(remoteEP));
-            }
+            ArgumentNullException.ThrowIfNull(remoteEP);
 
             if (_isDisconnected)
             {
@@ -845,11 +835,7 @@ namespace System.Net.Sockets
         public void Connect(IPAddress address, int port)
         {
             ThrowIfDisposed();
-
-            if (address == null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
+            ArgumentNullException.ThrowIfNull(address);
 
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
@@ -875,11 +861,8 @@ namespace System.Net.Sockets
         public void Connect(string host, int port)
         {
             ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(host);
 
-            if (host == null)
-            {
-                throw new ArgumentNullException(nameof(host));
-            }
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
@@ -907,11 +890,8 @@ namespace System.Net.Sockets
         public void Connect(IPAddress[] addresses, int port)
         {
             ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(addresses);
 
-            if (addresses == null)
-            {
-                throw new ArgumentNullException(nameof(addresses));
-            }
             if (addresses.Length == 0)
             {
                 throw new ArgumentException(SR.net_sockets_invalid_ipaddress_length, nameof(addresses));
@@ -1115,11 +1095,7 @@ namespace System.Net.Sockets
         public int Send(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode)
         {
             ThrowIfDisposed();
-
-            if (buffers == null)
-            {
-                throw new ArgumentNullException(nameof(buffers));
-            }
+            ArgumentNullException.ThrowIfNull(buffers);
 
             if (buffers.Count == 0)
             {
@@ -1309,10 +1285,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ValidateBufferArguments(buffer, offset, size);
-            if (remoteEP == null)
-            {
-                throw new ArgumentNullException(nameof(remoteEP));
-            }
+            ArgumentNullException.ThrowIfNull(remoteEP);
 
             ValidateBlockingMode();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} size:{size} remoteEP:{remoteEP}");
@@ -1385,10 +1358,7 @@ namespace System.Net.Sockets
         public int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
         {
             ThrowIfDisposed();
-            if (remoteEP == null)
-            {
-                throw new ArgumentNullException(nameof(remoteEP));
-            }
+            ArgumentNullException.ThrowIfNull(remoteEP);
 
             ValidateBlockingMode();
 
@@ -1531,11 +1501,7 @@ namespace System.Net.Sockets
         public int Receive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode)
         {
             ThrowIfDisposed();
-
-            if (buffers == null)
-            {
-                throw new ArgumentNullException(nameof(buffers));
-            }
+            ArgumentNullException.ThrowIfNull(buffers);
 
             if (buffers.Count == 0)
             {
@@ -1652,11 +1618,8 @@ namespace System.Net.Sockets
         public int ReceiveMessageFrom(Span<byte> buffer, ref SocketFlags socketFlags, ref EndPoint remoteEP, out IPPacketInformation ipPacketInformation)
         {
             ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(remoteEP);
 
-            if (remoteEP == null)
-            {
-                throw new ArgumentNullException(nameof(remoteEP));
-            }
             if (!CanTryAddressFamily(remoteEP.AddressFamily))
             {
                 throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, remoteEP.AddressFamily, _addressFamily), nameof(remoteEP));
@@ -1946,12 +1909,7 @@ namespace System.Net.Sockets
         public void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, object optionValue)
         {
             ThrowIfDisposed();
-
-            // Validate input parameters.
-            if (optionValue == null)
-            {
-                throw new ArgumentNullException(nameof(optionValue));
-            }
+            ArgumentNullException.ThrowIfNull(optionValue);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
 
@@ -2339,11 +2297,7 @@ namespace System.Net.Sockets
         public void EndSendFile(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
-
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             TaskToApm.End(asyncResult);
         }
@@ -2352,10 +2306,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
-            if (remoteEP == null)
-            {
-                throw new ArgumentNullException(nameof(remoteEP));
-            }
+            ArgumentNullException.ThrowIfNull(remoteEP);
 
             Task<int> t = SendToAsync(buffer.AsMemory(offset, size), socketFlags, remoteEP).AsTask();
             return TaskToApm.Begin(t, callback, state);
@@ -2469,10 +2420,7 @@ namespace System.Net.Sockets
         public int EndReceiveMessageFrom(IAsyncResult asyncResult, ref SocketFlags socketFlags, ref EndPoint endPoint, out IPPacketInformation ipPacketInformation)
         {
             ThrowIfDisposed();
-            if (endPoint == null)
-            {
-                throw new ArgumentNullException(nameof(endPoint));
-            }
+            ArgumentNullException.ThrowIfNull(endPoint);
             if (!CanTryAddressFamily(endPoint.AddressFamily))
             {
                 throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, endPoint.AddressFamily, _addressFamily), nameof(endPoint));
@@ -2510,11 +2458,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            // Validate input parameters.
-            if (endPoint == null)
-            {
-                throw new ArgumentNullException(nameof(endPoint));
-            }
+            ArgumentNullException.ThrowIfNull(endPoint);
             if (!CanTryAddressFamily(endPoint.AddressFamily))
             {
                 throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, endPoint.AddressFamily, _addressFamily), nameof(endPoint));
@@ -2628,10 +2572,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(e);
             if (e.HasMultipleBuffers)
             {
                 throw new ArgumentException(SR.net_multibuffernotsupported, nameof(e));
@@ -2683,18 +2624,12 @@ namespace System.Net.Sockets
 
             ThrowIfDisposed();
 
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(e);
             if (e.HasMultipleBuffers)
             {
                 throw new ArgumentException(SR.net_multibuffernotsupported, "BufferList");
             }
-            if (e.RemoteEndPoint == null)
-            {
-                throw new ArgumentNullException("remoteEP");
-            }
+            ArgumentNullException.ThrowIfNull(e.RemoteEndPoint, "remoteEP");
             if (_isListening)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
@@ -2785,14 +2720,8 @@ namespace System.Net.Sockets
             return pending;
         }
 
-        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e)
+        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e!!)
         {
-            bool pending;
-
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
             if (e.HasMultipleBuffers)
             {
                 throw new ArgumentException(SR.net_multibuffernotsupported, nameof(e));
@@ -2805,6 +2734,7 @@ namespace System.Net.Sockets
             EndPoint endPointSnapshot = e.RemoteEndPoint;
             DnsEndPoint? dnsEP = endPointSnapshot as DnsEndPoint;
 
+            bool pending;
             if (dnsEP != null)
             {
                 Socket? attemptSocket = dnsEP.AddressFamily != AddressFamily.Unspecified ? new Socket(dnsEP.AddressFamily, socketType, protocolType) : null;
@@ -2832,12 +2762,8 @@ namespace System.Net.Sockets
         /// <summary>Binds an unbound socket to "any" if necessary to support a connect.</summary>
         partial void WildcardBindForConnectIfNecessary(AddressFamily addressFamily);
 
-        public static void CancelConnectAsync(SocketAsyncEventArgs e)
+        public static void CancelConnectAsync(SocketAsyncEventArgs e!!)
         {
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
             e.CancelConnectAsync();
         }
 
@@ -2848,10 +2774,7 @@ namespace System.Net.Sockets
             // Throw if socket disposed
             ThrowIfDisposed();
 
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(e);
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.Disconnect);
@@ -2876,10 +2799,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(e);
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.Receive);
@@ -2904,10 +2824,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(e);
             if (e.RemoteEndPoint == null)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
@@ -2953,10 +2870,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(e);
             if (e.RemoteEndPoint == null)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
@@ -3003,10 +2917,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(e);
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.Send);
@@ -3031,10 +2942,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(e);
             if (e.SendPacketsElements == null)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.SendPacketsElements"), nameof(e));
@@ -3067,10 +2975,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (e == null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(e);
             if (e.RemoteEndPoint == null)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
@@ -3744,10 +3649,7 @@ namespace System.Net.Sockets
         // and check whether the socket is bound.
         private void ValidateReceiveFromEndpointAndState(EndPoint remoteEndPoint, string remoteEndPointArgumentName)
         {
-            if (remoteEndPoint == null)
-            {
-                throw new ArgumentNullException(remoteEndPointArgumentName);
-            }
+            ArgumentNullException.ThrowIfNull(remoteEndPoint, remoteEndPointArgumentName);
             if (!CanTryAddressFamily(remoteEndPoint.AddressFamily))
             {
                 throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, remoteEndPoint.AddressFamily, _addressFamily), remoteEndPointArgumentName);

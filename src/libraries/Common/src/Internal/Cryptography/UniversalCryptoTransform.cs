@@ -91,10 +91,8 @@ namespace Internal.Cryptography
             return numBytesWritten;
         }
 
-        public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+        public byte[] TransformFinalBlock(byte[] inputBuffer!!, int inputOffset, int inputCount)
         {
-            if (inputBuffer == null)
-                throw new ArgumentNullException(nameof(inputBuffer));
             if (inputOffset < 0)
                 throw new ArgumentOutOfRangeException(nameof(inputOffset));
             if (inputCount < 0)

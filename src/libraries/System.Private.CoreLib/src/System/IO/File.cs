@@ -334,10 +334,7 @@ namespace System.IO
         public static void WriteAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             InternalWriteAllLines(new StreamWriter(path, false, encoding), contents);
         }
 
@@ -371,23 +368,15 @@ namespace System.IO
         public static void AppendAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             InternalWriteAllLines(new StreamWriter(path, true, encoding), contents);
         }
 
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName)
             => Replace(sourceFileName, destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
 
-        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
+        public static void Replace(string sourceFileName!!, string destinationFileName!!, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName));
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
-
             FileSystem.ReplaceFile(
                 Path.GetFullPath(sourceFileName),
                 Path.GetFullPath(destinationFileName),
@@ -645,10 +634,7 @@ namespace System.IO
         public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
                 : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: false), contents, cancellationToken);
@@ -693,10 +679,7 @@ namespace System.IO
         public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
                 : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: true), contents, cancellationToken);

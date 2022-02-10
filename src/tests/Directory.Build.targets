@@ -448,4 +448,40 @@
   <!-- RunOnly projects have a special build for dependent projects -->
   <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
 
+  <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to tweak
+         rpath so that the test can load its native library dependencies if there's any -->
+    <IlcRPath Condition="'$(TargetOS)' != 'OSX'">$ORIGIN/..</IlcRPath>
+    <IlcRPath Condition="'$(TargetOS)' == 'OSX'">@executable_path/..</IlcRPath>
+
+    <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only"
+      Microsoft.NETCore.Native.targets expect IlcHostArch to be set but it doesn't have to -->
+    <DisableUnsupportedError>true</DisableUnsupportedError>
+
+    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
+    <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
+    <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
+    <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
+    <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+
+    <BuildNativeAotFrameworkObjects Condition="'$(IlcMultiModule)' == 'true'">true</BuildNativeAotFrameworkObjects>
+    <DisableFrameworkLibGeneration Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">true</DisableFrameworkLibGeneration>
+    <FrameworkLibPath Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(IlcSdkPath)</FrameworkLibPath>
+
+    <!-- Forced by ILLink targets; we should fix the SDK -->
+    <SelfContained>true</SelfContained>
+    <HasRuntimeOutput>false</HasRuntimeOutput>
+    <_UsingDefaultForHasRuntimeOutput>false</_UsingDefaultForHasRuntimeOutput>
+  </PropertyGroup>
+
+  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.NETCore.Native.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
+
+  <Target Name="BuildNativeAot"
+          DependsOnTargets="Build;LinkNativeIfBuildAndRun" />
+
+  <Target Name="LinkNativeIfBuildAndRun"
+          Condition="'$(CLRTestTargetUnsupported)' != 'true' and '$(CLRTestKind)' == 'BuildAndRun'"
+          DependsOnTargets="ComputeResolvedFilesToPublishList;LinkNative" />
+
 </Project>

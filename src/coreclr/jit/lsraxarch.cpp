@@ -610,6 +610,15 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_NULLCHECK:
         {
             assert(dstCount == 0);
+#ifdef TARGET_X86
+            if (varTypeIsByte(tree))
+            {
+                // on X86 we have to use byte-able regs for byte-wide loads
+                BuildUse(tree->gtGetOp1(), RBM_BYTE_REGS);
+                srcCount = 1;
+                break;
+            }
+#endif
             // If we have a contained address on a nullcheck, we transform it to
             // an unused GT_IND, since we require a target register.
             BuildUse(tree->gtGetOp1());

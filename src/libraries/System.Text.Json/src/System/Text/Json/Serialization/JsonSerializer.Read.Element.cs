@@ -76,13 +76,8 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static TValue? Deserialize<TValue>(this JsonElement element, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static TValue? Deserialize<TValue>(this JsonElement element, JsonTypeInfo<TValue> jsonTypeInfo!!)
         {
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             return ReadUsingMetadata<TValue>(element, jsonTypeInfo);
         }
 
@@ -118,18 +113,8 @@ namespace System.Text.Json
         /// The <see cref="JsonSerializerContext.GetTypeInfo(Type)"/> method of the provided
         /// <paramref name="context"/> returns <see langword="null"/> for the type to convert.
         /// </exception>
-        public static object? Deserialize(this JsonElement element, Type returnType, JsonSerializerContext context)
+        public static object? Deserialize(this JsonElement element, Type returnType!!, JsonSerializerContext context!!)
         {
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             return ReadUsingMetadata<object?>(element, jsonTypeInfo);
         }

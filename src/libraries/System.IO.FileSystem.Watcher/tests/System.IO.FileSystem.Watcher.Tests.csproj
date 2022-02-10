@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -39,6 +39,18 @@
              Link="Common\System\IO\ReparsePointUtilities.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
              Link="Common\TestUtilities\System\DisableParallelization.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.cs"
+             Link="Common\System\IO\PathInternal.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
+             Link="Common\System\IO\PathInternal.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
+             Link="Common\System\IO\PathInternal.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="FileSystemWatcher.Unix.cs" />

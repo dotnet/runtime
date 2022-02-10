@@ -28,13 +28,8 @@ namespace System.Runtime.InteropServices
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
-        public static IntPtr OffsetOf(Type t, string fieldName)
+        public static IntPtr OffsetOf(Type t!!, string fieldName)
         {
-            if (t is null)
-            {
-                throw new ArgumentNullException(nameof(t));
-            }
-
             FieldInfo? f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             if (f is null)
@@ -235,13 +230,8 @@ namespace System.Runtime.InteropServices
         /// Returns the HInstance for this module.  Returns -1 if the module doesn't have
         /// an HInstance.  In Memory (Dynamic) Modules won't have an HInstance.
         /// </summary>
-        public static IntPtr GetHINSTANCE(Module m)
+        public static IntPtr GetHINSTANCE(Module m!!)
         {
-            if (m is null)
-            {
-                throw new ArgumentNullException(nameof(m));
-            }
-
             if (m is RuntimeModule rtModule)
             {
                 return GetHINSTANCE(new QCallModule(ref rtModule));
@@ -271,13 +261,8 @@ namespace System.Runtime.InteropServices
         /// Given a managed object that wraps an ITypeInfo, return its name.
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static string GetTypeInfoName(ITypeInfo typeInfo)
+        public static string GetTypeInfoName(ITypeInfo typeInfo!!)
         {
-            if (typeInfo is null)
-            {
-                throw new ArgumentNullException(nameof(typeInfo));
-            }
-
             typeInfo.GetDocumentation(-1, out string strTypeLibName, out _, out _, out _);
             return strTypeLibName;
         }
@@ -309,13 +294,8 @@ namespace System.Runtime.InteropServices
         /// where the RCW was first seen. Will return null otherwise.
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static IntPtr /* IUnknown* */ GetIUnknownForObject(object o)
+        public static IntPtr /* IUnknown* */ GetIUnknownForObject(object o!!)
         {
-            if (o is null)
-            {
-                throw new ArgumentNullException(nameof(o));
-            }
-
             return GetIUnknownForObjectNative(o);
         }
 
@@ -326,13 +306,8 @@ namespace System.Runtime.InteropServices
         /// Return the IDispatch* for an Object.
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o)
+        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o!!)
         {
-            if (o is null)
-            {
-                throw new ArgumentNullException(nameof(o));
-            }
-
             return GetIDispatchForObjectNative(o);
         }
 
@@ -344,18 +319,8 @@ namespace System.Runtime.InteropServices
         /// Object o should support Type T
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T)
+        public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o!!, Type T!!)
         {
-            if (o is null)
-            {
-                throw new ArgumentNullException(nameof(o));
-            }
-
-            if (T is null)
-            {
-                throw new ArgumentNullException(nameof(T));
-            }
-
             return GetComInterfaceForObjectNative(o, T, true);
         }
 
@@ -368,18 +333,8 @@ namespace System.Runtime.InteropServices
         /// invoke customized QueryInterface or not.
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
+        public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o!!, Type T!!, CustomQueryInterfaceMode mode)
         {
-            if (o is null)
-            {
-                throw new ArgumentNullException(nameof(o));
-            }
-
-            if (T is null)
-            {
-                throw new ArgumentNullException(nameof(T));
-            }
-
             bool bEnableCustomizedQueryInterface = ((mode == CustomQueryInterfaceMode.Allow) ? true : false);
             return GetComInterfaceForObjectNative(o, T, bEnableCustomizedQueryInterface);
         }
@@ -393,10 +348,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static object GetObjectForIUnknown(IntPtr /* IUnknown* */ pUnk)
         {
-            if (pUnk == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(pUnk));
-            }
+            ArgumentNullException.ThrowIfNull(pUnk);
 
             return GetObjectForIUnknownNative(pUnk);
         }
@@ -407,10 +359,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static object GetUniqueObjectForIUnknown(IntPtr unknown)
         {
-            if (unknown == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(unknown));
-            }
+            ArgumentNullException.ThrowIfNull(unknown);
 
             return GetUniqueObjectForIUnknownNative(unknown);
         }
@@ -466,13 +415,8 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Checks if the object is classic COM component.
         /// </summary>
-        public static bool IsComObject(object o)
+        public static bool IsComObject(object o!!)
         {
-            if (o is null)
-            {
-                throw new ArgumentNullException(nameof(o));
-            }
-
             return o is __ComObject;
         }
 
@@ -516,10 +460,7 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
 
-            if (o is null)
-            {
-                throw new ArgumentNullException(nameof(o));
-            }
+            ArgumentNullException.ThrowIfNull(o);
             if (!(o is __ComObject co))
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
@@ -540,14 +481,8 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
 
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(key);
             if (!(obj is __ComObject co))
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(obj));
@@ -571,14 +506,8 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
 
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(key);
             if (!(obj is __ComObject co))
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(obj));
@@ -601,10 +530,7 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
 
-            if (t is null)
-            {
-                throw new ArgumentNullException(nameof(t));
-            }
+            ArgumentNullException.ThrowIfNull(t);
             if (!t.IsCOMObject)
             {
                 throw new ArgumentException(SR.Argument_TypeNotComObject, nameof(t));

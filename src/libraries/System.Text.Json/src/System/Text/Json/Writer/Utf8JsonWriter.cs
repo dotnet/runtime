@@ -99,9 +99,9 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// Thrown when the instance of <see cref="IBufferWriter{Byte}" /> that is passed in is null.
         /// </exception>
-        public Utf8JsonWriter(IBufferWriter<byte> bufferWriter, JsonWriterOptions options = default)
+        public Utf8JsonWriter(IBufferWriter<byte> bufferWriter!!, JsonWriterOptions options = default)
         {
-            _output = bufferWriter ?? throw new ArgumentNullException(nameof(bufferWriter));
+            _output = bufferWriter;
             _options = options;
 
             if (_options.MaxDepth == 0)
@@ -120,10 +120,8 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// Thrown when the instance of <see cref="Stream" /> that is passed in is null.
         /// </exception>
-        public Utf8JsonWriter(Stream utf8Json, JsonWriterOptions options = default)
+        public Utf8JsonWriter(Stream utf8Json!!, JsonWriterOptions options = default)
         {
-            if (utf8Json == null)
-                throw new ArgumentNullException(nameof(utf8Json));
             if (!utf8Json.CanWrite)
                 throw new ArgumentException(SR.StreamNotWritable);
 

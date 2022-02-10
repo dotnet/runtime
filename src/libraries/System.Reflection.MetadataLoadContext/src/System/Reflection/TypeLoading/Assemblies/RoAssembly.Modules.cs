@@ -59,11 +59,8 @@ namespace System.Reflection.TypeLoading
 
         public abstract override event ModuleResolveEventHandler? ModuleResolve;
 
-        internal RoModule? GetRoModule(string name)
+        internal RoModule? GetRoModule(string name!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             if (!TryGetAssemblyFileInfo(name, includeManifestModule: true, out AssemblyFileInfo afi))
                 return null;
 

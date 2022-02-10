@@ -37,13 +37,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="tableIndex"/> is not a valid table index.</exception>
-        public static int GetTableRowSize(this MetadataReader reader, TableIndex tableIndex)
+        public static int GetTableRowSize(this MetadataReader reader!!, TableIndex tableIndex)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             return tableIndex switch
             {
                 TableIndex.Module => reader.ModuleTable.RowSize,
@@ -282,13 +277,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// Enumerates entries of EnC log.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
-        public static IEnumerable<EditAndContinueLogEntry> GetEditAndContinueLogEntries(this MetadataReader reader)
+        public static IEnumerable<EditAndContinueLogEntry> GetEditAndContinueLogEntries(this MetadataReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             for (int rid = 1; rid <= reader.EncLogTable.NumberOfRows; rid++)
             {
                 yield return new EditAndContinueLogEntry(
@@ -301,13 +291,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// Enumerates entries of EnC map.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
-        public static IEnumerable<EntityHandle> GetEditAndContinueMapEntries(this MetadataReader reader)
+        public static IEnumerable<EntityHandle> GetEditAndContinueMapEntries(this MetadataReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             for (int rid = 1; rid <= reader.EncMapTable.NumberOfRows; rid++)
             {
                 yield return new EntityHandle(reader.EncMapTable.GetToken(rid));
@@ -321,13 +306,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// The resulting sequence corresponds exactly to entries in PropertyMap table,
         /// i.e. n-th returned <see cref="TypeDefinitionHandle"/> is stored in n-th row of PropertyMap.
         /// </returns>
-        public static IEnumerable<TypeDefinitionHandle> GetTypesWithProperties(this MetadataReader reader)
+        public static IEnumerable<TypeDefinitionHandle> GetTypesWithProperties(this MetadataReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             for (int rid = 1; rid <= reader.PropertyMapTable.NumberOfRows; rid++)
             {
                 yield return reader.PropertyMapTable.GetParentType(rid);
@@ -341,13 +321,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// The resulting sequence corresponds exactly to entries in EventMap table,
         /// i.e. n-th returned <see cref="TypeDefinitionHandle"/> is stored in n-th row of EventMap.
         /// </returns>
-        public static IEnumerable<TypeDefinitionHandle> GetTypesWithEvents(this MetadataReader reader)
+        public static IEnumerable<TypeDefinitionHandle> GetTypesWithEvents(this MetadataReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             for (int rid = 1; rid <= reader.EventMapTable.NumberOfRows; rid++)
             {
                 yield return reader.EventMapTable.GetParentType(rid);
@@ -357,13 +332,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Given a type handle and a raw type kind found in a signature blob determines whether the target type is a value type or a reference type.
         /// </summary>
-        public static SignatureTypeKind ResolveSignatureTypeKind(this MetadataReader reader, EntityHandle typeHandle, byte rawTypeKind)
+        public static SignatureTypeKind ResolveSignatureTypeKind(this MetadataReader reader!!, EntityHandle typeHandle, byte rawTypeKind)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             var typeKind = (SignatureTypeKind)rawTypeKind;
 
             switch (typeKind)
