@@ -330,7 +330,7 @@ namespace System.Runtime.InteropServices
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
-            ManagedObjectWrapperHolder ccwValue;
+            ManagedObjectWrapperHolder? ccwValue;
             if (_ccwTable.TryGetValue(instance, out ccwValue))
             {
                 return ccwValue.ComIp;

@@ -378,7 +378,8 @@ namespace System.Threading
         private static void StartThread(IntPtr parameter)
         {
             GCHandle threadHandle = (GCHandle)parameter;
-            Thread thread = (Thread)threadHandle.Target;
+            Thread? thread = (Thread?)threadHandle.Target;
+            Debug.Assert(thread != null);
 
             try
             {

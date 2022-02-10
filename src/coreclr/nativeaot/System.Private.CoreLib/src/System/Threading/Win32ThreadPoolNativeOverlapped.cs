@@ -75,7 +75,7 @@ namespace System.Threading
 
             while (true)
             {
-                OverlappedData[] dataArray = Volatile.Read(ref s_dataArray);
+                OverlappedData[]? dataArray = Volatile.Read(ref s_dataArray);
                 int currentLength = dataArray == null ? 0 : dataArray.Length;
 
                 // If the current array is too small, create a new, larger one.
@@ -87,7 +87,7 @@ namespace System.Threading
                     while (newLength <= dataIndex)
                         newLength = (newLength * 3) / 2;
 
-                    OverlappedData[] newDataArray = dataArray;
+                    OverlappedData[]? newDataArray = dataArray;
                     Array.Resize(ref newDataArray, newLength);
 
                     if (Interlocked.CompareExchange(ref s_dataArray, newDataArray, dataArray) != dataArray)
@@ -95,6 +95,8 @@ namespace System.Threading
 
                     dataArray = newDataArray;
                 }
+
+                Debug.Assert(dataArray != null);
 
                 // If we haven't stored this object in the array yet, do so now.  Then we need to make another pass through
                 // the loop, in case another thread resized the array before we made this update.
@@ -129,7 +131,7 @@ namespace System.Threading
             //
             if (pinData != null)
             {
-                object[] objArray = pinData as object[];
+                object[]? objArray = pinData as object[];
                 if (objArray != null && objArray.GetType() == typeof(object[]))
                 {
                     if (data._pinnedData == null || data._pinnedData.Length < objArray.Length)
@@ -192,6 +194,7 @@ namespace System.Threading
 
             if (data._executionContext == null)
             {
+                Debug.Assert(data._callback != null, "Does CompleteWithCallback called after Reset?");
                 data._callback(errorCode, bytesWritten, ToNativeOverlapped(overlapped));
                 return;
             }
@@ -229,6 +232,7 @@ namespace System.Threading
             args._data = null;
             t_executionContextCallbackArgs = args;
 
+            Debug.Assert(data._callback != null, "Does OnExecutionContextCallback called after Reset?");
             data._callback(errorCode, bytesWritten, ToNativeOverlapped(overlapped));
         }
 
