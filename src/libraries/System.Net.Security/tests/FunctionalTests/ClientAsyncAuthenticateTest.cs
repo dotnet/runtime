@@ -97,12 +97,23 @@ namespace System.Net.Security.Tests
             yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(Exception) };
             yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(Exception) };
 #pragma warning restore 0618
-            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(AuthenticationException) };
+            if (PlatformDetection.SupportsTls10)
+            {
+                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, PlatformDetection.SupportsTls11 ? typeof(AuthenticationException) : typeof(IOException) };
+                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, PlatformDetection.SupportsTls12 ? typeof(AuthenticationException) : typeof(IOException) };
+            }
+
+            if (PlatformDetection.SupportsTls11)
+            {
+                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, PlatformDetection.SupportsTls10 ? typeof(AuthenticationException) : typeof(IOException) };
+                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, PlatformDetection.SupportsTls12 ? typeof(AuthenticationException) : typeof(IOException) };
+            }
+
+            if (PlatformDetection.SupportsTls12)
+            {
+                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, PlatformDetection.SupportsTls11 ? typeof(AuthenticationException) : typeof(IOException) };
+                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, PlatformDetection.SupportsTls10 ? typeof(AuthenticationException) : typeof(IOException) };
+            }
         }
 
         #region Helpers

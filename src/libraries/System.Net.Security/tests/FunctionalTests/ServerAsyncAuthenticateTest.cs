@@ -10,7 +10,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -43,13 +43,19 @@ namespace System.Net.Security.Tests
             await ServerAsyncSslHelper(protocol, protocol);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(ProtocolMismatchData))]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols serverProtocol,
             SslProtocols clientProtocol,
             Type expectedException)
         {
+
+            if ((serverProtocol & SslProtocolSupport.SupportedSslProtocols) == 0)
+            {
+                throw new SkipTestException($"None of '{serverProtocol}' requested versions is available");
+            }
+
             Exception e = await Record.ExceptionAsync(
                 () =>
                 {
@@ -236,7 +242,7 @@ namespace System.Net.Security.Tests
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             var client = new SslStream(clientStream);
-            var server = new SslStream(serverStream, false, (sender, certificate, chain, sslPolicyErrors) => { validationCallbackCalled = true; return true;});
+            var server = new SslStream(serverStream, false, (sender, certificate, chain, sslPolicyErrors) => { validationCallbackCalled = true; return true; });
 
             using (client)
             using (server)

@@ -38,7 +38,8 @@ namespace System.Net.Security.Tests
             // On Windows, null ciphers (no encryption) are supported.
             if (OperatingSystem.IsWindows())
             {
-                return true;
+                // This may be more complicated but Server 2022 and Windows 11 some with restricted set of default ciphers.
+                return !PlatformDetection.IsWindows10Version20348OrGreater;
             }
 
             // On macOS and Android, the null cipher (no encryption) is not supported.
