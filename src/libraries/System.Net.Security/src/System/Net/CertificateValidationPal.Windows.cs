@@ -48,7 +48,9 @@ namespace System.Net
             SafeFreeCertContext? remoteContext = null;
             try
             {
-                remoteContext = SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext);
+                // Use SECPKG_ATTR_REMOTE_CERT_CHAIN instead of SECPKG_ATTR_REMOTE_CERT_CONTEXT because the former can be
+                // used even before the TLS handshake completes.
+                remoteContext = SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CHAIN(GlobalSSPI.SSPISecureChannel, securityContext);
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());

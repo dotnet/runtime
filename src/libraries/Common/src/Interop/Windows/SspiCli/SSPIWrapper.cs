@@ -426,12 +426,12 @@ namespace System.Net
             }
         }
 
-        public static SafeFreeCertContext? QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(ISSPIInterface secModule, SafeDeleteContext securityContext)
+        public static SafeFreeCertContext? QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CHAIN(ISSPIInterface secModule, SafeDeleteContext securityContext)
         {
             Span<IntPtr> buffer = stackalloc IntPtr[1];
             int errorCode = secModule.QueryContextAttributes(
                 securityContext,
-                Interop.SspiCli.ContextAttribute.SECPKG_ATTR_REMOTE_CERT_CONTEXT,
+                Interop.SspiCli.ContextAttribute.SECPKG_ATTR_REMOTE_CERT_CHAIN,
                 MemoryMarshal.AsBytes(buffer),
                 typeof(SafeFreeCertContext),
                 out SafeHandle? sspiHandle);
