@@ -425,6 +425,7 @@ namespace System.Net
                 return result;
             }
         }
+
         private static SafeFreeCertContext? QueryCertContextAttribute(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute attribute)
         {
             Span<IntPtr> buffer = stackalloc IntPtr[1];
