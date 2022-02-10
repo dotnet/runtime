@@ -536,6 +536,7 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.None, 0, input.Length, false, "");
                 }
                 yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
+                yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     yield return ("(?(dog2))", "dog2", RegexOptions.None, 0, 4, true, string.Empty);
