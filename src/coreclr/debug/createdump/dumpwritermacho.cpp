@@ -56,7 +56,7 @@ DumpWriter::WriteDump()
     if (alignment > 0)
     {
         if (alignment > sizeof(m_tempBuffer)) {
-            fprintf(stderr, "Segment alignment %llu > sizeof(m_tempBuffer)\n", alignment);
+            printf_error("Segment alignment %llu > sizeof(m_tempBuffer)\n", alignment);
             return false;
         }
         memset(m_tempBuffer, 0, alignment);
@@ -264,13 +264,13 @@ DumpWriter::WriteSegments()
                 size_t read = 0;
 
                 if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
-                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08zx) FAILED\n", address, bytesToRead);
+                    printf_error("ReadProcessMemory(%" PRIA PRIx64 ", %08zx) FAILED\n", address, bytesToRead);
                     return false;
                 }
 
                 // This can happen if the target process dies before createdump is finished
                 if (read == 0) {
-                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08zx) returned 0 bytes read\n", address, bytesToRead);
+                    printf_error("ReadProcessMemory(%" PRIA PRIx64 ", %08zx) returned 0 bytes read\n", address, bytesToRead);
                     return false;
                 }
 
@@ -284,6 +284,6 @@ DumpWriter::WriteSegments()
         }
     }
 
-    printf("Written %" PRId64 " bytes (%" PRId64 " pages) to core file\n", total, total / PAGE_SIZE);
+    printf_status("Written %" PRId64 " bytes (%" PRId64 " pages) to core file\n", total, total / PAGE_SIZE);
     return true;
 }
