@@ -71,7 +71,7 @@ namespace System.Text.RegularExpressions.Symbolic
             T newLinePredicate = Node._builder._newLinePredicate;
 
             // minterm == solver.False is used to represent the very last \n
-            uint nextCharKind = 0;
+            uint nextCharKind = CharKind.General;
             if (alg.False.Equals(minterm))
             {
                 nextCharKind = CharKind.NewLineS;

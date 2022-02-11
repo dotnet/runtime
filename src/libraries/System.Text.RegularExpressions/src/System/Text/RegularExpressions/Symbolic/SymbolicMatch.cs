@@ -26,7 +26,17 @@ namespace System.Text.RegularExpressions.Symbolic
         public int Length { get; }
 
         public bool Success => Index >= 0;
+
+        /// <summary>
+        /// Array of capture start indices for each capture group. Each is a valid index into the input if the group
+        /// was captured, or -1 otherwise.
+        /// </summary>
         public readonly int[]? CaptureStarts;
+
+        /// <summary>
+        /// Array of capture end indices for each capture group. Each is a valid index into the input and greater than
+        /// the corresponding start position if the group was captured, or -1 otherwise.
+        /// </summary>
         public readonly int[]? CaptureEnds;
 
         public static bool operator ==(SymbolicMatch left, SymbolicMatch right) =>

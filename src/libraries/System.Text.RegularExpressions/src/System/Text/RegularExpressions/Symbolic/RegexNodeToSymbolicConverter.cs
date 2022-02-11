@@ -19,7 +19,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private readonly Hashtable? _caps;
 
         /// <summary>Constructs a regex to symbolic finite automata converter</summary>
-        public RegexNodeToSymbolicConverter(Unicode.UnicodeCategoryTheory<BDD> categorizer, CultureInfo culture, Hashtable? caps = null)
+        public RegexNodeToSymbolicConverter(Unicode.UnicodeCategoryTheory<BDD> categorizer, CultureInfo culture, Hashtable? caps)
         {
             _categorizer = categorizer;
             _culture = culture;

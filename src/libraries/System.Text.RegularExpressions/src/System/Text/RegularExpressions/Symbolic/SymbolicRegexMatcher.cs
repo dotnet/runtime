@@ -138,6 +138,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <remarks>Non-null iff the pattern contains anchors; otherwise, it's unused.</remarks>
         private readonly uint[]? _asciiCharKinds;
 
+        /// <summary>Number of capture groups.</summary>
         private readonly int _capsize;
 
         /// <summary>Get the minterm of <paramref name="c"/>.</summary>
@@ -150,7 +151,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Constructs matcher for given symbolic regex.</summary>
-        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexCode code, CharSetSolver css, BDD[] minterms, TimeSpan matchTimeout, CultureInfo culture, int capsize)
+        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexCode code, CharSetSolver css, BDD[] minterms, TimeSpan matchTimeout, CultureInfo culture)
         {
             Debug.Assert(sr._builder._solver is BV64Algebra or BVAlgebra or CharSetSolver, $"Unsupported algebra: {sr._builder._solver}");
 
@@ -164,7 +165,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 BVAlgebra bv => bv._classifier,
                 _ => new MintermClassifier((CharSetSolver)(object)_builder._solver, minterms),
             };
-            _capsize = capsize;
+            _capsize = code.CapSize;
 
             if (code.FindOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
                 code.FindOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
@@ -552,7 +553,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Find match end position using the original pattern, end position is known to exist.</summary>
         /// <param name="input">input span</param>
         /// <param name="i">inclusive start position</param>
-        /// <returns></returns>
+        /// <returns>the match end position</returns>
         private int FindEndPosition(ReadOnlySpan<char> input, int i)
         {
             int i_end = input.Length;
