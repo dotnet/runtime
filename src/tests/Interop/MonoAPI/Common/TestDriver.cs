@@ -152,7 +152,7 @@ public class TestDriver {
 		}
 
 		//Console.WriteLine ("Regression tests: {0} ran, {1} failed in [{2}]{3}", ran, failed, type.Assembly.GetName().Name, type);
-		return failed;
+		return failed == 0 ? 100 : 1;
 	}
 
 	static public int RunTests (Type type, string[] args) {
