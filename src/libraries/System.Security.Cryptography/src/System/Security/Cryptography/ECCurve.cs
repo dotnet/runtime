@@ -75,8 +75,7 @@ namespace System.Security.Cryptography
             get => _oid;
             private set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(Oid));
+                ArgumentNullException.ThrowIfNull(value, nameof(Oid));
 
                 if (string.IsNullOrEmpty(value.Value) && string.IsNullOrEmpty(value.FriendlyName))
                     throw new ArgumentException(SR.Format(SR.Cryptography_InvalidCurveOid, value.Value));

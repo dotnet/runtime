@@ -14,8 +14,7 @@ namespace System.Reflection
             typeArguments = (Type[])(typeArguments.Clone());
             for (int i = 0; i < typeArguments.Length; i++)
             {
-                if (typeArguments[i] is null)
-                    throw new ArgumentNullException(nameof(typeArguments));
+                ArgumentNullException.ThrowIfNull(typeArguments[i], nameof(typeArguments));
             }
 
             _genericTypeDefinition = genericTypeDefinition;

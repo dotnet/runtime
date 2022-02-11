@@ -341,27 +341,18 @@ namespace System.IO
             return false;
         }
 
-        public static string Combine(string path1, string path2)
+        public static string Combine(string path1!!, string path2!!)
         {
-            if (path1 == null || path2 == null)
-                throw new ArgumentNullException((path1 == null) ? nameof(path1) : nameof(path2));
-
             return CombineInternal(path1, path2);
         }
 
-        public static string Combine(string path1, string path2, string path3)
+        public static string Combine(string path1!!, string path2!!, string path3!!)
         {
-            if (path1 == null || path2 == null || path3 == null)
-                throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : nameof(path3));
-
             return CombineInternal(path1, path2, path3);
         }
 
-        public static string Combine(string path1, string path2, string path3, string path4)
+        public static string Combine(string path1!!, string path2!!, string path3!!, string path4!!)
         {
-            if (path1 == null || path2 == null || path3 == null || path4 == null)
-                throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : (path3 == null) ? nameof(path3) : nameof(path4));
-
             return CombineInternal(path1, path2, path3, path4);
         }
 

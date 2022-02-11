@@ -748,7 +748,7 @@ namespace System.Text
                     return this;
                 }
 
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
             if (charCount > value.Length - startIndex)
             {
@@ -800,7 +800,7 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             if (count != 0)
@@ -843,7 +843,7 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             if (count == 0)
@@ -1328,7 +1328,7 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException(nameof(value), SR.ArgumentNull_String);
+                ArgumentNullException.Throw(nameof(value));
             }
 
             if (startIndex < 0)
@@ -1413,12 +1413,11 @@ namespace System.Text
 
         public StringBuilder AppendFormat(string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                string paramName = (format == null) ? nameof(format) : nameof(args);
-                throw new ArgumentNullException(paramName);
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             return AppendFormatHelper(null, format, new ParamsArray(args));
@@ -1432,12 +1431,11 @@ namespace System.Text
 
         public StringBuilder AppendFormat(IFormatProvider? provider, string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                string paramName = (format == null) ? nameof(format) : nameof(args);
-                throw new ArgumentNullException(paramName);
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             return AppendFormatHelper(provider, format, new ParamsArray(args));

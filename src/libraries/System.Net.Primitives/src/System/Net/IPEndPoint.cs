@@ -61,7 +61,11 @@ namespace System.Net
         public IPAddress Address
         {
             get => _address;
-            set => _address = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _address = value;
+            }
         }
 
         /// <summary>

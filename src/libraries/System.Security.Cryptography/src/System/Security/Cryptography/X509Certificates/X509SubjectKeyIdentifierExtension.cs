@@ -19,8 +19,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
-        public X509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier, bool critical)
-            : this(subjectKeyIdentifier.AsSpanParameter(nameof(subjectKeyIdentifier)), critical)
+        public X509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier!!, bool critical)
+            : this((ReadOnlySpan<byte>)subjectKeyIdentifier, critical)
         {
         }
 

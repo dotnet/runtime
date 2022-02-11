@@ -17,8 +17,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
-        public X509Extension(Oid oid, byte[] rawData, bool critical)
-            : this(oid, rawData.AsSpanParameter(nameof(rawData)), critical)
+        public X509Extension(Oid oid, byte[] rawData!!, bool critical)
+            : this(oid, (ReadOnlySpan<byte>)rawData, critical)
         {
         }
 
