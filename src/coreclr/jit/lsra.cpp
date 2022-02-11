@@ -9401,7 +9401,7 @@ void LinearScan::DumpOperandDefs(
 {
     assert(operand != nullptr);
     assert(operandString != nullptr);
-    if (!operand->IsLIR())
+    if (operand->OperIs(GT_ARGPLACE))
     {
         return;
     }
