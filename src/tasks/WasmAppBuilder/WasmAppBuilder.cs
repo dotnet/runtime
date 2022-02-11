@@ -300,11 +300,11 @@ public class WasmAppBuilder : Task
             {
                 string src = item.ItemSpec;
 
-                string dstDir = Path.Combine(AppDir!, item.GetMetadata("TargetPath"));
-                if (!Directory.Exists(dstDir))
-                    Directory.CreateDirectory(dstDir);
+                string dst = Path.Combine(AppDir!, item.GetMetadata("TargetPath"));
+                string? dstDir = Path.GetDirectoryName(dst);
+                if (!string.IsNullOrEmpty(dstDir) && !Directory.Exists(dstDir))
+                    Directory.CreateDirectory(dstDir!);
 
-                string dst = Path.Combine(dstDir, Path.GetFileName(src));
                 if (!FileCopyChecked(src, dst, "ExtraFilesToDeploy"))
                     return false;
             }
