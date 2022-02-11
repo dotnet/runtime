@@ -4602,9 +4602,8 @@ bool ValueNumStore::IsVNVectorZero(ValueNum vn)
     }
 #if FEATURE_HW_INTRINSICS
     VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp))
+    if (GetVNFunc(vn, &funcApp) && funcApp.m_arity == 1)
     {
-        assert(funcApp.m_arity == 1);
         switch (funcApp.m_func)
         {
             case VNF_HWI_Vector128_get_Zero:
