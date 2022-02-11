@@ -59,6 +59,7 @@ namespace System.Net.Security.Tests
             SslProtocols clientProtocol,
             Type expectedException)
         {
+            Console.WriteLine("PlatformDetection.SupportsTls12 = {0} 11 {1} 10 {2}", PlatformDetection.SupportsTls12, PlatformDetection.SupportsTls11, PlatformDetection.SupportsTls10);
             Exception e = await Record.ExceptionAsync(() => ClientAsyncSslHelper(serverProtocol, clientProtocol));
             Assert.NotNull(e);
             Assert.IsAssignableFrom(expectedException, e);
@@ -99,20 +100,20 @@ namespace System.Net.Security.Tests
 #pragma warning restore 0618
             if (PlatformDetection.SupportsTls10)
             {
-                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, PlatformDetection.SupportsTls11 ? typeof(AuthenticationException) : typeof(IOException) };
-                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, PlatformDetection.SupportsTls12 ? typeof(AuthenticationException) : typeof(IOException) };
+                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, PlatformDetection.SupportsTls11 || !PlatformDetection.IsWindows ? typeof(AuthenticationException) : typeof(IOException) };
+                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, PlatformDetection.SupportsTls12 || !PlatformDetection.IsWindows ? typeof(AuthenticationException) : typeof(IOException) };
             }
 
             if (PlatformDetection.SupportsTls11)
             {
-                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, PlatformDetection.SupportsTls10 ? typeof(AuthenticationException) : typeof(IOException) };
-                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, PlatformDetection.SupportsTls12 ? typeof(AuthenticationException) : typeof(IOException) };
+                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, PlatformDetection.SupportsTls10 || !PlatformDetection.IsWindows ? typeof(AuthenticationException) : typeof(IOException) };
+                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, PlatformDetection.SupportsTls12 || !PlatformDetection.IsWindows ? typeof(AuthenticationException) : typeof(IOException) };
             }
 
             if (PlatformDetection.SupportsTls12)
             {
-                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, PlatformDetection.SupportsTls11 ? typeof(AuthenticationException) : typeof(IOException) };
-                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, PlatformDetection.SupportsTls10 ? typeof(AuthenticationException) : typeof(IOException) };
+                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, PlatformDetection.SupportsTls10 || !PlatformDetection.IsWindows ? typeof(AuthenticationException) : typeof(IOException) };
+                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, PlatformDetection.SupportsTls11 || !PlatformDetection.IsWindows ? typeof(AuthenticationException) : typeof(IOException) };
             }
         }
 
