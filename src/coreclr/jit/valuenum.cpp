@@ -4667,7 +4667,7 @@ VNSimdTypeInfo ValueNumStore::GetVectorZeroSimdTypeOfVN(ValueNum vn)
     VNFuncApp funcApp;
     if (GetVNFunc(vn, &funcApp) && funcApp.m_arity == 1)
     {
-        return GetSimdTypeOfVN(funcApp.m_args[0]);   
+        return GetSimdTypeOfVN(funcApp.m_args[0]);
     }
 
     vnInfo.m_simdSize        = 0;

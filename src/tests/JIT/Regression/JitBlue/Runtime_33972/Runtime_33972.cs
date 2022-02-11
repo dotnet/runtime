@@ -172,6 +172,24 @@ class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector128<long> AdvSimd_Arm64_CompareEqual_Vector128_Long_AsVariableLoop(Vector128<long> left)
+    {
+        Vector128<long> result = default;
+        Vector128<long> asVar = Vector128.Create((long)0);
+        Vector128<nint> asVar2 = Vector128.Create((nint)0);
+        Vector128<long> asVar3 = asVar2.AsInt64();
+        for (var i = 0; i < 4; i++)
+        {
+            result = AdvSimd.Arm64.CompareEqual(left, asVar);
+            for (var j = 0; j < 4; j++)
+            {
+                result = AdvSimd.Arm64.CompareEqual(left, asVar3);
+            }
+        }
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector128<double> AdvSimd_Arm64_CompareEqual_Vector128_Double_Zero(Vector128<double> left)
     {
         return AdvSimd.Arm64.CompareEqual(left, Vector128<double>.Zero);
@@ -566,6 +584,9 @@ class Program
             result = -1;
 
         if (!ValidateResult_Vector128<long>(AdvSimd_Arm64_CompareEqual_Vector128_Int64_Zero(Vector128<long>.Zero), -1))
+            result = -1;
+
+        if (!ValidateResult_Vector128<long>(AdvSimd_Arm64_CompareEqual_Vector128_Long_AsVariableLoop(Vector128<long>.Zero), -1))
             result = -1;
 
         // Vector64
