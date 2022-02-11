@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.ComponentModel.DataAnnotations.Tests
 {
-    public class RegularExpressionAttributeTests : ValidationAttributeTestBase
+    public sealed partial class RegularExpressionAttributeTests : ValidationAttributeTestBase
     {
         protected override IEnumerable<TestCase> ValidValues()
         {
@@ -54,15 +54,6 @@ namespace System.ComponentModel.DataAnnotations.Tests
             var attribute = new RegularExpressionAttribute("SomePattern");
             attribute.MatchTimeoutInMilliseconds = newValue;
             Assert.Equal(newValue, attribute.MatchTimeoutInMilliseconds);
-        }
-
-        [Theory]
-        [InlineData(12345)]
-        [InlineData(-1)]
-        public static void MatchTimeout_Get_ReturnsExpected(int newValue)
-        {
-            var attribute = new RegularExpressionAttribute("SomePattern") { MatchTimeoutInMilliseconds = newValue };
-            Assert.Equal(TimeSpan.FromMilliseconds(newValue), attribute.MatchTimeout);
         }
 
         [Theory]
