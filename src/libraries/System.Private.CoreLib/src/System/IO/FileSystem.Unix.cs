@@ -387,13 +387,13 @@ namespace System.IO
             }
         }
 
-        private static void MoveDirectoryCore(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
         {
             // isCaseSensitiveRename is only set for case-insensitive systems (like macOS).
             Debug.Assert(!isCaseSensitiveRename || !PathInternal.IsCaseSensitive);
 
-            ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
             ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
+            ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
 
             // When the path ends with a directory separator, it must not be a file.
             // On Unix 'rename' fails with ENOTDIR, on wasm we need to manually check.

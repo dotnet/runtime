@@ -31,7 +31,7 @@ namespace System.IO
                 isCaseSensitiveRename = true;
             }
 
-            MoveDirectoryCore(sourceFullPath, destFullPath, isCaseSensitiveRename);
+            MoveDirectory(sourceFullPath, destFullPath, isCaseSensitiveRename);
         }
     }
 }

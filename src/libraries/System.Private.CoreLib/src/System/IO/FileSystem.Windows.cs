@@ -154,7 +154,7 @@ namespace System.IO
             return data.ftLastWriteTime.ToDateTimeOffset();
         }
 
-        private static void MoveDirectoryCore(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
         {
             // Source and destination must have the same root.
             ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(sourceFullPath);
