@@ -4652,9 +4652,9 @@ VNSimdTypeInfo ValueNumStore::GetSimdTypeOfVN(ValueNum vn)
     return vnInfo;
 }
 
-// TODO: Vector.Zero nodes in VN currently encode their SIMD type for
-//       conservative reasons. In the future, it might be possible not do this
-//       on most platforms since Vector.Zero's base type does not matter. 
+// REVIEW: Vector.Zero nodes in VN currently encode their SIMD type for
+//         conservative reasons. In the future, it might be possible not do this
+//         on most platforms since Vector.Zero's base type does not matter. 
 VNSimdTypeInfo ValueNumStore::GetVectorZeroSimdTypeOfVN(ValueNum vn)
 {
     VNSimdTypeInfo vnInfo;
