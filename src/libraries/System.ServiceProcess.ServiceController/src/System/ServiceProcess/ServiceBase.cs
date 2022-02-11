@@ -72,6 +72,7 @@ namespace System.ServiceProcess
             }
         }
 
+#if NETCOREAPP
         /// <summary>
         /// When this method is called from OnStart, OnStop, OnPause or OnContinue,
         /// the specified wait hint is passed to the
@@ -83,6 +84,7 @@ namespace System.ServiceProcess
             int milliseconds = (int)time.TotalMilliseconds;
             RequestAdditionalTime(milliseconds);
         }
+#endif
 
         /// <summary>
         /// Indicates whether to report Start, Stop, Pause, and Continue commands in the event.

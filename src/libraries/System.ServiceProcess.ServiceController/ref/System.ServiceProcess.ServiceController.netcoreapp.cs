@@ -6,6 +6,10 @@
 
 namespace System.ServiceProcess
 {
+    public partial class ServiceBase : System.ComponentModel.Component
+    {
+        public void RequestAdditionalTime(System.TimeSpan time) { }
+    }
     public partial class ServiceController : System.ComponentModel.Component
     {
         public void Stop(bool stopDependentServices) { }
