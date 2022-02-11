@@ -4601,10 +4601,10 @@ bool ValueNumStore::IsVNVectorZero(ValueNum vn)
         return false;
     }
 #if FEATURE_HW_INTRINSICS
-    // This will only return true if Vector.Zero encodes
-    // its base type as an argument. On XARCH there may be
-    // scenarios where Vector.Zero will not encode its base type;
-    // therefore, returning false here.
+    // REVIEW: This will only return true if Vector.Zero encodes
+    //         its base type as an argument. On XARCH there may be
+    //         scenarios where Vector.Zero will not encode its base type;
+    //         therefore, returning false here.
     VNFuncApp funcApp;
     if (GetVNFunc(vn, &funcApp) && funcApp.m_arity == 1)
     {
