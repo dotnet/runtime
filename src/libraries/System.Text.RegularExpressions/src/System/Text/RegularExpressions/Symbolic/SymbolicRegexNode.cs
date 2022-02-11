@@ -132,28 +132,32 @@ namespace System.Text.RegularExpressions.Symbolic
         private readonly int _hashcode;
 
 
-        /// <summary>Converts a concatenation into an array, returns a non-concatenation in a singleton array.</summary>
-        public List<SymbolicRegexNode<S>> ToList()
+        /// <summary>Converts a Concat or OrderdOr into an array, returns anything else in a singleton array.</summary>
+        /// <param name="list">a list to insert the elements into, or null to return results in a new list</param>
+        /// <param name="listKind">kind of node to consider as the list builder</param>
+        public List<SymbolicRegexNode<S>> ToList(List<SymbolicRegexNode<S>>? list = null, SymbolicRegexKind listKind = SymbolicRegexKind.Concat)
         {
-            var list = new List<SymbolicRegexNode<S>>();
-            AppendToList(this, list);
+            Debug.Assert(listKind == SymbolicRegexKind.Concat || listKind == SymbolicRegexKind.OrderedOr);
+            if (list is null)
+                list = new List<SymbolicRegexNode<S>>();
+            AppendToList(this, list, listKind);
             return list;
 
-            static void AppendToList(SymbolicRegexNode<S> concat, List<SymbolicRegexNode<S>> list)
+            static void AppendToList(SymbolicRegexNode<S> concat, List<SymbolicRegexNode<S>> list, SymbolicRegexKind listKind)
             {
                 if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
-                    StackHelper.CallOnEmptyStack(AppendToList, concat, list);
+                    StackHelper.CallOnEmptyStack(AppendToList, concat, list, listKind);
                     return;
                 }
 
                 SymbolicRegexNode<S> node = concat;
-                while (node._kind == SymbolicRegexKind.Concat)
+                while (node._kind == listKind)
                 {
                     Debug.Assert(node._left is not null && node._right is not null);
-                    if (node._left._kind == SymbolicRegexKind.Concat)
+                    if (node._left._kind == listKind)
                     {
-                        AppendToList(node._left, list);
+                        AppendToList(node._left, list, listKind);
                     }
                     else
                     {
@@ -431,9 +435,6 @@ namespace System.Text.RegularExpressions.Symbolic
         internal static SymbolicRegexNode<S> MkOr(SymbolicRegexBuilder<S> builder, params SymbolicRegexNode<S>[] disjuncts) =>
             MkCollection(builder, SymbolicRegexKind.Or, SymbolicRegexSet<S>.CreateMulti(builder, disjuncts, SymbolicRegexKind.Or), SymbolicRegexInfo.Or(GetInfos(disjuncts)));
 
-        internal static SymbolicRegexNode<S> MkOrderedOr(SymbolicRegexBuilder<S> builder, SymbolicRegexNode<S> left, SymbolicRegexNode<S> right) =>
-            Create(builder, SymbolicRegexKind.OrderedOr, left, right, -1, -1, default, null, SymbolicRegexInfo.Or(left._info, right._info));
-
         internal static SymbolicRegexNode<S> MkOr(SymbolicRegexBuilder<S> builder, SymbolicRegexSet<S> disjuncts)
         {
             Debug.Assert(disjuncts._kind == SymbolicRegexKind.Or || disjuncts.IsEverything);
@@ -511,6 +512,122 @@ namespace System.Text.RegularExpressions.Symbolic
                 concat = Create(builder, SymbolicRegexKind.Concat, left_elems[i], concat, -1, -1, default, null, SymbolicRegexInfo.Concat(left_elems[i]._info, concat._info));
             }
             return concat;
+        }
+
+        /// <summary>
+        /// Make an ordered or of given regexes, eliminate nothing regexes and treat .* as consuming element.
+        /// Keep the or flat, assuming both right and left are flat.
+        /// Apply a counber subsumption/combining optimization, such that e.g. a{2,5}|a{3,10} will be combined to a{2,10}.
+        /// </summary>
+        internal static SymbolicRegexNode<S> MkOrderedOr(SymbolicRegexBuilder<S> builder, SymbolicRegexNode<S> left, SymbolicRegexNode<S> right)
+        {
+            if (left.IsAnyStar || right == builder._nothing || left == right)
+                return left;
+            if (left == builder._nothing)
+                return right;
+
+            if (left._kind != SymbolicRegexKind.OrderedOr)
+            {
+                // Apply the counter subsumption/combining optimization if possible
+                var (loop, rest) = left.FirstCounterInfo();
+                if (loop != builder._nothing)
+                {
+                    Debug.Assert(loop._kind == SymbolicRegexKind.Loop && loop._left is not null);
+                    var (otherLoop, otherRest) = right.FirstCounterInfo();
+                    if (otherLoop != builder._nothing && rest == otherRest)
+                    {
+                        // Found two adjacent counters with the same continuation, check that the rest of the information matches
+                        Debug.Assert(otherLoop._kind == SymbolicRegexKind.Loop && otherLoop._left is not null);
+                        if (loop._left == otherLoop._left && loop.IsLazy == otherLoop.IsLazy &&
+                            loop._lower - 1 <= otherLoop._upper && otherLoop._lower - 1 <= loop._upper)
+                        {
+                            // Loops are equivalent apart from bounds, and the union of the bounds is a contiguous interval
+                            // Build a new counter for the union of the ranges
+                            SymbolicRegexNode<S> newCounter = MkConcat(builder, MkLoop(builder, loop._left,
+                                Math.Min(loop._lower, otherLoop._lower), Math.Max(loop._upper, otherLoop._upper), loop.IsLazy), rest);
+                            if (right._kind == SymbolicRegexKind.OrderedOr)
+                            {
+                                // The right counter came from an or, so include the rest of that or
+                                Debug.Assert(right._right is not null);
+                                return MkOrderedOr(builder, newCounter, right._right);
+                            }
+                            else
+                            {
+                                return newCounter;
+                            }
+                        }
+                    }
+                }
+                // No need for flattening and counter optimization did not apply, just build the or
+                return Create(builder, SymbolicRegexKind.OrderedOr, left, right, -1, -1, default, null, SymbolicRegexInfo.Or(left._info, right._info));
+            }
+
+            // If the left side was an or, then it has to be flattened, gather the elements from both sides
+            List<SymbolicRegexNode<S>> elems = left.ToList(listKind: SymbolicRegexKind.OrderedOr);
+            int firstRightElem = elems.Count;
+            right.ToList(elems, listKind: SymbolicRegexKind.OrderedOr);
+
+            // Eliminate any duplicate elements, keeping the leftmost element
+            HashSet<SymbolicRegexNode<S>> seenElems = new();
+            // Keep track of if any elements from the right side need to be eliminated
+            bool rightChanged = false;
+            for (int i = 0; i < elems.Count; i++)
+            {
+                if (!seenElems.Contains(elems[i]))
+                {
+                    seenElems.Add(elems[i]);
+                }
+                else
+                {
+                    // Nothing will be eliminated in the next step
+                    elems[i] = builder._nothing;
+                    rightChanged |= i >= firstRightElem;
+                }
+            }
+
+            // Build the flattened or, avoiding rebuilding the right side if possible
+            if (rightChanged)
+            {
+                SymbolicRegexNode<S> or = builder._nothing;
+                for (int i = elems.Count - 1; i >= 0; i--)
+                {
+                    or = MkOrderedOr(builder, elems[i], or);
+                }
+                return or;
+            }
+            else
+            {
+                SymbolicRegexNode<S> or = right;
+                for (int i = firstRightElem - 1; i >= 0; i--)
+                {
+                    or = MkOrderedOr(builder, elems[i], or);
+                }
+                return or;
+            }
+        }
+
+        /// <summary>
+        /// Extract a counter as a loop followed by its continuation. For example, a*b returns (a*,b).
+        /// Also look into the first element of an or, so a+|xyz returns (a+,()).
+        /// If no counter is found returns ([],[]).
+        /// </summary>
+        /// <returns>a tuple of the loop and its continuation</returns>
+        private (SymbolicRegexNode<S>, SymbolicRegexNode<S>) FirstCounterInfo()
+        {
+            if (_kind == SymbolicRegexKind.Loop)
+                return (this, _builder._epsilon);
+            if (_kind == SymbolicRegexKind.Concat)
+            {
+                Debug.Assert(_left is not null && _right is not null);
+                if (_left.Kind == SymbolicRegexKind.Loop)
+                    return (_left, _right);
+            }
+            if (_kind == SymbolicRegexKind.OrderedOr)
+            {
+                Debug.Assert(_left is not null);
+                return _left.FirstCounterInfo();
+            }
+            return (_builder._nothing, _builder._nothing);
         }
 
         internal static SymbolicRegexNode<S> MkNot(SymbolicRegexBuilder<S> builder, SymbolicRegexNode<S> root)
