@@ -3154,12 +3154,14 @@ size_t Prober::Add(size_t newEntry)
     } CONTRACTL_END
 
     size_t entry;
+    size_t returnEntry = newEntry;
     //if we have visited every slot then there is no room in the table to add this new entry
     if (NoMore())
         return CALL_STUB_EMPTY_ENTRY;
 
     do
     {
+retryCurrentBucket:
         entry = Read();
         if (entry==CALL_STUB_EMPTY_ENTRY)
         {
@@ -3182,7 +3184,27 @@ size_t Prober::Add(size_t newEntry)
         {
             return entry;
         }
+        size_t keyACurrentEntry = comparer->KeyA();
+        size_t keyBCurrentEntry = comparer->KeyB();
+        size_t pslCurrentEntry = PSL(ComputeIndex(keyACurrentEntry, keyBCurrentEntry));
 
+        if (pslCurrentEntry < probes)
+        {
+            if (FastInterlockCompareExchangePointer(&base[index],
+                newEntry, entry) == entry)
+            {
+                // Successfully swapped out old entry. Update prober to new data and continue
+                keyA = keyACurrentEntry;
+                keyB = keyBCurrentEntry;
+                probes = pslCurrentEntry;
+                newEntry = entry;
+            }
+            else
+            {
+                // Failed to swap old entry out. Retry current bucket.
+                goto retryCurrentBucket;
+            }
+        }
     } while(Next()); //Next() returns false when we have visited every slot
 
     //if we have visited every slot then there is no room in the table to add this new entry
@@ -3190,7 +3212,7 @@ size_t Prober::Add(size_t newEntry)
         return CALL_STUB_EMPTY_ENTRY;
 
     CONSISTENCY_CHECK(Read() == newEntry);
-    return newEntry;
+    return returnEntry;
 }
 
 /*Atomically grab an entry, if it is empty, so we can write in it.

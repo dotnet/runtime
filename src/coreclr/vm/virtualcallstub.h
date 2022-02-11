@@ -1484,6 +1484,26 @@ private:
     //initialize a prober across a bucket (table) for the specified keys.
     void InitProber(size_t key1, size_t key2, size_t* table);
     //set up the initial index and stride and probe count
+
+    size_t ComputeIndex(size_t key1, size_t key2)
+    {
+#ifdef TARGET_64BIT
+        int localIndex = CombineFourValuesIntoHash((UINT32)key1, (UINT32)(key1 >> 32), (UINT32)key2, (UINT32)(key2 >> 32));
+#else
+        int localIndex = CombineTwoValuesIntoHash(key1, key2);
+#endif
+        return localIndex & mask;
+    }
+
+    size_t PSL(size_t initialIndex)
+    {
+        size_t currentIndex = index;
+        if (currentIndex < initialIndex)
+        {
+            currentIndex += mask + 1;
+        }
+        return currentIndex - initialIndex;
+    }
     inline void FormHash()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1491,16 +1511,10 @@ private:
         probes = 0;
         //these two hash functions have not been formally measured for effectiveness
         //but they are at least orthogonal
-#ifdef TARGET_64BIT
-        index = CombineFourValuesIntoHash((UINT32)keyA, (UINT32)(keyA >> 32), (UINT32)keyB, (UINT32)(keyB >> 32)) & mask;
-        stride = CombineFourValuesIntoHash((UINT32)keyB, (UINT32)(keyB >> 32), (UINT32)keyA, (UINT32)(keyA >> 32));
-#else
-        index = CombineTwoValuesIntoHash(keyA, keyB);
-        stride = CombineTwoValuesIntoHash(keyB, keyA);
-#endif
-        index = index & mask;
-        stride = (stride | 1) & mask;
+        index = ComputeIndex(keyA, keyB);
     }
+
+
     //atomically grab an empty slot so we can insert a new entry into the bucket
     BOOL GrabEntry(size_t entryValue);
     size_t keyA;        //key pair we are looking for
@@ -1511,7 +1525,7 @@ private:
                         //  All that will happen is possibly dropping an entry
                         //  on the floor or adding a duplicate.
     size_t index;       //current probe point in the bucket
-    size_t stride;      //amount to step on each successive probe, must be relatively prime wrt the bucket size
+    const size_t stride = 1;      //amount to step on each successive probe, must be relatively prime wrt the bucket size
     size_t mask;        //size of bucket - 1
     size_t probes;      //number probes - 1
     Entry* comparer;//used to compare an entry against the sought after key pair
