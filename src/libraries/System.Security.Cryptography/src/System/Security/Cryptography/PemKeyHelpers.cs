@@ -5,7 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     internal static class PemKeyHelpers
     {
