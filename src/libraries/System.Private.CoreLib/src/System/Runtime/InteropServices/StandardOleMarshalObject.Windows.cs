@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices
                 fixed (Guid* riidPtr = &riid)
                 fixed (int* pSizePtr = &pSize)
                 {
-                    // GetMarshalSizeMax is 4th slot
+                    // GetMarshalSizeMax is 5th slot (zero-based indexing)
                     return ((delegate* unmanaged[Stdcall]<IntPtr, Guid*, IntPtr, int, IntPtr, int, int*, int>)(*(IntPtr**)pStandardMarshal)[4])(pStandardMarshal, riidPtr, pv, dwDestContext, pvDestContext, mshlflags, pSizePtr);
                 }
             }
@@ -80,7 +80,7 @@ namespace System.Runtime.InteropServices
                 // risk triggering an AppVerifier break
                 fixed (Guid* riidPtr = &riid)
                 {
-                    // MarshalInterface is 5th slot
+                    // MarshalInterface is 6th slot (zero-based indexing)
                     return ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr, Guid*, IntPtr, int, IntPtr, int, int>)(*(IntPtr**)pStandardMarshal)[5])(pStandardMarshal, pStm, riidPtr, pv, dwDestContext, pvDestContext, mshlflags);
                 }
             }
