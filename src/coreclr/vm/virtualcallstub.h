@@ -13,7 +13,7 @@
 
 #ifndef _VIRTUAL_CALL_STUB_H
 #define _VIRTUAL_CALL_STUB_H
-
+#include "typehashingalgorithms.h"
 
 #define CHAIN_LOOKUP
 
@@ -1491,11 +1491,15 @@ private:
         probes = 0;
         //these two hash functions have not been formally measured for effectiveness
         //but they are at least orthogonal
-
-        size_t a = ((keyA>>16) + keyA);
-        size_t b = ((keyB>>16) ^ keyB);
-        index    = (((a*CALL_STUB_HASH_CONST1)>>4)+((b*CALL_STUB_HASH_CONST2)>>4)+CALL_STUB_HASH_CONST1) & mask;
-        stride   = ((a+(b*CALL_STUB_HASH_CONST1)+CALL_STUB_HASH_CONST2) | 1) & mask;
+#ifdef TARGET_64BIT
+        index = CombineFourValuesIntoHash((UINT32)keyA, (UINT32)(keyA >> 32), (UINT32)keyB, (UINT32)(keyB >> 32)) & mask;
+        stride = CombineFourValuesIntoHash((UINT32)keyB, (UINT32)(keyB >> 32), (UINT32)keyA, (UINT32)(keyA >> 32));
+#else
+        index = CombineTwoValuesIntoHash(keyA, keyB);
+        stride = CombineTwoValuesIntoHash(keyB, keyA);
+#endif
+        index = index & mask;
+        stride = (stride | 1) & mask;
     }
     //atomically grab an empty slot so we can insert a new entry into the bucket
     BOOL GrabEntry(size_t entryValue);
@@ -1663,6 +1667,7 @@ private:
     inline size_t ComputeBucketIndex(size_t keyA, size_t keyB)
     {
         LIMITED_METHOD_CONTRACT;
+        // HASH2
         size_t a = ((keyA>>16) + keyA);
         size_t b = ((keyB>>16) ^ keyB);
         return CALL_STUB_FIRST_INDEX+(((((a*CALL_STUB_HASH_CONST2)>>5)^((b*CALL_STUB_HASH_CONST1)>>5))+CALL_STUB_HASH_CONST2) & bucketMask());

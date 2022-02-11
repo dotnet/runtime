@@ -155,6 +155,14 @@ inline static UINT32 HashMDToken(mdToken token)
     return a;
 }
 
+inline static void XXHash32_Initialize(UINT32* v1, UINT32* v2, UINT32* v3, UINT32* v4)
+{
+    *v1 = 2654435761U/*Prime1*/ + 2246822519U/*Prime2*/;
+    *v2 = 2246822519U/*Prime2*/;
+    *v3 = 0;
+    *v4 = 0-2654435761U/*Prime1*/;
+}
+
 inline static UINT32 XXHash32_MixEmptyState()
 {
     // Unlike System.HashCode, these hash values are required to be stable, so don't
@@ -234,6 +242,22 @@ inline static UINT32 CombineThreeValuesIntoHash(UINT32 value1, UINT32 value2, UI
     hash = XXHash32_QueueRound(hash, value1);
     hash = XXHash32_QueueRound(hash, value2);
     hash = XXHash32_QueueRound(hash, value3);
+    hash = XXHash32_MixFinal(hash);
+    return hash;
+}
+
+inline static UINT32 CombineFourValuesIntoHash(UINT32 value1, UINT32 value2, UINT32 value3, UINT32 value4)
+{
+    UINT32 v1, v2, v3, v4;
+    XXHash32_Initialize(&v1, &v2, &v3, &v4);
+    v1 = XXHash32_Round(v1, value1);
+    v2 = XXHash32_Round(v2, value2);
+    v3 = XXHash32_Round(v3, value3);
+    v4 = XXHash32_Round(v4, value4);
+
+    UINT32 hash =  XXHash32_MixState(v1, v2, v3, v4);
+    hash += 16;
+
     hash = XXHash32_MixFinal(hash);
     return hash;
 }

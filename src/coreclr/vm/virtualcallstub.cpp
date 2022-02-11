@@ -3047,6 +3047,44 @@ void VirtualCallStubManager::LogStats()
     stats.cache_entry_space = 0;
 }
 
+int reports = 0;
+FILE* reportFile = NULL;
+
+void ReportProbeDepth(int readCount)
+{
+    reports++;
+    if (reportFile == NULL)
+    {
+        reportFile = fopen("vsdreport.txt", "w");
+    }
+
+    if ((reports % 1000) == 0)
+    {
+        printf("report: %d\n", reports);
+        fflush(reportFile);
+    }
+    fprintf(reportFile, "%d, %d\n", reports, readCount);
+}
+
+FILE* reportIndexInBucketFile = NULL;
+int hashInBucketReports = 0;
+void ReportBucketInUseInBucket(int index)
+{
+    hashInBucketReports++;
+    if (reportIndexInBucketFile == NULL)
+    {
+        reportIndexInBucketFile = fopen("hashInBucketreport.txt", "w");
+    }
+
+    if ((hashInBucketReports % 1000) == 0)
+    {
+        printf("hashInBucketReports: %d\n", hashInBucketReports);
+        fflush(reportIndexInBucketFile);
+    }
+    fprintf(reportIndexInBucketFile, "%d, %d\n", hashInBucketReports, index);
+}
+
+
 void Prober::InitProber(size_t key1, size_t key2, size_t* table)
 {
     CONTRACTL {
@@ -3062,6 +3100,7 @@ void Prober::InitProber(size_t key1, size_t key2, size_t* table)
     base = &table[CALL_STUB_FIRST_INDEX];
     mask = table[CALL_STUB_MASK_INDEX];
     FormHash();
+    ReportBucketInUseInBucket((int)this->index);
 }
 
 size_t Prober::Find()
@@ -3073,18 +3112,24 @@ size_t Prober::Find()
     } CONTRACTL_END
 
     size_t entry;
+    int readCount = 0;
     //if this prober has already visited every slot, there is nothing more to look at.
     //note, this means that if a prober is going to be reused, the FormHash() function
     //needs to be called to reset it.
     if (NoMore())
+    {
+        ReportProbeDepth(readCount);
         return CALL_STUB_EMPTY_ENTRY;
+    }
     do
     {
         entry = Read();
+        readCount++;
 
         //if we hit an empty entry, it means it cannot be in the table
         if(entry==CALL_STUB_EMPTY_ENTRY)
         {
+            ReportProbeDepth(readCount);
             return CALL_STUB_EMPTY_ENTRY;
         }
 
@@ -3092,9 +3137,11 @@ size_t Prober::Find()
         comparer->SetContents(entry);
         if (comparer->Equals(keyA, keyB))
         {
+            ReportProbeDepth(-readCount);
             return entry;
         }
     } while(Next()); //Next() returns false when we have visited every slot
+    ReportProbeDepth(readCount);
     return CALL_STUB_EMPTY_ENTRY;
 }
 
@@ -3135,6 +3182,7 @@ size_t Prober::Add(size_t newEntry)
         {
             return entry;
         }
+
     } while(Next()); //Next() returns false when we have visited every slot
 
     //if we have visited every slot then there is no room in the table to add this new entry
@@ -3353,6 +3401,25 @@ void BucketTable::Reclaim()
     }
 }
 
+FILE* reportBucketIndexFile = NULL;
+int bucketIndexReports = 0;
+void ReportBucketIndex(int index)
+{
+    bucketIndexReports++;
+    if (reportBucketIndexFile == NULL)
+    {
+        reportBucketIndexFile = fopen("bucketIndexReport.txt", "w");
+    }
+
+    if ((bucketIndexReports % 1000) == 0)
+    {
+        printf("bucketIndexReports: %d\n", bucketIndexReports);
+        fflush(reportBucketIndexFile);
+    }
+    fprintf(reportBucketIndexFile, "%d, %d\n", bucketIndexReports, index);
+}
+
+
 //
 // When using SetUpProber the proper values to use for keyA, keyB are:
 //
@@ -3387,6 +3454,7 @@ BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
     // grows to 90% full.  (CALL_STUB_LOAD_FACTOR is 90%)
 
     size_t index = ComputeBucketIndex(keyA, keyB);
+    ReportBucketIndex((int)index);
     size_t bucket = buckets[index];  // non-volatile read
     if (bucket==CALL_STUB_EMPTY_ENTRY)
     {
