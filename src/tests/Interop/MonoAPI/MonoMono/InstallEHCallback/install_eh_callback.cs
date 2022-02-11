@@ -2,13 +2,13 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-using MonoAPI.Tests;
+namespace MonoAPI.Tests.MonoMono.InstallEHCallback;
 
 public class MonoPInvokeCallbackAttribute : Attribute {
 	public MonoPInvokeCallbackAttribute (Type delegateType) { }
 }
 
-public class Tests {
+public class InstallEHCallback {
 
 	[DllImport (MonoAPISupport.TestLibName)]
 	public static extern void mono_test_setjmp_and_call (VoidVoidDelegate del, out IntPtr handle);
@@ -170,6 +170,6 @@ public class Tests {
 
 	static int Main ()
 	{
-		return TestDriver.RunTests (typeof (Tests));
+	    return TestDriver.RunTests (typeof (InstallEHCallback));
 	}
 }
