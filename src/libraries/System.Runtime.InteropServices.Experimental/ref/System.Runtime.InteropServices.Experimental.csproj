@@ -2,10 +2,11 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.InteropServices</AssemblyName>
     <FeatureNFloat>true</FeatureNFloat>
-    <!-- Don't warn about usage of obsolete API since the contract must keep its own references
-         to its own obsolete API. -->
+    <!-- disable warnings about obsolete APIs,
+        Remove warning disable when nullable attributes are respected,
+        Type has no accessible constructors which use only CLS-compliant types -->
     <!-- Nullability of parameter 'name' doesn't match overridden member -->
-    <NoWarn>$(NoWarn);618;CS8765</NoWarn>
+    <NoWarn>$(NoWarn);0809;0618;CS8614;CS8765;CS3015;NU5131</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
