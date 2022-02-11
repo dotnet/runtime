@@ -172,7 +172,7 @@ namespace System.Text.Json
                 // Worst case scenario, the cache has been saturated with permanent entries.
                 // We want to avoid iterating needlessly through the entire cache every time
                 // a new options instance is created. For this reason we implement a backoff
-                // strategy to amortize the cost of eviction across multiple cache initializations.
+                // strategy to average out the cost of eviction across multiple cache initializations.
                 // The backoff count is determined by the eviction rates of the most recent eviction runs.
 
                 if (s_evictionRunsToSkip > 0)
