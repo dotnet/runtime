@@ -38,8 +38,15 @@ namespace System.Net.Security.Tests
             // On Windows, null ciphers (no encryption) are supported.
             if (OperatingSystem.IsWindows())
             {
+                if (!PlatformDetection.IsWindows10OrLater)
+                {
+                    // All old versions support null encryption
+                    return true;
+                }
+
                 try
                 {
+                    // New Windows can support null but it may be disabled in Azure images
                     using (Process p = Process.Start(new ProcessStartInfo("powershell", "-Command Get-TlsCipherSuite") { RedirectStandardOutput = true, RedirectStandardError = true }))
                     {
                         return p.StandardOutput.ReadToEnd().Contains("WITH_NULL");
