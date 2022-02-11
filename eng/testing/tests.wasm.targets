@@ -167,10 +167,10 @@
         ConditionToUse__="%(_WasmPropertyNames.ConditionToUse__)" />
 
       <_WasmVFSFilesToCopy Include="@(WasmFilesToIncludeInFileSystem)" />
-      <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(TargetPath)' == ''" />
+      <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(_WasmVFSFilesToCopy.TargetPath)' == ''" />
 
       <_WasmExtraFilesToCopy Include="@(WasmExtraFilesToDeploy)" />
-      <_WasmExtraFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(TargetPath)' == ''" />
+      <_WasmExtraFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(_WasmExtraFilesToCopy.TargetPath)' == ''" />
 
       <!-- Example of passing items to the project
 
