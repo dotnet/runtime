@@ -221,6 +221,9 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslAddExtraChainCert")]
         internal static partial bool SslAddExtraChainCert(SafeSslHandle ssl, SafeX509Handle x509);
 
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslAddClientCA")]
+        internal static partial bool SslAddClientCA(SafeSslHandle ssl, IntPtr x509);
+
         internal static bool AddExtraChainCertificates(SafeSslHandle ssl, X509Certificate2[] chain)
         {
             // send pre-computed list of intermediates.
