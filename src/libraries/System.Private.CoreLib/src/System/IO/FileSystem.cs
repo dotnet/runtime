@@ -29,9 +29,6 @@ namespace System.IO
             {
                 EnumerationOptions enumerationOptions = EnumerationOptions.Compatible;
 
-                // Compatible uses `IgnoreInaccessible = false`
-                enumerationOptions.IgnoreInaccessible = true;
-
                 if (recursive)
                 {
                     enumerationOptions.RecurseSubdirectories = true;
