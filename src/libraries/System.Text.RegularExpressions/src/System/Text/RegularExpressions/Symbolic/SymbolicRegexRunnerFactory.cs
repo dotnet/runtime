@@ -109,7 +109,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // If we successfully matched, capture the match, and then jump the current position to the end of the match.
                     int start = pos.Index + beginning;
                     int end = start + pos.Length;
-                    if (pos.CaptureStarts != null)
+                    if (!quick && pos.CaptureStarts != null)
                     {
                         Debug.Assert(pos.CaptureEnds != null);
                         Debug.Assert(pos.CaptureStarts.Length == pos.CaptureEnds.Length);
