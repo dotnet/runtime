@@ -3,6 +3,7 @@
 
 using Microsoft.DotNet.XUnitExtensions;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -1164,12 +1165,13 @@ namespace System.Net.NetworkInformation.Tests
                     ["LC_ALL"] = envVar_LC_ALL
                 }
             };
-
-            TimeSpan pingTimeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
+            
             RemoteExecutor.Invoke(address =>
             {
+                TimeSpan timeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
+
                 SendBatchPing(
-                    ping => ping.Send(address, pingTimeout, default, default),
+                    ping => ping.Send(address, timeout, default, default),
                     pingReply =>
                     {
                         PingResultValidator(pingReply, new[] { IPAddress.Parse(address) }, null);
@@ -1188,17 +1190,13 @@ namespace System.Net.NetworkInformation.Tests
         public void SendPingAsync_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
-            if (localIpAddress == null)
-            {
-                // No local address for given address family.
-                return;
-            }
 
-            var remoteInvokeStartInfo = new ProcessStartInfo();
-
-            remoteInvokeStartInfo.EnvironmentVariables["LANG"] = envVar_LANG;
-            remoteInvokeStartInfo.EnvironmentVariables["LC_MESSAGES"] = envVar_LC_MESSAGES;
-            remoteInvokeStartInfo.EnvironmentVariables["LC_ALL"] = envVar_LC_ALL;
+            var remoteInvokeStartInfo = new ProcessStartInfo { EnvironmentVariables =
+                {
+                    ["LANG"] = envVar_LANG, ["LC_MESSAGES"] = envVar_LC_MESSAGES,
+                    ["LC_ALL"] = envVar_LC_ALL
+                }
+            };
 
             RemoteExecutor.Invoke(async address =>
             {
@@ -1206,7 +1204,38 @@ namespace System.Net.NetworkInformation.Tests
                     (ping) => ping.SendPingAsync(address),
                     (pingReply) =>
                     {
-                        PingResultValidator(pingReply, new IPAddress[] { IPAddress.Parse(address) }, null);
+                        PingResultValidator(pingReply, new[] { IPAddress.Parse(address) }, null);
+                    });
+            }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(AddressFamily.InterNetwork, "ja_JP.UTF8", null, null)]
+        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", "ja_JP.UTF8", null)]
+        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", null, "ja_JP.UTF8")]
+        [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
+        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
+        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
+        public void SendPingAsync_LocaleEnvVarsMustBeIgnored_TimeSpan(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        {
+            IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
+
+            var remoteInvokeStartInfo = new ProcessStartInfo { EnvironmentVariables =
+                {
+                    ["LANG"] = envVar_LANG, ["LC_MESSAGES"] = envVar_LC_MESSAGES,
+                    ["LC_ALL"] = envVar_LC_ALL
+                }
+            };
+
+            RemoteExecutor.Invoke(async address =>
+            {
+                TimeSpan timeout = TimeSpan.FromMilliseconds(TestSettings.PingTimeout);
+                await SendBatchPingAsync(
+                    ping => ping.SendPingAsync(address, timeout, default, default, default),
+                    (pingReply) =>
+                    {
+                        PingResultValidator(pingReply, new[] { IPAddress.Parse(address) }, null);
                     });
             }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
         }
