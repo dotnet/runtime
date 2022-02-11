@@ -8,45 +8,45 @@
 #include <alloca.h>
 #endif
 
-#include "metadata/method-builder-ilgen.h"
-#include "metadata/method-builder-ilgen-internals.h"
-#include "object.h"
-#include "loader.h"
 #include "cil-coff.h"
-#include "metadata/marshal.h"
-#include "metadata/marshal-internals.h"
-#include "metadata/marshal-ilgen.h"
-#include "metadata/tabledefs.h"
-#include "metadata/exception.h"
+#include "icall-decl.h"
+#include "loader.h"
 #include "metadata/appdomain.h"
+#include "metadata/exception.h"
+#include "metadata/marshal-ilgen.h"
+#include "metadata/marshal-internals.h"
+#include "metadata/marshal.h"
+#include "metadata/method-builder-ilgen-internals.h"
+#include "metadata/method-builder-ilgen.h"
+#include "metadata/tabledefs.h"
 #include "mono/metadata/abi-details.h"
+#include "mono/metadata/attrdefs.h"
 #include "mono/metadata/class-abi-details.h"
 #include "mono/metadata/class-init.h"
-#include "mono/metadata/debug-helpers.h"
-#include "mono/metadata/threads.h"
-#include "mono/metadata/monitor.h"
 #include "mono/metadata/class-internals.h"
-#include "mono/metadata/metadata-internals.h"
+#include "mono/metadata/cominterop.h"
+#include "mono/metadata/custom-attrs-internals.h"
+#include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/gc-internals.h"
-#include "mono/metadata/threads-types.h"
-#include "mono/metadata/string-icalls.h"
-#include "mono/metadata/attrdefs.h"
-#include "mono/metadata/cominterop.h"
-#include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/handle.h"
-#include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/icall-internals.h"
-#include "mono/utils/mono-counters.h"
-#include "mono/utils/mono-tls.h"
-#include "mono/utils/mono-memory-model.h"
+#include "mono/metadata/metadata-internals.h"
+#include "mono/metadata/monitor.h"
+#include "mono/metadata/reflection-internals.h"
+#include "mono/metadata/string-icalls.h"
+#include "mono/metadata/threads-types.h"
+#include "mono/metadata/threads.h"
 #include "mono/utils/atomic.h"
-#include <mono/utils/mono-threads.h>
-#include <mono/utils/mono-threads-coop.h>
-#include <mono/utils/mono-error-internals.h>
-#include <string.h>
+#include "mono/utils/mono-counters.h"
+#include "mono/utils/mono-memory-model.h"
+#include "mono/utils/mono-tls.h"
+#include "object.h"
 #include <errno.h>
-#include "icall-decl.h"
+#include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-threads-coop.h>
+#include <mono/utils/mono-threads.h>
+#include <string.h>
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
@@ -3221,6 +3221,10 @@ emit_marshal_scalar_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_CONV_RESULT:
 		/* no conversions necessary */
+		mono_mb_emit_stloc (mb, 3);
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
 		mono_mb_emit_stloc (mb, 3);
 		break;
 
