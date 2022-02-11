@@ -37,7 +37,7 @@ namespace System.Text.RegularExpressions.Symbolic
         public int Find(int key)
         {
             int[] sparse = _sparse;
-            if ((uint)key < (int)sparse.Length)
+            if ((uint)key < (uint)sparse.Length)
             {
                 List<KeyValuePair<int, T>> dense = _dense;
                 int idx = sparse[key];
