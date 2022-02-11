@@ -4601,6 +4601,8 @@ bool ValueNumStore::IsVNVectorZero(ValueNum vn)
         return false;
     }
 #if FEATURE_HW_INTRINSICS
+    // This will only return true if Vector.Zero encodes
+    // its base type.
     VNFuncApp funcApp;
     if (GetVNFunc(vn, &funcApp) && funcApp.m_arity == 1)
     {
