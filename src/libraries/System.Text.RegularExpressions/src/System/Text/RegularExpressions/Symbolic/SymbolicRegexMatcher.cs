@@ -321,6 +321,26 @@ namespace System.Text.RegularExpressions.Symbolic
                 CaptureStarts = (int[])CaptureStarts.Clone(),
                 CaptureEnds = (int[])CaptureEnds.Clone(),
             };
+
+            /// <summary>
+            /// Copy register values from another set of registers, possibly allocating new arrays if they were not yet allocated.
+            /// </summary>
+            /// <param name="other">the registers to copy from</param>
+            public void Assign(Registers other)
+            {
+                if (CaptureStarts is not null && CaptureEnds is not null)
+                {
+                    Debug.Assert(CaptureStarts.Length == other.CaptureStarts.Length);
+                    Array.Copy(other.CaptureStarts, CaptureStarts, CaptureStarts.Length);
+                    Debug.Assert(CaptureEnds.Length == other.CaptureEnds.Length);
+                    Array.Copy(other.CaptureEnds, CaptureEnds, CaptureEnds.Length);
+                }
+                else
+                {
+                    CaptureStarts = (int[])other.CaptureStarts.Clone();
+                    CaptureEnds = (int[])other.CaptureEnds.Clone();
+                }
+            }
         }
 
         /// <summary>Transition for Brzozowski-style derivatives (i.e. a DFA).</summary>
@@ -569,6 +589,7 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             int i_end = input.Length;
             Registers endRegisters = default(Registers);
+            DfaMatchingState<TSetType>? endState = null;
 
             // Pick the correct start state based on previous character kind.
             uint prevCharKind = GetCharKind(input, i - 1);
@@ -586,9 +607,8 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 // Empty match exists because the initial state is accepting.
                 i_end = i - 1;
-                // Some empty groups may still be captured, apply effects as necessary
-                endRegisters = initialRegisters.Clone();
-                state.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i), CharKind.Context(state.PrevCharKind, GetCharKind(input, i)));
+                endRegisters.Assign(initialRegisters);
+                endState = state;
             }
 
             // Use two maps from state IDs to register values for the current and next set of states.
@@ -645,11 +665,8 @@ namespace System.Text.RegularExpressions.Symbolic
                             {
                                 // Accepting state has been reached. Record the position.
                                 i_end = i;
-                                endRegisters = newRegisters.Clone();
-                                // Some empty groups may still be captured, apply effects as necessary.
-                                // TODO-NONBACKTRACKING: This way of doing it is slow, cache these "finalization effects"
-                                targetState.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i + 1),
-                                    CharKind.Context(targetState.PrevCharKind, GetCharKind(input, i + 1)));
+                                endRegisters.Assign(newRegisters);
+                                endState = targetState;
                                 // No lower priority transitions from this or other source states are taken because the
                                 // backtracking engines would return the match ending here.
                                 goto BREAK_NULLABLE;
@@ -660,10 +677,8 @@ namespace System.Text.RegularExpressions.Symbolic
             BREAK_NULLABLE:
                 if (next.Count == 0)
                 {
-                    // If all states died out some nullable state must have been seen before. Return that match.
-                    Debug.Assert(i_end != input.Length);
-                    resultRegisters = endRegisters;
-                    return i_end;
+                    // If all states died out some nullable state must have been seen before
+                    goto FINISH;
                 }
 
                 // Swap the state sets and prepare for the next character
@@ -674,7 +689,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 i++;
             }
 
-            Debug.Assert(i_end != input.Length);
+        FINISH:
+            Debug.Assert(i_end != input.Length && endState is not null);
+            // Apply effects for finishing at the stored end state
+            endState.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i_end + 1),
+                CharKind.Context(endState.PrevCharKind, GetCharKind(input, i_end + 1)));
             resultRegisters = endRegisters;
             return i_end;
         }
