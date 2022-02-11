@@ -10232,7 +10232,6 @@ namespace System.IO
     }
     public static partial class Directory
     {
-        public static bool Copy(string sourcePath, string destinationPath, bool recursive) { throw null; }
         public static bool Copy(string sourcePath, string destinationPath, bool recursive, bool skipExistingFiles = true, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.IO.DirectoryInfo CreateDirectory(string path) { throw null; }
         public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
@@ -10290,7 +10289,6 @@ namespace System.IO
         public override string Name { get { throw null; } }
         public System.IO.DirectoryInfo? Parent { get { throw null; } }
         public System.IO.DirectoryInfo Root { get { throw null; } }
-        public bool CopyTo(string destinationPath, bool recursive) { throw null; }
         public bool CopyTo(string destinationPath, bool recursive, bool skipExistingFiles = true, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Create() { }
         public System.IO.DirectoryInfo CreateSubdirectory(string path) { throw null; }
