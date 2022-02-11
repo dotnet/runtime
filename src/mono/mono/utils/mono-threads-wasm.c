@@ -110,6 +110,7 @@ mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 	return id1 == id2;
 }
 
+static int pthread_warning_count = 0;
 
 MonoNativeThreadId
 mono_native_thread_id_get (void)
@@ -117,6 +118,7 @@ mono_native_thread_id_get (void)
 #ifdef __EMSCRIPTEN_PTHREADS__
 	return pthread_self ();
 #else
+	g_assert_not_reached ();
 	return (MonoNativeThreadId)1;
 #endif
 }
@@ -127,6 +129,7 @@ mono_native_thread_os_id_get (void)
 #ifdef __EMSCRIPTEN_PTHREADS__
 	return (guint64)pthread_self ();
 #else
+	g_assert_not_reached ();
 	return 1;
 #endif
 }

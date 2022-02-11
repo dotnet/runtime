@@ -467,6 +467,11 @@
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
+    </ItemGroup>
+
     <!-- Components -->
     <ItemGroup Condition="'$(MonoComponentsStatic)' == 'true'">
       <_MonoCMakeArgs Include="-DSTATIC_COMPONENTS=1" />

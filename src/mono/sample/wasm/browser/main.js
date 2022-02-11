@@ -28,6 +28,8 @@ async function main() {
                 postRun: () => { console.log('user code Module.postRun') },
             }
         });
+        globalThis.__Module = Module;
+        globalThis.MONO = MONO;
         console.log('after createDotnetRuntime')
 
         const testMeaning = BINDING.bind_static_method("[Wasm.Browser.CJS.Sample] Sample.Test:TestMeaning");

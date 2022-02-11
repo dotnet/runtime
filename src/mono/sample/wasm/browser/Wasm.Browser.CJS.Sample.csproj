@@ -6,13 +6,18 @@
     <DebugType>embedded</DebugType>
     <WasmDebugLevel>1</WasmDebugLevel>
     <WasmEnableES6>false</WasmEnableES6>
-
+    <WasmBuildNative>true</WasmBuildNative>
     <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
     <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
   </PropertyGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
+    <WasmExtraConfig Include="environment_variables" Value='
+{
+  "DOTNET_EnableEventPipe": 1,
+  "DOTNET_EventPipeOutputPath": "/trace.nettrace"
+}' />
   </ItemGroup>
 
   <PropertyGroup>
