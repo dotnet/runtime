@@ -196,6 +196,9 @@ emit_simd_ins (MonoCompile *cfg, MonoClass *klass, int opcode, int sreg1, int sr
 	} else if (spec [MONO_INST_DEST] == 'f') {
 		ins->dreg = alloc_freg (cfg);
 		ins->type = STACK_R8;
+	} else if (spec [MONO_INST_DEST] == 'v') {
+		ins->dreg = alloc_dreg (cfg, STACK_VTYPE);
+		ins->type = STACK_VTYPE;
 	}
 	ins->sreg1 = sreg1;
 	ins->sreg2 = sreg2;
@@ -1432,6 +1435,12 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_LoadAndInsertScalar, OP_ARM64_LD1_INSERT},
 	{SN_LoadAndReplicateToVector128, OP_ARM64_LD1R},
 	{SN_LoadAndReplicateToVector64, OP_ARM64_LD1R},
+	{SN_LoadPairScalarVector64, OP_ARM64_LDP_SCALAR},
+	{SN_LoadPairScalarVector64NonTemporal, OP_ARM64_LDNP_SCALAR},
+	{SN_LoadPairVector128, OP_ARM64_LDP},
+	{SN_LoadPairVector128NonTemporal, OP_ARM64_LDNP},
+	{SN_LoadPairVector64, OP_ARM64_LDP},
+	{SN_LoadPairVector64NonTemporal, OP_ARM64_LDNP},
 	{SN_LoadVector128, OP_ARM64_LD1},
 	{SN_LoadVector64, OP_ARM64_LD1},
 	{SN_Max, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMAX, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMAX, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAX},

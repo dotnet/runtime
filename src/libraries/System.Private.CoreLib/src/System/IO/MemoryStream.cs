@@ -764,11 +764,8 @@ namespace System.IO
         }
 
         // Writes this MemoryStream to another stream.
-        public virtual void WriteTo(Stream stream)
+        public virtual void WriteTo(Stream stream!!)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
-
             EnsureNotClosed();
 
             stream.Write(_buffer, _origin, _length - _origin);

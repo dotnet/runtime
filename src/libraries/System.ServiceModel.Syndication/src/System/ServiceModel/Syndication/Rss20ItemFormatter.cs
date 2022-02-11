@@ -20,12 +20,8 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Rss20ItemFormatter(Type itemTypeToCreate) : base()
+        public Rss20ItemFormatter(Type itemTypeToCreate!!) : base()
         {
-            if (itemTypeToCreate == null)
-            {
-                throw new ArgumentNullException(nameof(itemTypeToCreate));
-            }
             if (!typeof(SyndicationItem).IsAssignableFrom(itemTypeToCreate))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(itemTypeToCreate), nameof(SyndicationItem)), nameof(itemTypeToCreate));

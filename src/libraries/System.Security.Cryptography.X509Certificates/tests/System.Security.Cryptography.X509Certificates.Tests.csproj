@@ -76,6 +76,8 @@
     <Compile Include="ECDsaOther.cs" />
     <Compile Include="RSAOther.cs" />
     <Compile Include="TestDataGenerator.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
     <Compile Include="X509FilesystemTests.Unix.cs" />

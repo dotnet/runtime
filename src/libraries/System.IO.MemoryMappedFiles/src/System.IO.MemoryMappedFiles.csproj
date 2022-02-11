@@ -19,6 +19,8 @@
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedViewAccessor.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedViewStream.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileRights.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\MemoryMappedFiles\Interop.Windows.cs" />
