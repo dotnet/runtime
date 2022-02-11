@@ -57,7 +57,7 @@ int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times)
 {
     int32_t result;
 
-#if HAVE_FU_TIMENS
+#if HAVE_FUTIMENS
     struct timespec updatedTimes[2];
     updatedTimes[0].tv_sec = (time_t)times[0].tv_sec;
     updatedTimes[0].tv_nsec = (long)times[0].tv_nsec;
