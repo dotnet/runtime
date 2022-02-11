@@ -3098,7 +3098,7 @@ void Prober::InitProber(size_t key1, size_t key2, size_t* table)
     keyA = key1;
     keyB = key2;
     base = &table[CALL_STUB_FIRST_INDEX];
-    mask = table[CALL_STUB_MASK_INDEX];
+    size = table[CALL_STUB_TABLESIZE_INDEX];
     FormHash();
     ReportBucketInUseInBucket((int)this->index, keyA, keyB);
 }
@@ -3252,6 +3252,9 @@ size_t FastTable::Add(size_t entry, Prober* probe)
         FORBID_FAULT;
     } CONTRACTL_END
 
+    if (isFull())
+        return CALL_STUB_EMPTY_ENTRY;
+
     size_t result = probe->Add(entry);
     if (result == entry) IncrementCount();
     return result;
@@ -3262,6 +3265,45 @@ size_t FastTable::Find(Prober* probe)
     WRAPPER_NO_CONTRACT;
 
     return probe->Find();
+}
+
+static BOOL IsPrime(size_t number)
+{
+    // This is a very low-tech check for primality, which doesn't scale very well.
+    // There are more efficient tests if this proves to be burdensome for larger
+    // tables.
+
+    if ((number & 1) == 0)
+        return FALSE;
+
+    size_t factor = 3;
+    while (factor * factor <= number)
+    {
+        if ((number % factor) == 0)
+            return FALSE;
+        factor += 2;
+    }
+
+    return TRUE;
+}
+
+size_t FastTable::NextPrime(size_t number)
+{
+    for (int i = 0; i < (int) (sizeof(g_shash_primes) / sizeof(g_shash_primes[0])); i++) {
+        if (g_shash_primes[i] >= number)
+            return g_shash_primes[i];
+    }
+
+    if ((number&1) == 0)
+        number++;
+
+    while (number != 1) {
+        if (IsPrime(number))
+            return number;
+        number +=2;
+    }
+
+    return number;
 }
 
 /*Increase the size of the bucket referenced by the prober p and copy the existing members into it.

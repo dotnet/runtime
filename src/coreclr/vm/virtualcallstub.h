@@ -1018,8 +1018,10 @@ extern UINT32 STUB_COLLIDE_MONO_PCT;
 #define CALL_STUB_HASH_CONST1 1327
 #define CALL_STUB_HASH_CONST2 43627
 #define LARGE_PRIME 7199369
+//internal layout of fasttable=size,count,entries....
+#define CALL_STUB_TABLESIZE_INDEX 0
 //internal layout of buckets=size-1,count,entries....
-#define CALL_STUB_MASK_INDEX 0
+#define CALL_STUB_BUCKETTABLEMASK_INDEX 0
 #define CALL_STUB_COUNT_INDEX 1
 #define CALL_STUB_DEAD_LINK 2
 #define CALL_STUB_FIRST_INDEX 3
@@ -1466,13 +1468,16 @@ private:
     //return the bucket (FastTable*) that the prober is currently walking
     inline size_t* items() {LIMITED_METHOD_CONTRACT; return &base[-CALL_STUB_FIRST_INDEX];}
     //are there more probes possible, or have we probed everything in the bucket
-    inline BOOL NoMore() {LIMITED_METHOD_CONTRACT; return probes>mask;} //both probes and mask are (-1)
+    inline BOOL NoMore() {LIMITED_METHOD_CONTRACT; return probesReal>size;} //both probes and mask are (-1)
     //advance the probe to a new place in the bucket
     inline BOOL Next()
     {
         WRAPPER_NO_CONTRACT;
-        index = (index + stride) & mask;
+        index = (index + stride);
+        if (index >= size)
+            index -= size;
         probes++;
+        probesReal++;
         return !NoMore();
     }
     inline size_t Read()
@@ -1492,7 +1497,7 @@ private:
 #else
         int localIndex = CombineTwoValuesIntoHash(key1, key2);
 #endif
-        return localIndex & mask;
+        return localIndex % size;
     }
 
     size_t PSL(size_t initialIndex)
@@ -1500,7 +1505,7 @@ private:
         size_t currentIndex = index;
         if (currentIndex < initialIndex)
         {
-            currentIndex += mask + 1;
+            currentIndex += size;
         }
         return currentIndex - initialIndex;
     }
@@ -1509,6 +1514,7 @@ private:
         LIMITED_METHOD_CONTRACT;
 
         probes = 0;
+        probesReal = 0;
         //these two hash functions have not been formally measured for effectiveness
         //but they are at least orthogonal
         index = ComputeIndex(keyA, keyB);
@@ -1526,8 +1532,9 @@ private:
                         //  on the floor or adding a duplicate.
     size_t index;       //current probe point in the bucket
     const size_t stride = 1;      //amount to step on each successive probe, must be relatively prime wrt the bucket size
-    size_t mask;        //size of bucket - 1
-    size_t probes;      //number probes - 1
+    size_t size;        //size of bucket
+    size_t probes;      //number probes - 1 (Used for PSL calculation)
+    size_t probesReal;      //number probes - 1 (Actual Probe count)
     Entry* comparer;//used to compare an entry against the sought after key pair
 };
 
@@ -1571,6 +1578,8 @@ private:
     size_t Add(size_t entry, Prober* probe);
     void IncrementCount();
 
+    static size_t NextPrime(size_t number);
+
     // Create a FastTable with space for numberOfEntries. Please note that this method
     // does not throw on OOM. **YOU MUST CHECK FOR NULL RETURN**
     static FastTable* MakeTable(size_t numberOfEntries)
@@ -1581,8 +1590,7 @@ private:
             INJECT_FAULT(COMPlusThrowOM(););
         } CONTRACTL_END;
 
-        size_t size = CALL_STUB_MIN_ENTRIES;
-        while (size < numberOfEntries) {size = size<<1;}
+        size_t size = NextPrime(numberOfEntries);
 //        if (size == CALL_STUB_MIN_ENTRIES)
 //            size += 3;
         FastTable* table = new (NumCallStubs, size) FastTable();
@@ -1594,17 +1602,16 @@ private:
     {
         LIMITED_METHOD_CONTRACT;
         memset(&contents[0], CALL_STUB_EMPTY_ENTRY, (size+CALL_STUB_FIRST_INDEX)*sizeof(BYTE*));
-        contents[CALL_STUB_MASK_INDEX] = size-1;
+        contents[CALL_STUB_TABLESIZE_INDEX] = size;
     }
-    inline size_t tableMask() {LIMITED_METHOD_CONTRACT; return (size_t) (contents[CALL_STUB_MASK_INDEX]);}
-    inline size_t tableSize() {LIMITED_METHOD_CONTRACT; return tableMask()+1;}
+    inline size_t tableSize() {LIMITED_METHOD_CONTRACT; return (size_t) (contents[CALL_STUB_TABLESIZE_INDEX]);}
     inline size_t tableCount() {LIMITED_METHOD_CONTRACT; return (size_t) (contents[CALL_STUB_COUNT_INDEX]);}
     inline BOOL isFull()
     {
         LIMITED_METHOD_CONTRACT;
-        return (tableCount()+1) * 100 / CALL_STUB_LOAD_FACTOR >= tableSize();
+        return (tableCount()) * 100 / CALL_STUB_LOAD_FACTOR >= tableSize();
     }
-    //we store (size-1) in bucket[CALL_STUB_MASK_INDEX==0],
+    //we store size in bucket[CALL_STUB_TABLESIZE_INDEX==0],
     //we store the used count in bucket[CALL_STUB_COUNT_INDEX==1],
     //we have an unused cell to use as a temp at bucket[CALL_STUB_DEAD_LINK==2],
     //and the table starts at bucket[CALL_STUB_FIRST_INDEX==3],
@@ -1676,7 +1683,7 @@ public:
     void LogStats();
 
 private:
-    inline size_t bucketMask() {LIMITED_METHOD_CONTRACT; return (size_t) (buckets[CALL_STUB_MASK_INDEX]);}
+    inline size_t bucketMask() {LIMITED_METHOD_CONTRACT; return (size_t) (buckets[CALL_STUB_BUCKETTABLEMASK_INDEX]);}
     inline size_t bucketCount() {LIMITED_METHOD_CONTRACT; return bucketMask()+1;}
     inline size_t ComputeBucketIndex(size_t keyA, size_t keyB)
     {
@@ -1696,7 +1703,7 @@ private:
         if (buckets != NULL)
         {
             memset(&buckets[0], CALL_STUB_EMPTY_ENTRY, (size+CALL_STUB_FIRST_INDEX)*sizeof(void*));
-            buckets[CALL_STUB_MASK_INDEX] =  size-1;
+            buckets[CALL_STUB_BUCKETTABLEMASK_INDEX] =  size - 1;
         }
         return buckets;
     }
@@ -1713,7 +1720,7 @@ private:
         VolatileStore(&buckets[index], value);
     }
 
-    // We store (#buckets-1) in    bucket[CALL_STUB_MASK_INDEX  ==0]
+    // We store (#buckets-1) in    bucket[CALL_STUB_BUCKETTABLEMASK_INDEX  ==0]
     // We have two unused cells at bucket[CALL_STUB_COUNT_INDEX ==1]
     //                         and bucket[CALL_STUB_DEAD_LINK   ==2]
     // and the table starts at     bucket[CALL_STUB_FIRST_INDEX ==3]
