@@ -536,7 +536,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     var (otherLoop, otherRest) = right.FirstCounterInfo();
                     if (otherLoop != builder._nothing && rest == otherRest)
                     {
-                        // Found two adjacent counters with the same continuation, check that the rest of the information matches
+                        // Found two adjacent counters with the same continuation, check that the loops are equivalent apart from bounds
+                        // and that the bounds form a contiguous interval. Two integer intervals [x1,x2] and [y1,y2] overlap when
+                        // x1 <= y2 and y1 <= x2. The union of intervals that just touch is still contiguous, e.g. [2,5] and [6,10] make
+                        // [2,10], so the lower bounds are decremented by 1 in the check.
                         Debug.Assert(otherLoop._kind == SymbolicRegexKind.Loop && otherLoop._left is not null);
                         if (loop._left == otherLoop._left && loop.IsLazy == otherLoop.IsLazy &&
                             loop._lower - 1 <= otherLoop._upper && otherLoop._lower - 1 <= loop._upper)

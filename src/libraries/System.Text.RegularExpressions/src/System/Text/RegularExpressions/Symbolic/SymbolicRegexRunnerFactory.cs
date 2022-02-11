@@ -111,7 +111,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         {
                             if (pos.CaptureStarts[cap] >= 0)
                             {
-                                Debug.Assert(pos.CaptureEnds[cap] >= 0);
+                                Debug.Assert(pos.CaptureEnds[cap] >= pos.CaptureStarts[cap]);
                                 Capture(cap, pos.CaptureStarts[cap] + beginning, pos.CaptureEnds[cap] + beginning);
                             }
                         }
