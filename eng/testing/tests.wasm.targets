@@ -169,6 +169,9 @@
       <_WasmVFSFilesToCopy Include="@(WasmFilesToIncludeInFileSystem)" />
       <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(TargetPath)' == ''" />
 
+      <_WasmExtraFilesToCopy Include="@(WasmExtraFilesToDeploy)" />
+      <_WasmExtraFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(TargetPath)' == ''" />
+
       <!-- Example of passing items to the project
 
           <_WasmItemsToPass Include="@(BundleFiles)" OriginalItemName__="BundleFiles" ConditionToUse__="'$(Foo)' != 'true'" />
@@ -183,7 +186,8 @@
         OutputFile="$(BundleDir)publish\ProxyProjectForAOTOnHelix.props" />
 
     <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
-    <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
+    <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\vfsFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
+    <Copy SourceFiles="@(_WasmExtraFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmExtraFilesToCopy.TargetPath)" />
   </Target>
 
   <Target Name="PrepareForWasmBuildApp">
