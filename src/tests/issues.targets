@@ -3403,7 +3403,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64883/Runtime_64883/*">
             <Issue>Loads an assembly from file</Issue>
         </ExcludeList>
-      
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
         </ExcludeList>
@@ -3422,7 +3421,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/gh53564/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
         </ExcludeList>
-
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverse/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
         </ExcludeList>
@@ -3449,7 +3447,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
-
     </ItemGroup>
 
     <ItemGroup Condition=" $(TargetOS) == 'Android' " >
