@@ -706,20 +706,140 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
 #endif
     }
 #endif
-
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
+#ifdef FEATURE_HW_INTRINSICS
+    else if (OperIsHWIntrinsic())
     {
-        assert(TypeGet() == TYP_STRUCT);
-        return 2;
+        assert(TypeIs(TYP_STRUCT));
+
+        const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId = intrinsic->GetHWIntrinsicId();
+        assert(HWIntrinsicInfo::IsMultiReg(intrinsicId));
+
+        return HWIntrinsicInfo::GetMultiRegCount(intrinsicId);
     }
-#endif
+#endif // FEATURE_HW_INTRINSICS
+
     if (OperIsScalarLocal())
     {
         return AsLclVar()->GetFieldCount(compiler);
     }
     assert(!"Unexpected multi-reg node");
     return 0;
+}
+
+//-----------------------------------------------------------------------------------
+// IsMultiRegNode: whether a node returning its value in more than one register
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns true if this GenTree is a multi-reg node.
+//
+// Notes:
+//     All targets that support multi-reg ops of any kind also support multi-reg return
+//     values for calls. Should that change with a future target, this method will need
+//     to change accordingly.
+//
+bool GenTree::IsMultiRegNode() const
+{
+#if FEATURE_MULTIREG_RET
+    if (IsMultiRegCall())
+    {
+        return true;
+    }
+
+#if FEATURE_ARG_SPLIT
+    if (OperIsPutArgSplit())
+    {
+        return true;
+    }
+#endif
+
+#if !defined(TARGET_64BIT)
+    if (OperIsMultiRegOp())
+    {
+        return true;
+    }
+#endif
+
+    if (OperIs(GT_COPY, GT_RELOAD))
+    {
+        return true;
+    }
+#endif // FEATURE_MULTIREG_RET
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        return HWIntrinsicInfo::IsMultiReg(AsHWIntrinsic()->GetHWIntrinsicId());
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    if (IsMultiRegLclVar())
+    {
+        return true;
+    }
+    return false;
+}
+
+//-----------------------------------------------------------------------------------
+// GetMultiRegCount: Return the register count for a multi-reg node.
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns the number of registers defined by this node.
+//
+unsigned GenTree::GetMultiRegCount() const
+{
+#if FEATURE_MULTIREG_RET
+    if (IsMultiRegCall())
+    {
+        return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
+    }
+
+#if FEATURE_ARG_SPLIT
+    if (OperIsPutArgSplit())
+    {
+        return AsPutArgSplit()->gtNumRegs;
+    }
+#endif
+
+#if !defined(TARGET_64BIT)
+    if (OperIsMultiRegOp())
+    {
+        return AsMultiRegOp()->GetRegCount();
+    }
+#endif
+
+    if (OperIs(GT_COPY, GT_RELOAD))
+    {
+        return AsCopyOrReload()->GetRegCount();
+    }
+#endif // FEATURE_MULTIREG_RET
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        return HWIntrinsicInfo::GetMultiRegCount(AsHWIntrinsic()->GetHWIntrinsicId());
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    {
+        assert((gtFlags & GTF_VAR_MULTIREG) != 0);
+        // The register count for a multireg lclVar requires looking at the LclVarDsc,
+        // which requires a Compiler instance. The caller must handle this separately.
+        // The register count for a multireg lclVar requires looking at the LclVarDsc,
+        // which requires a Compiler instance. The caller must use the GetFieldCount
+        // method on GenTreeLclVar.
+
+        assert(!"MultiRegCount for LclVar");
+    }
+    assert(!"GetMultiRegCount called with non-multireg node");
+    return 1;
 }
 
 //---------------------------------------------------------------

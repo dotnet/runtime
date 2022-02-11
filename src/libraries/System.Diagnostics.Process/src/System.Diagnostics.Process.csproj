@@ -33,6 +33,8 @@
     <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
     <Compile Include="System\Diagnostics\MonitoringDescriptionAttribute.cs" />
     <Compile Include="System\Collections\Specialized\StringDictionaryWrapper.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Runtime\Serialization\SerializationGuard.cs"
              Link="Common\System\Runtime\Serialization\SerializationGuard.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.cs"

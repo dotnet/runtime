@@ -10,17 +10,17 @@ namespace System.Net
     // This is a helper class for debugging GC-ed handles that we define.
     // As a general rule normal code path should always destroy handles explicitly
     //
-    internal abstract class DebugCriticalHandleZeroOrMinusOneIsInvalid : CriticalHandleZeroOrMinusOneIsInvalid
+    internal abstract class DebugSafeHandleZeroOrMinusOneIsInvalid : SafeHandleZeroOrMinusOneIsInvalid
     {
         private string _trace;
 
-        protected DebugCriticalHandleZeroOrMinusOneIsInvalid() : base()
+        protected DebugSafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base(ownsHandle)
         {
             _trace = "WARNING! GC-ed  >>" + this.GetType().FullName + "<< (should be explicitly closed) \r\n";
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Creating SafeHandle");
         }
 
-        ~DebugCriticalHandleZeroOrMinusOneIsInvalid()
+        ~DebugSafeHandleZeroOrMinusOneIsInvalid()
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, _trace);
         }

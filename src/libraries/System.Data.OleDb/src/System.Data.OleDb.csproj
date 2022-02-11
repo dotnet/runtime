@@ -133,6 +133,9 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
     <Compile Include="UnsafeNativeMethods.COMWrappers.cs" />
     <Compile Include="OleDbComWrappers.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="UnsafeNativeMethods.NoCOMWrappers.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\System.Data.OleDb.OleDbMetaData.xml"

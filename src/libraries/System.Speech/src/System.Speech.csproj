@@ -221,6 +221,10 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutWrite.cs"
             Link="Common\Interop\Windows\WinMm\Interop.waveOutWrite.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <EmbeddedResource Include="Resources\Strings.resx">
       <Visible>true</Visible>

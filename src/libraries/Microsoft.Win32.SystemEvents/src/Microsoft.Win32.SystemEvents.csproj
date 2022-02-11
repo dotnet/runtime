@@ -120,6 +120,9 @@ Microsoft.Win32.SystemEvents</PackageDescription>
     <Compile Include="Microsoft\Win32\UserPreferenceChangedEventHandler.cs" />
     <Compile Include="Microsoft\Win32\UserPreferenceChangingEventArgs.cs" />
     <Compile Include="Microsoft\Win32\UserPreferenceChangingEventHandler.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs"
              Link="System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs"
              Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />

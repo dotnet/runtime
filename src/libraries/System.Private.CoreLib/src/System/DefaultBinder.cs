@@ -617,8 +617,7 @@ namespace System
             {
                 foreach (Type index in indexes)
                 {
-                    if (index == null)
-                        throw new ArgumentNullException(nameof(indexes));
+                    ArgumentNullException.ThrowIfNull(index, nameof(indexes));
                 }
             }
 

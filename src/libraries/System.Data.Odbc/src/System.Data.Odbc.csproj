@@ -126,6 +126,12 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
     <Compile Include="$(CommonPath)Interop\Interop.Odbc.cs"
              Link="Common\Interop\Interop.Odbc.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+          Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\HandleRefMarshaller.cs"
+          Link="Common\System\Runtime\InteropServices\HandleRefMarshaller.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />

@@ -169,13 +169,8 @@ namespace System.ServiceModel.Syndication
         }
 
 
-        public void AddPermalink(Uri permalink)
+        public void AddPermalink(Uri permalink!!)
         {
-            if (permalink == null)
-            {
-                throw new ArgumentNullException(nameof(permalink));
-            }
-
             Id = permalink.AbsoluteUri;
             Links.Add(SyndicationLink.CreateAlternateLink(permalink));
         }

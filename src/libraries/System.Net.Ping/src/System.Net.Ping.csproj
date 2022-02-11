@@ -16,6 +16,9 @@
     <Compile Include="System\Net\NetworkInformation\PingException.cs" />
     <Compile Include="System\Net\NetworkInformation\PingOptions.cs" />
     <Compile Include="System\Net\NetworkInformation\PingReply.cs" />
+    <!-- Common -->
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <!-- System.Net Common -->
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
              Link="Common\System\Net\IPAddressParserStatics.cs" />

@@ -63,7 +63,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Value);
                 text = value;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Value);
