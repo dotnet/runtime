@@ -229,7 +229,7 @@
               TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
 
-      <WasmExtraFilesToDeploy Include="$(MonoProjectRoot)wasm\wasm-symbol-patterns.txt" TargetPath="wasm-symbol-patterns.txt" />
+      <WasmExtraFilesToDeploy Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" TargetPath="wasm-symbol-patterns.txt" />
     </ItemGroup>
   </Target>
 
