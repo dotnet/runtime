@@ -617,7 +617,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="i">inclusive start position</param>
         /// <param name="resultRegisters">out parameter for the final register values, which indicate capture starts and ends</param>
         /// <param name="perThreadData">Per thread data reused between calls.</param>
-        /// <returns></returns>
+        /// <returns>the match end position</returns>
         private int FindEndPositionCapturing(ReadOnlySpan<char> input, int i, out Registers resultRegisters, PerThreadData perThreadData)
         {
             int i_end = input.Length;
