@@ -310,8 +310,8 @@ void Compiler::optCopyPropPushDef(GenTreeOp*           asg,
     {
         assert((lclNode->gtFlags & GTF_VAR_DEF) != 0);
 
-        // Quirk: do not collect defs from PHIs or copy blocks. Preserves previous behavior.
-        if (!asg->IsPhiDefn() && (!asg->TypeIs(TYP_STRUCT) || ((lclNode->gtFlags & GTF_VAR_USEASG) != 0)))
+        // Quirk: do not collect defs from PHIs. Preserves previous behavior.
+        if (!asg->IsPhiDefn())
         {
             ssaDefNum = GetSsaNumForLocalVarDef(lclNode);
 
