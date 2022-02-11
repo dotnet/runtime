@@ -458,6 +458,13 @@ namespace System.IO
                     { } // The child directory was removed.
                     catch (IOException ex) when (ex.HResult == Interop.Error.ENOTDIR.Info().RawErrno)
                     { } // The child directory was replaced by a file.
+                    catch (Exception ex)
+                    {
+                        if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
+                        {
+                            watcher.OnError(new ErrorEventArgs(ex));
+                        }
+                    }
                 }
             }
 
