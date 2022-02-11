@@ -82,8 +82,14 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             /// <summary>The matching engine.</summary>
             private readonly SymbolicRegexMatcher<TSetType> _matcher;
+            /// <summary>Per thread data available to the matching engine.</summary>
+            private readonly SymbolicRegexMatcher<TSetType>.PerThreadData _perThreadData;
 
-            internal Runner(SymbolicRegexMatcher<TSetType> matcher) => _matcher = matcher;
+            internal Runner(SymbolicRegexMatcher<TSetType> matcher)
+            {
+                _matcher = matcher;
+                _perThreadData = _matcher.CreatePerThreadData();
+            }
 
             protected override void InitTrackCount() { } // nop, no backtracking
 
@@ -95,7 +101,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 ReadOnlySpan<char> inputSpan = runtext.AsSpan(beginning, runtextend - beginning);
 
                 // Perform the match.
-                SymbolicMatch pos = _matcher.FindMatch(quick, inputSpan, runtextpos - beginning);
+                SymbolicMatch pos = _matcher.FindMatch(quick, inputSpan, runtextpos - beginning, _perThreadData);
 
                 // Transfer the result back to the RegexRunner state.
                 if (pos.Success)

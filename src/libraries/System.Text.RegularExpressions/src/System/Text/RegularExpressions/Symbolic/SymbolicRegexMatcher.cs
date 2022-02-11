@@ -239,6 +239,36 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
+        /// <summary>
+        /// Per thread data to be held by the regex runner and passed into every call to FindMatch. This is used to
+        /// avoid repeated memory allocation.
+        /// </summary>
+        internal struct PerThreadData
+        {
+            /// <summary>Maps used for the capturing third phase.</summary>
+            public SparseIntMap<Registers>? Current, Next;
+            /// <summary>Registers used for the capturing third phase.</summary>
+            public Registers InitialRegisters;
+
+            public PerThreadData(int capsize)
+            {
+                // Only create data used for capturing mode if there are subcaptures
+                bool capturing = capsize > 1;
+                Current = capturing ? new() : null;
+                Next = capturing ? new() : null;
+                InitialRegisters = capturing ? new Registers
+                {
+                    CaptureStarts = new int[capsize],
+                    CaptureEnds = new int[capsize],
+                } : default(Registers);
+            }
+        }
+
+        /// <summary>
+        /// Create a PerThreadData with the appropriate parts initialized for this matcher's pattern.
+        /// </summary>
+        internal PerThreadData CreatePerThreadData() => new PerThreadData(_capsize);
+
         /// <summary>Interface for transitions used by the <see cref="Delta"/> method.</summary>
         private interface ITransition
         {
@@ -275,7 +305,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <remarks>
         /// The NFA simulation based third phase has one of these for each current state in the current set of live states.
         /// </remarks>
-        private struct Registers
+        internal struct Registers
         {
             public int[] CaptureStarts;
             public int[] CaptureEnds;
@@ -454,7 +484,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="isMatch">Whether to return once we know there's a match without determining where exactly it matched.</param>
         /// <param name="input">The input span</param>
         /// <param name="startat">The position to start search in the input span.</param>
-        public SymbolicMatch FindMatch(bool isMatch, ReadOnlySpan<char> input, int startat)
+        /// <param name="perThreadData">Per thread data reused between calls.</param>
+        public SymbolicMatch FindMatch(bool isMatch, ReadOnlySpan<char> input, int startat, PerThreadData perThreadData)
         {
             int timeoutOccursAt = 0;
             if (_checkTimeout)
@@ -506,14 +537,14 @@ namespace System.Text.RegularExpressions.Symbolic
                     FindStartPosition(input, i, i_q0_A1); // Walk in reverse to locate the start position of the match
             }
 
-            if (_capsize == 1)
+            if (_capsize <= 1)
             {
                 int i_end = FindEndPosition(input, i_start);
                 return new SymbolicMatch(i_start, i_end + 1 - i_start);
             }
             else
             {
-                int i_end = FindEndPositionCapturing(input, i_start, out Registers endRegisters);
+                int i_end = FindEndPositionCapturing(input, i_start, out Registers endRegisters, perThreadData);
                 return new SymbolicMatch(i_start, i_end + 1 - i_start, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
             }
         }
@@ -584,8 +615,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="input">input span</param>
         /// <param name="i">inclusive start position</param>
         /// <param name="resultRegisters">out parameter for the final register values, which indicate capture starts and ends</param>
+        /// <param name="perThreadData">Per thread data reused between calls.</param>
         /// <returns></returns>
-        private int FindEndPositionCapturing(ReadOnlySpan<char> input, int i, out Registers resultRegisters)
+        private int FindEndPositionCapturing(ReadOnlySpan<char> input, int i, out Registers resultRegisters, PerThreadData perThreadData)
         {
             int i_end = input.Length;
             Registers endRegisters = default(Registers);
@@ -594,12 +626,9 @@ namespace System.Text.RegularExpressions.Symbolic
             // Pick the correct start state based on previous character kind.
             uint prevCharKind = GetCharKind(input, i - 1);
             DfaMatchingState<TSetType> state = _initialStates[prevCharKind];
+
+            Registers initialRegisters = perThreadData.InitialRegisters;
             // Initialize registers with -1, which means "not seen yet"
-            Registers initialRegisters = new Registers
-            {
-                CaptureStarts = new int[_capsize],
-                CaptureEnds = new int[_capsize],
-            };
             Array.Fill(initialRegisters.CaptureStarts, -1);
             Array.Fill(initialRegisters.CaptureEnds, -1);
 
@@ -614,7 +643,10 @@ namespace System.Text.RegularExpressions.Symbolic
             // Use two maps from state IDs to register values for the current and next set of states.
             // Note that these maps use insertion order, which is used to maintain priorities between states in a way
             // that matches the order the backtracking engines visit paths.
-            SparseIntMap<Registers> current = new(), next = new();
+            Debug.Assert(perThreadData.Current is not null && perThreadData.Next is not null);
+            SparseIntMap<Registers> current = perThreadData.Current, next = perThreadData.Next;
+            current.Clear();
+            next.Clear();
             current.Add(state.Id, initialRegisters);
 
             while ((uint)i < (uint)input.Length)
