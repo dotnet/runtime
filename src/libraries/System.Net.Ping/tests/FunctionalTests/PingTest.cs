@@ -50,7 +50,7 @@ namespace System.Net.NetworkInformation.Tests
 
         private void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses)  =>  PingResultValidator(pingReply, localIpAddresses, null);
 
-        private static void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses, ITestOutputHelper output)
+        private static void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses, ITestOutputHelper? output)
         {
             Assert.Equal(IPStatus.Success, pingReply.Status);
             if (localIpAddresses.Any(addr => pingReply.Address.Equals(addr)))
@@ -1156,11 +1156,6 @@ namespace System.Net.NetworkInformation.Tests
         public void SendPing_LocaleEnvVarsMustBeIgnored_TimeSpan(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
-            if (localIpAddress == null)
-            {
-                // No local address for given address family.
-                return;
-            }
 
             var remoteInvokeStartInfo = new ProcessStartInfo { EnvironmentVariables =
                 {
@@ -1175,7 +1170,7 @@ namespace System.Net.NetworkInformation.Tests
             {
                 SendBatchPing(
                     ping => ping.Send(address, pingTimeout, default, default),
-                    (pingReply) =>
+                    pingReply =>
                     {
                         PingResultValidator(pingReply, new[] { IPAddress.Parse(address) }, null);
                     });
