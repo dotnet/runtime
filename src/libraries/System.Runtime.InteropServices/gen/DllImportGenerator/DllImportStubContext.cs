@@ -218,35 +218,8 @@ namespace Microsoft.Interop
 
                 IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(options, runtimeMarshallingDisabled));
                 // We don't need to include the later generator factories for collection elements
-                // as the later generator factories only apply to parameters or to the synthetic return value for PreserveSig support.
+                // as the later generator factories only apply to parameters.
                 generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(options, runtimeMarshallingDisabled));
-                if (!dllImportData.PreserveSig)
-                {
-                    // Create type info for native out param
-                    if (!method.ReturnsVoid)
-                    {
-                        // Transform the managed return type info into an out parameter and add it as the last param
-                        TypePositionInfo nativeOutInfo = retTypeInfo with
-                        {
-                            InstanceIdentifier = PInvokeStubCodeGenerator.ReturnIdentifier,
-                            RefKind = RefKind.Out,
-                            RefKindSyntax = SyntaxKind.OutKeyword,
-                            ManagedIndex = TypePositionInfo.ReturnIndex,
-                            NativeIndex = typeInfos.Count
-                        };
-                        typeInfos.Add(nativeOutInfo);
-                    }
-
-                    // Use a marshalling generator that supports the HRESULT return->exception marshalling.
-                    generatorFactory = new NoPreserveSigMarshallingGeneratorFactory(generatorFactory);
-
-                    // Create type info for native HRESULT return
-                    retTypeInfo = new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance);
-                    retTypeInfo = retTypeInfo with
-                    {
-                        NativeIndex = TypePositionInfo.ReturnIndex
-                    };
-                }
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
             }

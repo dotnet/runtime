@@ -24,8 +24,6 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<string>(), 5, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<char[]>(), 5, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<string[]>(), 5, 0 };
-            yield return new object[] { CodeSnippets.PreserveSigFalse<char>(), 3, 0 };
-            yield return new object[] { CodeSnippets.PreserveSigFalse<string>(), 3, 0 };
 
             // Unsupported CharSet
             yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<char>(CharSet.Auto), 5, 0 };
