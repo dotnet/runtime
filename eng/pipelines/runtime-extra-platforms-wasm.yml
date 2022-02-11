@@ -141,93 +141,93 @@ jobs:
 #
 # runtime-wasm: Build the whole product using Mono and run libraries tests, for Wasm.Build.Tests
 #
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-    - Browser_wasm
-    - Browser_wasm_win
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: WasmBuildTests
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
-      timeoutInMinutes: 180
-      # always run for runtime-wasm builds (triggered manually)
-      condition: >-
-        eq(variables['isWasmOnlyBuild'], true)
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs)
-        scenarios:
-        - buildwasmapps
+#- template: /eng/pipelines/common/platform-matrix.yml
+  #parameters:
+    #jobTemplate: /eng/pipelines/common/global-build-job.yml
+    #helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    #buildConfig: Release
+    #runtimeFlavor: mono
+    #platforms:
+    #- Browser_wasm
+    #- Browser_wasm_win
+    #jobParameters:
+      #testGroup: innerloop
+      #nameSuffix: WasmBuildTests
+      #buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
+      #timeoutInMinutes: 180
+      ## always run for runtime-wasm builds (triggered manually)
+      #condition: >-
+        #eq(variables['isWasmOnlyBuild'], true)
+      ## extra steps, run tests
+      #extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      #extraStepsParameters:
+        #creator: dotnet-bot
+        #testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
+        #extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+        #scenarios:
+        #- buildwasmapps
 
-#
-# runtime-wasm: Build the whole product using Mono and run libraries tests, for wasm debugger tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-    - Browser_wasm
-    - Browser_wasm_win
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: Mono_DebuggerTests
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
-      timeoutInMinutes: 180
-      # always run for runtime-wasm builds (triggered manually)
-      condition: >-
-        eq(variables['isWasmOnlyBuild'], true)
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs)
-        scenarios:
-        - wasmdebuggertests
+##
+## runtime-wasm: Build the whole product using Mono and run libraries tests, for wasm debugger tests
+##
+#- template: /eng/pipelines/common/platform-matrix.yml
+  #parameters:
+    #jobTemplate: /eng/pipelines/common/global-build-job.yml
+    #helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    #buildConfig: Release
+    #runtimeFlavor: mono
+    #platforms:
+    #- Browser_wasm
+    #- Browser_wasm_win
+    #jobParameters:
+      #testGroup: innerloop
+      #nameSuffix: Mono_DebuggerTests
+      #buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
+      #timeoutInMinutes: 180
+      ## always run for runtime-wasm builds (triggered manually)
+      #condition: >-
+        #eq(variables['isWasmOnlyBuild'], true)
+      ## extra steps, run tests
+      #extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      #extraStepsParameters:
+        #creator: dotnet-bot
+        #testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
+        #extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+        #scenarios:
+        #- wasmdebuggertests
 
-#
-# runtime-wasm: Build the whole product using Mono and run runtime tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-    - Browser_wasm
-    variables:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
-        - name: _HelixSource
-          value: pr/dotnet/runtime/$(Build.SourceBranch)
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-        - name: _HelixSource
-          value: ci/dotnet/runtime/$(Build.SourceBranch)
-      - name: timeoutPerTestInMinutes
-        value: 10
-      - name: timeoutPerTestCollectionInMinutes
-        value: 200
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_RuntimeTests
-      buildArgs: -s mono+libs -c $(_BuildConfig)
-      timeoutInMinutes: 180
-      # always run for runtime-wasm builds (triggered manually)
-      condition: >-
-        eq(variables['isWasmOnlyBuild'], true)
-      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/wasm-runtime-and-send-to-helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+##
+## runtime-wasm: Build the whole product using Mono and run runtime tests
+##
+#- template: /eng/pipelines/common/platform-matrix.yml
+  #parameters:
+    #jobTemplate: /eng/pipelines/common/global-build-job.yml
+    #helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    #buildConfig: Release
+    #runtimeFlavor: mono
+    #platforms:
+    #- Browser_wasm
+    #variables:
+      #- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+        #- name: _HelixSource
+          #value: pr/dotnet/runtime/$(Build.SourceBranch)
+      #- ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        #- name: _HelixSource
+          #value: ci/dotnet/runtime/$(Build.SourceBranch)
+      #- name: timeoutPerTestInMinutes
+        #value: 10
+      #- name: timeoutPerTestCollectionInMinutes
+        #value: 200
+    #jobParameters:
+      #testGroup: innerloop
+      #nameSuffix: AllSubsets_Mono_RuntimeTests
+      #buildArgs: -s mono+libs -c $(_BuildConfig)
+      #timeoutInMinutes: 180
+      ## always run for runtime-wasm builds (triggered manually)
+      #condition: >-
+        #eq(variables['isWasmOnlyBuild'], true)
+      #extraStepsTemplate: /eng/pipelines/common/templates/runtimes/wasm-runtime-and-send-to-helix.yml
+      #extraStepsParameters:
+        #creator: dotnet-bot
+        #testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
