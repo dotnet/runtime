@@ -223,12 +223,12 @@ namespace System.ServiceModel.Syndication
                 _extensionData = extensionData;
             }
 
-            [UnconditionalSuppressMessage("ILLink", "IL2026")]
             public void WriteTo(XmlWriter writer)
             {
                 if (_xmlSerializer != null)
                 {
                     Debug.Assert((_dataContractSerializer == null && _outerName == null && _outerNamespace == null), "Xml serializer cannot have outer name, ns");
+#pragma warning disable IL2026
                     _xmlSerializer.Serialize(writer, _extensionData);
                 }
                 else
@@ -237,11 +237,13 @@ namespace System.ServiceModel.Syndication
                     if (_outerName != null)
                     {
                         writer.WriteStartElement(_outerName, _outerNamespace);
+#pragma warning disable IL2026
                         _dataContractSerializer.WriteObjectContent(writer, _extensionData);
                         writer.WriteEndElement();
                     }
                     else
                     {
+#pragma warning disable IL2026
                         _dataContractSerializer.WriteObject(writer, _extensionData);
                     }
                 }
@@ -285,6 +287,7 @@ namespace System.ServiceModel.Syndication
                 }
             }
 
+#pragma warning disable IL2026
             internal void ReadOuterNameAndNs(out string name, out string ns)
             {
                 using (MemoryStream stream = new MemoryStream())
