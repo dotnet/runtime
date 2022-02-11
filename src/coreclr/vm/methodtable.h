@@ -255,128 +255,6 @@ struct GenericsStaticsInfo
 };  // struct GenericsStaticsInfo
 typedef DPTR(GenericsStaticsInfo) PTR_GenericsStaticsInfo;
 
-//
-// This struct consolidates the writeable parts of the MethodTable
-// so that we can layout a read-only MethodTable with a pointer
-// to the writeable parts of the MethodTable in an ngen image
-//
-struct MethodTableWriteableData
-{
-    friend class MethodTable;
-#if defined(DACCESS_COMPILE)
-    friend class NativeImageDumper;
-#endif
-
-    enum
-    {
-        // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
-        // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
-        // CARRY THE CORRECT INITIAL FLAGS.
-
-        enum_flag_Unrestored                = 0x00000004,
-        enum_flag_HasApproxParent           = 0x00000010,
-        enum_flag_UnrestoredTypeKey         = 0x00000020,
-        enum_flag_IsNotFullyLoaded          = 0x00000040,
-        enum_flag_DependenciesLoaded        = 0x00000080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
-
-        // enum_unused                      = 0x00000100,
-
-        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x00000200,     // Is any field type or sub field type overrode Equals or GetHashCode
-        enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x00000400,  // Whether we have checked the overridden Equals or GetHashCode
-
-        // enum_unused                      = 0x00010000,
-        // enum_unused                      = 0x00020000,
-        // enum_unused                      = 0x00040000,
-        // enum_unused                      = 0x00080000,        // enum_unused                      = 0x0010000,
-        // enum_unused                      = 0x0020000,
-        // enum_unused                      = 0x0040000,
-        // enum_unused                      = 0x0080000,
-
-#ifdef _DEBUG
-        enum_flag_ParentMethodTablePointerValid =  0x40000000,
-        enum_flag_HasInjectedInterfaceDuplicates = 0x80000000,
-#endif
-    };
-    DWORD      m_dwFlags;                  // Lot of empty bits here.
-
-    /*
-     * m_hExposedClassObject is LoaderAllocator slot index to
-     * a RuntimeType instance for this class.
-     */
-    LOADERHANDLE m_hExposedClassObject;
-
-#ifdef _DEBUG
-    // to avoid verify same method table too many times when it's not changing, we cache the GC count
-    // on which the method table is verified. When fast GC STRESS is turned on, we only verify the MT if
-    // current GC count is bigger than the number. Note most thing which will invalidate a MT will require a
-    // GC (like AD unload)
-    Volatile<DWORD> m_dwLastVerifedGCCnt;
-
-#ifdef HOST_64BIT
-    DWORD m_dwPadding;               // Just to keep the size a multiple of 8
-#endif
-
-#endif
-
-public:
-#ifdef _DEBUG
-    inline BOOL IsParentMethodTablePointerValid() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return (m_dwFlags & enum_flag_ParentMethodTablePointerValid);
-    }
-    inline void SetParentMethodTablePointerValid()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= enum_flag_ParentMethodTablePointerValid;
-    }
-#endif
-
-
-    inline LOADERHANDLE GetExposedClassObjectHandle() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hExposedClassObject;
-    }
-
-    void SetIsNotFullyLoadedForBuildMethodTable()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // Used only during method table initialization - no need for logging or Interlocked Exchange.
-        m_dwFlags |= (MethodTableWriteableData::enum_flag_UnrestoredTypeKey |
-                      MethodTableWriteableData::enum_flag_Unrestored |
-                      MethodTableWriteableData::enum_flag_IsNotFullyLoaded |
-                      MethodTableWriteableData::enum_flag_HasApproxParent);
-    }
-
-    void SetIsRestoredForBuildMethodTable()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // Used only during method table initialization - no need for logging or Interlocked Exchange.
-        m_dwFlags &= ~(MethodTableWriteableData::enum_flag_UnrestoredTypeKey |
-                       MethodTableWriteableData::enum_flag_Unrestored);
-    }
-
-    void SetIsRestoredForBuildArrayMethodTable()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // Used only during method table initialization - no need for logging or Interlocked Exchange.
-        SetIsRestoredForBuildMethodTable();
-
-        // Array's parent is always precise
-        m_dwFlags &= ~(MethodTableWriteableData::enum_flag_HasApproxParent);
-
-    }
-};  // struct MethodTableWriteableData
-
-typedef DPTR(MethodTableWriteableData) PTR_MethodTableWriteableData;
-typedef DPTR(MethodTableWriteableData const) PTR_Const_MethodTableWriteableData;
-
 #ifdef UNIX_AMD64_ABI_ITF
 inline
 SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeType)
@@ -837,23 +715,11 @@ public:
 
     void CheckRestore();
 
-    inline BOOL HasUnrestoredTypeKey() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_UnrestoredTypeKey) != 0;
-    }
-
-    // Actually do the restore actions on the method table
-    void Restore();
-
-    void SetIsRestored();
-
     inline BOOL IsRestored_NoLogging()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return !(GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
+        return !GetFlag(enum_flag_Unrestored);
     }
     inline BOOL IsRestored()
     {
@@ -887,7 +753,7 @@ public:
         PRECONDITION(!HasApproxParent());
         PRECONDITION(IsRestored_NoLogging());
 
-        InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
+        ClearFlag(enum_flag_IsNotFullyLoaded);
     }
 
     // Equivalent to GetLoadLevel() == CLASS_LOADED
@@ -895,13 +761,13 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_IsNotFullyLoaded) == 0;
+        return GetFlag(enum_flag_IsNotFullyLoaded) == 0;
     }
 
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
+        return GetFlag(enum_flag_CanCompareBitsOrUseFastGetHashCode);
     }
 
     // If canCompare is true, this method ensure an atomic operation for setting
@@ -912,8 +778,7 @@ public:
         if (canCompare)
         {
             // Set checked and canCompare flags in one interlocked operation.
-            InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags,
-                MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode | MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
+            SetFlag((DWFLAGS_WRITEABLE_ENUM)(enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode | enum_flag_CanCompareBitsOrUseFastGetHashCode));
         }
         else
         {
@@ -924,13 +789,13 @@ public:
     inline BOOL HasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        return GetFlag(enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         WRAPPER_NO_CONTRACT;
-        InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        SetFlag(enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetIsDependenciesLoaded()
@@ -946,27 +811,24 @@ public:
         PRECONDITION(!HasApproxParent());
         PRECONDITION(IsRestored_NoLogging());
 
-        InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_DependenciesLoaded);
+        SetFlag(enum_flag_DependenciesLoaded);
     }
 
     inline ClassLoadLevel GetLoadLevel()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        DWORD dwFlags = GetWriteableData()->m_dwFlags;
+        DWORD dwFlags = m_dwWriteableFlags;
 
-        if (dwFlags & MethodTableWriteableData::enum_flag_IsNotFullyLoaded)
+        if (dwFlags & enum_flag_IsNotFullyLoaded)
         {
-            if (dwFlags & MethodTableWriteableData::enum_flag_UnrestoredTypeKey)
-                return CLASS_LOAD_UNRESTOREDTYPEKEY;
-
-            if (dwFlags & MethodTableWriteableData::enum_flag_Unrestored)
+            if (dwFlags & enum_flag_Unrestored)
                 return CLASS_LOAD_UNRESTORED;
 
-            if (dwFlags & MethodTableWriteableData::enum_flag_HasApproxParent)
+            if (dwFlags & enum_flag_HasApproxParent)
                 return CLASS_LOAD_APPROXPARENTS;
 
-            if (!(dwFlags & MethodTableWriteableData::enum_flag_DependenciesLoaded))
+            if (!(dwFlags & enum_flag_DependenciesLoaded))
                 return CLASS_LOAD_EXACTPARENTS;
 
             return CLASS_DEPENDENCIES_LOADED;
@@ -1418,7 +1280,7 @@ public:
         return pMTParent == NULL ? 0 : pMTParent->GetNumVirtuals();
     }
 
-    #define SIZEOF__MethodTable_ (0x10 + (6 INDEBUG(+1)) * TARGET_POINTER_SIZE)
+    #define SIZEOF__MethodTable_ (0x10 + (7 INDEBUG(+2)) * TARGET_POINTER_SIZE)
 
     static inline DWORD GetVtableOffset()
     {
@@ -1743,12 +1605,12 @@ public:
     BOOL HasApproxParent()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_HasApproxParent) != 0;
+        return GetFlag(enum_flag_HasApproxParent);
     }
     inline void SetHasExactParent()
     {
         WRAPPER_NO_CONTRACT;
-        InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_HasApproxParent);
+        ClearFlag(enum_flag_HasApproxParent);
     }
 
 
@@ -1787,7 +1649,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_pParentMethodTable = pParentMethodTable;
 #ifdef _DEBUG
-        GetWriteableDataForWrite_NoLogging()->SetParentMethodTablePointerValid();
+        SetFlag(enum_flag_ParentMethodTablePointerValid);
 #endif
     }
 #endif // !DACCESS_COMPILE
@@ -2720,38 +2582,41 @@ public:
     // Private part of MethodTable
     // ------------------------------------------------------------------
 
-#ifndef DACCESS_COMPILE
-    inline void SetWriteableData(PTR_MethodTableWriteableData pMTWriteableData)
+    inline LOADERHANDLE GetExposedClassObjectHandle() const
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(pMTWriteableData);
-        m_pWriteableData = pMTWriteableData;
-    }
-#endif
-
-    inline PTR_Const_MethodTableWriteableData GetWriteableData() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetWriteableData_NoLogging();
+        return m_hExposedClassObject;
     }
 
-    inline PTR_Const_MethodTableWriteableData GetWriteableData_NoLogging() const
+    void SetIsNotFullyLoadedForBuildMethodTable()
     {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return MethodTable::m_pWriteableData;
+        LIMITED_METHOD_CONTRACT;
+
+        // Used only during method table initialization - no need for logging or Interlocked Exchange.
+        m_dwWriteableFlags |= (enum_flag_Unrestored |
+                               enum_flag_IsNotFullyLoaded |
+                               enum_flag_HasApproxParent);
     }
 
-    inline PTR_MethodTableWriteableData GetWriteableDataForWrite()
+    void SetIsRestoredForBuildMethodTable()
     {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetWriteableDataForWrite_NoLogging();
+        LIMITED_METHOD_CONTRACT;
+
+        // Used only during method table initialization - no need for logging or Interlocked Exchange.
+        m_dwWriteableFlags &= ~(enum_flag_Unrestored);
     }
 
-    inline PTR_MethodTableWriteableData GetWriteableDataForWrite_NoLogging()
+    void SetIsRestoredForBuildArrayMethodTable()
     {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return MethodTable::m_pWriteableData;
+        LIMITED_METHOD_CONTRACT;
+
+        // Used only during method table initialization - no need for logging or Interlocked Exchange.
+        SetIsRestoredForBuildMethodTable();
+
+        // Array's parent is always precise
+        m_dwWriteableFlags &= ~(enum_flag_HasApproxParent);
     }
+
 
     //-------------------------------------------------------------------
     // The GUID Info
@@ -2799,12 +2664,12 @@ public :
     inline BOOL Debug_HasInjectedInterfaceDuplicates() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_HasInjectedInterfaceDuplicates) != 0;
+        return GetFlag(enum_flag_HasInjectedInterfaceDuplicates);
     }
     inline void Debug_SetHasInjectedInterfaceDuplicates()
     {
         LIMITED_METHOD_CONTRACT;
-        GetWriteableDataForWrite()->m_dwFlags |= MethodTableWriteableData::enum_flag_HasInjectedInterfaceDuplicates;
+        SetFlag(enum_flag_HasInjectedInterfaceDuplicates);
     }
 #endif // _DEBUG
 
@@ -3483,6 +3348,58 @@ private:
 
     };  // enum WFLAGS2_ENUM
 
+    enum DWFLAGS_WRITEABLE_ENUM
+    {
+        // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
+        // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
+        // CARRY THE CORRECT INITIAL FLAGS.
+        // The current implementation does not copy these flags, and sets most to 0 at start
+        //
+        // These flags are adjusted via FastInterlockedOr or FastInterlockedAnd
+
+        enum_flag_Unrestored                                     = 0x00000004,
+        enum_flag_HasApproxParent                                = 0x00000010,
+        enum_flag_IsNotFullyLoaded                               = 0x00000020,
+        enum_flag_DependenciesLoaded                             = 0x00000040,     // class and all depedencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
+
+        enum_flag_CanCompareBitsOrUseFastGetHashCode             = 0x00000080,     // Is any field type or sub field type overrode Equals or GetHashCode
+        enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x00000100,  // Whether we have checked the overridden Equals or GetHashCode
+
+        // enum_unused                      = 0x00000080,
+        // enum_unused                      = 0x00000100,
+
+        // enum_unused                      = 0x00000200,
+        // enum_unused                      = 0x00000400,
+
+        // enum_unused                      = 0x00010000,
+        // enum_unused                      = 0x00020000,
+        // enum_unused                      = 0x00040000,
+        // enum_unused                      = 0x00080000,        // enum_unused                      = 0x0010000,
+        // enum_unused                      = 0x0020000,
+        // enum_unused                      = 0x0040000,
+        // enum_unused                      = 0x0080000,
+
+#ifdef _DEBUG
+        enum_flag_ParentMethodTablePointerValid                  = 0x40000000,
+        enum_flag_HasInjectedInterfaceDuplicates                 = 0x80000000,
+#endif
+    };
+
+    __forceinline void SetFlag(DWFLAGS_WRITEABLE_ENUM flag)
+    {
+        FastInterlockOr(&m_dwWriteableFlags, flag);
+    }
+
+    __forceinline void ClearFlag(DWFLAGS_WRITEABLE_ENUM flag)
+    {
+        FastInterlockAnd(&m_dwWriteableFlags, ~flag);
+    }
+
+    __forceinline BOOL GetFlag(DWFLAGS_WRITEABLE_ENUM flag) const
+    {
+        return m_dwWriteableFlags & flag;
+    }
+
     __forceinline void ClearFlag(WFLAGS_LOW_ENUM flag)
     {
         _ASSERTE(!IsStringOrArray());
@@ -3574,7 +3491,27 @@ private:
 
     PTR_Module      m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
 
-    PTR_MethodTableWriteableData m_pWriteableData;
+#ifdef _DEBUG
+    // to avoid verify same method table too many times when it's not changing, we cache the GC count
+    // on which the method table is verified. When fast GC STRESS is turned on, we only verify the MT if
+    // current GC count is bigger than the number. Note most thing which will invalidate a MT will require a
+    // GC (like AD unload)
+    Volatile<DWORD> m_dwLastVerifedGCCnt;
+
+#if defined(HOST_64BIT)
+    DWORD           m_dwDebuggingPadding;               // Just to keep the size a multiple of 8
+#endif // HOST_64BIT
+
+#endif // _DEBUG
+    DWORD           m_dwWriteableFlags;                 // Lot of empty bits here.
+#if defined(HOST_64BIT)
+    DWORD           m_dwPadding;                        // Just to keep the size a multiple of 8
+#endif // HOST_64BIT
+    /*
+     * m_hExposedClassObject is LoaderAllocator slot index to
+     * a RuntimeType instance for this class.
+     */
+    LOADERHANDLE m_hExposedClassObject;
 
     // The value of lowest two bits describe what the union contains
     enum LowBits {

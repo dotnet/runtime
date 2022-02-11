@@ -360,14 +360,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
 
-    // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    MethodTableWriteableData * pMTWriteableData = (MethodTableWriteableData *) (BYTE *)
-        pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
-    pMT->SetWriteableData(pMTWriteableData);
-
     // This also disables IBC logging until the type is sufficiently intitialized so
     // it needs to be done early
-    pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
+    pMT->SetIsNotFullyLoadedForBuildMethodTable();
 
     // Fill in pClass
     if (pClass != NULL)
@@ -471,7 +466,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
     // Mark the type as restored to avoid asserts. Note that this also enables IBC logging.
-    pMTWriteableData->SetIsRestoredForBuildArrayMethodTable();
+    pMT->SetIsRestoredForBuildArrayMethodTable();
 
     {
         // Fill out the vtable indirection slots

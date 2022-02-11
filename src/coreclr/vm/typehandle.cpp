@@ -998,17 +998,6 @@ BOOL TypeHandle::IsRestored() const
     }
 }
 
-BOOL TypeHandle::HasUnrestoredTypeKey()  const
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    if (IsTypeDesc())
-        return AsTypeDesc()->HasUnrestoredTypeKey();
-    else
-        return AsMethodTable()->HasUnrestoredTypeKey();
-}
-
 void TypeHandle::CheckRestore() const
 {
     CONTRACTL
@@ -1558,7 +1547,6 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
 const char * const classLoadLevelName[] =
 {
     "BEGIN",
-    "UNRESTOREDTYPEKEY",
     "UNRESTORED",
     "APPROXPARENTS",
     "EXACTPARENTS",
@@ -1586,7 +1574,6 @@ CHECK TypeHandle::CheckLoadLevel(ClassLoadLevel requiredLevel)
         //                    /* debugTypeName.GetUnicode(), */ actualLevel, requiredLevel /* classLoadLevelName[actualLevel], classLoadLevelName[requiredLevel] */));
     }
     CONSISTENCY_CHECK((actualLevel > CLASS_LOAD_UNRESTORED) == IsRestored());
-    CONSISTENCY_CHECK((actualLevel == CLASS_LOAD_UNRESTOREDTYPEKEY) == HasUnrestoredTypeKey());
     CHECK_OK;
 }
 

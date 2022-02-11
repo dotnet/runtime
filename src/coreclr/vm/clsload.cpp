@@ -2889,9 +2889,6 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
             }
             break;
 
-        case CLASS_LOAD_UNRESTOREDTYPEKEY :
-            break;
-
         // Attain level CLASS_LOAD_APPROXPARENTS, starting with unrestored class
         case CLASS_LOAD_UNRESTORED :
             break;

@@ -537,7 +537,7 @@ BOOL TypeDesc::IsRestored_NoLogging()
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SUPPORTS_DAC;
 
-    return (m_typeAndFlags & TypeDesc::enum_flag_Unrestored) == 0;
+    return TRUE;
 }
 
 ClassLoadLevel TypeDesc::GetLoadLevel()
@@ -547,15 +547,7 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
     STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
-    if (m_typeAndFlags & TypeDesc::enum_flag_UnrestoredTypeKey)
-    {
-        return CLASS_LOAD_UNRESTOREDTYPEKEY;
-    }
-    else if (m_typeAndFlags & TypeDesc::enum_flag_Unrestored)
-    {
-        return CLASS_LOAD_UNRESTORED;
-    }
-    else if (m_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
+    if (m_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
     {
         if (m_typeAndFlags & TypeDesc::enum_flag_DependenciesLoaded)
         {

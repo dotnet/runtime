@@ -18,17 +18,9 @@
 //
 //   Placeholder level used before type has been created or located in ngen image
 //
-//
-// CLASS_LOAD_UNRESTOREDTYPEKEY
-//
-//   Type lives in an ngen image and components of its type key need restoring:
-//     for methodtables: generic arguments, EEClass pointer, Module pointer in EEClass
-//     for typedescs: param type, template methodtable
-//
-//
 // CLASS_LOAD_UNRESTORED
 //
-//   Type lives in an ngen image and contains fields that need restoring
+//   Type is in the process of being loaded in MethodTableBuilder and many fields are not yet initialized
 //   (e.g. parent, interfaces, param type)
 //
 //
@@ -71,7 +63,6 @@
 enum ClassLoadLevel
 {
     CLASS_LOAD_BEGIN,
-    CLASS_LOAD_UNRESTOREDTYPEKEY,
     CLASS_LOAD_UNRESTORED,
     CLASS_LOAD_APPROXPARENTS,
     CLASS_LOAD_EXACTPARENTS,

@@ -10183,14 +10183,9 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
 
-    MethodTableWriteableData * pMTWriteableData = (MethodTableWriteableData *) (BYTE *)
-        pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
-    // Note: Memory allocated on loader heap is zero filled
-    pMT->SetWriteableData(pMTWriteableData);
-
     // This also disables IBC logging until the type is sufficiently intitialized so
     // it needs to be done early
-    pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
+    pMT->SetIsNotFullyLoadedForBuildMethodTable();
 
 #ifdef _DEBUG
     pClassLoader->m_dwGCSize += dwGCSize;
@@ -10299,7 +10294,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     }
 
 #ifdef _DEBUG
-    pMT->m_pWriteableData->m_dwLastVerifedGCCnt = (DWORD)-1;
+    pMT->m_dwLastVerifedGCCnt = (DWORD)-1;
 #endif // _DEBUG
 
     RETURN(pMT);
@@ -10642,7 +10637,7 @@ MethodTableBuilder::SetupMethodTable2(
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
     // Mark the type as restored to avoid avoid asserts. Note that this also enables IBC logging.
-    pMT->GetWriteableDataForWrite_NoLogging()->SetIsRestoredForBuildMethodTable();
+    pMT->SetIsRestoredForBuildMethodTable();
 
 #ifdef _DEBUG
     // Store status if we tried to inject duplicate interfaces

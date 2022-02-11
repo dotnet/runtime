@@ -540,29 +540,6 @@ void MethodTable::SetClassInitError()
 }
 
 //==========================================================================================
-// mark the class as having been restored.
-void MethodTable::SetIsRestored()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END
-
-    PRECONDITION(!IsFullyLoaded());
-
-    InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_Unrestored);
-
-#ifndef DACCESS_COMPILE
-    if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
-    {
-        ETW::MethodLog::MethodTableRestored(this);
-    }
-#endif
-}
-
-//==========================================================================================
 // mark as COM object type (System.__ComObject and types deriving from it)
 void MethodTable::SetComObjectType()
 {
@@ -850,11 +827,6 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
 
     // Note: Memory allocated on loader heap is zero filled
     // memset(pMT, 0, sizeof(MethodTable));
-
-    // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    BYTE* pMTWriteableData = (BYTE *)
-        pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
-    pMT->SetWriteableData((PTR_MethodTableWriteableData)pMTWriteableData);
 
     //
     // Set up the EEClass
@@ -4230,7 +4202,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(GetWriteableData()->m_hExposedClassObject != 0);
+        POSTCONDITION(m_hExposedClassObject != 0);
         //REENTRANT
     }
     CONTRACT_END;
@@ -4240,7 +4212,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
     GCStress<cfg_any, PulseGcTriggerPolicy>::MaybeTrigger();
 #endif // _DEBUG
 
-    if (GetWriteableData()->m_hExposedClassObject == NULL)
+    if (m_hExposedClassObject == NULL)
     {
         // Make sure that we have been restored
         CheckRestore();
@@ -4258,7 +4230,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
         // Only the winner can set m_ExposedClassObject from NULL.
         LOADERHANDLE exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
 
-        if (InterlockedCompareExchangeT(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
+        if (InterlockedCompareExchangeT(&m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(exposedClassObjectHandle);
         }
@@ -6688,7 +6660,7 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
 
     // workaround: Type loader accesses partially initialized datastructures that interferes with IBC logging.
     // Once type loader is fixed to do not access partially  initialized datastructures, this can go away.
-    if (!GetWriteableData_NoLogging()->IsParentMethodTablePointerValid())
+    if (!GetFlag(enum_flag_ParentMethodTablePointerValid))
         return FALSE;
 
     return TRUE;
@@ -7915,12 +7887,6 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         DacEnumMemoryRegion(dac_cast<TADDR>(it.GetIndirectionSlot()), it.GetSize());
     }
 
-    PTR_MethodTableWriteableData pWriteableData = m_pWriteableData;
-    if (pWriteableData.IsValid())
-    {
-        pWriteableData.EnumMem();
-    }
-
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
         DispatchMap * pMap = GetDispatchMap();
@@ -8693,10 +8659,7 @@ BOOL MethodTable::Validate()
     ASSERT_AND_CHECK(SanityCheck());
 
 #ifdef _DEBUG
-    ASSERT_AND_CHECK(m_pWriteableData != NULL);
-
-    MethodTableWriteableData *pWriteableData = m_pWriteableData;
-    DWORD dwLastVerifiedGCCnt = pWriteableData->m_dwLastVerifedGCCnt;
+    DWORD dwLastVerifiedGCCnt = m_dwLastVerifedGCCnt;
     // Here we used to assert that (dwLastVerifiedGCCnt <= GCHeapUtilities::GetGCHeap()->GetGcCount()) but
     // this is no longer true because with background gc. Since the purpose of having
     // m_dwLastVerifedGCCnt is just to only verify the same method table once for each GC
@@ -8722,7 +8685,7 @@ BOOL MethodTable::Validate()
     }
 
 #ifdef _DEBUG
-    pWriteableData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
+    m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
 #endif //_DEBUG
 
     return TRUE;

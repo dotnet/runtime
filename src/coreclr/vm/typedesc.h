@@ -121,14 +121,6 @@ public:
     BOOL IsRestored_NoLogging();
     void SetIsRestored();
 
-    inline BOOL HasUnrestoredTypeKey() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-
-        return (m_typeAndFlags & TypeDesc::enum_flag_UnrestoredTypeKey) != 0;
-    }
-
     BOOL HasTypeEquivalence() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -190,8 +182,8 @@ public:
     {
         // unused                        = 0x00000100,
         // unused                        = 0x00000200,
-        enum_flag_Unrestored             = 0x00000400,
-        enum_flag_UnrestoredTypeKey      = 0x00000800,
+        // unused                        = 0x00000400,
+        // unused                        = 0x00000800,
         enum_flag_IsNotFullyLoaded       = 0x00001000,
         enum_flag_DependenciesLoaded     = 0x00002000,
         enum_flag_HasTypeEquivalence     = 0x00004000

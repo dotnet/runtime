@@ -1333,7 +1333,7 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
     LIMITED_METHOD_CONTRACT;
 
     // Logging will be done by the slow path
-    LOADERHANDLE handle = GetWriteableData_NoLogging()->GetExposedClassObjectHandle();
+    LOADERHANDLE handle = GetExposedClassObjectHandle();
 
     OBJECTREF retVal;
 

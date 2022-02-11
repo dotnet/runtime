@@ -543,16 +543,28 @@ namespace System.Runtime.CompilerServices
 
         private const int ParentMethodTableOffset = 0x10 + DebugClassNamePtr;
 
+        private const int DebugLastVerifedGCCnt = // adjust for m_dwLastVerifedGCCnt
+#if DEBUG
 #if TARGET_64BIT
-        private const int ElementTypeOffset = 0x30 + DebugClassNamePtr;
+            8
 #else
-        private const int ElementTypeOffset = 0x20 + DebugClassNamePtr;
+            4
+#endif
+#else
+            0
+#endif
+            ;
+
+#if TARGET_64BIT
+        private const int ElementTypeOffset = 0x38 + DebugClassNamePtr + DebugLastVerifedGCCnt;
+#else
+        private const int ElementTypeOffset = 0x24 + DebugClassNamePtr + DebugLastVerifedGCCnt;
 #endif
 
 #if TARGET_64BIT
-        private const int InterfaceMapOffset = 0x38 + DebugClassNamePtr;
+        private const int InterfaceMapOffset = 0x40 + DebugClassNamePtr + DebugLastVerifedGCCnt;
 #else
-        private const int InterfaceMapOffset = 0x24 + DebugClassNamePtr;
+        private const int InterfaceMapOffset = 0x28 + DebugClassNamePtr + DebugLastVerifedGCCnt;
 #endif
 
         public bool HasComponentSize
