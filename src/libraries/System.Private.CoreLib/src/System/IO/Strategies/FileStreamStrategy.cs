@@ -13,8 +13,6 @@ namespace System.IO.Strategies
 
         internal abstract SafeFileHandle SafeFileHandle { get; }
 
-        internal abstract bool RequiresFinalizer { get; }
-
         internal IntPtr Handle => SafeFileHandle.DangerousGetHandle();
 
         internal abstract bool IsClosed { get; }

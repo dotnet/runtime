@@ -50,9 +50,6 @@ namespace System.IO.Strategies
             }
         }
 
-        // derived classes may depend on Dispose(false) call
-        internal override bool RequiresFinalizer => true;
-
         internal override bool IsClosed => _strategy.IsClosed;
 
         internal override void Lock(long position, long length) => _strategy.Lock(position, length);

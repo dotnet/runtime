@@ -49,11 +49,6 @@ namespace System.IO
                 ValidateHandle(safeHandle, access, bufferSize, isAsync);
 
                 _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, bufferSize, isAsync);
-
-                if (!_strategy.RequiresFinalizer)
-                {
-                    GC.SuppressFinalize(this);
-                }
             }
             catch
             {
@@ -209,11 +204,6 @@ namespace System.IO
 
             _strategy = FileStreamHelpers.ChooseStrategy(
                 this, path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize);
-
-            if (!_strategy.RequiresFinalizer)
-            {
-                GC.SuppressFinalize(this);
-            }
         }
 
         private FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
@@ -221,11 +211,6 @@ namespace System.IO
             FileStreamHelpers.ValidateArguments(path, mode, access, share, bufferSize, options, preallocationSize);
 
             _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize);
-
-            if (!_strategy.RequiresFinalizer)
-            {
-                GC.SuppressFinalize(this);
-            }
         }
 
         [Obsolete("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property instead.")]

@@ -108,9 +108,6 @@ namespace System.IO.Strategies
             }
         }
 
-        // buffering is transparent to this strategy, so it does no require a finalizer
-        internal override bool RequiresFinalizer => false;
-
         // this method just disposes everything (no buffer, no need to flush)
         public sealed override ValueTask DisposeAsync()
         {
