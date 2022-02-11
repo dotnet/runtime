@@ -3326,6 +3326,35 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         sigInfo = call->callSig;
     }
+
+    if (call->IsFastTailCall())
+    {
+        regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
+
+        // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
+        // non-standard args that may be trash if this is a tailcall.
+        if (compiler->getNeedsGSSecurityCookie())
+        {
+            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_0);
+            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
+        }
+
+        for (unsigned i = 0; i < call->fgArgInfo->ArgCount(); i++)
+        {
+            fgArgTabEntry* entry = call->fgArgInfo->GetArgEntry(i);
+            for (unsigned j = 0; j < entry->numRegs; j++)
+            {
+                regNumber reg = entry->GetRegNum(j);
+                if ((trashedByEpilog & genRegMask(reg)) != 0)
+                {
+                    JITDUMP("Tail call node:\n");
+                    DISPTREE(call);
+                    JITDUMP("Register used: %s\n", getRegName(reg));
+                    assert(!"Argument to tailcall may be trashed by epilog");
+                }
+            }
+        }
+    }
 #endif // DEBUG
     CORINFO_METHOD_HANDLE methHnd;
     GenTree*              target = getCallTarget(call, &methHnd);
