@@ -7,6 +7,9 @@
 
 #ifdef  _WIN32
     #define c_static_assert(e) static_assert((e),"")
+#endif
+
+#if defined(_WIN32) || defined(__EMSCRIPTEN__)
     #include "../../Windows/System.IO.Compression.Native/zlib/zlib.h"
 #else
     #include "pal_utilities.h"
