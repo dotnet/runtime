@@ -672,7 +672,7 @@ namespace System.Tests.Types
     {
         public override Type CreateType() => typeof(int).MakePointerType();
 
-        public override TypeAttributes Attributes => TypeAttributes.Class;
+        public override TypeAttributes Attributes => TypeAttributes.Public;
 
         public override Type BaseType => null;
 
@@ -689,7 +689,7 @@ namespace System.Tests.Types
     {
         public override Type CreateType() => typeof(int).MakeByRefType();
 
-        public override TypeAttributes Attributes => TypeAttributes.Class;
+        public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.SequentialLayout | TypeAttributes.Sealed | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
 
         public override Type BaseType => null;
 
