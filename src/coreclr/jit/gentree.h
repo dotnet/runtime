@@ -5259,7 +5259,7 @@ public:
         return (CorInfoType)gtSimdBaseJitType;
     }
 
-    CorInfoType GetSimdBaseJitPreciseType() const
+    CorInfoType GetNormalizedSimdBaseJitType() const
     {
         CorInfoType simdBaseJitType = GetSimdBaseJitType();
         switch (simdBaseJitType)

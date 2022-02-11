@@ -4602,8 +4602,9 @@ bool ValueNumStore::IsVNVectorZero(ValueNum vn)
     }
 #if FEATURE_HW_INTRINSICS
     VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp) && funcApp.m_arity == 1)
+    if (GetVNFunc(vn, &funcApp))
     {
+        assert(funcApp.m_arity == 1);
         switch (funcApp.m_func)
         {
             case VNF_HWI_Vector128_get_Zero:
@@ -4639,8 +4640,9 @@ VNSimdTypeInfo ValueNumStore::GetSimdTypeOfVN(ValueNum vn)
     // The SIMD type is encoded as a function,
     // even though it is not actually a function.
     VNFuncApp simdType;
-    if (GetVNFunc(vn, &simdType) && simdType.m_func == VNF_SimdType && simdType.m_arity == 2)
+    if (GetVNFunc(vn, &simdType) && simdType.m_func == VNF_SimdType)
     {
+        assert(simdType.m_arity == 2);
         vnInfo.m_simdSize        = GetConstantInt32(simdType.m_args[0]);
         vnInfo.m_simdBaseJitType = (CorInfoType)GetConstantInt32(simdType.m_args[1]);
         return vnInfo;
@@ -4651,6 +4653,9 @@ VNSimdTypeInfo ValueNumStore::GetSimdTypeOfVN(ValueNum vn)
     return vnInfo;
 }
 
+// TODO: Vector.Zero nodes in VN currently encode their SIMD type for
+//       conservative reasons. In the future, it might be possible not do this
+//       on most platforms since Vector.Zero's base type does not matter. 
 VNSimdTypeInfo ValueNumStore::GetVectorZeroSimdTypeOfVN(ValueNum vn)
 {
     VNSimdTypeInfo vnInfo;
@@ -4665,8 +4670,9 @@ VNSimdTypeInfo ValueNumStore::GetVectorZeroSimdTypeOfVN(ValueNum vn)
     // Vector.Zero does not have any arguments,
     // but its SIMD type is encoded as an argument.
     VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp) && funcApp.m_arity == 1)
+    if (GetVNFunc(vn, &funcApp))
     {
+        assert(funcApp.m_arity == 1);
         return GetSimdTypeOfVN(funcApp.m_args[0]);
     }
 
@@ -9636,7 +9642,7 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
 
         if (encodeResultType)
         {
-            ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseJitPreciseType());
+            ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetNormalizedSimdBaseJitType());
             resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG
@@ -9751,7 +9757,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     if (encodeResultType)
     {
-        ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseJitPreciseType());
+        ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetNormalizedSimdBaseJitType());
         resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG

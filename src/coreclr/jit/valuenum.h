@@ -725,11 +725,11 @@ public:
     bool IsVNVectorZero(ValueNum vn);
 
 #if FEATURE_SIMD
-    /// Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type.
+    // Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type.
     VNSimdTypeInfo GetSimdTypeOfVN(ValueNum vn);
 
-    /// Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type
-    /// for a Vector.Zero value number.
+    // Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type
+    // for a Vector.Zero value number.
     VNSimdTypeInfo GetVectorZeroSimdTypeOfVN(ValueNum vn);
 #endif
 
