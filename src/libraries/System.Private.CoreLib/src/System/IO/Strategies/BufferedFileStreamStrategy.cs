@@ -96,9 +96,6 @@ namespace System.IO.Strategies
             }
         }
 
-        // buffering is enabled by default and users might not expect that data is not immediately passed to the OS
-        internal override bool RequiresFinalizer => true;
-
         public override async ValueTask DisposeAsync()
         {
             try
