@@ -7,13 +7,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServ
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj", "{04BA3E3C-6979-4792-B19E-C797AD607F42}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.Experimental", "ref\System.Runtime.InteropServices.Experimental.csproj", "{8671F164-F78C-44FA-93B7-A310F67890FE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.NFloat.Internal", "ref\System.Runtime.InteropServices.NFloat.Internal.csproj", "{8671F164-F78C-44FA-93B7-A310F67890FE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.Experimental", "src\System.Runtime.InteropServices.Experimental.csproj", "{4FC33B9B-1BCF-4D16-B886-DCA8F2B823C1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.NFloat.Internal", "src\System.Runtime.InteropServices.NFloat.Internal.csproj", "{4FC33B9B-1BCF-4D16-B886-DCA8F2B823C1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.ComDisabled.Tests", "tests\ComDisabled\System.Runtime.InteropServices.ComDisabled.Tests.csproj", "{6D2197E6-D3DF-43AE-9BEE-3573018639F9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.Experimental.Tests", "tests\System.Runtime.InteropServices.Experimental.Tests.csproj", "{E249BD6A-85DB-4CE4-BD82-8D67EBAC5664}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.NFloat.Internal.Tests", "tests\System.Runtime.InteropServices.NFloat.Internal.Tests.csproj", "{E249BD6A-85DB-4CE4-BD82-8D67EBAC5664}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{FB99AC59-1744-4F12-A4B0-0D54FCA048BF}"
 EndProject

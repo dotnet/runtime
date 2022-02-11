@@ -18,7 +18,7 @@
     <IsPackable>true</IsPackable>
     <ServicingVersion>1</ServicingVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageDescription>Exposes new experimental APIs from System.Runtime.InteropServices</PackageDescription>
+    <PackageDescription>Exposes additional NFloat APIs for Xamarin/Maui APIs from System.Runtime.InteropServices</PackageDescription>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <!-- TODO: Remove when the package shipped with NET6. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
@@ -28,8 +28,8 @@
     <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\ref\System.Runtime.InteropServices.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Collections\ref\System.Collections.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Collections\ref\System.Collections.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" PrivateAssets="all" />
   </ItemGroup>
   <Target Name="_ExperimentalUpdateFileVersion"
           AfterTargets="_InitializeAssemblyVersion">
