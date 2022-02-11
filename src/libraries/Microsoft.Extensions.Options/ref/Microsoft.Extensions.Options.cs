@@ -121,7 +121,7 @@ namespace Microsoft.Extensions.Options
     {
         TOptions CurrentValue { get; }
         TOptions Get(string? name);
-        System.IDisposable OnChange(System.Action<TOptions, string?> listener);
+        System.IDisposable? OnChange(System.Action<TOptions, string?> listener);
     }
     public partial interface IOptionsSnapshot<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] out TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
     {
