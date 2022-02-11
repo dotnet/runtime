@@ -230,6 +230,7 @@ namespace System.ServiceModel.Syndication
                     Debug.Assert((_dataContractSerializer == null && _outerName == null && _outerNamespace == null), "Xml serializer cannot have outer name, ns");
 #pragma warning disable IL2026
                     _xmlSerializer.Serialize(writer, _extensionData);
+#pragma warning restore IL2026
                 }
                 else
                 {
@@ -239,12 +240,14 @@ namespace System.ServiceModel.Syndication
                         writer.WriteStartElement(_outerName, _outerNamespace);
 #pragma warning disable IL2026
                         _dataContractSerializer.WriteObjectContent(writer, _extensionData);
+#pragma warning restore IL2026
                         writer.WriteEndElement();
                     }
                     else
                     {
 #pragma warning disable IL2026
                         _dataContractSerializer.WriteObject(writer, _extensionData);
+#pragma warning restore IL2026
                     }
                 }
             }
