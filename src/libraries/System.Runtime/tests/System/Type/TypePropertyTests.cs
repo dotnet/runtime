@@ -672,7 +672,8 @@ namespace System.Tests.Types
     {
         public override Type CreateType() => typeof(int).MakePointerType();
 
-        public override TypeAttributes Attributes => TypeAttributes.Public;
+        public override TypeAttributes Attributes => PlatformDetection.IsMonoRuntime ? TypeAttributes.Public :
+            TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.SequentialLayout | TypeAttributes.Sealed | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
 
         public override Type BaseType => null;
 
