@@ -3286,12 +3286,18 @@ PROCAbortInitialize()
         char* dumpType = getenv("COMPlus_DbgMiniDumpType");
         char* diagStr = getenv("COMPlus_CreateDumpDiagnostics");
         BOOL diag = diagStr != nullptr && strcmp(diagStr, "1") == 0;
+        char* verboseStr = getenv("COMPlus_CreateDumpVerboseDiagnostics");
+        BOOL verbose = verboseStr != nullptr && strcmp(verboseStr, "1") == 0;
         char* crashReportStr = getenv("COMPlus_EnableCrashReport");
         BOOL crashReport = crashReportStr != nullptr && strcmp(crashReportStr, "1") == 0;
         ULONG32 flags = GenerateDumpFlagsNone;
         if (diag)
         {
             flags |= GenerateDumpFlagsLoggingEnabled;
+        }
+        if (verbose)
+        {
+            flags |= GenerateDumpFlagsVerboseLoggingEnabled;
         }
         if (crashReport)
         {
