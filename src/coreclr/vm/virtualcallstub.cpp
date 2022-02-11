@@ -3050,7 +3050,7 @@ void VirtualCallStubManager::LogStats()
 int reports = 0;
 FILE* reportFile = NULL;
 
-void ReportProbeDepth(int readCount)
+void ReportProbeDepth(int readCount, size_t keyA, size_t keyB)
 {
     reports++;
     if (reportFile == NULL)
@@ -3063,12 +3063,12 @@ void ReportProbeDepth(int readCount)
         printf("report: %d\n", reports);
         fflush(reportFile);
     }
-    fprintf(reportFile, "%d, %d\n", reports, readCount);
+    fprintf(reportFile, "%d, %d, %p %p\n", reports, readCount, (void*)keyA, (void*)keyB);
 }
 
 FILE* reportIndexInBucketFile = NULL;
 int hashInBucketReports = 0;
-void ReportBucketInUseInBucket(int index)
+void ReportBucketInUseInBucket(int index, size_t keyA, size_t keyB)
 {
     hashInBucketReports++;
     if (reportIndexInBucketFile == NULL)
@@ -3081,7 +3081,7 @@ void ReportBucketInUseInBucket(int index)
         printf("hashInBucketReports: %d\n", hashInBucketReports);
         fflush(reportIndexInBucketFile);
     }
-    fprintf(reportIndexInBucketFile, "%d, %d\n", hashInBucketReports, index);
+    fprintf(reportIndexInBucketFile, "%d, %d, %p %p\n", hashInBucketReports, index, (void*)keyA, (void*)keyB);
 }
 
 
@@ -3100,7 +3100,7 @@ void Prober::InitProber(size_t key1, size_t key2, size_t* table)
     base = &table[CALL_STUB_FIRST_INDEX];
     mask = table[CALL_STUB_MASK_INDEX];
     FormHash();
-    ReportBucketInUseInBucket((int)this->index);
+    ReportBucketInUseInBucket((int)this->index, keyA, keyB);
 }
 
 size_t Prober::Find()
@@ -3118,7 +3118,7 @@ size_t Prober::Find()
     //needs to be called to reset it.
     if (NoMore())
     {
-        ReportProbeDepth(readCount);
+        ReportProbeDepth(readCount, keyA, keyB);
         return CALL_STUB_EMPTY_ENTRY;
     }
     do
@@ -3129,7 +3129,7 @@ size_t Prober::Find()
         //if we hit an empty entry, it means it cannot be in the table
         if(entry==CALL_STUB_EMPTY_ENTRY)
         {
-            ReportProbeDepth(readCount);
+            ReportProbeDepth(readCount, keyA, keyB);
             return CALL_STUB_EMPTY_ENTRY;
         }
 
@@ -3137,11 +3137,11 @@ size_t Prober::Find()
         comparer->SetContents(entry);
         if (comparer->Equals(keyA, keyB))
         {
-            ReportProbeDepth(-readCount);
+            ReportProbeDepth(-readCount, keyA, keyB);
             return entry;
         }
     } while(Next()); //Next() returns false when we have visited every slot
-    ReportProbeDepth(readCount);
+    ReportProbeDepth(readCount, keyA, keyB);
     return CALL_STUB_EMPTY_ENTRY;
 }
 
