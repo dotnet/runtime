@@ -1803,188 +1803,324 @@ namespace System.Numerics
         {
             bool result = true;
 
-            unsafe
+            float det;
+
+            Matrix4x4 matTemp = Matrix4x4.Identity;
+            Vector3 canonicalBasis_Row0 = new Vector3(1.0f, 0.0f, 0.0f);
+            Vector3 canonicalBasis_Row1 = new Vector3(0.0f, 1.0f, 0.0f);
+            Vector3 canonicalBasis_Row2 = new Vector3(0.0f, 0.0f, 1.0f);
+
+            translation = new Vector3(
+                matrix.M41,
+                matrix.M42,
+                matrix.M43);
+
+            Vector3 pVectorBasis_0 = new Vector3(matrix.M11, matrix.M12, matrix.M13);
+            Vector3 pVectorBasis_1 = new Vector3(matrix.M21, matrix.M22, matrix.M23);
+            Vector3 pVectorBasis_2 = new Vector3(matrix.M31, matrix.M32, matrix.M33);
+
+            scale.X = pVectorBasis_0.Length();
+            scale.Y = pVectorBasis_1.Length();
+            scale.Z = pVectorBasis_2.Length();
+            float pfScales_0 = scale.X;
+            float pfScales_1 = scale.Y;
+            float pfScales_2 = scale.Z;
+
+            uint a, b;
+            #region Ranking
+            float x = pfScales_0, y = pfScales_1, z = pfScales_2;
+            float pfScales_A, pfScales_B, pfScales_C;
+            Vector3 pVectorBasis_A, pVectorBasis_B, pVectorBasis_C;
+            Vector3 canonicalBasis_A;
+            if (x < y)
             {
-                fixed (Vector3* scaleBase = &scale)
+                if (y < z)
                 {
-                    float* pfScales = (float*)scaleBase;
-                    float det;
+                    a = 2;
+                    b = 1;
 
-                    VectorBasis vectorBasis;
-                    Vector3** pVectorBasis = (Vector3**)&vectorBasis;
+                    pfScales_A = pfScales_2;
+                    pfScales_B = pfScales_1;
+                    pfScales_C = pfScales_0;
 
-                    Matrix4x4 matTemp = Identity;
-                    CanonicalBasis canonicalBasis = default;
-                    Vector3* pCanonicalBasis = &canonicalBasis.Row0;
+                    pVectorBasis_A = pVectorBasis_2;
+                    pVectorBasis_B = pVectorBasis_1;
+                    pVectorBasis_C = pVectorBasis_0;
 
-                    canonicalBasis.Row0 = new Vector3(1.0f, 0.0f, 0.0f);
-                    canonicalBasis.Row1 = new Vector3(0.0f, 1.0f, 0.0f);
-                    canonicalBasis.Row2 = new Vector3(0.0f, 0.0f, 1.0f);
+                    canonicalBasis_A = canonicalBasis_Row2;
+                }
+                else
+                {
+                    a = 1;
+                    pfScales_A = pfScales_1;
+                    pVectorBasis_A = pVectorBasis_1;
+                    canonicalBasis_A = canonicalBasis_Row1;
 
-                    translation = new Vector3(
-                        matrix.M41,
-                        matrix.M42,
-                        matrix.M43);
-
-                    pVectorBasis[0] = (Vector3*)&matTemp.M11;
-                    pVectorBasis[1] = (Vector3*)&matTemp.M21;
-                    pVectorBasis[2] = (Vector3*)&matTemp.M31;
-
-                    *(pVectorBasis[0]) = new Vector3(matrix.M11, matrix.M12, matrix.M13);
-                    *(pVectorBasis[1]) = new Vector3(matrix.M21, matrix.M22, matrix.M23);
-                    *(pVectorBasis[2]) = new Vector3(matrix.M31, matrix.M32, matrix.M33);
-
-                    scale.X = pVectorBasis[0]->Length();
-                    scale.Y = pVectorBasis[1]->Length();
-                    scale.Z = pVectorBasis[2]->Length();
-
-                    uint a, b, c;
-                    #region Ranking
-                    float x = pfScales[0], y = pfScales[1], z = pfScales[2];
-                    if (x < y)
+                    if (x < z)
                     {
-                        if (y < z)
-                        {
-                            a = 2;
-                            b = 1;
-                            c = 0;
-                        }
-                        else
-                        {
-                            a = 1;
+                        b = 2;
 
-                            if (x < z)
-                            {
-                                b = 2;
-                                c = 0;
-                            }
-                            else
-                            {
-                                b = 0;
-                                c = 2;
-                            }
-                        }
+                        pfScales_B = pfScales_2;
+                        pfScales_C = pfScales_0;
+
+                        pVectorBasis_B = pVectorBasis_2;
+                        pVectorBasis_C = pVectorBasis_0;
+
                     }
                     else
                     {
-                        if (x < z)
-                        {
-                            a = 2;
-                            b = 0;
-                            c = 1;
-                        }
-                        else
-                        {
-                            a = 0;
+                        b = 0;
 
-                            if (y < z)
-                            {
-                                b = 2;
-                                c = 1;
-                            }
-                            else
-                            {
-                                b = 1;
-                                c = 2;
-                            }
-                        }
-                    }
-                    #endregion
+                        pfScales_B = pfScales_0;
+                        pfScales_C = pfScales_2;
 
-                    if (pfScales[a] < DecomposeEpsilon)
-                    {
-                        *(pVectorBasis[a]) = pCanonicalBasis[a];
-                    }
+                        pVectorBasis_B = pVectorBasis_0;
+                        pVectorBasis_C = pVectorBasis_2;
 
-                    *pVectorBasis[a] = Vector3.Normalize(*pVectorBasis[a]);
-
-                    if (pfScales[b] < DecomposeEpsilon)
-                    {
-                        uint cc;
-                        float fAbsX, fAbsY, fAbsZ;
-
-                        fAbsX = MathF.Abs(pVectorBasis[a]->X);
-                        fAbsY = MathF.Abs(pVectorBasis[a]->Y);
-                        fAbsZ = MathF.Abs(pVectorBasis[a]->Z);
-
-                        #region Ranking
-                        if (fAbsX < fAbsY)
-                        {
-                            if (fAbsY < fAbsZ)
-                            {
-                                cc = 0;
-                            }
-                            else
-                            {
-                                if (fAbsX < fAbsZ)
-                                {
-                                    cc = 0;
-                                }
-                                else
-                                {
-                                    cc = 2;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (fAbsX < fAbsZ)
-                            {
-                                cc = 1;
-                            }
-                            else
-                            {
-                                if (fAbsY < fAbsZ)
-                                {
-                                    cc = 1;
-                                }
-                                else
-                                {
-                                    cc = 2;
-                                }
-                            }
-                        }
-                        #endregion
-
-                        *pVectorBasis[b] = Vector3.Cross(*pVectorBasis[a], *(pCanonicalBasis + cc));
-                    }
-
-                    *pVectorBasis[b] = Vector3.Normalize(*pVectorBasis[b]);
-
-                    if (pfScales[c] < DecomposeEpsilon)
-                    {
-                        *pVectorBasis[c] = Vector3.Cross(*pVectorBasis[a], *pVectorBasis[b]);
-                    }
-
-                    *pVectorBasis[c] = Vector3.Normalize(*pVectorBasis[c]);
-
-                    det = matTemp.GetDeterminant();
-
-                    // use Kramer's rule to check for handedness of coordinate system
-                    if (det < 0.0f)
-                    {
-                        // switch coordinate system by negating the scale and inverting the basis vector on the x-axis
-                        pfScales[a] = -pfScales[a];
-                        *pVectorBasis[a] = -(*pVectorBasis[a]);
-
-                        det = -det;
-                    }
-
-                    det -= 1.0f;
-                    det *= det;
-
-                    if ((DecomposeEpsilon < det))
-                    {
-                        // Non-SRT matrix encountered
-                        rotation = Quaternion.Identity;
-                        result = false;
-                    }
-                    else
-                    {
-                        // generate the quaternion from the matrix
-                        rotation = Quaternion.CreateFromRotationMatrix(matTemp);
                     }
                 }
+            }
+            else
+            {
+                if (x < z)
+                {
+                    a = 2;
+                    b = 0;
+
+                    pfScales_A = pfScales_2;
+                    pfScales_B = pfScales_0;
+                    pfScales_C = pfScales_1;
+
+                    pVectorBasis_A = pVectorBasis_2;
+                    pVectorBasis_B = pVectorBasis_0;
+                    pVectorBasis_C = pVectorBasis_1;
+
+                    canonicalBasis_A = canonicalBasis_Row2;
+                }
+                else
+                {
+                    a = 0;
+                    pfScales_A = pfScales_0;
+                    pVectorBasis_A = pVectorBasis_0;
+                    canonicalBasis_A = canonicalBasis_Row0;
+
+                    if (y < z)
+                    {
+                        b = 2;
+
+                        pfScales_B = pfScales_2;
+                        pfScales_C = pfScales_1;
+
+                        pVectorBasis_B = pVectorBasis_2;
+                        pVectorBasis_C = pVectorBasis_1;
+                    }
+                    else
+                    {
+                        b = 1;
+
+                        pfScales_B = pfScales_1;
+                        pfScales_C = pfScales_2;
+
+                        pVectorBasis_B = pVectorBasis_1;
+                        pVectorBasis_C = pVectorBasis_2;
+
+                    }
+                }
+            }
+            #endregion
+
+            if (pfScales_A < DecomposeEpsilon)
+            {
+                pVectorBasis_A = canonicalBasis_A;
+            }
+
+            pVectorBasis_A = Vector3.Normalize(pVectorBasis_A);
+
+            Vector3 canonicalBasis_CC;
+            if (pfScales_B < DecomposeEpsilon)
+            {
+                float fAbsX, fAbsY, fAbsZ;
+
+                fAbsX = MathF.Abs(pVectorBasis_A.X);
+                fAbsY = MathF.Abs(pVectorBasis_A.Y);
+                fAbsZ = MathF.Abs(pVectorBasis_A.Z);
+
+                #region Ranking
+                if (fAbsX < fAbsY)
+                {
+                    if (fAbsY < fAbsZ)
+                    {
+                        canonicalBasis_CC = canonicalBasis_Row0;
+                    }
+                    else
+                    {
+                        if (fAbsX < fAbsZ)
+                        {
+                            canonicalBasis_CC = canonicalBasis_Row0;
+                        }
+                        else
+                        {
+                            canonicalBasis_CC = canonicalBasis_Row2;
+                        }
+                    }
+                }
+                else
+                {
+                    if (fAbsX < fAbsZ)
+                    {
+                        canonicalBasis_CC = canonicalBasis_Row1;
+                    }
+                    else
+                    {
+                        if (fAbsY < fAbsZ)
+                        {
+                            canonicalBasis_CC = canonicalBasis_Row1;
+                        }
+                        else
+                        {
+                            canonicalBasis_CC = canonicalBasis_Row2;
+                        }
+                    }
+                }
+                #endregion
+
+                pVectorBasis_B = Vector3.Cross(pVectorBasis_A, canonicalBasis_CC);
+            }
+
+            pVectorBasis_B = Vector3.Normalize(pVectorBasis_B);
+
+            if (pfScales_C < DecomposeEpsilon)
+            {
+                pVectorBasis_C = Vector3.Cross(pVectorBasis_A, pVectorBasis_B);
+            }
+
+            pVectorBasis_C = Vector3.Normalize(pVectorBasis_C);
+            if (a == 0)
+            {
+                if (b == 1)
+                {
+                    matTemp.M11 = pVectorBasis_A.X;
+                    matTemp.M12 = pVectorBasis_A.Y;
+                    matTemp.M13 = pVectorBasis_A.Z;
+                    matTemp.M21 = pVectorBasis_B.X;
+                    matTemp.M22 = pVectorBasis_B.Y;
+                    matTemp.M23 = pVectorBasis_B.Z;
+                    matTemp.M31 = pVectorBasis_C.X;
+                    matTemp.M32 = pVectorBasis_C.Y;
+                    matTemp.M33 = pVectorBasis_C.Z;
+                }
+                else
+                {
+                    matTemp.M11 = pVectorBasis_A.X;
+                    matTemp.M12 = pVectorBasis_A.Y;
+                    matTemp.M13 = pVectorBasis_A.Z;
+                    matTemp.M21 = pVectorBasis_C.X;
+                    matTemp.M22 = pVectorBasis_C.Y;
+                    matTemp.M23 = pVectorBasis_C.Z;
+                    matTemp.M31 = pVectorBasis_B.X;
+                    matTemp.M32 = pVectorBasis_B.Y;
+                    matTemp.M33 = pVectorBasis_B.Z;
+
+                }
+            }
+            else if (a == 1)
+            {
+                if (b == 0)
+                {
+                    matTemp.M11 = pVectorBasis_B.X;
+                    matTemp.M12 = pVectorBasis_B.Y;
+                    matTemp.M13 = pVectorBasis_B.Z;
+                    matTemp.M21 = pVectorBasis_A.X;
+                    matTemp.M22 = pVectorBasis_A.Y;
+                    matTemp.M23 = pVectorBasis_A.Z;
+                    matTemp.M31 = pVectorBasis_C.X;
+                    matTemp.M32 = pVectorBasis_C.Y;
+                    matTemp.M33 = pVectorBasis_C.Z;
+                }
+                else
+                {
+                    matTemp.M11 = pVectorBasis_C.X;
+                    matTemp.M12 = pVectorBasis_C.Y;
+                    matTemp.M13 = pVectorBasis_C.Z;
+                    matTemp.M21 = pVectorBasis_A.X;
+                    matTemp.M22 = pVectorBasis_A.Y;
+                    matTemp.M23 = pVectorBasis_A.Z;
+                    matTemp.M31 = pVectorBasis_B.X;
+                    matTemp.M32 = pVectorBasis_B.Y;
+                    matTemp.M33 = pVectorBasis_B.Z;
+
+                }
+            }
+            else
+            {
+                if (b == 0)
+                {
+                    matTemp.M11 = pVectorBasis_B.X;
+                    matTemp.M12 = pVectorBasis_B.Y;
+                    matTemp.M13 = pVectorBasis_B.Z;
+                    matTemp.M21 = pVectorBasis_C.X;
+                    matTemp.M22 = pVectorBasis_C.Y;
+                    matTemp.M23 = pVectorBasis_C.Z;
+                    matTemp.M31 = pVectorBasis_A.X;
+                    matTemp.M32 = pVectorBasis_A.Y;
+                    matTemp.M33 = pVectorBasis_A.Z;
+                }
+                else
+                {
+                    matTemp.M11 = pVectorBasis_C.X;
+                    matTemp.M12 = pVectorBasis_C.Y;
+                    matTemp.M13 = pVectorBasis_C.Z;
+                    matTemp.M21 = pVectorBasis_B.X;
+                    matTemp.M22 = pVectorBasis_B.Y;
+                    matTemp.M23 = pVectorBasis_B.Z;
+                    matTemp.M31 = pVectorBasis_A.X;
+                    matTemp.M32 = pVectorBasis_A.Y;
+                    matTemp.M33 = pVectorBasis_A.Z;
+                }
+            }
+
+            det = matTemp.GetDeterminant();
+
+            // use Kramer's rule to check for handedness of coordinate system
+            if (det < 0.0f)
+            {
+                // switch coordinate system by negating the scale and inverting the basis vector on the x-axis
+                pVectorBasis_A = -pVectorBasis_A;
+
+                det = -det;
+            }
+
+            det -= 1.0f;
+            det *= det;
+
+            if ((DecomposeEpsilon < det))
+            {
+                if (a == 0)
+                {
+                    matTemp.M11 = pVectorBasis_A.X;
+                    matTemp.M12 = pVectorBasis_A.Y;
+                    matTemp.M13 = pVectorBasis_A.Z;
+                }
+                else if (a == 1)
+                {
+                    matTemp.M21 = pVectorBasis_A.X;
+                    matTemp.M22 = pVectorBasis_A.Y;
+                    matTemp.M23 = pVectorBasis_A.Z;
+                }
+                else
+                {
+                    matTemp.M31 = pVectorBasis_A.X;
+                    matTemp.M32 = pVectorBasis_A.Y;
+                    matTemp.M33 = pVectorBasis_A.Z;
+                }
+                // Non-SRT matrix encountered
+                rotation = Quaternion.Identity;
+                result = false;
+            }
+            else
+            {
+                // generate the quaternion from the matrix
+                rotation = Quaternion.CreateFromRotationMatrix(matTemp);
             }
 
             return result;
