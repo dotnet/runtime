@@ -299,11 +299,20 @@ public class WasmAppBuilder : Task
             foreach (ITaskItem item in ExtraFilesToDeploy!)
             {
                 string src = item.ItemSpec;
+                string dst;
 
-                string dst = Path.Combine(AppDir!, item.GetMetadata("TargetPath"));
-                string? dstDir = Path.GetDirectoryName(dst);
-                if (!string.IsNullOrEmpty(dstDir) && !Directory.Exists(dstDir))
-                    Directory.CreateDirectory(dstDir!);
+                string tgtPath = item.GetMetadata("TargetPath");
+                if (!string.IsNullOrEmpty(tgtPath))
+                {
+                    dst = Path.Combine(AppDir!, tgtPath);
+                    string? dstDir = Path.GetDirectoryName(dst);
+                    if (!string.IsNullOrEmpty(dstDir) && !Directory.Exists(dstDir))
+                        Directory.CreateDirectory(dstDir!);
+                }
+                else
+                {
+                    dst = Path.Combine(AppDir!, Path.GetFileName(src));
+                }
 
                 if (!FileCopyChecked(src, dst, "ExtraFilesToDeploy"))
                     return false;
