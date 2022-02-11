@@ -1065,65 +1065,79 @@ namespace
         MethodTable** pMTOut,
         UINT* errorResIDOut)
     {
-        switch (sig.PeekElemTypeNormalized(pModule, pTypeContext))
+        while (true)
         {
-        case ELEMENT_TYPE_BOOLEAN:
-        case ELEMENT_TYPE_U1:
-            return MarshalInfo::MARSHAL_TYPE_GENERIC_U1;
-        case ELEMENT_TYPE_I1:
-            return MarshalInfo::MARSHAL_TYPE_GENERIC_1;
-        case ELEMENT_TYPE_CHAR:
-        case ELEMENT_TYPE_U2:
-            return MarshalInfo::MARSHAL_TYPE_GENERIC_U2;
-        case ELEMENT_TYPE_I2:
-            return MarshalInfo::MARSHAL_TYPE_GENERIC_2;
-        case ELEMENT_TYPE_U4:
-            return MarshalInfo::MARSHAL_TYPE_GENERIC_U4;
-        case ELEMENT_TYPE_I4:
-            return MarshalInfo::MARSHAL_TYPE_GENERIC_4;
-        case ELEMENT_TYPE_U8:
-        case ELEMENT_TYPE_I8:
-            return MarshalInfo::MARSHAL_TYPE_GENERIC_8;
-#ifdef TARGET_64BIT
-        case ELEMENT_TYPE_U:
-        case ELEMENT_TYPE_PTR:
-        case ELEMENT_TYPE_FNPTR:
-        case ELEMENT_TYPE_I:
-            return MarshalInfo::MARSHAL_TYPE_GENERIC_8;
-#else
-        case ELEMENT_TYPE_U:
-            return MarshalInfo::MARSHAL_TYPE_GENERIC_U4;
-        case ELEMENT_TYPE_PTR:
-        case ELEMENT_TYPE_FNPTR:
-        case ELEMENT_TYPE_I:
-            return MarshalInfo::MARSHAL_TYPE_GENERIC_4;
-#endif
-        case ELEMENT_TYPE_R4:
-            return MarshalInfo::MARSHAL_TYPE_FLOAT;
-        case ELEMENT_TYPE_R8:
-            return MarshalInfo::MARSHAL_TYPE_DOUBLE;
-        case ELEMENT_TYPE_VAR:
-        case ELEMENT_TYPE_VALUETYPE:
-        {
-            TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
-            MethodTable* pMT = sigTH.GetMethodTable();
-
-            if (!pMT->IsValueType() || pMT->ContainsPointers())
+            switch (sig.PeekElemTypeNormalized(pModule, pTypeContext))
             {
+            // Skip modreqs and modopts in the signature.
+            case ELEMENT_TYPE_CMOD_OPT:
+            case ELEMENT_TYPE_CMOD_REQD:
+            {
+                if(FAILED(sig.GetElemType(NULL)))
+                {
+                    *errorResIDOut = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
+                    return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
+                }
+                break;
+            }
+            case ELEMENT_TYPE_BOOLEAN:
+            case ELEMENT_TYPE_U1:
+                return MarshalInfo::MARSHAL_TYPE_GENERIC_U1;
+            case ELEMENT_TYPE_I1:
+                return MarshalInfo::MARSHAL_TYPE_GENERIC_1;
+            case ELEMENT_TYPE_CHAR:
+            case ELEMENT_TYPE_U2:
+                return MarshalInfo::MARSHAL_TYPE_GENERIC_U2;
+            case ELEMENT_TYPE_I2:
+                return MarshalInfo::MARSHAL_TYPE_GENERIC_2;
+            case ELEMENT_TYPE_U4:
+                return MarshalInfo::MARSHAL_TYPE_GENERIC_U4;
+            case ELEMENT_TYPE_I4:
+                return MarshalInfo::MARSHAL_TYPE_GENERIC_4;
+            case ELEMENT_TYPE_U8:
+            case ELEMENT_TYPE_I8:
+                return MarshalInfo::MARSHAL_TYPE_GENERIC_8;
+    #ifdef TARGET_64BIT
+            case ELEMENT_TYPE_U:
+            case ELEMENT_TYPE_PTR:
+            case ELEMENT_TYPE_FNPTR:
+            case ELEMENT_TYPE_I:
+                return MarshalInfo::MARSHAL_TYPE_GENERIC_8;
+    #else
+            case ELEMENT_TYPE_U:
+                return MarshalInfo::MARSHAL_TYPE_GENERIC_U4;
+            case ELEMENT_TYPE_PTR:
+            case ELEMENT_TYPE_FNPTR:
+            case ELEMENT_TYPE_I:
+                return MarshalInfo::MARSHAL_TYPE_GENERIC_4;
+    #endif
+            case ELEMENT_TYPE_R4:
+                return MarshalInfo::MARSHAL_TYPE_FLOAT;
+            case ELEMENT_TYPE_R8:
+                return MarshalInfo::MARSHAL_TYPE_DOUBLE;
+            case ELEMENT_TYPE_VAR:
+            case ELEMENT_TYPE_VALUETYPE:
+            {
+                TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
+                MethodTable* pMT = sigTH.GetMethodTable();
+
+                if (!pMT->IsValueType() || pMT->ContainsPointers())
+                {
+                    *errorResIDOut = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
+                    return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
+                }
+                if (pMT->IsAutoLayoutOrHasAutoLayoutField())
+                {
+                    *errorResIDOut = IDS_EE_BADMARSHAL_AUTOLAYOUT;
+                    return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
+                }
+                *pMTOut = pMT;
+                return MarshalInfo::MARSHAL_TYPE_BLITTABLEVALUECLASS;
+            }
+            default:
                 *errorResIDOut = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
                 return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
             }
-            if (pMT->IsAutoLayoutOrHasAutoLayoutField())
-            {
-                *errorResIDOut = IDS_EE_BADMARSHAL_AUTOLAYOUT;
-                return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
-            }
-            *pMTOut = pMT;
-            return MarshalInfo::MARSHAL_TYPE_BLITTABLEVALUECLASS;
-        }
-        default:
-            *errorResIDOut = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
-            return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
         }
     }
 }

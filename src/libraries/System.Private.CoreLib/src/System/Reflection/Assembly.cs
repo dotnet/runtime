@@ -203,17 +203,7 @@ namespace System.Reflection
 
         public static string CreateQualifiedName(string? assemblyName, string? typeName) => typeName + ", " + assemblyName;
 
-        public static Assembly? GetAssembly(Type type)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
-            Module m = type.Module;
-            if (m == null)
-                return null;
-            else
-                return m.Assembly;
-        }
+        public static Assembly? GetAssembly(Type type!!) => type.Module?.Assembly;
 
         // internal test hook
         private static bool s_forceNullEntryPoint;

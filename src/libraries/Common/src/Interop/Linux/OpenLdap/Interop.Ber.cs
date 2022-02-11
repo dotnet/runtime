@@ -15,11 +15,8 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ber_alloc_t", CharSet = CharSet.Ansi)]
         public static partial IntPtr ber_alloc(int option);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ber_init", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ber_init(BerVal value);
-#pragma warning restore DLLIMPORTGENANALYZER015
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ber_init", CharSet = CharSet.Ansi)]
+        public static partial IntPtr ber_init(BerVal value);
 
         [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ber_free", CharSet = CharSet.Ansi)]
         public static partial IntPtr ber_free(IntPtr berelement, int option);

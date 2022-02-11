@@ -51,13 +51,8 @@ namespace System.Text.Json
         /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static object? Deserialize(this JsonDocument document!!, Type returnType, JsonSerializerOptions? options = null)
+        public static object? Deserialize(this JsonDocument document!!, Type returnType!!, JsonSerializerOptions? options = null)
         {
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return ReadDocument<object?>(document, jsonTypeInfo);
         }

@@ -20,6 +20,8 @@
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''" />
   <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs"
              Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\BasicSymmetricCipher.cs"

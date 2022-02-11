@@ -6,20 +6,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    public interface IMarshallingGeneratorFactory
-    {
-        /// <summary>
-        /// Create an <see cref="IMarshallingGenerator"/> instance for marshalling the supplied type in the given position.
-        /// </summary>
-        /// <param name="info">Type details</param>
-        /// <param name="context">Metadata about the stub the type is associated with</param>
-        /// <returns>A <see cref="IMarshallingGenerator"/> instance.</returns>
-        public IMarshallingGenerator Create(
-            TypePositionInfo info,
-            StubCodeContext context);
-    }
-
-    public sealed class DefaultMarshallingGeneratorFactory : IMarshallingGeneratorFactory
+    public sealed class MarshalAsMarshallingGeneratorFactory : IMarshallingGeneratorFactory
     {
         private static readonly ByteBoolMarshaller s_byteBool = new();
         private static readonly WinBoolMarshaller s_winBool = new();
@@ -36,10 +23,12 @@ namespace Microsoft.Interop
         private static readonly DelegateMarshaller s_delegate = new();
         private static readonly SafeHandleMarshaller s_safeHandle = new();
         private InteropGenerationOptions Options { get; }
+        private IMarshallingGeneratorFactory InnerFactory { get; }
 
-        public DefaultMarshallingGeneratorFactory(InteropGenerationOptions options)
+        public MarshalAsMarshallingGeneratorFactory(InteropGenerationOptions options, IMarshallingGeneratorFactory inner)
         {
             Options = options;
+            InnerFactory = inner;
         }
 
         /// <summary>
@@ -123,7 +112,7 @@ namespace Microsoft.Interop
                     return s_forwarder;
 
                 default:
-                    throw new MarshallingNotSupportedException(info, context);
+                    return InnerFactory.Create(info, context);
             }
         }
 

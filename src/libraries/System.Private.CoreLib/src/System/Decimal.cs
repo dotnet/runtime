@@ -260,8 +260,8 @@ namespace System
         // The possible binary representations of a particular value are all
         // equally valid, and all are numerically equivalent.
         //
-        public Decimal(int[] bits) :
-            this((ReadOnlySpan<int>)(bits ?? throw new ArgumentNullException(nameof(bits))))
+        public Decimal(int[] bits!!) :
+            this((ReadOnlySpan<int>)bits)
         {
         }
 

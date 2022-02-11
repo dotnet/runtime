@@ -25,6 +25,8 @@
     <Compile Include="System\Security\Policy\Evidence.cs" />
     <Compile Include="System\Security\Policy\EvidenceBase.cs" />
     <!-- PInvoke sources -->
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"

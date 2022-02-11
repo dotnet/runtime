@@ -36,6 +36,12 @@ System.IO.Ports.SerialPort</PackageDescription>
     <Compile Include="System\IO\Ports\StopBits.cs" />
   </ItemGroup>
 
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and '$(TargetsAnyOS)' != 'true'">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Ports\SerialStream.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DCB.cs"
@@ -90,7 +96,7 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs"
              Link="Common\Interop\Windows\Interop.FileTypes.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" 
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
              Link="Common\System\IO\PathInternal.Windows.cs" />

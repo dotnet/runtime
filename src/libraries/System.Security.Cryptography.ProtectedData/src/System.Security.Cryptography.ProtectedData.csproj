@@ -39,6 +39,10 @@ System.Security.Cryptography.ProtectedData</PackageDescription>
     <Compile Include="$(CommonPath)System\HResults.cs"
              Link="Common\System\HResults.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />

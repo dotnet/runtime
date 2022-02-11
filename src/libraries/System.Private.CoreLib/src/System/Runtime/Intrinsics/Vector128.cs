@@ -984,7 +984,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<float> Create(float value)
         {
-            if (Sse.IsSupported || AdvSimd.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 return Create(value);
             }
@@ -1391,7 +1391,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<float> Create(float e0, float e1, float e2, float e3)
         {
-            if (Sse.IsSupported || AdvSimd.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 return Create(e0, e1, e2, e3);
             }

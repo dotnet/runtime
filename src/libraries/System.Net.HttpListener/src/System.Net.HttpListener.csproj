@@ -55,6 +55,8 @@
     <Compile Include="System\Net\NetEventSource.HttpListener.cs" />
     <Compile Include="System\Net\WebSockets\HttpListenerWebSocketContext.cs" />
     <Compile Include="System\Net\WebSockets\HttpWebSocket.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
              Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
@@ -159,10 +161,8 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" />
     <!-- Add NTAuthentication -->
-    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs" />
+    <Compile Include="$(CommonPath)System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs"
+             Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs"
              Link="Common\System\Collections\Generic\BidirectionalDictionary.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"

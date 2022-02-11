@@ -9,7 +9,7 @@
          BeforePack must be used. Setting both to ensure that we are always running before other targets. --> 
     <PackDependsOn>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(PackDependsOn)</PackDependsOn>
     <BeforePack>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(BeforePack)</BeforePack>
-    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludePrivateProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludeProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
     <IncludeBuildOutput Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetPlatformIdentifier)' != ''">false</IncludeBuildOutput>
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
     <SuppressDependenciesWhenPacking Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetPlatformIdentifier)' != ''">true</SuppressDependenciesWhenPacking>
@@ -226,12 +226,12 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="IncludePrivateProjectReferencesWithPackAttributeInPackage"
-          Condition="'@(ProjectReference->WithMetadataValue('PrivateAssets', 'all')->WithMetadataValue('Pack', 'true'))' != ''"
+  <Target Name="IncludeProjectReferencesWithPackAttributeInPackage"
+          Condition="'@(ProjectReference->WithMetadataValue('Pack', 'true'))' != ''"
           DependsOnTargets="BuildOnlySettings;ResolveReferences">
     <ItemGroup>
       <!-- Add ReferenceCopyLocalPaths for ProjectReferences which are flagged as Pack="true" into the package. -->
-      <_projectReferenceCopyLocalPaths Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('PrivateAssets', 'all')->WithMetadataValue('Pack', 'true'))" />
+      <_projectReferenceCopyLocalPaths Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('Pack', 'true'))" />
       <TfmSpecificPackageFile Include="@(_projectReferenceCopyLocalPaths)"
                               PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)/$(TargetFramework)'))" />
       <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"

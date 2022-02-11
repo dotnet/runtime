@@ -8,6 +8,8 @@
     <Compile Include="System\IO\DriveInfo.cs" />
     <Compile Include="System\IO\DriveNotFoundException.cs" />
     <Compile Include="System\IO\DriveType.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\HResults.cs"
              Link="Common\System\HResults.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"

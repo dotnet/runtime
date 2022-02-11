@@ -5076,7 +5076,7 @@ MethodTableBuilder::ValidateMethods()
         // Virtual static methods are only allowed on interfaces and they must be abstract.
         if (IsMdStatic(it.Attrs()) && IsMdVirtual(it.Attrs()))
         {
-            if (!IsInterface() || !IsMdAbstract(it.Attrs()))
+            if (!IsInterface())
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL, it.Token());
             }

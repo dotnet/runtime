@@ -32,6 +32,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
@@ -221,10 +223,8 @@
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
              Link="Common\System\Net\ExceptionCheck.cs" />
     <!-- Add NTAuthentication -->
-    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs" />
+    <Compile Include="$(CommonPath)System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs"
+             Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs"
              Link="Common\System\Collections\Generic\BidirectionalDictionary.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"

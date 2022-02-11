@@ -23,7 +23,8 @@ namespace System.Security.Cryptography
             }
             set
             {
-                _hashAlgorithm = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                _hashAlgorithm = value;
             }
         }
 

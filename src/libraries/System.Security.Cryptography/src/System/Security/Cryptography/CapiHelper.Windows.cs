@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
                 throw GetErrorCode().ToCryptographicException();
             }
             //allocate memory for the provider name
-            StringBuilder providerName = new StringBuilder((int)sizeofProviderName);
+            char[] providerName = new char[sizeofProviderName];
 
             //Now call the function CryptGetDefaultProvider again to get the name of the provider
             if (!Interop.Advapi32.CryptGetDefaultProvider(dwType, IntPtr.Zero,
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
             }
 
             // check to see if there are upgrades available for the requested CSP
-            string providerNameString = providerName.ToString();
+            string providerNameString = new string(providerName.AsSpan().Slice(0, providerName.AsSpan().IndexOf('\0')));
             string? wszUpgrade = null;
             if (dwType == (int)ProviderType.PROV_RSA_FULL)
             {
