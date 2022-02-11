@@ -18,7 +18,7 @@ namespace System.Drawing
         {
             _color = color;
 
-            IntPtr nativeBrush = IntPtr.Zero;
+            IntPtr nativeBrush;
             int status = Gdip.GdipCreateSolidFill(_color.ToArgb(), out nativeBrush);
             Gdip.CheckStatus(status);
 

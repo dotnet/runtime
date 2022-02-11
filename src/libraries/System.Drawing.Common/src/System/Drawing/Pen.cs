@@ -52,7 +52,7 @@ namespace System.Drawing
         {
             _color = color;
 
-            IntPtr pen = IntPtr.Zero;
+            IntPtr pen;
             int status = Gdip.GdipCreatePen1(color.ToArgb(),
                                                 width,
                                                 (int)GraphicsUnit.World,
