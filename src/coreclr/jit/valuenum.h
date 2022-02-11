@@ -184,10 +184,9 @@ struct VNFuncApp
     }
 };
 
-// An instance of this struct represents the decoded information of a SIMD type from a value number of a function.
-struct VNFuncSimdTypeInfo
+// An instance of this struct represents the decoded information of a SIMD type from a value number.
+struct VNSimdTypeInfo
 {
-    ValueNum     m_simdTypeVN;
     unsigned int m_simdSize;
     CorInfoType  m_simdBaseJitType;
 };
@@ -726,9 +725,12 @@ public:
     bool IsVNVectorZero(ValueNum vn);
 
 #if FEATURE_SIMD
-    /// Returns VNFuncSimdTypeInfo(NoVN, 0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type
-    /// on a function.
-    VNFuncSimdTypeInfo GetFuncSimdTypeOfVN(ValueNum vn);
+    /// Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type.
+    VNSimdTypeInfo GetSimdTypeOfVN(ValueNum vn);
+
+    /// Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type
+    /// for a Vector.Zero value number.
+    VNSimdTypeInfo GetVectorZeroSimdTypeOfVN(ValueNum vn);
 #endif
 
     // Returns true iff the VN represents an integer constant.

@@ -3041,7 +3041,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         {
             assert(vnStore->IsVNVectorZero(vnCns));
 
-            VNFuncSimdTypeInfo vnInfo = vnStore->GetFuncSimdTypeOfVN(vnCns);
+            VNSimdTypeInfo vnInfo = vnStore->GetVectorZeroSimdTypeOfVN(vnCns);
 
             assert(vnInfo.m_simdBaseJitType != CORINFO_TYPE_UNDEF);
             assert(vnInfo.m_simdSize != 0);

@@ -4601,11 +4601,10 @@ bool ValueNumStore::IsVNVectorZero(ValueNum vn)
         return false;
     }
 #if FEATURE_HW_INTRINSICS
-    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
-    if (c->m_attribs == CEA_Func1)
+    VNFuncApp funcApp;
+    if (GetVNFunc(vn, &funcApp) && funcApp.m_arity == 1)
     {
-        VNDefFunc1Arg* const chunkSlots = reinterpret_cast<VNDefFunc1Arg*>(c->m_defs);
-        switch (chunkSlots[vn - c->m_baseVN].m_func)
+        switch (funcApp.m_func)
         {
             case VNF_HWI_Vector128_get_Zero:
 #if defined(TARGET_XARCH)
@@ -4626,39 +4625,51 @@ bool ValueNumStore::IsVNVectorZero(ValueNum vn)
 }
 
 #if FEATURE_SIMD
-VNFuncSimdTypeInfo ValueNumStore::GetFuncSimdTypeOfVN(ValueNum vn)
+VNSimdTypeInfo ValueNumStore::GetSimdTypeOfVN(ValueNum vn)
 {
-    VNFuncSimdTypeInfo vnInfo;
+    VNSimdTypeInfo vnInfo;
 
     if (vn == NoVN)
     {
-        vnInfo.m_simdTypeVN      = NoVN;
         vnInfo.m_simdSize        = 0;
         vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
         return vnInfo;
     }
-    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
-    if (c->m_attribs == CEA_Func1)
+
+    // The SIMD type is encoded as a function,
+    // even though it is not actually a function.
+    VNFuncApp simdType;
+    if (GetVNFunc(vn, &simdType) && simdType.m_func == VNF_SimdType && simdType.m_arity == 2)
     {
-        VNDefFunc1Arg* chunkSlots    = reinterpret_cast<VNDefFunc1Arg*>(c->m_defs);
-        ValueNum       simdTypeVN    = chunkSlots[vn - c->m_baseVN].m_arg0;
-        Chunk*         simdTypeChunk = m_chunks.GetNoExpand(GetChunkNum(simdTypeVN));
-
-        if (simdTypeChunk->m_attribs == CEA_Func2 && simdTypeChunk->m_typ == TYP_REF)
-        {
-            VNDefFunc2Arg* simdTypeChunkSlots = reinterpret_cast<VNDefFunc2Arg*>(simdTypeChunk->m_defs);
-            VNDefFunc2Arg  simdTypeSlot       = simdTypeChunkSlots[simdTypeVN - simdTypeChunk->m_baseVN];
-
-            if (simdTypeSlot.m_func == VNF_SimdType)
-            {
-                vnInfo.m_simdTypeVN      = simdTypeVN;
-                vnInfo.m_simdSize        = GetConstantInt32(simdTypeSlot.m_arg0);
-                vnInfo.m_simdBaseJitType = (CorInfoType)GetConstantInt32(simdTypeSlot.m_arg1);
-                return vnInfo;
-            }
-        }
+        vnInfo.m_simdSize        = GetConstantInt32(simdType.m_args[0]);
+        vnInfo.m_simdBaseJitType = (CorInfoType)GetConstantInt32(simdType.m_args[1]);
+        return vnInfo;
     }
-    vnInfo.m_simdTypeVN      = NoVN;
+
+    vnInfo.m_simdSize        = 0;
+    vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
+    return vnInfo;
+}
+
+VNSimdTypeInfo ValueNumStore::GetVectorZeroSimdTypeOfVN(ValueNum vn)
+{
+    VNSimdTypeInfo vnInfo;
+
+    if (!IsVNVectorZero(vn))
+    {
+        vnInfo.m_simdSize        = 0;
+        vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
+        return vnInfo;
+    }
+
+    // Vector.Zero does not have any arguments,
+    // but its SIMD type is encoded as an argument.
+    VNFuncApp funcApp;
+    if (GetVNFunc(vn, &funcApp) && funcApp.m_arity == 1)
+    {
+        return GetSimdTypeOfVN(funcApp.m_args[0]);   
+    }
+
     vnInfo.m_simdSize        = 0;
     vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
     return vnInfo;

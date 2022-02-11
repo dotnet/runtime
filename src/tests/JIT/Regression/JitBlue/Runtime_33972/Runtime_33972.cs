@@ -150,6 +150,28 @@ class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<float> AdvSimd_CompareEqual_Vector128_Single_CreateZeroZeroZeroZero_AsVariableLoop(Vector128<float> left)
+    {
+        Vector128<float> result = default;
+        var asVar = Vector128.Create(0f, 0f, 0f, 0f);
+        for (var i = 0; i < 4; i++)
+        {
+            result = AdvSimd.CompareEqual(left, asVar);
+            result = AdvSimd.CompareEqual(left, asVar);
+            result = AdvSimd.CompareEqual(left, asVar);
+            result = AdvSimd.CompareEqual(left, asVar);
+            for (var j = 0; j < 4; j++)
+            {
+                result = AdvSimd.CompareEqual(left, asVar);
+                result = AdvSimd.CompareEqual(left, asVar);
+                result = AdvSimd.CompareEqual(left, asVar);
+                result = AdvSimd.CompareEqual(left, asVar);
+            }
+        }
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector128<double> AdvSimd_Arm64_CompareEqual_Vector128_Double_Zero(Vector128<double> left)
     {
         return AdvSimd.Arm64.CompareEqual(left, Vector128<double>.Zero);
@@ -462,6 +484,9 @@ class Program
             result = -1;
 
         if (!ValidateResult_Vector128<float>(AdvSimd_CompareEqual_Vector128_Single_CreateZeroZeroZeroZero_AsVariable(Vector128<float>.Zero), Single.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector128<float>(AdvSimd_CompareEqual_Vector128_Single_CreateZeroZeroZeroZero_AsVariableLoop(Vector128<float>.Zero), Single.NaN))
             result = -1;
 
         // End CompareEqual Tests
