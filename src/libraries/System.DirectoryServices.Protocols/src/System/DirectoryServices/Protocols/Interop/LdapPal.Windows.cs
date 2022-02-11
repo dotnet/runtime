@@ -42,7 +42,13 @@ namespace System.DirectoryServices.Protocols
 
         internal static int GetSecurityHandleOption(ConnectionHandle ldapHandle, LdapOption option, ref SecurityHandle outValue) => Interop.Ldap.ldap_get_option_sechandle(ldapHandle, option, ref outValue);
 
-        internal static int GetSecInfoOption(ConnectionHandle ldapHandle, LdapOption option, SecurityPackageContextConnectionInformation outValue) => Interop.Ldap.ldap_get_option_secInfo(ldapHandle, option, outValue);
+        internal static unsafe int GetSecInfoOption(ConnectionHandle ldapHandle, LdapOption option, SecurityPackageContextConnectionInformation outValue)
+        {
+            fixed (void* outValuePtr = outValue)
+            {
+                return Interop.Ldap.ldap_get_option_secInfo(ldapHandle, option, outValuePtr);
+            }
+        }
 
         internal static IntPtr GetValuesFromAttribute(ConnectionHandle ldapHandle, IntPtr result, string name) => Interop.Ldap.ldap_get_values_len(ldapHandle, result, name);
 

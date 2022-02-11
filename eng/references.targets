@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <!-- Project references shouldn't be copied to the output for non test apps. -->
-  <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
+  <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true' and '$(IsGeneratorProject)' != 'true'">
     <ProjectReference>
       <Private>false</Private>
     </ProjectReference>

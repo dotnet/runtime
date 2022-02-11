@@ -1,7 +1,7 @@
 /**
  * \file
  * Functions for creating IL methods at runtime.
- * 
+ *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *
@@ -47,11 +47,11 @@ static MonoDisHelper marshal_dh = {
 	"\n",
 	"IL_%04x: ",
 	"IL_%04x",
-	indenter, 
+	indenter,
 	NULL,
 	NULL
 };
-#endif 
+#endif
 
 static MonoMethodBuilderCallbacks mb_cb;
 static gboolean cb_inited = FALSE;

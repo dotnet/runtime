@@ -193,7 +193,7 @@ typedef gdouble		mips_freg;
 
 #define MONO_ARCH_FRAME_ALIGNMENT 8
 
-/* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
+/* fixme: align to 16byte instead of 32byte (we align to 32byte to get
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
@@ -423,4 +423,4 @@ typedef struct {
 
 guint8 *mips_emit_load_const (guint8 *code, int dreg, target_mgreg_t v);
 
-#endif /* __MONO_MINI_MIPS_H__ */  
+#endif /* __MONO_MINI_MIPS_H__ */

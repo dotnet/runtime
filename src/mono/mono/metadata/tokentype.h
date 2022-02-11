@@ -9,13 +9,13 @@
  * These tokens match the table ID except for the last
  * three (string, name and base type which are special)
  */
- 
+
 typedef enum {
 	MONO_TOKEN_MODULE            = 0x00000000,
 	MONO_TOKEN_TYPE_REF          = 0x01000000,
 	MONO_TOKEN_TYPE_DEF          = 0x02000000,
 	MONO_TOKEN_FIELD_DEF         = 0x04000000,
-	MONO_TOKEN_METHOD_DEF        = 0x06000000, 
+	MONO_TOKEN_METHOD_DEF        = 0x06000000,
 	MONO_TOKEN_PARAM_DEF         = 0x08000000,
 	MONO_TOKEN_INTERFACE_IMPL    = 0x09000000,
 	MONO_TOKEN_MEMBER_REF        = 0x0a000000,

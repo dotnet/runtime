@@ -12,7 +12,7 @@ System.Security.Cryptography.X509Certificates.X509Certificate2UI
 System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup Condition="'$(TargetsWindows)' != 'true'"> 
+  <PropertyGroup Condition="'$(TargetsWindows)' != 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_System_Windows_Extensions</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -82,6 +82,10 @@ System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescript
     <Compile Include="System\Media\SystemSounds.cs" />
     <Compile Include="System\Xaml\Permissions\XamlAccessLevel.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and '$(TargetsAnyOS)' != 'true'">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
     <Reference Include="System.Buffers" />
@@ -104,5 +108,8 @@ System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescript
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Reference Include="System.Security.Cryptography" />
   </ItemGroup>
 </Project>

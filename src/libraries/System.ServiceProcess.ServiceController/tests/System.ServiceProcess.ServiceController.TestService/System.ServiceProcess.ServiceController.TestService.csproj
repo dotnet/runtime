@@ -15,6 +15,9 @@
     </Compile>
     <Compile Include="..\..\src\Microsoft\Win32\SafeHandles\SafeServiceHandle.cs"
              Link="Microsoft\Win32\SafeHandles\SafeServiceHandle.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs"
+             Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ServiceProcessOptions.cs"

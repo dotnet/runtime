@@ -18,6 +18,6 @@
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Security.Cryptography" />
   </ItemGroup>
 </Project>

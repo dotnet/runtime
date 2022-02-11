@@ -265,6 +265,7 @@
     <Compile Include="Sha512ManagedTests.cs" />
     <Compile Include="SignatureDescriptionTests.cs" />
     <Compile Include="SimpleHashAlgorithmTest.cs" />
+    <Compile Include="StreamHelpers.cs" />
     <Compile Include="Sum32Hash.cs" />
     <Compile Include="SymmetricAlgorithm\Minimal.cs" />
     <Compile Include="SymmetricAlgorithm\Trivial.cs" />

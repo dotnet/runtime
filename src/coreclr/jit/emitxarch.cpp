@@ -423,6 +423,10 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
         case IF_RWR:
         case IF_RRD:
         case IF_RRW:
+        case IF_RWR_RRD_RRD:
+        case IF_RWR_RRD_MRD:
+        case IF_RWR_RRD_ARD:
+        case IF_RWR_RRD_SRD:
             break;
         default:
             return false;
@@ -2780,17 +2784,15 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
 #ifdef TARGET_AMD64
-    // 64-bit immediates are only supported on mov r64, imm64
-    // As per manual:
-    // Support for 64-bit immediate operands is accomplished by expanding
-    // the semantics of the existing move (MOV reg, imm16/32) instructions.
-    if ((valSize > sizeof(INT32)) && (ins != INS_mov))
-        valSize = sizeof(INT32);
-#else
-    // occasionally longs get here on x86
+    // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
+    // all other opcodes take a sign-extended 4-byte immediate
+    noway_assert(valSize <= sizeof(INT32) || !id->idIsCnsReloc());
+#endif // TARGET_AMD64
+
     if (valSize > sizeof(INT32))
+    {
         valSize = sizeof(INT32);
-#endif // !TARGET_AMD64
+    }
 
     if (id->idIsCnsReloc())
     {
@@ -8965,9 +8967,8 @@ void emitter::emitDispIns(
     }
     else
     {
-        attr = emitGetMemOpSize(id);
-
-        sstr = codeGen->genSizeStr(attr);
+        attr = id->idOpSize();
+        sstr = codeGen->genSizeStr(emitGetMemOpSize(id));
 
         if (ins == INS_lea)
         {
@@ -11742,17 +11743,6 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
 #ifdef DEBUG
         int byteSize = EA_SIZE_IN_BYTES(emitGetMemOpSize(id));
-
-        // this instruction has a fixed size (4) src.
-        if (ins == INS_cvttss2si || ins == INS_cvtss2sd || ins == INS_vbroadcastss)
-        {
-            byteSize = 4;
-        }
-        // This has a fixed size (8) source.
-        if (ins == INS_vbroadcastsd)
-        {
-            byteSize = 8;
-        }
 
         // Check that the offset is properly aligned (i.e. the ddd in [ddd])
         // When SMALL_CODE is set, we only expect 4-byte alignment, otherwise

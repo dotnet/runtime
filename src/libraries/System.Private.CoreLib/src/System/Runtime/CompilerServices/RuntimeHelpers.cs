@@ -66,13 +66,8 @@ namespace System.Runtime.CompilerServices
         }
 
         [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object? userData)
+        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code!!, CleanupCode backoutCode!!, object? userData)
         {
-            if (code == null)
-                throw new ArgumentNullException(nameof(code));
-            if (backoutCode == null)
-                throw new ArgumentNullException(nameof(backoutCode));
-
             bool exceptionThrown = true;
 
             try

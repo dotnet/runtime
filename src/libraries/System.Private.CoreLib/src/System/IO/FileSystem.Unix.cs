@@ -387,40 +387,58 @@ namespace System.IO
             }
         }
 
-        public static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool sameDirectoryDifferentCase)
         {
-            // Windows doesn't care if you try and copy a file via "MoveDirectory"...
-            if (FileExists(sourceFullPath))
-            {
-                // ... but it doesn't like the source to have a trailing slash ...
+            ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
+            ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
 
+            if (OperatingSystem.IsBrowser() && Path.EndsInDirectorySeparator(sourceFullPath) && FileExists(sourceFullPath))
+            {
                 // On Windows we end up with ERROR_INVALID_NAME, which is
                 // "The filename, directory name, or volume label syntax is incorrect."
-                //
-                // This surfaces as an IOException, if we let it go beyond here it would
-                // give DirectoryNotFound.
-
-                if (Path.EndsInDirectorySeparator(sourceFullPath))
-                    throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
-
-                // ... but it doesn't care if the destination has a trailing separator.
-                destFullPath = Path.TrimEndingDirectorySeparator(destFullPath);
+                // On Unix, rename fails with ENOTDIR, but on WASM it does not.
+                // So if the path ends with directory separator, but it's a file, we just throw.
+                throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
             }
 
-            if (FileExists(destFullPath))
+            if (!sameDirectoryDifferentCase) // This check is to allow renaming of directories
             {
-                // Some Unix distros will overwrite the destination file if it already exists.
-                // Throwing IOException to match Windows behavior.
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+                if (Interop.Sys.Stat(destNoDirectorySeparator, out _) >= 0)
+                {
+                    // destination exists, but before we throw we need to check whether source exists or not
+
+                    // Windows will throw if the source file/directory doesn't exist, we preemptively check
+                    // to make sure our cross platform behavior matches .NET Framework behavior.
+                    if (Interop.Sys.Stat(srcNoDirectorySeparator, out Interop.Sys.FileStatus sourceFileStatus) < 0)
+                    {
+                        throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                    }
+                    else if ((sourceFileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFDIR
+                        && Path.EndsInDirectorySeparator(sourceFullPath))
+                    {
+                        throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                    }
+
+                    // Some Unix distros will overwrite the destination file if it already exists.
+                    // Throwing IOException to match Windows behavior.
+                    throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+                }
             }
 
-            if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
+            if (Interop.Sys.Rename(sourceFullPath, destNoDirectorySeparator) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
                 {
                     case Interop.Error.EACCES: // match Win32 exception
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.RawErrno);
+                    case Interop.Error.ENOENT:
+                        throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path,
+                            Interop.Sys.Stat(srcNoDirectorySeparator, out _) >= 0
+                                ? destFullPath // the source directory exists, so destination does not. Example: Move("/tmp/existing/", "/tmp/nonExisting1/nonExisting2/")
+                                : sourceFullPath));
+                    case Interop.Error.ENOTDIR: // sourceFullPath exists and it's not a directory
+                        throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
                     default:
                         throw Interop.GetExceptionForIoErrno(errorInfo, isDirectory: true);
                 }
@@ -554,51 +572,25 @@ namespace System.IO
         }
 
         public static void SetAttributes(string fullPath, FileAttributes attributes)
-        {
-            new FileInfo(fullPath, null).Attributes = attributes;
-        }
+            => default(FileStatus).SetAttributes(fullPath, attributes, asDirectory: false);
 
         public static DateTimeOffset GetCreationTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).CreationTimeUtc;
-        }
+            => default(FileStatus).GetCreationTime(fullPath).UtcDateTime;
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-
-            info.CreationTimeCore = time;
-        }
+            => default(FileStatus).SetCreationTime(fullPath, time, asDirectory);
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).LastAccessTimeUtc;
-        }
+            => default(FileStatus).GetLastAccessTime(fullPath).UtcDateTime;
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-
-            info.LastAccessTimeCore = time;
-        }
+            => default(FileStatus).SetLastAccessTime(fullPath, time, asDirectory);
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).LastWriteTimeUtc;
-        }
+            => default(FileStatus).GetLastWriteTime(fullPath).UtcDateTime;
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-
-            info.LastWriteTimeCore = time;
-        }
+            => default(FileStatus).SetLastWriteTime(fullPath, time, asDirectory);
 
         public static string[] GetLogicalDrives()
         {

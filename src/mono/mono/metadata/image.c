@@ -2,7 +2,7 @@
  * \file
  * Routines for manipulating an image stored in an
  * extended PE/COFF file.
- * 
+ *
  * Authors:
  *   Miguel de Icaza (miguel@ximian.com)
  *   Paolo Molaro (lupus@ximian.com)
@@ -127,7 +127,7 @@ void
 mono_install_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data)
 {
 	ImageUnloadHook *hook;
-	
+
 	g_return_if_fail (func != NULL);
 
 	hook = g_new0 (ImageUnloadHook, 1);
@@ -206,10 +206,10 @@ mono_cli_rva_image_map (MonoImage *image, guint32 addr)
  * \param addr relative virtual address (RVA)
  *
  * This is a low-level routine used by the runtime to map relative
- * virtual address (RVA) into their location in memory. 
+ * virtual address (RVA) into their location in memory.
  *
  * \returns the address in memory for the given RVA, or NULL if the
- * RVA is not valid for this image. 
+ * RVA is not valid for this image.
  */
 char *
 mono_image_rva_map (MonoImage *image, guint32 addr)
@@ -288,14 +288,14 @@ mono_image_ensure_section_idx (MonoImage *image, int section)
 {
 	MonoCLIImageInfo *iinfo = image->image_info;
 	MonoSectionTable *sect;
-	
+
 	g_return_val_if_fail (section < iinfo->cli_section_count, FALSE);
 
 	if (iinfo->cli_sections [section] != NULL)
 		return TRUE;
 
 	sect = &iinfo->cli_section_tables [section];
-	
+
 	if (sect->st_raw_data_ptr + sect->st_raw_data_size > image->raw_data_len)
 		return FALSE;
 #ifdef HOST_WIN32
@@ -323,11 +323,11 @@ mono_image_ensure_section (MonoImage *image, const char *section)
 {
 	MonoCLIImageInfo *ii = image->image_info;
 	int i;
-	
+
 	for (i = 0; i < ii->cli_section_count; i++){
 		if (strncmp (ii->cli_section_tables [i].st_name, section, 8) != 0)
 			continue;
-		
+
 		return mono_image_ensure_section_idx (image, i);
 	}
 	return FALSE;
@@ -342,7 +342,7 @@ load_section_tables (MonoImage *image, MonoCLIImageInfo *iinfo, guint32 offset)
 	iinfo->cli_section_count = top;
 	iinfo->cli_section_tables = g_new0 (MonoSectionTable, top);
 	iinfo->cli_sections = g_new0 (void *, top);
-	
+
 	for (i = 0; i < top; i++){
 		MonoSectionTable *t = &iinfo->cli_section_tables [i];
 
@@ -372,7 +372,7 @@ gboolean
 mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 {
 	guint32 offset;
-	
+
 	offset = mono_cli_rva_image_map (image, iinfo->cli_header.datadir.pe_cli_header.rva);
 	if (offset == INVALID_ADDRESS)
 		return FALSE;
@@ -428,7 +428,7 @@ mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 		/* g_warning ("Some fields in the CLI header which should have been zero are not zero"); */
 
 	}
-	    
+
 	return TRUE;
 }
 
@@ -455,7 +455,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 	int i;
 	guint32 pad;
 	char *ptr;
-	
+
 	offset = mono_cli_rva_image_map (image, iinfo->cli_cli_header.ch_metadata.rva);
 	if (offset == INVALID_ADDRESS)
 		return FALSE;
@@ -490,7 +490,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 
 	/* skip over flags */
 	ptr += 2;
-	
+
 	streams = read16 (ptr);
 	ptr += 2;
 
@@ -591,7 +591,7 @@ load_tables (MonoImage *image)
 	guint64 valid_mask;
 	int valid = 0, table;
 	int heap_sizes;
-	
+
 	heap_sizes = heap_tables [6];
 	image->idx_string_wide = ((heap_sizes & 0x01) == 1);
 	image->idx_guid_wide   = ((heap_sizes & 0x02) == 2);
@@ -603,10 +603,10 @@ load_tables (MonoImage *image)
 		g_assert (image->idx_guid_wide);
 		g_assert (image->idx_blob_wide);
 	}
-	
+
 	valid_mask = read64 (heap_tables + 8);
 	rows = (const guint32 *) (heap_tables + 24);
-	
+
 	for (table = 0; table < 64; table++){
 		if ((valid_mask & ((guint64) 1 << table)) == 0){
 			if (table > MONO_TABLE_LAST)
@@ -677,7 +677,7 @@ mono_image_check_for_module_cctor (MonoImage *image)
 			guint32 last_method;
 			if (table_info_get_rows (t) > 1)
 				last_method = mono_metadata_decode_row_col (t, 1, MONO_TYPEDEF_METHOD_LIST) - 1;
-			else 
+			else
 				last_method = table_info_get_rows (mt);
 			for (; first_method < last_method; first_method++) {
 				nameidx = mono_metadata_decode_row_col (mt, first_method, MONO_METHOD_NAME);
@@ -777,7 +777,7 @@ mono_image_init (MonoImage *image)
 #define SWAPPDE(x)
 #endif
 
-static int 
+static int
 do_load_header_internal (const char *raw_data, guint32 raw_data_len, MonoDotNetHeader *header, int offset, gboolean image_is_module_handle)
 {
 	MonoDotNetHeader64 header64;
@@ -910,12 +910,12 @@ do_load_header_internal (const char *raw_data, guint32 raw_data_len, MonoDotNetH
 static int
 do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
 {
-	offset = do_load_header_internal (image->raw_data, image->raw_data_len, header, offset, 
+	offset = do_load_header_internal (image->raw_data, image->raw_data_len, header, offset,
 #ifdef HOST_WIN32
 	m_image_is_module_handle (image));
 #else
 	FALSE);
-#endif	
+#endif
 
 #ifdef HOST_WIN32
 	if (m_image_is_module_handle (image))
@@ -924,7 +924,7 @@ do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
 	return offset;
 }
 
-mono_bool 
+mono_bool
 mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 {
 	MonoDotNetHeader cli_header;
@@ -934,11 +934,11 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 
 	int offset = 0;
 	memcpy (&msdos, raw_data + offset, sizeof (msdos));
-	
+
 	if (!(msdos.msdos_sig [0] == 'M' && msdos.msdos_sig [1] == 'Z')) {
 		return FALSE;
 	}
-	
+
 	msdos.pe_offset = GUINT32_FROM_LE (msdos.pe_offset);
 
 	offset = msdos.pe_offset;
@@ -959,7 +959,7 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 				if (ret + sizeof (MonoSectionTable) > raw_data_len) {
 					return FALSE;
 				}
-				
+
 				memcpy (&t, raw_data + ret, sizeof (MonoSectionTable));
 				ret += sizeof (MonoSectionTable);
 
@@ -1014,10 +1014,10 @@ pe_image_load_pe_data (MonoImage *image)
 		goto invalid_image;
 
 	memcpy (&msdos, image->raw_data + offset, sizeof (msdos));
-	
+
 	if (!(msdos.msdos_sig [0] == 'M' && msdos.msdos_sig [1] == 'Z'))
 		goto invalid_image;
-	
+
 	msdos.pe_offset = GUINT32_FROM_LE (msdos.pe_offset);
 
 	offset = msdos.pe_offset;
@@ -1052,7 +1052,7 @@ pe_image_load_pe_data (MonoImage *image)
 	/*
 	 * FIXME: byte swap all addresses here for header.
 	 */
-	
+
 	if (!load_section_tables (image, iinfo, offset))
 		goto invalid_image;
 
@@ -1104,7 +1104,7 @@ mono_image_load_names (MonoImage *image)
 {
 	/* modules don't have an assembly table row */
 	if (table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLY])) {
-		image->assembly_name = mono_metadata_string_heap (image, 
+		image->assembly_name = mono_metadata_string_heap (image,
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_ASSEMBLY],
 					0, MONO_ASSEMBLY_NAME));
 	}
@@ -1314,7 +1314,7 @@ mono_image_storage_dtor (gpointer self)
 	MonoImageStorage *storage = (MonoImageStorage *)self;
 
 	mono_image_storage_unpublish (storage);
-	
+
 #ifdef HOST_WIN32
 	if (storage->is_module_handle && !storage->has_entry_point) {
 		mono_images_lock ();
@@ -1369,7 +1369,7 @@ mono_image_storage_open (const char *fname)
 		g_free (key);
 		return published_storage;
 	}
-	
+
 	MonoFileMap *filed;
 	if ((filed = mono_file_map_open (fname)) == NULL){
 		g_free (key);
@@ -1390,7 +1390,7 @@ mono_image_storage_open (const char *fname)
 	mono_file_map_close (filed);
 
 	storage->key = key;
-	
+
 	MonoImageStorage *other_storage = NULL;
 	if (!mono_image_storage_trypublish (storage, &other_storage)) {
 		mono_image_storage_close (storage);
@@ -1789,7 +1789,7 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 	char *absfname;
 
 	g_return_val_if_fail (fname != NULL, NULL);
-	
+
 #ifdef HOST_WIN32
 	// Win32 path: If we are running with mixed-mode assemblies enabled (ie have loaded mscoree.dll),
 	// then assemblies need to be loaded with LoadLibrary:
@@ -1901,8 +1901,8 @@ mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImag
  * mono_image_open:
  * \param fname filename that points to the module we want to open
  * \param status An error condition is returned in this field
- * \returns An open image of type \c MonoImage or NULL on error. 
- * The caller holds a temporary reference to the returned image which should be cleared 
+ * \returns An open image of type \c MonoImage or NULL on error.
+ * The caller holds a temporary reference to the returned image which should be cleared
  * when no longer needed by calling \c mono_image_close.
  * if NULL, then check the value of \p status for details on the error
  */
@@ -1926,7 +1926,7 @@ MonoImage *
 mono_pe_file_open (const char *fname, MonoImageOpenStatus *status)
 {
 	g_return_val_if_fail (fname != NULL, NULL);
-	
+
 	return do_mono_image_open (mono_alc_get_default (), fname, status, FALSE, TRUE, FALSE);
 }
 
@@ -1935,13 +1935,13 @@ mono_pe_file_open (const char *fname, MonoImageOpenStatus *status)
  * \param fname filename that points to the module we want to open
  * \param status An error condition is returned in this field
  * \returns an image without loading neither pe or cli data.
- * Use mono_image_load_pe_data and mono_image_load_cli_data to load them.  
+ * Use mono_image_load_pe_data and mono_image_load_cli_data to load them.
  */
 MonoImage *
 mono_image_open_raw (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status)
 {
 	g_return_val_if_fail (fname != NULL, NULL);
-	
+
 	return do_mono_image_open (alc, fname, status, FALSE, FALSE, FALSE);
 }
 
@@ -1980,7 +1980,7 @@ mono_image_fixup_vtable (MonoImage *image)
 	vtfixup = (MonoVTableFixup*) mono_image_rva_map (image, de->rva);
 	if (!vtfixup)
 		return;
-	
+
 	count = de->size / sizeof (MonoVTableFixup);
 	while (count--) {
 		if (!vtfixup->rva || !vtfixup->count)
@@ -2039,7 +2039,7 @@ void
 mono_image_addref (MonoImage *image)
 {
 	mono_atomic_inc_i32 (&image->ref_count);
-}	
+}
 
 void
 mono_dynamic_stream_reset (MonoDynamicStream* stream)
@@ -2068,7 +2068,7 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->delegate_end_invoke_cache);
 	free_hash (cache->delegate_bound_static_invoke_cache);
 	free_hash (cache->runtime_invoke_signature_cache);
-	
+
 	free_hash (cache->delegate_abstract_invoke_cache);
 
 	free_hash (cache->runtime_invoke_method_cache);
@@ -2139,7 +2139,7 @@ mono_image_close_except_pools (MonoImage *image)
 	mono_metadata_update_cleanup_on_close (image);
 
 	/*
-	 * The caches inside a MonoImage might refer to metadata which is stored in referenced 
+	 * The caches inside a MonoImage might refer to metadata which is stored in referenced
 	 * assemblies, so we can't release these references in mono_assembly_close () since the
 	 * MonoImage might outlive its associated MonoAssembly.
 	 */
@@ -2340,7 +2340,7 @@ mono_image_close (MonoImage *image)
 		mono_image_close_finish (image);
 }
 
-/** 
+/**
  * mono_image_strerror:
  * \param status an code indicating the result from a recent operation
  * \returns a string describing the error
@@ -2415,7 +2415,7 @@ mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
 		for(i=0; i<entries; i++) {
 			MonoPEResourceDirEntry *sub_entry=&sub_entries[i];
 			gpointer ret;
-			
+
 			ret=mono_image_walk_resource_tree (info, res_id,
 							   lang_id, name,
 							   sub_entry, root,
@@ -2495,11 +2495,11 @@ mono_image_lookup_resource (MonoImage *image, guint32 res_id, guint32 lang_id, g
 
 	entries = GUINT16_FROM_LE (resource_dir->res_named_entries) + GUINT16_FROM_LE (resource_dir->res_id_entries);
 	res_entries=(MonoPEResourceDirEntry *)(resource_dir+1);
-	
+
 	for(i=0; i<entries; i++) {
 		MonoPEResourceDirEntry *entry=&res_entries[i];
 		gpointer ret;
-		
+
 		ret=mono_image_walk_resource_tree (info, res_id, lang_id,
 						   name, entry, resource_dir,
 						   0);
@@ -2511,7 +2511,7 @@ mono_image_lookup_resource (MonoImage *image, guint32 res_id, guint32 lang_id, g
 	return(NULL);
 }
 
-/** 
+/**
  * mono_image_get_entry_point:
  * \param image the image where the entry point will be looked up.
  * Use this routine to determine the metadata token for method that
@@ -2545,7 +2545,7 @@ mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
 
 	if (!ch->ch_resources.rva || offset + 4 > ch->ch_resources.size)
 		return NULL;
-	
+
 	data = mono_image_rva_map (image, ch->ch_resources.rva);
 	if (!data)
 		return NULL;
@@ -2698,10 +2698,10 @@ mono_image_strong_name_position (MonoImage *image, guint32 *size)
  * \param size a \c guint32 pointer, or NULL.
  *
  * This is used to obtain the public key in the \p image.
- * 
+ *
  * If the image has a public key, and \p size is not NULL, the value
  * pointed to by size will have the size of the public key.
- * 
+ *
  * \returns NULL if the image does not have a public key, or a pointer
  * to the public key.
  */
@@ -2797,7 +2797,7 @@ mono_table_info_get_rows (const MonoTableInfo *table)
  * Use this routine to get the assembly that owns this image.
  * \returns the assembly that holds this image.
  */
-MonoAssembly* 
+MonoAssembly*
 mono_image_get_assembly (MonoImage *image)
 {
 	return image->assembly;
@@ -2911,7 +2911,7 @@ GList*
 mono_g_list_prepend_image (MonoImage *image, GList *list, gpointer data)
 {
 	GList *new_list;
-	
+
 	new_list = (GList *)mono_image_alloc (image, sizeof (GList));
 	new_list->data = data;
 	new_list->prev = list ? list->prev : NULL;
@@ -2956,7 +2956,7 @@ mono_image_unlock (MonoImage *image)
  *
  * LOCKING: Takes the image lock
  */
-gpointer 
+gpointer
 mono_image_property_lookup (MonoImage *image, gpointer subject, guint32 property)
 {
 	gpointer res;

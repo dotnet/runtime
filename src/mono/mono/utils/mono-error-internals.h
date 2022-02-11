@@ -164,7 +164,7 @@ void
 mono_error_dup_strings (MonoError *error, gboolean dup_strings);
 
 /* This function is not very useful as you can't provide any details beyond the message.*/
-MONO_COMPONENT_API 
+MONO_COMPONENT_API
 void
 mono_error_set_error (MonoError *error, int error_code, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
 
@@ -210,7 +210,7 @@ MONO_COMPONENT_API
 void
 mono_error_set_not_supported (MonoError *error, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
-void 
+void
 mono_error_set_ambiguous_implementation (MonoError *error, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
 MONO_COMPONENT_API

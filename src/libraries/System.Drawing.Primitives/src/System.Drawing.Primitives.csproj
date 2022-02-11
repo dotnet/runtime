@@ -36,7 +36,6 @@
              Link="Common\Interop\Windows\User32\Interop.Win32SystemColors.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\src\Microsoft.Win32.SystemEvents.csproj" />
     <Reference Include="System.Collections" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Numerics.Vectors" />

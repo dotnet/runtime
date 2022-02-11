@@ -247,6 +247,11 @@ mb_emit_exception_noilgen (MonoMethodBuilder *mb, const char *exc_nspace, const 
 }
 
 static void
+emit_marshal_directive_exception_noilgen (EmitMarshalContext *m, int argnum, const char* msg)
+{
+}
+
+static void
 mb_emit_exception_for_error_noilgen (MonoMethodBuilder *mb, const MonoError *error)
 {
 }
@@ -404,6 +409,7 @@ mono_marshal_noilgen_init (void)
 	cb.mb_set_dynamic = mb_set_dynamic_noilgen;
 	cb.mb_emit_exception = mb_emit_exception_noilgen;
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_noilgen;
+	cb.emit_marshal_directive_exception = emit_marshal_directive_exception_noilgen;
 	cb.mb_emit_byte = mb_emit_byte_noilgen;
 	mono_install_marshal_callbacks (&cb);
 }

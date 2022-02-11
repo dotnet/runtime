@@ -166,12 +166,9 @@ namespace System.IO
 
         private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
         {
-            ValidateArgs(path, encoding);
-
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
+            ArgumentNullException.ThrowIfNull(options);
             if ((options.Access & FileAccess.Write) == 0)
             {
                 throw new ArgumentException(SR.Argument_StreamNotWritable, nameof(options));
@@ -182,21 +179,14 @@ namespace System.IO
 
         private static Stream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
         {
-            ValidateArgs(path, encoding);
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
             if (bufferSize <= 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            }
 
             return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize);
-        }
-
-        private static void ValidateArgs(string path, Encoding encoding)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath);
         }
 
         public override void Close()
@@ -377,12 +367,8 @@ namespace System.IO
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // prevent WriteSpan from bloating call sites
-        public override void Write(char[] buffer, int index, int count)
+        public override void Write(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -519,23 +505,16 @@ namespace System.IO
 
         private void WriteFormatHelper(string format, ParamsArray args, bool appendNewLine)
         {
-            StringBuilder sb =
-                StringBuilderCache.Acquire((format?.Length ?? 0) + args.Length * 8)
-                .AppendFormatHelper(null, format!, args); // AppendFormatHelper will appropriately throw ArgumentNullException for a null format
+            int estimatedLength = (format?.Length ?? 0) + args.Length * 8;
+            var vsb = estimatedLength <= 256 ?
+                new ValueStringBuilder(stackalloc char[256]) :
+                new ValueStringBuilder(estimatedLength);
 
-            StringBuilder.ChunkEnumerator chunks = sb.GetChunks();
+            vsb.AppendFormatHelper(null, format!, args); // AppendFormatHelper will appropriately throw ArgumentNullException for a null format
 
-            bool more = chunks.MoveNext();
-            while (more)
-            {
-                ReadOnlySpan<char> current = chunks.Current.Span;
-                more = chunks.MoveNext();
+            WriteSpan(vsb.AsSpan(), appendNewLine);
 
-                // If final chunk, include the newline if needed
-                WriteSpan(current, appendNewLine: more ? false : appendNewLine);
-            }
-
-            StringBuilderCache.Release(sb);
+            vsb.Dispose();
         }
 
         public override void Write(string format, object? arg0)
@@ -717,12 +696,8 @@ namespace System.IO
             }
         }
 
-        public override Task WriteAsync(char[] buffer, int index, int count)
+        public override Task WriteAsync(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -877,12 +852,8 @@ namespace System.IO
             return task;
         }
 
-        public override Task WriteLineAsync(char[] buffer, int index, int count)
+        public override Task WriteLineAsync(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);

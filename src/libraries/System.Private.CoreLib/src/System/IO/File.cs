@@ -49,14 +49,8 @@ namespace System.IO
         /// </summary>
         public static void Copy(string sourceFileName, string destFileName, bool overwrite)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName), SR.ArgumentNull_FileName);
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
-            if (sourceFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(sourceFileName));
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             FileSystem.CopyFile(Path.GetFullPath(sourceFileName), Path.GetFullPath(destFileName), overwrite);
         }
@@ -292,12 +286,8 @@ namespace System.IO
 
         public static void WriteAllBytes(string path, byte[] bytes)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(bytes);
 
             using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read);
             RandomAccess.WriteAtOffset(sfh, bytes, 0);
@@ -344,10 +334,7 @@ namespace System.IO
         public static void WriteAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             InternalWriteAllLines(new StreamWriter(path, false, encoding), contents);
         }
 
@@ -381,23 +368,15 @@ namespace System.IO
         public static void AppendAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             InternalWriteAllLines(new StreamWriter(path, true, encoding), contents);
         }
 
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName)
             => Replace(sourceFileName, destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
 
-        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
+        public static void Replace(string sourceFileName!!, string destinationFileName!!, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName));
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
-
             FileSystem.ReplaceFile(
                 Path.GetFullPath(sourceFileName),
                 Path.GetFullPath(destinationFileName),
@@ -418,14 +397,8 @@ namespace System.IO
 
         public static void Move(string sourceFileName, string destFileName, bool overwrite)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName), SR.ArgumentNull_FileName);
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
-            if (sourceFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(sourceFileName));
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             string fullSourceFileName = Path.GetFullPath(sourceFileName);
             string fullDestFileName = Path.GetFullPath(destFileName);
@@ -609,12 +582,8 @@ namespace System.IO
 
         public static Task WriteAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(bytes);
 
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
@@ -649,7 +618,7 @@ namespace System.IO
                 cancellationToken.ThrowIfCancellationRequested();
                 string? line;
                 List<string> lines = new List<string>();
-                while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
+                while ((line = await sr.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != null)
                 {
                     lines.Add(line);
                     cancellationToken.ThrowIfCancellationRequested();
@@ -665,10 +634,7 @@ namespace System.IO
         public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
                 : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: false), contents, cancellationToken);
@@ -713,10 +679,7 @@ namespace System.IO
         public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
                 : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: true), contents, cancellationToken);
@@ -764,12 +727,8 @@ namespace System.IO
 
         private static void Validate(string path, Encoding encoding)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
         }
 
         private static byte[] ReadAllBytesUnknownLength(SafeFileHandle sfh)

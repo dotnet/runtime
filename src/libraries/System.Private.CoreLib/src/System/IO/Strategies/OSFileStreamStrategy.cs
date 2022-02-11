@@ -195,8 +195,8 @@ namespace System.IO.Strategies
         {
             Debug.Assert(value >= 0, "value >= 0");
 
-            FileStreamHelpers.SetFileLength(_fileHandle, value);
-            Debug.Assert(!_fileHandle.LengthCanBeCached, "If length can be cached (file opened for reading, not shared for writing), it should be impossible to modify file length");
+            RandomAccess.SetFileLength(_fileHandle, value);
+            Debug.Assert(!_fileHandle.TryGetCachedLength(out _), "If length can be cached (file opened for reading, not shared for writing), it should be impossible to modify file length");
 
             if (_filePosition > value)
             {
@@ -283,7 +283,7 @@ namespace System.IO.Strategies
                 return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, fileOffset: -1, cancellationToken);
             }
 
-            if (_fileHandle.HasCachedFileLength && Volatile.Read(ref _filePosition) >= _fileHandle.GetFileLength())
+            if (_fileHandle.TryGetCachedLength(out long cachedLength) && Volatile.Read(ref _filePosition) >= cachedLength)
             {
                 // We know for sure that the file length can be safely cached and it has already been obtained.
                 // If we have reached EOF we just return here and avoid a sys-call.

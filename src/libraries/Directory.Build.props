@@ -23,8 +23,6 @@
     <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
-  <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" Condition="'$(UseTargetFrameworkSDK)' != 'false'" />
-
   <!-- Unique assembly versions increases(3x) the compiler throughput during reference package updates. -->
   <PropertyGroup Condition="'$(IsGeneratorProject)' == 'true'">
     <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
@@ -78,17 +76,10 @@
     <!-- We can't generate an apphost without restoring the targeting pack. -->
     <UseAppHost>false</UseAppHost>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <!--
-      Microsoft.NET.TargetFrameworkInference.targets appends the TargetFramework.
-      We do this manually and use the Configuration instead.
-    -->
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
   <!-- Language configuration -->
   <PropertyGroup>
-    <!-- We decided to keep this disabled by default: https://github.com/dotnet/runtime/issues/15152 -->
-    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
     <!-- Disable analyzers for tests and unsupported projects -->
     <RunAnalyzers Condition="'$(IsTestProject)' != 'true' and '$(IsSourceProject)' != 'true'">false</RunAnalyzers>

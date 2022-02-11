@@ -17,6 +17,7 @@
 #include "field.h"
 #include <msodwwrap.h>
 #include <shlobj.h>
+#include <werapi.h>
 #include "dbginterface.h"
 #include <winver.h>
 #include "dlwrap.h"
@@ -56,14 +57,6 @@ public:
 
     operator HMODULE() { return hModule; }
 };
-
-#ifndef FEATURE_CORESYSTEM
-#define WER_MODULE_NAME_W WINDOWS_KERNEL32_DLLNAME_W
-typedef SimpleModuleHolder<WszGetModuleHandle, false> WerModuleHolder;
-#else
-#define WER_MODULE_NAME_W W("api-ms-win-core-windowserrorreporting-l1-1-0.dll")
-typedef SimpleModuleHolder<CLRLoadLibrary, true> WerModuleHolder;
-#endif
 
 //------------------------------------------------------------------------------
 // Description
@@ -107,47 +100,17 @@ BOOL RegisterOutOfProcessWatsonCallbacks()
     CONTRACTL_END;
 
     WCHAR wszDACName[] = MAIN_DAC_MODULE_NAME_W W(".dll");
-    WerModuleHolder hWerModule(WER_MODULE_NAME_W);
-
-#ifdef FEATURE_CORESYSTEM
-    if ((hWerModule == NULL) && !RunningOnWin8())
-    {
-        // If we are built for CoreSystemServer, but are running on Windows 7, we need to look elsewhere
-        hWerModule = WerModuleHolder(W("Kernel32.dll"));
-    }
-#endif
-
-    if (hWerModule == NULL)
-    {
-        _ASSERTE(!"failed to get WER module handle");
-        return FALSE;
-    }
-
-    typedef HRESULT (WINAPI * WerRegisterRuntimeExceptionModuleFnPtr)(PCWSTR, PDWORD);
-    WerRegisterRuntimeExceptionModuleFnPtr pFnWerRegisterRuntimeExceptionModule;
-
-    pFnWerRegisterRuntimeExceptionModule = (WerRegisterRuntimeExceptionModuleFnPtr)
-                                        GetProcAddress(hWerModule, "WerRegisterRuntimeExceptionModule");
-
-    _ASSERTE(pFnWerRegisterRuntimeExceptionModule != NULL);
-    if (pFnWerRegisterRuntimeExceptionModule == NULL)
-    {
-       return FALSE;
-    }
     HRESULT hr = S_OK;
 
     EX_TRY
     {
         PathString wszDACPath;
-        if (SUCCEEDED(::GetClrModuleDirectory(wszDACPath)))
+        hr = ::GetClrModuleDirectory(wszDACPath);
+        if (SUCCEEDED(hr))
         {
             wszDACPath.Append(wszDACName);
-            hr = (*pFnWerRegisterRuntimeExceptionModule)(wszDACPath, (PDWORD)GetClrModuleBase());
+            hr = WerRegisterRuntimeExceptionModule(wszDACPath, (PDWORD)GetClrModuleBase());
         }
-        else {
-            hr = E_FAIL;
-        }
-
     }
     EX_CATCH_HRESULT(hr);
 
@@ -156,16 +119,7 @@ BOOL RegisterOutOfProcessWatsonCallbacks()
         STRESS_LOG0(LF_STARTUP,
                     LL_ERROR,
                     "WATSON support: failed to register DAC dll with WerRegisterRuntimeExceptionModule");
-
-#ifdef FEATURE_CORESYSTEM
-        // For CoreSys we *could* be running on a platform that doesn't have Watson proper
-        // (the APIs might exist but they just fail).
-        // WerRegisterRuntimeExceptionModule may return E_NOIMPL.
         return TRUE;
-#else // FEATURE_CORESYSTEM
-       _ASSERTE(! "WATSON support: failed to register DAC dll with WerRegisterRuntimeExceptionModule");
-        return FALSE;
-#endif // FEATURE_CORESYSTEM
     }
 
     STRESS_LOG0(LF_STARTUP,

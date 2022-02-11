@@ -187,8 +187,7 @@ by Mono runtime in environments that allow fallback to JIT or need IL interprete
 
 [Native AOT](https://github.com/dotnet/designs/blob/main/accepted/2020/form-factors.md#native-aot-form-factors) is
 a .NET runtime form factor with key performance characteristics (startup time, binary size and steady state throughput and predictability)
-competitive with statically compiled languages. A .NET runtime flavor based on CoreCLR with these characteristics is being developed as
-experimental project in [dotnet/runtimelab](https://github.com/dotnet/runtimelab/tree/feature/NativeAOT) repo.
+competitive with statically compiled languages.
 
 ## Frameworks
 

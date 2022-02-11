@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -10,7 +11,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public interface ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode { get; }
-        public bool IsIncludeFieldsEnabled { get; }
+        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
 
         public JsonTypeInfo<Location> Location { get; }
         public JsonTypeInfo<NumberTypes> NumberTypes { get; }
@@ -46,6 +47,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<ClassWithBadCustomConverter> ClassWithBadCustomConverter { get; }
         public JsonTypeInfo<StructWithBadCustomConverter> StructWithBadCustomConverter { get; }
         public JsonTypeInfo<PersonStruct?> NullablePersonStruct { get; }
+        public JsonTypeInfo<TypeWithValidationAttributes> TypeWithValidationAttributes { get; }
+        public JsonTypeInfo<TypeWithDerivedAttribute> TypeWithDerivedAttribute { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext

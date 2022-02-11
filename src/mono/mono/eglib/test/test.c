@@ -48,16 +48,16 @@
 extern gint global_passed, global_tests;
 static gchar *last_result = NULL;
 
-static gboolean 
+static gboolean
 run_test(const Test *test, char **result_out)
 {
-	gchar *result; 
+	gchar *result;
 
 	if((result = test->handler()) == NULL) {
 		*result_out = NULL;
 		return TRUE;
 	} else {
-		*result_out = result;	
+		*result_out = result;
 		return FALSE;
 	}
 }
@@ -88,7 +88,7 @@ run_group(const Group *group, gint iterations, gboolean quiet,
 	for(i = 0; tests[i].name != NULL; i++) {
 		gchar *result = (char*)"";
 		gboolean iter_pass, run;
-	
+
 		iter_pass = FALSE;
 		if(tests_to_run != NULL) {
 			gint j;
@@ -106,15 +106,15 @@ run_group(const Group *group, gint iterations, gboolean quiet,
 		if(!run) {
 			continue;
 		}
-	
+
 		total++;
-	
+
 		if(!quiet) {
 			printf("  %s: ", tests[i].name);
 		}
 
 		start_time_test = get_timestamp();
-		
+
 		for(j = 0; j < iterations; j++) {
 			iter_pass = run_test(&(tests[i]), &result);
 			if(!iter_pass) {
@@ -131,11 +131,11 @@ run_group(const Group *group, gint iterations, gboolean quiet,
 					printf("OK\n");
 				}
 			}
-		} else  {			
+		} else  {
 			if(!quiet) {
 				printf("FAILED (%s)\n", result);
 			}
-			
+
 			if(last_result == result) {
 				last_result = NULL;
 				g_free(result);
@@ -198,12 +198,12 @@ get_timestamp (void)
 	return res.tv_sec + (1.e-6) * res.tv_usec;
 }
 
-/* 
+/*
  * Duplicating code here from EGlib to avoid g_strsplit skew between
  * EGLib and GLib
  */
- 
-gchar ** 
+
+gchar **
 eg_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 {
 	gchar *string_c;
@@ -215,12 +215,12 @@ eg_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 	g_return_val_if_fail(string != NULL, NULL);
 	g_return_val_if_fail(delimiter != NULL, NULL);
 	g_return_val_if_fail(delimiter[0] != 0, NULL);
-	
+
 	token_length = strlen(string);
 	string_c = (gchar *)g_malloc(token_length + 1);
 	memcpy(string_c, string, token_length);
 	string_c[token_length] = 0;
-	
+
 	vector = NULL;
 	token = (gchar *)strtok_r(string_c, delimiter, &strtok_save);
 
@@ -230,11 +230,11 @@ eg_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 		memcpy(token_c, token, token_length);
 		token_c[token_length] = 0;
 
-		vector = vector == NULL ? 
+		vector = vector == NULL ?
 			(gchar **)g_malloc(2 * sizeof(vector)) :
 			(gchar **)g_realloc(vector, (size + 1) * sizeof(vector));
-	
-		vector[size - 1] = token_c;	
+
+		vector[size - 1] = token_c;
 		size++;
 
 		if(max_tokens > 0 && size >= max_tokens) {
@@ -251,7 +251,7 @@ eg_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 	if(vector != NULL && size > 0) {
 		vector[size - 1] = NULL;
 	}
-	
+
 	g_free(string_c);
 	string_c = NULL;
 

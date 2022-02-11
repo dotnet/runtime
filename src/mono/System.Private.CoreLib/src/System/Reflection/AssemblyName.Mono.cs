@@ -12,47 +12,6 @@ namespace System.Reflection
 {
     public partial class AssemblyName
     {
-        public AssemblyName(string assemblyName)
-        {
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
-            if (assemblyName.Length == 0 || assemblyName[0] == '\0')
-                throw new ArgumentException(SR.Format_StringZeroLength);
-
-            using (SafeStringMarshal name = RuntimeMarshal.MarshalString(assemblyName))
-            {
-                // TODO: Should use CoreRT AssemblyNameParser
-                if (!ParseAssemblyName(name.Value, out MonoAssemblyName nativeName, out bool isVersionDefined, out bool isTokenDefined))
-                    throw new FileLoadException("The assembly name is invalid.");
-
-                try
-                {
-                    unsafe
-                    {
-                        FillName(&nativeName, null, isVersionDefined, false, isTokenDefined);
-                    }
-                }
-                finally
-                {
-                    RuntimeMarshal.FreeAssemblyName(ref nativeName, false);
-                }
-            }
-        }
-
-        private unsafe byte[]? ComputePublicKeyToken()
-        {
-            if (_publicKey == null)
-                return null;
-            if (_publicKey.Length == 0)
-                return Array.Empty<byte>();
-
-            var token = new byte[8];
-            fixed (byte* pkt = token)
-            fixed (byte* pk = _publicKey)
-                get_public_token(pkt, pk, _publicKey.Length);
-            return token;
-        }
-
         internal static AssemblyName Create(IntPtr monoAssembly, string? codeBase)
         {
             AssemblyName aname = new AssemblyName();
@@ -119,32 +78,7 @@ namespace System.Reflection
             }
         }
 
-        private static AssemblyName GetFileInformationCore(string assemblyFile)
-        {
-            unsafe
-            {
-                Assembly.InternalGetAssemblyName(Path.GetFullPath(assemblyFile), out MonoAssemblyName nativeName, out string? codebase);
-
-                var aname = new AssemblyName();
-                try
-                {
-                    aname.FillName(&nativeName, codebase, true, false, true);
-                    return aname;
-                }
-                finally
-                {
-                    RuntimeMarshal.FreeAssemblyName(ref nativeName, false);
-                }
-            }
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe void get_public_token(byte* token, byte* pubkey, int len);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe MonoAssemblyName* GetNativeName(IntPtr assemblyPtr);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool ParseAssemblyName(IntPtr name, out MonoAssemblyName aname, out bool is_version_definited, out bool is_token_defined);
     }
 }

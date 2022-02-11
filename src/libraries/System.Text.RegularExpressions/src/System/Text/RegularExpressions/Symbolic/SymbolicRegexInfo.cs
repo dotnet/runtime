@@ -4,7 +4,7 @@
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Misc information of structural properties of a <see cref="SymbolicRegexNode{S}"/> that is computed bottom up.</summary>
-    internal readonly struct SymbolicRegexInfo
+    internal readonly struct SymbolicRegexInfo : IEquatable<SymbolicRegexInfo>
     {
         private const uint IsAlwaysNullableMask = 1;
         private const uint StartsWithLineAnchorMask = 2;
@@ -177,7 +177,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 containsSomeCharacter: info.ContainsSomeCharacter,
                 isLazy: info.IsLazy);
 
-        public override bool Equals(object? obj) => obj is SymbolicRegexInfo i && i._info == _info;
+        public override bool Equals(object? obj) => obj is SymbolicRegexInfo i && Equals(i);
+
+        public bool Equals(SymbolicRegexInfo other) => _info == other._info;
 
         public override int GetHashCode() => _info.GetHashCode();
 

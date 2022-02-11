@@ -89,10 +89,7 @@ namespace System.IO
 
         public FileInfo CopyTo(string destFileName, bool overwrite)
         {
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             string destinationPath = Path.GetFullPath(destFileName);
             FileSystem.CopyFile(FullPath, destinationPath, overwrite);
@@ -139,10 +136,7 @@ namespace System.IO
         // This method does work across volumes.
         public void MoveTo(string destFileName, bool overwrite)
         {
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName));
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             string fullDestFileName = Path.GetFullPath(destFileName);
 
@@ -169,11 +163,8 @@ namespace System.IO
         public FileInfo Replace(string destinationFileName, string? destinationBackupFileName)
             => Replace(destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
 
-        public FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
+        public FileInfo Replace(string destinationFileName!!, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
-
             FileSystem.ReplaceFile(
                 FullPath,
                 Path.GetFullPath(destinationFileName),

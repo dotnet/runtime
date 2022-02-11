@@ -1,6 +1,6 @@
 /**
  * \file
- * 
+ *
  * Private unstable APIs.
  *
  * WARNING: The declarations and behavior of functions in this header are NOT STABLE and can be modified or removed at
@@ -64,7 +64,7 @@ mono_install_load_aot_data_hook (MonoLoadAotDataFunc load_func, MonoFreeAotDataF
 MONO_API int
 monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues);
 
-MONO_API int 
+MONO_API int
 monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void *user_data);
 
 // The wrapper MonoCoreRuntimeProperties struct can be stack-allocated or freed, but the structs inside it _must_ be heap-allocated and never freed, as they are not copied to avoid extra allocations

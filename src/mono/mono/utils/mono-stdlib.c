@@ -1,7 +1,7 @@
 /**
  * \file
  * stdlib replacement functions.
- * 
+ *
  * Authors:
  * 	Gonzalo Paniagua Javier (gonzalo@novell.com)
  *

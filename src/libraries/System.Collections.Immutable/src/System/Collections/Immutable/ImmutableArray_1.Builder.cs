@@ -348,7 +348,35 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Adds the specified items to the end of the array.
             /// </summary>
-            /// <param name="items">The items.</param>
+            /// <param name="items">The items to add at the end of the array.</param>
+            public void AddRange(ReadOnlySpan<T> items)
+            {
+                int offset = this.Count;
+                this.Count += items.Length;
+
+                items.CopyTo(new Span<T>(_elements, offset, items.Length));
+            }
+
+            /// <summary>
+            /// Adds the specified items to the end of the array.
+            /// </summary>
+            /// <param name="items">The items to add at the end of the array.</param>
+            public void AddRange<TDerived>(ReadOnlySpan<TDerived> items) where TDerived : T
+            {
+                int offset = this.Count;
+                this.Count += items.Length;
+
+                var elements = new Span<T>(_elements, offset, items.Length);
+                for (int i = 0; i < items.Length; i++)
+                {
+                    elements[i] = items[i];
+                }
+            }
+
+            /// <summary>
+            /// Adds the specified items to the end of the array.
+            /// </summary>
+            /// <param name="items">The items to add at the end of the array.</param>
             public void AddRange<TDerived>(ImmutableArray<TDerived> items) where TDerived : T
             {
                 if (items.array != null)
@@ -360,7 +388,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Adds the specified items to the end of the array.
             /// </summary>
-            /// <param name="items">The items.</param>
+            /// <param name="items">The items to add at the end of the array.</param>
             public void AddRange(Builder items)
             {
                 Requires.NotNull(items, nameof(items));
@@ -370,7 +398,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Adds the specified items to the end of the array.
             /// </summary>
-            /// <param name="items">The items.</param>
+            /// <param name="items">The items to add at the end of the array.</param>
             public void AddRange<TDerived>(ImmutableArray<TDerived>.Builder items) where TDerived : T
             {
                 Requires.NotNull(items, nameof(items));
@@ -703,6 +731,16 @@ namespace System.Collections.Immutable
                 {
                     Array.Sort(_elements, index, count, comparer);
                 }
+            }
+
+            /// <summary>
+            /// Copies the current contents to the specified <see cref="Span{T}"/>.
+            /// </summary>
+            /// <param name="destination">The <see cref="Span{T}"/> to copy to.</param>
+            public void CopyTo(Span<T> destination)
+            {
+                Requires.Range(this.Count <= destination.Length, nameof(destination));
+                new ReadOnlySpan<T>(_elements, 0, this.Count).CopyTo(destination);
             }
 
             /// <summary>

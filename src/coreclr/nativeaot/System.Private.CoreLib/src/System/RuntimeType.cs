@@ -9,7 +9,7 @@ namespace System
     // Base class for runtime implemented Type
     public abstract class RuntimeType : TypeInfo
     {
-        public sealed override string GetEnumName(object value)
+        public sealed override string? GetEnumName(object value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));

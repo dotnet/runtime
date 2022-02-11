@@ -110,13 +110,6 @@ namespace System.Text.RegularExpressions
             internalMatchTimeout = matchTimeout;
             roptions = options;
 
-#if DEBUG
-            if (IsDebug)
-            {
-                Debug.WriteLine($"Pattern: {pattern}    Options: {options & ~RegexOptions.Debug}    Timeout: {(matchTimeout == InfiniteMatchTimeout ? "infinite" : matchTimeout.ToString())}");
-            }
-#endif
-
             // Parse the input
             RegexTree tree = RegexParser.Parse(pattern, roptions, culture);
 
@@ -153,11 +146,7 @@ namespace System.Text.RegularExpressions
         {
             if (((((uint)options) >> MaxOptionShift) != 0) ||
                 ((options & RegexOptions.ECMAScript) != 0 &&
-                 (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.NonBacktracking |
-#if DEBUG
-                             RegexOptions.Debug |
-#endif
-                             RegexOptions.CultureInvariant)) != 0))
+                 (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.NonBacktracking | RegexOptions.CultureInvariant)) != 0))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.options);
             }
@@ -394,12 +383,7 @@ namespace System.Text.RegularExpressions
             RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
             try
             {
-                // Do the scan starting at the requested position
-                Match? match = runner.Scan(this, input, beginning, beginning + length, startat, prevlen, quick, internalMatchTimeout);
-#if DEBUG
-                if (IsDebug) match?.Dump();
-#endif
-                return match;
+                return runner.Scan(this, input, beginning, beginning + length, startat, prevlen, quick, internalMatchTimeout);
             }
             finally
             {
@@ -410,6 +394,7 @@ namespace System.Text.RegularExpressions
         internal void Run<TState>(string input, int startat, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject)
         {
             Debug.Assert((uint)startat <= (uint)input.Length);
+
             RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
             try
             {

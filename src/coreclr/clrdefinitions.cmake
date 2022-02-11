@@ -92,7 +92,6 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CORECLR)
-add_definitions(-DFEATURE_CORESYSTEM)
 if(FEATURE_DBGIPC)
   add_definitions(-DFEATURE_DBGIPC_TRANSPORT_DI)
   add_definitions(-DFEATURE_DBGIPC_TRANSPORT_VM)
