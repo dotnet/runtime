@@ -6,13 +6,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
+#nullable enable
+
 namespace Microsoft.Extensions.Logging
 {
     internal static class ProviderAliasUtilities
     {
         private const string AliasAttributeTypeFullName = "Microsoft.Extensions.Logging.ProviderAliasAttribute";
 
-        internal static string GetAlias(Type providerType)
+        internal static string? GetAlias(Type providerType)
         {
             IList<CustomAttributeData> attributes = CustomAttributeData.GetCustomAttributes(providerType);
 

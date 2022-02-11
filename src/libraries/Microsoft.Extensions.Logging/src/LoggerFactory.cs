@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -19,7 +20,7 @@ namespace Microsoft.Extensions.Logging
         private volatile bool _disposed;
         private IDisposable _changeTokenRegistration;
         private LoggerFilterOptions _filterOptions;
-        private LoggerFactoryScopeProvider _scopeProvider;
+        private LoggerFactoryScopeProvider? _scopeProvider;
         private LoggerFactoryOptions _factoryOptions;
 
         /// <summary>
@@ -61,7 +62,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
         /// <param name="filterOption">The filter option to use.</param>
         /// <param name="options">The <see cref="LoggerFactoryOptions"/>.</param>
-        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions> options = null)
+        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions>? options = null)
         {
             _factoryOptions = options == null || options.Value == null ? new LoggerFactoryOptions() : options.Value;
 
@@ -94,10 +95,11 @@ namespace Microsoft.Extensions.Logging
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddLogging(configure);
             ServiceProvider serviceProvider = serviceCollection.BuildServiceProvider();
-            ILoggerFactory loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-            return new DisposingLoggerFactory(loggerFactory, serviceProvider);
+            ILoggerFactory? loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+            return new DisposingLoggerFactory(loggerFactory!, serviceProvider);
         }
 
+        [MemberNotNull(nameof(_filterOptions))]
         private void RefreshFilters(LoggerFilterOptions filterOptions)
         {
             lock (_sync)
@@ -125,7 +127,7 @@ namespace Microsoft.Extensions.Logging
 
             lock (_sync)
             {
-                if (!_loggers.TryGetValue(categoryName, out Logger logger))
+                if (!_loggers.TryGetValue(categoryName, out Logger? logger))
                 {
                     logger = new Logger
                     {
@@ -205,10 +207,10 @@ namespace Microsoft.Extensions.Logging
             return loggers;
         }
 
-        private (MessageLogger[] MessageLoggers, ScopeLogger[] ScopeLoggers) ApplyFilters(LoggerInformation[] loggers)
+        private (MessageLogger[] MessageLoggers, ScopeLogger[]? ScopeLoggers) ApplyFilters(LoggerInformation[] loggers)
         {
             var messageLoggers = new List<MessageLogger>();
-            List<ScopeLogger> scopeLoggers = _filterOptions.CaptureScopes ? new List<ScopeLogger>() : null;
+            List<ScopeLogger>? scopeLoggers = _filterOptions.CaptureScopes ? new List<ScopeLogger>() : null;
 
             foreach (LoggerInformation loggerInformation in loggers)
             {
@@ -216,7 +218,7 @@ namespace Microsoft.Extensions.Logging
                     loggerInformation.ProviderType,
                     loggerInformation.Category,
                     out LogLevel? minLevel,
-                    out Func<string, string, LogLevel, bool> filter);
+                    out Func<string?, string?, LogLevel?, bool>? filter);
 
                 if (minLevel != null && minLevel > LogLevel.Critical)
                 {
