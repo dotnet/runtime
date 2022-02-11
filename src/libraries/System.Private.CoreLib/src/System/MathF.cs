@@ -508,6 +508,7 @@ namespace System
             return Math.Sign(x);
         }
 
+        [Intrinsic]
         public static unsafe float Truncate(float x)
         {
             ModF(x, &x);
