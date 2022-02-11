@@ -3182,7 +3182,7 @@ retryCurrentBucket:
         comparer->SetContents(entry);
         if (comparer->Equals(keyA, keyB))
         {
-            return entry;
+            return returnEntry;
         }
         size_t keyACurrentEntry = comparer->KeyA();
         size_t keyBCurrentEntry = comparer->KeyB();
