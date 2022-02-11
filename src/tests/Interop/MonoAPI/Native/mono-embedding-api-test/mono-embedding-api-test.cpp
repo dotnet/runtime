@@ -4085,7 +4085,11 @@ static gpointer
 lookup_mono_symbol (const char *symbol_name)
 {
 #ifndef HOST_WIN32
+#ifdef HOST_DARWIN	
 	void *module = dlopen ("libcoreclr.dylib", RTLD_LAZY);
+#else
+	void *module = dlopen ("libcoreclr.so", RTLD_LAZY);
+#endif
 	g_assert (module);
 	return dlsym (/*RTLD_DEFAULT*/ module, symbol_name);
 #else

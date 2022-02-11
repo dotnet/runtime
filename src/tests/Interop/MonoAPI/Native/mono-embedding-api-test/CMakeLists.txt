@@ -9,6 +9,14 @@ add_subdirectory(${CLR_SRC_NATIVE_DIR}/monoapi monoapi)
 add_library (mono-embedding-api-test SHARED mono-embedding-api-test.cpp)
 target_link_libraries(mono-embedding-api-test monoapi ${LINK_LIBRARIES_ADDITIONAL})
 
+if(CLR_CMAKE_HOST_OSX)
+  target_compile_definitions(mono-embedding-api-test PRIVATE -DHOST_DARWIN)
+elseif(CLR_CMAKE_HOST_WINDOWS)
+  target_compile_definitions(mono-embedding-api-test PRIVATE -DHOST_WIN32)
+else()
+  target_compile_definitions(mono-embedding-api-test PRIVATE -DHOST_LINUX)
+endif()
+
 # add the install targets
 install (TARGETS mono-embedding-api-test DESTINATION bin)
 
