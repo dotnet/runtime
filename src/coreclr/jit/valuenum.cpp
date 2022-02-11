@@ -9636,7 +9636,7 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
 
         if (encodeResultType)
         {
-            ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseJitType());
+            ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseJitPreciseType());
             resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG
@@ -9751,7 +9751,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     if (encodeResultType)
     {
-        ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseJitType());
+        ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseJitPreciseType());
         resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG

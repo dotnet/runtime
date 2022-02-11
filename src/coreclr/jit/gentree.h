@@ -5259,6 +5259,34 @@ public:
         return (CorInfoType)gtSimdBaseJitType;
     }
 
+    CorInfoType GetSimdBaseJitPreciseType() const
+    {
+        CorInfoType simdBaseJitType = GetSimdBaseJitType();
+        switch (simdBaseJitType)
+        {
+            case CORINFO_TYPE_NATIVEINT:
+            {
+#if TARGET_64BIT
+                return CORINFO_TYPE_LONG;
+#else
+                return CORINFO_TYPE_INT;
+#endif
+            }
+
+            case CORINFO_TYPE_NATIVEUINT:
+            {
+#if TARGET_64BIT
+                return CORINFO_TYPE_ULONG;
+#else
+                return CORINFO_TYPE_UINT;
+#endif
+            }
+
+            default:
+                return simdBaseJitType;
+        }
+    }
+
     void SetSimdBaseJitType(CorInfoType simdBaseJitType)
     {
         gtSimdBaseJitType = (unsigned char)simdBaseJitType;
