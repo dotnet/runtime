@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Runtime.InteropServices</AssemblyName>
+    <FeatureNFloat>true</FeatureNFloat>
+    <!-- disable warnings about obsolete APIs,
+        Remove warning disable when nullable attributes are respected,
+        Type has no accessible constructors which use only CLS-compliant types -->
+    <!-- Nullability of parameter 'name' doesn't match overridden member -->
+    <NoWarn>$(NoWarn);0809;0618;CS8614;CS8765;CS3015;NU5131</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(FeatureNFloat)' == 'true'">
+    <!-- Place this assembly in the nuget ref folder -->
+    <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
+    <DefineConstants>$(DefineConstants);FEATURE_NFLOAT</DefineConstants>
+    <IsPackable>true</IsPackable>
+    <ServicingVersion>1</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageDescription>Exposes additional NFloat APIs for Xamarin/Maui APIs from System.Runtime.InteropServices</PackageDescription>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <!-- TODO: Remove when the package shipped with NET6. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\ref\System.Runtime.InteropServices.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\ref\System.Runtime.InteropServices.Forwards.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Collections\ref\System.Collections.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" PrivateAssets="all" />
+  </ItemGroup>
+  <Target Name="_ExperimentalUpdateFileVersion"
+          AfterTargets="_InitializeAssemblyVersion">
+    <PropertyGroup>
+      <_FileVersionMaj>$(FileVersion.Split('.')[0])</_FileVersionMaj>
+      <_FileVersionMin>$(FileVersion.Split('.')[1])</_FileVersionMin>
+      <_FileVersionBld>$(FileVersion.Split('.')[2])</_FileVersionBld>
+      <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
+      <FileVersion>$(_FileVersionMaj).$([MSBuild]::Add($(_FileVersionMin), 100)).$(_FileVersionBld).$(_FileVersionRev)</FileVersion>
+    </PropertyGroup>
+  </Target>
+</Project>

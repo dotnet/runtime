@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <FeatureNFloat>true</FeatureNFloat>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureNFloat)' == 'true'">$(DefineConstants);FEATURE_NFLOAT</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\tests\System\Runtime\InteropServices\NFloatTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- it's a reference assembly, but the project system doesn't know that - include it during compilation, but don't publish it -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.NFloat.Internal\ref\System.Runtime.InteropServices.NFloat.Internal.csproj" IncludeAssets="compile" Private="false" />
+  </ItemGroup>
+</Project>
