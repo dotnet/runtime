@@ -253,6 +253,7 @@ INT32 TypeHandle::GetElementTypeAttributes() const
         return tdPublic;
 
     if (IsPointer() || IsByRef()) {
+        _ASSERTE(HasTypeParam());
         TypeHandle elementType = GetTypeParam();
 
         if (elementType.IsTypeDesc())
