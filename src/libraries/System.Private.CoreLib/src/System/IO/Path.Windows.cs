@@ -27,29 +27,19 @@ namespace System.IO
             (char)31
         };
 
-        private static bool ExistsCore(string fullPath)
+        private static bool ExistsCore(string fullPath, out bool isDirectory)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FileSystem.FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
             bool result = (errorCode == Interop.Errors.ERROR_SUCCESS) && (data.dwFileAttributes != -1);
-
-            if (PathInternal.IsDirectorySeparator(fullPath[fullPath.Length - 1]))
-            {
-                // We want to make sure that if the path ends in a trailing slash, it's truly a directory
-                // because FillAttributeInfo syscall removes any trailing slashes and may give false positives
-                // for existing files.
-                result = result && (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0;
-            }
+            isDirectory = result && (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0;
 
             return result;
         }
 
         // Expands the given path to a fully qualified path.
-        public static string GetFullPath(string path)
+        public static string GetFullPath(string path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             // If the path would normalize to string empty, we'll consider it empty
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
@@ -63,14 +53,8 @@ namespace System.IO
             return GetFullPathInternal(path);
         }
 
-        public static string GetFullPath(string path, string basePath)
+        public static string GetFullPath(string path!!, string basePath!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (basePath == null)
-                throw new ArgumentNullException(nameof(basePath));
-
             if (!IsPathFullyQualified(basePath))
                 throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
 

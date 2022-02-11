@@ -41,8 +41,15 @@
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapPartialResultsProcessor.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+      Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+      <Link>Common\DisableRuntimeMarshalling.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Ldap.cs">
       <Link>Common\Interop\Interop.Ldap.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -102,6 +109,7 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />

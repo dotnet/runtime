@@ -25,8 +25,8 @@ namespace System.Text.Json
         /// <remarks>
         /// The comment value is not escaped before writing.
         /// </remarks>
-        public void WriteCommentValue(string value)
-            => WriteCommentValue((value ?? throw new ArgumentNullException(nameof(value))).AsSpan());
+        public void WriteCommentValue(string value!!)
+            => WriteCommentValue(value.AsSpan());
 
         /// <summary>
         /// Writes the text value (as a JSON comment).

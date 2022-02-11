@@ -200,7 +200,6 @@ float_cgt: dest:i src1:f src2:f len:16
 float_cgt_un: dest:i src1:f src2:f len:20
 float_clt: dest:i src1:f src2:f len:16
 float_clt_un: dest:i src1:f src2:f len:20
-float_conv_to_u: dest:i src1:f len:36
 float_cneq: dest:i src1:f src2:f len:16
 float_cge: dest:i src1:f src2:f len:16
 float_cle: dest:i src1:f src2:f len:16

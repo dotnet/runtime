@@ -49,13 +49,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="MemoryCacheEntryOptions"/> so that additional calls can be chained.</returns>
         public static MemoryCacheEntryOptions AddExpirationToken(
             this MemoryCacheEntryOptions options,
-            IChangeToken expirationToken)
+            IChangeToken expirationToken!!)
         {
-            if (expirationToken == null)
-            {
-                throw new ArgumentNullException(nameof(expirationToken));
-            }
-
             options.ExpirationTokens.Add(expirationToken);
             return options;
         }
@@ -111,13 +106,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="MemoryCacheEntryOptions"/> so that additional calls can be chained.</returns>
         public static MemoryCacheEntryOptions RegisterPostEvictionCallback(
             this MemoryCacheEntryOptions options,
-            PostEvictionDelegate callback)
+            PostEvictionDelegate callback!!)
         {
-            if (callback == null)
-            {
-                throw new ArgumentNullException(nameof(callback));
-            }
-
             return options.RegisterPostEvictionCallback(callback, state: null);
         }
 
@@ -130,14 +120,9 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="MemoryCacheEntryOptions"/> so that additional calls can be chained.</returns>
         public static MemoryCacheEntryOptions RegisterPostEvictionCallback(
             this MemoryCacheEntryOptions options,
-            PostEvictionDelegate callback,
-            object state)
+            PostEvictionDelegate callback!!,
+            object? state)
         {
-            if (callback == null)
-            {
-                throw new ArgumentNullException(nameof(callback));
-            }
-
             options.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
             {
                 EvictionCallback = callback,

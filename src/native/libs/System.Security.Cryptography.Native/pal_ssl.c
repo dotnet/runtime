@@ -162,6 +162,19 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
         // to be to use server preference (as of June 2020), so just always assert that.
         SSL_CTX_set_options(ctx, SSL_OP_NO_COMPRESSION | SSL_OP_CIPHER_SERVER_PREFERENCE);
 
+#ifdef NEED_OPENSSL_3_0
+        if (CryptoNative_OpenSslVersionNumber() >= OPENSSL_VERSION_3_0_RTM)
+        {
+            // OpenSSL 3.0 forbids client-initiated renegotiation by default. To avoid platform
+            // differences, we explicitly enable it and handle AllowRenegotiation flag in managed
+            // code as in previous versions
+#ifndef SSL_OP_ALLOW_CLIENT_RENEGOTIATION
+#define SSL_OP_ALLOW_CLIENT_RENEGOTIATION ((uint64_t)1 << (uint64_t)8)
+#endif
+            SSL_CTX_set_options(ctx, SSL_OP_ALLOW_CLIENT_RENEGOTIATION);
+        }
+#endif
+
         // If openssl.cnf doesn't have an opinion for CipherString, then use this value instead
         if (!g_config_specified_ciphersuites)
         {
@@ -358,14 +371,34 @@ int32_t CryptoNative_SslSessionReused(SSL* ssl)
     return SSL_session_reused(ssl) == 1;
 }
 
-int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num)
+int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num, int32_t* error)
 {
-    return SSL_write(ssl, buf, num);
+    int32_t result = SSL_write(ssl, buf, num);
+    if (result > 0)
+    {
+        *error = SSL_ERROR_NONE;
+    }
+    else
+    {
+        *error = CryptoNative_SslGetError(ssl, result);
+    }
+
+    return result;
 }
 
-int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num)
+int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
 {
-    return SSL_read(ssl, buf, num);
+    int32_t result = SSL_read(ssl, buf, num);
+    if (result > 0)
+    {
+        *error = SSL_ERROR_NONE;
+    }
+    else
+    {
+        *error = CryptoNative_SslGetError(ssl, result);
+    }
+
+    return result;
 }
 
 static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
@@ -376,8 +409,29 @@ static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
     return 1;
 }
 
-int32_t CryptoNative_SslRenegotiate(SSL* ssl)
+int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
+#ifdef NEED_OPENSSL_1_1
+    // TLS1.3 uses different API for renegotiation/delayed client cert request
+    #ifndef TLS1_3_VERSION
+    #define TLS1_3_VERSION 0x0304
+    #endif
+    if (SSL_version(ssl) == TLS1_3_VERSION)
+    {
+        // this is just a sanity check, if TLS 1.3 was negotiated, then the function must be available
+        if (API_EXISTS(SSL_verify_client_post_handshake))
+        {
+            // Post-handshake auth reqires SSL_VERIFY_PEER to be set
+            CryptoNative_SslSetVerifyPeer(ssl);
+            return SSL_verify_client_post_handshake(ssl);
+        }
+        else
+        {
+            return 0;
+        }
+    }
+#endif
+
     // The openssl context is destroyed so we can't use ticket or session resumption.
     SSL_set_options(ssl, SSL_OP_NO_TICKET | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 
@@ -387,11 +441,15 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl)
         SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
         int ret = SSL_renegotiate(ssl);
         if(ret != 1)
+        {
+            *error = CryptoNative_SslGetError(ssl, ret);
             return ret;
+        }
 
-        return SSL_do_handshake(ssl);
+        return CryptoNative_SslDoHandshake(ssl, error);
     }
 
+    *error = SSL_ERROR_NONE;
     return 0;
 }
 
@@ -412,10 +470,20 @@ void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
     SSL_set_bio(ssl, rbio, wbio);
 }
 
-int32_t CryptoNative_SslDoHandshake(SSL* ssl)
+int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error)
 {
     ERR_clear_error();
-    return SSL_do_handshake(ssl);
+    int32_t result = SSL_do_handshake(ssl);
+    if (result == 1)
+    {
+        *error = SSL_ERROR_NONE;
+    }
+    else
+    {
+        *error = CryptoNative_SslGetError(ssl, result);
+    }
+
+    return result;
 }
 
 int32_t CryptoNative_IsSslStateOK(SSL* ssl)
@@ -684,6 +752,19 @@ static int client_certificate_cb(SSL *ssl, void* state)
 void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set)
 {
     SSL_set_cert_cb(ssl, set ? client_certificate_cb : NULL, NULL);
+}
+
+void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val)
+{
+#ifdef NEED_OPENSSL_1_1
+    if (API_EXISTS(SSL_set_post_handshake_auth))
+    {
+        SSL_set_post_handshake_auth(ssl, val);
+    }
+#else
+    (void)ssl;
+    (void)val;
+#endif
 }
 
 int32_t CryptoNative_SslSetData(SSL* ssl, void *ptr)

@@ -53,11 +53,7 @@ namespace System.Security.Authentication.ExtendedProtection
             {
                 throw new ArgumentException(SR.security_ExtendedProtectionPolicy_UseDifferentConstructorForNever, nameof(policyEnforcement));
             }
-
-            if (customChannelBinding == null)
-            {
-                throw new ArgumentNullException(nameof(customChannelBinding));
-            }
+            ArgumentNullException.ThrowIfNull(customChannelBinding);
 
             _policyEnforcement = policyEnforcement;
             _protectionScenario = ProtectionScenario.TransportSelected;

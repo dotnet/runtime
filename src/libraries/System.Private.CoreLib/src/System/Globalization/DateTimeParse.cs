@@ -4226,12 +4226,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     break;
                 case '\"':
                 case '\'':
-                    StringBuilder enquotedString = StringBuilderCache.Acquire();
+                    var enquotedString = new ValueStringBuilder(stackalloc char[128]);
                     // Use ParseQuoteString so that we can handle escape characters within the quoted string.
-                    if (!TryParseQuoteString(format.Value, format.Index, enquotedString, out tokenLen))
+                    if (!TryParseQuoteString(format.Value, format.Index, ref enquotedString, out tokenLen))
                     {
                         result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadQuote), ch);
-                        StringBuilderCache.Release(enquotedString);
+                        enquotedString.Dispose();
                         return false;
                     }
                     format.Index += tokenLen - 1;
@@ -4239,7 +4239,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     // Some cultures uses space in the quoted string.  E.g. Spanish has long date format as:
                     // "dddd, dd' de 'MMMM' de 'yyyy".  When inner spaces flag is set, we should skip whitespaces if there is space
                     // in the quoted string.
-                    string quotedStr = StringBuilderCache.GetStringAndRelease(enquotedString);
+                    string quotedStr = enquotedString.ToString();
 
                     for (int i = 0; i < quotedStr.Length; i++)
                     {
@@ -4385,18 +4385,14 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         // The pos should point to a quote character. This method will
         // get the string enclosed by the quote character.
         //
-        internal static bool TryParseQuoteString(ReadOnlySpan<char> format, int pos, StringBuilder result, out int returnValue)
+        internal static bool TryParseQuoteString(ReadOnlySpan<char> format, int pos, ref ValueStringBuilder result, out int returnValue)
         {
-            //
-            // NOTE : pos will be the index of the quote character in the 'format' string.
-            //
-            returnValue = 0;
-            int formatLen = format.Length;
+            // NOTE: pos will be the index of the quote character in the 'format' string.
             int beginPos = pos;
             char quoteChar = format[pos++]; // Get the character used to quote the following string.
 
             bool foundQuote = false;
-            while (pos < formatLen)
+            while ((uint)pos < (uint)format.Length)
             {
                 char ch = format[pos++];
                 if (ch == quoteChar)
@@ -4411,15 +4407,14 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     // Therefore, someone can use a format like "'minute:' mm\"" to display:
                     //  minute: 45"
                     // because the second double quote is escaped.
-                    if (pos < formatLen)
+                    if ((uint)pos < (uint)format.Length)
                     {
                         result.Append(format[pos++]);
                     }
                     else
                     {
-                        //
                         // This means that '\' is at the end of the formatting string.
-                        //
+                        returnValue = 0;
                         return false;
                     }
                 }
@@ -4432,6 +4427,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             if (!foundQuote)
             {
                 // Here we can't find the matching quote.
+                returnValue = 0;
                 return false;
             }
 

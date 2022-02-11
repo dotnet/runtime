@@ -132,7 +132,11 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
   # files already in /cores/ at this point. This is being done to prevent
   # inadvertently flooding the CI machines with dumps.
   if [[ ! -d "/cores" || ! "$(ls -A /cores)" ]]; then
-    ulimit -c unlimited
+    # TODO: Re-enable core dumps - https://github.com/dotnet/runtime/issues/65000
+    # Temporarily disabling core dumps on osx as runtime work items uploading dumps
+    # are affecting the entire queue
+    # ulimit -c unlimited
+    ulimit -c 0
   fi
 
 elif [[ "$(uname -s)" == "Linux" ]]; then

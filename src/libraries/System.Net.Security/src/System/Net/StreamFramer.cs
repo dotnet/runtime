@@ -73,13 +73,8 @@ namespace System.Net
             return buffer;
         }
 
-        public async Task WriteMessageAsync<TAdapter>(TAdapter adapter, byte[] message) where TAdapter : IReadWriteAdapter
+        public async Task WriteMessageAsync<TAdapter>(TAdapter adapter, byte[] message!!) where TAdapter : IReadWriteAdapter
         {
-            if (message == null)
-            {
-                throw new ArgumentNullException(nameof(message));
-            }
-
             _writeHeader.PayloadSize = message.Length;
             _writeHeader.CopyTo(_writeHeaderBuffer, 0);
 

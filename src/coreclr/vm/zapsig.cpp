@@ -654,31 +654,35 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     else
     {
         index -= assemblyRefMax;
-        tkAssemblyRef = RidToToken(index, mdtAssemblyRef);
-        IMDInternalImport *  pMDImportOverride = (nativeImage != NULL
-            ? nativeImage->GetManifestMetadata() : fromModule->GetNativeAssemblyImport(FALSE));
-        if (pMDImportOverride != NULL)
+        pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
+        if (pAssembly == NULL)
         {
-            BOOL fValidAssemblyRef = TRUE;
-            LPCSTR pAssemblyName;
-            DWORD  dwFlags;
-            if (FAILED(pMDImportOverride->GetAssemblyRefProps(tkAssemblyRef,
-                    NULL,
-                    NULL,
-                    &pAssemblyName,
-                    NULL,
-                    NULL,
-                    NULL,
-                    &dwFlags)))
-            {   // Unexpected failure reading MetaData
-                fValidAssemblyRef = FALSE;
-            }
-
-            if (fValidAssemblyRef)
+            tkAssemblyRef = RidToToken(index, mdtAssemblyRef);
+            IMDInternalImport *  pMDImportOverride = (nativeImage != NULL
+                ? nativeImage->GetManifestMetadata() : fromModule->GetNativeAssemblyImport(FALSE));
+            if (pMDImportOverride != NULL)
             {
-                pAssembly = fromModule->GetAssemblyIfLoaded(
-                        tkAssemblyRef,
-                        pMDImportOverride);
+                BOOL fValidAssemblyRef = TRUE;
+                LPCSTR pAssemblyName;
+                DWORD  dwFlags;
+                if (FAILED(pMDImportOverride->GetAssemblyRefProps(tkAssemblyRef,
+                        NULL,
+                        NULL,
+                        &pAssemblyName,
+                        NULL,
+                        NULL,
+                        NULL,
+                        &dwFlags)))
+                {   // Unexpected failure reading MetaData
+                    fValidAssemblyRef = FALSE;
+                }
+    
+                if (fValidAssemblyRef)
+                {
+                    pAssembly = fromModule->GetAssemblyIfLoaded(
+                            tkAssemblyRef,
+                            pMDImportOverride);
+                }
             }
         }
     }

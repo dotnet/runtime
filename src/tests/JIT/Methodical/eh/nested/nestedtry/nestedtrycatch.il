@@ -8,11 +8,11 @@
 }
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly test {}
-
-.module nestedtrycatch.exe
+.assembly 'nestedtrycatch' {}
 
 
+
+.class public auto ansi Test_nestedtrycatch extends [mscorlib] System.Object {
 .method public static int32 main() {
   .entrypoint
   .maxstack  2
@@ -648,4 +648,5 @@ begin:
     callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
     
     ret
+}
 }

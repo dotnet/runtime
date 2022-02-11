@@ -46,21 +46,16 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of ToolboxItemAttribute and specifies the name of the type.
         /// </summary>
-        public ToolboxItemAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string toolboxItemTypeName)
+        public ToolboxItemAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string toolboxItemTypeName!!)
         {
-            _toolboxItemTypeName = toolboxItemTypeName ?? throw new ArgumentNullException(nameof(toolboxItemTypeName));
+            _toolboxItemTypeName = toolboxItemTypeName;
         }
 
         /// <summary>
         /// Initializes a new instance of ToolboxItemAttribute and specifies the type of the toolbox item.
         /// </summary>
-        public ToolboxItemAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type toolboxItemType)
+        public ToolboxItemAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type toolboxItemType!!)
         {
-            if (toolboxItemType == null)
-            {
-                throw new ArgumentNullException(nameof(toolboxItemType));
-            }
-
             _toolboxItemType = toolboxItemType;
             _toolboxItemTypeName = toolboxItemType.AssemblyQualifiedName;
         }

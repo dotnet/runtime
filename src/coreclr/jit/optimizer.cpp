@@ -1159,7 +1159,7 @@ bool Compiler::optExtractInitTestIncr(
     noway_assert(initStmt != nullptr && (initStmt->GetNextStmt() == nullptr));
 
     // If it is a duplicated loop condition, skip it.
-    if (initStmt->IsCompilerAdded())
+    if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
     {
         bool doGetPrev = true;
 #ifdef DEBUG
@@ -3771,10 +3771,9 @@ PhaseStatus Compiler::optUnrollLoops()
         Statement* incrStmt = testStmt->GetPrevStmt();
         noway_assert(incrStmt != nullptr);
 
-        if (initStmt->IsCompilerAdded())
+        if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
         {
             // Must be a duplicated loop condition.
-            noway_assert(initStmt->GetRootNode()->gtOper == GT_JTRUE);
 
             dupCond  = true;
             initStmt = initStmt->GetPrevStmt();
@@ -4601,8 +4600,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         {
             clonedStmt->SetDebugInfo(stmt->GetDebugInfo());
         }
-
-        clonedStmt->SetCompilerAdded();
     }
 
     assert(foundCondTree);
@@ -5835,12 +5832,9 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     preHead->bbFlags |= (exprBb->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK));
 
     Statement* hoistStmt = gtNewStmt(hoist);
-    hoistStmt->SetCompilerAdded();
 
-    /* simply append the statement at the end of the preHead's list */
-
+    // Simply append the statement at the end of the preHead's list.
     Statement* firstStmt = preHead->firstStmt();
-
     if (firstStmt != nullptr)
     {
         /* append after last statement */

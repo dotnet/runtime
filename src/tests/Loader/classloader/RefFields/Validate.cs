@@ -15,6 +15,8 @@ class Validate
     {
         Console.WriteLine($"{nameof(Validate_Invalid_RefField_Fails)}...");
         Assert.Throws<TypeLoadException>(() => { var t = typeof(InvalidStructWithRefField); });
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(InvalidRefFieldAlignment); });
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(InvalidObjectRefRefFieldOverlap); });
     }
 
     [Fact]

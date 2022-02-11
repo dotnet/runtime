@@ -16,7 +16,7 @@ ValueNumFuncDef(NotAField, 0, false, false, false)  // Value number function for
 ValueNumFuncDef(PtrToLoc, 2, false, true, false)            // Pointer (byref) to a local variable.  Args: VN's of: 0: var num, 1: FieldSeq.
 ValueNumFuncDef(PtrToArrElem, 4, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: FieldSeq.
 ValueNumFuncDef(PtrToStatic, 2, false, true, false)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
-                                                            // Args: 0: (VN of) the field handle, 1: the field sequence, of which the first element is the static itself.
+                                                            // Args: 0: (VN of) the box's address if the static is "boxed", 1: the field sequence, of which the first element is the static itself.
 
 ValueNumFuncDef(Phi, 2, false, false, false)        // A phi function.  Only occurs as arg of PhiDef or PhiMemoryDef.  Arguments are SSA numbers of var being defined.
 ValueNumFuncDef(PhiDef, 3, false, false, false)     // Args: 0: local var # (or -1 for memory), 1: SSA #, 2: VN of definition.

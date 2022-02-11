@@ -66,13 +66,8 @@ namespace System.Reflection.Emit
 
         public override Module Module => m_containingType.Module;
 
-        private void SetMethodSemantics(MethodBuilder mdBuilder, MethodSemanticsAttributes semantics)
+        private void SetMethodSemantics(MethodBuilder mdBuilder!!, MethodSemanticsAttributes semantics)
         {
-            if (mdBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(mdBuilder));
-            }
-
             m_containingType.ThrowIfCreated();
             ModuleBuilder module = m_moduleBuilder;
             TypeBuilder.DefineMethodSemantics(
@@ -101,13 +96,8 @@ namespace System.Reflection.Emit
 
         // Use this function if client decides to form the custom attribute blob themselves
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
-
             m_containingType.ThrowIfCreated();
             TypeBuilder.DefineCustomAttribute(
                 m_moduleBuilder,
@@ -117,12 +107,8 @@ namespace System.Reflection.Emit
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
         {
-            if (customBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(customBuilder));
-            }
             m_containingType.ThrowIfCreated();
             customBuilder.CreateCustomAttribute(m_moduleBuilder, m_tkProperty);
         }
