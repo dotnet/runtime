@@ -7485,12 +7485,13 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, gpoint
 	/* Write back args */
 	sp_args = sp;
 	findex = 0;
+	if (sig->ret->type != MONO_TYPE_VOID)
+		findex ++;
 	if (sig->hasthis) {
 		// FIXME: This
 		sp_args++;
 		findex ++;
 	}
-	findex = sig->hasthis ? 1 : 0;
 	for (int i = 0; i < sig->param_count; ++i) {
 		if (il_state->data [findex]) {
 			int size = stackval_to_data (sig->params [i], sp_args, il_state->data [findex], FALSE);
