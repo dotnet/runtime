@@ -134,7 +134,7 @@ namespace System.Security.Cryptography
         }
 
         private ILiteSymmetricCipher CreateLiteSymmetricCipher(
-            byte[] key!!,
+            ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,
             bool encrypting,
             PaddingMode padding,
@@ -142,7 +142,6 @@ namespace System.Security.Cryptography
             int feedbackSizeInBits)
         {
             ValidateFeedbackSize(mode, feedbackSizeInBits);
-            byte[] processedKey = CopyAndValidateKey(key);
 
             if (!iv.IsEmpty && iv.Length != AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BlockSize))
             {
@@ -154,6 +153,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_MissingIV);
             }
 
+            byte[] processedKey = CopyAndValidateKey(key);
             int blockSizeInBytes = AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BlockSize);
             SafeAlgorithmHandle algorithmModeHandle = _outer.GetEphemeralModeHandle(mode, feedbackSizeInBits);
 
@@ -274,15 +274,15 @@ namespace System.Security.Cryptography
             }
         }
 
-        private byte[] CopyAndValidateKey(byte[] rgbKey)
+        private byte[] CopyAndValidateKey(ReadOnlySpan<byte> rgbKey)
         {
-            byte[] key = rgbKey.CloneByteArray();
-
-            long keySize = key.Length * (long)BitsPerByte;
+            long keySize = rgbKey.Length * (long)BitsPerByte;
             if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(_outer.LegalKeySizes))
             {
                 throw new ArgumentException(SR.Cryptography_InvalidKeySize, nameof(rgbKey));
             }
+
+            byte[] key = rgbKey.ToArray();
 
             if (_outer.IsWeakKey(key))
             {
