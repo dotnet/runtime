@@ -3176,7 +3176,7 @@ retryCurrentBucket:
             }
 
             // We didn't grab this entry, so keep trying.
-            continue;
+            goto retryCurrentBucket;
         }
         //check if this entry is already in the table, if so we are done
         comparer->SetContents(entry);
