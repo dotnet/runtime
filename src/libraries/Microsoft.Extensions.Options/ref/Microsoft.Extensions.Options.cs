@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Options
     }
     public partial interface IOptionsFactory<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> where TOptions : class
     {
-        TOptions Create(string? name);
+        TOptions Create(string name);
     }
     public partial interface IOptionsMonitorCache<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> where TOptions : class
     {
@@ -186,8 +186,8 @@ namespace Microsoft.Extensions.Options
     {
         public OptionsFactory(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IConfigureOptions<TOptions>> setups, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IPostConfigureOptions<TOptions>> postConfigures) { }
         public OptionsFactory(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IConfigureOptions<TOptions>> setups, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IPostConfigureOptions<TOptions>> postConfigures, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IValidateOptions<TOptions>> validations) { }
-        public TOptions Create(string? name) { throw null; }
-        protected virtual TOptions CreateInstance(string? name) { throw null; }
+        public TOptions Create(string name) { throw null; }
+        protected virtual TOptions CreateInstance(string name) { throw null; }
     }
     public partial class OptionsManager<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptions<TOptions>, Microsoft.Extensions.Options.IOptionsSnapshot<TOptions> where TOptions : class
     {
@@ -209,10 +209,10 @@ namespace Microsoft.Extensions.Options
     }
     public partial class OptionsValidationException : System.Exception
     {
-        public OptionsValidationException(string? optionsName, System.Type optionsType, System.Collections.Generic.IEnumerable<string>? failureMessages) { }
+        public OptionsValidationException(string optionsName, System.Type optionsType, System.Collections.Generic.IEnumerable<string>? failureMessages) { }
         public System.Collections.Generic.IEnumerable<string> Failures { get { throw null; } }
         public override string Message { get { throw null; } }
-        public string? OptionsName { get { throw null; } }
+        public string OptionsName { get { throw null; } }
         public System.Type OptionsType { get { throw null; } }
     }
     public partial class OptionsWrapper<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class

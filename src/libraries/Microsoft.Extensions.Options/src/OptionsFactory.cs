@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
-        public TOptions Create(string? name)
+        public TOptions Create(string name)
         {
             TOptions options = CreateInstance(name);
             foreach (IConfigureOptions<TOptions> setup in _setups)
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Creates a new instance of options type
         /// </summary>
-        protected virtual TOptions CreateInstance(string? name)
+        protected virtual TOptions CreateInstance(string name)
         {
             return Activator.CreateInstance<TOptions>();
         }
