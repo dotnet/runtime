@@ -7,6 +7,8 @@ using System;
 using System.Threading;
 using System.Runtime.InteropServices;
 
+using MonoAPI.Tests;
+
 public class MonoPInvokeCallbackAttribute : Attribute {
 	public MonoPInvokeCallbackAttribute (Type delegateType) { }
 }
@@ -27,7 +29,7 @@ public class Tests {
 		was_called++;
 	}
 
-	[DllImport ("libtest", EntryPoint="mono_test_attach_invoke_foreign_thread")]
+	[DllImport (MonoAPISupport.TestLibName, EntryPoint="mono_test_attach_invoke_foreign_thread")]
 	public static extern bool mono_test_attach_invoke_foreign_thread (string assm_name, string name_space, string class_name, string method_name, VoidVoidDelegate del);
 
 	public static int test_0_attach_invoke_foreign_thread ()
@@ -60,7 +62,7 @@ public class Tests {
 	{
 	}
 
-	[DllImport ("libtest", EntryPoint="mono_test_attach_invoke_block_foreign_thread")]
+	[DllImport (MonoAPISupport.TestLibName, EntryPoint="mono_test_attach_invoke_block_foreign_thread")]
 	public static extern bool mono_test_attach_invoke_block_foreign_thread (string assm_name, string name_space, string class_name, string method_name, VoidVoidDelegate del);
 
 	public static int test_0_attach_invoke_block_foreign_thread ()
