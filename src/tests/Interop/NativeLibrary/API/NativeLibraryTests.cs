@@ -33,8 +33,8 @@ public class NativeLibraryTests : IDisposable
     public void LoadLibraryOnNonExistentFile_NameOnly()
     {
         string libName = Path.Combine(testBinDir, "notfound");
-        EXPECT(LoadLibrary_NameOnly(libName));
-        EXPECT(TryLoadLibrary_NameOnly(libName));
+        EXPECT(LoadLibrary_NameOnly(libName), TestResult.DllNotFound);
+        EXPECT(TryLoadLibrary_NameOnly(libName), TestResult.ReturnFailure);
     }
     
     [Fact]
