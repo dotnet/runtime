@@ -3066,6 +3066,22 @@ void ReportProbeDepth(int readCount, size_t keyA, size_t keyB)
     fprintf(reportFile, "%d, %d, %p %p\n", reports, readCount, (void*)keyA, (void*)keyB);
 }
 
+void ReportAddProbeDepth(int readCount, size_t keyA, size_t keyB)
+{
+    reports++;
+    if (reportFile == NULL)
+    {
+        reportFile = fopen("vsdreport.txt", "w");
+    }
+
+    if ((reports % 1000) == 0)
+    {
+        printf("report: %d\n", reports);
+        fflush(reportFile);
+    }
+    fprintf(reportFile, "A %d, %d, %p %p\n", reports, readCount, (void*)keyA, (void*)keyB);
+}
+
 FILE* reportIndexInBucketFile = NULL;
 int hashInBucketReports = 0;
 void ReportBucketInUseInBucket(int index, size_t keyA, size_t keyB)
@@ -3172,6 +3188,7 @@ retryCurrentBucket:
             //this slot, so we will just keep looking
             if (GrabEntry(newEntry))
             {
+                ReportAddProbeDepth((int)probes + 1, keyA, keyB);
                 break;
             }
 
@@ -3193,6 +3210,7 @@ retryCurrentBucket:
             if (FastInterlockCompareExchangePointer(&base[index],
                 newEntry, entry) == entry)
             {
+                ReportAddProbeDepth(-(int)(probes + 1), keyA, keyB);
                 // Successfully swapped out old entry. Update prober to new data and continue
                 keyA = keyACurrentEntry;
                 keyB = keyBCurrentEntry;
