@@ -8555,15 +8555,7 @@ MethodTableBuilder::HandleExplicitLayout(
                         break;
                     }
 
-                    ExplicitFieldTrust::TrustLevel trust;
-                    if (pByValueMT->IsByRefLike())
-                    {
-                        trust = CheckByRefLikeValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset_NoLogging()]);
-                    }
-                    else
-                    {
-                        trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset_NoLogging()]);
-                    }
+                    ExplicitFieldTrust::TrustLevel trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset_NoLogging()]);
                     fieldTrust.SetTrust(trust);
 
                     if (trust != ExplicitFieldTrust::kNone)
@@ -8735,10 +8727,11 @@ MethodTableBuilder::HandleExplicitLayout(
 {
     STANDARD_VM_CONTRACT;
 
-    // ByRefLike types need to be checked for ByRef fields. See CheckByRefLikeValueClassLayout().
-    _ASSERTE(!pMT->IsByRefLike());
+    // ByRefLike types need to be checked for ByRef fields.
+    if (pMT->IsByRefLike())
+        return CheckByRefLikeValueClassLayout(pMT, pFieldLayout);
 
-    // This method assumes there is associated GC desc associated with the MethodTable.
+    // This method assumes there is a GC desc associated with the MethodTable.
     _ASSERTE(pMT->ContainsPointers());
 
     // Build a layout of the value class (vc). Don't know the sizes of all the fields easily, but
@@ -8842,14 +8835,7 @@ MethodTableBuilder::HandleExplicitLayout(
         if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
         {
             MethodTable *pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-            if (pFieldMT->IsByRefLike())
-            {
-                trust = CheckByRefLikeValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex]);
-            }
-            else
-            {
-                trust = CheckValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex]);
-            }
+            trust = CheckValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex]);
         }
         else if (pFD->IsObjRef())
         {
