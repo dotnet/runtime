@@ -1722,6 +1722,7 @@
     <Compile Include="System\Security\Cryptography\AsnFormatter.Windows.cs" />
     <Compile Include="System\Security\Cryptography\BasicSymmetricCipherCsp.cs" />
     <Compile Include="System\Security\Cryptography\BasicSymmetricCipherNCrypt.cs" />
+    <Compile Include="System\Security\Cryptography\BasicSymmetricCipherLiteNCrypt.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Shared.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Windows.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Shared.cs" />
