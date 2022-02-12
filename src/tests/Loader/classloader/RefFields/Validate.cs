@@ -115,15 +115,4 @@ class Validate
         Validate v = new();
         Create_TypedReferenceRefField_Worker(v, 1);
     }
-
-    public static int Main(string[] _)
-    {
-        Validate_Invalid_RefField_Fails();
-        Validate_ConservativeGC_Types();
-        Validate_RefStructWithRefField_Load();
-        Validate_Create_RefField();
-        Validate_Create_RefStructField();
-        Validate_Create_TypedReferenceRefField();
-        return 100;
-    }
 }
