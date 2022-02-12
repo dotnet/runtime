@@ -412,7 +412,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint ListenerCallbackDelegate(
             IntPtr listener,
             IntPtr context,
-            ref ListenerEvent evt);
+            ListenerEvent* evt);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ListenerOpenDelegate(
@@ -553,7 +553,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint ConnectionCallbackDelegate(
             IntPtr connection,
             IntPtr context,
-            ref ConnectionEvent connectionEvent);
+            ConnectionEvent* connectionEvent);
 
         // TODO: order is Open, Close, Shutdown, Start, SetConfiguration, SendResumptionTicket
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -708,7 +708,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint StreamCallbackDelegate(
             IntPtr stream,
             IntPtr context,
-            ref StreamEvent streamEvent);
+            StreamEvent* streamEvent);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamOpenDelegate(
@@ -1034,16 +1034,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
                 return __retVal;
             }
-            internal uint ListenerCallback(IntPtr listener, IntPtr context, ref ListenerEvent evt)
-            {
-                uint __retVal;
-                fixed (ListenerEvent* __evt_gen_native = &evt)
-                {
-                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, ListenerEvent*, uint>)_functionPointer)(listener, context, __evt_gen_native);
-                }
-
-                return __retVal;
-            }
             internal uint ListenerOpen(SafeMsQuicRegistrationHandle registration, ListenerCallbackDelegate handler, IntPtr context, out SafeMsQuicListenerHandle listener)
             {
                 IntPtr __handler_gen_native = default;
@@ -1145,16 +1135,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     if (listener__addRefd)
                         listener.DangerousRelease();
                 }
-            }
-            internal uint ConnectionCallback(IntPtr connection, IntPtr context, ref ConnectionEvent connectionEvent)
-            {
-                uint __retVal;
-                fixed (ConnectionEvent* __connectionEvent_gen_native = &connectionEvent)
-                {
-                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, ConnectionEvent*, uint>)_functionPointer)(connection, context, __connectionEvent_gen_native);
-                }
-
-                return __retVal;
             }
             internal uint ConnectionOpen(SafeMsQuicRegistrationHandle registration, ConnectionCallbackDelegate handler, IntPtr context, out SafeMsQuicConnectionHandle connection)
             {
@@ -1318,16 +1298,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     if (connection__addRefd)
                         connection.DangerousRelease();
                 }
-            }
-            internal uint StreamCallback(IntPtr stream, IntPtr context, ref StreamEvent streamEvent)
-            {
-                uint __retVal;
-                fixed (StreamEvent* __streamEvent_gen_native = &streamEvent)
-                {
-                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, StreamEvent*, uint>)_functionPointer)(stream, context, __streamEvent_gen_native);
-                }
-
-                return __retVal;
             }
             internal uint StreamOpen(SafeMsQuicConnectionHandle connection, QUIC_STREAM_OPEN_FLAGS flags, StreamCallbackDelegate handler, IntPtr context, out SafeMsQuicStreamHandle stream)
             {

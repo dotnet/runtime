@@ -123,9 +123,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 {
                     if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
                     {
-                        delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint> msQuicOpenVersion =
-                            (delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint>)msQuicOpenVersionAddress;
-                        uint status = msQuicOpenVersion(MsQuicVersion, out NativeApi* vtable);
+                        NativeApi* vtable;
+                        delegate* unmanaged[Cdecl]<uint, NativeApi**, uint> msQuicOpenVersion =
+                            (delegate* unmanaged[Cdecl]<uint, NativeApi**, uint>)msQuicOpenVersionAddress;
+                        uint status = msQuicOpenVersion(MsQuicVersion, &vtable);
                         if (MsQuicStatusHelper.SuccessfulStatusCode(status))
                         {
                             IsQuicSupported = true;
