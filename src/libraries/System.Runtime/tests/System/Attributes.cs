@@ -536,6 +536,7 @@ namespace System.Tests
 
         // reproduces https://github.com/dotnet/runtime/issues/64335
         [Fact]
+        [SkipOnMono("Mono throws on open generic type passed to GetCustomAttributes")]
         public static void GetCustomAttributesDoesNotReturnNullForOpenGenericType()
         {
             Attribute[] openGenericAttributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<>));
@@ -548,6 +549,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnMono("Mono throws NullReferenceException internally if ICustomAttributeProvider.GetCustomAttributes returns null")]
         public static void GetCustomAttributesReturnsAttributeArrayForMisbehavingCustomMemberInfo()
         {
             FieldInfo fieldWithNullAttributes = new CustomFieldInfo(null!);
