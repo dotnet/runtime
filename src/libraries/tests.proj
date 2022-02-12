@@ -373,37 +373,41 @@
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(RunSmokeTestsOnly)' == 'true'">
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Collections.Immutable/tests/System.Collections.Immutable.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\System.Text.RegularExpressions.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Threading.Channels/tests/System.Threading.Channels.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true'">
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(TestAssemblies)' == 'true'" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
-                      Condition="'$(TestPackages)' == 'true'" />
-    <TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(TestTrimming)' == 'true'"
-                      AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />
-    <ProjectReference Include="@(TrimmingTestProjects)" />
+  <!--<ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true'">-->
+    <!--<ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"-->
+                      <!--Exclude="@(ProjectExclusions)"-->
+                      <!--Condition="'$(TestAssemblies)' == 'true'" />-->
+    <!--<ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"-->
+                      <!--Condition="'$(TestPackages)' == 'true'" />-->
+    <!--<TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"-->
+                      <!--Exclude="@(ProjectExclusions)"-->
+                      <!--Condition="'$(TestTrimming)' == 'true'"-->
+                      <!--AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />-->
+    <!--<ProjectReference Include="@(TrimmingTestProjects)" />-->
 
-    <!-- wasm.build.tests are run on _WasmBuildTests job on CI, and with library tests locally. -->
-    <ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\Wasm.Build.Tests\*.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(TargetOS)' == 'Browser' and
-                                    (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or
-                                     ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
-                      BuildInParallel="false" />
+    <!--[> wasm.build.tests are run on _WasmBuildTests job on CI, and with library tests locally. <]-->
+    <!--<ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\Wasm.Build.Tests\*.Tests.csproj"-->
+                      <!--Exclude="@(ProjectExclusions)"-->
+                      <!--Condition="'$(TargetOS)' == 'Browser' and-->
+                                    <!--(('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or-->
+                                     <!--('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"-->
+                      <!--BuildInParallel="false" />-->
 
-    <ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\Wasm.Debugger.Tests\*.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(TargetOS)' == 'Browser' and
-                                    (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmDebuggerTests)' == 'true') or
-                                     ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
-                      BuildInParallel="false" />
-  </ItemGroup>
+    <!--<ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\Wasm.Debugger.Tests\*.Tests.csproj"-->
+                      <!--Exclude="@(ProjectExclusions)"-->
+                      <!--Condition="'$(TargetOS)' == 'Browser' and-->
+                                    <!--(('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmDebuggerTests)' == 'true') or-->
+                                     <!--('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"-->
+                      <!--BuildInParallel="false" />-->
+  <!--</ItemGroup>-->
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'iOS'">
     <!-- Only System.Runtime tests on iOS for now -->
