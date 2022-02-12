@@ -44,7 +44,7 @@ System.Text.CodePagesEncodingProvider</PackageDescription>
     <Compile Include="System\Text\ISCIIEncoding.cs" />
     <Compile Include="System\Text\SBCSCodePageEncoding.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(TargetFrameworkIdentifier)' == '.NETFramework'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' or '$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="System\Text\CodePagesEncodingProvider.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
@@ -57,7 +57,7 @@ System.Text.CodePagesEncodingProvider</PackageDescription>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework' and '$(TargetsWindows)' != 'true'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="System\Text\CodePagesEncodingProvider.Default.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
