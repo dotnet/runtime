@@ -123,14 +123,13 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssembl
     m_pDomain(pDomain),
     m_pClassLoader(NULL),
     m_pEntryPoint(NULL),
-    m_pManifest(NULL),
-    m_pManifestFile(clr::SafeAddRef(pPEAssembly)),
+    m_pModule(NULL),
+    m_pPEAssembly(clr::SafeAddRef(pPEAssembly)),
     m_pFriendAssemblyDescriptor(NULL),
     m_isDynamic(false),
 #ifdef FEATURE_COLLECTIBLE_TYPES
     m_isCollectible(fIsCollectible),
 #endif
-    m_nextAvailableModuleIndex(1),
     m_pLoaderAllocator(NULL),
 #ifdef FEATURE_COMINTEROP
     m_pITypeLib(NULL),
@@ -186,7 +185,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     m_pClassLoader = new ClassLoader(this);
     m_pClassLoader->Init(pamTracker);
 
-    PEAssembly* pPEAssembly = GetManifestFile();
+    PEAssembly* pPEAssembly = GetPEAssembly();
 
     // "Module::Create" will initialize R2R support, if there is an R2R header.
     // make sure the PE is loaded or R2R will be disabled.
@@ -194,17 +193,15 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 
     if (pPEAssembly->IsDynamic())
         // manifest modules of dynamic assemblies are always transient
-        m_pManifest = ReflectionModule::Create(this, pPEAssembly, pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
+        m_pModule = ReflectionModule::Create(this, pPEAssembly, pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
-        m_pManifest = Module::Create(this, mdFileNil, pPEAssembly, pamTracker);
+        m_pModule = Module::Create(this, mdFileNil, pPEAssembly, pamTracker);
 
     FastInterlockIncrement((LONG*)&g_cAssemblies);
 
-    PrepareModuleForAssembly(m_pManifest, pamTracker);
+    PrepareModuleForAssembly(m_pModule, pamTracker);
 
-    CacheManifestFiles();
-
-    if (!m_pManifest->IsReadyToRun())
+    if (!m_pModule->IsReadyToRun())
         CacheManifestExportedTypes(pamTracker);
 
     // We'll load the friend assembly information lazily.  For the ngen case we should avoid
@@ -228,7 +225,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
         FAULT_FORBID();
         //Cannot fail after this point.
 
-        PublishModuleIntoAssembly(m_pManifest);
+        PublishModuleIntoAssembly(m_pModule);
 
         return;  // Explicit return to let you know you are NOT welcome to add code after the CANNOTTHROW/FAULT_FORBID expires
     }
@@ -249,9 +246,9 @@ Assembly::~Assembly()
     if (m_pFriendAssemblyDescriptor != NULL)
         m_pFriendAssemblyDescriptor->Release();
 
-    if (m_pManifestFile)
+    if (m_pPEAssembly)
     {
-        m_pManifestFile->Release();
+        m_pPEAssembly->Release();
     }
 
 #ifdef FEATURE_COMINTEROP
@@ -331,7 +328,7 @@ void Assembly::Terminate( BOOL signalProfiler )
 
 Assembly * Assembly::Create(
     BaseDomain *                 pDomain,
-    PEAssembly *                 pFile,
+    PEAssembly *                 pPEAssembly,
     DebuggerAssemblyControlFlags debuggerFlags,
     BOOL                         fIsCollectible,
     AllocMemTracker *            pamTracker,
@@ -339,7 +336,7 @@ Assembly * Assembly::Create(
 {
     STANDARD_VM_CONTRACT;
 
-    NewHolder<Assembly> pAssembly (new Assembly(pDomain, pFile, debuggerFlags, fIsCollectible));
+    NewHolder<Assembly> pAssembly (new Assembly(pDomain, pPEAssembly, debuggerFlags, fIsCollectible));
 
 #ifdef PROFILING_SUPPORTED
     {
@@ -395,15 +392,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
     AllocMemTracker *pamTracker = &amTracker;
 
     Assembly *pRetVal = NULL;
-
-    MethodDesc *pmdEmitter = SystemDomain::GetCallersMethod(args->stackMark);
-
-    // Called either from interop or async delegate invocation. Rejecting because we don't
-    // know how to set the correct permission on the new dynamic assembly.
-    if (!pmdEmitter)
-        COMPlusThrow(kInvalidOperationException);
-
-    Assembly   *pCallerAssembly = pmdEmitter->GetAssembly();
 
     // First, we set up a pseudo-manifest file for the assembly.
 
@@ -513,48 +501,10 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
         IfFailThrow(pAssemblyEmit->DefineAssembly(publicKey, publicKey.GetSize(), ulHashAlgId,
                                                    name, &assemData, dwFlags,
                                                    &ma));
-        pPEAssembly = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
-
-        AssemblyBinder* pFallbackBinder = pBinder;
-
-        // If ALC is not specified
-        if (pFallbackBinder == nullptr)
-        {
-            // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
-            // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
-            // caller/creator to ensure that any assembly loads triggered by the dynamic assembly are resolved using the intended load context.
-            //
-            // If the creator assembly has a HostAssembly associated with it, then use it for binding. Otherwise, the creator is dynamic
-            // and will have a fallback load context binder associated with it.
-
-            // There is always a manifest file - wehther working with static or dynamic assemblies.
-            PEAssembly* pCallerAssemblyManifestFile = pCallerAssembly->GetManifestFile();
-            _ASSERTE(pCallerAssemblyManifestFile != NULL);
-
-            if (!pCallerAssemblyManifestFile->IsDynamic())
-            {
-                // Static assemblies with do not have fallback load context
-                _ASSERTE(pCallerAssemblyManifestFile->GetFallbackBinder() == nullptr);
-
-                // Fetch the binder from the host assembly
-                PTR_BINDER_SPACE_Assembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
-                _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
-
-                pFallbackBinder = pCallerAssemblyHostAssembly->GetBinder();
-            }
-            else
-            {
-                // Creator assembly is dynamic too, so use its fallback load context for the one
-                // we are creating.
-                pFallbackBinder = pCallerAssemblyManifestFile->GetFallbackBinder();
-            }
-        }
-
-        // At this point, we should have a fallback load context binder to work with
-        _ASSERTE(pFallbackBinder != nullptr);
+        pPEAssembly = PEAssembly::Create(pAssemblyEmit);
 
         // Set it as the fallback load context binder for the dynamic assembly being created
-        pPEAssembly->SetFallbackBinder(pFallbackBinder);
+        pPEAssembly->SetFallbackBinder(pBinder);
     }
 
     NewHolder<DomainAssembly> pDomainAssembly;
@@ -622,9 +572,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
             // Assembly::Create will call SuppressRelease on the NewHolder that holds the LoaderAllocator when it transfers ownership
             pAssem = Assembly::Create(pDomain, pPEAssembly, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
 
-            ReflectionModule* pModule = (ReflectionModule*) pAssem->GetManifestModule();
-            pModule->SetCreatingAssembly( pCallerAssembly );
-
+            ReflectionModule* pModule = (ReflectionModule*) pAssem->GetModule();
 
             if (createdNewAssemblyLoaderAllocator)
             {
@@ -693,7 +641,7 @@ void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
     }
     CONTRACTL_END;
 
-    GetManifestModule()->SetDomainFile(pDomainAssembly);
+    GetModule()->SetDomainAssembly(pDomainAssembly);
 
 } // Assembly::SetDomainAssembly
 
@@ -702,7 +650,7 @@ void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 DomainAssembly *Assembly::GetDomainAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return GetManifestModule()->GetDomainAssembly();
+    return GetModule()->GetDomainAssembly();
 }
 
 PTR_LoaderHeap Assembly::GetLowFrequencyHeap()
@@ -795,9 +743,9 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
     mdToken mdLinkRef;
     mdToken mdBinding;
 
-    IMDInternalImport *pManifestImport = GetManifestImport();
+    IMDInternalImport *pMDImport = GetMDImport();
 
-    IfFailThrow(pManifestImport->GetExportedTypeProps(
+    IfFailThrow(pMDImport->GetExportedTypeProps(
         mdType,
         NULL,
         NULL,
@@ -806,7 +754,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
         NULL));         // dwflags
 
     // Don't trust the returned tokens.
-    if (!pManifestImport->IsValidToken(mdLinkRef))
+    if (!pMDImport->IsValidToken(mdLinkRef))
     {
         if (loadFlag != Loader::Load)
         {
@@ -831,27 +779,27 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
 #ifndef DACCESS_COMPILE
                     // LoadAssembly never returns NULL
                     DomainAssembly * pDomainAssembly =
-                        GetManifestModule()->LoadAssembly(mdLinkRef);
+                        GetModule()->LoadAssembly(mdLinkRef);
                     PREFIX_ASSUME(pDomainAssembly != NULL);
 
-                    RETURN pDomainAssembly->GetCurrentModule();
+                    RETURN pDomainAssembly->GetModule();
 #else
                     _ASSERTE(!"DAC shouldn't attempt to trigger loading");
                     return NULL;
 #endif // !DACCESS_COMPILE
                 };
                 case Loader::DontLoad:
-                    pAssembly = GetManifestModule()->GetAssemblyIfLoaded(mdLinkRef);
+                    pAssembly = GetModule()->GetAssemblyIfLoaded(mdLinkRef);
                     break;
                 case Loader::SafeLookup:
-                    pAssembly = GetManifestModule()->LookupAssemblyRef(mdLinkRef);
+                    pAssembly = GetModule()->LookupAssemblyRef(mdLinkRef);
                     break;
                 default:
                     _ASSERTE(FALSE);
             }
 
             if (pAssembly)
-                RETURN pAssembly->GetManifestModule();
+                RETURN pAssembly->GetModule();
             else
                 RETURN NULL;
 
@@ -868,7 +816,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
 
             // Note that we don't want to attempt a LoadModule if a GetModuleIfLoaded will
             // succeed, because it has a stronger contract.
-            Module *pModule = GetManifestModule()->GetModuleIfLoaded(mdLinkRef);
+            Module *pModule = GetModule()->GetModuleIfLoaded(mdLinkRef);
 #ifdef DACCESS_COMPILE
             return pModule;
 #else
@@ -881,17 +829,17 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
             // We should never get here in the GC case - the above should have succeeded.
             CONSISTENCY_CHECK(!FORBIDGC_LOADER_USE_ENABLED());
 
-            DomainFile* pDomainModule = NULL;
+            DomainAssembly* pDomainModule = NULL;
             if (loadFlag == Loader::Load)
             {
-                pDomainModule = GetManifestModule()->LoadModule(::GetAppDomain(), mdLinkRef);
+                pDomainModule = GetModule()->LoadModule(::GetAppDomain(), mdLinkRef);
             }
 
             if (pDomainModule == NULL)
                 RETURN NULL;
             else
             {
-                pModule = pDomainModule->GetCurrentModule();
+                pModule = pDomainModule->GetModule();
                 if (pModule == NULL)
                 {
                     _ASSERTE(loadFlag!=Loader::Load);
@@ -1014,8 +962,8 @@ Module * Assembly::FindModuleByTypeRef(
 #ifndef DACCESS_COMPILE
             if (loadFlag == Loader::Load)
             {
-                DomainFile* pActualDomainFile = pModule->LoadModule(::GetAppDomain(), tkType);
-                RETURN(pActualDomainFile->GetModule());
+                DomainAssembly* pActualDomainAssembly = pModule->LoadModule(::GetAppDomain(), tkType);
+                RETURN(pActualDomainAssembly->GetModule());
             }
             else
             {
@@ -1051,7 +999,7 @@ Module * Assembly::FindModuleByTypeRef(
 
             if (pAssembly != NULL)
             {
-                RETURN pAssembly->m_pManifest;
+                RETURN pAssembly->m_pModule;
             }
 
 #ifdef DACCESS_COMPILE
@@ -1069,14 +1017,14 @@ Module * Assembly::FindModuleByTypeRef(
             if (pDomainAssembly == NULL)
                 RETURN NULL;
 
-            pAssembly = pDomainAssembly->GetCurrentAssembly();
+            pAssembly = pDomainAssembly->GetAssembly();
             if (pAssembly == NULL)
             {
                 RETURN NULL;
             }
             else
             {
-                RETURN pAssembly->m_pManifest;
+                RETURN pAssembly->m_pModule;
             }
 #endif //!DACCESS_COMPILE
         }
@@ -1111,9 +1059,9 @@ Module *Assembly::FindModuleByName(LPCSTR pszModuleName)
         ThrowHR(COR_E_UNAUTHORIZEDACCESS);
 
     if (this == SystemDomain::SystemAssembly())
-        RETURN m_pManifest->GetModuleIfLoaded(kFile);
+        RETURN m_pModule->GetModuleIfLoaded(kFile);
     else
-        RETURN m_pManifest->LoadModule(::GetAppDomain(), kFile)->GetModule();
+        RETURN m_pModule->LoadModule(::GetAppDomain(), kFile)->GetModule();
 }
 
 void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
@@ -1129,28 +1077,24 @@ void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
     // Prejitted assemblies are expected to have their table prebuilt.
     // If not, we do it here at load time (as if we would jit the assembly).
 
-    if (m_pManifest->IsPersistedObject(m_pManifest->m_pAvailableClasses))
+    if (m_pModule->IsPersistedObject(m_pModule->m_pAvailableClasses))
         RETURN;
 
     mdToken mdExportedType;
 
-    HENUMInternalHolder phEnum(GetManifestImport());
+    HENUMInternalHolder phEnum(GetMDImport());
     phEnum.EnumInit(mdtExportedType,
                     mdTokenNil);
 
     ClassLoader::AvailableClasses_LockHolder lh(m_pClassLoader);
 
-    for(int i = 0; GetManifestImport()->EnumNext(&phEnum, &mdExportedType); i++)
-        m_pClassLoader->AddExportedTypeHaveLock(GetManifestModule(),
+    for(int i = 0; GetMDImport()->EnumNext(&phEnum, &mdExportedType); i++)
+        m_pClassLoader->AddExportedTypeHaveLock(GetModule(),
                                                 mdExportedType,
                                                 pamTracker);
 
     RETURN;
 }
-void Assembly::CacheManifestFiles()
-{
-}
-
 
 //<TODO>@TODO: if module is not signed it needs to acquire the
 //permissions from the assembly.</TODO>
@@ -1183,7 +1127,7 @@ void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTrac
          module->GetDebuggerInfoBits()));
 #endif // DEBUGGING_SUPPORTED
 
-    m_pManifest->EnsureFileCanBeStored(module->GetModuleRef());
+    m_pModule->EnsureFileCanBeStored(module->GetModuleRef());
 }
 
 // This is the final step of publishing a Module into an Assembly. This step cannot fail.
@@ -1197,7 +1141,7 @@ void Assembly::PublishModuleIntoAssembly(Module *module)
     }
     CONTRACTL_END
 
-    GetManifestModule()->EnsuredStoreFile(module->GetModuleRef(), module);
+    GetModule()->EnsuredStoreFile(module->GetModuleRef(), module);
     FastInterlockIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
 }
 
@@ -1219,7 +1163,7 @@ void Assembly::CacheFriendAssemblyInfo()
 
     if (m_pFriendAssemblyDescriptor == NULL)
     {
-        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetManifestFile());
+        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetPEAssembly());
         _ASSERTE(pFriendAssemblies != NULL);
 
         CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
@@ -1254,7 +1198,7 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
 
     while (true)
     {
-        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetManifestFile());
+        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetPEAssembly());
         FriendAssemblyDescriptor* pFriendAssemblyDescriptorNextLoop = NULL;
 
         {
@@ -1696,14 +1640,14 @@ MethodDesc* Assembly::GetEntryPoint()
     if (m_pEntryPoint)
         RETURN m_pEntryPoint;
 
-    mdToken mdEntry = m_pManifestFile->GetEntryPointToken();
+    mdToken mdEntry = m_pPEAssembly->GetEntryPointToken();
     if (IsNilToken(mdEntry))
         RETURN NULL;
 
     Module *pModule = NULL;
     switch(TypeFromToken(mdEntry)) {
     case mdtFile:
-        pModule = m_pManifest->LoadModule(::GetAppDomain(), mdEntry)->GetModule();
+        pModule = m_pModule->LoadModule(::GetAppDomain(), mdEntry)->GetModule();
 
         mdEntry = pModule->GetEntryPointToken();
         if ( (TypeFromToken(mdEntry) != mdtMethodDef) ||
@@ -1712,8 +1656,8 @@ MethodDesc* Assembly::GetEntryPoint()
         break;
 
     case mdtMethodDef:
-        if (m_pManifestFile->GetMDImport()->IsValidToken(mdEntry))
-            pModule = m_pManifest;
+        if (m_pPEAssembly->GetMDImport()->IsValidToken(mdEntry))
+            pModule = m_pModule;
         break;
     }
 
@@ -1871,7 +1815,7 @@ BOOL Assembly::IsInstrumentedHelper()
         return false;
 
     // We must have a native image in order to perform IBC instrumentation
-    if (!GetManifestFile()->IsReadyToRun())
+    if (!GetPEAssembly()->IsReadyToRun())
         return false;
 
     // @Consider using the full name instead of the short form
@@ -1998,7 +1942,7 @@ mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssembl
     SafeComHolder<IMetaDataAssemblyEmit> emitHolder;
 
     AssemblySpec spec;
-    spec.InitializeSpec(refedAssembly->GetManifestFile());
+    spec.InitializeSpec(refedAssembly->GetPEAssembly());
 
     if (refedAssembly->IsCollectible())
     {
@@ -2056,7 +2000,7 @@ void Assembly::AddExportedType(mdExportedType cl)
     CONTRACTL_END
 
     AllocMemTracker amTracker;
-    m_pClassLoader->AddExportedTypeDontHaveLock(GetManifestModule(),
+    m_pClassLoader->AddExportedTypeDontHaveLock(GetModule(),
         cl,
         &amTracker);
     amTracker.SuppressRelease();
@@ -2235,13 +2179,13 @@ Assembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         m_pClassLoader->EnumMemoryRegions(flags);
     }
-    if (m_pManifest.IsValid())
+    if (m_pModule.IsValid())
     {
-        m_pManifest->EnumMemoryRegions(flags, true);
+        m_pModule->EnumMemoryRegions(flags, true);
     }
-    if (m_pManifestFile.IsValid())
+    if (m_pPEAssembly.IsValid())
     {
-        m_pManifestFile->EnumMemoryRegions(flags);
+        m_pPEAssembly->EnumMemoryRegions(flags);
     }
 }
 

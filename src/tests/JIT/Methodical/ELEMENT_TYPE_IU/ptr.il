@@ -9,9 +9,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'test'
+.assembly 'ptr'
 { }
-.module 'test.exe'
 // MVID: {6048B3F7-DE21-4008-935A-6B43C5338841}
 .class value private explicit ansi sealed $MultiByte$size$120
 {

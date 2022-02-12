@@ -66,13 +66,8 @@ namespace System.Runtime.CompilerServices
         }
 
         [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object? userData)
+        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code!!, CleanupCode backoutCode!!, object? userData)
         {
-            if (code == null)
-                throw new ArgumentNullException(nameof(code));
-            if (backoutCode == null)
-                throw new ArgumentNullException(nameof(backoutCode));
-
             bool exceptionThrown = true;
 
             try
@@ -121,7 +116,7 @@ namespace System.Runtime.CompilerServices
 
         // The following intrinsics return true if input is a compile-time constant
         // Feel free to add more overloads on demand
-
+#pragma warning disable IDE0060
         [Intrinsic]
         internal static bool IsKnownConstant(string? t) => false;
 
@@ -130,5 +125,6 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         internal static bool IsKnownConstant(int t) => false;
+#pragma warning restore IDE0060
     }
 }

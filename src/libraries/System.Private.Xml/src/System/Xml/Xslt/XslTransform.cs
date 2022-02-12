@@ -51,12 +51,8 @@ namespace System.Xml.Xsl
         {
             Load(stylesheet, CreateDefaultResolver());
         }
-        public void Load(XmlReader stylesheet, XmlResolver? resolver)
+        public void Load(XmlReader stylesheet!!, XmlResolver? resolver)
         {
-            if (stylesheet == null)
-            {
-                throw new ArgumentNullException(nameof(stylesheet));
-            }
             Load(new XPathDocument(stylesheet, XmlSpace.Preserve), resolver);
         }
 
@@ -64,30 +60,18 @@ namespace System.Xml.Xsl
         {
             Load(stylesheet, CreateDefaultResolver());
         }
-        public void Load(IXPathNavigable stylesheet, XmlResolver? resolver)
+        public void Load(IXPathNavigable stylesheet!!, XmlResolver? resolver)
         {
-            if (stylesheet == null)
-            {
-                throw new ArgumentNullException(nameof(stylesheet));
-            }
             Load(stylesheet.CreateNavigator()!, resolver);
         }
 
-        public void Load(XPathNavigator stylesheet)
+        public void Load(XPathNavigator stylesheet!!)
         {
-            if (stylesheet == null)
-            {
-                throw new ArgumentNullException(nameof(stylesheet));
-            }
             Load(stylesheet, CreateDefaultResolver());
         }
 
-        public void Load(XPathNavigator stylesheet, XmlResolver? resolver)
+        public void Load(XPathNavigator stylesheet!!, XmlResolver? resolver)
         {
-            if (stylesheet == null)
-            {
-                throw new ArgumentNullException(nameof(stylesheet));
-            }
             Compile(stylesheet, resolver);
         }
 
@@ -170,74 +154,42 @@ namespace System.Xml.Xsl
             processor.Execute(output);
         }
 
-        public XmlReader Transform(IXPathNavigable input, XsltArgumentList? args, XmlResolver? resolver)
+        public XmlReader Transform(IXPathNavigable input!!, XsltArgumentList? args, XmlResolver? resolver)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
             return Transform(input.CreateNavigator()!, args, resolver);
         }
 
-        public XmlReader Transform(IXPathNavigable input, XsltArgumentList? args)
+        public XmlReader Transform(IXPathNavigable input!!, XsltArgumentList? args)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
             return Transform(input.CreateNavigator()!, args, _DocumentResolver);
         }
-        public void Transform(IXPathNavigable input, XsltArgumentList? args, TextWriter output, XmlResolver? resolver)
+        public void Transform(IXPathNavigable input!!, XsltArgumentList? args, TextWriter output, XmlResolver? resolver)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
             Transform(input.CreateNavigator()!, args, output, resolver);
         }
 
-        public void Transform(IXPathNavigable input, XsltArgumentList? args, TextWriter output)
+        public void Transform(IXPathNavigable input!!, XsltArgumentList? args, TextWriter output)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
             Transform(input.CreateNavigator()!, args, output, _DocumentResolver);
         }
 
-        public void Transform(IXPathNavigable input, XsltArgumentList? args, Stream output, XmlResolver? resolver)
+        public void Transform(IXPathNavigable input!!, XsltArgumentList? args, Stream output, XmlResolver? resolver)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
             Transform(input.CreateNavigator()!, args, output, resolver);
         }
 
-        public void Transform(IXPathNavigable input, XsltArgumentList? args, Stream output)
+        public void Transform(IXPathNavigable input!!, XsltArgumentList? args, Stream output)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
             Transform(input.CreateNavigator()!, args, output, _DocumentResolver);
         }
 
-        public void Transform(IXPathNavigable input, XsltArgumentList? args, XmlWriter output, XmlResolver? resolver)
+        public void Transform(IXPathNavigable input!!, XsltArgumentList? args, XmlWriter output, XmlResolver? resolver)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
             Transform(input.CreateNavigator()!, args, output, resolver);
         }
 
-        public void Transform(IXPathNavigable input, XsltArgumentList? args, XmlWriter output)
+        public void Transform(IXPathNavigable input!!, XsltArgumentList? args, XmlWriter output)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
             Transform(input.CreateNavigator()!, args, output, _DocumentResolver);
         }
 

@@ -58,7 +58,8 @@ namespace System.Globalization
             [MemberNotNull(nameof(_str))]
             set
             {
-                _str = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                _str = value;
                 _indexes = null;
             }
         }

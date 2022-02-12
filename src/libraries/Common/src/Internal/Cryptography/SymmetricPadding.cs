@@ -150,7 +150,7 @@ namespace Internal.Cryptography
 
         public static int GetPaddingLength(ReadOnlySpan<byte> block, PaddingMode paddingMode, int blockSize)
         {
-            int padBytes = 0;
+            int padBytes;
 
             // See PadBlock for a description of the padding modes.
             switch (paddingMode)

@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="key">An object identifying the requested entry.</param>
         /// <param name="value">The located value or null.</param>
         /// <returns>True if the key was found.</returns>
-        bool TryGetValue(object key, out object value);
+        bool TryGetValue(object key, out object? value);
 
         /// <summary>
         /// Create or overwrite an entry in the cache.

@@ -56,13 +56,8 @@ namespace System.Security.Claims
         /// <param name="reader">a <see cref="BinaryReader"/> pointing to a <see cref="Claim"/>.</param>
         /// <param name="subject"> the value for <see cref="Claim.Subject"/>, which is the <see cref="ClaimsIdentity"/> that has these claims.</param>
         /// <exception cref="ArgumentNullException">if 'reader' is null.</exception>
-        public Claim(BinaryReader reader, ClaimsIdentity? subject)
+        public Claim(BinaryReader reader!!, ClaimsIdentity? subject)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             _subject = subject;
 
             SerializationMask mask = (SerializationMask)reader.ReadInt32();
@@ -251,18 +246,8 @@ namespace System.Security.Claims
         /// <param name="subject">The subject that this claim describes.</param>
         /// <param name="propertyKey">This allows adding a property when adding a Claim.</param>
         /// <param name="propertyValue">The value associated with the property.</param>
-        internal Claim(string type, string value, string? valueType, string? issuer, string? originalIssuer, ClaimsIdentity? subject, string? propertyKey, string? propertyValue)
+        internal Claim(string type!!, string value!!, string? valueType, string? issuer, string? originalIssuer, ClaimsIdentity? subject, string? propertyKey, string? propertyValue)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             _type = type;
             _value = value;
             _valueType = string.IsNullOrEmpty(valueType) ? ClaimValueTypes.String : valueType;
@@ -295,11 +280,8 @@ namespace System.Security.Claims
         /// <param name="subject">the <see cref="ClaimsIdentity"/> to assign to <see cref="Claim.Subject"/>.</param>
         /// <remarks><see cref="Claim.Subject"/>will be set to 'subject'.</remarks>
         /// <exception cref="ArgumentNullException">if 'other' is null.</exception>
-        protected Claim(Claim other, ClaimsIdentity? subject)
+        protected Claim(Claim other!!, ClaimsIdentity? subject)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
-
             _issuer = other._issuer;
             _originalIssuer = other._originalIssuer;
             _subject = subject;
@@ -432,13 +414,8 @@ namespace System.Security.Claims
         /// <param name="writer">the <see cref="BinaryWriter"/> to use for data storage.</param>
         /// <param name="userData">additional data provided by derived type.</param>
         /// <exception cref="ArgumentNullException">if 'writer' is null.</exception>
-        protected virtual void WriteTo(BinaryWriter writer, byte[]? userData)
+        protected virtual void WriteTo(BinaryWriter writer!!, byte[]? userData)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             int numberOfPropertiesWritten = 1;
             SerializationMask mask = SerializationMask.None;
             if (string.Equals(_type, ClaimsIdentity.DefaultNameClaimType))

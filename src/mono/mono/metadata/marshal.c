@@ -3803,7 +3803,9 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	mb->method->save_lmf = 1;
 
 	WrapperInfo *info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT);
-	info->d.managed_to_native.method = NULL;
+	//info->d.managed_to_native.method = NULL;
+	info->d.native_func.klass = caller_class;
+	info->d.native_func.sig = sig;
 
 	MonoMethodPInvoke *piinfo = NULL;
 	MonoMarshalSpec **mspecs = g_new0 (MonoMarshalSpec *, 1 + sig->param_count);

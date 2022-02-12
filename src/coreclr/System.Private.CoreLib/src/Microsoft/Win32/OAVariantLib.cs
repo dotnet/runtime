@@ -72,12 +72,8 @@ namespace Microsoft.Win32
          * Variant and the types that CLR supports explicitly in the
          * CLR Variant class.
          */
-        internal static Variant ChangeType(Variant source, Type targetClass, short options, CultureInfo culture)
+        internal static Variant ChangeType(Variant source, Type targetClass!!, short options, CultureInfo culture!!)
         {
-            if (targetClass == null)
-                throw new ArgumentNullException(nameof(targetClass));
-            if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
             Variant result = default;
             ChangeTypeEx(ref result, ref source,
                          culture.LCID,

@@ -558,8 +558,7 @@ namespace System
 
         internal static RuntimeType GetTypeByNameUsingCARules(string name, RuntimeModule scope)
         {
-            if (string.IsNullOrEmpty(name))
-                throw new ArgumentException(null, nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             RuntimeType? type = null;
             GetTypeByNameUsingCARules(name, new QCallModule(ref scope), ObjectHandleOnStack.Create(ref type));

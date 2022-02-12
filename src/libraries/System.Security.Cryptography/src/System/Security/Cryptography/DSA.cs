@@ -95,10 +95,8 @@ namespace System.Security.Cryptography
             throw DerivedClassMustOverride();
         }
 
-        public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
+        public byte[] SignData(byte[] data!!, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
             // hashAlgorithm is verified in the overload
 
             return SignData(data, 0, data.Length, hashAlgorithm);
@@ -125,28 +123,22 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the hashing or signing operation.
         /// </exception>
-        public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        public byte[] SignData(byte[] data!!, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
             return SignDataCore(data, hashAlgorithm, signatureFormat);
         }
 
-        public virtual byte[] SignData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
+        public virtual byte[] SignData(byte[] data!!, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(count));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             byte[] hash = HashData(data, offset, count, hashAlgorithm);
             return CreateSignature(hash);
@@ -189,20 +181,17 @@ namespace System.Security.Cryptography
         ///   An error occurred in the hashing or signing operation.
         /// </exception>
         public byte[] SignData(
-            byte[] data,
+            byte[] data!!,
             int offset,
             int count,
             HashAlgorithmName hashAlgorithm,
             DSASignatureFormat signatureFormat)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(count));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
@@ -240,12 +229,9 @@ namespace System.Security.Cryptography
             return AsymmetricAlgorithmHelpers.ConvertFromIeeeP1363Signature(sig, signatureFormat);
         }
 
-        public virtual byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm)
+        public virtual byte[] SignData(Stream data!!, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             byte[] hash = HashData(data, hashAlgorithm);
             return CreateSignature(hash);
@@ -272,12 +258,9 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the hashing or signing operation.
         /// </exception>
-        public byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        public byte[] SignData(Stream data!!, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
@@ -302,28 +285,20 @@ namespace System.Security.Cryptography
             return CreateSignatureCore(hash, signatureFormat);
         }
 
-        public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm)
+        public bool VerifyData(byte[] data!!, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
-
             return VerifyData(data, 0, data.Length, signature, hashAlgorithm);
         }
 
         public virtual bool VerifyData(byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(count));
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentNullException.ThrowIfNull(signature);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             byte[] hash = HashData(data, offset, count, hashAlgorithm);
             return VerifySignature(hash, signature);
@@ -374,30 +349,22 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             DSASignatureFormat signatureFormat)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(count));
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentNullException.ThrowIfNull(signature);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
             return VerifyDataCore(new ReadOnlySpan<byte>(data, offset, count), signature, hashAlgorithm, signatureFormat);
         }
 
-        public virtual bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm)
+        public virtual bool VerifyData(Stream data!!, byte[] signature!!, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             byte[] hash = HashData(data, hashAlgorithm);
             return VerifySignature(hash, signature);
@@ -420,10 +387,8 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the signing operation.
         /// </exception>
-        public byte[] CreateSignature(byte[] rgbHash, DSASignatureFormat signatureFormat)
+        public byte[] CreateSignature(byte[] rgbHash!!, DSASignatureFormat signatureFormat)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
@@ -544,8 +509,7 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             out int bytesWritten)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             if (TryHashData(data, destination, hashAlgorithm, out int hashLength) &&
                 TryCreateSignature(destination.Slice(0, hashLength), destination, out bytesWritten))
@@ -589,8 +553,7 @@ namespace System.Security.Cryptography
             DSASignatureFormat signatureFormat,
             out int bytesWritten)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
@@ -634,8 +597,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> signature,
             HashAlgorithmName hashAlgorithm)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             return VerifyDataCore(data, signature, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
@@ -663,17 +625,12 @@ namespace System.Security.Cryptography
         ///   An error occurred in the hashing or verification operation.
         /// </exception>
         public bool VerifyData(
-            byte[] data,
-            byte[] signature,
+            byte[] data!!,
+            byte[] signature!!,
             HashAlgorithmName hashAlgorithm,
             DSASignatureFormat signatureFormat)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
@@ -703,17 +660,12 @@ namespace System.Security.Cryptography
         ///   An error occurred in the hashing or verification operation.
         /// </exception>
         public bool VerifyData(
-            Stream data,
-            byte[] signature,
+            Stream data!!,
+            byte[] signature!!,
             HashAlgorithmName hashAlgorithm,
             DSASignatureFormat signatureFormat)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
@@ -765,8 +717,7 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             DSASignatureFormat signatureFormat)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
@@ -816,12 +767,8 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the verification operation.
         /// </exception>
-        public bool VerifySignature(byte[] rgbHash, byte[] rgbSignature, DSASignatureFormat signatureFormat)
+        public bool VerifySignature(byte[] rgbHash!!, byte[] rgbSignature!!, DSASignatureFormat signatureFormat)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
-                throw new ArgumentNullException(nameof(rgbSignature));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
@@ -933,18 +880,12 @@ namespace System.Security.Cryptography
         private static Exception DerivedClassMustOverride() =>
             new NotImplementedException(SR.NotSupported_SubclassOverride);
 
-        internal static Exception HashAlgorithmNameNullOrEmpty() =>
-            new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");
-
         public override bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
-            PbeParameters pbeParameters,
+            PbeParameters pbeParameters!!,
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
-                throw new ArgumentNullException(nameof(pbeParameters));
-
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 ReadOnlySpan<char>.Empty,
@@ -962,13 +903,10 @@ namespace System.Security.Cryptography
 
         public override bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
-            PbeParameters pbeParameters,
+            PbeParameters pbeParameters!!,
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
-                throw new ArgumentNullException(nameof(pbeParameters));
-
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 password,

@@ -965,6 +965,19 @@ void* __cdecl ThreadStressLog::operator new(size_t n, const NoThrow&) NOEXCEPT
     return malloc(n);
 #endif //HOST_WINDOWS
 }
+
+void __cdecl ThreadStressLog::operator delete(void* p) 
+{
+    if (StressLogChunk::s_memoryMapped)
+        return; // Giving up, we will just leak it instead of building a sophisticated allocator
+#ifdef HOST_WINDOWS
+    _ASSERTE(StressLogChunk::s_LogChunkHeap);
+    HeapFree(StressLogChunk::s_LogChunkHeap, 0, p);
+#else
+    free(p);
+#endif //HOST_WINDOWS
+}
+
 #endif //MEMORY_MAPPED_STRESSLOG
 
 #endif // STRESS_LOG

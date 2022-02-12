@@ -19,6 +19,7 @@ namespace System.Net.NetworkInformation
         private const int MinIpHeaderLengthInBytes = 20;
         private const int MaxIpHeaderLengthInBytes = 60;
         private const int IpV6HeaderLengthInBytes = 40;
+        private static ushort DontFragment = OperatingSystem.IsFreeBSD() ? (ushort)IPAddress.HostToNetworkOrder((short)0x4000) : (ushort)0x4000;
 
         private unsafe SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
@@ -29,15 +30,17 @@ namespace System.Net.NetworkInformation
 
             bool ipv4 = address.AddressFamily == AddressFamily.InterNetwork;
             bool sendIpHeader = ipv4 && options != null && SendIpHeader;
+            int totalLength = 0;
 
              if (sendIpHeader)
              {
                 iph.VersionAndLength = 0x45;
+                totalLength = sizeof(IpHeader) + checked(sizeof(IcmpHeader) +  buffer.Length);
                 // On OSX this strangely must be host byte order.
-                iph.TotalLength = (ushort)(sizeof(IpHeader) + checked(sizeof(IcmpHeader) +  buffer.Length));
+                iph.TotalLength = OperatingSystem.IsFreeBSD() ? (ushort)IPAddress.HostToNetworkOrder((short)totalLength) : (ushort)totalLength;
                 iph.Protocol = 1; // ICMP
                 iph.Ttl = (byte)options!.Ttl;
-                iph.Flags = (ushort)(options.DontFragment ? 0x4000 : 0);
+                iph.Flags = (ushort)(options.DontFragment ? DontFragment : 0);
 #pragma warning disable 618
                 iph.DestinationAddress = (uint)address.Address;
 #pragma warning restore 618
@@ -52,7 +55,7 @@ namespace System.Net.NetworkInformation
                 {
                     Type = ipv4 ? (byte)IcmpV4MessageType.EchoRequest : (byte)IcmpV6MessageType.EchoRequest,
                     Identifier = id,
-                }, buffer));
+                }, buffer, totalLength));
         }
 
         private Socket GetRawSocket(SocketConfig socketConfig)
@@ -405,14 +408,14 @@ namespace System.Net.NetworkInformation
             public readonly byte[] SendBuffer;
         }
 
-        private static unsafe byte[] CreateSendMessageBuffer(IpHeader ipHeader, IcmpHeader icmpHeader, byte[] payload)
+        private static unsafe byte[] CreateSendMessageBuffer(IpHeader ipHeader, IcmpHeader icmpHeader, byte[] payload, int totalLength = 0)
         {
             int icmpHeaderSize = sizeof(IcmpHeader);
             int offset = 0;
-            int packetSize = ipHeader.TotalLength != 0 ? ipHeader.TotalLength : checked(icmpHeaderSize + payload.Length);
+            int packetSize = totalLength != 0 ? totalLength : checked(icmpHeaderSize + payload.Length);
             byte[] result = new byte[packetSize];
 
-            if (ipHeader.TotalLength != 0)
+            if (totalLength != 0)
             {
                 int ipHeaderSize = sizeof(IpHeader);
                 new Span<byte>(&ipHeader, sizeof(IpHeader)).CopyTo(result);

@@ -3934,9 +3934,9 @@ namespace System.Text.RegularExpressions
                 if (!needsCulture)
                 {
                     int[] codes = _code!.Codes;
-                    for (int codepos = 0; codepos < codes.Length; codepos += RegexCode.OpcodeSize(codes[codepos]))
+                    for (int codepos = 0; codepos < codes.Length; codepos += RegexCode.OpcodeSize((RegexOpcode)codes[codepos]))
                     {
-                        if ((codes[codepos] & RegexCode.Ci) == RegexCode.Ci)
+                        if (((RegexOpcode)codes[codepos] & RegexOpcode.CaseInsensitive) == RegexOpcode.CaseInsensitive)
                         {
                             needsCulture = true;
                             break;

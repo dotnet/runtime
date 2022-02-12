@@ -4657,6 +4657,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Figure out what locals are address-taken.
     //
     DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
+    // Run a simple forward substitution pass.
+    //
+    DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
 
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
@@ -5286,6 +5289,18 @@ void Compiler::generatePatchpointInfo()
                 patchpointInfo->MonitorAcquiredOffset());
     }
 
+#if defined(TARGET_AMD64)
+    // Record callee save registers.
+    // Currently only needed for x64.
+    //
+    regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    rsPushRegs |= RBM_FPBASE;
+    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+    JITDUMP("--OSR-- Tier0 callee saves: ");
+    JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
+    JITDUMP("\n");
+#endif
+
     // Register this with the runtime.
     info.compCompHnd->setPatchpointInfo(patchpointInfo);
 }
@@ -5625,10 +5640,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     // Set this before the first 'BADCODE'
     // Skip verification where possible
-    //.tiVerificationNeeded = !compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
     assert(compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION));
-
-    assert(!compIsForInlining() || !tiVerificationNeeded); // Inlinees must have been verified.
 
     /* Setup an error trap */
 
@@ -6156,17 +6168,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
                 eeGetMethodFullName(info.compMethodHnd), dspPtr(impTokenLookupContextHandle)));
     }
 
-    if (tiVerificationNeeded)
-    {
-        JITLOG((LL_INFO10000, "tiVerificationNeeded initially set to true for %s\n", info.compFullName));
-    }
 #endif // DEBUG
 
-    /* Since tiVerificationNeeded can be turned off in the middle of
-       compiling a method, and it might have caused blocks to be queued up
-       for reimporting, impCanReimport can be used to check for reimporting. */
-
-    impCanReimport = (tiVerificationNeeded || compStressCompile(STRESS_CHK_REIMPORT, 15));
+    impCanReimport = compStressCompile(STRESS_CHK_REIMPORT, 15);
 
     /* Initialize set a bunch of global values */
 
@@ -6396,9 +6400,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         // Honor the config setting that tells the jit to
         // always optimize methods with loops.
         //
-        // If that's not set, and OSR is enabled, the jit may still
+        // If neither of those apply, and OSR is enabled, the jit may still
         // decide to optimize, if there's something in the method that
-        // OSR currently cannot handle.
+        // OSR currently cannot handle, or we're optionally suppressing
+        // OSR by method hash.
         //
         const char* reason = nullptr;
 
@@ -6406,35 +6411,42 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             reason = "tail.call and not BBINSTR";
         }
-        else if ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0)
+        else if (compHasBackwardJump && ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
         {
-            if (compHasBackwardJump)
-            {
-                reason = "loop";
-            }
+            reason = "loop";
         }
-        else if (JitConfig.TC_OnStackReplacement() > 0)
+
+        if (compHasBackwardJump && (reason == nullptr) && (JitConfig.TC_OnStackReplacement() > 0))
         {
-            const bool patchpointsOK = compCanHavePatchpoints(&reason);
-            assert(patchpointsOK || (reason != nullptr));
+            const char* noPatchpointReason = nullptr;
+            bool        canEscapeViaOSR    = compCanHavePatchpoints(&reason);
 
 #ifdef DEBUG
-            // Optionally disable OSR by method hash.
-            //
-            if (patchpointsOK && compHasBackwardJump)
+            if (canEscapeViaOSR)
             {
+                // Optionally disable OSR by method hash. This will force any
+                // method that might otherwise get trapped in Tier0 to be optimized.
+                //
                 static ConfigMethodRange JitEnableOsrRange;
                 JitEnableOsrRange.EnsureInit(JitConfig.JitEnableOsrRange());
                 const unsigned hash = impInlineRoot()->info.compMethodHash();
                 if (!JitEnableOsrRange.Contains(hash))
                 {
-                    JITDUMP("Disabling OSR -- Method hash 0x%08x not within range ", hash);
-                    JITDUMPEXEC(JitEnableOsrRange.Dump());
-                    JITDUMP("\n");
-                    reason = "OSR disabled by JitEnableOsrRange";
+                    canEscapeViaOSR = false;
+                    reason          = "OSR disabled by JitEnableOsrRange";
                 }
             }
 #endif
+
+            if (canEscapeViaOSR)
+            {
+                JITDUMP("\nOSR enabled for this method\n");
+            }
+            else
+            {
+                JITDUMP("\nOSR disabled for this method: %s\n", noPatchpointReason);
+                assert(reason != nullptr);
+            }
         }
 
         if (reason != nullptr)
@@ -8848,6 +8860,20 @@ void dTreeLIR(GenTree* tree)
     cTreeLIR(JitTls::GetCompiler(), tree);
 }
 
+void dTreeRange(GenTree* first, GenTree* last)
+{
+    Compiler* comp = JitTls::GetCompiler();
+    GenTree*  cur  = first;
+    while (true)
+    {
+        cTreeLIR(comp, cur);
+        if (cur == last)
+            break;
+
+        cur = cur->gtNext;
+    }
+}
+
 void dTrees()
 {
     cTrees(JitTls::GetCompiler());
@@ -9723,6 +9749,29 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 }
 
 //------------------------------------------------------------------------------
+// gtTypeForNullCheck: helper to get the most optimal and correct type for nullcheck
+//
+// Arguments:
+//    tree - the node for nullcheck;
+//
+var_types Compiler::gtTypeForNullCheck(GenTree* tree)
+{
+    if (varTypeIsIntegral(tree))
+    {
+#if defined(TARGET_XARCH)
+        // Just an optimization for XARCH - smaller mov
+        if (varTypeIsLong(tree))
+        {
+            return TYP_INT;
+        }
+#endif
+        return tree->TypeGet();
+    }
+    // for the rest: probe a single byte to avoid potential AVEs
+    return TYP_BYTE;
+}
+
+//------------------------------------------------------------------------------
 // gtChangeOperToNullCheck: helper to change tree oper to a NULLCHECK.
 //
 // Arguments:
@@ -9738,7 +9787,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
-    tree->ChangeType(TYP_INT);
+    tree->ChangeType(gtTypeForNullCheck(tree));
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
@@ -9893,6 +9942,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_returnSpCheck++;
                 break;
 
+            case DoNotEnregisterReason::SimdUserForcesDep:
+                m_simdUserForcesDep++;
+                break;
+
             default:
                 unreached();
                 break;
@@ -10014,6 +10067,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);
+    PRINT_STATS(m_simdUserForcesDep, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)

@@ -1464,6 +1464,7 @@ namespace System
             return decimal.Truncate(d);
         }
 
+        [Intrinsic]
         public static unsafe double Truncate(double d)
         {
             ModF(d, &d);

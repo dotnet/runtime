@@ -734,7 +734,7 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
         BinderTracing::AssemblyBindOperation bindOperation(this);
         bindOperation.SetResult(pAssembly->GetPEAssembly(), true /*cached*/);
 
-        pDomain->LoadDomainFile(pAssembly, targetLevel);
+        pDomain->LoadDomainAssembly(pAssembly, targetLevel);
         RETURN pAssembly;
     }
 

@@ -277,6 +277,7 @@ namespace System
         public override string Message { get { throw null; } }
         public virtual string? ParamName { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static void ThrowIfNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpression("argument")] string? paramName = null) { throw null; }
     }
     public partial class ArgumentNullException : System.ArgumentException
     {
@@ -9186,6 +9187,11 @@ namespace System.Diagnostics.CodeAnalysis
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
+    [System.AttributeUsage(System.AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
+    public sealed class SetsRequiredMembersAttribute : System.Attribute
+    {
+        public SetsRequiredMembersAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public sealed partial class StringSyntaxAttribute : System.Attribute
     {
@@ -10719,6 +10725,7 @@ namespace System.IO
         public static string Combine(params string[] paths) { throw null; }
         public static bool EndsInDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
         public static bool EndsInDirectorySeparator(string path) { throw null; }
+        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? path) { throw null; }
         public static System.ReadOnlySpan<char> GetDirectoryName(System.ReadOnlySpan<char> path) { throw null; }
         public static string? GetDirectoryName(string? path) { throw null; }
         public static System.ReadOnlySpan<char> GetExtension(System.ReadOnlySpan<char> path) { throw null; }
@@ -13205,6 +13212,11 @@ namespace System.Runtime.CompilerServices
     public sealed partial class PreserveBaseOverridesAttribute : System.Attribute
     {
         public PreserveBaseOverridesAttribute() { }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+    public sealed class RequiredMemberAttribute : System.Attribute
+    {
+        public RequiredMemberAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
     public sealed partial class ReferenceAssemblyAttribute : System.Attribute

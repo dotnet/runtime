@@ -33,15 +33,7 @@ namespace System.Security.Principal
 
         public NTAccount(string domainName, string accountName)
         {
-            if (accountName == null)
-            {
-                throw new ArgumentNullException(nameof(accountName));
-            }
-
-            if (accountName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(accountName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(accountName);
 
             if (accountName.Length > MaximumAccountNameLength)
             {
@@ -65,15 +57,7 @@ namespace System.Security.Principal
 
         public NTAccount(string name)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             if (name.Length > (MaximumDomainNameLength + 1 /* '\' */ + MaximumAccountNameLength))
             {
@@ -110,13 +94,8 @@ namespace System.Security.Principal
             }
         }
 
-        public override IdentityReference Translate(Type targetType)
+        public override IdentityReference Translate(Type targetType!!)
         {
-            if (targetType == null)
-            {
-                throw new ArgumentNullException(nameof(targetType));
-            }
-
             if (targetType == typeof(NTAccount))
             {
                 return this; // assumes that NTAccount objects are immutable
@@ -174,13 +153,8 @@ namespace System.Security.Principal
             return result;
         }
 
-        internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceAccounts, Type targetType, out bool someFailed)
+        internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceAccounts!!, Type targetType, out bool someFailed)
         {
-            if (sourceAccounts == null)
-            {
-                throw new ArgumentNullException(nameof(sourceAccounts));
-            }
-
             if (targetType == typeof(SecurityIdentifier))
             {
                 return TranslateToSids(sourceAccounts, out someFailed);
@@ -222,13 +196,8 @@ namespace System.Security.Principal
         #region Private methods
 
 
-        private static IdentityReferenceCollection TranslateToSids(IdentityReferenceCollection sourceAccounts, out bool someFailed)
+        private static IdentityReferenceCollection TranslateToSids(IdentityReferenceCollection sourceAccounts!!, out bool someFailed)
         {
-            if (sourceAccounts == null)
-            {
-                throw new ArgumentNullException(nameof(sourceAccounts));
-            }
-
             if (sourceAccounts.Count == 0)
             {
                 throw new ArgumentException(SR.Arg_EmptyCollection, nameof(sourceAccounts));

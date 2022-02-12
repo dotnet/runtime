@@ -530,7 +530,7 @@
       <_Objcopy Condition="'$(Platform)' == 's390x'">s390x-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'x64'">x86_64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'x86'">i686-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
-      <_Objcopy Condition="'$(TargetsAndroid)' == 'true'">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/bin/$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(TargetsAndroid)' == 'true'">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/bin/llvm-objcopy</_Objcopy>
     </PropertyGroup>
     <!-- test viability of objcopy command -->
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) -V" IgnoreStandardErrorWarningFormat="true" ContinueOnError="WarnAndContinue" IgnoreExitCode="true" EchoOff="true" ConsoleToMsBuild="true">

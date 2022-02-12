@@ -20,10 +20,6 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
 {
 #define REPORT_FAILURE() do { if (assertOnFail) { ASSERT_UNCONDITIONALLY("MethodTable::Validate check failed"); } return false; } while (false)
 
-    // Deal with the most common case of a bad pointer without an exception.
-    if (this == NULL)
-        REPORT_FAILURE();
-
     // MethodTable structures should be at least pointer aligned.
     if (dac_cast<TADDR>(this) & (sizeof(TADDR)-1))
         REPORT_FAILURE();

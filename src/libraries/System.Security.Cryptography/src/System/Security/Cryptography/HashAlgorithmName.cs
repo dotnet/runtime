@@ -121,13 +121,8 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         /// <paramref name="oidValue" /> is null.
         /// </exception>
-        public static bool TryFromOid(string oidValue, out HashAlgorithmName value)
+        public static bool TryFromOid(string oidValue!!, out HashAlgorithmName value)
         {
-            if (oidValue is null)
-            {
-                throw new ArgumentNullException(nameof(oidValue));
-            }
-
             switch (oidValue)
             {
                 case Oids.Md5:

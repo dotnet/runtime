@@ -190,7 +190,7 @@ namespace System.Text.RegularExpressions
                 for (int i = 0; i < childCount; i++)
                 {
                     RegexNode child = node.Child(i);
-                    Debug.Assert(child.Parent == node, $"{child.Description()} missing reference to parent {node.Description()}");
+                    Debug.Assert(child.Parent == node, $"{child.Describe()} missing reference to parent {node.Describe()}");
 
                     toExamine.Push(child);
                 }
@@ -2568,7 +2568,40 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         [ExcludeFromCodeCoverage]
-        public string Description()
+        public override string ToString()
+        {
+            RegexNode? curNode = this;
+            int curChild = 0;
+            var sb = new StringBuilder().AppendLine(curNode.Describe());
+            var stack = new List<int>();
+            while (true)
+            {
+                if (curChild < curNode!.ChildCount())
+                {
+                    stack.Add(curChild + 1);
+                    curNode = curNode.Child(curChild);
+                    curChild = 0;
+
+                    sb.Append(new string(' ', stack.Count * 2)).Append(curNode.Describe()).AppendLine();
+                }
+                else
+                {
+                    if (stack.Count == 0)
+                    {
+                        break;
+                    }
+
+                    curChild = stack[stack.Count - 1];
+                    stack.RemoveAt(stack.Count - 1);
+                    curNode = curNode.Parent;
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        [ExcludeFromCodeCoverage]
+        private string Describe()
         {
             var sb = new StringBuilder(Kind.ToString());
 
@@ -2590,7 +2623,7 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.Notonelazy:
                 case RegexNodeKind.One:
                 case RegexNodeKind.Notone:
-                    sb.Append(" '").Append(RegexCharClass.CharDescription(Ch)).Append('\'');
+                    sb.Append(" '").Append(RegexCharClass.DescribeChar(Ch)).Append('\'');
                     break;
                 case RegexNodeKind.Capture:
                     sb.Append(' ').Append($"index = {M}");
@@ -2610,7 +2643,7 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.Setloop:
                 case RegexNodeKind.Setloopatomic:
                 case RegexNodeKind.Setlazy:
-                    sb.Append(' ').Append(RegexCharClass.SetDescription(Str!));
+                    sb.Append(' ').Append(RegexCharClass.DescribeSet(Str!));
                     break;
             }
 
@@ -2635,42 +2668,6 @@ namespace System.Text.RegularExpressions
                         (N == M) ? $"{{{M}}}" :
                         $"{{{M}, {N}}}");
                     break;
-            }
-
-            return sb.ToString();
-        }
-
-        [ExcludeFromCodeCoverage]
-        public void Dump() => Debug.WriteLine(ToString());
-
-        [ExcludeFromCodeCoverage]
-        public override string ToString()
-        {
-            RegexNode? curNode = this;
-            int curChild = 0;
-            var sb = new StringBuilder().AppendLine(curNode.Description());
-            var stack = new List<int>();
-            while (true)
-            {
-                if (curChild < curNode!.ChildCount())
-                {
-                    stack.Add(curChild + 1);
-                    curNode = curNode.Child(curChild);
-                    curChild = 0;
-
-                    sb.Append(new string(' ', stack.Count * 2)).Append(curNode.Description()).AppendLine();
-                }
-                else
-                {
-                    if (stack.Count == 0)
-                    {
-                        break;
-                    }
-
-                    curChild = stack[stack.Count - 1];
-                    stack.RemoveAt(stack.Count - 1);
-                    curNode = curNode.Parent;
-                }
             }
 
             return sb.ToString();

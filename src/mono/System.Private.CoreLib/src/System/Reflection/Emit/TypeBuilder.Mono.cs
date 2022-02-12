@@ -74,7 +74,7 @@ namespace System.Reflection.Emit
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;
-        private bool is_byreflike_set;
+        private int is_byreflike_set;
 
         private int state;
 #endregion
@@ -145,7 +145,7 @@ namespace System.Reflection.Emit
                 this.parent = typeof(object);
 
             // skip .<Module> ?
-            table_idx = mb.get_next_table_index(this, 0x02, 1);
+            table_idx = mb.get_next_table_index(0x02, 1);
             this.fullname = GetFullName();
         }
 
@@ -408,8 +408,7 @@ namespace System.Reflection.Emit
             {
                 foreach (Type iface in interfaces)
                 {
-                    if (iface == null)
-                        throw new ArgumentNullException(nameof(interfaces));
+                    ArgumentNullException.ThrowIfNull(iface, nameof(interfaces));
                     if (iface.IsByRef)
                         throw new ArgumentException(nameof(interfaces));
                 }
@@ -1535,7 +1534,7 @@ namespace System.Reflection.Emit
             }
             else if (attrname == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
             {
-                is_byreflike_set = true;
+                is_byreflike_set = 1;
             }
 
             if (cattrs != null)
@@ -1593,10 +1592,7 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException("Empty name is not legal", nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
             if ((size <= 0) || (size > 0x3f0000))
                 throw new ArgumentException("Data size must be > 0 and < 0x3f0000");
             check_not_created();
@@ -1608,7 +1604,7 @@ namespace System.Reflection.Emit
             {
                 TypeBuilder tb = DefineNestedType(typeName,
                     TypeAttributes.NestedPrivate | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
-                                                   typeof(ValueType), null, PackingSize.Size1, size);
+                                                   typeof(ValueType), null, FieldBuilder.RVADataPackingSize(size), size);
                 tb.CreateType();
                 datablobtype = tb;
             }
@@ -1645,9 +1641,9 @@ namespace System.Reflection.Emit
             this.parent = ResolveUserType(this.parent);
         }
 
-        internal int get_next_table_index(object obj, int table, int count)
+        internal int get_next_table_index(int table, int count)
         {
-            return pmodule.get_next_table_index(obj, table, count);
+            return pmodule.get_next_table_index(table, count);
         }
 
         [ComVisible(true)]
@@ -1698,9 +1694,8 @@ namespace System.Reflection.Emit
 
         private static void check_name(string argName, string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(argName);
-            if (name.Length == 0 || name[0] == ((char)0))
+            ArgumentException.ThrowIfNullOrEmpty(name, argName);
+            if (name[0] == '\0')
                 throw new ArgumentException(SR.Argument_EmptyName, argName);
         }
 
