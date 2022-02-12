@@ -35,6 +35,7 @@
         <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
+    <!--Commented out to mitigate https://github.com/dotnet/performance/issues/2254 on main-->
     <!--<HelixWorkItem Include="SOD - Maui Android APK Size"> 
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
         <PreCommands>cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiAndroidDefault.apk .; $(Python) pre.py -1-apk-name MauiAndroidDefault.apk</PreCommands>
@@ -53,6 +54,7 @@
       <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroid.apk --package-name net.dot.HelloAndroid --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
+    <!--Commented out to mitigate https://github.com/dotnet/performance/issues/2254 on main-->
     <!--<HelixWorkItem Include="Startup - Android Maui">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiAndroidDefault.apk .;$(Python) pre.py -1-apk-name MauiAndroidDefault.apk</PreCommands>
