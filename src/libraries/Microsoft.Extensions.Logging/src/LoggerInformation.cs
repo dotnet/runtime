@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Logging
             {
                 return ExternalScopeProvider.Push(state);
             }
-            return Logger.BeginScope<TState>(state);
+            return Logger!.BeginScope<TState>(state);
         }
     }
 

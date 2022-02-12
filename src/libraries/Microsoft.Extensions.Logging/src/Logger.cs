@@ -8,7 +8,9 @@ namespace Microsoft.Extensions.Logging
 {
     internal sealed class Logger : ILogger
     {
-        public LoggerInformation[]? Loggers { get; set; }
+        public Logger(LoggerInformation[] loggers) => Loggers = loggers;
+
+        public LoggerInformation[] Loggers { get; set; }
         public MessageLogger[]? MessageLoggers { get; set; }
         public ScopeLogger[]? ScopeLoggers { get; set; }
 

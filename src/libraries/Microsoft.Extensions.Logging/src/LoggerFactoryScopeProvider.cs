@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.Logging
             {
                 if (!_isDisposed)
                 {
-                    _provider._currentScope.Value = Parent;
+                    _provider._currentScope.Value = Parent!;
                     _isDisposed = true;
                 }
             }

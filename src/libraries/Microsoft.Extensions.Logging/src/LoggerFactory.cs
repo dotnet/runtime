@@ -95,8 +95,8 @@ namespace Microsoft.Extensions.Logging
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddLogging(configure);
             ServiceProvider serviceProvider = serviceCollection.BuildServiceProvider();
-            ILoggerFactory? loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-            return new DisposingLoggerFactory(loggerFactory!, serviceProvider);
+            ILoggerFactory loggerFactory = serviceProvider.GetService<ILoggerFactory>()!;
+            return new DisposingLoggerFactory(loggerFactory, serviceProvider);
         }
 
         [MemberNotNull(nameof(_filterOptions))]
@@ -129,10 +129,7 @@ namespace Microsoft.Extensions.Logging
             {
                 if (!_loggers.TryGetValue(categoryName, out Logger? logger))
                 {
-                    logger = new Logger
-                    {
-                        Loggers = CreateLoggers(categoryName),
-                    };
+                    logger = new Logger(CreateLoggers(categoryName));
 
                     (logger.MessageLoggers, logger.ScopeLoggers) = ApplyFilters(logger.Loggers);
 
@@ -220,7 +217,7 @@ namespace Microsoft.Extensions.Logging
                     out LogLevel? minLevel,
                     out Func<string?, string?, LogLevel?, bool>? filter);
 
-                if (minLevel != null && minLevel > LogLevel.Critical)
+                if (minLevel is not null and > LogLevel.Critical)
                 {
                     continue;
                 }
