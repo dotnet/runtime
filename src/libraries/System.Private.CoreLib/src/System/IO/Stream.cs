@@ -719,10 +719,8 @@ namespace System.IO
 
         public virtual void WriteByte(byte value) => Write(new byte[1] { value }, 0, 1);
 
-        public static Stream Synchronized(Stream stream) =>
-            stream is null ? throw new ArgumentNullException(nameof(stream)) :
-            stream is SyncStream ? stream :
-            new SyncStream(stream);
+        public static Stream Synchronized(Stream stream!!) =>
+            stream as SyncStream ?? new SyncStream(stream);
 
         [Obsolete("Do not call or override this method.")]
         protected virtual void ObjectInvariant() { }
@@ -865,7 +863,7 @@ namespace System.IO
         {
             private readonly Stream _stream;
 
-            internal SyncStream(Stream stream) => _stream = stream ?? throw new ArgumentNullException(nameof(stream));
+            internal SyncStream(Stream stream!!) => _stream = stream;
 
             public override bool CanRead => _stream.CanRead;
             public override bool CanWrite => _stream.CanWrite;

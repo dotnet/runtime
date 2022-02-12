@@ -3967,7 +3967,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 
     assert(tree->gtOp1->isUsedFromReg());
     regNumber reg = genConsumeReg(tree->gtOp1);
-    GetEmitter()->emitIns_AR_R(INS_cmp, EA_4BYTE, reg, reg, 0);
+    GetEmitter()->emitIns_AR_R(INS_cmp, emitTypeSize(tree), reg, reg, 0);
 }
 
 //------------------------------------------------------------------------
@@ -7027,7 +7027,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 //    ii) treeNode oper is a GT_INTRINSIC
 //   iii) treeNode type is a floating point type
 //    iv) treeNode is not used from memory
-//     v) tree oper is NI_System_Math{F}_Round, _Ceiling, or _Floor
+//     v) tree oper is NI_System_Math{F}_Round, _Ceiling, _Floor, or _Truncate
 //    vi) caller of this routine needs to call genProduceReg()
 void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 {
@@ -7055,7 +7055,7 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 
     unsigned ival = 0;
 
-    // v) tree oper is NI_System_Math{F}_Round, _Ceiling, or _Floor
+    // v) tree oper is NI_System_Math{F}_Round, _Ceiling, _Floor, or _Truncate
     switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
         case NI_System_Math_Round:
@@ -7068,6 +7068,10 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 
         case NI_System_Math_Floor:
             ival = 9;
+            break;
+
+        case NI_System_Math_Truncate:
+            ival = 11;
             break;
 
         default:
@@ -7197,6 +7201,7 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_Truncate:
         case NI_System_Math_Round:
             genSSE41RoundOp(treeNode->AsOp());
             break;

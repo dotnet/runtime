@@ -35,12 +35,8 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Atom10FeedFormatter(Type feedTypeToCreate) : base()
+        public Atom10FeedFormatter(Type feedTypeToCreate!!) : base()
         {
-            if (feedTypeToCreate == null)
-            {
-                throw new ArgumentNullException(nameof(feedTypeToCreate));
-            }
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(feedTypeToCreate), nameof(SyndicationFeed)), nameof(feedTypeToCreate));

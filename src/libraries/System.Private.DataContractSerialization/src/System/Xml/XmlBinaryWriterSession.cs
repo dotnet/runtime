@@ -25,11 +25,9 @@ namespace System.Xml
             _strings = new PriorityDictionary<string, int>();
         }
 
-        public virtual bool TryAdd(XmlDictionaryString value, out int key)
+        public virtual bool TryAdd(XmlDictionaryString value!!, out int key)
         {
             IntArray? keys;
-            if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
 
             if (_maps.TryGetValue(value.Dictionary, out keys))
             {

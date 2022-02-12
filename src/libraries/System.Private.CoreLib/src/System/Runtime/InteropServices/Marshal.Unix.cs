@@ -160,11 +160,8 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
+        internal static Type? GetTypeFromProgID(string progID!!, string? server, bool throwOnError)
         {
-            if (progID == null)
-                throw new ArgumentNullException(nameof(progID));
-
             if (throwOnError)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
 

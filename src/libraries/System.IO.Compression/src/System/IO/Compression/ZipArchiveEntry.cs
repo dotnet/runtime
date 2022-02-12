@@ -215,8 +215,7 @@ namespace System.IO.Compression
             [MemberNotNull(nameof(_storedEntryName))]
             private set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(FullName));
+                ArgumentNullException.ThrowIfNull(value, nameof(FullName));
 
                 _storedEntryNameBytes = ZipHelper.GetEncodedTruncatedBytesFromString(
                     value, _archive.EntryNameAndCommentEncoding, 0 /* No truncation */, out bool hasUnicodeEntryName);
