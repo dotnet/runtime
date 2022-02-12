@@ -11,7 +11,7 @@ target_link_libraries(mono-embedding-api-test monoapi ${LINK_LIBRARIES_ADDITIONA
 
 if(CLR_CMAKE_HOST_OSX)
   target_compile_definitions(mono-embedding-api-test PRIVATE -DHOST_DARWIN)
-elseif(CLR_CMAKE_HOST_WINDOWS)
+elseif(CLR_CMAKE_HOST_WIN32)
   target_compile_definitions(mono-embedding-api-test PRIVATE -DHOST_WIN32)
 else()
   target_compile_definitions(mono-embedding-api-test PRIVATE -DHOST_LINUX)

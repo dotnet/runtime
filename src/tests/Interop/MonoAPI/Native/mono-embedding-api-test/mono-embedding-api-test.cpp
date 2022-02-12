@@ -10,7 +10,9 @@
 #include <math.h>
 #include <setjmp.h>
 #include <signal.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 
 #ifndef HOST_WIN32
 #include <dlfcn.h>
@@ -65,10 +67,6 @@ extern "C" {
 #else
 #define STDCALL
 #define __thiscall /* nothing */
-#endif
-
-#ifdef __GNUC__
-#pragma GCC diagnostic ignored "-Wmissing-prototypes"
 #endif
 
 #ifdef _MSC_VER
