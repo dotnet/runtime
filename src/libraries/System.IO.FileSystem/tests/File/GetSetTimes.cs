@@ -235,15 +235,13 @@ namespace System.IO.Tests
                     path,
                     FileMode.OpenOrCreate,
                     FileAccess.ReadWrite,
-                    FileShare.ReadWrite,
-                    FileOptions.DeleteOnClose);
+                    FileShare.ReadWrite);
             }
 
             return File.OpenHandle(linkTarget.LinkTarget,
                 FileMode.OpenOrCreate,
                 FileAccess.ReadWrite,
-                FileShare.ReadWrite,
-                FileOptions.DeleteOnClose);
+                FileShare.ReadWrite);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
