@@ -325,7 +325,7 @@ namespace System.IO.Tests
         }
 
         // Linux kernels no longer have long max date time support. Discussed in https://github.com/dotnet/runtime/issues/43166.
-        [PlatformSpecific(~TestPlatforms.Windows)]
+        [PlatformSpecific(~TestPlatforms.Linux)]
         [ConditionalFact(nameof(SupportsLongMaxDateTime))]
         public void SetDateTimeMax_SafeFileHandle()
         {
