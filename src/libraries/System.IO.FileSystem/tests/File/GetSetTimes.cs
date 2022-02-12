@@ -73,7 +73,7 @@ namespace System.IO.Tests
             Assert.Equal(newCreationTimeUTC, File.GetCreationTimeUtc(path));
         }
 
-        public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
+        public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false, bool testHandles = true)
         {
             if (IOInputs.SupportsGettingCreationTime &&
                 (!requiresRoundtripping || IOInputs.SupportsSettingCreationTime))
@@ -82,148 +82,182 @@ namespace System.IO.Tests
                     File.SetCreationTime,
                     File.GetCreationTime,
                     DateTimeKind.Local);
-                yield return TimeFunction.Create(
-                    (path, time) =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        File.SetCreationTime(fileHandle, time);
-                    },
-                    path =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        return File.GetCreationTime(fileHandle);
-                    },
-                    DateTimeKind.Local);
+                if (testHandles)
+                {
+                    yield return TimeFunction.Create(
+                        (path, time) =>
+                        {
+                            using var fileHandle = OpenFileHandle(path);
+                            File.SetCreationTime(fileHandle, time);
+                        },
+                        path =>
+                        {
+                            using var fileHandle = OpenFileHandle(path);
+                            return File.GetCreationTime(fileHandle);
+                        },
+                        DateTimeKind.Local);
+                }
+
                 yield return TimeFunction.Create(
                     File.SetCreationTimeUtc,
                     File.GetCreationTimeUtc,
                     DateTimeKind.Unspecified);
-                yield return TimeFunction.Create(
-                    (path, time) =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        File.SetCreationTimeUtc(fileHandle, time);
-                    },
-                    path =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        return File.GetCreationTimeUtc(fileHandle);
-                    },
-                    DateTimeKind.Unspecified);
+                if (testHandles)
+                {
+                    yield return TimeFunction.Create(
+                        (path, time) =>
+                        {
+                            using var fileHandle = OpenFileHandle(path);
+                            File.SetCreationTimeUtc(fileHandle, time);
+                        },
+                        path =>
+                        {
+                            using var fileHandle = OpenFileHandle(path);
+                            return File.GetCreationTimeUtc(fileHandle);
+                        },
+                        DateTimeKind.Unspecified);
+                }
+
                 yield return TimeFunction.Create(
                     File.SetCreationTimeUtc,
                     File.GetCreationTimeUtc,
                     DateTimeKind.Utc);
-                yield return TimeFunction.Create(
-                    (path, time) =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        File.SetCreationTimeUtc(fileHandle, time);
-                    },
-                    path =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        return File.GetCreationTimeUtc(fileHandle);
-                    },
-                    DateTimeKind.Utc);
+                if (testHandles)
+                {
+                    yield return TimeFunction.Create(
+                        (path, time) =>
+                        {
+                            using var fileHandle = OpenFileHandle(path);
+                            File.SetCreationTimeUtc(fileHandle, time);
+                        },
+                        path =>
+                        {
+                            using var fileHandle = OpenFileHandle(path);
+                            return File.GetCreationTimeUtc(fileHandle);
+                        },
+                        DateTimeKind.Utc);
+                }
             }
 
             yield return TimeFunction.Create(
                 File.SetLastAccessTime,
                 File.GetLastAccessTime,
                 DateTimeKind.Local);
-            yield return TimeFunction.Create(
-                (path, time) =>
-                {
-                    using var fileHandle = OpenFileHandle(path);
-                    File.SetLastAccessTime(fileHandle, time);
-                },
-                path =>
-                {
-                    using var fileHandle = OpenFileHandle(path);
-                    return File.GetLastAccessTime(fileHandle);
-                },
-                DateTimeKind.Local);
+            if (testHandles)
+            {
+                yield return TimeFunction.Create(
+                    (path, time) =>
+                    {
+                        using var fileHandle = OpenFileHandle(path);
+                        File.SetLastAccessTime(fileHandle, time);
+                    },
+                    path =>
+                    {
+                        using var fileHandle = OpenFileHandle(path);
+                        return File.GetLastAccessTime(fileHandle);
+                    },
+                    DateTimeKind.Local);
+            }
+
             yield return TimeFunction.Create(
                 File.SetLastAccessTimeUtc,
                 File.GetLastAccessTimeUtc,
                 DateTimeKind.Unspecified);
-            yield return TimeFunction.Create(
-                (path, time) =>
-                {
-                    using var fileHandle = OpenFileHandle(path);
-                    File.SetLastAccessTimeUtc(fileHandle, time);
-                },
-                path =>
-                {
-                    using var fileHandle = OpenFileHandle(path);
-                    return File.GetLastAccessTimeUtc(fileHandle);
-                },
-                DateTimeKind.Unspecified);
+            if (testHandles)
+            {
+                yield return TimeFunction.Create(
+                    (path, time) =>
+                    {
+                        using var fileHandle = OpenFileHandle(path);
+                        File.SetLastAccessTimeUtc(fileHandle, time);
+                    },
+                    path =>
+                    {
+                        using var fileHandle = OpenFileHandle(path);
+                        return File.GetLastAccessTimeUtc(fileHandle);
+                    },
+                    DateTimeKind.Unspecified);
+            }
+
             yield return TimeFunction.Create(
                 File.SetLastAccessTimeUtc,
                 File.GetLastAccessTimeUtc,
                 DateTimeKind.Utc);
-            yield return TimeFunction.Create(
-                (path, time) =>
-                {
-                    using var fileHandle = OpenFileHandle(path);
-                    File.SetLastAccessTimeUtc(fileHandle, time);
-                },
-                path =>
-                {
-                    using var fileHandle = OpenFileHandle(path);
-                    return File.GetLastAccessTimeUtc(fileHandle);
-                },
-                DateTimeKind.Utc);
+            if (testHandles)
+            {
+                yield return TimeFunction.Create(
+                    (path, time) =>
+                    {
+                        using var fileHandle = OpenFileHandle(path);
+                        File.SetLastAccessTimeUtc(fileHandle, time);
+                    },
+                    path =>
+                    {
+                        using var fileHandle = OpenFileHandle(path);
+                        return File.GetLastAccessTimeUtc(fileHandle);
+                    },
+                    DateTimeKind.Utc);
+            }
+
             yield return TimeFunction.Create(
                 File.SetLastWriteTime,
                 File.GetLastWriteTime,
                 DateTimeKind.Local);
-            yield return TimeFunction.Create(
-                (path, time) =>
-                {
-                    using var fileHandle = OpenFileHandle(path);
-                    File.SetLastWriteTime(fileHandle, time);
-                },
-                path =>
-                {
-                    using var fileHandle = OpenFileHandle(path);
-                    return File.GetLastWriteTime(fileHandle);
-                },
-                DateTimeKind.Local);
+            if (testHandles)
+            {
+                yield return TimeFunction.Create(
+                    (path, time) =>
+                    {
+                        using var fileHandle = OpenFileHandle(path);
+                        File.SetLastWriteTime(fileHandle, time);
+                    },
+                    path =>
+                    {
+                        using var fileHandle = OpenFileHandle(path);
+                        return File.GetLastWriteTime(fileHandle);
+                    },
+                    DateTimeKind.Local);
+            }
+
             yield return TimeFunction.Create(
                 File.SetLastWriteTimeUtc,
                 File.GetLastWriteTimeUtc,
                 DateTimeKind.Unspecified);
-            yield return TimeFunction.Create(
-                (path, time) =>
-                {
-                    using var fileHandle = OpenFileHandle(path);
-                    File.SetLastWriteTimeUtc(fileHandle, time);
-                },
-                path =>
-                {
-                    using var fileHandle = OpenFileHandle(path);
-                    return File.GetLastWriteTimeUtc(fileHandle);
-                },
-                DateTimeKind.Unspecified);
+            if (testHandles)
+            {
+                yield return TimeFunction.Create(
+                    (path, time) =>
+                    {
+                        using var fileHandle = OpenFileHandle(path);
+                        File.SetLastWriteTimeUtc(fileHandle, time);
+                    },
+                    path =>
+                    {
+                        using var fileHandle = OpenFileHandle(path);
+                        return File.GetLastWriteTimeUtc(fileHandle);
+                    },
+                    DateTimeKind.Unspecified);
+            }
+
             yield return TimeFunction.Create(
                 File.SetLastWriteTimeUtc,
                 File.GetLastWriteTimeUtc,
                 DateTimeKind.Utc);
-            yield return TimeFunction.Create(
-                (path, time) =>
-                {
-                    using var fileHandle = OpenFileHandle(path);
-                    File.SetLastWriteTimeUtc(fileHandle, time);
-                },
-                path =>
-                {
-                    using var fileHandle = OpenFileHandle(path);
-                    return File.GetLastWriteTimeUtc(fileHandle);
-                },
-                DateTimeKind.Utc);
+            if (testHandles)
+            {
+                yield return TimeFunction.Create(
+                    (path, time) =>
+                    {
+                        using var fileHandle = OpenFileHandle(path);
+                        File.SetLastWriteTimeUtc(fileHandle, time);
+                    },
+                    path =>
+                    {
+                        using var fileHandle = OpenFileHandle(path);
+                        return File.GetLastWriteTimeUtc(fileHandle);
+                    },
+                    DateTimeKind.Utc);
+            }
         }
 
         private static SafeFileHandle OpenFileHandle(string path)
@@ -252,7 +286,9 @@ namespace System.IO.Tests
             string pageFilePath = Directory.EnumerateFiles(@"C:\", "pagefile.sys").FirstOrDefault();
             if (pageFilePath != null)
             {
-                Assert.All(TimeFunctions(), (item) =>
+                // Due to the fact that the pagefile.sys is already opened by the operating system (ntoskrnl.exe - PID: 4),
+                // we exclude the `SafeFileHandle`-`TimeFunctions`, because the handle cannot be opened twice.
+                Assert.All(TimeFunctions(false, false), item =>
                 {
                     var time = item.Getter(pageFilePath);
                     Assert.NotEqual(DateTime.FromFileTime(0), time);

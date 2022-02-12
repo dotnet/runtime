@@ -37,7 +37,7 @@ namespace System.IO.Tests
 
         protected abstract string GetItemPath(T item);
 
-        public abstract IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false);
+        public abstract IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false, bool testHandles = true);
 
         public class TimeFunction : Tuple<SetTime, GetTime, DateTimeKind>
         {
