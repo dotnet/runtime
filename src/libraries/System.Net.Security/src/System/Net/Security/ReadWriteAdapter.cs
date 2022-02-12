@@ -17,7 +17,7 @@ namespace System.Net.Security
     }
 #pragma warning restore CA2252
 
-    internal sealed class AsyncReadWriteAdapter : IReadWriteAdapter
+    internal readonly struct AsyncReadWriteAdapter : IReadWriteAdapter
     {
         public static ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) =>
             stream.ReadAsync(buffer, cancellationToken);
@@ -30,7 +30,7 @@ namespace System.Net.Security
         public static Task WaitAsync(TaskCompletionSource<bool> waiter) => waiter.Task;
     }
 
-    internal sealed class SyncReadWriteAdapter : IReadWriteAdapter
+    internal readonly struct SyncReadWriteAdapter : IReadWriteAdapter
     {
         public static ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) =>
             new ValueTask<int>(stream.Read(buffer.Span));

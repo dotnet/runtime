@@ -161,23 +161,23 @@ namespace System.Net.Security
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        private Task ProcessAuthenticationAsync(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
+        private Task ProcessAuthenticationAsync(bool isAsync = false, CancellationToken cancellationToken = default)
         {
             ThrowIfExceptional();
 
             if (NetSecurityTelemetry.Log.IsEnabled())
             {
-                return ProcessAuthenticationWithTelemetryAsync(isAsync, isApm, cancellationToken);
+                return ProcessAuthenticationWithTelemetryAsync(isAsync, cancellationToken);
             }
             else
             {
                 return isAsync ?
-                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(_context!.IsServer, null, isApm, cancellationToken) :
-                    ForceAuthenticationAsync<SyncReadWriteAdapter>(_context!.IsServer, null, isApm: false, cancellationToken);
+                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(_context!.IsServer, null, cancellationToken) :
+                    ForceAuthenticationAsync<SyncReadWriteAdapter>(_context!.IsServer, null, cancellationToken);
             }
         }
 
-        private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, bool isApm, CancellationToken cancellationToken)
+        private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, CancellationToken cancellationToken)
         {
             NetSecurityTelemetry.Log.HandshakeStart(_context!.IsServer, _sslAuthenticationOptions!.TargetHost);
             ValueStopwatch stopwatch = ValueStopwatch.StartNew();
@@ -185,8 +185,8 @@ namespace System.Net.Security
             try
             {
                 Task task = isAsync?
-                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(_context!.IsServer, null, isApm, cancellationToken) :
-                    ForceAuthenticationAsync<SyncReadWriteAdapter>(_context!.IsServer, null, isApm: false, cancellationToken);
+                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(_context!.IsServer, null, cancellationToken) :
+                    ForceAuthenticationAsync<SyncReadWriteAdapter>(_context!.IsServer, null, cancellationToken);
 
                 await task.ConfigureAwait(false);
 
@@ -211,7 +211,7 @@ namespace System.Net.Security
         {
             try
             {
-                await ForceAuthenticationAsync<TIOAdapter>(receiveFirst: false, buffer, isApm: false, cancellationToken).ConfigureAwait(false);
+                await ForceAuthenticationAsync<TIOAdapter>(receiveFirst: false, buffer, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -226,18 +226,18 @@ namespace System.Net.Security
         {
             if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
             {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "NegotiateClientCertificateAsync", "renegotiate"));
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
             }
 
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
             if (Interlocked.Exchange(ref _nestedWrite, 1) == 1)
             {
                 _nestedRead = 0;
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(WriteAsync), "write"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
 
             try
@@ -272,15 +272,17 @@ namespace System.Net.Security
 
                 _buffer.EnsureAvailableSpace(InitialHandshakeBufferSize);
 
-                ProtocolToken message = null!;
-                do {
+                ProtocolToken message;
+                do
+                {
                     message = await ReceiveBlobAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
                     if (message.Size > 0)
                     {
                         await TIOAdapter.WriteAsync(InnerStream, message.Payload!, 0, message.Size, cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                     }
-                } while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
+                }
+                while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
                 CompleteHandshake(_sslAuthenticationOptions!);
             }
@@ -299,7 +301,7 @@ namespace System.Net.Security
         }
 
         // reAuthenticationData is only used on Windows in case of renegotiation.
-        private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, bool isApm, CancellationToken cancellationToken)
+        private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
             ProtocolToken message;
@@ -310,7 +312,7 @@ namespace System.Net.Security
                 // prevent nesting only when authentication functions are called explicitly. e.g. handle renegotiation transparently.
                 if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, isApm ? "BeginAuthenticate" : "Authenticate", "authenticate"));
+                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
                 }
             }
 
@@ -820,20 +822,19 @@ namespace System.Net.Security
         {
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
             ThrowIfExceptionalOrNotAuthenticated();
 
-            int processedLength = 0;
-            int payloadBytes = 0;
-
             try
             {
+                int processedLength = 0;
+
                 if (_buffer.DecryptedLength != 0)
                 {
                     processedLength = CopyDecryptedData(buffer);
-                    if (processedLength == buffer.Length || !HaveFullTlsFrame(out payloadBytes))
+                    if (processedLength == buffer.Length || !HaveFullTlsFrame(out _))
                     {
                         // We either filled whole buffer or used all buffered frames.
                         return processedLength;
@@ -867,7 +868,7 @@ namespace System.Net.Security
 
                 while (true)
                 {
-                    payloadBytes = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
+                    int payloadBytes = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
                     if (payloadBytes == 0)
                     {
                         _receivedEOF = true;
@@ -977,7 +978,7 @@ namespace System.Net.Security
 
             if (Interlocked.Exchange(ref _nestedWrite, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(WriteAsync), "write"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
 
             try

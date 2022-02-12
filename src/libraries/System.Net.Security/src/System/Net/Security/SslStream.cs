@@ -472,7 +472,7 @@ namespace System.Net.Security
 
             ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
 
-            return ProcessAuthenticationAsync(isAsync: true, isApm: false, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         private Task AuthenticateAsClientApm(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
@@ -482,7 +482,7 @@ namespace System.Net.Security
 
             ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
 
-            return ProcessAuthenticationAsync(isAsync: true, isApm: true, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate) =>
@@ -520,7 +520,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
-            return ProcessAuthenticationAsync(isAsync: true, isApm: false, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         private Task AuthenticateAsServerApm(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken = default)
@@ -528,13 +528,13 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
-            return ProcessAuthenticationAsync(isAsync: true, isApm: true, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         public Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionsCallback, object? state, CancellationToken cancellationToken = default)
         {
             ValidateCreateContext(new SslAuthenticationOptions(optionsCallback, state, _userCertificateValidationCallback));
-            return ProcessAuthenticationAsync(isAsync: true, isApm: false, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         public virtual Task ShutdownAsync()
@@ -831,7 +831,7 @@ namespace System.Net.Security
             ThrowIfExceptionalOrNotAuthenticated();
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "ReadByte", "read"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
             // If there's any data in the buffer, take one byte, and we're done.

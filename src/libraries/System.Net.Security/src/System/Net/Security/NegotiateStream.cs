@@ -341,12 +341,12 @@ namespace System.Net.Security
             return ReadAsync<AsyncReadWriteAdapter>(buffer, cancellationToken);
         }
 
-        private async ValueTask<int> ReadAsync<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken, [CallerMemberName] string? callerName = null)
+        private async ValueTask<int> ReadAsync<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
             if (Interlocked.Exchange(ref _readInProgress, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, callerName, "read"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
             try
@@ -492,7 +492,7 @@ namespace System.Net.Security
         {
             if (Interlocked.Exchange(ref _writeInProgress, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(Write), "write"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
 
             try
@@ -704,7 +704,7 @@ namespace System.Net.Security
             }
         }
 
-        private async Task AuthenticateAsync<TIOAdapter>(CancellationToken cancellationToken, [CallerMemberName] string? callerName = null)
+        private async Task AuthenticateAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
             Debug.Assert(_context != null);
@@ -712,7 +712,7 @@ namespace System.Net.Security
             ThrowIfFailed(authSuccessCheck: false);
             if (Interlocked.Exchange(ref _authInProgress, 1) == 1)
             {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, callerName, "authenticate"));
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
             }
 
             try
