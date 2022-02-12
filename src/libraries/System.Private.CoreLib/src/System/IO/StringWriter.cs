@@ -151,21 +151,132 @@ namespace System.IO
 
         public override void Write(StringBuilder? value)
         {
-            if (GetType() != typeof(StringWriter))
+            // This overload was added after the Write(char[], ...) overload, and so in case
+            // a derived type may have overridden it, we need to delegate to it, which the base does.
+            if (UseBase())
             {
-                // This overload was added after the Write(char[], ...) overload, and so in case
-                // a derived type may have overridden it, we need to delegate to it, which the base does.
                 base.Write(value);
-                return;
             }
+            else
+            {
+                _sb.Append(value);
+            }
+        }
 
+        #region Write(format) + WriteLine(format)
+
+        [System.Runtime.CompilerServices.MethodImpl(Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        private bool UseBase()
+        {
             if (!_isOpen)
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
             }
 
-            _sb.Append(value);
+            return GetType() != typeof(StringWriter);
         }
+
+        public override void Write(string format, params object?[] arg)
+        {
+            if (UseBase())
+            {
+                base.Write(format, arg: arg);
+            }
+            else
+            {
+                _sb.AppendFormat(format, args: arg);
+            }
+        }
+
+        public override void Write(string format, object? arg0)
+        {
+            if (UseBase())
+            {
+                base.Write(format, arg0: arg0);
+            }
+            else
+            {
+                _sb.AppendFormat(format, arg0: arg0);
+            }
+        }
+
+        public override void Write(string format, object? arg0, object? arg1)
+        {
+            if (UseBase())
+            {
+                base.Write(format, arg0: arg0, arg1: arg1);
+            }
+            else
+            {
+                _sb.AppendFormat(format, arg0: arg0, arg1: arg1);
+            }
+        }
+
+        public override void Write(string format, object? arg0, object? arg1, object? arg2)
+        {
+            if (UseBase())
+            {
+                base.Write(format, arg0: arg0, arg1: arg1, arg2: arg2);
+            }
+            else
+            {
+                _sb.AppendFormat(format, arg0: arg0, arg1: arg1, arg2: arg2);
+            }
+        }
+
+        public override void WriteLine(string format, params object?[] arg)
+        {
+            if (UseBase())
+            {
+                base.WriteLine(format, arg: arg);
+            }
+            else
+            {
+                _sb.AppendFormat(format, args: arg);
+                _sb.AppendLine();
+            }
+        }
+
+        public override void WriteLine(string format, object? arg0)
+        {
+            if (UseBase())
+            {
+                base.WriteLine(format, arg0: arg0);
+            }
+            else
+            {
+                _sb.AppendFormat(format, arg0: arg0);
+                _sb.AppendLine();
+            }
+        }
+
+        public override void WriteLine(string format, object? arg0, object? arg1)
+        {
+            if (UseBase())
+            {
+                base.WriteLine(format, arg0: arg0, arg1: arg1);
+            }
+            else
+            {
+                _sb.AppendFormat(format, arg0: arg0, arg1: arg1);
+                _sb.AppendLine();
+            }
+        }
+
+        public override void WriteLine(string format, object? arg0, object? arg1, object? arg2)
+        {
+            if (UseBase())
+            {
+                base.WriteLine(format, arg0: arg0, arg1: arg1, arg2: arg2);
+            }
+            else
+            {
+                _sb.AppendFormat(format, arg0: arg0, arg1: arg1, arg2: arg2);
+                _sb.AppendLine();
+            }
+        }
+
+        #endregion
 
         public override void WriteLine(ReadOnlySpan<char> buffer)
         {
