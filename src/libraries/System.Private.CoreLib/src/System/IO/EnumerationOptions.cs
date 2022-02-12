@@ -20,7 +20,7 @@ namespace System.IO
         internal static EnumerationOptions Compatible { get; } =
             new EnumerationOptions { MatchType = MatchType.Win32, AttributesToSkip = 0, IgnoreInaccessible = false };
 
-        private static EnumerationOptions CompatibleRecursive { get; } =
+        internal static EnumerationOptions CompatibleRecursive { get; } =
             new EnumerationOptions { RecurseSubdirectories = true, MatchType = MatchType.Win32, AttributesToSkip = 0, IgnoreInaccessible = false };
 
         /// <summary>

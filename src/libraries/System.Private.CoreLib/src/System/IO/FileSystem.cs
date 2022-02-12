@@ -31,7 +31,7 @@ namespace System.IO
 
                 if (recursive)
                 {
-                    enumerationOptions.RecurseSubdirectories = true;
+                    enumerationOptions = EnumerationOptions.CompatibleRecursive;
                 }
 
                 directoryEnumeration = Directory.EnumerateDirectories(sourcePath, "*", enumerationOptions);
