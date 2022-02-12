@@ -373,8 +373,6 @@
   <ItemGroup Condition="'$(UseManagedNtlm)' == 'true'">
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Managed.cs"
              Link="Common\System\Net\NTAuthentication.Managed.cs" />
-    <Compile Include="$(CommonPath)System\Net\Ntlm\Ntlm.cs"
-             Link="Common\System\Net\Ntlm\Ntlm.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\MD4.cs"
              Link="Common\System\Net\Security\MD4.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\RC4.cs"

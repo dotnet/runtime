@@ -263,7 +263,7 @@ namespace System.Net
                 Debug.Assert(decodedIncomingBlob != null);
                 // TODO: Is this correct for SpNego?
                 IsCompleted = true;
-                decodedOutgoingBlob = _isSpNego ? ProcessNegotiateChallenge(decodedIncomingBlob) : ProcessChallengeMessage(decodedIncomingBlob);
+                decodedOutgoingBlob = _isSpNego ? ProcessSpNegoChallenge(decodedIncomingBlob) : ProcessChallenge(decodedIncomingBlob);
             }
 
             string? outgoingBlob = null;
@@ -323,50 +323,6 @@ namespace System.Net
                 Flags.NegotiateVersion | Flags.NegotiateKeyExchange | Flags.Negotiate128 |
                 Flags.NegotiateTargetInfo | Flags.NegotiateAlwaysSign | Flags.NegotiateSign;
             message[0].Version = new Version { VersionMajor = 6, VersionMinor = 1, ProductBuild = 7600, CurrentRevision = 15 };
-        }
-
-        private unsafe byte[] CreateSpNegoNegotiateMessage(ReadOnlySpan<byte> ntlmNegotiateMessage)
-        {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            using (writer.PushSequence(new Asn1Tag(TagClass.Application, 0)))
-            {
-                writer.WriteObjectIdentifier(SpnegoOid);
-
-                // NegTokenInit::= SEQUENCE {
-                //    mechTypes[0] MechTypeList,
-                //    reqFlags[1] ContextFlags OPTIONAL,
-                //       --inherited from RFC 2478 for backward compatibility,
-                //      --RECOMMENDED to be left out
-                //    mechToken[2] OCTET STRING  OPTIONAL,
-                //    mechListMIC[3] OCTET STRING  OPTIONAL,
-                //    ...
-                // }
-                using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenInit)))
-                {
-                    using (writer.PushSequence())
-                    {
-                        // MechType::= OBJECT IDENTIFIER
-                        //    -- OID represents each security mechanism as suggested by
-                        //   --[RFC2743]
-                        //
-                        // MechTypeList::= SEQUENCE OF MechType
-                        using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechTypes)))
-                        {
-                            using (writer.PushSequence())
-                            {
-                                writer.WriteObjectIdentifier(NtlmOid);
-                            }
-                        }
-
-                        using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechToken)))
-                        {
-                            writer.WriteOctetString(ntlmNegotiateMessage);
-                        }
-                    }
-                }
-            }
-
-            return writer.Encode();
         }
 
         private unsafe int GetFieldLength(MessageField field)
@@ -467,7 +423,6 @@ namespace System.Net
             Debug.Assert(clientChallenge.Length == ChallengeLength);
             Debug.Assert(lm2Hash.Length == DigestLength);
 
-
             Span<byte> blob = payload.Slice(0, sizeof(NtChallengeResponse) + serverInfo.Length);
             Span<NtChallengeResponse> temp = MemoryMarshal.Cast<byte, NtChallengeResponse>(blob.Slice(0, sizeof(NtChallengeResponse)));
 
@@ -503,103 +458,8 @@ namespace System.Net
             return blob.Length;
         }
 
-        private unsafe byte[] ProcessNegotiateChallenge(byte[] challenge)
-        {
-            NegState state = NegState.Unknown;
-            string? mech = null;
-            byte[]? blob = null;
-
-            AsnReader reader = new AsnReader(challenge, AsnEncodingRules.DER);
-            AsnReader challengeReader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenResp));
-            reader.ThrowIfNotEmpty();
-
-            // NegTokenResp::= SEQUENCE {
-            //    negState[0] ENUMERATED {
-            //        accept - completed(0),
-            //        accept - incomplete(1),
-            //        reject(2),
-            //        request - mic(3)
-            //    } OPTIONAL,
-            // --REQUIRED in the first reply from the target
-            //    supportedMech[1] MechType OPTIONAL,
-            // --present only in the first reply from the target
-            // responseToken[2] OCTET STRING  OPTIONAL,
-            // mechListMIC[3] OCTET STRING  OPTIONAL,
-            // ...
-            // }
-
-            challengeReader = challengeReader.ReadSequence();
-            while (challengeReader.HasData)
-            {
-                Asn1Tag tag = challengeReader.PeekTag();
-                if (tag.TagClass == TagClass.ContextSpecific)
-                {
-                    NegTokenResp dataType = (NegTokenResp)tag.TagValue;
-                    AsnReader specificValue = new AsnReader(challengeReader.PeekContentBytes(), AsnEncodingRules.DER);
-
-                    switch (dataType)
-                    {
-                        case NegTokenResp.NegState:
-                            state = specificValue.ReadEnumeratedValue<NegState>();
-                            specificValue.ThrowIfNotEmpty();
-                            break;
-                        case NegTokenResp.SupportedMech:
-                            mech = specificValue.ReadObjectIdentifier();
-                            specificValue.ThrowIfNotEmpty();
-                            break;
-                        case NegTokenResp.ResponseToken:
-                            blob = specificValue.ReadOctetString();
-                            specificValue.ThrowIfNotEmpty();
-                            break;
-                        default:
-                            // Ignore everything else
-                            break;
-                    }
-                }
-
-                challengeReader.ReadEncodedValue();
-            }
-
-            // Mechanism should be set on first message. That means always
-            // as NTLM has only one challenege message.
-            if (!NtlmOid.Equals(mech))
-            {
-                // TODO: Use correct exception
-                throw new NotSupportedException($"'{mech}' mechanism is not supported");
-            }
-
-            if (state != NegState.Unknown && state != NegState.AcceptIncomplete)
-            {
-                // If state was set, it should be AcceptIncomplete for us to proseed.
-                return Array.Empty<byte>();
-            }
-
-            if (blob?.Length > 0)
-            {
-                // Process decoded NTLM blob.
-                byte[]? response = ProcessChallengeMessage(blob);
-                if (response?.Length > 0)
-                {
-                    AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-                    using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenResp)))
-                    {
-                        using (writer.PushSequence())
-                        using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechToken)))
-                        {
-                            writer.WriteOctetString(response);
-                        }
-                    }
-
-                    return writer.Encode();
-                }
-            }
-
-            return Array.Empty<byte>();
-        }
-
         // This gets decoded byte blob and returns response in binary form.
-        private unsafe byte[]? ProcessChallengeMessage(byte[] blob)
+        private unsafe byte[]? ProcessChallenge(byte[] blob)
         {
             ReadOnlySpan<byte> asBytes = new ReadOnlySpan<byte>(blob);
             ReadOnlySpan<ChallengeMessage> challengeMessage = MemoryMarshal.Cast<byte, ChallengeMessage>(asBytes.Slice(0, sizeof(ChallengeMessage)));
@@ -619,10 +479,13 @@ namespace System.Net
                 Console.WriteLine("Get challenge from '{0}' with 0x{1:x} ({2}) flags", target, flags, FlagsEnumToString<Flags>(flags));
             }*/
 
+            // Only NTLMv2 with MIC is supported
             if (((flags & Flags.NegotiateNtlm2) != Flags.NegotiateNtlm2) ||
-                ((flags & Flags.NegotiateTargetInfo) != Flags.NegotiateTargetInfo))
+                ((flags & Flags.NegotiateTargetInfo) != Flags.NegotiateTargetInfo) ||
+                !flags.HasFlag(Flags.NegotiateSign) ||
+                !flags.HasFlag(Flags.NegotiateKeyExchange))
             {
-                throw new NotSupportedException("Only NTLMv2 is supported");
+                return null;
             }
 
             ReadOnlySpan<byte> targetInfo = GetField(challengeMessage[0].TargetInfo, asBytes);
@@ -738,8 +601,12 @@ namespace System.Net
             Debug.Assert(flags.HasFlag(Flags.NegotiateSign) && flags.HasFlag(Flags.NegotiateKeyExchange));
 
             // Derive session base key
-            byte[] sessionBaseKey = new HMACMD5(ntlm2hash).ComputeHash(responseAsSpan.Slice(response[0].NtChallengeResponse.PayloadOffset, 16).ToArray());
-            sessionBaseKey.AsSpan().CopyTo(exportedSessionKey);
+            Span<byte> sessionBaseKey = stackalloc byte[16];
+            using (var hmacSessionKey = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, ntlm2hash))
+            {
+                hmacSessionKey.AppendData(responseAsSpan.Slice(response[0].NtChallengeResponse.PayloadOffset, 16));
+                hmacSessionKey.GetHashAndReset(sessionBaseKey);
+            }
 
             // Encrypt exportedSessionKey with sessionBaseKey
             byte[] encryptedRandomSessionKey = new byte[16];
@@ -751,17 +618,157 @@ namespace System.Net
 
             // Calculate MIC
             Debug.Assert(_negotiateMessage != null);
-
-            var hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, exportedSessionKey);
-            hmac.AppendData(_negotiateMessage);
-            hmac.AppendData(blob);
-            hmac.AppendData(responseBytes.AsSpan(0, payloadOffset));
-            fixed (byte *mic = response[0].Mic)
-                hmac.GetHashAndReset().CopyTo(new Span<byte>(mic, 16));
+            using (var hmacMic = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, exportedSessionKey))
+            {
+                hmacMic.AppendData(_negotiateMessage);
+                hmacMic.AppendData(blob);
+                hmacMic.AppendData(responseBytes.AsSpan(0, payloadOffset));
+                fixed (byte *mic = response[0].Mic)
+                    hmacMic.GetHashAndReset(new Span<byte>(mic, 16));
+            }
 
             Debug.Assert(payloadOffset == responseBytes.Length);
 
             return responseBytes;
+        }
+
+        private unsafe byte[] CreateSpNegoNegotiateMessage(ReadOnlySpan<byte> ntlmNegotiateMessage)
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            using (writer.PushSequence(new Asn1Tag(TagClass.Application, 0)))
+            {
+                writer.WriteObjectIdentifier(SpnegoOid);
+
+                // NegTokenInit::= SEQUENCE {
+                //    mechTypes[0] MechTypeList,
+                //    reqFlags[1] ContextFlags OPTIONAL,
+                //       --inherited from RFC 2478 for backward compatibility,
+                //      --RECOMMENDED to be left out
+                //    mechToken[2] OCTET STRING  OPTIONAL,
+                //    mechListMIC[3] OCTET STRING  OPTIONAL,
+                //    ...
+                // }
+                using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenInit)))
+                {
+                    using (writer.PushSequence())
+                    {
+                        // MechType::= OBJECT IDENTIFIER
+                        //    -- OID represents each security mechanism as suggested by
+                        //   --[RFC2743]
+                        //
+                        // MechTypeList::= SEQUENCE OF MechType
+                        using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechTypes)))
+                        {
+                            using (writer.PushSequence())
+                            {
+                                writer.WriteObjectIdentifier(NtlmOid);
+                            }
+                        }
+
+                        using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechToken)))
+                        {
+                            writer.WriteOctetString(ntlmNegotiateMessage);
+                        }
+                    }
+                }
+            }
+
+            return writer.Encode();
+        }
+
+        private unsafe byte[] ProcessSpNegoChallenge(byte[] challenge)
+        {
+            NegState state = NegState.Unknown;
+            string? mech = null;
+            byte[]? blob = null;
+
+            AsnReader reader = new AsnReader(challenge, AsnEncodingRules.DER);
+            AsnReader challengeReader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenResp));
+            reader.ThrowIfNotEmpty();
+
+            // NegTokenResp::= SEQUENCE {
+            //    negState[0] ENUMERATED {
+            //        accept - completed(0),
+            //        accept - incomplete(1),
+            //        reject(2),
+            //        request - mic(3)
+            //    } OPTIONAL,
+            // --REQUIRED in the first reply from the target
+            //    supportedMech[1] MechType OPTIONAL,
+            // --present only in the first reply from the target
+            // responseToken[2] OCTET STRING  OPTIONAL,
+            // mechListMIC[3] OCTET STRING  OPTIONAL,
+            // ...
+            // }
+
+            challengeReader = challengeReader.ReadSequence();
+            while (challengeReader.HasData)
+            {
+                Asn1Tag tag = challengeReader.PeekTag();
+                if (tag.TagClass == TagClass.ContextSpecific)
+                {
+                    NegTokenResp dataType = (NegTokenResp)tag.TagValue;
+                    AsnReader specificValue = new AsnReader(challengeReader.PeekContentBytes(), AsnEncodingRules.DER);
+
+                    switch (dataType)
+                    {
+                        case NegTokenResp.NegState:
+                            state = specificValue.ReadEnumeratedValue<NegState>();
+                            specificValue.ThrowIfNotEmpty();
+                            break;
+                        case NegTokenResp.SupportedMech:
+                            mech = specificValue.ReadObjectIdentifier();
+                            specificValue.ThrowIfNotEmpty();
+                            break;
+                        case NegTokenResp.ResponseToken:
+                            blob = specificValue.ReadOctetString();
+                            specificValue.ThrowIfNotEmpty();
+                            break;
+                        default:
+                            // Ignore everything else
+                            break;
+                    }
+                }
+
+                challengeReader.ReadEncodedValue();
+            }
+
+            // Mechanism should be set on first message. That means always
+            // as NTLM has only one challenege message.
+            if (!NtlmOid.Equals(mech))
+            {
+                // TODO: Use correct exception
+                throw new NotSupportedException($"'{mech}' mechanism is not supported");
+            }
+
+            if (state != NegState.Unknown && state != NegState.AcceptIncomplete)
+            {
+                // If state was set, it should be AcceptIncomplete for us to proseed.
+                return Array.Empty<byte>();
+            }
+
+            if (blob?.Length > 0)
+            {
+                // Process decoded NTLM blob.
+                byte[]? response = ProcessChallenge(blob);
+                if (response?.Length > 0)
+                {
+                    AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+                    using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenResp)))
+                    {
+                        using (writer.PushSequence())
+                        using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechToken)))
+                        {
+                            writer.WriteOctetString(response);
+                        }
+                    }
+
+                    return writer.Encode();
+                }
+            }
+
+            return Array.Empty<byte>();
         }
     }
 }
