@@ -164,8 +164,8 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"")]
     public static partial int {{|CS8795:Method2|}}(out int ret);
 
-    [DllImport(""DoesNotExist"")]
-    public static extern int {{|CS8795:Method3|}}(out int ret);
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial int {{|CS8795:Method3|}}(out int ret);
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
