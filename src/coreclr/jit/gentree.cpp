@@ -3486,8 +3486,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
 #elif defined(TARGET_ARM64)
                 if ((*((__int64*)&(tree->AsDblCon()->gtDconVal)) == 0) ||
-                    (compCurBB->bbWeight > BB_UNITY_WEIGHT) ||
-                    emitter::emitIns_valid_imm_for_fmov(tree->AsDblCon()->gtDconVal))
+                    ((compCurBB->bbWeight > BB_UNITY_WEIGHT) && emitter::emitIns_valid_imm_for_fmov(tree->AsDblCon()->gtDconVal))
                 {
                     costEx = 1;
                     costSz = 1;
