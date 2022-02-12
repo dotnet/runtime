@@ -10,6 +10,7 @@
   <PropertyGroup>
     <OutputPath>bin</OutputPath>
     <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
+    <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <WasmNativeStrip>false</WasmNativeStrip>
