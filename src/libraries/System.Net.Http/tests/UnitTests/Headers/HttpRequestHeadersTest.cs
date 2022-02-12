@@ -162,7 +162,7 @@ namespace System.Net.Http.Tests
             foreach (var header in headers.NonValidated)
             {
                 Assert.Equal("Accept-Charset", header.Key);
-                Assert.Equal("utf-8, iso-8859-5; q=0.5, invalid value", header.Value.ToString());
+                Assert.Equal("invalid value, utf-8, iso-8859-5; q=0.5", header.Value.ToString());
             }
         }
 
@@ -667,7 +667,7 @@ namespace System.Net.Http.Tests
             foreach (var header in headers.NonValidated)
             {
                 Assert.Equal("User-Agent", header.Key);
-                Assert.Equal("custom2/1.1 (comment) custom\u4F1A", header.Value.ToString());
+                Assert.Equal("custom\u4F1A custom2/1.1 (comment)", header.Value.ToString());
             }
         }
 
@@ -1552,6 +1552,24 @@ namespace System.Net.Http.Tests
         }
 
         #endregion
+
+        [Fact]
+        public void NonValidatedHeader_Orders()
+        {
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com");
+            request.Headers.TryAddWithoutValidation("Accept", "text/bar");
+            request.Headers.TryAddWithoutValidation("Accept", "invalid");
+            request.Headers.TryAddWithoutValidation("Accept", "text/baz");
+
+            // Force parsing
+            _ = request.Headers.Accept.Count;
+
+            Assert.Equal(1, request.Headers.NonValidated.Count);
+            Assert.Equal(3, request.Headers.NonValidated.ElementAt(0).Value.Count);
+            Assert.Equal("text/bar", request.Headers.NonValidated.ElementAt(0).Value.ElementAt(0));
+            Assert.Equal("invalid", request.Headers.NonValidated.ElementAt(0).Value.ElementAt(1));
+            Assert.Equal("text/baz", request.Headers.NonValidated.ElementAt(0).Value.ElementAt(2));
+        }
 
         [Fact]
         public void ToString_SeveralRequestHeaders_Success()

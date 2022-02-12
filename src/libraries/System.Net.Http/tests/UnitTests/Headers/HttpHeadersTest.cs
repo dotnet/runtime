@@ -199,12 +199,12 @@ namespace System.Net.Http.Tests
             // - The header value has an invalid format (very rare for standard headers) AND
             // - There are multiple header values (some valid, some invalid) AND
             // - The order of the headers matters (e.g. Transfer-Encoding)
-            Assert.Equal(parsedPrefix, headers.First().Value.ElementAt(0));
-            Assert.Equal(invalidHeaderValue, headers.First().Value.ElementAt(1));
-
+            Assert.Equal(invalidHeaderValue, headers.First().Value.ElementAt(0));
+            Assert.Equal(parsedPrefix, headers.First().Value.ElementAt(1));
+            
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
 
-            string expected = headers.Descriptor.Name + ": " + parsedPrefix + ", " + invalidHeaderValue + Environment.NewLine;
+            string expected = headers.Descriptor.Name + ": " + invalidHeaderValue + ", " + parsedPrefix + Environment.NewLine;
             Assert.Equal(expected, headers.ToString());
         }
 
@@ -616,8 +616,8 @@ namespace System.Net.Http.Tests
             Assert.Equal(1, headers.Count());
             Assert.Equal(2, headers.First().Value.Count());
 
-            Assert.Equal(parsedPrefix + "1", headers.First().Value.ElementAt(0));
-            Assert.Equal(invalidHeaderValue, headers.First().Value.ElementAt(1));
+            Assert.Equal(invalidHeaderValue, headers.First().Value.ElementAt(0));
+            Assert.Equal(parsedPrefix + "1", headers.First().Value.ElementAt(1));
 
             // Value is already parsed. There shouldn't be additional calls to the parser.
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
@@ -2047,9 +2047,9 @@ namespace System.Net.Http.Tests
             // invalid value.
             Assert.Equal(3, destination.GetValues(known2Header).Count());
             Assert.Equal(parsedPrefix + "5", destination.GetValues(known2Header).ElementAt(0));
-            Assert.Equal(parsedPrefix + "7", destination.GetValues(known2Header).ElementAt(1));
-            Assert.Equal(invalidHeaderValue, destination.GetValues(known2Header).ElementAt(2));
-
+            Assert.Equal(invalidHeaderValue, destination.GetValues(known2Header).ElementAt(1));
+            Assert.Equal(parsedPrefix + "7", destination.GetValues(known2Header).ElementAt(2));
+           
             // Header 'known3' should not be copied, since it doesn't contain any values.
             Assert.False(destination.Contains(known3Header), "'known3' header value count.");
 
