@@ -361,18 +361,17 @@ namespace System.Net
             }
         }
 
-        private static int AddToPayload(ref MessageField field, ReadOnlySpan<byte> data, ref Span<byte> payload, int offset)
+        private static void AddToPayload(ref MessageField field, ReadOnlySpan<byte> data, Span<byte> payload, ref int offset)
         {
             SetField(ref field, data.Length, offset);
-            data.CopyTo(payload);
-            payload = payload.Slice(data.Length);
-            return data.Length;
+            data.CopyTo(payload.Slice(offset));
+            offset += data.Length;
         }
 
-        private static int AddToPayload(ref MessageField field, string data, ref Span<byte> payload, int offset)
+        private static void AddToPayload(ref MessageField field, string data, Span<byte> payload, ref int offset)
         {
             byte[] bytes = Encoding.Unicode.GetBytes(data);
-            return AddToPayload(ref field, bytes, ref payload, offset);
+            AddToPayload(ref field, bytes, payload, ref offset);
         }
 
         // Section 3.3.2
@@ -417,7 +416,7 @@ namespace System.Net
         // Set temp to ConcatenationOf(Responserversion, HiResponserversion, Z(6), Time, ClientChallenge, Z(4), ServerName, Z(4))
         // Set NTProofStr to HMAC_MD5(ResponseKeyNT, ConcatenationOf(CHALLENGE_MESSAGE.ServerChallenge, temp))
         // Set NtChallengeResponse to ConcatenationOf(NTProofStr, temp)
-        private unsafe int makeNtlm2ChallengeResponse(DateTime time, byte[] lm2Hash, ReadOnlySpan<byte> serverChallenge, Span<byte> clientChallenge, ReadOnlySpan<byte> serverInfo, ref MessageField field, ref Span<byte> payload)
+        private unsafe int makeNtlm2ChallengeResponse(DateTime time, byte[] lm2Hash, ReadOnlySpan<byte> serverChallenge, Span<byte> clientChallenge, ReadOnlySpan<byte> serverInfo, ref MessageField field, Span<byte> payload)
         {
             Debug.Assert(serverChallenge.Length == ChallengeLength);
             Debug.Assert(clientChallenge.Length == ChallengeLength);
@@ -454,7 +453,6 @@ namespace System.Net
             NTProofStr.CopyTo(blob);
             SetField(ref field, blob.Length, sizeof(AuthenticateMessage));
 
-            payload = payload.Slice(blob.Length);
             return blob.Length;
         }
 
@@ -480,6 +478,9 @@ namespace System.Net
             }*/
 
             // Only NTLMv2 with MIC is supported
+            //
+            // NegotiateSign and NegotiateKeyExchange are necessary to calculate the key
+            // that is used for MIC.
             if (((flags & Flags.NegotiateNtlm2) != Flags.NegotiateNtlm2) ||
                 ((flags & Flags.NegotiateTargetInfo) != Flags.NegotiateTargetInfo) ||
                 !flags.HasFlag(Flags.NegotiateSign) ||
@@ -560,7 +561,7 @@ namespace System.Net
             Span<AuthenticateMessage> response = MemoryMarshal.Cast<byte, AuthenticateMessage>(responseAsSpan.Slice(0, sizeof(AuthenticateMessage)));
 
             // variable fields
-            Span<byte> payload = responseAsSpan.Slice(sizeof(AuthenticateMessage));
+            Span<byte> payload = responseAsSpan;
             int payloadOffset = sizeof(AuthenticateMessage);
 
             responseAsSpan.Clear();
@@ -586,12 +587,12 @@ namespace System.Net
             makeLm2ChallengeResponse(ntlm2hash, serverChallenge, clientChallenge, ref responseAsSpan);
 
             // Create NTLM2 response
-            payloadOffset += makeNtlm2ChallengeResponse(time, ntlm2hash, serverChallenge, clientChallenge, targetInfoBuffer, ref response[0].NtChallengeResponse, ref payload);
+            payloadOffset += makeNtlm2ChallengeResponse(time, ntlm2hash, serverChallenge, clientChallenge, targetInfoBuffer, ref response[0].NtChallengeResponse, payload.Slice(payloadOffset));
             Debug.Assert(payloadOffset == sizeof(AuthenticateMessage) + sizeof(NtChallengeResponse) + targetInfoOffset);
 
-            payloadOffset += AddToPayload(ref response[0].UserName, _credential.UserName, ref payload, payloadOffset);
-            payloadOffset += AddToPayload(ref response[0].DomainName, _credential.Domain, ref payload, payloadOffset);
-            payloadOffset += AddToPayload(ref response[0].Workstation, s_workstation, ref payload, payloadOffset);
+            AddToPayload(ref response[0].UserName, _credential.UserName, payload, ref payloadOffset);
+            AddToPayload(ref response[0].DomainName, _credential.Domain, payload, ref payloadOffset);
+            AddToPayload(ref response[0].Workstation, s_workstation, payload, ref payloadOffset);
 
             // Generate random session key that will be used for signing the messages
             Span<byte> exportedSessionKey = stackalloc byte[16];
@@ -609,12 +610,13 @@ namespace System.Net
             }
 
             // Encrypt exportedSessionKey with sessionBaseKey
-            byte[] encryptedRandomSessionKey = new byte[16];
             using (RC4 rc4 = new RC4(sessionBaseKey))
             {
+                Span<byte> encryptedRandomSessionKey = payload.Slice(payloadOffset, 16);
                 rc4.Transform(exportedSessionKey, encryptedRandomSessionKey);
+                SetField(ref response[0].EncryptedRandomSessionKey, 16, payloadOffset);
+                payloadOffset += 16;
             }
-            payloadOffset += AddToPayload(ref response[0].EncryptedRandomSessionKey, encryptedRandomSessionKey, ref payload, payloadOffset);
 
             // Calculate MIC
             Debug.Assert(_negotiateMessage != null);
