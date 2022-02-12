@@ -152,8 +152,8 @@ class Program
         AssertAny(b10, a => (a as MultiAttribute<Type>)?.Value == typeof(Class));
         AssertAny(b10, a => (a as MultiAttribute<Type>)?.Value == typeof(Class.Derive));
 
-        Assert(CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), false) == null);
-        Assert(CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), true) == null);
+        Assert(!CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), false).GetEnumerator().MoveNext());
+        Assert(!CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), true).GetEnumerator().MoveNext());
         Assert(!((ICustomAttributeProvider)programTypeInfo).GetCustomAttributes(typeof(MultiAttribute<>), true).GetEnumerator().MoveNext());
 
         // Test coverage for CustomAttributeData api surface
