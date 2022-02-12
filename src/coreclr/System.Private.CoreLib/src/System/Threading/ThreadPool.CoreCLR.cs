@@ -164,9 +164,8 @@ namespace System.Threading
     {
         private static readonly byte UsePortableThreadPoolConfigValues = InitializeConfigAndDetermineUsePortableThreadPool();
 
-        // SOS's ThreadPool command depends on this name
+        // SOS's ThreadPool command depends on the following names
         internal static readonly bool UsePortableThreadPool = UsePortableThreadPoolConfigValues != 0;
-
         internal static readonly bool UsePortableThreadPoolForIO = UsePortableThreadPoolConfigValues > 1;
 
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
