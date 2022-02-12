@@ -20,6 +20,25 @@ class Validate
     }
 
     [Fact]
+    public static void Validate_ConservativeGC_Types()
+    {
+        // These types represent scenarios where a conservative GC is needed.
+        // Since Mono always runs with a conservative GC, these types are permissable.
+        if (TestLibrary.Utilities.IsMonoRuntime)
+        {
+            var load1 = () => { var t = typeof(IntPtrRefFieldOverlap); };
+            load1();
+            var load2 = () => { var t = typeof(IntPtrOverlapWithInnerFieldType); };
+            load2();
+        }
+        else
+        {
+            Assert.Throws<TypeLoadException>(() => { var t = typeof(IntPtrRefFieldOverlap); });
+            Assert.Throws<TypeLoadException>(() => { var t = typeof(IntPtrOverlapWithInnerFieldType); });
+        }
+    }
+
+    [Fact]
     public static void Validate_RefStructWithRefField_Load()
     {
         Console.WriteLine($"{nameof(Validate_RefStructWithRefField_Load)}...");
@@ -95,5 +114,16 @@ class Validate
 
         Validate v = new();
         Create_TypedReferenceRefField_Worker(v, 1);
+    }
+
+    public static int Main(string[] _)
+    {
+        Validate_Invalid_RefField_Fails();
+        Validate_ConservativeGC_Types();
+        Validate_RefStructWithRefField_Load();
+        Validate_Create_RefField();
+        Validate_Create_RefStructField();
+        Validate_Create_TypedReferenceRefField();
+        return 100;
     }
 }
