@@ -248,6 +248,31 @@
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
+      <HelixWorkItem Include="@(_DefaultWorkItems -> 'a-$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+      <HelixWorkItem Include="@(_DefaultWorkItems -> 'b-$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+      <HelixWorkItem Include="@(_DefaultWorkItems -> 'c-$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+      <HelixWorkItem Include="@(_DefaultWorkItems -> 'd-$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+      <HelixWorkItem Include="@(_DefaultWorkItems -> 'e-$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
     </ItemGroup>
 
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Done building Helix work items for scenario $(Scenario). Work item count: @(HelixWorkItem->Count())" />
