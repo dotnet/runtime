@@ -533,6 +533,33 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => (ArgumentUsageAttribute)Attribute.GetCustomAttribute(paramInfos[0], attributeType, false));
 
         }
+
+        // reproduces https://github.com/dotnet/runtime/issues/64335
+        [Fact]
+        public static void GetCustomAttributesDoesNotReturnNullForOpenGenericType()
+        {
+            Attribute[] openGenericAttributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<>));
+            Assert.Empty(openGenericAttributes);
+            Assert.Equal(typeof(Attribute[]), openGenericAttributes.GetType());
+
+            Attribute[] closedGenericAttributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<string>));
+            Assert.Equal(1, closedGenericAttributes.Length);
+            Assert.Equal(typeof(GenericAttribute<string>[]), closedGenericAttributes.GetType());
+        }
+
+        [Fact]
+        public static void GetCustomAttributesReturnsAttributeArrayForMisbehavingCustomMemberInfo()
+        {
+            FieldInfo fieldWithNullAttributes = new CustomFieldInfo(null!);
+            Attribute[] fieldWithNullAttributesAttributes = Attribute.GetCustomAttributes(fieldWithNullAttributes);
+            Assert.NotNull(fieldWithNullAttributesAttributes);
+            Assert.Empty(fieldWithNullAttributesAttributes);
+
+            FieldInfo fieldWithStringAttributes = new CustomFieldInfo(new[] { "a", "b" });
+            Attribute[] fieldWithStringAttributesAttributes = Attribute.GetCustomAttributes(fieldWithStringAttributes);
+            Assert.NotNull(fieldWithStringAttributesAttributes);
+            Assert.Empty(fieldWithStringAttributesAttributes);
+        }
     }
     [AttributeUsage(AttributeTargets.All)]
     public class TestAttribute : Attribute
@@ -824,4 +851,42 @@ namespace System.Tests
 
     [Nameable]
     public class ExampleWithAttribute { }
+
+    public class GenericAttribute<T> : Attribute
+    {
+    }
+
+    [GenericAttribute<string>]
+    public class HasGenericAttribute
+    {
+    }
+
+    public class CustomFieldInfo : FieldInfo
+    {
+        private readonly object[] _customAttributes;
+
+        public CustomFieldInfo(object[] customAttributes)
+        {
+            this._customAttributes = customAttributes;
+        }
+
+        public override FieldAttributes Attributes => default;
+        public override RuntimeFieldHandle FieldHandle => default;
+        public override Type FieldType => typeof(object);
+        public override Type DeclaringType => null;
+        public override string Name => "custom";
+        public override Type ReflectedType => null;
+
+        public override object[] GetCustomAttributes(bool inherit) => this._customAttributes;
+
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) => this._customAttributes;
+
+        public override object GetValue(object obj) => null;
+
+        public override bool IsDefined(Type attributeType, bool inherit) => false;
+
+        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, System.Globalization.CultureInfo culture)
+        {
+        }
+    }
 }

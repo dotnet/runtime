@@ -902,7 +902,7 @@ namespace System.Reflection
             Debug.Assert(caType is not null);
 
             if (type.GetElementType() is not null)
-                return (caType.IsValueType) ? Array.Empty<object>() : CreateAttributeArrayHelper(caType, 0);
+                return CreateAttributeArrayHelper(caType, 0);
 
             if (type.IsGenericType && !type.IsGenericTypeDefinition)
                 type = (type.GetGenericTypeDefinition() as RuntimeType)!;
@@ -922,8 +922,6 @@ namespace System.Reflection
 
             RuntimeType.ListBuilder<object> result = default;
             bool mustBeInheritable = false;
-            bool useObjectArray = (caType.IsValueType || caType.ContainsGenericParameters);
-            RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : caType;
 
             for (int i = 0; i < pcas.Count; i++)
                 result.Add(pcas[i]);
@@ -935,7 +933,7 @@ namespace System.Reflection
                 type = (type.BaseType as RuntimeType)!;
             }
 
-            object[] typedResult = CreateAttributeArrayHelper(arrayType, result.Count);
+            object[] typedResult = CreateAttributeArrayHelper(caType, result.Count);
             for (int i = 0; i < result.Count; i++)
             {
                 typedResult[i] = result[i];
@@ -966,8 +964,6 @@ namespace System.Reflection
 
             RuntimeType.ListBuilder<object> result = default;
             bool mustBeInheritable = false;
-            bool useObjectArray = (caType.IsValueType || caType.ContainsGenericParameters);
-            RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : caType;
 
             for (int i = 0; i < pcas.Count; i++)
                 result.Add(pcas[i]);
@@ -979,7 +975,7 @@ namespace System.Reflection
                 method = method.GetParentDefinition()!;
             }
 
-            object[] typedResult = CreateAttributeArrayHelper(arrayType, result.Count);
+            object[] typedResult = CreateAttributeArrayHelper(caType, result.Count);
             for (int i = 0; i < result.Count; i++)
             {
                 typedResult[i] = result[i];
@@ -1126,16 +1122,13 @@ namespace System.Reflection
         }
 
         private static object[] GetCustomAttributes(
-            RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount, RuntimeType? attributeFilterType)
+            RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount, RuntimeType attributeFilterType)
         {
             RuntimeType.ListBuilder<object> attributes = default;
 
             AddCustomAttributes(ref attributes, decoratedModule, decoratedMetadataToken, attributeFilterType, false, default);
 
-            bool useObjectArray = attributeFilterType is null || attributeFilterType.IsValueType || attributeFilterType.ContainsGenericParameters;
-            RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : attributeFilterType!;
-
-            object[] result = CreateAttributeArrayHelper(arrayType, attributes.Count + pcaCount);
+            object[] result = CreateAttributeArrayHelper(attributeFilterType, attributes.Count + pcaCount);
             for (int i = 0; i < attributes.Count; i++)
             {
                 result[i] = attributes[i];
@@ -1480,15 +1473,32 @@ namespace System.Reflection
             blobStart = (IntPtr)pBlobStart;
         }
 
-        private static object[] CreateAttributeArrayHelper(RuntimeType elementType, int elementCount)
+        private static object[] CreateAttributeArrayHelper(RuntimeType caType, int elementCount)
         {
+            if (caType.IsValueType)
+            {
+                return CreateArray<object>();
+            }
+
+            if (caType.ContainsGenericParameters)
+            {
+                if (caType.IsSubclassOf(typeof(Attribute)))
+                {
+                    return CreateArray<Attribute>();
+                }
+
+                return CreateArray<object>();
+            }
+
             // If we have 0 elements, don't allocate a new array
             if (elementCount == 0)
             {
-                return elementType.GetEmptyArray();
+                return caType.GetEmptyArray();
             }
 
-            return (object[])Array.CreateInstance(elementType, elementCount);
+            return (object[])Array.CreateInstance(caType, elementCount);
+
+            T[] CreateArray<T>() => elementCount == 0 ? Array.Empty<T>() : new T[elementCount];
         }
         #endregion
     }
