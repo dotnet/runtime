@@ -34,6 +34,7 @@
 //
 
 #if MONO_FEATURE_SRE
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
@@ -246,10 +247,8 @@ namespace System.Reflection.Emit
 
         private void emit_int(int val)
         {
-            code[code_len++] = (byte)(val & 0xFF);
-            code[code_len++] = (byte)((val >> 8) & 0xFF);
-            code[code_len++] = (byte)((val >> 16) & 0xFF);
-            code[code_len++] = (byte)((val >> 24) & 0xFF);
+            BinaryPrimitives.WriteInt32LittleEndian(code.AsSpan(code_len), val);
+            code_len += 4;
         }
 
         /* change to pass by ref to avoid copy */
@@ -520,25 +519,10 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, double arg)
         {
-            byte[] s = BitConverter.GetBytes(arg);
             make_room(10);
             ll_emit(opcode);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Copy(s, 0, code, code_len, 8);
-                code_len += 8;
-            }
-            else
-            {
-                code[code_len++] = s[7];
-                code[code_len++] = s[6];
-                code[code_len++] = s[5];
-                code[code_len++] = s[4];
-                code[code_len++] = s[3];
-                code[code_len++] = s[2];
-                code[code_len++] = s[1];
-                code[code_len++] = s[0];
-            }
+            BinaryPrimitives.WriteDoubleLittleEndian(code.AsSpan(code_len), arg);
+            code_len += 8;
         }
 
         public virtual void Emit(OpCode opcode, FieldInfo field)
@@ -553,8 +537,8 @@ namespace System.Reflection.Emit
         {
             make_room(4);
             ll_emit(opcode);
-            code[code_len++] = (byte)(arg & 0xFF);
-            code[code_len++] = (byte)((arg >> 8) & 0xFF);
+            BinaryPrimitives.WriteInt16LittleEndian(code.AsSpan(code_len), arg);
+            code_len += 2;
         }
 
         public virtual void Emit(OpCode opcode, int arg)
@@ -568,14 +552,8 @@ namespace System.Reflection.Emit
         {
             make_room(10);
             ll_emit(opcode);
-            code[code_len++] = (byte)(arg & 0xFF);
-            code[code_len++] = (byte)((arg >> 8) & 0xFF);
-            code[code_len++] = (byte)((arg >> 16) & 0xFF);
-            code[code_len++] = (byte)((arg >> 24) & 0xFF);
-            code[code_len++] = (byte)((arg >> 32) & 0xFF);
-            code[code_len++] = (byte)((arg >> 40) & 0xFF);
-            code[code_len++] = (byte)((arg >> 48) & 0xFF);
-            code[code_len++] = (byte)((arg >> 56) & 0xFF);
+            BinaryPrimitives.WriteInt64LittleEndian(code.AsSpan(code_len), arg);
+            code_len += 8;
         }
 
         public virtual void Emit(OpCode opcode, Label label)
@@ -792,21 +770,10 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, float arg)
         {
-            byte[] s = BitConverter.GetBytes(arg);
             make_room(6);
             ll_emit(opcode);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Copy(s, 0, code, code_len, 4);
-                code_len += 4;
-            }
-            else
-            {
-                code[code_len++] = s[3];
-                code[code_len++] = s[2];
-                code[code_len++] = s[1];
-                code[code_len++] = s[0];
-            }
+            BinaryPrimitives.WriteSingleLittleEndian(code.AsSpan(code_len), arg);
+            code_len += 4;
         }
 
         public virtual void Emit(OpCode opcode, string str)
@@ -995,26 +962,15 @@ namespace System.Reflection.Emit
         internal unsafe void SetCode(byte* code, int code_size, int max_stack)
         {
             // Make a copy to avoid possible security problems
-            this.code = new byte[code_size];
-            for (int i = 0; i < code_size; ++i)
-                this.code[i] = code[i];
+            this.code = new ReadOnlySpan<byte>(code, code_size).ToArray();
             this.code_len = code_size;
             this.max_stack = max_stack;
             this.cur_stack = 0;
         }
 
-        internal ITokenGenerator TokenGenerator
-        {
-            get
-            {
-                return token_gen;
-            }
-        }
+        internal ITokenGenerator TokenGenerator => token_gen;
 
-        public virtual int ILOffset
-        {
-            get { return code_len; }
-        }
+        public virtual int ILOffset => code_len;
     }
 
     internal struct SequencePoint
