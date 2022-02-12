@@ -73,6 +73,78 @@ namespace System.IO.Tests
             Assert.Equal(newCreationTimeUTC, File.GetCreationTimeUtc(path));
         }
 
+        private static void SetCreationTimeUsingHandle(string path, DateTime creationTime)
+        {
+            using var fileHandle = OpenFileHandle(path);
+            File.SetCreationTime(fileHandle, creationTime);
+        }
+
+        private static DateTime GetCreationTimeUsingHandle(string path)
+        {
+            using var fileHandle = OpenFileHandle(path);
+            return File.GetCreationTime(fileHandle);
+        }
+
+        private static void SetCreationTimeUsingHandleUtc(string path, DateTime creationTime)
+        {
+            using var fileHandle = OpenFileHandle(path);
+            File.SetCreationTimeUtc(fileHandle, creationTime);
+        }
+
+        private static DateTime GetCreationTimeUsingHandleUtc(string path)
+        {
+            using var fileHandle = OpenFileHandle(path);
+            return File.GetCreationTimeUtc(fileHandle);
+        }
+
+        private static void SetLastAccessTimeUsingHandle(string path, DateTime creationTime)
+        {
+            using var fileHandle = OpenFileHandle(path);
+            File.SetLastAccessTime(fileHandle, creationTime);
+        }
+
+        private static DateTime GetLastAccessTimeUsingHandle(string path)
+        {
+            using var fileHandle = OpenFileHandle(path);
+            return File.GetLastAccessTime(fileHandle);
+        }
+
+        private static void SetLastAccessTimeUsingHandleUtc(string path, DateTime creationTime)
+        {
+            using var fileHandle = OpenFileHandle(path);
+            File.SetLastAccessTimeUtc(fileHandle, creationTime);
+        }
+
+        private static DateTime GetLastAccessTimeUsingHandleUtc(string path)
+        {
+            using var fileHandle = OpenFileHandle(path);
+            return File.GetLastAccessTimeUtc(fileHandle);
+        }
+
+        private static void SetLastWriteTimeUsingHandle(string path, DateTime creationTime)
+        {
+            using var fileHandle = OpenFileHandle(path);
+            File.SetLastWriteTime(fileHandle, creationTime);
+        }
+
+        private static DateTime GetLastWriteTimeUsingHandle(string path)
+        {
+            using var fileHandle = OpenFileHandle(path);
+            return File.GetLastWriteTime(fileHandle);
+        }
+
+        private static void SetLastWriteTimeUsingHandleUtc(string path, DateTime creationTime)
+        {
+            using var fileHandle = OpenFileHandle(path);
+            File.SetLastWriteTimeUtc(fileHandle, creationTime);
+        }
+
+        private static DateTime GetLastWriteTimeUsingHandleUtc(string path)
+        {
+            using var fileHandle = OpenFileHandle(path);
+            return File.GetLastWriteTimeUtc(fileHandle);
+        }
+
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false, bool testHandles = true)
         {
             if (IOInputs.SupportsGettingCreationTime &&
@@ -85,16 +157,8 @@ namespace System.IO.Tests
                 if (testHandles)
                 {
                     yield return TimeFunction.Create(
-                        (path, time) =>
-                        {
-                            using var fileHandle = OpenFileHandle(path);
-                            File.SetCreationTime(fileHandle, time);
-                        },
-                        path =>
-                        {
-                            using var fileHandle = OpenFileHandle(path);
-                            return File.GetCreationTime(fileHandle);
-                        },
+                        SetCreationTimeUsingHandle,
+                        GetCreationTimeUsingHandle,
                         DateTimeKind.Local);
                 }
 
@@ -105,16 +169,8 @@ namespace System.IO.Tests
                 if (testHandles)
                 {
                     yield return TimeFunction.Create(
-                        (path, time) =>
-                        {
-                            using var fileHandle = OpenFileHandle(path);
-                            File.SetCreationTimeUtc(fileHandle, time);
-                        },
-                        path =>
-                        {
-                            using var fileHandle = OpenFileHandle(path);
-                            return File.GetCreationTimeUtc(fileHandle);
-                        },
+                        SetCreationTimeUsingHandleUtc,
+                        GetCreationTimeUsingHandleUtc,
                         DateTimeKind.Unspecified);
                 }
 
@@ -125,16 +181,8 @@ namespace System.IO.Tests
                 if (testHandles)
                 {
                     yield return TimeFunction.Create(
-                        (path, time) =>
-                        {
-                            using var fileHandle = OpenFileHandle(path);
-                            File.SetCreationTimeUtc(fileHandle, time);
-                        },
-                        path =>
-                        {
-                            using var fileHandle = OpenFileHandle(path);
-                            return File.GetCreationTimeUtc(fileHandle);
-                        },
+                        SetCreationTimeUsingHandleUtc,
+                        GetCreationTimeUsingHandleUtc,
                         DateTimeKind.Utc);
                 }
             }
@@ -146,16 +194,8 @@ namespace System.IO.Tests
             if (testHandles)
             {
                 yield return TimeFunction.Create(
-                    (path, time) =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        File.SetLastAccessTime(fileHandle, time);
-                    },
-                    path =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        return File.GetLastAccessTime(fileHandle);
-                    },
+                    SetLastAccessTimeUsingHandle,
+                    GetLastAccessTimeUsingHandle,
                     DateTimeKind.Local);
             }
 
@@ -166,16 +206,8 @@ namespace System.IO.Tests
             if (testHandles)
             {
                 yield return TimeFunction.Create(
-                    (path, time) =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        File.SetLastAccessTimeUtc(fileHandle, time);
-                    },
-                    path =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        return File.GetLastAccessTimeUtc(fileHandle);
-                    },
+                    SetLastAccessTimeUsingHandleUtc,
+                    GetLastAccessTimeUsingHandleUtc,
                     DateTimeKind.Unspecified);
             }
 
@@ -186,16 +218,8 @@ namespace System.IO.Tests
             if (testHandles)
             {
                 yield return TimeFunction.Create(
-                    (path, time) =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        File.SetLastAccessTimeUtc(fileHandle, time);
-                    },
-                    path =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        return File.GetLastAccessTimeUtc(fileHandle);
-                    },
+                    SetLastAccessTimeUsingHandleUtc,
+                    GetLastAccessTimeUsingHandleUtc,
                     DateTimeKind.Utc);
             }
 
@@ -206,16 +230,8 @@ namespace System.IO.Tests
             if (testHandles)
             {
                 yield return TimeFunction.Create(
-                    (path, time) =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        File.SetLastWriteTime(fileHandle, time);
-                    },
-                    path =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        return File.GetLastWriteTime(fileHandle);
-                    },
+                    SetLastWriteTimeUsingHandle,
+                    GetLastWriteTimeUsingHandle,
                     DateTimeKind.Local);
             }
 
@@ -226,16 +242,8 @@ namespace System.IO.Tests
             if (testHandles)
             {
                 yield return TimeFunction.Create(
-                    (path, time) =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        File.SetLastWriteTimeUtc(fileHandle, time);
-                    },
-                    path =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        return File.GetLastWriteTimeUtc(fileHandle);
-                    },
+                    SetLastWriteTimeUsingHandleUtc,
+                    GetLastWriteTimeUsingHandleUtc,
                     DateTimeKind.Unspecified);
             }
 
@@ -246,16 +254,8 @@ namespace System.IO.Tests
             if (testHandles)
             {
                 yield return TimeFunction.Create(
-                    (path, time) =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        File.SetLastWriteTimeUtc(fileHandle, time);
-                    },
-                    path =>
-                    {
-                        using var fileHandle = OpenFileHandle(path);
-                        return File.GetLastWriteTimeUtc(fileHandle);
-                    },
+                    SetLastWriteTimeUsingHandleUtc,
+                    GetLastWriteTimeUsingHandleUtc,
                     DateTimeKind.Utc);
             }
         }
@@ -294,6 +294,78 @@ namespace System.IO.Tests
                     Assert.NotEqual(DateTime.FromFileTime(0), time);
                 });
             }
+        }
+
+        [Fact]
+        public void GetCreationTime_SafeFileHandle_Conformance()
+        {
+            string firstFilePath = GetTestFilePath();
+            string secondFilePath = GetTestFilePath();
+
+            File.WriteAllText(firstFilePath, "");
+            File.WriteAllText(secondFilePath, "");
+
+            using var firstFileHandle = File.OpenHandle(firstFilePath, access: FileAccess.ReadWrite);
+
+            DateTime now = DateTime.Now;
+            DateTime utcNow = now.ToUniversalTime();
+
+            File.SetCreationTime(firstFileHandle, now);
+            File.SetCreationTime(secondFilePath, now);
+
+            Assert.Equal(now, File.GetCreationTime(firstFileHandle));
+            Assert.Equal(now, File.GetCreationTime(secondFilePath));
+
+            Assert.Equal(utcNow, File.GetCreationTimeUtc(firstFileHandle));
+            Assert.Equal(utcNow, File.GetCreationTimeUtc(secondFilePath));
+        }
+
+        [Fact]
+        public void GetLastAccessTime_SafeFileHandle_Conformance()
+        {
+            string firstFilePath = GetTestFilePath();
+            string secondFilePath = GetTestFilePath();
+
+            File.WriteAllText(firstFilePath, "");
+            File.WriteAllText(secondFilePath, "");
+
+            using var firstFileHandle = File.OpenHandle(firstFilePath, access: FileAccess.ReadWrite);
+
+            DateTime now = DateTime.Now;
+            DateTime utcNow = now.ToUniversalTime();
+
+            File.SetLastAccessTime(firstFileHandle, now);
+            File.SetLastAccessTime(secondFilePath, now);
+
+            Assert.Equal(now, File.GetLastAccessTime(firstFileHandle));
+            Assert.Equal(now, File.GetLastAccessTime(secondFilePath));
+
+            Assert.Equal(utcNow, File.GetLastAccessTimeUtc(firstFileHandle));
+            Assert.Equal(utcNow, File.GetLastAccessTimeUtc(secondFilePath));
+        }
+
+        [Fact]
+        public void GetLastWriteTime_SafeFileHandle_Conformance()
+        {
+            string firstFilePath = GetTestFilePath();
+            string secondFilePath = GetTestFilePath();
+
+            File.WriteAllText(firstFilePath, "");
+            File.WriteAllText(secondFilePath, "");
+
+            using var firstFileHandle = File.OpenHandle(firstFilePath, access: FileAccess.ReadWrite);
+
+            DateTime now = DateTime.Now;
+            DateTime utcNow = now.ToUniversalTime();
+
+            File.SetLastWriteTime(firstFileHandle, now);
+            File.SetLastWriteTime(secondFilePath, now);
+
+            Assert.Equal(now, File.GetLastWriteTime(firstFileHandle));
+            Assert.Equal(now, File.GetLastWriteTime(secondFilePath));
+
+            Assert.Equal(utcNow, File.GetLastWriteTimeUtc(firstFileHandle));
+            Assert.Equal(utcNow, File.GetLastWriteTimeUtc(secondFilePath));
         }
 
         [Fact]

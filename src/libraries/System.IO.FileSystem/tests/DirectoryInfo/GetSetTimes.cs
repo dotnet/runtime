@@ -19,7 +19,7 @@ namespace System.IO.Tests
 
         protected override void InvokeCreate(DirectoryInfo item) => item.Create();
 
-        public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
+        public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false, bool testHandles = true)
         {
             if (IOInputs.SupportsGettingCreationTime && (!requiresRoundtripping || IOInputs.SupportsSettingCreationTime))
             {

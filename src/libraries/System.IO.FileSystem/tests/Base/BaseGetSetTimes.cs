@@ -56,7 +56,7 @@ namespace System.IO.Tests
 
         private void SettingUpdatesPropertiesCore(T item)
         {
-            Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
+            Assert.All(TimeFunctions(true, false), (function) =>
             {
                 // Checking that milliseconds are not dropped after setter.
                 // Emscripten drops milliseconds in Browser
@@ -170,8 +170,8 @@ namespace System.IO.Tests
             // Or, when creation time setting is not available:
             // [0] = (access, write, False),    [1] = (access, write, True),
             // [2] = (write, access, False),    [3] = (write, access, True)
-
-            IEnumerable<TimeFunction> timeFunctionsUtc = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
+            
+            IEnumerable<TimeFunction> timeFunctionsUtc = TimeFunctions(true, false).Where((f) => f.Kind == DateTimeKind.Utc);
             bool[] booleanArray = new bool[] { false, true };
             Assert.All(timeFunctionsUtc.SelectMany((x) => timeFunctionsUtc.SelectMany((y) => booleanArray.Select((reverse) => (x, y, reverse)))).Where((fs) => fs.x.Getter != fs.y.Getter), (functions) =>
             {
