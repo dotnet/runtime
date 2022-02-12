@@ -1406,30 +1406,6 @@ mono_test_marshal_stringbuilder_utf16_tolower (short *s, int n)
 }
 
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wc++-compat"
-#endif
-
-/*
-* Standard C and C++ doesn't allow empty structs, empty structs will always have a size of 1 byte.
-* GCC have an extension to allow empty structs, https://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html.
-* This cause a little dilemma since runtime build using none GCC compiler will not be compatible with
-* GCC build C libraries and the other way around. On platforms where empty structs has size of 1 byte
-* it must be represented in call and cannot be dropped. On Windows x64 structs will always be represented in the call
-* meaning that an empty struct must have a representation in the callee in order to correctly follow the ABI used by the
-* C/C++ standard and the runtime.
-*/
-typedef struct {
-#if !defined(__GNUC__) || defined(TARGET_WIN32) || defined(__cplusplus)
-    char a;
-#endif
-} EmptyStruct;
-
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-
 LIBTEST_API int STDCALL
 mono_test_marshal_empty_string_array (char **array)
 {
@@ -1509,37 +1485,6 @@ mono_test_marshal_unicode_string_array (gunichar2 **array, char **array2)
 		return 4;
 
 	return 0;
-}
-
-/* this does not work on Redhat gcc 2.96 */
-LIBTEST_API int STDCALL
-mono_test_empty_struct (int a, EmptyStruct es, int b)
-{
-	// printf ("mono_test_empty_struct %d %d\n", a, b);
-
-	// Intel icc on ia64 passes 'es' in 2 registers
-#if defined(__ia64) && defined(__INTEL_COMPILER)
-	return 0;
-#else
-	if (a == 1 && b == 2)
-		return 0;
-	return 1;
-#endif
-}
-
-LIBTEST_API EmptyStruct STDCALL
-mono_test_return_empty_struct (int a)
-{
-	EmptyStruct s;
-
-	memset (&s, 0, sizeof (s));
-
-#if !(defined(__i386__) && defined(__clang__))
-	/* https://bugzilla.xamarin.com/show_bug.cgi?id=58901 */
-	g_assert (a == 42);
-#endif
-
-	return s;
 }
 
 typedef struct {
