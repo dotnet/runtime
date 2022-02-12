@@ -48,6 +48,7 @@
                   Condition="!Exists($(_DotNetInstallScriptPath))"/>
 
     <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
+          IgnoreStandardErrorWarningFormat="true"
           Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallScriptPath) -i $(SdkWithNoWorkloadForTestingPath) -v $(SdkVersionForWorkloadTesting)" />
 
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
