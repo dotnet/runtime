@@ -227,8 +227,11 @@ static char* marshal_strdup (const char *str)
 	if (!str)
 		return NULL;
 
-	char *buf = (char *) CoTaskMemAlloc (strlen (str) + 1);
-	return strcpy (buf, str);
+	size_t n = strlen (str) + 1;
+	char *buf = (char *) CoTaskMemAlloc (n);
+	strncpy_s (buf, n, str, n - 1);
+	buf[n] = 0;
+	return buf;
 #else
 	return strdup (str);
 #endif
@@ -295,9 +298,9 @@ test_lpwstr_marshal (unsigned short* chars, int length)
 LIBTEST_API void STDCALL
 test_lpwstr_marshal_out (unsigned short** chars)
 {
-	int i = 0;
+	unsigned int i = 0;
 	const char abc[] = "ABC";
-	glong len = strlen(abc);
+	size_t len = strlen(abc);
 
 	*chars = (unsigned short *)marshal_alloc (2 * (len + 1));
 
@@ -329,7 +332,7 @@ mono_return_int (int a) {
 
 LIBTEST_API float STDCALL
 mono_test_marshal_pass_return_float (float f) {
-	return f + 1.0;
+	return f + 1.0f;
 }
 
 struct ss
@@ -442,7 +445,7 @@ LIBTEST_API char * STDCALL
 mono_return_struct_4_double (void *ptr, struct Rect rect, struct Scalar4 sc4, int a, int b, int c)
 {
 	char *buffer = (char *)marshal_alloc (1024 * sizeof (char));
-	sprintf (buffer, "sc4 = {%.1f, %.1f, %.1f, %.1f }, a=%x, b=%x, c=%x\n", (float) sc4.val [0], (float) sc4.val [1], (float) sc4.val [2], (float) sc4.val [3], a, b, c);
+	snprintf (buffer, 1024, "sc4 = {%.1f, %.1f, %.1f, %.1f }, a=%x, b=%x, c=%x\n", (float) sc4.val [0], (float) sc4.val [1], (float) sc4.val [2], (float) sc4.val [3], a, b, c);
 	return buffer;
 }
 
@@ -935,7 +938,7 @@ typedef struct long_align_struct {
 LIBTEST_API int STDCALL
 mono_test_marshal_long_align_struct_array (long_align_struct *ss)
 {
-	return ss[0].a + ss[0].b + ss[0].c + ss[1].a + ss[1].b + ss[1].c;
+	return (int)(ss[0].a + ss[0].b + ss[0].c + ss[1].a + ss[1].b + ss[1].c);
 }
 
 LIBTEST_API simplestruct2 * STDCALL
@@ -1311,7 +1314,7 @@ LIBTEST_API int STDCALL
 mono_test_marshal_stringbuilder_append (char *s, int length)
 {
 	const char out_sentinel[] = "CSHARP_";
-	const char out_len = strlen (out_sentinel);
+	size_t out_len = strlen (out_sentinel);
 
 	for (int i=0; i < length; i++) {
 		s [i] = out_sentinel [i % out_len];
@@ -1861,31 +1864,6 @@ LIBTEST_API int STDCALL
 mono_test_marshal_long_struct (LongStruct *s)
 {
 	return s->i + s->l.l;
-}
-
-LIBTEST_API void STDCALL
-mono_test_last_error (int err)
-{
-#ifdef WIN32
-	SetLastError (err);
-
-	/*
-	* Make sure argument register used calling SetLastError
-	* get's cleaned before returning back to caller. This is done to ensure
-	* we don't get a undetected failure if error is preserved in register
-	* on return since we read back value directly when doing p/invoke with SetLastError = true
-	* into first argument register and then pass it to Mono function setting value in TLS.
-	* If there is a codegen bug reading last error or the code has been incorrectly eliminated
-	* this test could still succeed since expected error code could be left in argument register.
-	* Below code just do something that shouldn't touch last error and won't be optimized away
-	* but will change the argument registers to something different than err.
-	*/
-	char buffer[256] = { 0 };
-	char value[] = "Dummy";
-	strncpy (buffer, value, STRING_LENGTH (value));
-#else
-	errno = err;
-#endif
 }
 
 LIBTEST_API int STDCALL
@@ -7808,18 +7786,6 @@ mono_test_marshal_fixed_buffer_unicode (FixedBufferUnicode *s)
 	return 0;
 }
 
-const int NSTRINGS = 6;
-//test strings
-const char  *utf8Strings[] = {
-                                "Managed",
-                                 "Sîne klâwen durh die wolken sint geslagen" ,
-                                 "काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम्",
-                                 "我能吞下玻璃而不伤身体",
-                                 "ღმერთსი შემვედრე,შემვედრე, ნუთუ კვლა დამხსნას შემვედრე,სოფლისა შემვედრე, შემვედრე,შემვედრე,შემვედრე,შრომასა, ცეცხლს, წყალსა და მიწასა, ჰაერთა თანა მრომასა; მომცნეს ფრთენი და აღვფრინდე, მივჰხვდე მას ჩემსა ნდომასა, დღისით და ღამით ვჰხედვიდე მზისა ელვათა კრთომაასაშემვედრე,შემვედრე,",
-                                 "Τη γλώσσα μου έδωσαν ελληνική",
-"\0"
-};
-
 LIBTEST_API char *
 build_return_string(const char* pReturn)
 {
@@ -7841,85 +7807,6 @@ StringParameterInOut(/*[In,Out]*/ char *s, int index)
 	return build_return_string(s);
 }
 
-LIBTEST_API void
-StringParameterRefOut(/*out*/ char **s, int index)
-{
-	char *pszTextutf8 = (char*)utf8Strings[index];
-	size_t strLength = strlen(pszTextutf8);
-	*s = (char *)(marshal_alloc (sizeof(char)* (strLength + 1)));
-	memcpy(*s, pszTextutf8, strLength);
-	(*s)[strLength] = '\0';
-}
-
-LIBTEST_API void
-StringParameterRef(/*ref*/ char **s, int index)
-{
-    char *pszTextutf8 = (char*)utf8Strings[index];
-    size_t strLength = strlen(pszTextutf8);
-    // do byte by byte validation of in string
-    size_t szLen = strlen(*s);
-    for (size_t i = 0; i < szLen; i++)
-    {
-        if ((*s)[i] != pszTextutf8[i])
-        {
-            printf("[in] managed string do not match native string\n");
-	    abort ();
-        }
-    }
-
-    if (*s)
-    {
-       marshal_free (*s);
-    }
-    // overwrite the orginal
-    *s = (char *)(marshal_alloc (sizeof(char)* (strLength + 1)));
-    memcpy(*s, pszTextutf8, strLength);
-    (*s)[strLength] = '\0';
-}
-
-LIBTEST_API void
-StringBuilderParameterInOut(/*[In,Out] StringBuilder*/ char *s, int index)
-{
-    // if string.empty
-    if (s == 0 || *s == 0)
-        return;
-
-    char *pszTextutf8 = (char*)utf8Strings[index];
-
-    // do byte by byte validation of in string
-    size_t szLen = strlen(s);
-    for (size_t i = 0; i < szLen; i++)
-    {
-        if (s[i] != pszTextutf8[i])
-        {
-            printf("[in] managed string do not match native string\n");
-	    abort ();
-        }
-    }
-
-    // modify the string inplace
-    size_t outLen = strlen(pszTextutf8);
-    for (size_t i = 0; i < outLen; i++) {
-        s[i] = pszTextutf8[i];
-    }
-    s[outLen] = '\0';
-}
-
-//out string builder
-LIBTEST_API void
-StringBuilderParameterOut(/*[Out] StringBuilder*/ char *s, int index)
-{
-    char *pszTextutf8 = (char*)utf8Strings[index];
-
-    printf ("SBPO: Receiving %s\n", s);
-    // modify the string inplace
-    size_t outLen = strlen(pszTextutf8);
-    for (size_t i = 0; i < outLen; i++) {
-        s[i] = pszTextutf8[i];
-    }
-    s[outLen] = '\0';
-}
-
 LIBTEST_API char *
 StringParameterOut(/*[Out]*/ char *s, int index)
 {
@@ -7927,64 +7814,6 @@ StringParameterOut(/*[Out]*/ char *s, int index)
     return build_return_string(s);
 }
 
-// Utf8 field
-typedef struct FieldWithUtf8
-{
-    char *pFirst;
-    int index;
-}FieldWithUtf8;
-
-//utf8 struct field
-LIBTEST_API void
-TestStructWithUtf8Field(struct FieldWithUtf8 fieldStruct)
-{
-    char *pszManagedutf8 = fieldStruct.pFirst;
-    int stringIndex = fieldStruct.index;
-    char *pszNative = 0;
-    size_t outLen = 0;
-
-    if (pszManagedutf8 == 0 || *pszManagedutf8 == 0)
-        return;
-
-    pszNative = (char*)utf8Strings[stringIndex];
-
-    outLen = strlen(pszNative);
-    // do byte by byte comparision
-    for (size_t i = 0; i < outLen; i++)
-    {
-        if (pszNative[i] != pszManagedutf8[i])
-        {
-            printf("Native and managed string do not match.\n");
-	    abort ();
-        }
-    }
-}
-
-typedef void (* Callback2)(char *text, int index);
-
-LIBTEST_API void
-Utf8DelegateAsParameter(Callback2 managedCallback)
-{
-    for (int i = 0; i < NSTRINGS; ++i)
-    {
-        char *pszNative = 0;
-        pszNative = (char*)utf8Strings[i];
-        managedCallback(pszNative, i);
-    }
-}
-
-
-LIBTEST_API char*
-StringBuilderParameterReturn(int index)
-{
-    char *pszTextutf8 = (char*)utf8Strings[index];
-    size_t strLength = strlen(pszTextutf8);
-    char * ret = (char *)(marshal_alloc (sizeof(char)* (strLength + 1)));
-    memcpy(ret, pszTextutf8, strLength);
-    ret[strLength] = '\0';
-
-    return  ret;
-}
 
 LIBTEST_API int STDCALL
 mono_test_marshal_pointer_array (int *arr[])
@@ -8426,22 +8255,22 @@ struct invoke_names {
 static struct invoke_names *
 make_invoke_names (const char *assm_name, const char *name_space, const char *name, const char *meth_name)
 {
-	struct invoke_names *names = (struct invoke_names*) malloc (sizeof (struct invoke_names));
-	names->assm_name = strdup (assm_name);
-	names->name_space = strdup (name_space);
-	names->name = strdup (name);
-	names->meth_name = strdup (meth_name);
+	struct invoke_names *names = (struct invoke_names*) marshal_alloc (sizeof (struct invoke_names));
+	names->assm_name = marshal_strdup (assm_name);
+	names->name_space = marshal_strdup (name_space);
+	names->name = marshal_strdup (name);
+	names->meth_name = marshal_strdup (meth_name);
 	return names;
 }
 
 static void
 destroy_invoke_names (struct invoke_names *n)
 {
-	free (n->assm_name);
-	free (n->name_space);
-	free (n->name);
-	free (n->meth_name);
-	free (n);
+	marshal_free (n->assm_name);
+	marshal_free (n->name_space);
+	marshal_free (n->name);
+	marshal_free (n->meth_name);
+	marshal_free (n);
 }
 
 static void
