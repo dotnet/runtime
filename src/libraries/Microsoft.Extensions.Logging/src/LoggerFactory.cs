@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging
         private readonly List<ProviderRegistration> _providerRegistrations = new List<ProviderRegistration>();
         private readonly object _sync = new object();
         private volatile bool _disposed;
-        private IDisposable _changeTokenRegistration;
+        private IDisposable? _changeTokenRegistration;
         private LoggerFilterOptions _filterOptions;
         private LoggerFactoryScopeProvider? _scopeProvider;
         private LoggerFactoryOptions _factoryOptions;
