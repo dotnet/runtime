@@ -218,7 +218,7 @@ namespace System.Reflection.Emit
         private int num_fixups;
         internal Module module;
         private int cur_block;
-        private Stack? open_blocks;
+        private Int32Stack? open_blocks;
         private ITokenGenerator token_gen;
 
         private const int defaultFixupSize = 4;
@@ -343,7 +343,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginCatchBlock(Type exceptionType)
         {
-            open_blocks ??= new Stack(defaultExceptionStackSize);
+            open_blocks ??= new Int32Stack(defaultExceptionStackSize);
 
             if (open_blocks.Count <= 0)
                 throw new NotSupportedException("Not in an exception block");
@@ -372,7 +372,7 @@ namespace System.Reflection.Emit
         public virtual void BeginExceptFilterBlock()
         {
             if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
+                open_blocks = new Int32Stack(defaultExceptionStackSize);
 
             if (open_blocks.Count <= 0)
                 throw new NotSupportedException("Not in an exception block");
@@ -385,7 +385,7 @@ namespace System.Reflection.Emit
         {
             //System.Console.WriteLine ("Begin Block");
             if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
+                open_blocks = new Int32Stack(defaultExceptionStackSize);
 
             if (ex_handlers != null)
             {
@@ -407,7 +407,7 @@ namespace System.Reflection.Emit
         public virtual void BeginFaultBlock()
         {
             if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
+                open_blocks = new Int32Stack(defaultExceptionStackSize);
 
             if (open_blocks.Count <= 0)
                 throw new NotSupportedException("Not in an exception block");
@@ -426,7 +426,7 @@ namespace System.Reflection.Emit
         public virtual void BeginFinallyBlock()
         {
             if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
+                open_blocks = new Int32Stack(defaultExceptionStackSize);
 
             if (open_blocks.Count <= 0)
                 throw new NotSupportedException("Not in an exception block");
@@ -910,7 +910,7 @@ namespace System.Reflection.Emit
         public virtual void EndExceptionBlock()
         {
             if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
+                open_blocks = new Int32Stack(defaultExceptionStackSize);
 
             if (open_blocks.Count <= 0)
                 throw new NotSupportedException("Not in an exception block");
@@ -923,7 +923,7 @@ namespace System.Reflection.Emit
             ex_handlers[cur_block].End(code_len);
             open_blocks.Pop();
             if (open_blocks.Count > 0)
-                cur_block = (int)open_blocks.Peek()!;
+                cur_block = open_blocks.Peek()!;
         }
 
         public virtual void EndScope()
@@ -1026,42 +1026,33 @@ namespace System.Reflection.Emit
         public int EndCol;
     }
 
-    internal sealed class Stack
+    internal sealed class Int32Stack
     {
-        private object?[] _array;
+        private int[] _array;
         private int _size;
-        private int _version;
 
         private const int _defaultCapacity = 10;
 
-        public Stack()
+        public Int32Stack()
         {
-            _array = new object[_defaultCapacity];
+            _array = new int[_defaultCapacity];
             _size = 0;
-            _version = 0;
         }
 
-        public Stack(int initialCapacity)
+        public Int32Stack(int initialCapacity)
         {
             if (initialCapacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(initialCapacity), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (initialCapacity < _defaultCapacity)
                 initialCapacity = _defaultCapacity;
-            _array = new object[initialCapacity];
+            _array = new int[initialCapacity];
             _size = 0;
-            _version = 0;
         }
 
-        public int Count
-        {
-            get
-            {
-                return _size;
-            }
-        }
+        public int Count => _size;
 
-        public object? Peek()
+        public int Peek()
         {
             if (_size == 0)
                 throw new InvalidOperationException();
@@ -1069,27 +1060,21 @@ namespace System.Reflection.Emit
             return _array[_size - 1];
         }
 
-        public object? Pop()
+        public int Pop()
         {
             if (_size == 0)
                 throw new InvalidOperationException();
 
-            _version++;
-            object? obj = _array[--_size];
-            _array[_size] = null;
-            return obj;
+            return _array[--_size];
         }
 
-        public void Push(object obj)
+        public void Push(int obj)
         {
             if (_size == _array.Length)
             {
-                object[] newArray = new object[2 * _array.Length];
-                Array.Copy(_array, 0, newArray, 0, _size);
-                _array = newArray;
+                Array.Resize(ref _array, 2 * _array.Length);
             }
             _array[_size++] = obj;
-            _version++;
         }
     }
 }
