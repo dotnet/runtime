@@ -847,7 +847,7 @@ mono_debug_method_lookup_location (MonoDebugMethodInfo *minfo, int il_offset)
 			if (ret)
 				return ret;
 		}
-	} 
+	}
 
 	MonoDebugSourceLocation *location;
 
@@ -871,7 +871,7 @@ mono_debug_lookup_locals (MonoMethod *method)
 {
 	MonoDebugMethodInfo *minfo;
 	MonoDebugLocalsInfo *res;
-	
+
 	MonoImage* img = m_class_get_image (method->klass);
 	if (img->has_updates) {
 		int idx = mono_metadata_token_index (method->token);
@@ -1144,7 +1144,7 @@ mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrA
 			if (mono_ppdb_get_seq_points_enc (minfo, mdie->ppdb_file, mdie->idx, source_file, source_file_list, source_files, seq_points, n_seq_points))
 				return;
 		}
-	} 
+	}
 	if (minfo->handle->ppdb)
 		mono_ppdb_get_seq_points (minfo, source_file, source_file_list, source_files, seq_points, n_seq_points);
 	else

@@ -1,0 +1,8 @@
+<Project>
+    <Import Project="..\..\Directory.Build.props" />
+
+    <PropertyGroup>
+        <!-- WASI host applications need to grant access to specific disk paths, so ensure the output is within the current directory -->
+        <OutputPath>bin/$(Configuration)/net7.0</OutputPath>
+    </PropertyGroup>
+</Project>

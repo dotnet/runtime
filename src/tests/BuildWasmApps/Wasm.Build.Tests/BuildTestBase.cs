@@ -127,7 +127,8 @@ namespace Wasm.Build.Tests
                                            string? buildDir = null,
                                            int expectedExitCode = 0,
                                            string? args = null,
-                                           Dictionary<string, string>? envVars = null)
+                                           Dictionary<string, string>? envVars = null,
+                                           string targetFramework = "net6.0")
         {
             buildDir ??= _projectDir;
             envVars ??= new();
@@ -144,7 +145,7 @@ namespace Wasm.Build.Tests
                     envVars[kvp.Key] = kvp.Value;
             }
 
-            string bundleDir = Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config), "AppBundle");
+            string bundleDir = Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config, targetFramework: targetFramework), "AppBundle");
             (string testCommand, string extraXHarnessArgs) = host switch
             {
                 RunHost.V8     => ("wasm test", "--js-file=test-main.js --engine=V8 -v trace"),
@@ -341,8 +342,8 @@ namespace Wasm.Build.Tests
 
                 if (options.ExpectSuccess)
                 {
-                    string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config), "AppBundle");
-                    AssertBasicAppBundle(bundleDir, buildArgs.ProjectName, buildArgs.Config, options.HasIcudt, options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
+                    string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? "net6.0"), "AppBundle");
+                    AssertBasicAppBundle(bundleDir, buildArgs.ProjectName, buildArgs.Config, options.MainJS ?? "test-main.js", options.HasV8Script, options.HasIcudt, options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
                 }
 
                 if (options.UseCache)
@@ -369,6 +370,18 @@ namespace Wasm.Build.Tests
             File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "nuget6.config"), Path.Combine(_projectDir, "nuget.config"));
             File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
             File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
+        }
+
+        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser")
+        {
+            InitPaths(id);
+            InitProjectDir(id);
+            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
+                    .WithWorkingDirectory(_projectDir!)
+                    .ExecuteWithCapturedOutput($"new {template}")
+                    .EnsureSuccessful();
+
+            return Path.Combine(_projectDir!, $"{id}.csproj");
         }
 
         public string CreateBlazorWasmTemplateProject(string id)
@@ -476,19 +489,19 @@ namespace Wasm.Build.Tests
                 throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: {s_buildEnv.RuntimePackDir}{Environment.NewLine}Actual:   {actualPath}");
         }
 
-        protected static void AssertBasicAppBundle(string bundleDir, string projectName, string config, bool hasIcudt=true, bool dotnetWasmFromRuntimePack=true)
+        protected static void AssertBasicAppBundle(string bundleDir, string projectName, string config, string mainJS, bool hasV8Script, bool hasIcudt=true, bool dotnetWasmFromRuntimePack=true)
         {
             AssertFilesExist(bundleDir, new []
             {
                 "index.html",
-                "test-main.js",
+                mainJS,
                 "dotnet.timezones.blat",
                 "dotnet.wasm",
                 "mono-config.json",
-                "dotnet.js",
-                "run-v8.sh"
+                "dotnet.js"
             });
 
+            AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
             AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
 
             string managedDir = Path.Combine(bundleDir, "managed");
@@ -866,7 +879,10 @@ namespace Wasm.Build.Tests
         bool    CreateProject             = true,
         bool    Publish                   = true,
         bool    BuildOnlyAfterPublish     = true,
+        bool    HasV8Script               = true,
         string? Verbosity                 = null,
-        string? Label                     = null
+        string? Label                     = null,
+        string? TargetFramework           = null,
+        string? MainJS                    = null
     );
 }

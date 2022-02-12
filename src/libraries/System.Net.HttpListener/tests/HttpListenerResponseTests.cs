@@ -436,6 +436,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.FreeBSD, "unreliable on FreeBSD")]
         public async Task AddLongHeader_DoesNotThrow()
         {
             string longString = new string('a', 65536);

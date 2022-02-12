@@ -90,7 +90,13 @@ namespace System.Formats.Cbor.Tests
 
                 throw new ArgumentException("Unrecognized named curve", curve.Oid.Value);
 
-                bool MatchesOid(ECCurve namedCurve) => curve.Oid.Value == namedCurve.Oid.Value;
+                bool MatchesOid(ECCurve namedCurve) => curve.Oid.Value == namedCurve.Oid.Value
+#if NETFRAMEWORK
+                    // If this check fails, resolve the OID Value yourself.
+                    // See https://github.com/dotnet/runtime/issues/62813#issuecomment-994114540
+                    || (curve.Oid.Value is null && curve.Oid.FriendlyName == namedCurve.Oid.FriendlyName)
+#endif
+                    ;
             }
 
             static CoseKeyAlgorithm MapHashAlgorithmNameToCoseKeyAlg(HashAlgorithmName name)

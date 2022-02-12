@@ -26,8 +26,16 @@ namespace System
     // (ie, users could assign a new value to the old location).
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+#pragma warning disable CA1066 // adding IEquatable<T> implementation could change semantics of code like that in xunit that queries for IEquatable vs enumerating contents
     public readonly struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
+#pragma warning restore CA1066
     {
+        // ArraySegment<T> doesn't implement IEquatable<T>, even though it provides a strongly-typed
+        // Equals(T), as that results in different comparison semantics than comparing item-by-item
+        // the elements returned from its IEnumerable<T> implementation.  This then is a breaking change
+        // for usage like that in xunit's Assert.Equal, which will prioritize using an instance's IEquatable<T>
+        // over its IEnumerable<T>.
+
         // Do not replace the array allocation with Array.Empty. We don't want to have the overhead of
         // instantiating another generic type in addition to ArraySegment<T> for new type parameters.
 #pragma warning disable CA1825
@@ -120,7 +128,7 @@ namespace System
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj) =>
-            obj is ArraySegment<T> && Equals((ArraySegment<T>)obj);
+            obj is ArraySegment<T> other && Equals(other);
 
         public bool Equals(ArraySegment<T> obj) =>
             obj._array == _array && obj._offset == _offset && obj._count == _count;

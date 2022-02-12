@@ -3760,6 +3760,14 @@
     "any",
     "base"
   ],
+  "linux-armv6": [
+    "linux-armv6",
+    "linux",
+    "unix-armv6",
+    "unix",
+    "any",
+    "base"
+  ],
   "linux-mips64": [
     "linux-mips64",
     "linux",
@@ -8244,6 +8252,12 @@
   ],
   "unix-loongarch64": [
     "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "unix-armv6": [
+    "unix-armv6",
     "unix",
     "any",
     "base"

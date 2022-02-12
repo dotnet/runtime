@@ -3,6 +3,8 @@
 
 using System;
 
+namespace Test_hfa_params
+{
 public struct doublesStruct
 {
     public double f1;
@@ -64,4 +66,5 @@ public class A
 
         return (foo(ds, ds2, ds3) ? 100 : -1);
     }
+}
 }

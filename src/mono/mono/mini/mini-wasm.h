@@ -45,7 +45,7 @@
 #define MONO_ARCH_INST_SREG2_MASK(ins) 0
 
 struct MonoLMF {
-	/* 
+	/*
 	 * If the second lowest bit is set to 1, then this is a MonoLMFExt structure, and
 	 * the other fields are not valid.
 	 */
@@ -108,4 +108,4 @@ void mono_wasm_print_stack_trace (void);
 gboolean
 mini_wasm_is_scalar_vtype (MonoType *type);
 
-#endif /* __MONO_MINI_WASM_H__ */  
+#endif /* __MONO_MINI_WASM_H__ */

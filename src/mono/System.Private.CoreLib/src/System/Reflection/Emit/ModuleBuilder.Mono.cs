@@ -148,10 +148,7 @@ namespace System.Reflection.Emit
             Justification = "Reflection.Emit is not subject to trimming")]
         private FieldBuilder DefineDataImpl(string name, int size, FieldAttributes attributes)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException("name cannot be empty", nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
             if (global_type_created != null)
                 throw new InvalidOperationException("global fields already created");
             if ((size <= 0) || (size >= 0x3f0000))
@@ -165,7 +162,7 @@ namespace System.Reflection.Emit
             {
                 TypeBuilder tb = DefineType(typeName,
                     TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
-                                             typeof(ValueType), null, PackingSize.Size1, size);
+                                             typeof(ValueType), null, FieldBuilder.RVADataPackingSize(size), size);
                 tb.CreateType();
                 datablobtype = tb;
             }
@@ -408,10 +405,7 @@ namespace System.Reflection.Emit
         [ComVisible(true)]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
-            if (className == null)
-                throw new ArgumentNullException(nameof(className));
-            if (className.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(className));
+            ArgumentException.ThrowIfNullOrEmpty(className);
 
             TypeBuilder? result = null;
 

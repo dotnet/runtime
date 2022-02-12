@@ -1711,6 +1711,24 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        public void GetEnumerator_InvalidValueBetweenValidHeaders_EnumeratorReturnsAllValidValuesAndRemovesInvalidValue()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.TryAddWithoutValidation("foo", "fooValue");
+            headers.TryAddWithoutValidation("invalid", "invalid\nvalue");
+            headers.TryAddWithoutValidation("bar", "barValue");
+
+            Assert.Equal(3, headers.Count);
+
+            IDictionary<string, IEnumerable<string>> dict = headers.ToDictionary(pair => pair.Key, pair => pair.Value);
+            Assert.Equal("fooValue", Assert.Single(Assert.Contains("foo", dict)));
+            Assert.Equal("barValue", Assert.Single(Assert.Contains("bar", dict)));
+
+            Assert.Equal(2, headers.Count);
+            Assert.False(headers.NonValidated.Contains("invalid"));
+        }
+
+        [Fact]
         public void AddParsedValue_AddSingleValueToNonExistingHeader_HeaderGetsCreatedAndValueAdded()
         {
             Uri headerValue = new Uri("http://example.org/");
@@ -2205,6 +2223,150 @@ namespace System.Net.Http.Tests
                 Assert.False(e.MoveNext());
 
                 Assert.Equal("hello, world", hsv.ToString());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NumberOfHeadersUpToArrayThreshold_AddNonValidated_EnumerateNonValidated))]
+        public void Add_WithinArrayThresholdHeaders_EnumerationPreservesOrdering(int numberOfHeaders, bool addNonValidated, bool enumerateNonValidated)
+        {
+            var headers = new MockHeaders();
+
+            for (int i = 0; i < numberOfHeaders; i++)
+            {
+                if (addNonValidated)
+                {
+                    headers.TryAddWithoutValidation(i.ToString(), i.ToString());
+                }
+                else
+                {
+                    headers.Add(i.ToString(), i.ToString());
+                }
+            }
+
+            KeyValuePair<string, string>[] entries = enumerateNonValidated
+                ? headers.NonValidated.Select(pair => KeyValuePair.Create(pair.Key, Assert.Single(pair.Value))).ToArray()
+                : headers.Select(pair => KeyValuePair.Create(pair.Key, Assert.Single(pair.Value))).ToArray();
+
+            Assert.Equal(numberOfHeaders, entries.Length);
+            for (int i = 0; i < numberOfHeaders; i++)
+            {
+                Assert.Equal(i.ToString(), entries[i].Key);
+                Assert.Equal(i.ToString(), entries[i].Value);
+            }
+        }
+
+        [Fact]
+        public void Add_Remove_HeaderOrderingIsPreserved()
+        {
+            var headers = new MockHeaders();
+            headers.Add("a", "");
+            headers.Add("b", "");
+            headers.Add("c", "");
+
+            headers.Remove("b");
+
+            Assert.Equal(new[] { "a", "c" }, headers.Select(pair => pair.Key));
+        }
+
+        [Fact]
+        public void Add_AddToExistingKey_OriginalOrderingIsPreserved()
+        {
+            var headers = new MockHeaders();
+            headers.Add("a", "a1");
+            headers.Add("b", "b1");
+            headers.Add("a", "a2");
+
+            Assert.Equal(new[] { "a", "b" }, headers.Select(pair => pair.Key));
+        }
+
+        [Theory]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(HttpHeaders.ArrayThreshold / 4)]
+        [InlineData(HttpHeaders.ArrayThreshold / 2)]
+        [InlineData(HttpHeaders.ArrayThreshold - 1)]
+        [InlineData(HttpHeaders.ArrayThreshold)]
+        [InlineData(HttpHeaders.ArrayThreshold + 1)]
+        [InlineData(HttpHeaders.ArrayThreshold * 2)]
+        [InlineData(HttpHeaders.ArrayThreshold * 4)]
+        public void Add_LargeNumberOfHeaders_OperationsStillSupported(int numberOfHeaders)
+        {
+            string[] keys = Enumerable.Range(1, numberOfHeaders).Select(i => i.ToString()).ToArray();
+
+            var headers = new MockHeaders();
+            foreach (string key in keys)
+            {
+                Assert.False(headers.NonValidated.Contains(key));
+                headers.TryAddWithoutValidation(key, key);
+                Assert.True(headers.NonValidated.Contains(key));
+            }
+
+            string[] nonValidatedKeys = headers.NonValidated.Select(pair => pair.Key).ToArray();
+            Assert.Equal(numberOfHeaders, nonValidatedKeys.Length);
+
+            string[] newKeys = headers.Select(pair => pair.Key).ToArray();
+            Assert.Equal(numberOfHeaders, newKeys.Length);
+
+            string[] nonValidatedKeysAfterValidation = headers.NonValidated.Select(pair => pair.Key).ToArray();
+            Assert.Equal(numberOfHeaders, nonValidatedKeysAfterValidation.Length);
+
+            if (numberOfHeaders > HttpHeaders.ArrayThreshold)
+            {
+                // Ordering is lost when adding more than ArrayThreshold headers
+                Array.Sort(nonValidatedKeys, (a, b) => int.Parse(a).CompareTo(int.Parse(b)));
+                Array.Sort(newKeys, (a, b) => int.Parse(a).CompareTo(int.Parse(b)));
+                Array.Sort(nonValidatedKeysAfterValidation, (a, b) => int.Parse(a).CompareTo(int.Parse(b)));
+            }
+            Assert.Equal(keys, nonValidatedKeys);
+            Assert.Equal(keys, newKeys);
+            Assert.Equal(keys, nonValidatedKeysAfterValidation);
+
+            headers.Add("3", "secondValue");
+            Assert.True(headers.TryGetValues("3", out IEnumerable<string> valuesFor3));
+            Assert.Equal(new[] { "3", "secondValue" }, valuesFor3);
+
+            Assert.True(headers.TryAddWithoutValidation("invalid", "invalid\nvalue"));
+            Assert.True(headers.TryAddWithoutValidation("valid", "validValue"));
+
+            Assert.Equal(numberOfHeaders + 2, headers.NonValidated.Count);
+
+            // Remove all headers except for "1", "valid", "invalid"
+            for (int i = 2; i <= numberOfHeaders; i++)
+            {
+                Assert.True(headers.Remove(i.ToString()));
+            }
+
+            Assert.False(headers.Remove("3"));
+
+            // "1", "invalid", "valid"
+            Assert.True(headers.NonValidated.Contains("invalid"));
+            Assert.Equal(3, headers.NonValidated.Count);
+
+            Assert.Equal(new[] { "1", "valid" }, headers.Select(pair => pair.Key).OrderBy(i => i));
+
+            Assert.Equal(2, headers.NonValidated.Count);
+
+            headers.Clear();
+
+            Assert.Equal(0, headers.NonValidated.Count);
+            Assert.Empty(headers);
+            Assert.False(headers.Contains("3"));
+
+            Assert.True(headers.TryAddWithoutValidation("3", "newValue"));
+            Assert.True(headers.TryGetValues("3", out valuesFor3));
+            Assert.Equal(new[] { "newValue" }, valuesFor3);
+        }
+
+        public static IEnumerable<object[]> NumberOfHeadersUpToArrayThreshold_AddNonValidated_EnumerateNonValidated()
+        {
+            for (int i = 0; i <= HttpHeaders.ArrayThreshold; i++)
+            {
+                yield return new object[] { i, false, false };
+                yield return new object[] { i, false, true };
+                yield return new object[] { i, true, false };
+                yield return new object[] { i, true, true };
             }
         }
 

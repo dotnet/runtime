@@ -16,7 +16,7 @@ test_formats (void)
 {
 	char buffer [1024];
 	gsize a = 1;
-	
+
 	sprintf (buffer, "%" G_GSIZE_FORMAT, a);
 
 	return NULL;
@@ -64,7 +64,7 @@ test_ptrconv (void)
 	uv2 = GPOINTER_TO_UINT (ptr);
 	if (uv != uv2)
 		return FAILED ("uint to pointer and back conversions fail %u != %d", uv, uv2);
-	
+
 	uv = 1;
 	ptr = GUINT_TO_POINTER (uv);
 	uv2 = GPOINTER_TO_UINT (ptr);
@@ -78,7 +78,7 @@ test_ptrconv (void)
 		return FAILED ("uint to pointer and back conversions fail %u != %d", uv, uv2);
 
 	return NULL;
-	
+
 }
 
 typedef struct {
@@ -91,7 +91,7 @@ test_offset (void)
 {
 	if (G_STRUCT_OFFSET (my_struct, a) != 0)
 		return FAILED ("offset of a is not zero");
-	
+
 	if (G_STRUCT_OFFSET (my_struct, b) != 4 && G_STRUCT_OFFSET (my_struct, b) != 8)
 		return FAILED ("offset of b is 4 or 8, macro might be busted");
 

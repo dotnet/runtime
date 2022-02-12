@@ -14,14 +14,12 @@ namespace System.Security.Cryptography
     {
         internal static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
-            IntPtr evpType = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);
-            return new EvpHashProvider(evpType);
+            return new EvpHashProvider(hashAlgorithmId);
         }
 
         internal static HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
-            IntPtr evpType = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);
-            return new HmacHashProvider(evpType, key);
+            return new HmacHashProvider(hashAlgorithmId, key);
         }
 
         internal static class OneShotHashProvider
@@ -61,8 +59,16 @@ namespace System.Security.Cryptography
                 fixed (byte* pSource = source)
                 fixed (byte* pDestination = destination)
                 {
+                    const int Success = 1;
                     uint length = (uint)destination.Length;
-                    Check(Interop.Crypto.EvpDigestOneShot(evpType, pSource, source.Length, pDestination, &length));
+                    int ret = Interop.Crypto.EvpDigestOneShot(evpType, pSource, source.Length, pDestination, &length);
+
+                    if (ret != Success)
+                    {
+                        Debug.Assert(ret == 0);
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
                     Debug.Assert(length == hashSize);
                 }
 
@@ -72,71 +78,40 @@ namespace System.Security.Cryptography
 
         private sealed class EvpHashProvider : HashProvider
         {
-            private readonly IntPtr _algorithmEvp;
-            private readonly int _hashSize;
-            private readonly SafeEvpMdCtxHandle _ctx;
+            private readonly LiteHash _liteHash;
             private bool _running;
 
-            public EvpHashProvider(IntPtr algorithmEvp)
+            public EvpHashProvider(string hashAlgorithmId)
             {
-                _algorithmEvp = algorithmEvp;
-                Debug.Assert(algorithmEvp != IntPtr.Zero);
-
-                _hashSize = Interop.Crypto.EvpMdSize(_algorithmEvp);
-                if (_hashSize <= 0 || _hashSize > Interop.Crypto.EVP_MAX_MD_SIZE)
-                {
-                    throw new CryptographicException();
-                }
-
-                _ctx = Interop.Crypto.EvpMdCtxCreate(_algorithmEvp);
-
-                Interop.Crypto.CheckValidOpenSslHandle(_ctx);
+                _liteHash = LiteHashProvider.CreateHash(hashAlgorithmId);
             }
 
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
-                if (data.IsEmpty)
-                {
-                    return;
-                }
-
+                _liteHash.Append(data);
                 _running = true;
-                Check(Interop.Crypto.EvpDigestUpdate(_ctx, data, data.Length));
             }
 
             public override int FinalizeHashAndReset(Span<byte> destination)
             {
-                Debug.Assert(destination.Length >= _hashSize);
-
-                uint length = (uint)destination.Length;
-                Check(Interop.Crypto.EvpDigestFinalEx(_ctx, ref MemoryMarshal.GetReference(destination), ref length));
-                Debug.Assert(length == _hashSize);
-
-                // Reset the algorithm provider.
-                Check(Interop.Crypto.EvpDigestReset(_ctx, _algorithmEvp));
+                int written = _liteHash.Finalize(destination);
+                _liteHash.Reset();
                 _running = false;
-
-                return _hashSize;
+                return written;
             }
 
             public override int GetCurrentHash(Span<byte> destination)
             {
-                Debug.Assert(destination.Length >= _hashSize);
-
-                uint length = (uint)destination.Length;
-                Check(Interop.Crypto.EvpDigestCurrent(_ctx, ref MemoryMarshal.GetReference(destination), ref length));
-                Debug.Assert(length == _hashSize);
-
-                return _hashSize;
+                return _liteHash.Current(destination);
             }
 
-            public override int HashSizeInBytes => _hashSize;
+            public override int HashSizeInBytes => _liteHash.HashSizeInBytes;
 
             public override void Dispose(bool disposing)
             {
                 if (disposing)
                 {
-                    _ctx.Dispose();
+                    _liteHash.Dispose();
                 }
             }
 
@@ -144,7 +119,7 @@ namespace System.Security.Cryptography
             {
                 if (_running)
                 {
-                    Check(Interop.Crypto.EvpDigestReset(_ctx, _algorithmEvp));
+                    _liteHash.Reset();
                     _running = false;
                 }
             }
@@ -152,67 +127,40 @@ namespace System.Security.Cryptography
 
         private sealed class HmacHashProvider : HashProvider
         {
-            private readonly int _hashSize;
-            private SafeHmacCtxHandle _hmacCtx;
+            private readonly LiteHmac _liteHmac;
             private bool _running;
 
-            public HmacHashProvider(IntPtr algorithmEvp, ReadOnlySpan<byte> key)
+            public HmacHashProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
             {
-                Debug.Assert(algorithmEvp != IntPtr.Zero);
-
-                _hashSize = Interop.Crypto.EvpMdSize(algorithmEvp);
-                if (_hashSize <= 0 || _hashSize > Interop.Crypto.EVP_MAX_MD_SIZE)
-                {
-                    throw new CryptographicException();
-                }
-
-                _hmacCtx = Interop.Crypto.HmacCreate(ref MemoryMarshal.GetReference(key), key.Length, algorithmEvp);
-                Interop.Crypto.CheckValidOpenSslHandle(_hmacCtx);
+                _liteHmac = LiteHashProvider.CreateHmac(hashAlgorithmId, key);
             }
 
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
-                if (data.IsEmpty)
-                {
-                    return;
-                }
-
+                _liteHmac.Append(data);
                 _running = true;
-                Check(Interop.Crypto.HmacUpdate(_hmacCtx, data, data.Length));
             }
 
             public override int FinalizeHashAndReset(Span<byte> destination)
             {
-                Debug.Assert(destination.Length >= _hashSize);
-
-                int length = destination.Length;
-                Check(Interop.Crypto.HmacFinal(_hmacCtx, ref MemoryMarshal.GetReference(destination), ref length));
-                Debug.Assert(length == _hashSize);
-
-                Check(Interop.Crypto.HmacReset(_hmacCtx));
+                int written = _liteHmac.Finalize(destination);
+                _liteHmac.Reset();
                 _running = false;
-                return _hashSize;
+                return written;
             }
 
             public override int GetCurrentHash(Span<byte> destination)
             {
-                Debug.Assert(destination.Length >= _hashSize);
-
-                int length = destination.Length;
-                Check(Interop.Crypto.HmacCurrent(_hmacCtx, ref MemoryMarshal.GetReference(destination), ref length));
-                Debug.Assert(length == _hashSize);
-
-                return _hashSize;
+                return _liteHmac.Current(destination);
             }
 
-            public override int HashSizeInBytes => _hashSize;
+            public override int HashSizeInBytes => _liteHmac.HashSizeInBytes;
 
             public override void Dispose(bool disposing)
             {
-                if (disposing && _hmacCtx != null)
+                if (disposing)
                 {
-                    _hmacCtx.Dispose();
-                    _hmacCtx = null!;
+                    _liteHmac.Dispose();
                 }
             }
 
@@ -220,19 +168,9 @@ namespace System.Security.Cryptography
             {
                 if (_running)
                 {
-                    Check(Interop.Crypto.HmacReset(_hmacCtx));
+                    _liteHmac.Reset();
                     _running = false;
                 }
-            }
-        }
-
-        private static void Check(int result)
-        {
-            const int Success = 1;
-            if (result != Success)
-            {
-                Debug.Assert(result == 0);
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
         }
     }

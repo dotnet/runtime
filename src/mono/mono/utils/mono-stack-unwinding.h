@@ -55,7 +55,7 @@ typedef enum {
 
 typedef struct {
 	MonoStackFrameType type;
-	/* 
+	/*
 	 * For FRAME_TYPE_MANAGED, otherwise NULL.
 	 */
 	MonoJitInfo *ji;
@@ -79,7 +79,7 @@ typedef struct {
 	int native_offset;
 	/*
 	 * IL offset of this frame.
-	 * Only available if the runtime have debugging enabled (--debug switch) and 
+	 * Only available if the runtime have debugging enabled (--debug switch) and
 	 *  il offset resultion was requested (MONO_UNWIND_LOOKUP_IL_OFFSET)
 	 */
 	int il_offset;
@@ -114,7 +114,7 @@ typedef struct {
 enum {
 	MONO_UNWIND_DATA_DOMAIN,
 	MONO_UNWIND_DATA_LMF,
-	MONO_UNWIND_DATA_JIT_TLS,	
+	MONO_UNWIND_DATA_JIT_TLS,
 };
 
 /*

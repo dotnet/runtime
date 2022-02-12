@@ -24,10 +24,10 @@ namespace Microsoft.Extensions.Caching.Memory
         private object _value;
         private CacheEntryState _state;
 
-        internal CacheEntry(object key, MemoryCache memoryCache)
+        internal CacheEntry(object key!!, MemoryCache memoryCache!!)
         {
-            Key = key ?? throw new ArgumentNullException(nameof(key));
-            _cache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
+            Key = key;
+            _cache = memoryCache;
             _previous = memoryCache.TrackLinkedCacheEntries ? CacheEntryHelper.EnterScope(this) : null;
             _state = new CacheEntryState(CacheItemPriority.Normal);
         }

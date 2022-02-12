@@ -86,6 +86,9 @@ namespace ILCompiler.DependencyAnalysis
         private static extern void FinishObjWriter(IntPtr objWriter);
 
         [DllImport(NativeObjectWriterFileName)]
+        private static extern void SetDwarfVersion(IntPtr objWriter, ushort v);
+
+        [DllImport(NativeObjectWriterFileName)]
         private static extern void SwitchSection(IntPtr objWriter, string sectionName, CustomSectionAttributes attributes = 0, string comdatName = null);
 
         public void SetSection(ObjectNodeSection section)
@@ -792,7 +795,7 @@ namespace ILCompiler.DependencyAnalysis
             // For now consider all method symbols address taken.
             // We could restrict this in the future to those that are referenced from
             // reflection tables, EH tables, were actually address taken in code, or are referenced from vtables.
-            if ((_options & ObjectWritingOptions.ControlFlowGuard) != 0 && target is IMethodNode)
+            if ((_options & ObjectWritingOptions.ControlFlowGuard) != 0 && (target is IMethodNode || target is AssemblyStubNode))
             {
                 flags |= SymbolRefFlags.AddressTakenFunction;
             }
@@ -884,6 +887,11 @@ namespace ILCompiler.DependencyAnalysis
             _isSingleFileCompilation = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation;
             _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(this, factory);
             _options = options;
+
+            if ((_options & ObjectWritingOptions.UseDwarf5) != 0)
+            {
+                SetDwarfVersion(_nativeObjectWriter, 5);
+            }
         }
 
         public void Dispose()
@@ -1319,5 +1327,6 @@ namespace ILCompiler.DependencyAnalysis
     {
         GenerateDebugInfo = 0x01,
         ControlFlowGuard = 0x02,
+        UseDwarf5 = 0x4,
     }
 }

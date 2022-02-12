@@ -416,7 +416,7 @@ stages:
         - Build_Android_arm64_release_AllSubsets_Mono
         - Build_Android_x86_release_AllSubsets_Mono
         - Build_Android_x64_release_AllSubsets_Mono
-        - Build_Browser_wasm_release_AllSubsets_Mono
+        - Build_Browser_wasm_Linux_release_AllSubsets_Mono
         - Build_iOS_arm_release_AllSubsets_Mono
         - Build_iOS_arm64_release_AllSubsets_Mono
         - Build_iOSSimulator_x64_release_AllSubsets_Mono

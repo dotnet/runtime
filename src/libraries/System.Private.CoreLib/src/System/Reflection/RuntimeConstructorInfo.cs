@@ -48,11 +48,8 @@ namespace System.Reflection
             return invocationFlags;
         }
 
-        internal static void CheckCanCreateInstance(Type declaringType, bool isVarArg)
+        internal static void CheckCanCreateInstance(Type declaringType!!, bool isVarArg)
         {
-            if (declaringType == null)
-                throw new ArgumentNullException(nameof(declaringType));
-
             // ctor is declared on interface class
             if (declaringType.IsInterface)
                 throw new MemberAccessException(

@@ -5,7 +5,7 @@
 #ifndef __MONO_PUBLIB_H__
 #define __MONO_PUBLIB_H__
 
-/* 
+/*
  * Minimal general purpose header for use in public mono header files.
  * We can't include config.h, so we use compiler-specific preprocessor
  * directives where needed.

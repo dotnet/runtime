@@ -313,15 +313,15 @@ Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstrin
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jobjectArray j_args)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, jobjectArray j_args)
 {
     char file_dir[2048];
     char cache_dir[2048];
-    char docs_dir[2048];
+    char testresults_dir[2048];
     char entryPointLibName[2048];
     strncpy_str (env, file_dir, j_files_dir, sizeof(file_dir));
     strncpy_str (env, cache_dir, j_cache_dir, sizeof(cache_dir));
-    strncpy_str (env, docs_dir, j_docs_dir, sizeof(docs_dir));
+    strncpy_str (env, testresults_dir, j_testresults_dir, sizeof(testresults_dir));
     strncpy_str (env, entryPointLibName, j_entryPointLibName, sizeof(entryPointLibName));
 
     bundle_path = file_dir;
@@ -329,7 +329,7 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
 
     setenv ("HOME", bundle_path, true);
     setenv ("TMPDIR", cache_dir, true);
-    setenv ("DOCSDIR", docs_dir, true);
+    setenv ("TEST_RESULTS_DIR", testresults_dir, true);
 
     int args_len = (*env)->GetArrayLength(env, j_args);
     int managed_argc = args_len + 1;

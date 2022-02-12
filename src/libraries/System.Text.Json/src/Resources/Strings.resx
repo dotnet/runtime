@@ -539,9 +539,6 @@
   <data name="SerializerConverterFactoryReturnsJsonConverterFactory" xml:space="preserve">
     <value>The converter '{0}' cannot return an instance of JsonConverterFactory.</value>
   </data>
-  <data name="NodeDynamicObjectResultNotAssignable" xml:space="preserve">
-    <value>The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site.</value>
-  </data>
   <data name="NodeElementWrongType" xml:space="preserve">
     <value>The element must be of type '{0}'</value>
   </data>
@@ -574,9 +571,6 @@
   </data>
   <data name="OptionsAlreadyBoundToContext" xml:space="preserve">
     <value>"The specified 'JsonSerializerOptions' instance is already bound with a 'JsonSerializerContext' instance."</value>
-  </data>
-  <data name="InitializeTypeInfoAsObjectInvalid" xml:space="preserve">
-    <value>The value must represent an object type.</value>
   </data>
   <data name="ConverterForPropertyMustBeValid" xml:space="preserve">
     <value>The generic type of the converter for property '{0}.{1}' must match with the specified converter type '{2}'. The converter must not be 'null'.</value>

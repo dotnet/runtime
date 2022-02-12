@@ -18,6 +18,27 @@ namespace System.IO
     {
         private static readonly IOCompletionCallback s_callback = AllocateCallback();
 
+        internal static unsafe void SetFileLength(SafeFileHandle handle, long length)
+        {
+            var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
+            {
+                EndOfFile = length
+            };
+
+            if (!Interop.Kernel32.SetFileInformationByHandle(
+                handle,
+                Interop.Kernel32.FileEndOfFileInfo,
+                &eofInfo,
+                (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
+            {
+                int errorCode = Marshal.GetLastPInvokeError();
+
+                throw errorCode == Interop.Errors.ERROR_INVALID_PARAMETER
+                    ? new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig)
+                    : Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
+            }
+        }
+
         internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
             if (handle.IsAsync)

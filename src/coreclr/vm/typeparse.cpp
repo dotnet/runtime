@@ -1273,7 +1273,7 @@ TypeName::GetTypeHaveAssemblyHelper(
 
     TypeHandle th = TypeHandle();
     SArray<SString *> & names = GetNames();
-    Module *      pManifestModule = pAssembly->GetManifestModule();
+    Module *      pManifestModule = pAssembly->GetModule();
     Module *      pLookOnlyInModule = NULL;
     ClassLoader * pClassLoader = pAssembly->GetLoader();
 
@@ -1427,7 +1427,7 @@ DomainAssembly * LoadDomainAssembly(
     {
         // If the requesting assembly has Fallback LoadContext binder available,
         // then set it up in the AssemblySpec.
-        PEAssembly *pRequestingAssemblyManifestFile = pRequestingAssembly->GetManifestFile();
+        PEAssembly *pRequestingAssemblyManifestFile = pRequestingAssembly->GetPEAssembly();
         spec.SetFallbackBinderForRequestingAssembly(pRequestingAssemblyManifestFile->GetFallbackBinder());
     }
 

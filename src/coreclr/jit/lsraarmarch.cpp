@@ -785,7 +785,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
         useCount++;
-        BuildUse(blkNode->AsDynBlk()->gtDynamicSize, sizeRegMask);
+        BuildUse(blkNode->AsStoreDynBlk()->gtDynamicSize, sizeRegMask);
     }
 
     buildInternalRegisterUses();

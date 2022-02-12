@@ -266,7 +266,6 @@ float_clt_un: dest:y src1:f src2:f len:32
 float_cneq: dest:y src1:f src2:f len:25
 float_cge: dest:y src1:f src2:f len:37
 float_cle: dest:y src1:f src2:f len:37
-float_conv_to_u: dest:i src1:f len:36
 call_handler: len:11 clob:c
 aotconst: dest:i len:5
 load_gotaddr: dest:i len:64

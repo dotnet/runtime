@@ -30,13 +30,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry AddExpirationToken(
             this ICacheEntry entry,
-            IChangeToken expirationToken)
+            IChangeToken expirationToken!!)
         {
-            if (expirationToken == null)
-            {
-                throw new ArgumentNullException(nameof(expirationToken));
-            }
-
             entry.ExpirationTokens.Add(expirationToken);
             return entry;
         }
@@ -92,13 +87,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry RegisterPostEvictionCallback(
             this ICacheEntry entry,
-            PostEvictionDelegate callback)
+            PostEvictionDelegate callback!!)
         {
-            if (callback == null)
-            {
-                throw new ArgumentNullException(nameof(callback));
-            }
-
             return entry.RegisterPostEvictionCallback(callback, state: null);
         }
 
@@ -111,14 +101,9 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry RegisterPostEvictionCallback(
             this ICacheEntry entry,
-            PostEvictionDelegate callback,
-            object state)
+            PostEvictionDelegate callback!!,
+            object? state)
         {
-            if (callback == null)
-            {
-                throw new ArgumentNullException(nameof(callback));
-            }
-
             entry.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
             {
                 EvictionCallback = callback,
@@ -166,13 +151,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="entry">The <see cref="ICacheEntry"/>.</param>
         /// <param name="options">Set the values of these options on the <paramref name="entry"/>.</param>
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
-        public static ICacheEntry SetOptions(this ICacheEntry entry, MemoryCacheEntryOptions options)
+        public static ICacheEntry SetOptions(this ICacheEntry entry, MemoryCacheEntryOptions options!!)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
             entry.AbsoluteExpiration = options.AbsoluteExpiration;
             entry.AbsoluteExpirationRelativeToNow = options.AbsoluteExpirationRelativeToNow;
             entry.SlidingExpiration = options.SlidingExpiration;
@@ -186,7 +166,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             foreach (PostEvictionCallbackRegistration postEvictionCallback in options.PostEvictionCallbacks)
             {
-                entry.RegisterPostEvictionCallback(postEvictionCallback.EvictionCallback, postEvictionCallback.State);
+                entry.RegisterPostEvictionCallback(postEvictionCallback.EvictionCallback!, postEvictionCallback.State);
             }
 
             return entry;

@@ -465,7 +465,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
         case GT_BLK:
         case GT_OBJ:
-        case GT_DYN_BLK:
         {
             assert(varTypeIsStruct(location));
             GenTreeBlk* storeBlk = location->AsBlk();
@@ -477,9 +476,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                     break;
                 case GT_OBJ:
                     storeOper = GT_STORE_OBJ;
-                    break;
-                case GT_DYN_BLK:
-                    storeOper = GT_STORE_DYN_BLK;
                     break;
                 default:
                     unreached();
@@ -807,8 +803,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 #endif // FEATURE_HW_INTRINSICS
 
         default:
-            // These nodes should not be present in HIR.
-            assert(!node->OperIs(GT_CMP, GT_SETCC, GT_JCC, GT_JCMP, GT_LOCKADD));
+            // Check that we don't have nodes not allowed in HIR here.
+            assert((node->DebugOperKind() & DBK_NOTHIR) == 0);
             break;
     }
 

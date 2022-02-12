@@ -499,6 +499,26 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                 // Protocol extensions
+                case "DotnetDebugger.setNextIP":
+                    {
+                        var loc = SourceLocation.Parse(args?["location"] as JObject);
+                        if (loc == null)
+                            return false;
+                        var ret = await OnSetNextIP(id, loc, token);
+                        if (ret == true)
+                            SendResponse(id, Result.OkFromObject(new { }), token);
+                        else
+                            SendResponse(id, Result.Err("Set next instruction pointer failed."), token);
+                        return true;
+                    }
+                case "DotnetDebugger.applyUpdates":
+                    {
+                        if (await ApplyUpdates(id, args, token))
+                            SendResponse(id, Result.OkFromObject(new { }), token);
+                        else
+                            SendResponse(id, Result.Err("ApplyUpdate failed."), token);
+                        return true;
+                    }
                 case "DotnetDebugger.addSymbolServerUrl":
                     {
                         string url = args["url"]?.Value<string>();
@@ -593,6 +613,19 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return false;
         }
+
+        private async Task<bool> ApplyUpdates(MessageId id, JObject args, CancellationToken token)
+        {
+            var context = GetContext(id);
+            string moduleGUID = args["moduleGUID"]?.Value<string>();
+            string dmeta = args["dmeta"]?.Value<string>();
+            string dil = args["dil"]?.Value<string>();
+            string dpdb = args["dpdb"]?.Value<string>();
+            var moduleId = await context.SdbAgent.GetModuleId(moduleGUID, token);
+            var applyUpdates =  await context.SdbAgent.ApplyUpdates(moduleId, dmeta, dil, dpdb, token);
+            return applyUpdates;
+        }
+
         private void SetJustMyCode(MessageId id, JObject args, CancellationToken token)
         {
             var isEnabled = args["enabled"]?.Value<bool>();
@@ -853,28 +886,30 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (shouldReturn)
                     return true;
 
-                if (j == 0 && (method?.Info.HasStepThroughAttribute == true || method?.Info.IsHiddenFromDebugger == true))
+                if (j == 0 && method?.Info.DebuggerAttrInfo.DoAttributesAffectCallStack(JustMyCode) == true)
                 {
-                    if (method.Info.IsHiddenFromDebugger)
+                    if (method.Info.DebuggerAttrInfo.ShouldStepOut(event_kind))
                     {
                         if (event_kind == EventKind.Step)
                             context.IsSkippingHiddenMethod = true;
                         if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
                             return true;
                     }
-
-                    if (event_kind == EventKind.Step ||
-                        (JustMyCode && (event_kind == EventKind.Breakpoint || event_kind == EventKind.UserBreak)))
+                    if (!method.Info.DebuggerAttrInfo.HasStepperBoundary)
                     {
-                        if (context.IsResumedAfterBp)
-                            context.IsResumedAfterBp = false;
-                        else if (event_kind != EventKind.UserBreak)
-                            context.IsSteppingThroughMethod = true;
-                        if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
-                            return true;
+                        if (event_kind == EventKind.Step ||
+                        (JustMyCode && (event_kind == EventKind.Breakpoint || event_kind == EventKind.UserBreak)))
+                        {
+                            if (context.IsResumedAfterBp)
+                                context.IsResumedAfterBp = false;
+                            else if (event_kind != EventKind.UserBreak)
+                                context.IsSteppingThroughMethod = true;
+                            if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                                return true;
+                        }
+                        if (event_kind == EventKind.Breakpoint)
+                            context.IsResumedAfterBp = true;
                     }
-                    if (event_kind == EventKind.Breakpoint)
-                        context.IsResumedAfterBp = true;
                 }
 
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);
@@ -1023,6 +1058,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case EventKind.Breakpoint:
                     {
                         Breakpoint bp = context.BreakpointRequests.Values.SelectMany(v => v.Locations).FirstOrDefault(b => b.RemoteId == request_id);
+                        if (request_id == context.TempBreakpointForSetNextIP)
+                        {
+                            context.TempBreakpointForSetNextIP = -1;
+                            await context.SdbAgent.RemoveBreakpoint(request_id, token);
+                        }
                         string reason = "other";//other means breakpoint
                         int methodId = 0;
                         if (event_kind != EventKind.UserBreak)
@@ -1443,7 +1483,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 SourceLocation loc = sourceId.First();
                 req.Method = loc.IlLocation.Method;
-                if (req.Method.IsHiddenFromDebugger)
+                if (req.Method.DebuggerAttrInfo.HasDebuggerHidden)
                     continue;
 
                 Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, req.Condition, token);
@@ -1487,6 +1527,54 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendResponse(msg_id, Result.OkFromObject(new { }), token);
         }
 
+        private static bool IsNestedMethod(DebugStore store, Frame scope, SourceLocation foundLocation, SourceLocation targetLocation)
+        {
+            if (foundLocation.Line != targetLocation.Line || foundLocation.Column != targetLocation.Column)
+            {
+                SourceFile doc = store.GetFileById(scope.Method.Info.SourceId);
+                foreach (var method in doc.Methods)
+                {
+                    if (method.Token == scope.Method.Info.Token)
+                        continue;
+                    if (method.IsLexicallyContainedInMethod(scope.Method.Info))
+                        continue;
+                    SourceLocation newFoundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
+                                                .FirstOrDefault();
+                    if (!(newFoundLocation is null))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private async Task<bool> OnSetNextIP(MessageId sessionId, SourceLocation targetLocation, CancellationToken token)
+        {
+            DebugStore store = await RuntimeReady(sessionId, token);
+            ExecutionContext context = GetContext(sessionId);
+            Frame scope = context.CallStack.First<Frame>();
+
+            SourceLocation foundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
+                                                    .FirstOrDefault();
+
+            if (foundLocation is null)
+                 return false;
+
+            //search if it's a nested method and it's return false because we cannot move to another method
+            if (IsNestedMethod(store, scope, foundLocation, targetLocation))
+                return false;
+
+            var ilOffset = foundLocation.IlLocation;
+            var ret = await context.SdbAgent.SetNextIP(scope.Method, context.ThreadId, ilOffset, token);
+
+            if (!ret)
+                return false;
+
+            var breakpointId = await context.SdbAgent.SetBreakpoint(scope.Method.DebugId, ilOffset.Offset, token);
+            context.TempBreakpointForSetNextIP = breakpointId;
+            await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+            return true;
+        }
+
         private async Task<bool> OnGetScriptSource(MessageId msg_id, string script_id, CancellationToken token)
         {
             if (!SourceId.TryParse(script_id, out SourceId id))
@@ -1501,7 +1589,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 using (Stream data = await src_file.GetSourceAsync(checkHash: false, token: token))
                 {
-                    if (data.Length == 0)
+                    if (data is MemoryStream && data.Length == 0)
                         return false;
 
                     using (var reader = new StreamReader(data))

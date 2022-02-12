@@ -52,12 +52,8 @@ namespace System.Data.Common
             private T? GetDbColumnValue<T>(string columnName) => _schemaColumns.Contains(columnName) && _schemaRow[columnName] is T value ? value : default;
         }
 
-        public static ReadOnlyCollection<DbColumn> GetColumnSchema(this DbDataReader reader)
+        public static ReadOnlyCollection<DbColumn> GetColumnSchema(this DbDataReader reader!!)
         {
-            if (reader is null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
             if (reader is IDbColumnSchemaGenerator schemaGenerator)
             {
                 return schemaGenerator.GetColumnSchema();

@@ -34,16 +34,21 @@ namespace Internal.Cryptography
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
         public static byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
         {
             // The classes that call us are sealed and their base class has checked this already.
             Debug.Assert(data != null);
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
-            using (HashAlgorithm hasher = GetHashAlgorithm(hashAlgorithm))
-            {
-                return hasher.ComputeHash(data);
-            }
+            return
+                hashAlgorithm == HashAlgorithmName.SHA256 ? SHA256.HashData(data) :
+                hashAlgorithm == HashAlgorithmName.SHA1 ? SHA1.HashData(data) :
+                hashAlgorithm == HashAlgorithmName.SHA512 ? SHA512.HashData(data) :
+                hashAlgorithm == HashAlgorithmName.SHA384 ? SHA384.HashData(data) :
+                hashAlgorithm == HashAlgorithmName.MD5 ? MD5.HashData(data) :
+                throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
@@ -61,15 +66,5 @@ namespace Internal.Cryptography
                 hashAlgorithm == HashAlgorithmName.MD5 ? MD5.TryHashData(source, destination, out bytesWritten) :
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
         }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
-        private static HashAlgorithm GetHashAlgorithm(HashAlgorithmName hashAlgorithmName) =>
-            hashAlgorithmName == HashAlgorithmName.SHA256 ? SHA256.Create() :
-            hashAlgorithmName == HashAlgorithmName.SHA1 ? SHA1.Create() :
-            hashAlgorithmName == HashAlgorithmName.SHA512 ? SHA512.Create() :
-            hashAlgorithmName == HashAlgorithmName.SHA384 ? SHA384.Create() :
-            hashAlgorithmName == HashAlgorithmName.MD5 ? MD5.Create() :
-            throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
     }
 }

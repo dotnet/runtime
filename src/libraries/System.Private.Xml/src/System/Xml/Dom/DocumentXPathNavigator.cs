@@ -38,13 +38,8 @@ namespace System.Xml
             return new DocumentXPathNavigator(this);
         }
 
-        public override void SetValue(string value)
+        public override void SetValue(string value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             XmlNode node = _source;
             XmlNode end;
 
@@ -1599,14 +1594,8 @@ namespace System.Xml
         {
             if (!(lastSiblingToReplace is DocumentXPathNavigator that))
             {
-                if (lastSiblingToReplace == null)
-                {
-                    throw new ArgumentNullException(nameof(lastSiblingToReplace));
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
+                ArgumentNullException.ThrowIfNull(lastSiblingToReplace);
+                throw new NotSupportedException();
             }
 
             this.CalibrateText();
@@ -1656,14 +1645,8 @@ namespace System.Xml
         {
             if (!(lastSiblingToDelete is DocumentXPathNavigator that))
             {
-                if (lastSiblingToDelete == null)
-                {
-                    throw new ArgumentNullException(nameof(lastSiblingToDelete));
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
+                ArgumentNullException.ThrowIfNull(lastSiblingToDelete);
+                throw new NotSupportedException();
             }
 
             this.CalibrateText();

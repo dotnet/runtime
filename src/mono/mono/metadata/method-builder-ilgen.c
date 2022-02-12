@@ -616,10 +616,10 @@ mono_mb_emit_exception_for_error (MonoMethodBuilder *mb, MonoError *error)
 void
 mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint16 local, gint32 incr)
 {
-	mono_mb_emit_ldloc (mb, local); 
+	mono_mb_emit_ldloc (mb, local);
 	mono_mb_emit_icon (mb, incr);
 	mono_mb_emit_byte (mb, CEE_ADD);
-	mono_mb_emit_stloc (mb, local); 
+	mono_mb_emit_stloc (mb, local);
 }
 
 void

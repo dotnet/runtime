@@ -53,13 +53,8 @@ namespace System.Collections.Concurrent
         /// cref="ConcurrentBag{T}"/>.</param>
         /// <exception cref="ArgumentNullException"><paramref name="collection"/> is a null reference
         /// (Nothing in Visual Basic).</exception>
-        public ConcurrentBag(IEnumerable<T> collection)
+        public ConcurrentBag(IEnumerable<T> collection!!)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection), SR.ConcurrentBag_Ctor_ArgumentNullException);
-            }
-
             _locals = new ThreadLocal<WorkStealingQueue>();
 
             WorkStealingQueue queue = GetCurrentThreadWorkStealingQueue(forceCreate: true)!;
@@ -277,12 +272,8 @@ namespace System.Collections.Concurrent
         /// -or- the number of elements in the source <see
         /// cref="ConcurrentBag{T}"/> is greater than the available space from
         /// <paramref name="index"/> to the end of the destination <paramref name="array"/>.</exception>
-        public void CopyTo(T[] array, int index)
+        public void CopyTo(T[] array!!, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array), SR.ConcurrentBag_CopyTo_ArgumentNullException);
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.Collection_CopyTo_ArgumentOutOfRangeException);
@@ -375,10 +366,7 @@ namespace System.Collections.Concurrent
 
             // Otherwise, fall back to first storing the contents to an array,
             // and then relying on its CopyTo to copy to the target Array.
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array), SR.ConcurrentBag_CopyTo_ArgumentNullException);
-            }
+            ArgumentNullException.ThrowIfNull(array);
             ToArray().CopyTo(array, index);
         }
 

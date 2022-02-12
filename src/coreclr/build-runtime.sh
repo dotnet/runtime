@@ -22,7 +22,7 @@ usage_list+=("-pgodatapath: path to profile guided optimization data.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
 usage_list+=("-staticanalyzer: use scan_build static analyzer.")
-usage_list+=("-component: Build individual components instead of the full project. Available options are 'hosts', 'jit', 'runtime', 'paltests', 'alljits', 'iltools', and 'nativeaot'. Can be specified multiple times.")
+usage_list+=("-component: Build individual components instead of the full project. Available options are 'hosts', 'jit', 'runtime', 'paltests', 'alljits', 'iltools', 'nativeaot', and 'spmi'. Can be specified multiple times.")
 
 setup_dirs_local()
 {

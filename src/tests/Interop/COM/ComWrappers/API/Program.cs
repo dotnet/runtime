@@ -6,6 +6,7 @@ namespace ComWrappersTests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
 
@@ -376,7 +377,7 @@ namespace ComWrappersTests
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
                         Assert.True(false, "Invalid failure mode");
-                        throw new Exception("UNREACHABLE");
+                        throw new UnreachableException();
                 }
             }
 
@@ -390,7 +391,7 @@ namespace ComWrappersTests
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
                         Assert.True(false, "Invalid failure mode");
-                        throw new Exception("UNREACHABLE");
+                        throw new UnreachableException();
                 }
             }
 

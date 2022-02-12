@@ -195,7 +195,7 @@ export function assert(condition: unknown, messsage: string): asserts condition 
 }
 
 // see src/mono/wasm/driver.c MARSHAL_TYPE_xxx and Runtime.cs MarshalType
-export enum MarshalType {
+export const enum MarshalType {
     NULL = 0,
     INT = 1,
     FP64 = 2,
@@ -230,7 +230,7 @@ export enum MarshalType {
 }
 
 // see src/mono/wasm/driver.c MARSHAL_ERROR_xxx and Runtime.cs
-export enum MarshalError {
+export const enum MarshalError {
     BUFFER_TOO_SMALL = 512,
     NULL_CLASS_POINTER = 513,
     NULL_TYPE_POINTER = 514,
