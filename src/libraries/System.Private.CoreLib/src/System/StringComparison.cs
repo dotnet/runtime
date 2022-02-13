@@ -5,6 +5,7 @@ namespace System
 {
     public enum StringComparison
     {
+        // NOTE: RyuJIT has some of these values hardcoded
         CurrentCulture = 0,
         CurrentCultureIgnoreCase = 1,
         InvariantCulture = 2,

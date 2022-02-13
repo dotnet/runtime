@@ -612,6 +612,7 @@ namespace System
         }
 
         // Determines whether two strings match.
+        [Intrinsic] // Can be unrolled and vectorized
         public bool Equals([NotNullWhen(true)] string? value)
         {
             if (object.ReferenceEquals(this, value))
@@ -630,6 +631,7 @@ namespace System
             return EqualsHelper(this, value);
         }
 
+        [Intrinsic] // Can be unrolled and vectorized
         public bool Equals([NotNullWhen(true)] string? value, StringComparison comparisonType)
         {
             if (object.ReferenceEquals(this, value))
@@ -671,20 +673,9 @@ namespace System
         }
 
         // Determines whether two Strings match.
+        [Intrinsic] // Can be unrolled and vectorized
         public static bool Equals(string? a, string? b)
         {
-            // Transform 'str == ""' to 'str != null && str.Length == 0' if either a or b are jit-time
-            // constants. Otherwise, these two blocks are eliminated
-            if (RuntimeHelpers.IsKnownConstant(a) && a != null && a.Length == 0)
-            {
-                return b != null && b.Length == 0;
-            }
-
-            if (RuntimeHelpers.IsKnownConstant(b) && b != null && b.Length == 0)
-            {
-                return a != null && a.Length == 0;
-            }
-
             if (object.ReferenceEquals(a, b))
             {
                 return true;
@@ -698,6 +689,7 @@ namespace System
             return EqualsHelper(a, b);
         }
 
+        [Intrinsic] // Can be unrolled and vectorized
         public static bool Equals(string? a, string? b, StringComparison comparisonType)
         {
             if (object.ReferenceEquals(a, b))
