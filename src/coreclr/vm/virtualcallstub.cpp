@@ -502,7 +502,11 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     //
 
     NewHolder<BucketTable> resolvers_holder(new BucketTable(CALL_STUB_MIN_BUCKETS));
+#ifdef PRIME_SIZE_VSD_BUCKET_TABLE
+    NewHolder<BucketTable> dispatchers_holder(new BucketTable(CALL_STUB_MORE_BUCKETS));
+#else
     NewHolder<BucketTable> dispatchers_holder(new BucketTable(CALL_STUB_MIN_BUCKETS*2));
+#endif
     NewHolder<BucketTable> lookups_holder(new BucketTable(CALL_STUB_MIN_BUCKETS));
     NewHolder<BucketTable> vtableCallers_holder(new BucketTable(CALL_STUB_MIN_BUCKETS));
     NewHolder<BucketTable> cache_entries_holder(new BucketTable(CALL_STUB_MIN_BUCKETS));
@@ -3047,6 +3051,7 @@ void VirtualCallStubManager::LogStats()
     stats.cache_entry_space = 0;
 }
 
+#ifdef TERRIBLE_VSD_LOGGING
 int reports = 0;
 FILE* reportFile = NULL;
 
@@ -3099,7 +3104,7 @@ void ReportBucketInUseInBucket(int index, size_t keyA, size_t keyB)
     }
     fprintf(reportIndexInBucketFile, "%d, %d, %p %p\n", hashInBucketReports, index, (void*)keyA, (void*)keyB);
 }
-
+#endif // TERRIBLE_VSD_LOGGING
 
 void Prober::InitProber(size_t key1, size_t key2, size_t* table)
 {
@@ -3116,7 +3121,9 @@ void Prober::InitProber(size_t key1, size_t key2, size_t* table)
     base = &table[CALL_STUB_FIRST_INDEX];
     size = table[CALL_STUB_TABLESIZE_INDEX];
     FormHash();
+#ifdef TERRIBLE_VSD_LOGGING
     ReportBucketInUseInBucket((int)this->index, keyA, keyB);
+#endif
 }
 
 size_t Prober::Find()
@@ -3134,7 +3141,9 @@ size_t Prober::Find()
     //needs to be called to reset it.
     if (NoMore())
     {
+#ifdef TERRIBLE_VSD_LOGGING
         ReportProbeDepth(readCount, keyA, keyB);
+#endif
         return CALL_STUB_EMPTY_ENTRY;
     }
     do
@@ -3145,7 +3154,9 @@ size_t Prober::Find()
         //if we hit an empty entry, it means it cannot be in the table
         if(entry==CALL_STUB_EMPTY_ENTRY)
         {
+#ifdef TERRIBLE_VSD_LOGGING
             ReportProbeDepth(readCount, keyA, keyB);
+#endif
             return CALL_STUB_EMPTY_ENTRY;
         }
 
@@ -3153,11 +3164,15 @@ size_t Prober::Find()
         comparer->SetContents(entry);
         if (comparer->Equals(keyA, keyB))
         {
+#ifdef TERRIBLE_VSD_LOGGING
             ReportProbeDepth(-readCount, keyA, keyB);
+#endif
             return entry;
         }
     } while(Next()); //Next() returns false when we have visited every slot
+#ifdef TERRIBLE_VSD_LOGGING
     ReportProbeDepth(readCount, keyA, keyB);
+#endif
     return CALL_STUB_EMPTY_ENTRY;
 }
 
@@ -3188,7 +3203,9 @@ retryCurrentBucket:
             //this slot, so we will just keep looking
             if (GrabEntry(newEntry))
             {
+#ifdef TERRIBLE_VSD_LOGGING
                 ReportAddProbeDepth((int)probes + 1, keyA, keyB);
+#endif
                 break;
             }
 
@@ -3210,7 +3227,9 @@ retryCurrentBucket:
             if (FastInterlockCompareExchangePointer(&base[index],
                 newEntry, entry) == entry)
             {
+#ifdef TERRIBLE_VSD_LOGGING
                 ReportAddProbeDepth(-(int)(probes + 1), keyA, keyB);
+#endif
                 // Successfully swapped out old entry. Update prober to new data and continue
                 keyA = keyACurrentEntry;
                 keyB = keyBCurrentEntry;
@@ -3483,6 +3502,7 @@ void BucketTable::Reclaim()
     }
 }
 
+#ifdef TERRIBLE_VSD_LOGGING
 FILE* reportBucketIndexFile = NULL;
 int bucketIndexReports = 0;
 void ReportBucketIndex(int index)
@@ -3500,7 +3520,7 @@ void ReportBucketIndex(int index)
     }
     fprintf(reportBucketIndexFile, "%d, %d\n", bucketIndexReports, index);
 }
-
+#endif
 
 //
 // When using SetUpProber the proper values to use for keyA, keyB are:
@@ -3536,7 +3556,6 @@ BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
     // grows to 90% full.  (CALL_STUB_LOAD_FACTOR is 90%)
 
     size_t index = ComputeBucketIndex(keyA, keyB);
-    ReportBucketIndex((int)index);
     size_t bucket = buckets[index];  // non-volatile read
     if (bucket==CALL_STUB_EMPTY_ENTRY)
     {
@@ -3580,6 +3599,10 @@ size_t BucketTable::Add(size_t entry, Prober* probe)
     } CONTRACTL_END
 
     FastTable* table = (FastTable*)(probe->items());
+#ifdef TERRIBLE_VSD_LOGGING
+    size_t index = ComputeBucketIndex(probe->keyA, probe->keyB);
+    ReportBucketIndex((int)index);
+#endif
     size_t result = table->Add(entry,probe);
     if (result != CALL_STUB_EMPTY_ENTRY)
     {

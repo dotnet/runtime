@@ -1002,6 +1002,9 @@ extern UINT32 STUB_COLLIDE_MONO_PCT;
 #define STUB_COLLIDE_MONO_PCT     0
 #endif // !STUB_LOGGING
 
+#define TERRIBLE_VSD_LOGGING
+#define PRIME_SIZE_VSD_BUCKET_TABLE
+
 //size and mask of the cache used by resolve stubs
 // CALL_STUB_CACHE_SIZE must be equal to 2^CALL_STUB_CACHE_NUM_BITS
 #define CALL_STUB_CACHE_NUM_BITS 12 //10
@@ -1009,7 +1012,12 @@ extern UINT32 STUB_COLLIDE_MONO_PCT;
 #define CALL_STUB_CACHE_MASK (CALL_STUB_CACHE_SIZE-1)
 #define CALL_STUB_CACHE_PROBES 5
 //min sizes for BucketTable and buckets and the growth and hashing constants
+#ifdef PRIME_SIZE_VSD_BUCKET_TABLE
+#define CALL_STUB_MIN_BUCKETS 29
+#define CALL_STUB_MORE_BUCKETS 59
+#else
 #define CALL_STUB_MIN_BUCKETS 32
+#endif
 #define CALL_STUB_MIN_ENTRIES 4
 //this is so that the very first growth will jump from 4 to 32 entries, then double from there.
 #define CALL_STUB_SECONDARY_ENTRIES 8
@@ -1020,8 +1028,10 @@ extern UINT32 STUB_COLLIDE_MONO_PCT;
 #define LARGE_PRIME 7199369
 //internal layout of fasttable=size,count,entries....
 #define CALL_STUB_TABLESIZE_INDEX 0
+#ifndef PRIME_SIZE_VSD_BUCKET_TABLE
 //internal layout of buckets=size-1,count,entries....
 #define CALL_STUB_BUCKETTABLEMASK_INDEX 0
+#endif
 #define CALL_STUB_COUNT_INDEX 1
 #define CALL_STUB_DEAD_LINK 2
 #define CALL_STUB_FIRST_INDEX 3
@@ -1646,9 +1656,13 @@ public:
     BucketTable(size_t numberOfBuckets)
     {
         WRAPPER_NO_CONTRACT;
+#ifdef PRIME_SIZE_VSD_BUCKET_TABLE
+        buckets = AllocateBuckets(numberOfBuckets);
+#else
         size_t size = CALL_STUB_MIN_BUCKETS;
         while (size < numberOfBuckets) {size = size<<1;}
         buckets = AllocateBuckets(size);
+#endif
         // Initialize statistics counters
         memset(&stats, 0, sizeof(stats));
     }
@@ -1683,15 +1697,23 @@ public:
     void LogStats();
 
 private:
+#ifdef PRIME_SIZE_VSD_BUCKET_TABLE
+    inline size_t bucketCount() {LIMITED_METHOD_CONTRACT; return (size_t) (buckets[CALL_STUB_TABLESIZE_INDEX]); }
+#else
     inline size_t bucketMask() {LIMITED_METHOD_CONTRACT; return (size_t) (buckets[CALL_STUB_BUCKETTABLEMASK_INDEX]);}
     inline size_t bucketCount() {LIMITED_METHOD_CONTRACT; return bucketMask()+1;}
+#endif
     inline size_t ComputeBucketIndex(size_t keyA, size_t keyB)
     {
         LIMITED_METHOD_CONTRACT;
         // HASH2
         size_t a = ((keyA>>16) + keyA);
         size_t b = ((keyB>>16) ^ keyB);
+#ifdef PRIME_SIZE_VSD_BUCKET_TABLE
+        return CALL_STUB_FIRST_INDEX+(((((a*CALL_STUB_HASH_CONST2)>>5)^((b*CALL_STUB_HASH_CONST1)>>5))+CALL_STUB_HASH_CONST2) % bucketCount());
+#else
         return CALL_STUB_FIRST_INDEX+(((((a*CALL_STUB_HASH_CONST2)>>5)^((b*CALL_STUB_HASH_CONST1)>>5))+CALL_STUB_HASH_CONST2) & bucketMask());
+#endif
     }
     //grows the bucket referenced by probe.
     BOOL GetMoreSpace(const Prober* probe);
@@ -1703,7 +1725,11 @@ private:
         if (buckets != NULL)
         {
             memset(&buckets[0], CALL_STUB_EMPTY_ENTRY, (size+CALL_STUB_FIRST_INDEX)*sizeof(void*));
+#ifdef PRIME_SIZE_VSD_BUCKET_TABLE
+            buckets[CALL_STUB_TABLESIZE_INDEX] = size;
+#else
             buckets[CALL_STUB_BUCKETTABLEMASK_INDEX] =  size - 1;
+#endif
         }
         return buckets;
     }
@@ -1720,7 +1746,11 @@ private:
         VolatileStore(&buckets[index], value);
     }
 
+#ifdef PRIME_SIZE_VSD_BUCKET_TABLE
+    // We store (#buckets) in    bucket[CALL_STUB_TABLESIZE_INDEX  ==0]
+#else
     // We store (#buckets-1) in    bucket[CALL_STUB_BUCKETTABLEMASK_INDEX  ==0]
+#endif
     // We have two unused cells at bucket[CALL_STUB_COUNT_INDEX ==1]
     //                         and bucket[CALL_STUB_DEAD_LINK   ==2]
     // and the table starts at     bucket[CALL_STUB_FIRST_INDEX ==3]
