@@ -4326,7 +4326,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     JITDUMP("... Successfully unrolled to:\n")
                     DISPTREE(unrolled)
-                    for (unsigned i = 0; i < sig->numArgs; i++)
+                    for (unsigned i = 0; i < max(2, sig->numArgs); i++)
                     {
                         impPopStack();
                     }
