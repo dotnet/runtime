@@ -244,6 +244,7 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"package={package}, spn={spn}, requestedContextFlags={requestedContextFlags}");
 
             // TODO: requestedContextFlags
+            // TODO: Handle default credential
             _credential = credential;
             _spn = spn;
             _channelBinding = channelBinding;
@@ -251,7 +252,17 @@ namespace System.Net
 
         internal void CloseContext()
         {
-            // TODO
+            // Dispose of the state
+            _negotiateMessage = null;
+            _clientSigningKey = null;
+            _serverSigningKey = null;
+            _clientSeal?.Dispose();
+            _serverSeal?.Dispose();
+            _clientSeal = null;
+            _serverSeal = null;
+            _clientSequenceNumber = 0;
+            _serverSequenceNumber = 0;
+            IsCompleted = true;
         }
 
         internal unsafe string? GetOutgoingBlob(string? incomingBlob)
@@ -292,34 +303,6 @@ namespace System.Net
             }
 
             return outgoingBlob;
-        }
-
-        public static string FlagsEnumToString<T>(T e)
-            where T : Enum
-        {
-            const string Separator = ", ";
-            var str = new StringBuilder();
-
-            foreach (object i in Enum.GetValues(typeof(T)))
-            {
-                if (IsExactlyOneBitSet((uint)i) &&
-                    e.HasFlag((T)i))
-                {
-                    str.Append((T)i + Separator);
-                }
-            }
-
-            if (str.Length > 0)
-            {
-                str.Length -= Separator.Length;
-            }
-
-            return str.ToString();
-        }
-
-        private static bool IsExactlyOneBitSet(uint i)
-        {
-            return i != 0 && (i & (i - 1)) == 0;
         }
 
         private unsafe void CreateNtlmNegotiateMessage(Span<byte> asBytes)
@@ -395,6 +378,7 @@ namespace System.Net
         // EndDefine
         private static byte[] makeNtlm2Hash(string domain, string userName, string password)
         {
+            // TODO: Don't leak the buffers onto heap
             byte[] pwHash = new byte[DigestLength];
             byte[] pwBytes = Encoding.Unicode.GetBytes(password);
 
@@ -450,22 +434,17 @@ namespace System.Net
             offset += ChallengeLength + 4; // challengeLength + Z4
             serverInfo.CopyTo(blob.Slice(offset));
 
-            // We will prepend server chalenge for purpose of calculating NTProofStr
-            // It will be overriten later.
-            serverChallenge.CopyTo(blob.Slice(ChallengeLength, ChallengeLength));
-
-            Span<byte> NTProofStr = stackalloc byte[DigestLength];
-            HMACMD5 hmac = new HMACMD5(lm2Hash);
-            bool result = hmac.TryComputeHash(blob.Slice(ChallengeLength), NTProofStr, out int bytes);
-            if (!result || bytes != DigestLength)
-            {
-                return 0;
-            }
-
+            // Calculate NTProofStr
             // we created temp part in place where it needs to be.
             // now we need to prepend it with calculated hmac.
-            // Write first 16 bytes, overiding challengeLength part.
-            NTProofStr.CopyTo(blob);
+            // Write first 16 bytes, overriding challengeLength part.
+            using (var hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, lm2Hash))
+            {
+                hmac.AppendData(serverChallenge);
+                hmac.AppendData(blob.Slice(DigestLength));
+                hmac.GetHashAndReset(blob);
+            }
+
             SetField(ref field, blob.Length, sizeof(AuthenticateMessage));
 
             return blob.Length;
@@ -497,16 +476,12 @@ namespace System.Net
 
             Flags flags = (Flags)BinaryPrimitives.ReadInt32LittleEndian(asBytes.Slice((int)Marshal.OffsetOf(typeof(ChallengeMessage), "Flags"), 4));
             ReadOnlySpan<byte> targetName = GetField(challengeMessage[0].TargetName, asBytes);
-            /*if (Diag)
-            {
-                string target = Encoding.Unicode.GetString(targetName);
-                Console.WriteLine("Get challenge from '{0}' with 0x{1:x} ({2}) flags", target, flags, FlagsEnumToString<Flags>(flags));
-            }*/
 
             // Only NTLMv2 with MIC is supported
             //
             // NegotiateSign and NegotiateKeyExchange are necessary to calculate the key
             // that is used for MIC.
+            // TODO: Verify remaining flags (Unicode, etc.)
             if (((flags & Flags.NegotiateNtlm2) != Flags.NegotiateNtlm2) ||
                 ((flags & Flags.NegotiateTargetInfo) != Flags.NegotiateTargetInfo) ||
                 !flags.HasFlag(Flags.NegotiateSign) ||
@@ -534,11 +509,6 @@ namespace System.Net
                     {
                         break;
                     }
-
-                    /*if (Diag)
-                    {
-                        Console.WriteLine("Got ID {0} with {1} len", ID, length);
-                    }*/
 
                     if (ID == 7) // Timestamp
                     {
@@ -662,6 +632,7 @@ namespace System.Net
             _serverSeal = new RC4(DeriveKey(exportedSessionKey, ServerSealingKeyMagic));
             _clientSequenceNumber = 0;
             _serverSequenceNumber = 0;
+            CryptographicOperations.ZeroMemory(exportedSessionKey);
 
             Debug.Assert(payloadOffset == responseBytes.Length);
 
@@ -857,7 +828,7 @@ namespace System.Net
                                 {
                                     initialMachTypesWriter.WriteObjectIdentifier(NtlmOid);
                                 }
-                                byte[] initialMachTypes = writer1.Encode();
+                                byte[] initialMachTypes = initialMachTypesWriter.Encode();
 
                                 writer.WriteOctetString(GetMIC(initialMachTypes));
                             }
