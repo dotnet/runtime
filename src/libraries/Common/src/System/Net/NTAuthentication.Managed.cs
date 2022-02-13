@@ -240,7 +240,7 @@ namespace System.Net
         {
             if (isServer)
             {
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
             }
 
             if (package.Equals("NTLM", StringComparison.OrdinalIgnoreCase))
@@ -253,13 +253,18 @@ namespace System.Net
             }
             else
             {
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(SR.net_securitypackagesupport);
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"package={package}, spn={spn}, requestedContextFlags={requestedContextFlags}");
 
+            if (string.IsNullOrWhiteSpace(credential.UserName) || string.IsNullOrWhiteSpace(credential.Password))
+            {
+                // NTLM authentication is not possible with default credentials which are no-op
+                throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
+            }
+
             // TODO: requestedContextFlags
-            // TODO: Handle default credential
             _credential = credential;
             _spn = spn;
             _channelBinding = channelBinding;
@@ -302,6 +307,7 @@ namespace System.Net
             else
             {
                 Debug.Assert(decodedIncomingBlob != null);
+
                 IsCompleted = true;
                 decodedOutgoingBlob = _isSpNego ? ProcessSpNegoChallenge(decodedIncomingBlob) : ProcessChallenge(decodedIncomingBlob);
             }
@@ -367,6 +373,7 @@ namespace System.Net
             fixed (void* ptr = &field)
             {
                 Span<byte> span = new Span<byte>(ptr, sizeof(MessageField));
+                // TODO: Length validation!
                 BinaryPrimitives.WriteInt16LittleEndian(span, (short)length);
                 BinaryPrimitives.WriteInt16LittleEndian(span.Slice(2), (short)length);
                 BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), offset);
@@ -504,6 +511,7 @@ namespace System.Net
 
             // Target name (eg. HTTP/example.org)
             targetInfoBuffer[targetInfoOffset] = (byte)AvId.TargetName;
+            // TODO: Length validation
             BinaryPrimitives.WriteUInt16LittleEndian(targetInfoBuffer.AsSpan(2 + targetInfoOffset), (ushort)spnSize);
             if (_spn != null)
             {
