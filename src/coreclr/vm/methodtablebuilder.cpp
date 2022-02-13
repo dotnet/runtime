@@ -8578,9 +8578,9 @@ MethodTableBuilder::HandleExplicitLayout(
             // Look for any orefs or byrefs under this field
             BYTE *loc = NULL;
             BYTE* currOffset = pFieldLayout + pFD->GetOffset_NoLogging();
-            for (UINT j = 0; j < fieldSize; ++j)
+            BYTE* endOffset = currOffset + fieldSize;
+            for (; currOffset < endOffset; ++currOffset)
             {
-                currOffset += j;
                 if (*currOffset == oref || *currOffset == byref)
                 {
                     loc = currOffset;
