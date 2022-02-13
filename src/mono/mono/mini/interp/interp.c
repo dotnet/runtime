@@ -427,6 +427,15 @@ interp_free_context (gpointer ctx)
 	g_free (context);
 }
 
+static void
+check_pending_unwind (ThreadContext *context)
+{
+	if (context->pending_unwind) {
+		context->pending_unwind = FALSE;
+		mono_llvm_cpp_throw_exception ();
+	}
+}
+
 void
 mono_interp_error_cleanup (MonoError* error)
 {
@@ -2116,6 +2125,8 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 
 	context->stack_pointer = (guchar*)sp;
 
+	check_pending_unwind (context);
+
 	if (context->has_resume_state) {
 		/*
 		 * This can happen on wasm where native frames cannot be skipped during EH.
@@ -2217,6 +2228,8 @@ interp_entry (InterpEntryData *data)
 
 	if (rmethod->needs_thread_attach)
 		mono_threads_detach_coop (orig_domain, &attach_cookie);
+
+	check_pending_unwind (context);
 
 	if (mono_llvm_only) {
 		if (context->has_resume_state)
@@ -2640,9 +2653,17 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 			 */
 			return;
 		MonoJitTlsData *jit_tls = mono_get_jit_tls ();
-		if (jit_tls->resume_state.il_state)
-			/* Caught in an AOTed frame above us */
-			mono_llvm_cpp_throw_exception ();
+		if (jit_tls->resume_state.il_state) {
+			/*
+			 * This c++ exception is going to be caught by an AOTed frame above us.
+			 * We can't rethrow here, since that will skip the cleanup of the
+			 * interpreter stack space etc. So set a flag and the caller
+			 * will rethrow the exception.
+			 */
+			//mono_llvm_cpp_throw_exception ();
+			context->pending_unwind = TRUE;
+			return;
+		}
 		MonoObject *obj = mono_llvm_load_exception ();
 		g_assert (obj);
 		mono_llvm_clear_exception ();
@@ -2959,6 +2980,8 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 
 	if (rmethod->needs_thread_attach)
 		mono_threads_detach_coop (orig_domain, &attach_cookie);
+
+	check_pending_unwind (context);
 
 	/* Write back the return value */
 	/* 'frame' is still valid */
@@ -3495,6 +3518,8 @@ static long total_executed_opcodes;
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
  * to return error information.
  * FRAME is only valid until the next call to alloc_frame ().
+ * After the call, if context->pending_unwind is set, the caller should clean up then
+ * call mono_llvm_cpp_throw_exception () to continue unwinding.
  */
 static MONO_NEVER_INLINE void
 interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args)
@@ -3912,6 +3937,8 @@ main_loop:
 				frame->state.ip = ip;
 				error_init_reuse (error);
 				do_jit_call (context, (stackval*)(locals + return_offset), (stackval*)(locals + call_args_offset), frame, cmethod, error);
+				if (context->pending_unwind)
+					return;
 				if (!is_ok (error)) {
 					MonoException *ex = interp_error_convert_to_exception (frame, error, ip);
 					THROW_EX (ex, ip);
@@ -4013,6 +4040,8 @@ call:
 			/* for calls, have ip pointing at the start of next instruction */
 			frame->state.ip = ip + 4;
 			do_jit_call (context, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame, rmethod, error);
+			if (context->pending_unwind)
+				return;
 			if (!is_ok (error)) {
 				MonoException *ex = interp_error_convert_to_exception (frame, error, ip);
 				THROW_EX (ex, ip);
@@ -4031,6 +4060,8 @@ call:
 
 			frame->state.ip = ip + 6;
 			do_jit_call (context, (stackval*)(locals + ip [1]), frame, rmethod, error);
+			if (context->pending_unwind)
+				return;
 			if (!is_ok (error)) {
 				MonoException *ex = interp_error_convert_to_exception (frame, error);
 				THROW_EX (ex, ip);
@@ -7342,6 +7373,9 @@ interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip
 
 	iframe->next_free = next_free;
 	iframe->state.ip = state_ip;
+
+	check_pending_unwind (context);
+
 	if (context->has_resume_state) {
 		return TRUE;
 	} else {
@@ -7392,6 +7426,8 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 	memcpy (iframe->stack, child_frame.stack, iframe->imethod->locals_size);
 
 	context->stack_pointer = (guchar*)child_frame.stack;
+
+	check_pending_unwind (context);
 
 	/* ENDFILTER stores the result into child_frame->retval */
 	return retval.data.i ? TRUE : FALSE;
@@ -7518,6 +7554,8 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, gpoint
 
 	memset (orig_sp, 0, (guint8*)context->stack_pointer - (guint8*)orig_sp);
 	context->stack_pointer = (guchar*)orig_sp;
+
+	check_pending_unwind (context);
 
 	if (context->has_resume_state)
 		return TRUE;

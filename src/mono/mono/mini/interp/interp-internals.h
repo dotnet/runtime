@@ -231,6 +231,8 @@ typedef struct {
 	guchar *stack_pointer;
 	/* Used for allocation of localloc regions */
 	FrameDataAllocator data_stack;
+	/* Whenever to unwind from interpreter code back to the caller */
+	gboolean pending_unwind;
 } ThreadContext;
 
 typedef struct {
