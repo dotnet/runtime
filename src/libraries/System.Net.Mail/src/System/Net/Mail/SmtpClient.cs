@@ -413,7 +413,7 @@ namespace System.Net.Mail
             Send(mailMessage);
         }
 
-        public void Send(MailMessage message)
+        public void Send(MailMessage message!!)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -428,11 +428,6 @@ namespace System.Net.Mail
             if (InCall)
             {
                 throw new InvalidOperationException(SR.net_inasync);
-            }
-
-            if (message == null)
-            {
-                throw new ArgumentNullException(nameof(message));
             }
 
             if (DeliveryMethod == SmtpDeliveryMethod.Network)
@@ -563,7 +558,6 @@ namespace System.Net.Mail
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-
             try
             {
                 if (InCall)
@@ -571,10 +565,7 @@ namespace System.Net.Mail
                     throw new InvalidOperationException(SR.net_inasync);
                 }
 
-                if (message == null)
-                {
-                    throw new ArgumentNullException(nameof(message));
-                }
+                ArgumentNullException.ThrowIfNull(message);
 
                 if (DeliveryMethod == SmtpDeliveryMethod.Network)
                     CheckHostAndPort();

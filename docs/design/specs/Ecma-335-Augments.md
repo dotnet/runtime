@@ -453,7 +453,7 @@ https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 
 (Add second paragraph)
 
-Static interface methods may be marked as virtual. Valid object types implementing such interfaces shall provide implementations
+Static interface methods may be marked as virtual. Valid object types implementing such interfaces may provide implementations
 for these methods by means of Method Implementations (II.15.1.4). Polymorphic behavior of calls to these methods is facilitated
 by the constrained. call IL instruction where the constrained. prefix specifies the type to use for lookup of the static interface
 method.
@@ -531,7 +531,6 @@ or static method actually implemented directly on the type.
 (Add to the end of the 1st paragraph)
 
 Interfaces may define static virtual methods that get resolved at runtime based on actual types involved.
-These static virtual methods must be marked as abstract in the defining interfaces.
 
 ### II.12.2 Implementing virtual methods on interfaces
 
@@ -754,7 +753,7 @@ the call itself doesn't involve any instance or `this` pointer.
 (Edit bulleted section "This contains informative text only" starting at the bottom of page
 233):
 
-Edit section *7.b*: Static | Virtual | !Abstract
+Remove section *7.b*: ~~Static | Virtual~~
 
 (Add new section 41 after the last section 40:)
 

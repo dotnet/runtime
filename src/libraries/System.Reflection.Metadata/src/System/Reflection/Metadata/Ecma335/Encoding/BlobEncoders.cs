@@ -12,13 +12,8 @@ namespace System.Reflection.Metadata.Ecma335
     {
         public BlobBuilder Builder { get; }
 
-        public BlobEncoder(BlobBuilder builder)
+        public BlobEncoder(BlobBuilder builder!!)
         {
-            if (builder == null)
-            {
-                Throw.BuilderArgumentNull();
-            }
-
             Builder = builder;
         }
 
@@ -114,11 +109,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="fixedArguments">Called first, to encode fixed arguments.</param>
         /// <param name="namedArguments">Called second, to encode named arguments.</param>
         /// <exception cref="ArgumentNullException"><paramref name="fixedArguments"/> or <paramref name="namedArguments"/> is null.</exception>
-        public void CustomAttributeSignature(Action<FixedArgumentsEncoder> fixedArguments, Action<CustomAttributeNamedArgumentsEncoder> namedArguments)
+        public void CustomAttributeSignature(Action<FixedArgumentsEncoder> fixedArguments!!, Action<CustomAttributeNamedArgumentsEncoder> namedArguments!!)
         {
-            if (fixedArguments == null) Throw.ArgumentNull(nameof(fixedArguments));
-            if (namedArguments == null) Throw.ArgumentNull(nameof(namedArguments));
-
             FixedArgumentsEncoder fixedArgumentsEncoder;
             CustomAttributeNamedArgumentsEncoder namedArgumentsEncoder;
             CustomAttributeSignature(out fixedArgumentsEncoder, out namedArgumentsEncoder);
@@ -228,11 +220,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="returnType">Called first, to encode the return type.</param>
         /// <param name="parameters">Called second, to encode the actual parameters.</param>
         /// <exception cref="ArgumentNullException"><paramref name="returnType"/> or <paramref name="parameters"/> is null.</exception>
-        public void Parameters(int parameterCount, Action<ReturnTypeEncoder> returnType, Action<ParametersEncoder> parameters)
+        public void Parameters(int parameterCount, Action<ReturnTypeEncoder> returnType!!, Action<ParametersEncoder> parameters!!)
         {
-            if (returnType == null) Throw.ArgumentNull(nameof(returnType));
-            if (parameters == null) Throw.ArgumentNull(nameof(parameters));
-
             ReturnTypeEncoder returnTypeEncoder;
             ParametersEncoder parametersEncoder;
             Parameters(parameterCount, out returnTypeEncoder, out parametersEncoder);
@@ -330,13 +319,8 @@ namespace System.Reflection.Metadata.Ecma335
             Builder = builder;
         }
 
-        public PermissionSetEncoder AddPermission(string typeName, ImmutableArray<byte> encodedArguments)
+        public PermissionSetEncoder AddPermission(string typeName!!, ImmutableArray<byte> encodedArguments)
         {
-            if (typeName == null)
-            {
-                Throw.ArgumentNull(nameof(typeName));
-            }
-
             if (encodedArguments.IsDefault)
             {
                 Throw.ArgumentNull(nameof(encodedArguments));
@@ -353,18 +337,8 @@ namespace System.Reflection.Metadata.Ecma335
             return this;
         }
 
-        public PermissionSetEncoder AddPermission(string typeName, BlobBuilder encodedArguments)
+        public PermissionSetEncoder AddPermission(string typeName!!, BlobBuilder encodedArguments!!)
         {
-            if (typeName == null)
-            {
-                Throw.ArgumentNull(nameof(typeName));
-            }
-
-            if (encodedArguments == null)
-            {
-                Throw.ArgumentNull(nameof(encodedArguments));
-            }
-
             if (encodedArguments.Count > BlobWriterImpl.MaxCompressedIntegerValue)
             {
                 Throw.BlobTooLarge(nameof(encodedArguments));
@@ -439,11 +413,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="arrayType">Called first, to encode the type of the vector.</param>
         /// <param name="vector">Called second, to encode the items of the vector.</param>
         /// <exception cref="ArgumentNullException"><paramref name="arrayType"/> or <paramref name="vector"/> is null.</exception>
-        public void TaggedVector(Action<CustomAttributeArrayTypeEncoder> arrayType, Action<VectorEncoder> vector)
+        public void TaggedVector(Action<CustomAttributeArrayTypeEncoder> arrayType!!, Action<VectorEncoder> vector!!)
         {
-            if (arrayType == null) Throw.ArgumentNull(nameof(arrayType));
-            if (vector == null) Throw.ArgumentNull(nameof(vector));
-
             CustomAttributeArrayTypeEncoder arrayTypeEncoder;
             VectorEncoder vectorEncoder;
             TaggedVector(out arrayTypeEncoder, out vectorEncoder);
@@ -478,11 +449,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="type">Called first, to encode the type of the literal.</param>
         /// <param name="scalar">Called second, to encode the value of the literal.</param>
         /// <exception cref="ArgumentNullException"><paramref name="type"/> or <paramref name="scalar"/> is null.</exception>
-        public void TaggedScalar(Action<CustomAttributeElementTypeEncoder> type, Action<ScalarEncoder> scalar)
+        public void TaggedScalar(Action<CustomAttributeElementTypeEncoder> type!!, Action<ScalarEncoder> scalar!!)
         {
-            if (type == null) Throw.ArgumentNull(nameof(type));
-            if (scalar == null) Throw.ArgumentNull(nameof(scalar));
-
             CustomAttributeElementTypeEncoder typeEncoder;
             ScalarEncoder scalarEncoder;
             TaggedScalar(out typeEncoder, out scalarEncoder);
@@ -608,9 +576,8 @@ namespace System.Reflection.Metadata.Ecma335
             Builder = builder;
         }
 
-        public void Name(string name)
+        public void Name(string name!!)
         {
-            if (name == null) Throw.ArgumentNull(nameof(name));
             if (name.Length == 0) Throw.ArgumentEmptyString(nameof(name));
 
             Builder.WriteSerializedString(name);
@@ -671,12 +638,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="name">Called second, to encode the name of the field or property.</param>
         /// <param name="literal">Called third, to encode the literal value of the argument.</param>
         /// <exception cref="ArgumentNullException"><paramref name="type"/>, <paramref name="name"/> or <paramref name="literal"/> is null.</exception>
-        public void AddArgument(bool isField, Action<NamedArgumentTypeEncoder> type, Action<NameEncoder> name, Action<LiteralEncoder> literal)
+        public void AddArgument(bool isField, Action<NamedArgumentTypeEncoder> type!!, Action<NameEncoder> name!!, Action<LiteralEncoder> literal!!)
         {
-            if (type == null) Throw.ArgumentNull(nameof(type));
-            if (name == null) Throw.ArgumentNull(nameof(name));
-            if (literal == null) Throw.ArgumentNull(nameof(literal));
-
             NamedArgumentTypeEncoder typeEncoder;
             NameEncoder nameEncoder;
             LiteralEncoder literalEncoder;
@@ -793,9 +756,8 @@ namespace System.Reflection.Metadata.Ecma335
             WriteTypeCode(SerializationTypeCode.Type);
         }
 
-        public void Enum(string enumTypeName)
+        public void Enum(string enumTypeName!!)
         {
-            if (enumTypeName == null) Throw.ArgumentNull(nameof(enumTypeName));
             if (enumTypeName.Length == 0) Throw.ArgumentEmptyString(nameof(enumTypeName));
 
             WriteTypeCode(SerializationTypeCode.Enum);
@@ -894,11 +856,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="elementType">Called first, to encode the type of the element.</param>
         /// <param name="arrayShape">Called second, to encode the shape of the array.</param>
         /// <exception cref="ArgumentNullException"><paramref name="elementType"/> or <paramref name="arrayShape"/> is null.</exception>
-        public void Array(Action<SignatureTypeEncoder> elementType, Action<ArrayShapeEncoder> arrayShape)
+        public void Array(Action<SignatureTypeEncoder> elementType!!, Action<ArrayShapeEncoder> arrayShape!!)
         {
-            if (elementType == null) Throw.ArgumentNull(nameof(elementType));
-            if (arrayShape == null) Throw.ArgumentNull(nameof(arrayShape));
-
             SignatureTypeEncoder elementTypeEncoder;
             ArrayShapeEncoder arrayShapeEncoder;
             Array(out elementTypeEncoder, out arrayShapeEncoder);

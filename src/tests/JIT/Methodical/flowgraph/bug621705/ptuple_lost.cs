@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+namespace Test_ptuple_lost
+{
 internal class A
 {
     public static int Main()
@@ -25,4 +27,5 @@ internal class A
             return 101;
         }
     }
+}
 }

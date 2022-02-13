@@ -74,7 +74,7 @@ namespace System.Reflection.Emit
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;
-        private bool is_byreflike_set;
+        private int is_byreflike_set;
 
         private int state;
 #endregion
@@ -145,7 +145,7 @@ namespace System.Reflection.Emit
                 this.parent = typeof(object);
 
             // skip .<Module> ?
-            table_idx = mb.get_next_table_index(this, 0x02, 1);
+            table_idx = mb.get_next_table_index(0x02, 1);
             this.fullname = GetFullName();
         }
 
@@ -1534,7 +1534,7 @@ namespace System.Reflection.Emit
             }
             else if (attrname == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
             {
-                is_byreflike_set = true;
+                is_byreflike_set = 1;
             }
 
             if (cattrs != null)
@@ -1641,9 +1641,9 @@ namespace System.Reflection.Emit
             this.parent = ResolveUserType(this.parent);
         }
 
-        internal int get_next_table_index(object obj, int table, int count)
+        internal int get_next_table_index(int table, int count)
         {
-            return pmodule.get_next_table_index(obj, table, count);
+            return pmodule.get_next_table_index(table, count);
         }
 
         [ComVisible(true)]

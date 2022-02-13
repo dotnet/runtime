@@ -175,10 +175,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Need to verify the status description doesn't contain any control characters except HT.  We mask off the high
                 // byte since that's how it's encoded.
@@ -207,12 +204,8 @@ namespace System.Net
             Headers.Add(name, value);
         }
 
-        public void AppendCookie(Cookie cookie)
+        public void AppendCookie(Cookie cookie!!)
         {
-            if (cookie == null)
-            {
-                throw new ArgumentNullException(nameof(cookie));
-            }
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"cookie: {cookie}");
             Cookies.Add(cookie);
         }
@@ -274,13 +267,8 @@ namespace System.Net
             StatusDescription = HttpStatusDescription.Get(StatusCode)!;
         }
 
-        public void SetCookie(Cookie cookie)
+        public void SetCookie(Cookie cookie!!)
         {
-            if (cookie == null)
-            {
-                throw new ArgumentNullException(nameof(cookie));
-            }
-
             Cookie newCookie = cookie.Clone();
             int added = Cookies.InternalAdd(newCookie, true);
 

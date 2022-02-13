@@ -33,19 +33,18 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"\b", "Hello World!", RegexOptions.None, 0, 0, new string[] { "", "Hello", " ", "World", "!" } };
                 yield return new object[] { engine, @"^", "Hello \nWorld!", RegexOptions.None | RegexOptions.Multiline, 0, 0, new string[] { "", "Hello \n", "World!" } };
                 yield return new object[] { engine, @"$", "Hello \nWorld!", RegexOptions.None | RegexOptions.Multiline, 0, 0, new string[] { "Hello ", "\nWorld!", "" } };
+                yield return new object[] { engine, @"(\s)?(-)", "once -upon-a time", RegexOptions.None, 17, 0, new string[] { "once", " ", "-", "upon", "-", "a time" } };
+                yield return new object[] { engine, @"(\s)?(-)", "once upon a time", RegexOptions.None, 16, 0, new string[] { "once upon a time" } };
+                yield return new object[] { engine, @"(\s)?(-)", "once - -upon- a- time", RegexOptions.None, 21, 0, new string[] { "once", " ", "-", "", " ", "-", "upon", "-", " a", "-", " time" } };
+
+                yield return new object[] { engine, "a(.)c(.)e", "123abcde456aBCDe789", RegexOptions.None, 19, 0, new string[] { "123", "b", "d", "456aBCDe789" } };
+                yield return new object[] { engine, "a(.)c(.)e", "123abcde456aBCDe789", RegexOptions.IgnoreCase, 19, 0, new string[] { "123", "b", "d", "456", "B", "D", "789" } };
+
+                yield return new object[] { engine, "a(?<dot1>.)c(.)e", "123abcde456aBCDe789", RegexOptions.None, 19, 0, new string[] { "123", "d", "b", "456aBCDe789" } };
+                yield return new object[] { engine, "a(?<dot1>.)c(.)e", "123abcde456aBCDe789", RegexOptions.IgnoreCase, 19, 0, new string[] { "123", "d", "b", "456", "D", "B", "789" } };
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, @"(\s)?(-)", "once -upon-a time", RegexOptions.None, 17, 0, new string[] { "once", " ", "-", "upon", "-", "a time" } };
-                    yield return new object[] { engine, @"(\s)?(-)", "once upon a time", RegexOptions.None, 16, 0, new string[] { "once upon a time" } };
-                    yield return new object[] { engine, @"(\s)?(-)", "once - -upon- a- time", RegexOptions.None, 21, 0, new string[] { "once", " ", "-", "", " ", "-", "upon", "-", " a", "-", " time" } };
-
-                    yield return new object[] { engine, "a(.)c(.)e", "123abcde456aBCDe789", RegexOptions.None, 19, 0, new string[] { "123", "b", "d", "456aBCDe789" } };
-                    yield return new object[] { engine, "a(.)c(.)e", "123abcde456aBCDe789", RegexOptions.IgnoreCase, 19, 0, new string[] { "123", "b", "d", "456", "B", "D", "789" } };
-
-                    yield return new object[] { engine, "a(?<dot1>.)c(.)e", "123abcde456aBCDe789", RegexOptions.None, 19, 0, new string[] { "123", "d", "b", "456aBCDe789" } };
-                    yield return new object[] { engine, "a(?<dot1>.)c(.)e", "123abcde456aBCDe789", RegexOptions.IgnoreCase, 19, 0, new string[] { "123", "d", "b", "456", "D", "B", "789" } };
-
                     // RightToLeft
                     yield return new object[] { engine, "", "", RegexOptions.RightToLeft, 0, 0, new string[] { "", "" } };
                     yield return new object[] { engine, "123", "abc", RegexOptions.RightToLeft, 3, 0, new string[] { "abc" } };
@@ -65,28 +64,6 @@ namespace System.Text.RegularExpressions.Tests
 
                     // Anchors
                     yield return new object[] { engine, @"(?<=\G..)(?=..)", "aabbccdd", RegexOptions.None, 8, 0, new string[] { "aa", "bb", "cc", "dd" } };
-                }
-
-                if (RegexHelpers.IsNonBacktracking(engine))
-                {
-                    // RegexOptions.NonBacktracking also ignores named captures as if they were not given
-                    yield return new object[] { engine, "a(?<dot1>.)c(.)e", "123abcde456aBCDe789", RegexOptions.None, 19, 0, new string[] { "123", "456aBCDe789" } };
-                    yield return new object[] { engine, "a(?<dot1>.)c(.)e", "123abcde456aBCDe789", RegexOptions.IgnoreCase, 19, 0, new string[] { "123", "456", "789" } };
-                }
-
-                // RegexOptions.NonBacktracking is similar to RegexOptions.ExplicitCapture when there are no explicit capture names because NonBacktracking does not support captures
-                // This is the reason for including the RegexOptions.ExplicitCapture options also to check that the results are the same in this case
-                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.ExplicitCapture })
-                {
-                    if (options != RegexOptions.None || RegexHelpers.IsNonBacktracking(engine))
-                    {
-                        yield return new object[] { engine, @"(\s)?(-)", "once -upon-a time", options, 17, 0, new string[] { "once", "upon", "a time" } };
-                        yield return new object[] { engine, @"(\s)?(-)", "once upon a time", options, 16, 0, new string[] { "once upon a time" } };
-                        yield return new object[] { engine, @"(\s)?(-)", "once - -upon- a- time", options, 21, 0, new string[] { "once", "", "upon", " a", " time" } };
-                        yield return new object[] { engine, "a(.)c(.)e", "123abcde456aBCDe789", options, 19, 0, new string[] { "123", "456aBCDe789" } };
-                        yield return new object[] { engine, "a.c.e", "123abcde456aBCDe789", options, 19, 0, new string[] { "123", "456aBCDe789" } };
-                        yield return new object[] { engine, "a.c.e", "123abcde456aBCDe789", options | RegexOptions.IgnoreCase, 19, 0, new string[] { "123", "456", "789" } };
-                    }
                 }
             }
         }

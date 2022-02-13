@@ -103,16 +103,16 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
-                iv: null,
+            ILiteSymmetricCipher cipher = _core.CreateLiteSymmetricCipher(
+                iv: default,
                 encrypting: false,
                 paddingMode,
                 CipherMode.ECB,
                 feedbackSizeInBits: 0);
 
-            using (transform)
+            using (cipher)
             {
-                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+                return UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
             }
         }
 
@@ -122,16 +122,16 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
-                iv: null,
+            ILiteSymmetricCipher cipher = _core.CreateLiteSymmetricCipher(
+                iv: default,
                 encrypting: true,
                 paddingMode,
                 CipherMode.ECB,
                 feedbackSizeInBits: 0);
 
-            using (transform)
+            using (cipher)
             {
-                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+                return UniversalCryptoOneShot.OneShotEncrypt(cipher, paddingMode, plaintext, destination, out bytesWritten);
             }
         }
 
@@ -142,16 +142,16 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
-                iv: iv.ToArray(),
+            ILiteSymmetricCipher cipher = _core.CreateLiteSymmetricCipher(
+                iv,
                 encrypting: true,
                 paddingMode,
                 CipherMode.CBC,
                 feedbackSizeInBits: 0);
 
-            using (transform)
+            using (cipher)
             {
-                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+                return UniversalCryptoOneShot.OneShotEncrypt(cipher, paddingMode, plaintext, destination, out bytesWritten);
             }
         }
 
@@ -162,16 +162,16 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
-                iv: iv.ToArray(),
+            ILiteSymmetricCipher cipher = _core.CreateLiteSymmetricCipher(
+                iv,
                 encrypting: false,
                 paddingMode,
                 CipherMode.CBC,
                 feedbackSizeInBits: 0);
 
-            using (transform)
+            using (cipher)
             {
-                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+                return UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
             }
         }
 
@@ -183,16 +183,16 @@ namespace System.Security.Cryptography
             int feedbackSizeInBits,
             out int bytesWritten)
         {
-            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
-                iv: iv.ToArray(),
+            ILiteSymmetricCipher cipher = _core.CreateLiteSymmetricCipher(
+                iv,
                 encrypting: false,
                 paddingMode,
                 CipherMode.CFB,
                 feedbackSizeInBits);
 
-            using (transform)
+            using (cipher)
             {
-                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+                return UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
             }
         }
 
@@ -204,16 +204,16 @@ namespace System.Security.Cryptography
             int feedbackSizeInBits,
             out int bytesWritten)
         {
-            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
-                iv: iv.ToArray(),
+            ILiteSymmetricCipher cipher = _core.CreateLiteSymmetricCipher(
+                iv,
                 encrypting: true,
                 paddingMode,
                 CipherMode.CFB,
                 feedbackSizeInBits);
 
-            using (transform)
+            using (cipher)
             {
-                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+                return UniversalCryptoOneShot.OneShotEncrypt(cipher, paddingMode, plaintext, destination, out bytesWritten);
             }
         }
 

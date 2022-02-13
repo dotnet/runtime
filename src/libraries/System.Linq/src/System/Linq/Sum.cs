@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace System.Linq
 {
@@ -9,17 +10,19 @@ namespace System.Linq
     {
         public static int Sum(this IEnumerable<int> source)
         {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
             int sum = 0;
-            checked
+            if (source.TryGetSpan(out ReadOnlySpan<int> span))
+            {
+                foreach (int v in span)
+                {
+                    checked { sum += v; }
+                }
+            }
+            else
             {
                 foreach (int v in source)
                 {
-                    sum += v;
+                    checked { sum += v; }
                 }
             }
 
@@ -50,17 +53,19 @@ namespace System.Linq
 
         public static long Sum(this IEnumerable<long> source)
         {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
             long sum = 0;
-            checked
+            if (source.TryGetSpan(out ReadOnlySpan<long> span))
+            {
+                foreach (long v in span)
+                {
+                    checked { sum += v; }
+                }
+            }
+            else
             {
                 foreach (long v in source)
                 {
-                    sum += v;
+                    checked { sum += v; }
                 }
             }
 
@@ -91,9 +96,9 @@ namespace System.Linq
 
         public static float Sum(this IEnumerable<float> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<float> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                return (float)Sum(span);
             }
 
             double sum = 0;
@@ -103,6 +108,18 @@ namespace System.Linq
             }
 
             return (float)sum;
+        }
+
+        private static double Sum(ReadOnlySpan<float> span)
+        {
+            double sum = 0;
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                sum += span[i];
+            }
+
+            return sum;
         }
 
         public static float? Sum(this IEnumerable<float?> source)
@@ -126,15 +143,27 @@ namespace System.Linq
 
         public static double Sum(this IEnumerable<double> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<double> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                return Sum(span);
             }
 
             double sum = 0;
-            foreach (double v in source)
+            foreach (double d in source)
             {
-                sum += v;
+                sum += d;
+            }
+
+            return sum;
+        }
+
+        private static double Sum(ReadOnlySpan<double> span)
+        {
+            double sum = 0;
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                sum += span[i];
             }
 
             return sum;
@@ -161,17 +190,27 @@ namespace System.Linq
 
         public static decimal Sum(this IEnumerable<decimal> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<decimal> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                return Sum(span);
             }
 
             decimal sum = 0;
-            foreach (decimal v in source)
+            foreach (decimal d in source)
             {
-                sum += v;
+                sum += d;
             }
 
+            return sum;
+        }
+
+        private static decimal Sum(ReadOnlySpan<decimal> span)
+        {
+            decimal sum = 0;
+            foreach (decimal d in span)
+            {
+                sum += d;
+            }
             return sum;
         }
 

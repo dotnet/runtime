@@ -16,8 +16,6 @@ namespace Microsoft.Interop
 
         public const string GeneratedMarshallingAttribute = "System.Runtime.InteropServices.GeneratedMarshallingAttribute";
 
-        public const string BlittableTypeAttribute = "System.Runtime.InteropServices.BlittableTypeAttribute";
-
         public const string NativeMarshallingAttribute = "System.Runtime.InteropServices.NativeMarshallingAttribute";
 
         public const string MarshalUsingAttribute = "System.Runtime.InteropServices.MarshalUsingAttribute";
@@ -75,5 +73,7 @@ namespace Microsoft.Interop
         {
             return options.UseInternalUnsafeType ? Internal_Runtime_CompilerServices_Unsafe : System_Runtime_CompilerServices_Unsafe;
         }
+
+        public const string System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute = "System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute";
     }
 }

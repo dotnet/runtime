@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using Xunit;
-using System.Threading;
+using Xunit.Sdk;
 
 namespace DebuggerTests
 {
@@ -294,11 +293,12 @@ namespace DebuggerTests
         }
 
         [Fact]
-        [Trait("Category", "windows-failing")] // https://github.com/dotnet/runtime/issues/62823
-        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/62823
         public async Task BreakpointInAssemblyUsingTypeFromAnotherAssembly_BothDynamicallyLoaded()
         {
             int line = 7;
+
+            // Start the task earlier than loading the assemblies, so we don't miss the event
+            Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             await SetBreakpoint(".*/library-dependency-debugger-test1.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
                     Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test2.dll"),
@@ -309,6 +309,8 @@ namespace DebuggerTests
 
             var source_location = "dotnet://library-dependency-debugger-test1.dll/library-dependency-debugger-test1.cs";
             Assert.Contains(source_location, scripts.Values);
+
+            await bpResolved;
 
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[library-dependency-debugger-test1] TestDependency:IntAdd', 5, 10); }, 1);",
