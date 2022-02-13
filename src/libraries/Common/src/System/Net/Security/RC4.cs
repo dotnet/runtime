@@ -56,10 +56,7 @@ namespace System.Net.Security
             for (int counter = 0; counter < 256; counter++)
             {
                 index2 = (byte)(key[index1] + state[counter] + index2);
-                // swap byte
-                byte tmp = state[counter];
-                state[counter] = state[index2];
-                state[index2] = tmp;
+                (state[counter], state[index2]) = (state[index2], state[counter]);
                 index1 = (byte)((index1 + 1) % key.Length);
             }
         }
@@ -76,7 +73,7 @@ namespace System.Net.Security
             }
         }
 
-        internal void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+        public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
             Debug.Assert(input.Length == output.Length);
             Debug.Assert(state != null);
@@ -85,10 +82,7 @@ namespace System.Net.Security
             {
                 x = (byte)(x + 1);
                 y = (byte)(state[x] + y);
-                // swap byte
-                byte tmp = state[x];
-                state[x] = state[y];
-                state[y] = tmp;
+                (state[x], state[y]) = (state[y], state[x]);
                 byte xorIndex = (byte)(state[x] + state[y]);
                 output[counter] = (byte)(input[counter] ^ state[xorIndex]);
             }

@@ -29,11 +29,25 @@ namespace System.Net
 
         // State parameters
         private byte[]? _negotiateMessage;
+        private byte[]? _clientSigningKey;
+        private byte[]? _serverSigningKey;
+        private RC4? _clientSeal;
+        private RC4? _serverSeal;
+        private uint _clientSequenceNumber;
+        private uint _serverSequenceNumber;
         public bool IsCompleted { get; set; }
 
         private static ReadOnlySpan<byte> NtlmHeader => new byte[] {
             (byte)'N', (byte)'T', (byte)'L', (byte)'M',
             (byte)'S', (byte)'S', (byte)'P', 0 };
+
+        private static byte[] ClientSigningKeyMagic = Encoding.ASCII.GetBytes("session key to client-to-server signing key magic constant\0");
+
+        private static byte[] ServerSigningKeyMagic = Encoding.ASCII.GetBytes("session key to server-to-client signing key magic constant\0");
+
+        private static byte[] ClientSealingKeyMagic = Encoding.ASCII.GetBytes("session key to client-to-server sealing key magic constant\0");
+
+        private static byte[] ServerSealingKeyMagic = Encoding.ASCII.GetBytes("session key to server-to-client sealing key magic constant\0");
 
         private static readonly byte[] s_workstation = Encoding.Unicode.GetBytes(Environment.MachineName);
 
@@ -46,6 +60,7 @@ namespace System.Net
         private const int DigestLength = 16;
 
         private const int SessionKeyLength = 16;
+        private const int SignatureLength = 16;
 
         private const string SpnegoOid = "1.3.6.1.5.5.2";
 
@@ -203,7 +218,7 @@ namespace System.Net
             AcceptCompleted = 0,
             AcceptIncomplete = 1,
             Reject = 2,
-            RequiestMic = 3
+            RequestMic = 3
         }
 
         internal NTAuthentication(bool isServer, string package, NetworkCredential credential, string? spn, ContextFlagsPal requestedContextFlags, ChannelBinding? channelBinding)
@@ -261,7 +276,6 @@ namespace System.Net
             else
             {
                 Debug.Assert(decodedIncomingBlob != null);
-                // TODO: Is this correct for SpNego?
                 IsCompleted = true;
                 decodedOutgoingBlob = _isSpNego ? ProcessSpNegoChallenge(decodedIncomingBlob) : ProcessChallenge(decodedIncomingBlob);
             }
@@ -368,10 +382,11 @@ namespace System.Net
             offset += data.Length;
         }
 
-        private static void AddToPayload(ref MessageField field, string data, Span<byte> payload, ref int offset)
+        private static void AddToPayload(ref MessageField field, ReadOnlySpan<char> data, Span<byte> payload, ref int offset)
         {
-            byte[] bytes = Encoding.Unicode.GetBytes(data);
-            AddToPayload(ref field, bytes, payload, ref offset);
+            int dataLength = Encoding.Unicode.GetBytes(data, payload.Slice(offset));
+            SetField(ref field, dataLength, offset);
+            offset += dataLength;
         }
 
         // Section 3.3.2
@@ -454,6 +469,17 @@ namespace System.Net
             SetField(ref field, blob.Length, sizeof(AuthenticateMessage));
 
             return blob.Length;
+        }
+
+        // Section 3.4.5.2 SIGNKEY, 3.4.5.3 SEALKEY
+        private byte[] DeriveKey(ReadOnlySpan<byte> exportedSessionKey, ReadOnlySpan<byte> magic)
+        {
+            using (var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5))
+            {
+                md5.AppendData(exportedSessionKey);
+                md5.AppendData(magic);
+                return md5.GetHashAndReset();
+            }
         }
 
         // This gets decoded byte blob and returns response in binary form.
@@ -629,9 +655,66 @@ namespace System.Net
                     hmacMic.GetHashAndReset(new Span<byte>(mic, 16));
             }
 
+            // Derive signing keys
+            _clientSigningKey = DeriveKey(exportedSessionKey, ClientSigningKeyMagic);
+            _serverSigningKey = DeriveKey(exportedSessionKey, ServerSigningKeyMagic);
+            _clientSeal = new RC4(DeriveKey(exportedSessionKey, ClientSealingKeyMagic));
+            _serverSeal = new RC4(DeriveKey(exportedSessionKey, ServerSealingKeyMagic));
+            _clientSequenceNumber = 0;
+            _serverSequenceNumber = 0;
+
             Debug.Assert(payloadOffset == responseBytes.Length);
 
             return responseBytes;
+        }
+
+        private void CalculateSignature(
+            ReadOnlySpan<byte> message,
+            uint sequenceNumber,
+            ReadOnlySpan<byte> signingKey,
+            RC4 seal,
+            Span<byte> signature)
+        {
+            BinaryPrimitives.WriteInt32LittleEndian(signature, 1);
+            BinaryPrimitives.WriteUInt32LittleEndian(signature.Slice(12), _serverSequenceNumber);
+            using (var hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, signingKey))
+            {
+                hmac.AppendData(signature.Slice(12, 4));
+                hmac.AppendData(message);
+                Span<byte> hmacResult = stackalloc byte[hmac.HashLengthInBytes];
+                hmac.GetHashAndReset(hmacResult);
+                seal.Transform(hmacResult.Slice(0, 8), signature.Slice(4, 8));
+            }
+        }
+
+        private bool VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
+        {
+            // Check length and version
+            if (signature.Length != SignatureLength ||
+                BinaryPrimitives.ReadInt32LittleEndian(signature) != 1 ||
+                _serverSeal == null ||
+                _serverSigningKey == null)
+            {
+                return false;
+            }
+
+            Span<byte> expectedSignature = stackalloc byte[SignatureLength];
+            CalculateSignature(message, _serverSequenceNumber, _serverSigningKey, _serverSeal, expectedSignature);
+
+            _serverSequenceNumber++;
+
+            return signature.SequenceEqual(expectedSignature);
+        }
+
+        private byte[] GetMIC(ReadOnlySpan<byte> message)
+        {
+            Debug.Assert(_clientSeal != null);
+            Debug.Assert(_clientSigningKey != null);
+
+            byte[] signature = new byte[SignatureLength];
+            CalculateSignature(message, _clientSequenceNumber, _clientSigningKey, _clientSeal, signature);
+            _clientSequenceNumber++;
+            return signature;
         }
 
         private unsafe byte[] CreateSpNegoNegotiateMessage(ReadOnlySpan<byte> ntlmNegotiateMessage)
@@ -760,9 +843,24 @@ namespace System.Net
                     using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenResp)))
                     {
                         using (writer.PushSequence())
-                        using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechToken)))
                         {
-                            writer.WriteOctetString(response);
+                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechToken)))
+                            {
+                                writer.WriteOctetString(response);
+                            }
+
+                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechListMIC)))
+                            {
+                                // TODO: Save this or extract it from CreateSpNegoNegotiateMessage
+                                AsnWriter initialMachTypesWriter = new AsnWriter(AsnEncodingRules.DER);
+                                using (initialMachTypesWriter.PushSequence())
+                                {
+                                    initialMachTypesWriter.WriteObjectIdentifier(NtlmOid);
+                                }
+                                byte[] initialMachTypes = writer1.Encode();
+
+                                writer.WriteOctetString(GetMIC(initialMachTypes));
+                            }
                         }
                     }
 
