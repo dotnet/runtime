@@ -101,6 +101,21 @@ namespace System.Net
             Negotiate56 = 0x80000000,
         }
 
+        private enum AvId
+        {
+            EOL,
+            NbComputerName,
+            NbDomainName,
+            DnsComputerName,
+            DnsDomainName,
+            DnsTreeName,
+            Flags,
+            Timestamp,
+            SingleHost,
+            TargetName,
+            ChannelBindings,
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private unsafe struct MessageField
         {
@@ -437,7 +452,6 @@ namespace System.Net
             // Calculate NTProofStr
             // we created temp part in place where it needs to be.
             // now we need to prepend it with calculated hmac.
-            // Write first 16 bytes, overriding challengeLength part.
             using (var hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, lm2Hash))
             {
                 hmac.AppendData(serverChallenge);
@@ -448,6 +462,75 @@ namespace System.Net
             SetField(ref field, blob.Length, sizeof(AuthenticateMessage));
 
             return blob.Length;
+        }
+
+        private byte[] ProcessTargetInfo(ReadOnlySpan<byte> targetInfo, out DateTime time)
+        {
+            int spnSize = _spn != null ? Encoding.Unicode.GetByteCount(_spn) : 0;
+            byte[] targetInfoBuffer = new byte[targetInfo.Length + 20 /* channel binding */ + 4 + spnSize /* SPN */ + 8 /* flags */];
+            int targetInfoOffset = 0;
+
+            time = DateTime.UtcNow;
+
+            if (targetInfo.Length > 0)
+            {
+                ReadOnlySpan<byte> info = targetInfo;
+                while (info.Length >= 4)
+                {
+                    AvId ID = (AvId)info[0];
+                    byte l1 = info[2];
+                    byte l2 = info[3];
+                    int length = (l2 << 8) + l1;
+
+                    if (ID == AvId.EOL)
+                    {
+                        break;
+                    }
+
+                    if (ID == AvId.Timestamp)
+                    {
+                        time = DateTime.FromFileTimeUtc(BitConverter.ToInt64(info.Slice(4, 8)));
+                    }
+
+                    // Copy attribute-value pair into destination target info
+                    info.Slice(0, length + 4).CopyTo(targetInfoBuffer.AsSpan(targetInfoOffset, length + 4));
+                    targetInfoOffset += length + 4;
+
+                    info = info.Slice(length + 4);
+                }
+            }
+
+            // Add new entries into destination target info
+
+            // Target name (eg. HTTP/example.org)
+            targetInfoBuffer[targetInfoOffset] = (byte)AvId.TargetName;
+            BinaryPrimitives.WriteUInt16LittleEndian(targetInfoBuffer.AsSpan(2 + targetInfoOffset), (ushort)spnSize);
+            if (_spn != null)
+            {
+                int bytesWritten = Encoding.Unicode.GetBytes(_spn, targetInfoBuffer.AsSpan(4 + targetInfoOffset));
+                Debug.Assert(bytesWritten == spnSize);
+            }
+            targetInfoOffset += spnSize + 4;
+
+            targetInfoBuffer[targetInfoOffset] = (byte)AvId.ChannelBindings;
+            targetInfoBuffer[targetInfoOffset + 2] = 16;
+
+            // TBD: Copy channel bindings to targetInfoBuffer + 4
+            // (zeros for no channel binding)
+            targetInfoOffset += 16 + 4;
+
+            // Flags
+            targetInfoBuffer[targetInfoOffset] = (byte)AvId.Flags;
+            targetInfoBuffer[targetInfoOffset + 2] = 4; // Length of flags
+            targetInfoBuffer[targetInfoOffset + 4] = 2; // MIC flag
+            targetInfoOffset += 8;
+
+            // EOL
+            targetInfoOffset += 4;
+
+            Debug.Assert(targetInfoOffset == targetInfoBuffer.Length);
+
+            return targetInfoBuffer;
         }
 
         // Section 3.4.5.2 SIGNKEY, 3.4.5.3 SEALKEY
@@ -491,62 +574,9 @@ namespace System.Net
             }
 
             ReadOnlySpan<byte> targetInfo = GetField(challengeMessage[0].TargetInfo, asBytes);
-            Span<byte> targetInfoBuffer = new byte[targetInfo.Length + 20 /* channel binding */ + 8 /* flags */];
-            int targetInfoOffset = 0;
-            DateTime time = DateTime.UtcNow;
+            byte[] targetInfoBuffer = ProcessTargetInfo(targetInfo, out DateTime time);
 
-            if (targetInfo.Length > 0)
-            {
-                ReadOnlySpan<byte> info = targetInfo;
-                while (info.Length >= 4)
-                {
-                    byte ID = info[0];
-                    byte l1 = info[2];
-                    byte l2 = info[3];
-                    int length = (l2 << 8) + l1;
-
-                    if (ID == 0)
-                    {
-                        break;
-                    }
-
-                    if (ID == 7) // Timestamp
-                    {
-                        time = DateTime.FromFileTimeUtc(BitConverter.ToInt64(info.Slice(4, 8)));
-                    }
-
-                    // Copy attribute-value pair into destination target info
-                    info.Slice(0, length + 4).CopyTo(targetInfoBuffer.Slice(targetInfoOffset, length + 4));
-                    targetInfoOffset += length + 4;
-
-                    info = info.Slice(length + 4);
-                }
-            }
-
-            // Add new entries into destination target info
-
-            // TBD: Target name (eg. HTTP/example.org, ID 0x9)
-
-            // MsvAvChannelBindings
-            targetInfoBuffer[targetInfoOffset] = 0xa;
-            targetInfoBuffer[targetInfoOffset + 2] = 16;
-
-            // TBD: Copy channel bindings to targetInfoBuffer + 4
-            // (zeros for no channel binding)
-            targetInfoOffset += 16 + 4;
-
-            // Flags
-            targetInfoBuffer[targetInfoOffset] = 6;
-            targetInfoBuffer[targetInfoOffset + 2] = 4; // Length of flags
-            targetInfoBuffer[targetInfoOffset + 4] = 2; // MIC flag
-            targetInfoOffset += 8;
-
-            // EOL
-            targetInfoOffset += 4;
-
-            Debug.Assert(targetInfoOffset == targetInfoBuffer.Length);
-
-            int responseLength = sizeof(AuthenticateMessage) + sizeof(NtChallengeResponse) + targetInfoOffset +
+            int responseLength = sizeof(AuthenticateMessage) + sizeof(NtChallengeResponse) + targetInfoBuffer.Length +
                                  Encoding.Unicode.GetByteCount(_credential.UserName) +
                                  Encoding.Unicode.GetByteCount(_credential.Domain) +
                                  s_workstation.Length +
@@ -584,7 +614,7 @@ namespace System.Net
 
             // Create NTLM2 response
             payloadOffset += makeNtlm2ChallengeResponse(time, ntlm2hash, serverChallenge, clientChallenge, targetInfoBuffer, ref response[0].NtChallengeResponse, payload.Slice(payloadOffset));
-            Debug.Assert(payloadOffset == sizeof(AuthenticateMessage) + sizeof(NtChallengeResponse) + targetInfoOffset);
+            Debug.Assert(payloadOffset == sizeof(AuthenticateMessage) + sizeof(NtChallengeResponse) + targetInfoBuffer.Length);
 
             AddToPayload(ref response[0].UserName, _credential.UserName, payload, ref payloadOffset);
             AddToPayload(ref response[0].DomainName, _credential.Domain, payload, ref payloadOffset);
