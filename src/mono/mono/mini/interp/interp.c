@@ -3361,7 +3361,13 @@ mono_interp_get_native_func_wrapper (InterpMethod* imethod, MonoMethodSignature*
 	MonoMethodPInvoke iinfo;
 	memset (&iinfo, 0, sizeof (iinfo));
 
-	MonoMethod* m = mono_marshal_get_native_func_wrapper (m_class_get_image (imethod->method->klass), csignature, &iinfo, mspecs, code);
+	MonoMethod *method = imethod->method;
+	MonoImage *image = NULL;
+	if (imethod->method->dynamic)
+		image = ((MonoDynamicMethod*)method)->assembly->image;
+	else
+		image = m_class_get_image (method->klass);
+	MonoMethod* m = mono_marshal_get_native_func_wrapper (image, csignature, &iinfo, mspecs, code);
 
 	for (int i = csignature->param_count; i >= 0; i--)
 		if (mspecs [i])
