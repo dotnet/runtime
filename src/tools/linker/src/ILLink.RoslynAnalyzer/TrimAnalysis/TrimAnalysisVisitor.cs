@@ -41,7 +41,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var value = base.VisitConversion (operation, state);
 
 			if (operation.OperatorMethod != null)
-				return new MethodReturnValue (operation.OperatorMethod);
+				return operation.OperatorMethod.ReturnType.IsTypeInterestingForDataflow () ? new MethodReturnValue (operation.OperatorMethod) : value;
 
 			// TODO - is it possible to have annotation on the operator method parameters?
 			// if so, will these be checked here?
@@ -51,7 +51,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override MultiValue VisitParameterReference (IParameterReferenceOperation paramRef, StateValue state)
 		{
-			return new MethodParameterValue (paramRef.Parameter);
+			return paramRef.Parameter.Type.IsTypeInterestingForDataflow () ? new MethodParameterValue (paramRef.Parameter) : TopValue;
 		}
 
 		public override MultiValue VisitInstanceReference (IInstanceReferenceOperation instanceRef, StateValue state)
@@ -62,13 +62,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// The instance reference operation represents a 'this' or 'base' reference to the containing type,
 			// so we get the annotation from the containing method.
 			// TODO: Check whether the Context.OwningSymbol is the containing type in case we are in a lambda.
-			var value = new MethodThisParameterValue ((IMethodSymbol) Context.OwningSymbol);
-			return value;
+			if (instanceRef.Type != null && instanceRef.Type.IsTypeInterestingForDataflow ())
+				return new MethodThisParameterValue ((IMethodSymbol) Context.OwningSymbol);
+
+			return TopValue;
 		}
 
 		public override MultiValue VisitFieldReference (IFieldReferenceOperation fieldRef, StateValue state)
 		{
-			return new FieldValue (fieldRef.Field);
+			return fieldRef.Field.Type.IsTypeInterestingForDataflow () ? new FieldValue (fieldRef.Field) : TopValue;
 		}
 
 		public override MultiValue VisitTypeOf (ITypeOfOperation typeOfOperation, StateValue state)
@@ -114,7 +116,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var diagnosticContext = DiagnosticContext.CreateDisabled ();
 			var handleCallAction = new HandleCallAction (diagnosticContext, Context.OwningSymbol, operation);
 			if (!handleCallAction.Invoke (new MethodProxy (calledMethod), instance, arguments, out MultiValue methodReturnValue)) {
-				methodReturnValue = calledMethod.ReturnsVoid ? TopValue : new MethodReturnValue (calledMethod);
+				if (!calledMethod.ReturnsVoid && calledMethod.ReturnType.IsTypeInterestingForDataflow ())
+					methodReturnValue = new MethodReturnValue (calledMethod);
+				else
+					methodReturnValue = TopValue;
 			}
 
 			TrimAnalysisPatterns.Add (new TrimAnalysisMethodCallPattern (
@@ -129,12 +134,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override void HandleReturnValue (MultiValue returnValue, IOperation operation)
 		{
-			var returnParameter = new MethodReturnValue ((IMethodSymbol) Context.OwningSymbol);
+			var associatedMethod = (IMethodSymbol) Context.OwningSymbol;
+			if (associatedMethod.ReturnType.IsTypeInterestingForDataflow ()) {
+				var returnParameter = new MethodReturnValue (associatedMethod);
 
-			TrimAnalysisPatterns.Add (
-				new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation),
-				isReturnValue: true
-			);
+				TrimAnalysisPatterns.Add (
+					new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation),
+					isReturnValue: true
+				);
+			}
 		}
 	}
 }

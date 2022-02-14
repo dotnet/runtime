@@ -196,8 +196,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicParameterlessConstructorAndNothing (typeof (TestType), this.GetType ());
 		}
 
-		// TODO: https://github.com/dotnet/linker/issues/2273
-		[ExpectedWarning ("IL2098", "p1", nameof (UnsupportedParameterType), ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2098", "p1", nameof (UnsupportedParameterType))]
 		private void UnsupportedParameterType ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] object p1)
 		{
 		}
