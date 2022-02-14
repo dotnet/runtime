@@ -3705,7 +3705,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
 {
     assert(len >= 8 && len <= 32);
 
-#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_64BIT)
     if (!compOpportunisticallyDependsOn(InstructionSet_Vector128))
     {
         // We need SSE2 or ADVSIMD at least
@@ -3741,17 +3741,18 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
         // Special case: use a single vector for len=16
         useSingleVector = len == 16;
 
-        GenTree* long1 = gtNewIconNode(*(UINT64*)(cns + 0), TYP_LONG);
-        GenTree* long2 = gtNewIconNode(*(UINT64*)(cns + 4), TYP_LONG);
-        GenTree* long3 = gtNewIconNode(*(UINT64*)(cns + 8), TYP_LONG);
-        GenTree* long4 = gtNewIconNode(*(UINT64*)(cns + 12), TYP_LONG);
+        assert(sizeof(ssize_t) == 8); // this code is guarded with TARGET_64BIT
+        GenTree* long1 = gtNewIconNode(*(ssize_t*)(cns + 0), TYP_LONG);
+        GenTree* long2 = gtNewIconNode(*(ssize_t*)(cns + 4), TYP_LONG);
+        GenTree* long3 = gtNewIconNode(*(ssize_t*)(cns + 8), TYP_LONG);
+        GenTree* long4 = gtNewIconNode(*(ssize_t*)(cns + 12), TYP_LONG);
         cnsVec1 = gtNewSimdHWIntrinsicNode(simdType, long1, long2, long3, long4, NI_Vector256_Create, type, simdSize);
 
         // cnsVec2 most likely overlaps with cnsVec1:
-        GenTree* long5 = gtNewIconNode(*(UINT64*)(cns + len - 16), TYP_LONG);
-        GenTree* long6 = gtNewIconNode(*(UINT64*)(cns + len - 12), TYP_LONG);
-        GenTree* long7 = gtNewIconNode(*(UINT64*)(cns + len - 8), TYP_LONG);
-        GenTree* long8 = gtNewIconNode(*(UINT64*)(cns + len - 4), TYP_LONG);
+        GenTree* long5 = gtNewIconNode(*(ssize_t*)(cns + len - 16), TYP_LONG);
+        GenTree* long6 = gtNewIconNode(*(ssize_t*)(cns + len - 12), TYP_LONG);
+        GenTree* long7 = gtNewIconNode(*(ssize_t*)(cns + len - 8), TYP_LONG);
+        GenTree* long8 = gtNewIconNode(*(ssize_t*)(cns + len - 4), TYP_LONG);
         cnsVec2 = gtNewSimdHWIntrinsicNode(simdType, long5, long6, long7, long8, NI_Vector256_Create, type, simdSize);
 
         loadIntrinsic = NI_AVX_LoadVector256;
@@ -3772,13 +3773,14 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
         // Special case: use a single vector for len=8
         useSingleVector = len == 8;
 
-        GenTree* long1 = gtNewIconNode(*(UINT64*)(cns + 0), TYP_LONG);
-        GenTree* long2 = gtNewIconNode(*(UINT64*)(cns + 4), TYP_LONG);
+        assert(sizeof(ssize_t) == 8); // this code is guarded with TARGET_64BIT
+        GenTree* long1 = gtNewIconNode(*(ssize_t*)(cns + 0), TYP_LONG);
+        GenTree* long2 = gtNewIconNode(*(ssize_t*)(cns + 4), TYP_LONG);
         cnsVec1        = gtNewSimdHWIntrinsicNode(simdType, long1, long2, NI_Vector128_Create, type, simdSize);
 
         // cnsVec2 most likely overlaps with cnsVec1:
-        GenTree* long3 = gtNewIconNode(*(UINT64*)(cns + len - 8), TYP_LONG);
-        GenTree* long4 = gtNewIconNode(*(UINT64*)(cns + len - 4), TYP_LONG);
+        GenTree* long3 = gtNewIconNode(*(ssize_t*)(cns + len - 8), TYP_LONG);
+        GenTree* long4 = gtNewIconNode(*(ssize_t*)(cns + len - 4), TYP_LONG);
         cnsVec2        = gtNewSimdHWIntrinsicNode(simdType, long3, long4, NI_Vector128_Create, type, simdSize);
 
 #if defined(TARGET_XARCH)
