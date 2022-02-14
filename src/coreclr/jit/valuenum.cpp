@@ -4598,11 +4598,11 @@ bool ValueNumStore::IsVNConstant(ValueNum vn)
 // IsVNVectorZero: Checks if the value number is a Vector*_get_Zero.
 //
 // Arguments:
-//    vn – The value number.
+//    vn - The value number.
 //
 // Return Value:
-//    true  – The value number is a Vector*_get_Zero.
-//    false – The value number is not a Vector*_get_Zero.
+//    true  - The value number is a Vector*_get_Zero.
+//    false - The value number is not a Vector*_get_Zero.
 bool ValueNumStore::IsVNVectorZero(ValueNum vn)
 {
 #ifdef FEATURE_SIMD
@@ -4622,7 +4622,7 @@ bool ValueNumStore::IsVNVectorZero(ValueNum vn)
 // GetSimdTypeOfVN: Returns the SIMD type information based on the given value number.
 //
 // Arguments:
-//    vn – The value number.
+//    vn - The value number.
 //
 // Return Value:
 //    Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type.
@@ -4651,7 +4651,7 @@ VNSimdTypeInfo ValueNumStore::GetSimdTypeOfVN(ValueNum vn)
 //                            if it's Vector*_get_Zero.
 //
 // Arguments:
-//    vn – The value number.
+//    vn - The value number.
 //
 // Return Value:
 //    Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type
