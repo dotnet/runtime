@@ -3,7 +3,7 @@ project (MonoEmbeddingApiTest)
 include_directories(${INC_PLATFORM_DIR})
 
 
-add_subdirectory(${CLR_SRC_NATIVE_DIR}/monoapi monoapi)
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/public public_api)
 
 # add the library
 add_library (mono-embedding-api-test SHARED mono-embedding-api-test.cpp)
