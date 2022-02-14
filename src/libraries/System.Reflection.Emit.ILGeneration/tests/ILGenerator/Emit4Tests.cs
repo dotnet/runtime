@@ -142,6 +142,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65304", TestPlatforms.MacCatalyst)]
         public void TestDynamicMethodEmitCalliNonBlittable()
         {
             string input = "Test string!", result = "!gnirts tseT";
