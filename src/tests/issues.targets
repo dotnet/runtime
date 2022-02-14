@@ -1241,6 +1241,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/CollectibleAssemblies/Statics/CollectibleStatics/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64883/Runtime_64883/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/ContextualReflection/ContextualReflection/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
         </ExcludeList>
@@ -3397,7 +3400,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/Runtime_64125/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64883/Runtime_64883/*">
+            <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
         </ExcludeList>
@@ -3416,7 +3421,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/gh53564/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
         </ExcludeList>
-
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverse/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
         </ExcludeList>
