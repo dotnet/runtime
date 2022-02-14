@@ -2677,6 +2677,8 @@ namespace System.Threading.Tasks
         /// </exception>
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds is < (-1) or > int.MaxValue)
             {
