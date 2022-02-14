@@ -433,16 +433,16 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class ReturnAsErrorException : Exception
     {
+        private Result _error;
         public Result Error
         {
             get
             {
-                Error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
-                return Error;
+                _error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
+                return _error;
             }
             set { }
         }
-
         public ReturnAsErrorException(JObject error)
             => Error = Result.Err(error);
 
@@ -455,7 +455,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 description = message,
                 className
             };
-            Error = Result.UserVisibleErr(JObject.FromObject(
+            _error = Result.UserVisibleErr(JObject.FromObject(
                 new
                 {
                     result = result,
