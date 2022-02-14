@@ -51,8 +51,11 @@ namespace System.Net
                 // SECPKG_ATTR_REMOTE_CERT_CHAIN can be used even before the TLS handshake completes, which is necessary
                 // in order to supply the certificate to the client cert selection callback. However, it is not available on
                 // windows 7, so use the SECPKG_ATTR_REMOTE_CERT_CONTEXT as a fallback option.
-                remoteContext = SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CHAIN(GlobalSSPI.SSPISecureChannel, securityContext)
-                    ?? SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext);
+                if (!SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CHAIN(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext))
+                {
+                    SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
+                }
+
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
