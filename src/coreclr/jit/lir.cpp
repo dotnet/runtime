@@ -1388,7 +1388,7 @@ public:
                         if ((readEnd > writeStart) && (writeEnd > readStart))
                         {
                             JITDUMP(
-                                "Write to unaliased local overlaps outstanding read (write: %u..%u, read: %u..%u)\n",
+                                "Write to local overlaps outstanding read (write: %u..%u, read: %u..%u)\n",
                                 writeStart, writeEnd, readStart, readEnd);
 
                             LIR::Use use;
