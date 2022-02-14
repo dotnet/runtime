@@ -56,7 +56,7 @@ namespace System.IO.Tests
 
         private void SettingUpdatesPropertiesCore(T item)
         {
-            Assert.All(TimeFunctions(true, false), (function) =>
+            Assert.All(TimeFunctions(requiresRoundtripping: true, testHandles: false), (function) =>
             {
                 // Checking that milliseconds are not dropped after setter.
                 // Emscripten drops milliseconds in Browser
