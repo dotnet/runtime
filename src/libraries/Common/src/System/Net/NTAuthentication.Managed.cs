@@ -51,6 +51,8 @@ namespace System.Net
 
         private static readonly byte[] s_workstation = Encoding.Unicode.GetBytes(Environment.MachineName);
 
+        private static readonly Version s_version = new Version { VersionMajor = 6, VersionMinor = 1, ProductBuild = 7600, CurrentRevision = 15 };
+
         private const int ChallengeResponseLength = 24;
 
         private const int HeaderLength = 8;
@@ -339,7 +341,7 @@ namespace System.Net
                 Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.TargetName |
                 Flags.NegotiateVersion | Flags.NegotiateKeyExchange | Flags.Negotiate128 |
                 Flags.NegotiateTargetInfo | Flags.NegotiateAlwaysSign | Flags.NegotiateSign;
-            message.Version = new Version { VersionMajor = 6, VersionMinor = 1, ProductBuild = 7600, CurrentRevision = 15 };
+            message.Version = s_version;
         }
 
         private unsafe int GetFieldLength(MessageField field)
