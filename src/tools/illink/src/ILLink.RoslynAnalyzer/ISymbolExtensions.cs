@@ -110,6 +110,8 @@ namespace ILLink.RoslynAnalyzer
 				break;
 
 			case IMethodSymbol methodSymbol:
+				// Use definition type parameter names, not instance type parameters
+				methodSymbol = methodSymbol.OriginalDefinition;
 				// Format the declaring type with namespace and containing types.
 				if (methodSymbol.ContainingSymbol.Kind == SymbolKind.NamedType) {
 					// If the containing symbol is a method (for example for local functions),
