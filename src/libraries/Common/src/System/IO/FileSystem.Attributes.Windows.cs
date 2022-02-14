@@ -114,7 +114,6 @@ namespace System.IO
 
         internal static int FillAttributeInfo(SafeFileHandle fileHandle, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data)
         {
-
             if (!Interop.Kernel32.GetFileInformationByHandle(
                 fileHandle,
                 out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInformationData))
