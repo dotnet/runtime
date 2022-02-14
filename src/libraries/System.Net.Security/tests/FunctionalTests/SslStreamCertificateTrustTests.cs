@@ -6,6 +6,7 @@ using System.IO.Tests;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using System.Linq;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -19,74 +20,49 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.OSX)]
         public async Task SslStream_SendCertificateTrust_CertificateCollection()
         {
-            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
-            using (client)
-            using (server)
-            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
-            using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
-            {
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
-                {
-                    ServerCertificate = serverCertificate,
-                    ClientCertificateRequired = true,
-                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
-                    ServerCertificateContext = SslStreamCertificateContext.Create(
-                        serverCertificate,
-                        null,
-                        trust: SslCertificateTrust.CreateForX509Collection(
-                            new X509Certificate2Collection { serverCertificate, clientCertificate },
-                            sendTrustInHandshake: true))
-                };
+            using X509Store store = new X509Store("Root", StoreLocation.LocalMachine);
+            store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+            X509Certificate2[] certList = store.Certificates.DistinctBy(c => c.Subject).Take(2).ToArray();
 
-                string[] acceptableIssuers = Array.Empty<string>();
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
-                {
-                    TargetHost = "localhost",
-                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
-                    LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, issuers) =>
-                    {
-                        if (remoteCertificate == null)
-                        {
-                            // ignore the first call, we should receive acceptable issuers in the next one
-                            return null;
-                        }
+            SslCertificateTrust trust = SslCertificateTrust.CreateForX509Collection(
+                new X509Certificate2Collection(certList),
+                sendTrustInHandshake: true);
 
-                        acceptableIssuers = issuers;
-                        return clientCertificate;
-                    },
+            string[] acceptableIssuers = await ConnectAndGatherAcceptableIssuers(trust);
 
-                };
-
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                                client.AuthenticateAsClientAsync(clientOptions),
-                                server.AuthenticateAsServerAsync(serverOptions));
-
-                Assert.Equal(2, acceptableIssuers.Length);
-                Assert.Contains(serverCertificate.Subject, acceptableIssuers);
-                Assert.Contains(clientCertificate.Subject, acceptableIssuers);
-            }
+            Assert.Equal(2, acceptableIssuers.Length);
+            Assert.Contains(certList[0].Subject, acceptableIssuers);
+            Assert.Contains(certList[1].Subject, acceptableIssuers);
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
         public async Task SslStream_SendCertificateTrust_CertificateStore()
         {
+            using X509Store store = new X509Store("Root", StoreLocation.LocalMachine);
+
+            SslCertificateTrust trust = SslCertificateTrust.CreateForX509Store(store, sendTrustInHandshake: true);
+            string[] acceptableIssuers = await ConnectAndGatherAcceptableIssuers(trust);
+
+            // don't assert individual ellements, just that some issuers were sent
+            // we use Root cert store which should always contain at least some certs
+            Assert.NotEmpty(acceptableIssuers);
+        }
+
+        private async Task<string[]> ConnectAndGatherAcceptableIssuers(SslCertificateTrust trust)
+        {
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
             using (client)
             using (server)
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
             using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
-            using (X509Store store = new X509Store("Root", StoreLocation.LocalMachine))
             {
                 SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCertificate,
                     ClientCertificateRequired = true,
                     RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
-                    ServerCertificateContext = SslStreamCertificateContext.Create(
-                        serverCertificate,
-                        null,
-                        trust: SslCertificateTrust.CreateForX509Store(store, sendTrustInHandshake: true))
+                    ServerCertificateContext = SslStreamCertificateContext.Create(serverCertificate, null, false, trust)
                 };
 
                 string[] acceptableIssuers = Array.Empty<string>();
@@ -112,9 +88,7 @@ namespace System.Net.Security.Tests
                                 client.AuthenticateAsClientAsync(clientOptions),
                                 server.AuthenticateAsServerAsync(serverOptions));
 
-                // don't assert individual ellements, just that some issuers were sent
-                // we use Root cert store which should always contain at least some certs
-                Assert.NotEmpty(acceptableIssuers);
+                return acceptableIssuers;
             }
         }
     }
