@@ -185,10 +185,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			throw new NotImplementedException ();
 		}
 
-		// TODO: https://github.com/dotnet/linker/issues/2273
-		[ExpectedWarning ("IL2106", nameof (UnsupportedReturnType), ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2106", nameof (UnsupportedReturnType))]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		static object UnsupportedReturnType () => null;
+
+		[ExpectedWarning ("IL2106", nameof (UnsupportedReturnTypeAndParameter))]
+		[ExpectedWarning ("IL2098", nameof (UnsupportedReturnTypeAndParameter))]
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		static object UnsupportedReturnTypeAndParameter ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] object param) => null;
 
 		class TestType
 		{

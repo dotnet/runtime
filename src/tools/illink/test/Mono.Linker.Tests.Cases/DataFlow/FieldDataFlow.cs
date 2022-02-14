@@ -44,9 +44,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		static Type _staticTypeWithoutRequirements;
 
-		// TODO: warn about annotation on wrong type in analyzer: https://github.com/dotnet/linker/issues/2273
-		[ExpectedWarning ("IL2097", nameof (_annotationOnWrongType),
-			ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2097", nameof (_annotationOnWrongType))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 		static object _annotationOnWrongType;
 

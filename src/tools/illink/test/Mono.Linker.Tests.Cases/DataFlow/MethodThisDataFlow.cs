@@ -138,18 +138,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class NonTypeType
 		{
-			// Analyzer doesn't warn about annotations on unsupported types:
-			// https://github.com/dotnet/linker/issues/2273
-			[ExpectedWarning ("IL2041", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2041")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public MethodInfo GetMethod (string name)
 			{
 				return null;
 			}
 
-			// Analyzer doesn't warn about annotations on unsupported types:
-			// https://github.com/dotnet/linker/issues/2273
-			[ExpectedWarning ("IL2041", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2041")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public static void StaticMethod ()
 			{
