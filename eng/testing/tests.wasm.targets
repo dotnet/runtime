@@ -23,6 +23,10 @@
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOn)' == ''">local</BuildAOTTestsOn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <_AOT_InternalForceInterpretAssemblies Include="@(HighAotMemoryUsageAssembly)" />
+  </ItemGroup>
+
   <!-- 
     This is running during compile time and therefore $(Scenario) is empty, unless the specific project sets it.
     Any settings in the project file could be replaced on Helix.
@@ -170,7 +174,7 @@
 
       -->
 
-      <_WasmItemsToPass Include="@(HighAotMemoryUsageAssembly)" OriginalItemName__="HighAotMemoryUsageAssembly" />
+      <_WasmItemsToPass Include="@(_AOT_InternalForceInterpretAssemblies)" OriginalItemName__="HighAotMemoryUsageAssembly" />
 
     </ItemGroup>
 

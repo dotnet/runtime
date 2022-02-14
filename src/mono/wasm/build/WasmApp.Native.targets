@@ -521,7 +521,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
 
     <ItemGroup>
       <!-- Skip known-huge assemblies specified in csproj -->
-      <_AotInputAssemblies Condition="'%(Filename)' != '' and '@(_AotInputAssemblies->Metadata(`Filename`))' != '' and '@(HighAotMemoryUsageAssembly->Metadata(`Filename`))' != ''">
+      <_AotInputAssemblies Condition="'%(Filename)' != '' and '@(_AotInputAssemblies->Metadata(`Filename`))' != '' and '@(_AOT_InternalForceInterpretAssemblies->Metadata(`Filename`))' != ''">
         <AOT_InternalForceToInterpret>true</AOT_InternalForceToInterpret>
       </_AotInputAssemblies>
     </ItemGroup>
