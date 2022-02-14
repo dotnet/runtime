@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -10,14 +11,11 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [ThreadStatic]
-        private static byte[]? t_msgBuf;
-
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
         internal static partial ulong ErrClearError();
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetErrorAlloc")]
-        private static partial ulong ErrGetErrorAlloc([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetExceptionError")]
+        private static partial ulong ErrGetExceptionError([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekError")]
         internal static partial ulong ErrPeekError();
@@ -33,39 +31,38 @@ internal static partial class Interop
 
         private static unsafe string ErrErrorStringN(ulong error)
         {
-            if (t_msgBuf is null)
-            {
-                t_msgBuf = new byte[1024];
-            }
-
-            byte[] buffer = t_msgBuf;
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(1024);
+            string ret;
 
             fixed (byte* buf = &buffer[0])
             {
                 ErrErrorStringN(error, buf, buffer.Length);
-                return Marshal.PtrToStringAnsi((IntPtr)buf)!;
+                ret = Marshal.PtrToStringAnsi((IntPtr)buf)!;
             }
+
+            ArrayPool<byte>.Shared.Return(buffer);
+            return ret;
         }
 
         internal static Exception CreateOpenSslCryptographicException()
         {
-            // The Windows cryptography library reports error codes through
-            // Marshal.GetLastWin32Error, which has a single value when the
-            // function exits, last writer wins.
+            // The Windows cryptography librares reports error codes through
+            // return values, or Marshal.GetLastWin32Error, either of which
+            // has a single value when the function exits.
             //
             // OpenSSL maintains an error queue. Calls to ERR_get_error read
             // values out of the queue in the order that ERR_set_error wrote
             // them. Nothing enforces that a single call into an OpenSSL
-            // function will guarantee at-most one error being set.
+            // function will guarantee at-most one error being set, and there
+            // are well-known cases where multiple errors are emitted.
             //
             // In older versions of .NET, we collected the last error in the
-            // queue, and did not habitually clear the error pipeline.
-            // Some of the flows in OpenSSL 3 showed that what we often want
-            // is the first error code that was set during the operation that
-            // failed (and that the preferred API often reports multiple/cascaded
-            // errors). So now we clear habitually, and we take the first error
+            // queue, by repeatedly calling into ERR_get_error from managed code
+            // and using the last error as the basis of the exception.
+            // Now, we call into the shim once, which is responsible for
+            // maintaining the error state and informing us of the one value to report.
             // (and when fetching that error we go ahead and clear out the rest).
-            ulong error = ErrGetErrorAlloc(out bool isAllocFailure);
+            ulong error = ErrGetExceptionError(out bool isAllocFailure);
 
             // If we're in an error flow which results in an Exception, but
             // no calls to ERR_set_error were made, throw the unadorned
@@ -81,7 +78,8 @@ internal static partial class Interop
             }
 
             // Even though ErrGetError returns ulong (C++ unsigned long), we
-            // really only expect error codes in the UInt32 range
+            // really only expect error codes in the UInt32 range, since that
+            // type is only 32 bits on x86 Linux.
             Debug.Assert(error <= uint.MaxValue, "ErrGetError should only return error codes in the UInt32 range.");
 
             // If there was an error code, and it wasn't something handled specially,

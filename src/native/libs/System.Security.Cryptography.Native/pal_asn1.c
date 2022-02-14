@@ -27,7 +27,7 @@ const ASN1_OBJECT* CryptoNative_GetObjectDefinitionByName(const char* friendlyNa
 {
     ERR_clear_error();
 
-    // Neither ln2nid nor sn2nid can generate errors, but nid2obj can in certain circumstances..
+    // Neither ln2nid nor sn2nid can generate errors, but nid2obj can in certain circumstances.
 
     int nid = OBJ_ln2nid(friendlyName);
 

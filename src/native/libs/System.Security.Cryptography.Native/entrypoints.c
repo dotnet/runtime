@@ -89,7 +89,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EncodeX509SubjectPublicKeyInfo)
     DllImportEntry(CryptoNative_ErrClearError)
     DllImportEntry(CryptoNative_ErrErrorStringN)
-    DllImportEntry(CryptoNative_ErrGetErrorAlloc)
+    DllImportEntry(CryptoNative_ErrGetExceptionError)
     DllImportEntry(CryptoNative_ErrPeekError)
     DllImportEntry(CryptoNative_ErrPeekLastError)
     DllImportEntry(CryptoNative_ErrReasonErrorString)

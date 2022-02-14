@@ -176,7 +176,8 @@ The encoded value of the version, otherwise:
 */
 int32_t CryptoNative_GetX509Version(X509* x509)
 {
-    // No error queue impact.
+    // No errors are expected to be written to the queue on this call,
+    // and the managed caller doesn't check for one.
 
     if (x509)
     {

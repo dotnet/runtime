@@ -9,7 +9,7 @@ void CryptoNative_ErrClearError()
     ERR_clear_error();
 }
 
-uint64_t CryptoNative_ErrGetErrorAlloc(int32_t* isAllocFailure)
+uint64_t CryptoNative_ErrGetExceptionError(int32_t* isAllocFailure)
 {
     unsigned long err = ERR_peek_last_error();
 
