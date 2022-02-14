@@ -424,21 +424,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         var methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
                         int passedParamCnt = method.ArgumentList.Arguments.Count;
-                        var methodParamsInfo = new List<ParameterInfo>();
-                        if (methodInfo?.Info != null)
-                        {
-                            methodParamsInfo = methodInfo.Info.GetMethodParams();
-                            // if less params then the function has was passed then some of them may be optional
-                            // if more, it will ensure to produce an error
-                            var optionalParamsCnt = methodParamsInfo.Count(p => p.HasDefaultValue);
-                            if (passedParamCnt <= methodParamsInfo.Count &&
-                                passedParamCnt + optionalParamsCnt >= methodParamsInfo.Count)
-                                passedParamCnt = methodParamsInfo.Count;
-                        }
-                        commandParamsObjWriter.Write(passedParamCnt + isTryingLinq);
+                        ParameterInfo[] methodParamsInfo = methodInfo.Info.ParametersInfo;
+
+                        // if less params then the function has was passed then some of them may be optional
+                        // if more, it will ensure to produce an error
+                        int methodParamsCnt = methodParamsInfo.Length;
+                        int optionalParamsCnt = methodInfo.Info.OptionalParametersCnt;
+                        int sentToDebuggerParamsCnt = methodParamsCnt;
+                        if (passedParamCnt > methodParamsCnt || passedParamCnt + optionalParamsCnt < methodParamsCnt)
+                            sentToDebuggerParamsCnt = passedParamCnt;
+
+                        commandParamsObjWriter.Write(sentToDebuggerParamsCnt + isTryingLinq);
                         if (isTryingLinq == 1)
                             commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
-                        for (var i = 0; i < passedParamCnt; i++)
+
+                        for (var i = 0; i < sentToDebuggerParamsCnt; i++)
                         {
                             // explicitly passed arguments
                             if (i < method.ArgumentList.Arguments.Count)
@@ -456,11 +456,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                                         return null;
                                 }
                             }
-                            // optional arguments that were not overritten
+                            // optional arguments that were not overwritten
                             else
                             {
                                 if (!await commandParamsObjWriter.WriteConst(methodParamsInfo[i].TypeCode, methodParamsInfo[i].Value, context.SdbAgent, token))
-                                    return null;
+                                    throw new Exception($"Unable to write optional parameter {methodParamsInfo[i].Name} value in method '{methodName}' to the mono buffer.");
                             }
                         }
                         var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);

@@ -1074,10 +1074,10 @@ namespace DebuggerTests
                    ("test.GetString(null)", TObject("string", is_null: true)),
                    ("test.GetStringNullable()", TString("1.23")),
 
-                   ("test.GetSingle()", JObject.FromObject( new { type = "number", value = 1.23, description = "1,23" })),
-                   ("test.GetDouble()", JObject.FromObject( new { type = "number", value = 1.23, description = "1,23" })),
-                   ("test.GetSingleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1,23" })),
-                   ("test.GetDoubleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1,23" })),
+                   ("test.GetSingle()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
+                   ("test.GetDouble()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
+                   ("test.GetSingleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
+                   ("test.GetDoubleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
                    
                    ("test.GetBool()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
                    ("test.GetBoolNullable()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),

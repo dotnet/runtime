@@ -335,6 +335,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public DebuggerAttributesInfo DebuggerAttrInfo { get; set; }
         public TypeInfo TypeInfo { get; }
         public bool HasSequencePoints { get => !DebugInformation.SequencePointsBlob.IsNil; }
+        public ParameterInfo[] ParametersInfo { get; private set; }
+        public int OptionalParametersCnt { get; private set; }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
         {
@@ -404,29 +406,34 @@ namespace Microsoft.WebAssembly.Diagnostics
                 DebuggerAttrInfo.ClearInsignificantAttrFlags();
             }
             localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
+            ParametersInfo = GetMethodParamsInfo();
+            OptionalParametersCnt = ParametersInfo.Count(p => p.HasDefaultValue);
         }
 
-        public List<ParameterInfo> GetMethodParams()
+        private ParameterInfo[] GetMethodParamsInfo()
         {
-            var paramsInfo = new List<ParameterInfo>();
-            foreach (var parameterHandle in methodDef.GetParameters())
+            var paramsHandles = methodDef.GetParameters().ToArray();
+            var paramsCnt = paramsHandles.Length;
+            var paramsInfo = new ParameterInfo[paramsCnt];
+
+            for (int i = 0; i < paramsCnt; i++)
             {
-                var parameter = Assembly.asmMetadataReader.GetParameter(parameterHandle);
+                var parameter = Assembly.asmMetadataReader.GetParameter(paramsHandles[i]);
                 var paramName = Assembly.asmMetadataReader.GetString(parameter.Name);
                 var isOptional = parameter.Attributes.HasFlag(ParameterAttributes.Optional) && parameter.Attributes.HasFlag(ParameterAttributes.HasDefault);
                 if (!isOptional)
                 {
-                    paramsInfo.Add(new ParameterInfo(paramName));
+                    paramsInfo[i] = new ParameterInfo(paramName);
                     continue;
                 }
                 var constantHandle = parameter.GetDefaultValue();
                 var blobHandle = Assembly.asmMetadataReader.GetConstant(constantHandle);
                 var paramBytes = Assembly.asmMetadataReader.GetBlobBytes(blobHandle.Value);
-                paramsInfo.Add(new ParameterInfo(
+                paramsInfo[i] = new ParameterInfo(
                     paramName,
                     blobHandle.TypeCode,
                     paramBytes
-                ));
+                );
             }
             return paramsInfo;
         }
@@ -554,29 +561,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     (EndLocation.Line == containerMethod.EndLocation.Line && EndLocation.Column < containerMethod.EndLocation.Column));
     }
 
-    internal class ParameterInfo
+    internal record ParameterInfo(string name, ConstantTypeCode? typeCode = null, byte[] value = null)
     {
-        public string Name { get; private set; }
+        public string Name => name;
+        public ConstantTypeCode? TypeCode => typeCode;
+        public byte[] Value => value;
 
-        public ConstantTypeCode TypeCode { get; private set; }
-
-        public byte[] Value { get; private set; }
-
-        public bool HasDefaultValue { get; private set; }
-
-        internal ParameterInfo(string name, ConstantTypeCode typeCode, byte[] value)
-        {
-            Name = name;
-            TypeCode = typeCode;
-            Value = value;
-            HasDefaultValue = true;
-        }
-
-        internal ParameterInfo(string name)
-        {
-            Name = name;
-            HasDefaultValue = false;
-        }
+        public bool HasDefaultValue = value != null;
     }
 
     internal class TypeInfo

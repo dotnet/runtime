@@ -19,6 +19,7 @@ using Microsoft.CodeAnalysis.Scripting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -420,7 +421,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (v is string s)
                 return new { type = "string", value = s, description = s };
             if (NumericTypes.Contains(v.GetType()))
-                return new { type = "number", value = v, description = v.ToString() };
+                return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
             if (v is JObject)
                 return v;
             return new { type = "object", value = v, description = v.ToString(), className = type.ToString() };

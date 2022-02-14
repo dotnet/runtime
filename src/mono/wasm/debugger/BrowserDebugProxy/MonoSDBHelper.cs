@@ -528,7 +528,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             Write(bytes);
         }
 
-        public async Task<bool> WriteConst(ConstantTypeCode type, byte[] bytes, MonoSDBHelper SdbHelper, CancellationToken token)
+        public async Task<bool> WriteConst(ConstantTypeCode? type, byte[] bytes, MonoSDBHelper SdbHelper, CancellationToken token)
         {
             switch (type)
             {
