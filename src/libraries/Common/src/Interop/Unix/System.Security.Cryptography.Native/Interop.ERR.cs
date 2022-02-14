@@ -46,7 +46,7 @@ internal static partial class Interop
 
         internal static Exception CreateOpenSslCryptographicException()
         {
-            // The Windows cryptography librares reports error codes through
+            // The Windows cryptography libraries reports error codes through
             // return values, or Marshal.GetLastWin32Error, either of which
             // has a single value when the function exits.
             //
