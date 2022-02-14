@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System.Collections.Immutable
@@ -1400,94 +1399,87 @@ namespace System.Collections.Immutable
             return new ImmutableArray<T>(tmp);
         }
 
-        private struct MultiSet
+        private class MultiSet
         {
             private readonly IEqualityComparer<T> _equalityComparer;
-            private readonly Dictionary<int, LinkedList<(T value, int count)>> _dictionary = new();
+            private readonly int[] _bucketHeaders; // initialized as zeroed array so its valid item value is 1-based index of _entries
+            private readonly Entry[] _entries;
+            private int _startOffset;
 
-            public MultiSet()
-            {
-                _equalityComparer = EqualityComparer<T>.Default;
-            }
-
-            public MultiSet(IEqualityComparer<T>? equalityComparer)
+            public MultiSet(int capacity, IEqualityComparer<T>? equalityComparer)
             {
                 _equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
+
+                _bucketHeaders = new int[capacity];
+                _entries = new Entry[capacity];
             }
 
             public void Add(T item)
             {
-                int hashCode = _equalityComparer.GetHashCode(item!);
-
-#if NET6_0_OR_GREATER
-                ref LinkedList<(T value, int count)>? list = ref CollectionsMarshal.GetValueRefOrAddDefault(_dictionary, hashCode, out bool exists);
-                if (exists)
-#else
-                if (_dictionary.TryGetValue(hashCode, out LinkedList<(T value, int count)>? list))
-#endif
+                ref int bucketHeader = ref GetBucketHeaderIndexRef(item);
+                int entryIndex = bucketHeader - 1;
+                while (entryIndex != -1)
                 {
-                    Debug.Assert(list != null && list.First != null);
-                    for (LinkedListNode<(T value, int count)>? node = list.First; node != null; node = node.Next)
+                    ref Entry entry = ref _entries[entryIndex];
+                    if (_equalityComparer.Equals(entry.Key, item))
                     {
-#if NET5_0_OR_GREATER
-                        ref (T value, int count) nodeValue = ref node.ValueRef;
-#else
-                        (T value, int count) nodeValue = node.Value;
-#endif
-                        if (_equalityComparer.Equals(item, nodeValue.value))
-                        {
-                            nodeValue.count++;
-#if !NET5_0_OR_GREATER
-                            node.Value = nodeValue;
-#endif
-                            return;
-                        }
+                        entry.Count++;
+                        return;
                     }
 
-                    list.AddLast((item, 1));
+                    entryIndex = entry.Next;
                 }
-                else
-                {
-                    list = new LinkedList<(T value, int count)>();
-                    list.AddFirst((item, 1));
 
-#if !NET6_0_OR_GREATER
-            _dictionary[hashCode] = list;
-#endif
-                }
+                Debug.Assert(_startOffset < _bucketHeaders.Length);
+                Debug.Assert(_startOffset < _entries.Length);
+
+                _entries[_startOffset].SetInfo(item, bucketHeader - 1, 1);
+
+                bucketHeader = ++_startOffset; // 1-based bucketHeader
             }
 
             public bool TryRemove(T item)
             {
-                int hashCode = _equalityComparer.GetHashCode(item!);
-                if (!_dictionary.TryGetValue(hashCode, out LinkedList<(T value, int count)>? list))
+                ref int bucketHeader = ref GetBucketHeaderIndexRef(item);
+                int entryIndex = bucketHeader - 1;
+                while (entryIndex != -1)
                 {
-                    return false;
-                }
-
-                for (LinkedListNode<(T value, int count)>? node = list.First; node != null; node = node.Next)
-                {
-#if NET5_0_OR_GREATER
-                    ref (T value, int count) nodeValue = ref node.ValueRef;
-#else
-                    (T value, int count) nodeValue = node.Value;
-#endif
-                    if (_equalityComparer.Equals(item, nodeValue.value))
+                    ref Entry entry = ref _entries[entryIndex];
+                    if (_equalityComparer.Equals(entry.Key, item))
                     {
-                        if (nodeValue.count == 0)
+                        if (entry.Count == 0)
                         {
                             return false;
                         }
 
-                        nodeValue.count--;
-#if !NET5_0_OR_GREATER
-                        node.Value = nodeValue;
-#endif
+                        entry.Count--;
                         return true;
                     }
+
+                    entryIndex = entry.Next;
                 }
 
                 return false;
+            }
+
+            private ref int GetBucketHeaderIndexRef(T item)
+            {
+                int hashCode = item == null ? 0 : _equalityComparer.GetHashCode(item);
+                return ref _bucketHeaders[(uint)hashCode % _bucketHeaders.Length];
+            }
+
+            private struct Entry
+            {
+                public void SetInfo(T key, int next, int count)
+                {
+                    Key = key;
+                    Next = next;
+                    Count = count;
+                }
+
+                public T Key;
+                public int Next; // 0 based index; -1 means current entry is the last one
+                public int Count;
             }
         }
     }
