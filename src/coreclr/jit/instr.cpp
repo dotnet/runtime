@@ -988,12 +988,128 @@ void CodeGen::inst_RV_SH(
 #endif // TARGET*
 }
 
-/*****************************************************************************
- *
- *  Generate an instruction of the form "op reg1, reg2, icon".
- */
-
 #if defined(TARGET_XARCH)
+//------------------------------------------------------------------------
+// genOperandDesc: Create an operand descriptor for the given operand node.
+//
+// The XARCH emitter requires codegen to use different methods for different
+// kinds of operands. However, the logic for determining which ones, in
+// general, is not simple (due to the fact that "memory" in the emitter can
+// be represented in more than one way). This helper method encapsulated the
+// logic for determining what "kind" of operand "op" is.
+//
+// Arguments:
+//    op - The operand node for which to obtain the descriptor
+//
+// Return Value:
+//    The operand descriptor for "op".
+//
+// Notes:
+//    This method is not idempotent - it can only be called once for a
+//    given node.
+//
+CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
+{
+    if (!op->isContained() && !op->isUsedFromSpillTemp())
+    {
+        return OperandDesc(op->GetRegNum());
+    }
+
+    emitter* emit   = GetEmitter();
+    TempDsc* tmpDsc = nullptr;
+    unsigned varNum = BAD_VAR_NUM;
+    uint16_t offset = UINT16_MAX;
+
+    if (op->isUsedFromSpillTemp())
+    {
+        assert(op->IsRegOptional());
+
+        tmpDsc = getSpillTempDsc(op);
+        varNum = tmpDsc->tdTempNum();
+        offset = 0;
+
+        regSet.tmpRlsTemp(tmpDsc);
+    }
+    else if (op->isIndir() || op->OperIsHWIntrinsic())
+    {
+        GenTree*      addr;
+        GenTreeIndir* memIndir = nullptr;
+
+        if (op->isIndir())
+        {
+            memIndir = op->AsIndir();
+            addr     = memIndir->Addr();
+        }
+        else
+        {
+#if defined(FEATURE_HW_INTRINSICS)
+            assert(op->AsHWIntrinsic()->OperIsMemoryLoad());
+            assert(op->AsHWIntrinsic()->GetOperandCount() == 1);
+            addr = op->AsHWIntrinsic()->Op(1);
+#else
+            unreached();
+#endif // FEATURE_HW_INTRINSICS
+        }
+
+        switch (addr->OperGet())
+        {
+            case GT_LCL_VAR_ADDR:
+            case GT_LCL_FLD_ADDR:
+            {
+                assert(addr->isContained());
+                varNum = addr->AsLclVarCommon()->GetLclNum();
+                offset = addr->AsLclVarCommon()->GetLclOffs();
+                break;
+            }
+
+            case GT_CLS_VAR_ADDR:
+                return OperandDesc(addr->AsClsVar()->gtClsVarHnd);
+
+            default:
+                return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
+        }
+    }
+    else
+    {
+        switch (op->OperGet())
+        {
+            case GT_LCL_FLD:
+                varNum = op->AsLclFld()->GetLclNum();
+                offset = op->AsLclFld()->GetLclOffs();
+                break;
+
+            case GT_LCL_VAR:
+                assert(op->IsRegOptional() || !compiler->lvaGetDesc(op->AsLclVar())->lvIsRegCandidate());
+                varNum = op->AsLclVar()->GetLclNum();
+                offset = 0;
+                break;
+
+            case GT_CNS_DBL:
+                return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->gtDconVal, emitTypeSize(op)));
+
+            case GT_CNS_INT:
+                assert(op->isContainedIntOrIImmed());
+                return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
+
+            default:
+                unreached();
+        }
+    }
+
+    // Ensure we got a good varNum and offset.
+    // We also need to check for `tmpDsc != nullptr` since spill temp numbers
+    // are negative and start with -1, which also happens to be BAD_VAR_NUM.
+    assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
+    assert(offset != UINT16_MAX);
+
+    return OperandDesc(varNum, offset);
+}
+
+/*****************************************************************************
+*
+*  Generate an instruction of the form "op reg1, reg2, icon".
+*/
+
 void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival)
 {
     assert(ins == INS_shld || ins == INS_shrd || ins == INS_shufps || ins == INS_shufpd || ins == INS_pshufd ||
