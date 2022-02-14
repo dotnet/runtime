@@ -3699,9 +3699,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/complus_config/name_config_with_pid/**">
             <Issue>System.ArgumentNullException: Value cannot be null. (Parameter 'path1')</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventactivityidcontrol/eventactivityidcontrol/**">
-            <Issue>System.Exception: Values for 'retCode' are not equal! Left='1' Right='0'</Issue>
-        </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/readytorun/multifolder/multifolder/**">
             <Issue>System.IO.FileNotFoundException: Could not load file or assembly '/.../Library/Developer/CoreSimulator/Devices/941235AB-7563-4D79-AC28-946B7AD2304A/data/Containers/Bundle/Application/40176A30-D8F5-4497-958A-6514E5C684FC/readytorun_multifolder.app/testdir-multifolder/../FolderA/FolderA/FolderA.dll' or one of its dependencies.</Issue>
