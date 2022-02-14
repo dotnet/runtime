@@ -5294,6 +5294,10 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     res = tanh(arg0Val);
                     break;
 
+                case NI_System_Math_Truncate:
+                    res = trunc(arg0Val);
+                    break;
+
                 default:
                     // the above are the only math intrinsics at the time of this writing.
                     unreached();
@@ -5396,6 +5400,10 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
 
                 case NI_System_Math_Tanh:
                     res = tanhf(arg0Val);
+                    break;
+
+                case NI_System_Math_Truncate:
+                    res = truncf(arg0Val);
                     break;
 
                 default:
@@ -5551,6 +5559,9 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                 break;
             case NI_System_Math_Tanh:
                 vnf = VNF_Tanh;
+                break;
+            case NI_System_Math_Truncate:
+                vnf = VNF_Truncate;
                 break;
             default:
                 unreached(); // the above are the only math intrinsics at the time of this writing.
@@ -9051,10 +9062,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         }
                     }
                     break;
-
-                    case GT_LOCKADD: // Binop
-                        noway_assert("LOCKADD should not appear before lowering");
-                        break;
 
                     case GT_XORR: // Binop
                     case GT_XAND: // Binop

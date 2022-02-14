@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -37,7 +38,7 @@ namespace System.Security.Cryptography.X509Certificates
             return SelectFromCollectionHelper(certificates, title, message, selectionFlag, hwndParent);
         }
 
-        private static void DisplayX509Certificate(X509Certificate2 certificate, IntPtr hwndParent)
+        private static unsafe void DisplayX509Certificate(X509Certificate2 certificate, IntPtr hwndParent)
         {
             using (SafeCertContextHandle safeCertContext = X509Utils.DuplicateCertificateContext(certificate))
             {
@@ -47,8 +48,12 @@ namespace System.Security.Cryptography.X509Certificates
                 int dwErrorCode = ERROR_SUCCESS;
 
                 // Initialize view structure.
-                Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW ViewInfo = new Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW();
-                ViewInfo.dwSize = (uint)Marshal.SizeOf(ViewInfo);
+                Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW ViewInfo = default;
+#if NET7_0_OR_GREATER
+                ViewInfo.dwSize = (uint)sizeof(Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW.Native);
+#else
+                ViewInfo.dwSize = (uint)Marshal.SizeOf<Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW>();
+#endif
                 ViewInfo.hwndParent = hwndParent;
                 ViewInfo.dwFlags = 0;
                 ViewInfo.szTitle = null;
@@ -104,10 +109,18 @@ namespace System.Security.Cryptography.X509Certificates
             if (safeCertStoreHandle == null || safeCertStoreHandle.IsInvalid)
                 throw new CryptographicException(Marshal.GetLastWin32Error());
 
-            Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW csc = new Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW();
+            Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW csc = default;
             // Older versions of CRYPTUI do not check the size correctly,
             // so always force it to the oldest version of the structure.
+#if NET7_0_OR_GREATER
+            // Declare a local for Native to enable us to get the managed byte offset
+            // without having a null check cause a failure.
+            Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW.Native native;
+            Unsafe.SkipInit(out native);
+            csc.dwSize = (uint)Unsafe.ByteOffset(ref Unsafe.As<Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW.Native, byte>(ref native), ref Unsafe.As<IntPtr, byte>(ref native.hSelectedCertStore));
+#else
             csc.dwSize = (uint)Marshal.OffsetOf(typeof(Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW), "hSelectedCertStore");
+#endif
             csc.hwndParent = hwndParent;
             csc.dwFlags = (uint)selectionFlags;
             csc.szTitle = title;
@@ -125,7 +138,7 @@ namespace System.Security.Cryptography.X509Certificates
             csc.rgPropSheetPages = IntPtr.Zero;
             csc.hSelectedCertStore = safeCertStoreHandle.DangerousGetHandle();
 
-            SafeCertContextHandle safeCertContextHandle = Interop.CryptUI.CryptUIDlgSelectCertificateW(csc);
+            SafeCertContextHandle safeCertContextHandle = Interop.CryptUI.CryptUIDlgSelectCertificateW(ref csc);
 
             if (safeCertContextHandle != null && !safeCertContextHandle.IsInvalid)
             {

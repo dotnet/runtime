@@ -387,10 +387,7 @@ namespace System.Globalization
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (s_asyncLocalCurrentCulture == null)
                 {

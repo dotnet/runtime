@@ -8,12 +8,12 @@ internal static partial class Interop
 {
     internal static partial class HostPolicy
     {
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
-        internal delegate void corehost_resolve_component_dependencies_result_fn(string assemblyPaths,
-            string nativeSearchPaths, string resourceSearchPaths);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate void corehost_resolve_component_dependencies_result_fn(IntPtr assemblyPaths,
+            IntPtr nativeSearchPaths, IntPtr resourceSearchPaths);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
-        internal delegate void corehost_error_writer_fn(string message);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate void corehost_error_writer_fn(IntPtr message);
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [GeneratedDllImport(Libraries.HostPolicy, CharSet = CharSet.Auto)]

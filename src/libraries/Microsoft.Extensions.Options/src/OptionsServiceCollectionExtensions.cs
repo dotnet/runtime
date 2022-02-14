@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="name">The name of the options instance.</param>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
-        public static IServiceCollection Configure<TOptions>(this IServiceCollection services!!, string name, Action<TOptions> configureOptions!!)
+        public static IServiceCollection Configure<TOptions>(this IServiceCollection services!!, string? name, Action<TOptions> configureOptions!!)
             where TOptions : class
         {
             services.AddOptions();
@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="name">The name of the options instance.</param>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
-        public static IServiceCollection PostConfigure<TOptions>(this IServiceCollection services!!, string name, Action<TOptions> configureOptions!!)
+        public static IServiceCollection PostConfigure<TOptions>(this IServiceCollection services!!, string? name, Action<TOptions> configureOptions!!)
             where TOptions : class
         {
             services.AddOptions();
@@ -225,7 +225,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="name">The name of the options instance.</param>
         /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that configure calls can be chained in it.</returns>
-        public static OptionsBuilder<TOptions> AddOptions<TOptions>(this IServiceCollection services!!, string name)
+        public static OptionsBuilder<TOptions> AddOptions<TOptions>(this IServiceCollection services!!, string? name)
             where TOptions : class
         {
             services.AddOptions();

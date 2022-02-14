@@ -18,11 +18,8 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Export the key out of the KSP
         /// </summary>
-        public byte[] Export(CngKeyBlobFormat format)
+        public byte[] Export(CngKeyBlobFormat format!!)
         {
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
-
             int numBytesNeeded;
             ErrorCode errorCode = Interop.NCrypt.NCryptExportKey(_keyHandle, IntPtr.Zero, format.Format, IntPtr.Zero, null, 0, out numBytesNeeded, 0);
             if (errorCode != ErrorCode.ERROR_SUCCESS)

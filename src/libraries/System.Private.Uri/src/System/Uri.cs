@@ -5104,11 +5104,8 @@ namespace System
         //  ArgumentNullException, InvalidOperationException
         //
         [Obsolete("Uri.MakeRelative has been deprecated. Use MakeRelativeUri(Uri uri) instead.")]
-        public string MakeRelative(Uri toUri)
+        public string MakeRelative(Uri toUri!!)
         {
-            if (toUri == null)
-                throw new ArgumentNullException(nameof(toUri));
-
             if (IsNotAbsoluteUri || toUri.IsNotAbsoluteUri)
                 throw new InvalidOperationException(SR.net_uri_NotAbsolute);
 

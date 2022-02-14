@@ -45,10 +45,10 @@ namespace System.Net.NetworkInformation.Tests
 
         private void PingResultValidator(PingReply pingReply, IPAddress localIpAddress)
         {
-            PingResultValidator(pingReply, new IPAddress[] { localIpAddress },  _output);
+            PingResultValidator(pingReply, new IPAddress[] { localIpAddress }, _output);
         }
 
-        private void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses)  =>  PingResultValidator(pingReply, localIpAddresses, null);
+        private void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses) => PingResultValidator(pingReply, localIpAddresses, null);
 
         private static void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses, ITestOutputHelper output)
         {
@@ -654,7 +654,7 @@ namespace System.Net.NetworkInformation.Tests
 
             byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
 
-            PingOptions  options = new PingOptions();
+            PingOptions options = new PingOptions();
             options.Ttl = 32;
             options.DontFragment = fragment;
 
@@ -675,10 +675,12 @@ namespace System.Net.NetworkInformation.Tests
             PingOptions options = new PingOptions();
             bool reachable = false;
 
+            byte[] payload = UsesPingUtility ? Array.Empty<byte>() : TestSettings.PayloadAsBytesShort;
+
             Ping ping = new Ping();
             for (int i = 0; i < s_pingcount; i++)
             {
-                pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, TestSettings.PayloadAsBytesShort);
+                pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, payload);
                 if (pingReply.Status == IPStatus.Success)
                 {
                     reachable = true;
@@ -692,7 +694,7 @@ namespace System.Net.NetworkInformation.Tests
 
             options.Ttl = 1;
             // This should always fail unless host is one IP hop away.
-            pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, TestSettings.PayloadAsBytesShort, options);
+            pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, payload, options);
             Assert.True(pingReply.Status == IPStatus.TimeExceeded || pingReply.Status == IPStatus.TtlExpired);
             Assert.NotEqual(IPAddress.Any, pingReply.Address);
         }
@@ -762,7 +764,7 @@ namespace System.Net.NetworkInformation.Tests
 
             _output.WriteLine($"pinging '{localIpAddress}'");
 
-            RemoteExecutor.Invoke(address  =>
+            RemoteExecutor.Invoke(address =>
             {
                 byte[] buffer = TestSettings.PayloadAsBytes;
                 SendBatchPing(
