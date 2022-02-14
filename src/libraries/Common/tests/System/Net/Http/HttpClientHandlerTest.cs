@@ -391,6 +391,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("TBD", TestPlatforms.Browser)]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -938,6 +939,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, true)]
         [InlineData(false, false)]
         [InlineData(null, false)]
+        [ActiveIssue("TBD", TestPlatforms.Browser)]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -974,6 +976,7 @@ namespace System.Net.Http.Functional.Tests
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
                         Assert.False(responseStream.CanWrite);
+                        Console.WriteLine($"IsBrowser: '{PlatformDetection.IsBrowser}', enableWasmStreaming: '{enableWasmStreaming}', canSeek: '{responseStream.CanSeek}'.");
                         Assert.Equal(PlatformDetection.IsBrowser && !enableWasmStreaming, responseStream.CanSeek);
 
                         // Not supported operations
