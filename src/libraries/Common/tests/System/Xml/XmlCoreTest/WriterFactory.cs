@@ -60,7 +60,7 @@ namespace XmlCoreTest.Common
 
         private XmlWriterSettings _wSettings = null;
         private XmlWriter _xmlWriter = null;
-        private Stream _writerStream = null;
+        private MemoryStream _writerStream = null;
 
         XmlWriter CreateWriterImpl()
         {
