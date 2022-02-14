@@ -82,7 +82,7 @@ namespace System.Text.Json
         /// this is to prevent multiple options instances from leaking into the object graphs of converters which
         /// could break user invariants.
         /// </summary>
-        private sealed class CachingContext
+        internal sealed class CachingContext
         {
             private readonly ConcurrentDictionary<Type, JsonConverter> _converterCache = new();
             private readonly ConcurrentDictionary<Type, JsonTypeInfo> _jsonTypeInfoCache = new();
@@ -112,7 +112,7 @@ namespace System.Text.Json
         /// this approach uses a regular dictionary pointing to weak references of <see cref="CachingContext"/>.
         /// Relevant caching contexts are looked up using the equality comparison defined by <see cref="EqualityComparer"/>.
         /// </summary>
-        private static class TrackedCachingContexts
+        internal static class TrackedCachingContexts
         {
             private const int MaxTrackedContexts = 64;
             private static readonly ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> s_cache =
@@ -166,6 +166,16 @@ namespace System.Text.Json
                     Debug.Assert(success);
 
                     return ctx;
+                }
+            }
+
+            public static void Clear()
+            {
+                lock (s_cache)
+                {
+                    s_cache.Clear();
+                    s_recentEvictionCounts.Clear();
+                    s_evictionRunsToSkip = 0;
                 }
             }
 
