@@ -88,11 +88,13 @@ enum NamedIntrinsic : unsigned short
     NI_System_String_get_Chars,
     NI_System_String_get_Length,
     NI_System_String_op_Implicit,
+    NI_System_String_StartsWith,
     NI_System_Span_get_Item,
     NI_System_ReadOnlySpan_get_Item,
 
     NI_System_MemoryExtensions_Equals,
     NI_System_MemoryExtensions_SequenceEqual,
+    NI_System_MemoryExtensions_StartsWith,
 
     // These are used by HWIntrinsics but are defined more generally
     // to allow dead code optimization and handle the recursion case

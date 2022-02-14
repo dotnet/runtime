@@ -4399,8 +4399,9 @@ protected:
     GenTree* impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int len, int dataOffset);
     GenTree* impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int len, int dataOffset);
     GenTree* impExpandHalfConstEquals(
-        GenTree* data, GenTree* lengthFld, bool checkForNull, WCHAR* cnsData, int len, int dataOffset);
+        GenTree* data, GenTree* lengthFld, bool checkForNull, bool startsWith, WCHAR* cnsData, int len, int dataOffset);
     GenTreeStrCon* impGetStrConFromSpan(GenTree* span);
+    GenTree* impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
 
     GenTree* impIntrinsic(GenTree*                newobjThis,
                           CORINFO_CLASS_HANDLE    clsHnd,

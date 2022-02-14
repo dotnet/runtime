@@ -3869,18 +3869,17 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int l
 #ifdef TARGET_64BIT
     else if (len == 3)
     {
-        if (dataOffset > 2)
-        {
-            // for len == 3 we slightly overlap with Length field
-            const UINT64 value = MAKEINT64(0 /*part of Length field*/, cns[0], cns[1], cns[2]);
-            return compareValue(this, data, TYP_LONG, dataOffset - 2, value);
-        }
-        else
-        {
-            // We can't load part of Length for spans
-            // TODO: implement via two indirs
-            return nullptr;
-        }
+        // handle len = 3 via two Int32 with overlapping
+        UINT32   value1      = MAKEINT32(cns[0], cns[1]);
+        UINT32   value2      = MAKEINT32(cns[1], cns[2]);
+        GenTree* firstIndir  = compareValue(this, data, TYP_INT, dataOffset, value1);
+        GenTree* secondIndir = compareValue(this, gtClone(data), TYP_INT, dataOffset + 2, value2);
+
+        // TODO: Consider marging two indirs via XOR instead of QMARK
+        // e.g. gtNewOperNode(GT_XOR, TYP_INT, firstIndir, secondIndir);
+        // but it currently has CQ issues
+        GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtFalse());
+        return gtNewQmarkNode(TYP_INT, firstIndir, doubleIndirColon);
     }
     else
     {
@@ -3900,7 +3899,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int l
             ssize_t  offset      = dataOffset + len * 2 - sizeof(UINT64);
             GenTree* secondIndir = compareValue(this, gtClone(data), TYP_LONG, offset, value2);
 
-            // Alternativly, we can do OR here and avoid a branch
+            // TODO: Consider marging two indirs via XOR instead of QMARK
             GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtFalse());
             return gtNewQmarkNode(TYP_INT, firstIndir, doubleIndirColon);
         }
@@ -3921,6 +3920,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int l
 //    data -         Pointer to a data to vectorize
 //    lengthFld -    Pointer to Length field
 //    checkForNull - Check data for null
+//    startsWith -   true - StartsWith, false - Equals
 //    cns -          Constant data (array of 2-byte chars)
 //    len -          Number of 2-byte chars in the cns
 //    dataOffset -   Offset for data
@@ -3930,7 +3930,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int l
 //    possible or not profitable
 //
 GenTree* Compiler::impExpandHalfConstEquals(
-    GenTree* data, GenTree* lengthFld, bool checkForNull, WCHAR* cnsData, int len, int dataOffset)
+    GenTree* data, GenTree* lengthFld, bool checkForNull, bool startsWith, WCHAR* cnsData, int len, int dataOffset)
 {
     assert(len >= 0);
 
@@ -3953,6 +3953,12 @@ GenTree* Compiler::impExpandHalfConstEquals(
     GenTree* lenCheckNode;
     if (len == 0)
     {
+        if (startsWith)
+        {
+            // Any string starts with ""
+            return gtTrue();
+        }
+
         // For zero length we don't need to compare content, the following expression is enough:
         //
         //   varData != null && lengthFld == 0
@@ -3975,19 +3981,22 @@ GenTree* Compiler::impExpandHalfConstEquals(
 
         if (indirCmp == nullptr)
         {
+            JITDUMP("unable to compose indirCmp\n");
             return nullptr;
         }
 
-        GenTreeColon* lenCheckColon = gtNewColonNode(TYP_INT, gtFalse(), indirCmp);
-        lenCheckNode = gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_NE, TYP_INT, lengthFld, elementsCount), lenCheckColon);
+        GenTreeColon* lenCheckColon = gtNewColonNode(TYP_INT, indirCmp, gtFalse());
+        lenCheckNode =
+            gtNewQmarkNode(TYP_INT, gtNewOperNode(startsWith ? GT_GE : GT_EQ, TYP_INT, lengthFld, elementsCount),
+                           lenCheckColon);
     }
 
     GenTree* rootQmark;
     if (checkForNull)
     {
         // varData == nullptr
-        GenTreeColon* nullCheckColon = gtNewColonNode(TYP_INT, gtFalse(), lenCheckNode);
-        rootQmark = gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_EQ, TYP_INT, data, gtNull()), nullCheckColon);
+        GenTreeColon* nullCheckColon = gtNewColonNode(TYP_INT, lenCheckNode, gtFalse());
+        rootQmark = gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_NE, TYP_INT, data, gtNull()), nullCheckColon);
     }
     else
     {
@@ -4029,6 +4038,131 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
         }
     }
     return nullptr;
+}
+
+GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags)
+{
+    // We're going to unroll & vectorize the following cases:
+    //
+    //  1) String.Equals(obj, "cns")
+    //  2) String.Equals(obj, "cns", StringComparison.Ordinal)
+    //  3) String.Equals("cns", obj)
+    //  4) String.Equals("cns", obj, StringComparison.Ordinal)
+    //  5) obj.Equals("cns")
+    //  6) obj.Equals("cns", StringComparison.Ordinal)
+    //  7) "cns".Equals(obj)
+    //  8) "cns".Equals(obj, StringComparison.Ordinal)
+    //
+    // NOTE: for cases 5 and 6 we don't emit "obj != null"
+    // TODO: Add support for String.Equals(object)
+
+    bool isStatic  = methodFlags & CORINFO_FLG_STATIC;
+    int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
+
+    GenTree* op1;
+    GenTree* op2;
+    if (argsCount == 3)
+    {
+        if (!impStackTop(0).val->IsIntegralConst(4)) // StringComparison.Ordinal
+        {
+            // TODO: Unroll & vectorize OrdinalIgnoreCase
+            return nullptr;
+        }
+        op1 = impStackTop(2).val;
+        op2 = impStackTop(1).val;
+    }
+    else
+    {
+        op1 = impStackTop(1).val;
+        op2 = impStackTop(0).val;
+    }
+
+    if (!(op1->OperIs(GT_CNS_STR) ^ op2->OperIs(GT_CNS_STR)))
+    {
+        // either op1 or op2 has to be CNS_STR, but not both - that case is optimized
+        // just fine as is.
+        return nullptr;
+    }
+
+    GenTree*       varStr;
+    GenTreeStrCon* cnsStr;
+    if (op1->OperIs(GT_CNS_STR))
+    {
+        cnsStr = op1->AsStrCon();
+        varStr = op2;
+    }
+    else
+    {
+        cnsStr = op2->AsStrCon();
+        varStr = op1;
+    }
+
+    bool needsNullcheck = true;
+    if ((op1 != cnsStr) && !isStatic)
+    {
+        // for the following cases we should not check varStr for null:
+        //
+        //  obj.Equals("cns")
+        //  obj.Equals("cns", StringComparison.Ordinal)
+        //
+        // instead, it should throw NRE if it's null
+        needsNullcheck = false;
+    }
+
+    int             cnsLength = -1;
+    const char16_t* str       = nullptr;
+    if (cnsStr->IsStringEmptyField())
+    {
+        // check for fake "" first
+        cnsLength = 0;
+        JITDUMP("Trying to unroll String.Equals(op1, \"\")...\n", str)
+    }
+    else
+    {
+        str = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, &cnsLength);
+        if (cnsLength < 0 || str == nullptr)
+        {
+            // We were unable to get the literal (e.g. dynamic context)
+            return nullptr;
+        }
+        JITDUMP("Trying to unroll String.Equals(op1, \"%ws\")...\n", str)
+    }
+
+    // Create a temp safe to gtClone for varStr
+    // We're not appending it as a statement untill we figure out unrolling is profitable (and possible)
+    unsigned varStrTmp         = lvaGrabTemp(true DEBUGARG("spilling varStr"));
+    lvaTable[varStrTmp].lvType = varStr->TypeGet();
+    GenTree* varStrLcl         = gtNewLclvNode(varStrTmp, varStr->TypeGet());
+
+    // TODO: Consider using ARR_LENGTH here, but we'll have to modify QMARK to propagate BBF_HAS_IDX_LEN
+    int      strLenOffset = OFFSETOF__CORINFO_String__stringLen;
+    GenTree* lenOffset    = gtNewIconNode(strLenOffset, TYP_I_IMPL);
+    GenTree* lenNode      = gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_BYREF, varStrLcl, lenOffset));
+    GenTree* unrolled = impExpandHalfConstEquals(gtClone(varStrLcl), lenNode, needsNullcheck, startsWith, (WCHAR*)str,
+                                                 cnsLength, strLenOffset + sizeof(int));
+
+    GenTree* retNode = nullptr;
+    if (unrolled != nullptr)
+    {
+        impAssignTempGen(varStrTmp, varStr);
+        if (unrolled->OperIs(GT_QMARK))
+        {
+            // QMARK nodes cannot reside on the evaluation stack
+            unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
+            impAssignTempGen(rootTmp, unrolled);
+            retNode = gtNewLclvNode(rootTmp, TYP_INT);
+        }
+
+        JITDUMP("\n... Successfully unrolled to:\n")
+        DISPTREE(unrolled)
+        for (int i = 0; i < argsCount; i++)
+        {
+            // max(2, numArgs) just to handle instance-method Equals that
+            // doesn't report "this" as an argument
+            impPopStack();
+        }
+    }
+    return retNode;
 }
 
 //------------------------------------------------------------------------
@@ -4217,120 +4351,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_String_Equals:
             {
-                // We're going to unroll & vectorize the following cases:
-                //
-                //  1) String.Equals(obj, "cns")
-                //  2) String.Equals(obj, "cns", StringComparison.Ordinal)
-                //  3) String.Equals("cns", obj)
-                //  4) String.Equals("cns", obj, StringComparison.Ordinal)
-                //  5) obj.Equals("cns")
-                //  6) obj.Equals("cns", StringComparison.Ordinal)
-                //  7) "cns".Equals(obj)
-                //  8) "cns".Equals(obj, StringComparison.Ordinal)
-                //
-                // NOTE: for cases 5 and 6 we don't emit "obj != null"
-                // TODO: Add support for String.Equals(object)
+                retNode = impStringEqualsOrStartsWith(false, sig, methodFlags);
+                break;
+            }
 
-                GenTree* op1;
-                GenTree* op2;
-                if (sig->numArgs == 3)
-                {
-                    if (!impStackTop(0).val->IsIntegralConst(4)) // StringComparison.Ordinal
-                    {
-                        // TODO: Unroll & vectorize OrdinalIgnoreCase
-                        break;
-                    }
-                    op1 = impStackTop(2).val;
-                    op2 = impStackTop(1).val;
-                }
-                else
-                {
-                    op1 = impStackTop(1).val;
-                    op2 = impStackTop(0).val;
-                }
-
-                if (!(op1->OperIs(GT_CNS_STR) ^ op2->OperIs(GT_CNS_STR)))
-                {
-                    // either op1 or op2 has to be CNS_STR, but not both - that case is optimized
-                    // just fine as is.
-                    break;
-                }
-
-                GenTree*       varStr;
-                GenTreeStrCon* cnsStr;
-                if (op1->OperIs(GT_CNS_STR))
-                {
-                    cnsStr = op1->AsStrCon();
-                    varStr = op2;
-                }
-                else
-                {
-                    cnsStr = op2->AsStrCon();
-                    varStr = op1;
-                }
-
-                assert(varStr->TypeIs(TYP_REF));
-
-                bool needsNullcheck = true;
-                if ((op1 != cnsStr) && ((methodFlags & CORINFO_FLG_STATIC) == 0))
-                {
-                    // for the following cases we should not check varStr for null:
-                    //
-                    //  obj.Equals("cns")
-                    //  obj.Equals("cns", StringComparison.Ordinal)
-                    //
-                    // instead, it should throw NRE if it's null
-                    needsNullcheck = false;
-                }
-
-                int             cnsLength = -1;
-                const char16_t* str       = nullptr;
-                if (cnsStr->IsStringEmptyField())
-                {
-                    cnsLength = 0;
-                    JITDUMP("Trying to unroll String.Equals(op1, \"\")...\n", str)
-                }
-                else
-                {
-                    str = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, &cnsLength);
-                    if (cnsLength < 0 || str == nullptr)
-                    {
-                        break;
-                    }
-                    JITDUMP("Trying to unroll String.Equals(op1, \"%ws\")...\n", str)
-                }
-
-                // Create a temp safe to gtClone for varStr
-                // We're not appending it as a statement untill we figure out
-                // unrolling is profitable (and possible)
-                unsigned varStrTmp         = lvaGrabTemp(true DEBUGARG("spilling varStr"));
-                lvaTable[varStrTmp].lvType = TYP_REF;
-                GenTree* varStrLcl         = gtNewLclvNode(varStrTmp, varStr->TypeGet());
-
-                // TODO: Consider using ARR_LENGTH here, but we'll have to modify QMARK to propagate BBF_HAS_IDX_LEN
-                int      strLenOffset = OFFSETOF__CORINFO_String__stringLen;
-                GenTree* lenOffset    = gtNewIconNode(strLenOffset, TYP_I_IMPL);
-                GenTree* lenNode      = gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_BYREF, varStrLcl, lenOffset));
-                GenTree* unrolled = impExpandHalfConstEquals(gtClone(varStrLcl), lenNode, needsNullcheck, (WCHAR*)str,
-                                                             cnsLength, strLenOffset + sizeof(int));
-                if (unrolled != nullptr)
-                {
-                    impAssignTempGen(varStrTmp, varStr);
-                    if (unrolled->OperIs(GT_QMARK))
-                    {
-                        // QMARK can't be a root node, spill it to a temp
-                        unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-                        impAssignTempGen(rootTmp, unrolled);
-                        retNode = gtNewLclvNode(rootTmp, TYP_INT);
-                    }
-
-                    JITDUMP("... Successfully unrolled to:\n")
-                    DISPTREE(unrolled)
-                    for (unsigned i = 0; i < max(2, sig->numArgs); i++)
-                    {
-                        impPopStack();
-                    }
-                }
+            case NI_System_String_StartsWith:
+            {
+                retNode = impStringEqualsOrStartsWith(true, sig, methodFlags);
                 break;
             }
 
@@ -5666,6 +5693,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_String_op_Implicit;
             }
+            else if (strcmp(methodName, "StartsWith") == 0)
+            {
+                result = NI_System_String_StartsWith;
+            }
         }
         else if (strcmp(className, "MemoryExtensions") == 0)
         {
@@ -5676,6 +5707,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "Equals") == 0)
             {
                 result = NI_System_MemoryExtensions_Equals;
+            }
+            else if (strcmp(methodName, "StartsWith") == 0)
+            {
+                result = NI_System_MemoryExtensions_StartsWith;
             }
         }
         else if (strcmp(className, "Span`1") == 0)

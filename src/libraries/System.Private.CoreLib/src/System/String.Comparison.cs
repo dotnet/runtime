@@ -612,7 +612,7 @@ namespace System
         }
 
         // Determines whether two strings match.
-        [Intrinsic] // Can be unrolled and vectorized
+        [Intrinsic] // Unrolled and vectorized for half-constant input
         public bool Equals([NotNullWhen(true)] string? value)
         {
             if (object.ReferenceEquals(this, value))
@@ -631,7 +631,7 @@ namespace System
             return EqualsHelper(this, value);
         }
 
-        [Intrinsic] // Can be unrolled and vectorized
+        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public bool Equals([NotNullWhen(true)] string? value, StringComparison comparisonType)
         {
             if (object.ReferenceEquals(this, value))
@@ -673,7 +673,7 @@ namespace System
         }
 
         // Determines whether two Strings match.
-        [Intrinsic] // Can be unrolled and vectorized
+        [Intrinsic] // Unrolled and vectorized for half-constant input
         public static bool Equals(string? a, string? b)
         {
             if (object.ReferenceEquals(a, b))
@@ -689,7 +689,7 @@ namespace System
             return EqualsHelper(a, b);
         }
 
-        [Intrinsic] // Can be unrolled and vectorized
+        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public static bool Equals(string? a, string? b, StringComparison comparisonType)
         {
             if (object.ReferenceEquals(a, b))
@@ -934,6 +934,7 @@ namespace System
             return StartsWith(value, StringComparison.CurrentCulture);
         }
 
+        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public bool StartsWith(string value!!, StringComparison comparisonType)
         {
             if ((object)this == (object)value)
