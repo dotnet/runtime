@@ -4,8 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Internal.Cryptography;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     //
     // A cross-platform ICryptoTransform implementation for decryption.

@@ -3,9 +3,8 @@
 
 using System;
 using System.Diagnostics;
-using System.Security.Cryptography;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     //
     // Represents a symmetric reusable cipher encryptor or decryptor. Underlying technology may be CNG or OpenSSL or anything else.

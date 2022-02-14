@@ -3,10 +3,10 @@
 
 using System;
 using System.Diagnostics;
-using System.Security.Cryptography;
+using Internal.Cryptography;
 using Internal.NativeCrypto;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     internal sealed class BasicSymmetricCipherBCrypt : BasicSymmetricCipher
     {
