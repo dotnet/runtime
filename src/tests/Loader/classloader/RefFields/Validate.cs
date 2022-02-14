@@ -17,25 +17,8 @@ class Validate
         Assert.Throws<TypeLoadException>(() => { var t = typeof(InvalidStructWithRefField); });
         Assert.Throws<TypeLoadException>(() => { var t = typeof(InvalidRefFieldAlignment); });
         Assert.Throws<TypeLoadException>(() => { var t = typeof(InvalidObjectRefRefFieldOverlap); });
-    }
-
-    [Fact]
-    public static void Validate_ConservativeGC_Types()
-    {
-        // These types represent scenarios where a conservative GC is needed.
-        // Since Mono always runs with a conservative GC, these types are permissable.
-        if (TestLibrary.Utilities.IsMonoRuntime)
-        {
-            var load1 = () => { var t = typeof(IntPtrRefFieldOverlap); };
-            load1();
-            var load2 = () => { var t = typeof(IntPtrOverlapWithInnerFieldType); };
-            load2();
-        }
-        else
-        {
-            Assert.Throws<TypeLoadException>(() => { var t = typeof(IntPtrRefFieldOverlap); });
-            Assert.Throws<TypeLoadException>(() => { var t = typeof(IntPtrOverlapWithInnerFieldType); });
-        }
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(IntPtrRefFieldOverlap); });
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(IntPtrOverlapWithInnerFieldType); });
     }
 
     [Fact]

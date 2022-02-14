@@ -60,7 +60,7 @@
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
         01 00 00 00
     )
-    .field [0] public int32& Field
+    .field public int32& Field
 }
 
 .class public explicit ansi sealed beforefieldinit InvalidCSharp.IntPtrOverlapWithInnerFieldType
