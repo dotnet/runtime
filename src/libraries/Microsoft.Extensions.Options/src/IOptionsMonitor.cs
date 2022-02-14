@@ -27,6 +27,6 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="listener">The action to be invoked when <typeparamref name="TOptions"/> has changed.</param>
         /// <returns>An <see cref="IDisposable"/> which should be disposed to stop listening for changes.</returns>
-        IDisposable OnChange(Action<TOptions, string?> listener);
+        IDisposable? OnChange(Action<TOptions, string?> listener);
     }
 }

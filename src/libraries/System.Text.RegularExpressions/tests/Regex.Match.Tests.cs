@@ -1549,7 +1549,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [ConditionalTheory(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/runtime/issues/24749")]
-        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeConfiguration.Checked)]
+        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", ~RuntimeConfiguration.Release)]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeTestModes.JitMinOpts)]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public void Match_ExcessPrefix(RegexEngine engine)
