@@ -861,7 +861,7 @@ include_directories("${CLR_SRC_NATIVE_DIR}")
 if(NOT DISABLE_LIBS)
   set(INSTALL_MONO_API 1)
 endif()
-add_subdirectory("${CLR_SRC_NATIVE_DIR}/monoapi" monoapi)
+add_subdirectory("${CLR_SRC_NATIVE_DIR}/public" public_apis)
 
 add_subdirectory(mono)
 if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCAT)

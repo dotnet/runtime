@@ -223,7 +223,7 @@ class OffsetsTool:
 			args.mono_path + "/mono",
 			args.mono_path + "/mono/eglib",
 			args.native_path,
-			args.native_path + "/monoapi",
+			args.native_path + "/public",
 			args.target_path,
 			args.target_path + "/mono/eglib"
 			]

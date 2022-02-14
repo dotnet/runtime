@@ -1,4 +1,3 @@
-project(monoapi)
 
 add_library(monoapi_utils INTERFACE)
 
