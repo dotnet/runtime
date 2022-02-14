@@ -400,11 +400,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (CompilationErrorException cee)
             {
-                throw new ReturnAsErrorException($"Running expression: {expression} failed with error: {cee.Message}. Check if the expression is correct.", "CompilationError");
+                throw new ReturnAsErrorException($"Cannot evaluate '{expression}': {cee.Message}", "CompilationError");
             }
             catch (Exception ex)
             {
-                throw new Exception($"Internal Error: Unable to run {expression}, error: {ex.Message}.");
+                throw new Exception($"Internal Error: Unable to run {expression}, error: {ex.Message}.", ex);
             }
         }
 
@@ -433,7 +433,16 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class ReturnAsErrorException : Exception
     {
-        public Result Error { get; }
+        public Result Error
+        {
+            get
+            {
+                Error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
+                return Error;
+            }
+            set { }
+        }
+
         public ReturnAsErrorException(JObject error)
             => Error = Result.Err(error);
 
@@ -456,11 +465,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         stackTrace = StackTrace
                     }
                 }));
-        }
-
-        public void UpdateStackTrace()
-        {
-            Error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
         }
     }
 }

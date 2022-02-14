@@ -1252,7 +1252,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (ReturnAsErrorException ree)
             {
-                ree.UpdateStackTrace();
                 SendResponse(msg_id, ree.Error, token);
             }
             catch (Exception e)
