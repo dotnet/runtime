@@ -128,11 +128,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsOk => Value != null;
         public bool IsErr => Error != null;
 
-        private Result(JObject resultOrError, bool isError, JObject error = null)
+        private Result(JObject resultOrError, bool isError)
         {
-            if (resultOrError != null && error != null)
-                throw new ArgumentException($"Both {nameof(resultOrError)} and {nameof(error)} arguments cannot be non-null.");
-
             bool resultHasError = isError || string.Equals((resultOrError?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
             if (resultOrError != null && resultHasError)
             {
@@ -142,13 +139,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             else
             {
                 Value = resultOrError;
-                Error = error;
+                Error = null;
             }
         }
         public static Result FromJson(JObject obj)
         {
-            //Log ("protocol", $"from result: {obj}");
-            return new Result(obj["result"] as JObject, false, obj["error"] as JObject);
+            var error = obj["error"] as JObject;
+            if (error != null)
+                return new Result(error, true);
+            var result = obj["result"] as JObject;
+            return new Result(result, false);
         }
 
         public static Result Ok(JObject ok) => new Result(ok, false);
