@@ -100,20 +100,20 @@ namespace System.Net.Security.Tests
 #pragma warning restore 0618
             if (PlatformDetection.SupportsTls10)
             {
-                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, PlatformDetection.SupportsTls11 || !PlatformDetection.IsWindows ? typeof(AuthenticationException) : typeof(IOException) };
-                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, PlatformDetection.SupportsTls12 || !PlatformDetection.IsWindows ? typeof(AuthenticationException) : typeof(IOException) };
+                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11,  typeof(AuthenticationException) };
+                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12,  typeof(AuthenticationException) };
             }
 
             if (PlatformDetection.SupportsTls11)
             {
-                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, PlatformDetection.SupportsTls10 || !PlatformDetection.IsWindows ? typeof(AuthenticationException) : typeof(IOException) };
-                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, PlatformDetection.SupportsTls12 || !PlatformDetection.IsWindows ? typeof(AuthenticationException) : typeof(IOException) };
+                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };
+                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(AuthenticationException) };
             }
 
             if (PlatformDetection.SupportsTls12)
             {
-                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, PlatformDetection.SupportsTls10 || !PlatformDetection.IsWindows ? typeof(AuthenticationException) : typeof(IOException) };
-                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, PlatformDetection.SupportsTls11 || !PlatformDetection.IsWindows ? typeof(AuthenticationException) : typeof(IOException) };
+                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(AuthenticationException) };
+                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
             }
         }
 
@@ -138,7 +138,6 @@ namespace System.Net.Security.Tests
             _log.WriteLine("Server: " + serverSslProtocols + "; Client: " + clientSslProtocols);
 
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, 0);
-
             using (var server = new DummyTcpServer(endPoint, encryptionPolicy))
             using (var client = new TcpClient())
             {
