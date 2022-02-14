@@ -593,7 +593,6 @@ static guint16 sri_vector_methods [] = {
 	SN_CreateScalarUnsafe,
 	SN_Equals,
 	SN_EqualsAll,
-	SN_EqualsAny,
 	SN_Floor,
 	SN_GetElement,
 	SN_GetLower,
@@ -723,11 +722,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
 	case SN_EqualsAll:
 		return emit_xequal (cfg, klass, args [0], args [1]);
-	case SN_EqualsAny: {
-		MonoInst *cmp_eq = emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
-		MonoInst *zero = emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
-		return emit_xequal (cfg, klass, cmp_eq, zero);
-	}
 	case SN_GetElement: {
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
