@@ -90,16 +90,30 @@ namespace System.Net.NetworkInformation
                     return CreatePingReply(IPStatus.TimedOut);
                 }
 
-                if ((p.ExitCode == 1 || p.ExitCode == 2) &&
-                    options?.Ttl == null) // we can't distinguish between not reached and TTL expired without checking stdout
-                {
-                    // Throw timeout for known failure return codes from ping functions.
-                    return CreatePingReply(IPStatus.TimedOut);
-                }
-
                 try
                 {
-                    string output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+                    string? output = null;
+                    // Throw timeout for known failure return codes from ping functions.
+                    if (p.ExitCode == 1 || p.ExitCode == 2)
+                    {
+                        if (options?.Ttl != null)
+                        {
+                            // TTL exceeded may have occured
+                            output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+                            if (output.Contains("Time to live exceeded", StringComparison.Ordinal))
+                            {
+                                // look for address in "From 172.21.64.1 icmp_seq=1 Time to live exceeded"
+                                int addressStart = output.IndexOf("From ", StringComparison.Ordinal) + 5;
+                                int addressLength = output.IndexOf(' ', addressStart) - addressStart;
+                                address = IPAddress.Parse(output.AsSpan(addressStart, addressLength));
+                                return CreatePingReply(IPStatus.TimeExceeded, address);
+                            }
+                        }
+
+                        return CreatePingReply(IPStatus.TimedOut);
+                    }
+
+                    output ??= await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
                     return ParsePingUtilityOutput(address, output);
                 }
                 catch (Exception)
@@ -112,26 +126,12 @@ namespace System.Net.NetworkInformation
 
         private PingReply ParsePingUtilityOutput(IPAddress address, string output)
         {
-            long rtt = 0;
-            IPStatus status;
-            if (output.Contains("Time to live exceeded", StringComparison.Ordinal))
-            {
-                // look for address in "From 172.21.64.1 icmp_seq=1 Time to live exceeded"
-                int addressStart = output.IndexOf("From ", StringComparison.Ordinal) + 5;
-                int addressLength = output.IndexOf(' ', addressStart) - addressStart;
-                address = IPAddress.Parse(output.AsSpan(addressStart, addressLength));
-                status = IPStatus.TimeExceeded;
-            }
-            else // expect success
-            {
-                rtt = UnixCommandLinePing.ParseRoundTripTime(output);
-                status = IPStatus.Success;
-            }
+            long rtt = UnixCommandLinePing.ParseRoundTripTime(output);
 
             return new PingReply(
                 address,
                 null, // Ping utility cannot accommodate these, return null to indicate they were ignored.
-                status,
+                IPStatus.Success,
                 rtt,
                 Array.Empty<byte>()); // Ping utility doesn't deliver this info.
         }
