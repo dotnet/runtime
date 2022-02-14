@@ -457,8 +457,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 }
                             }
                             // optional arguments that were not overritten
-                            else if (!await commandParamsObjWriter.WriteConst(methodParamsInfo[i].TypeCode, methodParamsInfo[i].Value, context.SdbAgent, token))
-                                return null;
+                            else
+                            {
+                                if (!await commandParamsObjWriter.WriteConst(methodParamsInfo[i].TypeCode, methodParamsInfo[i].Value, context.SdbAgent, token))
+                                    return null;
+                            }
                         }
                         var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);
                         return await GetValueFromObject(retMethod, token);
