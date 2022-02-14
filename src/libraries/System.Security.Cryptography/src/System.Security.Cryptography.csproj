@@ -26,28 +26,10 @@
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs"
              Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\BasicSymmetricCipher.cs"
-             Link="Common\Internal\Cryptography\BasicSymmetricCipher.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs"
              Link="Common\Internal\Cryptography\HashProvider.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
              Link="Common\Internal\Cryptography\Helpers.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\PemEnumerator.cs"
-             Link="Common\Internal\Cryptography\PemEnumerator.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\PemKeyHelpers.cs"
-             Link="Common\Internal\Cryptography\PemKeyHelpers.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\ILiteSymmetricCipher.cs"
-             Link="Common\Internal\Cryptography\ILiteSymmetricCipher.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\SymmetricPadding.cs"
-             Link="Common\Internal\Cryptography\SymmetricPadding.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoTransform.cs"
-             Link="Common\Internal\Cryptography\UniversalCryptoTransform.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoEncryptor.cs"
-             Link="Common\Internal\Cryptography\UniversalCryptoEncryptor.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoDecryptor.cs"
-             Link="Common\Internal\Cryptography\UniversalCryptoDecryptor.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoOneShot.cs"
-             Link="Common\Internal\Cryptography\UniversalCryptoOneShot.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs"
@@ -294,6 +276,7 @@
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
     <Compile Include="System\Security\Cryptography\Base64Transforms.cs" />
+    <Compile Include="System\Security\Cryptography\BasicSymmetricCipher.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.cs" />
     <Compile Include="System\Security\Cryptography\CipherMode.cs" />
     <Compile Include="System\Security\Cryptography\CngAlgorithm.cs" />
@@ -357,6 +340,7 @@
     <Compile Include="System\Security\Cryptography\HMACSHA512.cs" />
     <Compile Include="System\Security\Cryptography\ICryptoTransform.cs" />
     <Compile Include="System\Security\Cryptography\ICspAsymmetricAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\ILiteSymmetricCipher.cs" />
     <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
     <Compile Include="System\Security\Cryptography\KeyedHashAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\KeyNumber.cs" />
@@ -375,7 +359,9 @@
     <Compile Include="System\Security\Cryptography\PbeEncryptionAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\PbeParameters.cs" />
     <Compile Include="System\Security\Cryptography\PemEncoding.cs" />
+    <Compile Include="System\Security\Cryptography\PemEnumerator.cs" />
     <Compile Include="System\Security\Cryptography\PemFields.cs" />
+    <Compile Include="System\Security\Cryptography\PemKeyHelpers.cs" />
     <Compile Include="System\Security\Cryptography\PKCS1MaskGenerationMethod.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGeneratorImplementation.cs" />
@@ -414,8 +400,13 @@
     <Compile Include="System\Security\Cryptography\SHA512Managed.cs" />
     <Compile Include="System\Security\Cryptography\SignatureDescription.cs" />
     <Compile Include="System\Security\Cryptography\SymmetricAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\SymmetricPadding.cs" />
     <Compile Include="System\Security\Cryptography\TripleDES.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.cs" />
+    <Compile Include="System\Security\Cryptography\UniversalCryptoTransform.cs" />
+    <Compile Include="System\Security\Cryptography\UniversalCryptoEncryptor.cs" />
+    <Compile Include="System\Security\Cryptography\UniversalCryptoDecryptor.cs" />
+    <Compile Include="System\Security\Cryptography\UniversalCryptoOneShot.cs" />
     <Compile Include="System\Security\Cryptography\XmlKeyHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateExtensionsCommon.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.cs" />
@@ -1331,10 +1322,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.iOS.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="$(CommonPath)Internal\Cryptography\BasicSymmetricCipherBCrypt.cs"
-             Link="Common\Internal\Cryptography\BasicSymmetricCipherBCrypt.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\BasicSymmetricCipherLiteBCrypt.cs"
-             Link="Common\Internal\Cryptography\BasicSymmetricCipherLiteBCrypt.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\CngCommon.Hash.cs"
              Link="Common\Internal\Cryptography\CngCommon.Hash.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\CngCommon.SignVerify.cs"
@@ -1723,7 +1710,9 @@
     <Compile Include="System\Security\Cryptography\AesImplementation.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.Windows.cs" />
     <Compile Include="System\Security\Cryptography\BasicSymmetricCipherCsp.cs" />
+    <Compile Include="System\Security\Cryptography\BasicSymmetricCipherBCrypt.cs" />
     <Compile Include="System\Security\Cryptography\BasicSymmetricCipherNCrypt.cs" />
+    <Compile Include="System\Security\Cryptography\BasicSymmetricCipherLiteBCrypt.cs" />
     <Compile Include="System\Security\Cryptography\BasicSymmetricCipherLiteNCrypt.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Shared.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Windows.cs" />
