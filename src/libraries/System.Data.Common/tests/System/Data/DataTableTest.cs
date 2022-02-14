@@ -28,6 +28,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Globalization;
@@ -376,23 +377,38 @@ namespace System.Data.Tests
 
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        public void DataColumnTypeSerialization()
+        [Fact]
+        public void SerializationFormat_Binary_does_not_work_by_default()
         {
             DataTable dt = new DataTable("MyTable");
-            DataColumn dc = new DataColumn("dc", typeof(int));
-            dt.Columns.Add(dc);
-            dt.RemotingFormat = SerializationFormat.Binary;
+            Assert.Throws<InvalidEnumArgumentException>(() => dt.RemotingFormat = SerializationFormat.Binary);
+        }
 
-            DataTable dtDeserialized;
-            using (MemoryStream ms = new MemoryStream())
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SerializationFormat_Binary_works_with_appconfig_switch()
+        {
+            RemoteExecutor.Invoke(RunTest).Dispose();
+
+            static void RunTest()
             {
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(ms, dt);
-                ms.Seek(0, SeekOrigin.Begin);
-                dtDeserialized = (DataTable)bf.Deserialize(ms);
+                AppContext.SetSwitch("Switch.System.Data.AllowUnsafeSerializationFormatBinary", true);
+
+                DataTable dt = new DataTable("MyTable");
+                DataColumn dc = new DataColumn("dc", typeof(int));
+                dt.Columns.Add(dc);
+                dt.RemotingFormat = SerializationFormat.Binary;
+
+                DataTable dtDeserialized;
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    BinaryFormatter bf = new BinaryFormatter();
+                    bf.Serialize(ms, dt);
+                    ms.Seek(0, SeekOrigin.Begin);
+                    dtDeserialized = (DataTable)bf.Deserialize(ms);
+                }
+
+                Assert.Equal(dc.DataType, dtDeserialized.Columns[0].DataType);
             }
-            Assert.Equal(dc.DataType, dtDeserialized.Columns[0].DataType);
         }
 
         [Fact]

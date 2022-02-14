@@ -136,8 +136,7 @@ namespace System.Security.Principal
                     sourceName.AsSpan().CopyTo(new Span<byte>(sourceContext.SourceName, TOKEN_SOURCE.TOKEN_SOURCE_LENGTH));
                 }
 
-                if (sUserPrincipalName == null)
-                    throw new ArgumentNullException(nameof(sUserPrincipalName));
+                ArgumentNullException.ThrowIfNull(sUserPrincipalName);
 
                 byte[] upnBytes = Encoding.Unicode.GetBytes(sUserPrincipalName);
                 if (upnBytes.Length > ushort.MaxValue)

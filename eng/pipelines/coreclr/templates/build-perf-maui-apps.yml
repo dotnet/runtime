@@ -112,7 +112,7 @@ steps:
   - script: |
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
-      ./dotnet-install.sh --channel 6.0.2xx --quality signed --install-dir .
+      ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir .
       ./dotnet --info
       ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --source https://aka.ms/dotnet6/nuget/index.json --source https://api.nuget.org/v3/index.json
     displayName: Install MAUI workload
@@ -126,12 +126,14 @@ steps:
     displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
 
-  - script: |
-      chmod -R a+r .
-      ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
-      mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
-    displayName: Build MAUI Android
-    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+  #### Commented out to mitigate https://github.com/dotnet/performance/issues/2254 on main
+  #- script: |
+  #    chmod -R a+r .
+  #    ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release -p:RunAOTCompilation=false -p:AndroidEnableProfiledAot=false
+  #    ls -l -R
+  #    mv ./bin/Release/net6.0-android/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
+  #  displayName: Build MAUI Android
+  #  workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - script: |
       chmod -R a+r .
@@ -147,33 +149,38 @@ steps:
     displayName: Build MAUI MacCatalyst
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
-  - task: PublishBuildArtifacts@1
-    displayName: 'Publish MauiAndroid binlog'
-    inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
-      artifactName:  ${{ parameters.artifactName }}
+  #### Commented out to mitigate https://github.com/dotnet/performance/issues/2254 on main
+  #- task: PublishBuildArtifacts@1
+  #  displayName: 'Publish MauiAndroid binlog'
+  #  condition: always()
+  #  inputs:
+  #    pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
+  #    artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiiOS binlog'
+    condition: always()
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiiOS.binlog
       artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiMacCatalyst binlog'
+    condition: always()
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog
       artifactName:  ${{ parameters.artifactName }}
 
-  - template: /eng/pipelines/common/upload-artifact-step.yml
-    parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk
-        includeRootFolder: true
-        displayName: Maui Android App
-        artifactName: MauiAndroidApp
-        archiveExtension: '.tar.gz'
-        archiveType: tar
-        tarCompression: gz
+  #### Commented out to mitigate https://github.com/dotnet/performance/issues/2254 on main
+  #- template: /eng/pipelines/common/upload-artifact-step.yml
+  #  parameters:
+  #      rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk
+  #      includeRootFolder: true
+  #      displayName: Maui Android App
+  #      artifactName: MauiAndroidApp
+  #      archiveExtension: '.tar.gz'
+  #      archiveType: tar
+  #      tarCompression: gz
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:

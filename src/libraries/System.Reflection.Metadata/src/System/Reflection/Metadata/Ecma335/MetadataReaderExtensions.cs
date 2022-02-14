@@ -17,13 +17,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="tableIndex"/> is not a valid table index.</exception>
-        public static int GetTableRowCount(this MetadataReader reader, TableIndex tableIndex)
+        public static int GetTableRowCount(this MetadataReader reader!!, TableIndex tableIndex)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             if ((int)tableIndex >= MetadataTokens.TableCount)
             {
                 Throw.TableIndexOutOfRange();
@@ -106,13 +101,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="tableIndex"/> is not a valid table index.</exception>
-        public static unsafe int GetTableMetadataOffset(this MetadataReader reader, TableIndex tableIndex)
+        public static unsafe int GetTableMetadataOffset(this MetadataReader reader!!, TableIndex tableIndex)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             return (int)(reader.GetTableMetadataBlock(tableIndex).Pointer - reader.Block.Pointer);
         }
 
@@ -187,13 +177,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="heapIndex"/> is not a valid heap index.</exception>
-        public static int GetHeapSize(this MetadataReader reader, HeapIndex heapIndex)
+        public static int GetHeapSize(this MetadataReader reader!!, HeapIndex heapIndex)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             return reader.GetMetadataBlock(heapIndex).Length;
         }
 
@@ -202,13 +187,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="heapIndex"/> is not a valid heap index.</exception>
-        public static unsafe int GetHeapMetadataOffset(this MetadataReader reader, HeapIndex heapIndex)
+        public static unsafe int GetHeapMetadataOffset(this MetadataReader reader!!, HeapIndex heapIndex)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             return (int)(reader.GetMetadataBlock(heapIndex).Pointer - reader.Block.Pointer);
         }
 
@@ -235,13 +215,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// Returns the a handle to the UserString that follows the given one in the UserString heap or a nil handle if it is the last one.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
-        public static UserStringHandle GetNextHandle(this MetadataReader reader, UserStringHandle handle)
+        public static UserStringHandle GetNextHandle(this MetadataReader reader!!, UserStringHandle handle)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             return reader.UserStringHeap.GetNextHandle(handle);
         }
 
@@ -249,13 +224,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// Returns the a handle to the Blob that follows the given one in the Blob heap or a nil handle if it is the last one.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
-        public static BlobHandle GetNextHandle(this MetadataReader reader, BlobHandle handle)
+        public static BlobHandle GetNextHandle(this MetadataReader reader!!, BlobHandle handle)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             return reader.BlobHeap.GetNextHandle(handle);
         }
 
@@ -263,13 +233,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// Returns the a handle to the String that follows the given one in the String heap or a nil handle if it is the last one.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
-        public static StringHandle GetNextHandle(this MetadataReader reader, StringHandle handle)
+        public static StringHandle GetNextHandle(this MetadataReader reader!!, StringHandle handle)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             return reader.StringHeap.GetNextHandle(handle);
         }
 

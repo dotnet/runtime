@@ -731,12 +731,12 @@ namespace System.Runtime.InteropServices
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
             Justification = "The calling method is annotated with RequiresUnreferencedCode")]
-        [GeneratedDllImport(Interop.Libraries.Ole32, PreserveSig = false)]
+        [GeneratedDllImport(Interop.Libraries.Ole32)]
         private static partial int MkParseDisplayName(IntPtr pbc, [MarshalAs(UnmanagedType.LPWStr)] string szUserName, out uint pchEaten, out IntPtr ppmk);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
             Justification = "The calling method is annotated with RequiresUnreferencedCode")]
-        [GeneratedDllImport(Interop.Libraries.Ole32, PreserveSig = false)]
+        [GeneratedDllImport(Interop.Libraries.Ole32)]
         private static partial int BindMoniker(IntPtr pmk, uint grfOpt, ref Guid iidResult, out IntPtr ppvResult);
 
         [SupportedOSPlatform("windows")]

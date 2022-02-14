@@ -781,7 +781,11 @@ namespace System.Net
         public X509CertificateCollection ClientCertificates
         {
             get => _clientCertificates ??= new X509CertificateCollection();
-            set => _clientCertificates = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _clientCertificates = value;
+            }
         }
 
         // HTTP Version

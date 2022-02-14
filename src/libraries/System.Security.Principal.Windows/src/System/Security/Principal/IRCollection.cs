@@ -118,10 +118,7 @@ namespace System.Security.Principal
 
             set
             {
-                if (value is null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 _identities[index] = value;
             }
         }

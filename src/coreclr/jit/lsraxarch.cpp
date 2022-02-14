@@ -1826,6 +1826,7 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_Truncate:
         case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
             break;

@@ -85,7 +85,7 @@ enum genTreeOps : BYTE
 // The following enum defines a set of bit flags that can be used
 // to classify expression tree nodes.
 //
-enum genTreeKinds
+enum GenTreeOperKind
 {
     GTK_SPECIAL = 0x00, // special operator
     GTK_LEAF    = 0x01, // leaf    operator
@@ -95,12 +95,28 @@ enum genTreeKinds
     GTK_KINDMASK = (GTK_SPECIAL | GTK_LEAF | GTK_UNOP | GTK_BINOP), // operator kind mask
     GTK_SMPOP    = (GTK_UNOP | GTK_BINOP),
 
-    GTK_COMMUTE = 0x08,   // commutative  operator
-    GTK_EXOP    = 0x10,   // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
-                          // by adding non-node fields to unary or binary operator.
-    GTK_NOVALUE   = 0x20, // node does not produce a value
-    GTK_NOTLIR    = 0x40, // node is not allowed in LIR
-    GTK_NOCONTAIN = 0x80, // this node is a value, but may not be contained
+    GTK_COMMUTE = 0x08, // commutative  operator
+    GTK_EXOP    = 0x10, // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
+                        // by adding non-node fields to unary or binary operator.
+    GTK_NOVALUE = 0x20, // node does not produce a value
+
+    GTK_MASK = 0xFF
+};
+
+// The following enum defines a set of bit flags that describe opers for the purposes
+// of DEBUG-only checks. This is separate from the above "GenTreeOperKind"s to avoid
+// making the table for those larger in Release builds. However, it resides in the same
+// "namespace" and so all values here must be distinct from those in "GenTreeOperKind".
+//
+enum GenTreeDebugOperKind
+{
+    DBK_FIRST_FLAG = GTK_MASK + 1,
+
+    DBK_NOTHIR    = DBK_FIRST_FLAG,      // This oper is not supported in HIR (before rationalization).
+    DBK_NOTLIR    = DBK_FIRST_FLAG << 1, // This oper is not supported in LIR (after rationalization).
+    DBK_NOCONTAIN = DBK_FIRST_FLAG << 2, // This oper produces a value, but may not be contained.
+
+    DBK_MASK = ~GTK_MASK
 };
 
 /*****************************************************************************/
@@ -878,8 +894,11 @@ private:
 public:
     // The register number is stored in a small format (8 bits), but the getters return and the setters take
     // a full-size (unsigned) format, to localize the casts here.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
+#ifdef DEBUG
     bool canBeContained() const;
+#endif
 
     // for codegen purposes, is this node a subnode of its parent
     bool isContained() const;
@@ -1071,34 +1090,6 @@ public:
         }
 
         return true;
-    }
-
-    bool IsLIR() const
-    {
-        if ((OperKind(gtOper) & GTK_NOTLIR) != 0)
-        {
-            return false;
-        }
-
-        switch (gtOper)
-        {
-            case GT_NOP:
-                // NOPs may only be present in LIR if they do not produce a value.
-                return IsNothingNode();
-
-            case GT_ADDR:
-            {
-                // ADDR ndoes may only be present in LIR if the location they refer to is not a
-                // local, class variable, or IND node.
-                GenTree*   location   = gtGetOp1();
-                genTreeOps locationOp = location->OperGet();
-                return !location->IsLocal() && (locationOp != GT_CLS_VAR) && (locationOp != GT_IND);
-            }
-
-            default:
-                // All other nodes are assumed to be correct.
-                return true;
-        }
     }
 
     // LIR flags
@@ -1650,6 +1641,20 @@ public:
     }
 
 #ifdef DEBUG
+    static const GenTreeDebugOperKind gtDebugOperKindTable[];
+
+    static GenTreeDebugOperKind DebugOperKind(genTreeOps oper)
+    {
+        assert(oper < GT_COUNT);
+
+        return gtDebugOperKindTable[oper];
+    }
+
+    GenTreeDebugOperKind DebugOperKind() const
+    {
+        return DebugOperKind(OperGet());
+    }
+
     bool NullOp1Legal() const
     {
         assert(OperIsSimple());
@@ -1686,6 +1691,17 @@ public:
             default:
                 return false;
         }
+    }
+
+    bool OperIsLIR() const
+    {
+        if (OperIs(GT_NOP))
+        {
+            // NOPs may only be present in LIR if they do not produce a value.
+            return IsNothingNode();
+        }
+
+        return (DebugOperKind() & DBK_NOTLIR) == 0;
     }
 
     bool        OperSupportsReverseOps() const;

@@ -66,7 +66,7 @@ namespace System
             return !left.Equals(right);
         }
 
-        internal static string ConstructInstantiation(RuntimeMethodInfo method, TypeNameFormatFlags format)
+        internal static string ConstructInstantiation(RuntimeMethodInfo method)
         {
             var sb = new StringBuilder();
             Type[]? gen_params = method.GetGenericArguments();
