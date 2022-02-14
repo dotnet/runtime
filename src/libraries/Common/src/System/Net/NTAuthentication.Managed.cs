@@ -184,8 +184,6 @@ namespace System.Net
             public Flags Flags;
             public Version Version;
             public fixed byte Mic[16];
-            // Payload with fixed space for LN and NTLM responces
-            public fixed byte LmResponse[ChallengeResponseLength];  // hash + client challenge.
         }
 
         // Set temp to ConcatenationOf(Responserversion, HiResponserversion, Z(6), Time, ClientChallenge, Z(4), ServerName, Z(4))
@@ -201,7 +199,8 @@ namespace System.Net
             public long Time;
             public fixed byte ClientChallenge[ChallengeLength];
             private int _reserved4;
-            private int _reserved5;
+            public fixed byte ServerInfo[4]; // Has to be non-zero size, so set it to the Z(4) padding
+            //private int _reserved5;
         }
 
         // rfc4178
@@ -331,16 +330,16 @@ namespace System.Net
             Debug.Assert(HeaderLength == NtlmHeader.Length);
             Debug.Assert(asBytes.Length == sizeof(NegotiateMessage));
 
-            Span<NegotiateMessage> message = MemoryMarshal.Cast<byte, NegotiateMessage>(asBytes);
+            ref NegotiateMessage message = ref MemoryMarshal.AsRef<NegotiateMessage>(asBytes);
 
             asBytes.Clear();
             NtlmHeader.CopyTo(asBytes);
-            message[0].Header.MessageType = MessageType.Negotiate;
-            message[0].Flags =
+            message.Header.MessageType = MessageType.Negotiate;
+            message.Flags =
                 Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.TargetName |
                 Flags.NegotiateVersion | Flags.NegotiateKeyExchange | Flags.Negotiate128 |
                 Flags.NegotiateTargetInfo | Flags.NegotiateAlwaysSign | Flags.NegotiateSign;
-            message[0].Version = new Version { VersionMajor = 6, VersionMinor = 1, ProductBuild = 7600, CurrentRevision = 15 };
+            message.Version = new Version { VersionMajor = 6, VersionMinor = 1, ProductBuild = 7600, CurrentRevision = 15 };
         }
 
         private unsafe int GetFieldLength(MessageField field)
@@ -415,46 +414,24 @@ namespace System.Net
 
         // Section 3.3.2
         //
-        // Set LmChallengeResponse to ConcatenationOf(
-        //                              HMAC_MD5(ResponseKeyLM, ConcatenationOf(CHALLENGE_MESSAGE.ServerChallenge, ClientChallenge)),
-        //                              ClientChallenge )
-        private int makeLm2ChallengeResponse(byte[] lm2Hash, ReadOnlySpan<byte> serverChallenge, Span<byte> clientChallenge, ref Span<byte> responseAsBytes)
-        {
-            Debug.Assert(serverChallenge.Length == ChallengeLength);
-            Debug.Assert(clientChallenge.Length == ChallengeLength);
-            Debug.Assert(lm2Hash.Length == DigestLength);
-
-            Span<AuthenticateMessage> response = MemoryMarshal.Cast<byte, AuthenticateMessage>(responseAsBytes);
-            Span<byte> lmResponse = responseAsBytes.Slice((int)Marshal.OffsetOf(typeof(AuthenticateMessage), "LmResponse"), ChallengeResponseLength);
-            lmResponse.Fill(0);
-            SetField(ref response[0].LmChallengeResponse, ChallengeResponseLength, (int)Marshal.OffsetOf(typeof(AuthenticateMessage), "LmResponse"));
-
-            return ChallengeResponseLength;
-        }
-
-        // Section 3.3.2
-        //
         // Set temp to ConcatenationOf(Responserversion, HiResponserversion, Z(6), Time, ClientChallenge, Z(4), ServerName, Z(4))
         // Set NTProofStr to HMAC_MD5(ResponseKeyNT, ConcatenationOf(CHALLENGE_MESSAGE.ServerChallenge, temp))
         // Set NtChallengeResponse to ConcatenationOf(NTProofStr, temp)
-        private unsafe int makeNtlm2ChallengeResponse(DateTime time, byte[] lm2Hash, ReadOnlySpan<byte> serverChallenge, Span<byte> clientChallenge, ReadOnlySpan<byte> serverInfo, ref MessageField field, Span<byte> payload)
+        private unsafe void makeNtlm2ChallengeResponse(DateTime time, byte[] lm2Hash, ReadOnlySpan<byte> serverChallenge, Span<byte> clientChallenge, ReadOnlySpan<byte> serverInfo, ref MessageField field, Span<byte> payload, ref int payloadOffset)
         {
             Debug.Assert(serverChallenge.Length == ChallengeLength);
             Debug.Assert(clientChallenge.Length == ChallengeLength);
             Debug.Assert(lm2Hash.Length == DigestLength);
 
-            Span<byte> blob = payload.Slice(0, sizeof(NtChallengeResponse) + serverInfo.Length);
-            Span<NtChallengeResponse> temp = MemoryMarshal.Cast<byte, NtChallengeResponse>(blob.Slice(0, sizeof(NtChallengeResponse)));
+            Span<byte> blob = payload.Slice(payloadOffset, sizeof(NtChallengeResponse) + serverInfo.Length);
+            ref NtChallengeResponse temp = ref MemoryMarshal.AsRef<NtChallengeResponse>(blob.Slice(0, sizeof(NtChallengeResponse)));
 
-            temp[0].HiResponserversion = 1;
-            temp[0].Responserversion = 1;
-            temp[0].Time = time.ToFileTimeUtc();
+            temp.HiResponserversion = 1;
+            temp.Responserversion = 1;
+            temp.Time = time.ToFileTimeUtc();
 
-            int offset = (int)Marshal.OffsetOf(typeof(NtChallengeResponse), "ClientChallenge");
-            clientChallenge.CopyTo(blob.Slice(offset, ChallengeLength));
-
-            offset += ChallengeLength + 4; // challengeLength + Z4
-            serverInfo.CopyTo(blob.Slice(offset));
+            clientChallenge.CopyTo(MemoryMarshal.CreateSpan(ref temp.ClientChallenge[0], ChallengeLength));
+            serverInfo.CopyTo(MemoryMarshal.CreateSpan(ref temp.ServerInfo[0], serverInfo.Length));
 
             // Calculate NTProofStr
             // we created temp part in place where it needs to be.
@@ -466,9 +443,9 @@ namespace System.Net
                 hmac.GetHashAndReset(blob);
             }
 
-            SetField(ref field, blob.Length, sizeof(AuthenticateMessage));
+            SetField(ref field, blob.Length, payloadOffset);
 
-            return blob.Length;
+            payloadOffset += blob.Length;
         }
 
         private byte[] ProcessTargetInfo(ReadOnlySpan<byte> targetInfo, out DateTime time)
@@ -555,18 +532,20 @@ namespace System.Net
         // This gets decoded byte blob and returns response in binary form.
         private unsafe byte[]? ProcessChallenge(byte[] blob)
         {
+            // TODO: Validate size and offsets
+
             ReadOnlySpan<byte> asBytes = new ReadOnlySpan<byte>(blob);
-            ReadOnlySpan<ChallengeMessage> challengeMessage = MemoryMarshal.Cast<byte, ChallengeMessage>(asBytes.Slice(0, sizeof(ChallengeMessage)));
+            ref readonly ChallengeMessage challengeMessage = ref MemoryMarshal.AsRef<ChallengeMessage>(asBytes.Slice(0, sizeof(ChallengeMessage)));
 
             // Verify message type and signature
-            if (challengeMessage[0].Header.MessageType != MessageType.Challenge ||
+            if (challengeMessage.Header.MessageType != MessageType.Challenge ||
                 !NtlmHeader.SequenceEqual(asBytes.Slice(0, NtlmHeader.Length)))
             {
                 return null;
             }
 
             Flags flags = (Flags)BinaryPrimitives.ReadInt32LittleEndian(asBytes.Slice((int)Marshal.OffsetOf(typeof(ChallengeMessage), "Flags"), 4));
-            ReadOnlySpan<byte> targetName = GetField(challengeMessage[0].TargetName, asBytes);
+            ReadOnlySpan<byte> targetName = GetField(challengeMessage.TargetName, asBytes);
 
             // Only NTLMv2 with MIC is supported
             //
@@ -581,18 +560,22 @@ namespace System.Net
                 return null;
             }
 
-            ReadOnlySpan<byte> targetInfo = GetField(challengeMessage[0].TargetInfo, asBytes);
+            ReadOnlySpan<byte> targetInfo = GetField(challengeMessage.TargetInfo, asBytes);
             byte[] targetInfoBuffer = ProcessTargetInfo(targetInfo, out DateTime time);
 
-            int responseLength = sizeof(AuthenticateMessage) + sizeof(NtChallengeResponse) + targetInfoBuffer.Length +
-                                 Encoding.Unicode.GetByteCount(_credential.UserName) +
-                                 Encoding.Unicode.GetByteCount(_credential.Domain) +
-                                 s_workstation.Length +
-                                 SessionKeyLength;
+            int responseLength =
+                sizeof(AuthenticateMessage) +
+                ChallengeResponseLength +
+                sizeof(NtChallengeResponse) +
+                targetInfoBuffer.Length +
+                Encoding.Unicode.GetByteCount(_credential.UserName) +
+                Encoding.Unicode.GetByteCount(_credential.Domain) +
+                s_workstation.Length +
+                SessionKeyLength;
 
             byte[] responseBytes = new byte[responseLength];
             Span<byte> responseAsSpan = new Span<byte>(responseBytes);
-            Span<AuthenticateMessage> response = MemoryMarshal.Cast<byte, AuthenticateMessage>(responseAsSpan.Slice(0, sizeof(AuthenticateMessage)));
+            ref AuthenticateMessage response = ref MemoryMarshal.AsRef<AuthenticateMessage>(responseAsSpan.Slice(0, sizeof(AuthenticateMessage)));
 
             // variable fields
             Span<byte> payload = responseAsSpan;
@@ -602,12 +585,12 @@ namespace System.Net
             NtlmHeader.CopyTo(responseAsSpan);
 
             // TBD calculate flags.
-            response[0].Header.MessageType = MessageType.Authenticate;
-            response[0].Flags =
+            response.Header.MessageType = MessageType.Authenticate;
+            response.Flags =
                 Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.TargetName |
                 Flags.NegotiateVersion | Flags.NegotiateKeyExchange | Flags.Negotiate128 | Flags.NegotiateTargetInfo |
                 Flags.NegotiateAlwaysSign | Flags.NegotiateSign;
-            response[0].Version = new Version { VersionMajor = 6, VersionMinor = 1, ProductBuild = 7600, CurrentRevision = 15 };
+            response.Version = new Version { VersionMajor = 6, VersionMinor = 1, ProductBuild = 7600, CurrentRevision = 15 };
 
             // Calculate hash for hmac - same for lm2 and ntlm2
             byte[] ntlm2hash = makeNtlm2Hash(_credential.Domain, _credential.UserName, _credential.Password);
@@ -616,17 +599,19 @@ namespace System.Net
             byte[] clientChallenge = new byte[ChallengeLength];
             RandomNumberGenerator.Fill(clientChallenge);
 
-            // Create LM2 response.
-            ReadOnlySpan<byte> serverChallenge = asBytes.Slice(24, 8);
-            makeLm2ChallengeResponse(ntlm2hash, serverChallenge, clientChallenge, ref responseAsSpan);
+            // Create empty LM2 response.
+            SetField(ref response.LmChallengeResponse, ChallengeResponseLength, payloadOffset);
+            payload.Slice(payloadOffset, ChallengeResponseLength).Fill(0);
+            payloadOffset += ChallengeResponseLength;
 
             // Create NTLM2 response
-            payloadOffset += makeNtlm2ChallengeResponse(time, ntlm2hash, serverChallenge, clientChallenge, targetInfoBuffer, ref response[0].NtChallengeResponse, payload.Slice(payloadOffset));
-            Debug.Assert(payloadOffset == sizeof(AuthenticateMessage) + sizeof(NtChallengeResponse) + targetInfoBuffer.Length);
+            ReadOnlySpan<byte> serverChallenge = asBytes.Slice(24, 8);
+            makeNtlm2ChallengeResponse(time, ntlm2hash, serverChallenge, clientChallenge, targetInfoBuffer, ref response.NtChallengeResponse, payload, ref payloadOffset);
+            Debug.Assert(payloadOffset == sizeof(AuthenticateMessage) + ChallengeResponseLength + sizeof(NtChallengeResponse) + targetInfoBuffer.Length);
 
-            AddToPayload(ref response[0].UserName, _credential.UserName, payload, ref payloadOffset);
-            AddToPayload(ref response[0].DomainName, _credential.Domain, payload, ref payloadOffset);
-            AddToPayload(ref response[0].Workstation, s_workstation, payload, ref payloadOffset);
+            AddToPayload(ref response.UserName, _credential.UserName, payload, ref payloadOffset);
+            AddToPayload(ref response.DomainName, _credential.Domain, payload, ref payloadOffset);
+            AddToPayload(ref response.Workstation, s_workstation, payload, ref payloadOffset);
 
             // Generate random session key that will be used for signing the messages
             Span<byte> exportedSessionKey = stackalloc byte[16];
@@ -639,7 +624,7 @@ namespace System.Net
             Span<byte> sessionBaseKey = stackalloc byte[16];
             using (var hmacSessionKey = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, ntlm2hash))
             {
-                hmacSessionKey.AppendData(responseAsSpan.Slice(response[0].NtChallengeResponse.PayloadOffset, 16));
+                hmacSessionKey.AppendData(responseAsSpan.Slice(response.NtChallengeResponse.PayloadOffset, 16));
                 hmacSessionKey.GetHashAndReset(sessionBaseKey);
             }
 
@@ -648,7 +633,7 @@ namespace System.Net
             {
                 Span<byte> encryptedRandomSessionKey = payload.Slice(payloadOffset, 16);
                 rc4.Transform(exportedSessionKey, encryptedRandomSessionKey);
-                SetField(ref response[0].EncryptedRandomSessionKey, 16, payloadOffset);
+                SetField(ref response.EncryptedRandomSessionKey, 16, payloadOffset);
                 payloadOffset += 16;
             }
 
@@ -659,8 +644,7 @@ namespace System.Net
                 hmacMic.AppendData(_negotiateMessage);
                 hmacMic.AppendData(blob);
                 hmacMic.AppendData(responseBytes.AsSpan(0, payloadOffset));
-                fixed (byte *mic = response[0].Mic)
-                    hmacMic.GetHashAndReset(new Span<byte>(mic, 16));
+                hmacMic.GetHashAndReset(MemoryMarshal.CreateSpan(ref response.Mic[0], hmacMic.HashLengthInBytes));
             }
 
             // Derive signing keys
