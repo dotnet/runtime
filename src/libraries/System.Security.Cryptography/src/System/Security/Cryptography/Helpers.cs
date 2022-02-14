@@ -12,14 +12,6 @@ namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
-        internal static ReadOnlySpan<byte> AsSpanParameter(this byte[] array, string paramName)
-        {
-            if (array == null)
-                throw new ArgumentNullException(paramName);
-
-            return new ReadOnlySpan<byte>(array);
-        }
-
         internal static void AddRange<T>(this ICollection<T> coll, IEnumerable<T> newData)
         {
             foreach (T datum in newData)

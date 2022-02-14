@@ -31,13 +31,9 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="source"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="target"/> is null (Nothing in Visual Basic).</exception>
         public static IDisposable LinkTo<TOutput>(
-            this ISourceBlock<TOutput> source,
-            ITargetBlock<TOutput> target)
+            this ISourceBlock<TOutput> source!!,
+            ITargetBlock<TOutput> target!!)
         {
-            // Validate arguments
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (target == null) throw new ArgumentNullException(nameof(target));
-
             // This method exists purely to pass default DataflowLinkOptions
             // to increase usability of the "90%" case.
             return source.LinkTo(target, DataflowLinkOptions.Default);
@@ -71,17 +67,11 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="linkOptions"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="predicate"/> is null (Nothing in Visual Basic).</exception>
         public static IDisposable LinkTo<TOutput>(
-            this ISourceBlock<TOutput> source,
-            ITargetBlock<TOutput> target,
-            DataflowLinkOptions linkOptions,
-            Predicate<TOutput> predicate)
+            this ISourceBlock<TOutput> source!!,
+            ITargetBlock<TOutput> target!!,
+            DataflowLinkOptions linkOptions!!,
+            Predicate<TOutput> predicate!!)
         {
-            // Validate arguments
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (target == null) throw new ArgumentNullException(nameof(target));
-            if (linkOptions == null) throw new ArgumentNullException(nameof(linkOptions));
-            if (predicate == null) throw new ArgumentNullException(nameof(predicate));
-
             // Create the filter, which links to the real target, and then
             // link the real source to this intermediate filter.
             var filter = new FilteredLinkPropagator<TOutput>(source, target, predicate);
@@ -236,9 +226,8 @@ namespace System.Threading.Tasks.Dataflow
         /// which will return immediately and will enable the target to postpone the posted message and later consume it
         /// after SendAsync returns.
         /// </remarks>
-        public static bool Post<TInput>(this ITargetBlock<TInput> target, TInput item)
+        public static bool Post<TInput>(this ITargetBlock<TInput> target!!, TInput item)
         {
-            if (target == null) throw new ArgumentNullException(nameof(target));
             return target.OfferMessage(Common.SingleMessageHeader, item, source: null, consumeToAccept: false) == DataflowMessageStatus.Accepted;
         }
 
@@ -284,11 +273,8 @@ namespace System.Threading.Tasks.Dataflow
         /// </para>
         /// </returns>
         /// <exception cref="System.ArgumentNullException">The <paramref name="target"/> is null (Nothing in Visual Basic).</exception>
-        public static Task<bool> SendAsync<TInput>(this ITargetBlock<TInput> target, TInput item, CancellationToken cancellationToken)
+        public static Task<bool> SendAsync<TInput>(this ITargetBlock<TInput> target!!, TInput item, CancellationToken cancellationToken)
         {
-            // Validate arguments.  No validation necessary for item.
-            if (target == null) throw new ArgumentNullException(nameof(target));
-
             // Fast path check for cancellation
             if (cancellationToken.IsCancellationRequested)
                 return Common.CreateTaskFromCancellation<bool>(cancellationToken);
@@ -761,10 +747,8 @@ namespace System.Threading.Tasks.Dataflow
         /// This method does not wait until the source has an item to provide.
         /// It will return whether or not an element was available.
         /// </remarks>
-        public static bool TryReceive<TOutput>(this IReceivableSourceBlock<TOutput> source, [MaybeNullWhen(false)] out TOutput item)
+        public static bool TryReceive<TOutput>(this IReceivableSourceBlock<TOutput> source!!, [MaybeNullWhen(false)] out TOutput item)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-
             return source.TryReceive(null, out item);
         }
         #endregion
@@ -838,12 +822,9 @@ namespace System.Threading.Tasks.Dataflow
         /// timeout is a negative number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater than <see cref="int.MaxValue"/>.
         /// </exception>
         public static Task<TOutput> ReceiveAsync<TOutput>(
-            this ISourceBlock<TOutput> source, TimeSpan timeout, CancellationToken cancellationToken)
+            this ISourceBlock<TOutput> source!!, TimeSpan timeout, CancellationToken cancellationToken)
         {
             // Validate arguments
-
-
-            if (source == null) throw new ArgumentNullException(nameof(source));
             if (!Common.IsValidTimeout(timeout)) throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
             // Return the task representing the core receive operation
@@ -921,10 +902,9 @@ namespace System.Threading.Tasks.Dataflow
         /// If the source successfully offered an item that was received by this operation, it will be returned, even if a concurrent timeout or cancellation request occurs.
         /// </remarks>
         public static TOutput Receive<TOutput>(
-            this ISourceBlock<TOutput> source, TimeSpan timeout, CancellationToken cancellationToken)
+            this ISourceBlock<TOutput> source!!, TimeSpan timeout, CancellationToken cancellationToken)
         {
             // Validate arguments
-            if (source == null) throw new ArgumentNullException(nameof(source));
             if (!Common.IsValidTimeout(timeout)) throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
             // Do fast path checks for both cancellation and data already existing.
@@ -1397,11 +1377,8 @@ namespace System.Threading.Tasks.Dataflow
         /// completing prior to output being available.
         /// </returns>
         public static Task<bool> OutputAvailableAsync<TOutput>(
-            this ISourceBlock<TOutput> source, CancellationToken cancellationToken)
+            this ISourceBlock<TOutput> source!!, CancellationToken cancellationToken)
         {
-            // Validate arguments
-            if (source == null) throw new ArgumentNullException(nameof(source));
-
             // Fast path for cancellation
             if (cancellationToken.IsCancellationRequested)
                 return Common.CreateTaskFromCancellation<bool>(cancellationToken);
@@ -1533,9 +1510,8 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-            void IDataflowBlock.Fault(Exception exception)
+            void IDataflowBlock.Fault(Exception exception!!)
             {
-                if (exception == null) throw new ArgumentNullException(nameof(exception));
                 TrySetResult(false);
             }
 
@@ -1565,10 +1541,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <see cref="IDataflowBlock"/> implementation delegates to the specified source.
         /// </remarks>
         public static IPropagatorBlock<TInput, TOutput> Encapsulate<TInput, TOutput>(
-            ITargetBlock<TInput> target, ISourceBlock<TOutput> source)
+            ITargetBlock<TInput> target!!, ISourceBlock<TOutput> source!!)
         {
-            if (target == null) throw new ArgumentNullException(nameof(target));
-            if (source == null) throw new ArgumentNullException(nameof(source));
             return new EncapsulatingPropagator<TInput, TOutput>(target, source);
         }
 
@@ -1597,10 +1571,8 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-            void IDataflowBlock.Fault(Exception exception)
+            void IDataflowBlock.Fault(Exception exception!!)
             {
-                if (exception == null) throw new ArgumentNullException(nameof(exception));
-
                 _target.Fault(exception);
             }
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
@@ -1757,17 +1729,10 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="action2"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
         public static Task<int> Choose<T1, T2>(
-            ISourceBlock<T1> source1, Action<T1> action1,
-            ISourceBlock<T2> source2, Action<T2> action2,
-            DataflowBlockOptions dataflowBlockOptions)
+            ISourceBlock<T1> source1!!, Action<T1> action1!!,
+            ISourceBlock<T2> source2!!, Action<T2> action2!!,
+            DataflowBlockOptions dataflowBlockOptions!!)
         {
-            // Validate arguments
-            if (source1 == null) throw new ArgumentNullException(nameof(source1));
-            if (action1 == null) throw new ArgumentNullException(nameof(action1));
-            if (source2 == null) throw new ArgumentNullException(nameof(source2));
-            if (action2 == null) throw new ArgumentNullException(nameof(action2));
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
-
             // Delegate to the shared implementation
             return ChooseCore<T1, T2, VoidResult>(source1, action1, source2, action2, null, null, dataflowBlockOptions);
         }
@@ -1847,20 +1812,11 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="action3"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
         public static Task<int> Choose<T1, T2, T3>(
-            ISourceBlock<T1> source1, Action<T1> action1,
-            ISourceBlock<T2> source2, Action<T2> action2,
-            ISourceBlock<T3> source3, Action<T3> action3,
-            DataflowBlockOptions dataflowBlockOptions)
+            ISourceBlock<T1> source1!!, Action<T1> action1!!,
+            ISourceBlock<T2> source2!!, Action<T2> action2!!,
+            ISourceBlock<T3> source3!!, Action<T3> action3!!,
+            DataflowBlockOptions dataflowBlockOptions!!)
         {
-            // Validate arguments
-            if (source1 == null) throw new ArgumentNullException(nameof(source1));
-            if (action1 == null) throw new ArgumentNullException(nameof(action1));
-            if (source2 == null) throw new ArgumentNullException(nameof(source2));
-            if (action2 == null) throw new ArgumentNullException(nameof(action2));
-            if (source3 == null) throw new ArgumentNullException(nameof(source3));
-            if (action3 == null) throw new ArgumentNullException(nameof(action3));
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
-
             // Delegate to the shared implementation
             return ChooseCore<T1, T2, T3>(source1, action1, source2, action2, source3, action3, dataflowBlockOptions);
         }
@@ -2211,9 +2167,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="source">The source to wrap.</param>
         /// <returns>An IObservable{TOutput} that enables observers to be subscribed to the source.</returns>
         /// <exception cref="System.ArgumentNullException">The <paramref name="source"/> is null (Nothing in Visual Basic).</exception>
-        public static IObservable<TOutput> AsObservable<TOutput>(this ISourceBlock<TOutput> source)
+        public static IObservable<TOutput> AsObservable<TOutput>(this ISourceBlock<TOutput> source!!)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
             return SourceObservable<TOutput>.From(source);
         }
 
@@ -2275,10 +2230,9 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Subscribes the observer to the source.</summary>
             /// <param name="observer">the observer to subscribe.</param>
             /// <returns>An IDisposable that may be used to unsubscribe the source.</returns>
-            IDisposable IObservable<TOutput>.Subscribe(IObserver<TOutput> observer)
+            IDisposable IObservable<TOutput>.Subscribe(IObserver<TOutput> observer!!)
             {
                 // Validate arguments
-                if (observer == null) throw new ArgumentNullException(nameof(observer));
                 Common.ContractAssertMonitorStatus(_SubscriptionLock, held: false);
 
                 Task? sourceCompletionTask = Common.GetPotentiallyNotSupportedCompletionTask(_source);
@@ -2579,9 +2533,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <typeparam name="TInput">Specifies the type of input accepted by the target block.</typeparam>
         /// <param name="target">The target to wrap.</param>
         /// <returns>An observer that wraps the target block.</returns>
-        public static IObserver<TInput> AsObserver<TInput>(this ITargetBlock<TInput> target)
+        public static IObserver<TInput> AsObserver<TInput>(this ITargetBlock<TInput> target!!)
         {
-            if (target == null) throw new ArgumentNullException(nameof(target));
             return new TargetObserver<TInput>(target);
         }
 

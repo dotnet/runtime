@@ -859,11 +859,16 @@ namespace System.Drawing.Printing
             string? name;
             if (!settings.PrintToFile)
             {
-                StringBuilder sb = new StringBuilder(1024);
-                int length = sb.Capacity;
-                LibcupsNative.cupsTempFd(sb, length);
-                name = sb.ToString();
-                tmpfile = name;
+                sbyte[] buffer = new sbyte[1024];
+                int length = buffer.Length;
+                LibcupsNative.cupsTempFd(buffer, length);
+                unsafe
+                {
+                    fixed (sbyte* ptr = buffer)
+                    {
+                        tmpfile = name = new string(ptr);
+                    }
+                }
             }
             else
                 name = settings.PrintFileName!;

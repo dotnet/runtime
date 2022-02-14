@@ -42,13 +42,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configureOptions">Configures the binder options.</param>
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions)
+        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration!!, Action<BinderOptions>? configureOptions)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
             object? result = configuration.Get(typeof(T), configureOptions);
             if (result == null)
             {
@@ -80,16 +75,11 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The new instance if successful, null otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static object? Get(
-            this IConfiguration configuration,
+            this IConfiguration configuration!!,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             Action<BinderOptions>? configureOptions)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
             var options = new BinderOptions();
             configureOptions?.Invoke(options);
             return BindInstance(type, instance: null, config: configuration, options: options);
@@ -121,13 +111,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="instance">The object to bind.</param>
         /// <param name="configureOptions">Configures the binder options.</param>
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
-        public static void Bind(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
+        public static void Bind(this IConfiguration configuration!!, object? instance, Action<BinderOptions>? configureOptions)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
             if (instance != null)
             {
                 var options = new BinderOptions();
@@ -457,29 +442,23 @@ namespace Microsoft.Extensions.Configuration
                 // We only support string and enum keys
                 return;
             }
-
+            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue")!;
             PropertyInfo setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
             foreach (IConfigurationSection child in config.GetChildren())
             {
                 try
                 {
+                    object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) : child.Key;
+                    var args = new object?[] { key, null };
+                    _ = tryGetValue.Invoke(dictionary, args);
                     object? item = BindInstance(
                         type: valueType,
-                        instance: null,
+                        instance: args[1],
                         config: child,
                         options: options);
                     if (item != null)
                     {
-                        if (keyType == typeof(string))
-                        {
-                            string key = child.Key;
-                            setter.SetValue(dictionary, item, new object[] { key });
-                        }
-                        else if (keyTypeIsEnum)
-                        {
-                            object key = Enum.Parse(keyType, child.Key);
-                            setter.SetValue(dictionary, item, new object[] { key });
-                        }
+                        setter.SetValue(dictionary, item, new object[] { key });
                     }
                 }
                 catch
@@ -673,13 +652,8 @@ namespace Microsoft.Extensions.Configuration
                 options);
         }
 
-        private static string GetPropertyName(MemberInfo property)
+        private static string GetPropertyName(MemberInfo property!!)
         {
-            if (property == null)
-            {
-                throw new ArgumentNullException(nameof(property));
-            }
-
             // Check for a custom property name used for configuration key binding
             foreach (var attributeData in property.GetCustomAttributesData())
             {

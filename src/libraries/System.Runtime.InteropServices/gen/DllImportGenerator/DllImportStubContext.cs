@@ -199,38 +199,27 @@ namespace Microsoft.Interop
             }
             else
             {
-                generatorFactory = new DefaultMarshallingGeneratorFactory(options);
-                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, options);
-                // We don't need to include the later generator factories for collection elements
-                // as the later generator factories only apply to parameters or to the synthetic return value for PreserveSig support.
-                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, options);
-                if (!dllImportData.PreserveSig)
+                if (env.TargetFramework != TargetFramework.Net || env.TargetFrameworkVersion.Major < 7)
                 {
-                    // Create type info for native out param
-                    if (!method.ReturnsVoid)
-                    {
-                        // Transform the managed return type info into an out parameter and add it as the last param
-                        TypePositionInfo nativeOutInfo = retTypeInfo with
-                        {
-                            InstanceIdentifier = PInvokeStubCodeGenerator.ReturnIdentifier,
-                            RefKind = RefKind.Out,
-                            RefKindSyntax = SyntaxKind.OutKeyword,
-                            ManagedIndex = TypePositionInfo.ReturnIndex,
-                            NativeIndex = typeInfos.Count
-                        };
-                        typeInfos.Add(nativeOutInfo);
-                    }
-
-                    // Use a marshalling generator that supports the HRESULT return->exception marshalling.
-                    generatorFactory = new NoPreserveSigMarshallingGeneratorFactory(generatorFactory);
-
-                    // Create type info for native HRESULT return
-                    retTypeInfo = new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance);
-                    retTypeInfo = retTypeInfo with
-                    {
-                        NativeIndex = TypePositionInfo.ReturnIndex
-                    };
+                    // If we're using our downstream support, fall back to the Forwarder marshaller when the TypePositionInfo is unhandled.
+                    generatorFactory = new ForwarderMarshallingGeneratorFactory();
                 }
+                else
+                {
+                    // If we're in a "supported" scenario, then emit a diagnostic as our final fallback.
+                    generatorFactory = new UnsupportedMarshallingFactory();
+                }
+
+                generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);
+
+                IAssemblySymbol coreLibraryAssembly = env.Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
+                ITypeSymbol disabledRuntimeMarshallingAttributeType = coreLibraryAssembly.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute);
+                bool runtimeMarshallingDisabled = env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
+
+                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(options, runtimeMarshallingDisabled));
+                // We don't need to include the later generator factories for collection elements
+                // as the later generator factories only apply to parameters.
+                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(options, runtimeMarshallingDisabled));
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
             }
