@@ -184,7 +184,7 @@ namespace System.Text.Json
             Debug.Assert(typeToConvert != null);
 
             // Priority 1: If there is a JsonSerializerContext, fetch the converter from there.
-            JsonConverter? converter = _context?.GetTypeInfo(typeToConvert)?.PropertyInfoForTypeInfo?.ConverterBase;
+            JsonConverter? converter = _serializerContext?.GetTypeInfo(typeToConvert)?.PropertyInfoForTypeInfo?.ConverterBase;
 
             // Priority 2: Attempt to get custom converter added at runtime.
             // Currently there is not a way at runtime to override the [JsonConverter] when applied to a property.
@@ -311,7 +311,7 @@ namespace System.Text.Json
 
         internal bool TryGetDefaultSimpleConverter(Type typeToConvert, [NotNullWhen(true)] out JsonConverter? converter)
         {
-            if (_context == null && // For consistency do not return any default converters for
+            if (_serializerContext == null && // For consistency do not return any default converters for
                                     // options instances linked to a JsonSerializerContext,
                                     // even if the default converters might have been rooted.
                 s_defaultSimpleConverters != null &&

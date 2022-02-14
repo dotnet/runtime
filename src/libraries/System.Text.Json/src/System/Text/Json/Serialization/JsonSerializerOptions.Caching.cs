@@ -158,7 +158,7 @@ namespace System.Text.Json
 
                     // Use a defensive copy of the options instance as key to
                     // avoid capturing references to any caching contexts.
-                    var key = new JsonSerializerOptions(options) { _context = options._context };
+                    var key = new JsonSerializerOptions(options) { _serializerContext = options._serializerContext };
                     Debug.Assert(key._cachingContext == null);
 
                     ctx = new CachingContext(options);
@@ -265,7 +265,7 @@ namespace System.Text.Json
                     left._includeFields == right._includeFields &&
                     left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
                     left._writeIndented == right._writeIndented &&
-                    left._context == right._context &&
+                    left._serializerContext == right._serializerContext &&
                     CompareConverters(left.Converters, right.Converters);
 
                 static bool CompareConverters(IList<JsonConverter> left, IList<JsonConverter> right)
@@ -309,7 +309,7 @@ namespace System.Text.Json
                 hc.Add(options._includeFields);
                 hc.Add(options._propertyNameCaseInsensitive);
                 hc.Add(options._writeIndented);
-                hc.Add(options._context);
+                hc.Add(options._serializerContext);
 
                 foreach (JsonConverter converter in options.Converters)
                 {

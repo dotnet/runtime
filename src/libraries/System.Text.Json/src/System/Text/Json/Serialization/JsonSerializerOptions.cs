@@ -33,7 +33,7 @@ namespace System.Text.Json
         /// </remarks>
         public static JsonSerializerOptions Default { get; } = CreateDefaultImmutableInstance();
 
-        internal JsonSerializerContext? _context;
+        internal JsonSerializerContext? _serializerContext;
 
         // Stores the JsonTypeInfo factory, which requires unreferenced code and must be rooted by the reflection-based serializer.
         private static Func<Type, JsonSerializerOptions, JsonTypeInfo>? s_typeInfoCreationFunc;
@@ -150,13 +150,13 @@ namespace System.Text.Json
         /// </remarks>
         public void AddContext<TContext>() where TContext : JsonSerializerContext, new()
         {
-            if (_context != null)
+            if (_serializerContext != null)
             {
                 ThrowHelper.ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext();
             }
 
             TContext context = new();
-            _context = context;
+            _serializerContext = context;
             context._options = this;
         }
 
@@ -598,7 +598,7 @@ namespace System.Text.Json
 
         private JsonTypeInfo GetJsonTypeInfoFromContextOrCreate(Type type)
         {
-            JsonTypeInfo? info = _context?.GetTypeInfo(type);
+            JsonTypeInfo? info = _serializerContext?.GetTypeInfo(type);
             if (info != null)
             {
                 return info;
@@ -656,9 +656,9 @@ namespace System.Text.Json
 
         internal void VerifyMutable()
         {
-            if (_cachingContext != null || _context != null)
+            if (_cachingContext != null || _serializerContext != null)
             {
-                ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable(_context);
+                ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable(_serializerContext);
             }
         }
 
