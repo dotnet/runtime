@@ -37,6 +37,10 @@ namespace System.IO.Tests
 
         protected abstract string GetItemPath(T item);
 
+        // requiresRoundtripping defines whether to convert DateTimeFormat 'a' to 'b' and then back to 'a' to verify the DateTimeFormat-conversion
+        //
+        // testHandles defines whether to test using SafeFileHandle. Disabling this is useful, if you are not able to open a handle to the file for ex.
+        // because of system-conditions
         public abstract IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false, bool testHandles = true);
 
         public class TimeFunction : Tuple<SetTime, GetTime, DateTimeKind>
