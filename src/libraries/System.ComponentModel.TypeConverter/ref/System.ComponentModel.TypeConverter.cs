@@ -2306,6 +2306,7 @@ namespace System.Timers
     {
         public Timer() { }
         public Timer(double interval) { }
+        public Timer(System.TimeSpan interval) { }
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool AutoReset { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]

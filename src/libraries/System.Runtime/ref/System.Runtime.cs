@@ -14877,7 +14877,6 @@ namespace System.Threading
     }
     public sealed partial class Timer : System.MarshalByRefObject, System.IAsyncDisposable, System.IDisposable
     {
-        public Timer(System.TimeSpan interval) { }
         public Timer(System.Threading.TimerCallback callback) { }
         public Timer(System.Threading.TimerCallback callback, object? state, int dueTime, int period) { }
         public Timer(System.Threading.TimerCallback callback, object? state, long dueTime, long period) { }
