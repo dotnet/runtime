@@ -262,17 +262,8 @@ namespace System.IO.Tests
 
         private static SafeFileHandle OpenFileHandle(string path)
         {
-            FileSystemInfo? linkTarget = File.ResolveLinkTarget(path, true);
-            if (linkTarget?.LinkTarget is null)
-            {
-                return File.OpenHandle(
-                    path,
-                    FileMode.OpenOrCreate,
-                    FileAccess.ReadWrite,
-                    FileShare.ReadWrite);
-            }
-
-            return File.OpenHandle(linkTarget.LinkTarget,
+            return File.OpenHandle(
+                path,
                 FileMode.OpenOrCreate,
                 FileAccess.ReadWrite,
                 FileShare.ReadWrite);
@@ -294,78 +285,6 @@ namespace System.IO.Tests
                     Assert.NotEqual(DateTime.FromFileTime(0), time);
                 });
             }
-        }
-
-        [Fact]
-        public void GetCreationTime_SafeFileHandle_Conformance()
-        {
-            string firstFilePath = GetTestFilePath();
-            string secondFilePath = GetTestFilePath();
-
-            File.WriteAllText(firstFilePath, "");
-            File.WriteAllText(secondFilePath, "");
-
-            using var firstFileHandle = File.OpenHandle(firstFilePath, access: FileAccess.ReadWrite);
-
-            DateTime now = DateTime.Now;
-            DateTime utcNow = now.ToUniversalTime();
-
-            File.SetCreationTime(firstFileHandle, now);
-            File.SetCreationTime(secondFilePath, now);
-
-            Assert.Equal(now, File.GetCreationTime(firstFileHandle));
-            Assert.Equal(now, File.GetCreationTime(secondFilePath));
-
-            Assert.Equal(utcNow, File.GetCreationTimeUtc(firstFileHandle));
-            Assert.Equal(utcNow, File.GetCreationTimeUtc(secondFilePath));
-        }
-
-        [Fact]
-        public void GetLastAccessTime_SafeFileHandle_Conformance()
-        {
-            string firstFilePath = GetTestFilePath();
-            string secondFilePath = GetTestFilePath();
-
-            File.WriteAllText(firstFilePath, "");
-            File.WriteAllText(secondFilePath, "");
-
-            using var firstFileHandle = File.OpenHandle(firstFilePath, access: FileAccess.ReadWrite);
-
-            DateTime now = DateTime.Now;
-            DateTime utcNow = now.ToUniversalTime();
-
-            File.SetLastAccessTime(firstFileHandle, now);
-            File.SetLastAccessTime(secondFilePath, now);
-
-            Assert.Equal(now, File.GetLastAccessTime(firstFileHandle));
-            Assert.Equal(now, File.GetLastAccessTime(secondFilePath));
-
-            Assert.Equal(utcNow, File.GetLastAccessTimeUtc(firstFileHandle));
-            Assert.Equal(utcNow, File.GetLastAccessTimeUtc(secondFilePath));
-        }
-
-        [Fact]
-        public void GetLastWriteTime_SafeFileHandle_Conformance()
-        {
-            string firstFilePath = GetTestFilePath();
-            string secondFilePath = GetTestFilePath();
-
-            File.WriteAllText(firstFilePath, "");
-            File.WriteAllText(secondFilePath, "");
-
-            using var firstFileHandle = File.OpenHandle(firstFilePath, access: FileAccess.ReadWrite);
-
-            DateTime now = DateTime.Now;
-            DateTime utcNow = now.ToUniversalTime();
-
-            File.SetLastWriteTime(firstFileHandle, now);
-            File.SetLastWriteTime(secondFilePath, now);
-
-            Assert.Equal(now, File.GetLastWriteTime(firstFileHandle));
-            Assert.Equal(now, File.GetLastWriteTime(secondFilePath));
-
-            Assert.Equal(utcNow, File.GetLastWriteTimeUtc(firstFileHandle));
-            Assert.Equal(utcNow, File.GetLastWriteTimeUtc(secondFilePath));
         }
 
         [Fact]
