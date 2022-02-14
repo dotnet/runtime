@@ -43,7 +43,7 @@
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <!-- WebSocket tests use self-signed certificates for wss protocol that are refused by NodeJS -->
       <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;NODE_TLS_REJECT_UNAUTHORIZED=0&quot; )" />
-      <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=NPM_MODULES^=ws:WebSocket&quot; )" />
+      <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=NPM_MODULES^=ws:WebSocket,node-fetch&quot; )" />
       <!-- Restore NPM packages -->
       <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( call npm ci )" />
     </ItemGroup>
