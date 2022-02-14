@@ -174,7 +174,7 @@
 
       -->
 
-      <_WasmItemsToPass Include="@(_AOT_InternalForceInterpretAssemblies)" OriginalItemName__="HighAotMemoryUsageAssembly" />
+      <_WasmItemsToPass Include="@(_AOT_InternalForceInterpretAssemblies)" OriginalItemName__="_AOT_InternalForceInterpretAssemblies" />
 
     </ItemGroup>
 
