@@ -202,37 +202,37 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>5b358880114238a553ea86fe087ccb80b17a0017</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App.Runtime.win-x64" Version="7.0.0-preview.2.22103.2">
+    <Dependency Name="Microsoft.NETCore.App.Runtime.win-x64" Version="7.0.0-preview.2.22113.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>0ae04e5b33afac1c14a6127df1037f83d39a6ec3</Sha>
+      <Sha>6e05d78deba320a54ef10a265c6025bbb686efe6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="7.0.0-preview.2.22103.2">
+    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="7.0.0-preview.2.22113.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>0ae04e5b33afac1c14a6127df1037f83d39a6ec3</Sha>
+      <Sha>6e05d78deba320a54ef10a265c6025bbb686efe6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="7.0.0-preview.2.22103.2">
+    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="7.0.0-preview.2.22113.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>0ae04e5b33afac1c14a6127df1037f83d39a6ec3</Sha>
+      <Sha>6e05d78deba320a54ef10a265c6025bbb686efe6</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="7.0.0-preview.2.22103.2">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="7.0.0-preview.2.22113.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>0ae04e5b33afac1c14a6127df1037f83d39a6ec3</Sha>
+      <Sha>6e05d78deba320a54ef10a265c6025bbb686efe6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.ILAsm" Version="7.0.0-preview.2.22103.2">
+    <Dependency Name="Microsoft.NETCore.ILAsm" Version="7.0.0-preview.2.22113.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>0ae04e5b33afac1c14a6127df1037f83d39a6ec3</Sha>
+      <Sha>6e05d78deba320a54ef10a265c6025bbb686efe6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="7.0.0-preview.2.22103.2">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="7.0.0-preview.2.22113.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>0ae04e5b33afac1c14a6127df1037f83d39a6ec3</Sha>
+      <Sha>6e05d78deba320a54ef10a265c6025bbb686efe6</Sha>
     </Dependency>
-    <Dependency Name="System.Text.Json" Version="7.0.0-preview.2.22103.2">
+    <Dependency Name="System.Text.Json" Version="7.0.0-preview.2.22113.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>0ae04e5b33afac1c14a6127df1037f83d39a6ec3</Sha>
+      <Sha>6e05d78deba320a54ef10a265c6025bbb686efe6</Sha>
     </Dependency>
-    <Dependency Name="System.Runtime.CompilerServices.Unsafe" Version="7.0.0-preview.2.22103.2">
+    <Dependency Name="System.Runtime.CompilerServices.Unsafe" Version="7.0.0-preview.2.22113.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>0ae04e5b33afac1c14a6127df1037f83d39a6ec3</Sha>
+      <Sha>6e05d78deba320a54ef10a265c6025bbb686efe6</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22107.1">
       <Uri>https://github.com/dotnet/linker</Uri>
