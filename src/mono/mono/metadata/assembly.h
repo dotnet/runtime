@@ -2,7 +2,7 @@
  * \file
  */
 
-#ifndef _MONONET_METADATA_ASSEMBLY_H_ 
+#ifndef _MONONET_METADATA_ASSEMBLY_H_
 #define _MONONET_METADATA_ASSEMBLY_H_
 
 #include <mono/utils/mono-error.h>
@@ -21,12 +21,12 @@ MonoAssembly *mono_assembly_open_full (const char *filename,
 				       	MonoImageOpenStatus *status,
 					mono_bool refonly);
 MONO_API MONO_RT_EXTERNAL_ONLY
-MonoAssembly* mono_assembly_load       (MonoAssemblyName *aname, 
-                                       	const char       *basedir, 
+MonoAssembly* mono_assembly_load       (MonoAssemblyName *aname,
+                                       	const char       *basedir,
 				     	MonoImageOpenStatus *status);
 MONO_API MONO_RT_EXTERNAL_ONLY
 MonoAssembly* mono_assembly_load_full (MonoAssemblyName *aname,
-                                       	const char       *basedir, 
+                                       	const char       *basedir,
 				     	MonoImageOpenStatus *status,
 					mono_bool refonly);
 MONO_API MONO_RT_EXTERNAL_ONLY
@@ -68,8 +68,8 @@ typedef void  (*MonoAssemblyLoadFunc)         (MonoAssembly *assembly, void* use
 MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, void* user_data);
 
-/* 
- * Installs a new function which is used to search the list of loaded 
+/*
+ * Installs a new function which is used to search the list of loaded
  * assemblies for a given assembly name.
  */
 typedef MonoAssembly *(*MonoAssemblySearchFunc)         (MonoAssemblyName *aname, void* user_data);
@@ -82,7 +82,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY
 MonoAssembly* mono_assembly_invoke_search_hook (MonoAssemblyName *aname);
 
 /*
- * Installs a new search function which is used as a last resort when loading 
+ * Installs a new search function which is used as a last resort when loading
  * an assembly fails. This could invoke AssemblyResolve events.
  */
 MONO_API MONO_RT_EXTERNAL_ONLY

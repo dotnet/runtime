@@ -3,7 +3,7 @@
  * The main entry point for the mono executable
  *
  * The main entry point does a few things:
- * 
+ *
  *   * It probes whether the executable has a bundle appended
  *     at the end, and if so, registers the various bundled
  *     resources with Mono and executes the contained bundle
@@ -90,7 +90,7 @@ mono_main_with_options (int argc, char *argv [])
  * "config:NAME"    A configuration file (usually file.dll.config) in the payload that is
  *                  loaded as the config file for an assembly
  * "systemconfig:"  Treats as a Mono system configuration, payload contains the config file.
- * "options:"       The payload contains command line options to initialize Mono, as if you 
+ * "options:"       The payload contains command line options to initialize Mono, as if you
                     had set them on MONO_ENV_OPTIONS
  * "config_dir:DIR" Configures the MONO_PATH to point to point to DIR
  * "machineconfig:" The payload contains the machine.config file to use at runtime
@@ -269,7 +269,7 @@ found:
 		p += 8;
 		item_size = STREAM_INT (p);
 		p += 4;
-		
+
 		if (mapaddress == NULL) {
 			char *error_message = NULL;
 			mapaddress = (guchar*)mono_file_map_error (directory_location - offset, MONO_MMAP_READ | MONO_MMAP_PRIVATE,
@@ -323,9 +323,9 @@ found:
 		new_argv [j+1] = (*ref_argv)[j];
 	*ref_argv = new_argv;
 	(*ref_argc)++;
-	
+
 	return TRUE;
-	
+
 dofree:
 	g_free (directory);
 doclose:

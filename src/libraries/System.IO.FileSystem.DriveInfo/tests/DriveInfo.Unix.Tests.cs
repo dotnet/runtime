@@ -42,7 +42,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         public void PropertiesOfInvalidDrive()
         {
             string invalidDriveName = "NonExistentDriveName";

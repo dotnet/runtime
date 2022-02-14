@@ -4,7 +4,7 @@
 
 .assembly extern mscorlib
 { }
-.assembly extern common {}
+.assembly extern eh_common {}
 .assembly 'deadoponerror'
 { }
 .assembly extern xunit.core {}
@@ -18,13 +18,13 @@
 	.entrypoint
 	.maxstack  8
     .locals init (
-	  class [common]TestUtil.TestLog testLog
+	  class [eh_common]TestUtil.TestLog testLog
 	)
-    newobj     instance void [common]TestUtil.TestLog::.ctor()
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor()
     stloc.s    testLog
 
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 	.try {
 		ldc.i4 1
 		leave endtry2
@@ -45,10 +45,10 @@ endtry1:
 
 endtry2:
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
   
     ldloc.s    testLog
-    callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+    callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 
 	ret
 } // end of method 'Test::Main'

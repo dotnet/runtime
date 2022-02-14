@@ -63,7 +63,7 @@ static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
         allocChars = MAX_ERROR_STRING_LENGTH + 1;
     }
 
-    LPWSTR lpRetVal = (LPWSTR)LocalAlloc(LMEM_FIXED, allocChars * sizeof(WCHAR));
+    LPWSTR lpRetVal = (LPWSTR)PAL_malloc(allocChars * sizeof(WCHAR));
 
     if (lpRetVal)
     {
@@ -135,7 +135,7 @@ static INT FMTMSG__watoi( LPWSTR str )
         UINT NumOfBytes = 0; \
         nSize *= 2; \
         NumOfBytes = nSize * sizeof( WCHAR ); \
-        lpTemp = static_cast<WCHAR *>( LocalAlloc( LMEM_FIXED, NumOfBytes ) ); \
+        lpTemp = static_cast<WCHAR *>( PAL_malloc( NumOfBytes ) ); \
         TRACE( "Growing the buffer.\n" );\
         \
         if ( !lpTemp ) \
@@ -149,7 +149,7 @@ static INT FMTMSG__watoi( LPWSTR str )
         \
         *lpWorkingString = '\0';\
         PAL_wcscpy( lpTemp, lpReturnString );\
-        LocalFree( lpReturnString ); \
+        free( lpReturnString ); \
         lpWorkingString = lpReturnString = lpTemp; \
         lpWorkingString += nCount; \
     } \
@@ -341,7 +341,7 @@ FormatMessageW(
     /* Parameter processing. */
     if ( dwFlags & FORMAT_MESSAGE_ALLOCATE_BUFFER )
     {
-        TRACE( "Allocated %d TCHARs. Don't forget to call LocalFree to "
+        TRACE( "Allocated %d TCHARs. Don't forget to call free to "
                "free the memory when done.\n", nSize );
         bIsLocalAlloced = TRUE;
     }
@@ -418,7 +418,7 @@ FormatMessageW(
     }
 
     lpWorkingString = static_cast<WCHAR *>(
-        LocalAlloc( LMEM_FIXED, nSize * sizeof( WCHAR ) ) );
+        PAL_malloc( nSize * sizeof( WCHAR ) ) );
     if ( !lpWorkingString )
     {
         ERROR( "Unable to allocate memory for the working string.\n" );
@@ -675,14 +675,14 @@ exit: /* Function clean-up and exit. */
         {
             TRACE( "Copying the string into the buffer.\n" );
             PAL_wcsncpy( lpBuffer, lpReturnString, nCount + 1 );
-            LocalFree( lpReturnString );
+            free( lpReturnString );
         }
     }
     else /* Error, something occurred. */
     {
         if ( lpReturnString )
         {
-            LocalFree( lpReturnString );
+            free( lpReturnString );
         }
     }
     LOGEXIT( "FormatMessageW returns %d.\n", nCount );

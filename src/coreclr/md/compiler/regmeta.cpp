@@ -811,20 +811,20 @@ ErrExit:
 #define STRING_BUFFER_LEN 1024
 #define ENUM_BUFFER_SIZE 10
 
-int DumpMD_Write(__in __in_z const char *str)
+int DumpMD_Write(_In_ _In_z_ const char *str)
 {
     OutputDebugStringA(str);
     return 0; // strlen(str);
 } // int DumpMD_Write()
 
-int DumpMD_WriteLine(__in __in_z const char *str)
+int DumpMD_WriteLine(_In_ _In_z_ const char *str)
 {
     OutputDebugStringA(str);
     OutputDebugStringA("\n");
     return 0; // strlen(str);
 } // int DumpMD_Write()
 
-int DumpMD_VWriteMarker(__in __in_z const char *str, va_list marker)
+int DumpMD_VWriteMarker(_In_ _In_z_ const char *str, va_list marker)
 {
     CQuickBytes m_output;
 
@@ -846,7 +846,7 @@ int DumpMD_VWriteMarker(__in __in_z const char *str, va_list marker)
     return count;
 } // int DumpMD_VWriteMarker()
 
-int DumpMD_VWrite(__in __in_z const char *str, ...)
+int DumpMD_VWrite(_In_ _In_z_ const char *str, ...)
 {
     va_list marker;
     int     count;
@@ -857,7 +857,7 @@ int DumpMD_VWrite(__in __in_z const char *str, ...)
     return count;
 } // int DumpMD_VWrite()
 
-int DumpMD_VWriteLine(__in __in_z const char *str, ...)
+int DumpMD_VWriteLine(_In_ _In_z_ const char *str, ...)
 {
     va_list marker;
     int     count;

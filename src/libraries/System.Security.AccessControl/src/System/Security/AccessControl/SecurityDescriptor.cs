@@ -257,13 +257,8 @@ namespace System.Security.AccessControl
         // Converts the security descriptor to its binary form
         //
 
-        public void GetBinaryForm(byte[] binaryForm, int offset)
+        public void GetBinaryForm(byte[] binaryForm!!, int offset)
         {
-            if (binaryForm == null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
-
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset),
@@ -385,7 +380,6 @@ namespace System.Security.AccessControl
             {
                 MarshalInt(binaryForm, daclOffset, offset - originalOffset);
                 GenericDacl.GetBinaryForm(binaryForm, offset);
-                offset += GenericDacl.BinaryLength;
             }
             else
             {
@@ -467,17 +461,12 @@ namespace System.Security.AccessControl
         // Important: the representation must be in self-relative format
         //
 
-        public RawSecurityDescriptor(byte[] binaryForm, int offset)
+        public RawSecurityDescriptor(byte[] binaryForm!!, int offset)
             : base()
         {
             //
             // The array passed in must be valid
             //
-
-            if (binaryForm == null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
 
             if (offset < 0)
             {
@@ -622,13 +611,8 @@ namespace System.Security.AccessControl
 
         #region Static Methods
 
-        private static byte[] BinaryFormFromSddlForm(string sddlForm)
+        private static byte[] BinaryFormFromSddlForm(string sddlForm!!)
         {
-            if (sddlForm == null)
-            {
-                throw new ArgumentNullException(nameof(sddlForm));
-            }
-
             int error;
             IntPtr byteArray = IntPtr.Zero;
             uint byteArraySize = 0;
@@ -940,13 +924,8 @@ namespace System.Security.AccessControl
         {
         }
 
-        internal CommonSecurityDescriptor(bool isContainer, bool isDS, RawSecurityDescriptor rawSecurityDescriptor, bool trusted)
+        internal CommonSecurityDescriptor(bool isContainer, bool isDS, RawSecurityDescriptor rawSecurityDescriptor!!, bool trusted)
         {
-            if (rawSecurityDescriptor == null)
-            {
-                throw new ArgumentNullException(nameof(rawSecurityDescriptor));
-            }
-
             CreateFromParts(
                 isContainer,
                 isDS,
@@ -1200,26 +1179,16 @@ namespace System.Security.AccessControl
             }
         }
 
-        public void PurgeAccessControl(SecurityIdentifier sid)
+        public void PurgeAccessControl(SecurityIdentifier sid!!)
         {
-            if (sid == null)
-            {
-                throw new ArgumentNullException(nameof(sid));
-            }
-
             if (DiscretionaryAcl != null)
             {
                 DiscretionaryAcl.Purge(sid);
             }
         }
 
-        public void PurgeAudit(SecurityIdentifier sid)
+        public void PurgeAudit(SecurityIdentifier sid!!)
         {
-            if (sid == null)
-            {
-                throw new ArgumentNullException(nameof(sid));
-            }
-
             if (SystemAcl != null)
             {
                 SystemAcl.Purge(sid);

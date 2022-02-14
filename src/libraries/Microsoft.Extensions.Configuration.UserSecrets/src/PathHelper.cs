@@ -43,8 +43,8 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
             const string userSecretsFallbackDir = "DOTNET_USER_SECRETS_FALLBACK_DIR";
 
             // For backwards compat, this checks env vars first before using Env.GetFolderPath
-            string appData = Environment.GetEnvironmentVariable("APPDATA");
-            string root = appData                                                                   // On Windows it goes to %APPDATA%\Microsoft\UserSecrets\
+            string? appData = Environment.GetEnvironmentVariable("APPDATA");
+            string? root = appData                                                                   // On Windows it goes to %APPDATA%\Microsoft\UserSecrets\
                        ?? Environment.GetEnvironmentVariable("HOME")                             // On Mac/Linux it goes to ~/.microsoft/usersecrets/
                        ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
                        ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)

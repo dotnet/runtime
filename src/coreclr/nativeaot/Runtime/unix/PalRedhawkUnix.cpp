@@ -233,7 +233,7 @@ public:
             TimeSpecAdd(&endTime, milliseconds);
         }
 #else
-#error Don't know how to perform timed wait on this platform
+#error "Don't know how to perform timed wait on this platform"
 #endif
 
         int st = 0;

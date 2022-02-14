@@ -23,7 +23,7 @@ class Class1
         testLog = new TestUtil.TestLog(expectedOut);
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         //Start recording
         testLog.StartRecording();

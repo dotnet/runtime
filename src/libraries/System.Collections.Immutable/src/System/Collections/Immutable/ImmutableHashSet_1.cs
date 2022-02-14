@@ -747,14 +747,13 @@ namespace System.Collections.Immutable
         /// </summary>
         private static SortedInt32KeyNode<HashBucket> UpdateRoot(SortedInt32KeyNode<HashBucket> root, int hashCode, IEqualityComparer<HashBucket> hashBucketEqualityComparer, HashBucket newBucket)
         {
-            bool mutated;
             if (newBucket.IsEmpty)
             {
-                return root.Remove(hashCode, out mutated);
+                return root.Remove(hashCode, out _);
             }
             else
             {
-                return root.SetItem(hashCode, newBucket, hashBucketEqualityComparer, out bool replacedExistingValue, out mutated);
+                return root.SetItem(hashCode, newBucket, hashBucketEqualityComparer, out _, out _);
             }
         }
 

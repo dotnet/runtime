@@ -53,6 +53,14 @@ namespace Internal.IL.Stubs.StartupCode
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return "StartupCodeMain";
+            }
+        }
+
         public override MethodIL EmitIL()
         {
             ILEmitter emitter = new ILEmitter();
@@ -222,6 +230,14 @@ namespace Internal.IL.Stubs.StartupCode
             }
 
             public override string Name
+            {
+                get
+                {
+                    return "MainMethodWrapper";
+                }
+            }
+
+            public override string DiagnosticName
             {
                 get
                 {

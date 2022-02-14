@@ -1628,7 +1628,7 @@ size_t Interpreter::GetFrameSize(InterpreterMethodInfo* interpMethInfo)
 }
 
 // static
-ARG_SLOT Interpreter::ExecuteMethodWrapper(struct InterpreterMethodInfo* interpMethInfo, bool directCall, BYTE* ilArgs, void* stubContext, __out bool* pDoJmpCall, CORINFO_RESOLVED_TOKEN* pResolvedToken)
+ARG_SLOT Interpreter::ExecuteMethodWrapper(struct InterpreterMethodInfo* interpMethInfo, bool directCall, BYTE* ilArgs, void* stubContext, _Out_ bool* pDoJmpCall, CORINFO_RESOLVED_TOKEN* pResolvedToken)
 {
 #define INTERP_DYNAMIC_CONTRACTS 1
 #if INTERP_DYNAMIC_CONTRACTS
@@ -1995,7 +1995,7 @@ void Interpreter::DoMonitorExitWork()
 }
 
 
-void Interpreter::ExecuteMethod(ARG_SLOT* retVal, __out bool* pDoJmpCall, __out unsigned* pJmpCallToken)
+void Interpreter::ExecuteMethod(ARG_SLOT* retVal, _Out_ bool* pDoJmpCall, _Out_ unsigned* pJmpCallToken)
 {
 #if INTERP_DYNAMIC_CONTRACTS
     CONTRACTL {

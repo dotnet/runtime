@@ -607,13 +607,13 @@ static void* GcStressHijackTargets[1] =
 // static
 bool Thread::IsHijackTarget(void * address)
 {
-    for (int i = 0; i < COUNTOF(NormalHijackTargets); i++)
+    for (size_t i = 0; i < ARRAY_SIZE(NormalHijackTargets); i++)
     {
         if (NormalHijackTargets[i] == address)
             return true;
     }
 #ifdef FEATURE_GC_STRESS
-    for (int i = 0; i < COUNTOF(GcStressHijackTargets); i++)
+    for (size_t i = 0; i < ARRAY_SIZE(GcStressHijackTargets); i++)
     {
         if (GcStressHijackTargets[i] == address)
             return true;

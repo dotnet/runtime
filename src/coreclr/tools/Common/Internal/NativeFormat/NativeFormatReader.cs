@@ -543,7 +543,7 @@ namespace Internal.NativeFormat
                 {
                     while (_parser.Offset < _endOffset)
                     {
-                        byte lowHashcode = _parser.GetUInt8();
+                        _parser.GetUInt8();
                         return _parser.GetParserFromRelativeOffset();
                     }
 

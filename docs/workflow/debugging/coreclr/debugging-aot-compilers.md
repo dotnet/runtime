@@ -19,7 +19,7 @@ Built in debugging aids in the managed compilers
 ---------------------------------
 
 - When debugging a multi-threaded component of the compiler and not investigating a multi-threading issue itself, it is generally advisable to disable the use of multiple threads.
-To do this use the `--parallelism 1` switch (for crossgen2) or `--singlethreaded` (for ILC) to specify that the maximum parallelism of the process shall be 1.
+To do this use the `--parallelism 1` switch to specify that the maximum parallelism of the process shall be 1.
 
 - When debugging the behavior of compiling a single method, the compiler may be instructed to only compile a single method. This is done via the various --singlemethod options
 
@@ -172,3 +172,7 @@ devenv /debugexe C:\git2\runtime\.dotnet\dotnet.exe "c:\git2\runtime\artifacts\t
 ```
 
 This will launch the Visual Studio debugger, with a solution setup for debugging the dotnet.exe process. By default this solution will debug the native code of the process only. To debug the managed components, edit the properties on the solution and set the `Debugger Type` to `Managed (.NET Core, .NET 5+)` or `Mixed (.NET Core, .NET 5+)`.
+
+# Debugging compilation graph
+
+The AOT compilation is driven by a dependency graph. If you need to troubleshoot the dependency graph (to figure out why something was or wasn't generated) you can follow [this guide](debuging-compiler-dependency-analysis.md)

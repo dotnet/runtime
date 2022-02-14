@@ -252,6 +252,8 @@ class OffsetsTool:
 		]
 		self.jit_type_names = [
 			"MonoLMF",
+			"MonoLMFExt",
+			"MonoMethodILState",
 			"MonoMethodRuntimeGenericContext",
 			"MonoJitTlsData",
 			"MonoGSharedVtMethodRuntimeInfo",
@@ -279,7 +281,7 @@ class OffsetsTool:
 		clang_args += self.target_args
 		clang_args += ['-std=gnu99', '-DMONO_GENERATING_OFFSETS']
 		for include in self.sys_includes:
-			clang_args.append ("-I")
+			clang_args.append ("-isystem")
 			clang_args.append (include)
 		for include in mono_includes:
 			clang_args.append ("-I")

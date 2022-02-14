@@ -17,10 +17,18 @@ async function loadRuntime() {
 async function main() {
     try {
         const createDotnetRuntime = await loadRuntime();
-        const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => ({
-            disableDotnet6Compatibility: true,
-            configSrc: "./mono-config.json",
-        }));
+        const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
+            console.log('user code in createDotnetRuntime')
+            return {
+                disableDotnet6Compatibility: true,
+                configSrc: "./mono-config.json",
+                preInit: () => { console.log('user code Module.preInit') },
+                preRun: () => { console.log('user code Module.preRun') },
+                onRuntimeInitialized: () => { console.log('user code Module.onRuntimeInitialized') },
+                postRun: () => { console.log('user code Module.postRun') },
+            }
+        });
+        console.log('after createDotnetRuntime')
 
         const testMeaning = BINDING.bind_static_method("[Wasm.Browser.CJS.Sample] Sample.Test:TestMeaning");
         const ret = testMeaning();

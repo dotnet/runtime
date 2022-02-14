@@ -84,10 +84,6 @@
         <DllImportGenerator_UseInternalUnsafeType>true</DllImportGenerator_UseInternalUnsafeType>
         <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_INTERNALUNSAFE</DefineConstants>
     </PropertyGroup>
-
-    <PropertyGroup>
-      <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_ENABLED</DefineConstants>
-    </PropertyGroup>
   </Target>
 
   <Import Project="$(LibrariesProjectRoot)System.Runtime.InteropServices/gen/DllImportGenerator/Microsoft.Interop.DllImportGenerator.props" />

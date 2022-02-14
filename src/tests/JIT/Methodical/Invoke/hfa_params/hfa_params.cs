@@ -3,6 +3,8 @@
 
 using System;
 
+namespace Test_hfa_params
+{
 public struct doublesStruct
 {
     public double f1;
@@ -40,7 +42,7 @@ public class A
         return success;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         // Test that a function with HFA args gets the expected contents of the structs.
 
@@ -64,4 +66,5 @@ public class A
 
         return (foo(ds, ds2, ds3) ? 100 : -1);
     }
+}
 }

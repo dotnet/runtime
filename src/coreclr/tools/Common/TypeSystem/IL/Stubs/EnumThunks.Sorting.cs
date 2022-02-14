@@ -8,9 +8,9 @@ namespace Internal.IL.Stubs
     // Functionality related to deterministic ordering of types
     partial class EnumGetHashCodeThunk
     {
-        protected internal override int ClassCode => 261739662;
+        protected override int ClassCode => 261739662;
 
-        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
             var otherMethod = (EnumGetHashCodeThunk)other;
             return comparer.Compare(_owningType, otherMethod._owningType);
@@ -19,9 +19,9 @@ namespace Internal.IL.Stubs
 
     partial class EnumEqualsThunk
     {
-        protected internal override int ClassCode => -1774524780;
+        protected override int ClassCode => -1774524780;
 
-        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
             var otherMethod = (EnumEqualsThunk)other;
             return comparer.Compare(_owningType, otherMethod._owningType);

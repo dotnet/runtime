@@ -33,6 +33,7 @@
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetCustomAttribute.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetGenericParameterAttributes.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetInterfaceConstraints.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderByRefs.cs" />
     <Compile Include="MethodBuilder\MethodBuilderContainsGenericParameters.cs" />
     <Compile Include="MethodBuilder\MethodBuilderDefineGenericParameters.cs" />
     <Compile Include="MethodBuilder\MethodBuilderDefineParameter.cs" />

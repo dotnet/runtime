@@ -154,7 +154,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             AssertNotDisposed();
 
-            object setPropResult = Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
+            Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
             if (exception != 0)
                 throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}')");
         }

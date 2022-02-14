@@ -7,9 +7,9 @@ namespace Internal.IL.Stubs
 {
     partial class PInvokeLazyFixupField
     {
-        protected internal override int ClassCode => -1784477702;
+        protected override int ClassCode => -1784477702;
 
-        protected internal override int CompareToImpl(FieldDesc other, TypeSystemComparer comparer)
+        protected override int CompareToImpl(FieldDesc other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_targetMethod, ((PInvokeLazyFixupField)other)._targetMethod);
         }

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using Xunit;
 
 namespace System.IO.Tests
@@ -349,6 +350,21 @@ namespace System.IO.Tests
             // This always throws as you can't copy an alternate stream out (oddly)
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2, overwrite: true));
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2 + alternateStream, overwrite: true));
+        }
+
+        [Fact]
+        public void DestinationFileIsTruncatedWhenItsLargerThanSourceFile()
+        {
+            string sourcePath = GetTestFilePath();
+            string destPath = GetTestFilePath();
+
+            byte[] content = RandomNumberGenerator.GetBytes(1000);
+            File.WriteAllBytes(sourcePath, content);
+            File.WriteAllBytes(destPath, RandomNumberGenerator.GetBytes(content.Length * 2));
+
+            Copy(sourcePath, destPath, overwrite: true);
+
+            Assert.Equal(content, File.ReadAllBytes(destPath));
         }
     }
 

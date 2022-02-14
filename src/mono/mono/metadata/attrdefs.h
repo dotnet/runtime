@@ -12,12 +12,12 @@
  *
  * From the ECMA documentation
  */
- 
+
 #ifndef _MONO_METADATA_ATTRDEFS_H_
 #define	_MONO_METADATA_ATTRDEFS_H_
 
 /*
- * 23.1.1  Values for AssemblyHashAlgorithm 
+ * 23.1.1  Values for AssemblyHashAlgorithm
  */
 enum {
 	MONO_ASSEMBLY_HASH_NONE,
@@ -186,7 +186,7 @@ enum {
 	MONO_METHOD_IMPL_ATTR_INTERNAL_CALL        = 0x1000,
 	MONO_METHOD_IMPL_ATTR_SYNCHRONIZED         = 0x0020,
 	MONO_METHOD_IMPL_ATTR_NOINLINING           = 0x0008,
-	MONO_METHOD_IMPL_ATTR_NOOPTIMIZATION       = 0x0040,	
+	MONO_METHOD_IMPL_ATTR_NOOPTIMIZATION       = 0x0040,
 	MONO_METHOD_IMPL_ATTR_MAX_METHOD_IMPL_VAL  = 0xffff
 };
 

@@ -1175,7 +1175,7 @@ ErrExit:
 STDMETHODIMP RegMeta::GetMethodProps(
     mdMethodDef mb,                     // The method for which to get props.
     mdTypeDef   *pClass,                // Put method's class here.
-    __out_ecount_opt (cchMethod) LPWSTR szMethod, // Put method's name here.
+    _Out_writes_opt_ (cchMethod) LPWSTR szMethod, // Put method's name here.
     ULONG       cchMethod,              // Size of szMethod buffer in wide chars.
     ULONG       *pchMethod,             // Put actual size here
     DWORD       *pdwAttr,               // Put flags here.
@@ -1258,7 +1258,7 @@ ErrExit:
 STDMETHODIMP RegMeta::GetMemberRefProps(      // S_OK or error.
     mdMemberRef mr,                     // [IN] given memberref
     mdToken     *ptk,                   // [OUT] Put classref or classdef here.
-    __out_ecount_opt (cchMember) LPWSTR szMember, // [OUT] buffer to fill for member's name
+    _Out_writes_opt_ (cchMember) LPWSTR szMember, // [OUT] buffer to fill for member's name
     ULONG       cchMember,              // [IN] the count of char of szMember
     ULONG       *pchMember,             // [OUT] actual count of char in member name
     PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to meta data blob value
@@ -2111,7 +2111,7 @@ ErrExit:
 //*******************************************************************************
 STDMETHODIMP RegMeta::GetModuleRefProps(      // S_OK or error.
     mdModuleRef mur,                    // [IN] moduleref token.
-    __out_ecount_opt (cchName) LPWSTR szName, // [OUT] buffer to fill with the moduleref name.
+    _Out_writes_opt_ (cchName) LPWSTR szName, // [OUT] buffer to fill with the moduleref name.
     ULONG       cchName,                // [IN] size of szName in wide characters.
     ULONG       *pchName)               // [OUT] actual count of characters in the name.
 {
@@ -2452,7 +2452,7 @@ ErrExit:
 //*****************************************************************************
 STDMETHODIMP RegMeta::GetUserString(          // S_OK or error.
                                     mdString stk,               // [IN] String token.
-    __out_ecount_opt(cchStringSize) LPWSTR   wszString,         // [OUT] Copy of string.
+    _Out_writes_bytes_opt_(cchStringSize) LPWSTR   wszString,         // [OUT] Copy of string.
                                     ULONG    cchStringSize,     // [IN] Max chars of room in szString.
                                     ULONG   *pcchStringSize)    // [OUT] How many chars in actual string.
 {
@@ -2523,7 +2523,7 @@ STDMETHODIMP RegMeta::GetUserString(          // S_OK or error.
 STDMETHODIMP RegMeta::GetPinvokeMap(          // S_OK or error.
     mdToken     tk,                     // [IN] FieldDef or MethodDef.
     DWORD       *pdwMappingFlags,       // [OUT] Flags used for mapping.
-    __out_ecount_opt (cchImportName) LPWSTR szImportName, // [OUT] Import name.
+    _Out_writes_opt_ (cchImportName) LPWSTR szImportName, // [OUT] Import name.
     ULONG       cchImportName,          // [IN] Size of the name buffer.
     ULONG       *pchImportName,         // [OUT] Actual number of characters stored.
     mdModuleRef *pmrImportDLL)          // [OUT] ModuleRef token for the target DLL.
@@ -2791,7 +2791,7 @@ ErrExit:
 HRESULT RegMeta::GetMemberProps(
     mdToken     mb,                     // The member for which to get props.
     mdTypeDef   *pClass,                // Put member's class here.
-    __out_ecount_opt (cchMember) LPWSTR szMember, // Put member's name here.
+    _Out_writes_opt_ (cchMember) LPWSTR szMember, // Put member's name here.
     ULONG       cchMember,              // Size of szMember buffer in wide chars.
     ULONG       *pchMember,             // Put actual size here
     DWORD       *pdwAttr,               // Put flags here.
@@ -2863,7 +2863,7 @@ ErrExit:
 HRESULT RegMeta::GetFieldProps(
     mdFieldDef  fd,                     // The field for which to get props.
     mdTypeDef   *pClass,                // Put field's class here.
-    __out_ecount_opt (cchField) LPWSTR szField, // Put field's name here.
+    _Out_writes_opt_ (cchField) LPWSTR szField, // Put field's name here.
     ULONG       cchField,               // Size of szField buffer in wide chars.
     ULONG       *pchField,              // Put actual size here
     DWORD       *pdwAttr,               // Put flags here.
@@ -3146,7 +3146,7 @@ HRESULT RegMeta::GetParamProps(         // S_OK or error.
     mdParamDef  pd,                     // [IN]The Parameter.
     mdMethodDef *pmd,                   // [OUT] Parent Method token.
     ULONG       *pulSequence,           // [OUT] Parameter sequence.
-    __out_ecount_opt (cchName) LPWSTR szName, // [OUT] Put name here.
+    _Out_writes_opt_ (cchName) LPWSTR szName, // [OUT] Put name here.
     ULONG       cchName,                // [OUT] Size of name buffer.
     ULONG       *pchName,               // [OUT] Put actual size of name here.
     DWORD       *pdwAttr,               // [OUT] Put flags here.
@@ -3241,7 +3241,7 @@ HRESULT RegMeta::GetGenericParamProps(        // S_OK or error.
         DWORD* pdwAttr,                     // [OUT] Type parameter flags (for future use)
         mdToken *ptOwner,                   // [OUT] The owner (TypeDef or MethodDef)
         DWORD *reserved,                    // [OUT] The kind (TypeDef/Ref/Spec, for future use)
-        __out_ecount_opt (cchName) LPWSTR szName, // [OUT] The name
+        _Out_writes_opt_ (cchName) LPWSTR szName, // [OUT] The name
         ULONG cchName,                      // [IN] Size of name buffer
         ULONG *pchName)                     // [OUT] Actual size of name
 {
@@ -3431,7 +3431,7 @@ HRESULT RegMeta::GetPEKind(             // S_OK or error.
 //  version, and an empty string will be returned.
 //*****************************************************************************
 HRESULT RegMeta::GetVersionString(    // S_OK or error.
-    __out_ecount_opt (cchBufSize) LPWSTR pwzBuf, // [OUT] Put version string here.
+    _Out_writes_opt_ (cchBufSize) LPWSTR pwzBuf, // [OUT] Put version string here.
     DWORD       cchBufSize,             // [in] size of the buffer, in wide chars
     DWORD       *pchBufSize)            // [out] Size of the version string, wide chars, including terminating nul.
 {

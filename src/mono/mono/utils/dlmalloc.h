@@ -1,14 +1,14 @@
 /*
   Default header file for malloc-2.8.x, written by Doug Lea
   and released to the public domain, as explained at
-  http://creativecommons.org/licenses/publicdomain. 
- 
+  http://creativecommons.org/licenses/publicdomain.
+
   last update: Mon Aug 15 08:55:52 2005  Doug Lea  (dl at gee)
 
   This header is for ANSI C/C++ only.  You can set any of
   the following #defines before including:
 
-  * If USE_DL_PREFIX is defined, it is assumed that malloc.c 
+  * If USE_DL_PREFIX is defined, it is assumed that malloc.c
     was also compiled with this option, so all routines
     have names starting with "dl".
 

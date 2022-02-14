@@ -336,6 +336,59 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreateReferencedLibRecordCompilation()
+        {
+            string source = @"
+            using System.Text.Json.Serialization;
+
+            namespace ReferencedAssembly
+            {
+                public record LibRecord(int Id)
+                {
+                    public string Address1 { get; set; }
+                    public string Address2 { get; set; }
+                    public string City { get; set; }
+                    public string State { get; set; }
+                    public string PostalCode { get; set; }
+                    public string Name { get; set; }
+                    [JsonInclude]
+                    public string PhoneNumber;
+                    [JsonInclude]
+                    public string Country;
+                }
+            }
+";
+
+            return CreateCompilation(source);
+        }
+
+            public static Compilation CreateReferencedSimpleLibRecordCompilation()
+            {
+                string source = @"
+            using System.Text.Json.Serialization;
+
+            namespace ReferencedAssembly
+            {
+                public record LibRecord
+                {
+                    public int Id { get; set; }
+                    public string Address1 { get; set; }
+                    public string Address2 { get; set; }
+                    public string City { get; set; }
+                    public string State { get; set; }
+                    public string PostalCode { get; set; }
+                    public string Name { get; set; }
+                    [JsonInclude]
+                    public string PhoneNumber;
+                    [JsonInclude]
+                    public string Country;
+                }
+            }
+";
+
+                return CreateCompilation(source);
+        }
+
         internal static void CheckDiagnosticMessages(
             DiagnosticSeverity level,
             ImmutableArray<Diagnostic> diagnostics,

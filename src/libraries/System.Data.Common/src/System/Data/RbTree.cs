@@ -342,7 +342,7 @@ namespace System.Data
         private int GetNewNode(K? key)
         {
             // find page with free slots, if none, allocate a new page
-            TreePage? page = null;
+            TreePage? page;
 
             int freePageIndex = GetIndexOfPageWithFreeSlot(true);
             if (freePageIndex != -1)
@@ -1479,7 +1479,7 @@ namespace System.Data
             satelliteRootId = NIL;
             int x_id = root;
 
-            int rank = -1;
+            int rank;
             while (x_id != NIL && !(((rank = SubTreeSize(Left(x_id)) + 1) == index) && Next(x_id) == NIL))
             {
                 if (index < rank)
@@ -1972,8 +1972,8 @@ namespace System.Data
              */
             internal int AllocSlot(RBTree<K> tree)
             {
-                int segmentPos = 0;  // index into _SlotMap
-                int freeSlot = 0;  // Uint, slot offset within the segment
+                int segmentPos;  // index into _SlotMap
+                int freeSlot;  // Uint, slot offset within the segment
                 int freeSlotId = -1; // 0 based slot position
 
                 if (_inUseCount < _slots.Length)
@@ -1983,7 +1983,6 @@ namespace System.Data
                     {
                         if (unchecked((uint)_slotMap[segmentPos]) < 0xFFFFFFFF)
                         {
-                            freeSlotId = 0;
                             freeSlot = (~(_slotMap[segmentPos])) & unchecked(_slotMap[segmentPos] + 1);
 
                             // avoid string concat to allow debug code to run faster

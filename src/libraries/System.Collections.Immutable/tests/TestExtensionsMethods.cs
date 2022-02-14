@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Collections.Immutable.Tests
 {
@@ -13,6 +14,24 @@ namespace System.Collections.Immutable.Tests
         internal static void ValidateDefaultThisBehavior(Action a)
         {
             Assert.Throws<NullReferenceException>(a);
+        }
+
+        internal static void ValidateDefaultThisBehavior<TArg>(ReadOnlySpan<TArg> span, AssertExtensions.AssertThrowsActionReadOnly<TArg> action)
+        {
+            try
+            {
+                action(span);
+            }
+            catch (NullReferenceException nullRefEx) when (nullRefEx.GetType() == typeof(NullReferenceException))
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                throw new ThrowsException(typeof(NullReferenceException), ex);
+            }
+
+            throw new ThrowsException(typeof(NullReferenceException));
         }
     }
 }

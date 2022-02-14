@@ -228,6 +228,9 @@
   // convention that takes EDI as argument (but doesn't trash it), trashes EAX, and returns ESI.
   #define RBM_INIT_PINVOKE_FRAME_TRASH  (RBM_PINVOKE_SCRATCH | RBM_PINVOKE_TCB)
 
+  #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~RBM_ECX)
+  #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_ECX
+
   #define REG_FPBASE               REG_EBP
   #define RBM_FPBASE               RBM_EBP
   #define STR_FPBASE               "ebp"

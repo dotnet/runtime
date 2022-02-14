@@ -37,7 +37,7 @@ namespace System.Runtime.Tests
 
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // JitInfo metrics will be 0 in AOT scenarios
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // JitInfo metrics will be 0 in AOT scenarios
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55712", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void JitInfoIsPopulated()
         {
@@ -99,7 +99,7 @@ namespace System.Runtime.Tests
             Assert.True(afterCompiledMethodCount == 0, $"After Compiled method count not eqeual to 0! ({afterCompiledMethodCount})");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("Mono does not track thread specific JIT information")]
         public void JitInfoCurrentThreadIsPopulated()
         {

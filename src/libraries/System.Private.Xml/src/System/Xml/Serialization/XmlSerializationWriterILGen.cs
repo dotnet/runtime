@@ -121,11 +121,6 @@ namespace System.Xml.Serialization
                  argTypes.ToArray()
                  )!;
             ilg.Call(XmlSerializationWriter_WriteXXX);
-
-            if (hasDefault)
-            {
-                throw Globals.NotSupported("XmlQualifiedName DefaultValue not supported.  Fail in WriteValue()");
-            }
         }
 
         [RequiresUnreferencedCode("calls Load")]
@@ -1233,7 +1228,7 @@ namespace System.Xml.Serialization
                 {
                     string methodName;
                     Type methodType;
-                    Type argType = typeof(string);
+                    Type argType;
                     // check to see if we can write values of the attribute sequentially
                     if (CanOptimizeWriteListSequence(memberTypeDesc.ArrayElementTypeDesc))
                     {

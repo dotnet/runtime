@@ -48,7 +48,7 @@ typedef void	    (*MonoMainThreadFunc)    (void* user_data);
     } while (0)
 
 #define mono_array_addr(array,type,index) ((type*)mono_array_addr_with_size ((array), sizeof (type), (index)))
-#define mono_array_get(array,type,index) ( *(type*)mono_array_addr ((array), type, (index)) ) 
+#define mono_array_get(array,type,index) ( *(type*)mono_array_addr ((array), type, (index)) )
 #define mono_array_set(array,type,index,value)	\
 	do {	\
 		type *__p = (type *) mono_array_addr ((array), type, (index));	\
@@ -291,7 +291,7 @@ mono_runtime_exec_managed_code (MonoDomain *domain,
 				void* main_args);
 
 MONO_API MONO_RT_EXTERNAL_ONLY int
-mono_runtime_run_main	    (MonoMethod *method, int argc, char* argv[], 
+mono_runtime_run_main	    (MonoMethod *method, int argc, char* argv[],
 			     MonoObject **exc);
 
 MONO_API MONO_RT_EXTERNAL_ONLY int
@@ -348,11 +348,11 @@ mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 /* GC handles support
  *
  * A handle can be created to refer to a managed object and either prevent it
- * from being garbage collected or moved or to be able to know if it has been 
+ * from being garbage collected or moved or to be able to know if it has been
  * collected or not (weak references).
  * mono_gchandle_new () is used to prevent an object from being garbage collected
  * until mono_gchandle_free() is called. Use a TRUE value for the pinned argument to
- * prevent the object from being moved (this should be avoided as much as possible 
+ * prevent the object from being moved (this should be avoided as much as possible
  * and this should be used only for shorts periods of time or performance will suffer).
  * To create a weakref use mono_gchandle_new_weakref (): track_resurrection should
  * usually be false (see the GC docs for more details).

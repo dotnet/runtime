@@ -18,17 +18,8 @@ namespace System.Reflection.Emit
         }
 
         // Use this function if client decides to form the custom attribute blob themselves
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
         {
-            if (con == null)
-            {
-                throw new ArgumentNullException(nameof(con));
-            }
-            if (binaryAttribute == null)
-            {
-                throw new ArgumentNullException(nameof(binaryAttribute));
-            }
-
             TypeBuilder.DefineCustomAttribute(
                 _methodBuilder.GetModuleBuilder(),
                 _token,
@@ -37,12 +28,8 @@ namespace System.Reflection.Emit
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
         {
-            if (customBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(customBuilder));
-            }
             customBuilder.CreateCustomAttribute((ModuleBuilder)(_methodBuilder.GetModule()), _token);
         }
 

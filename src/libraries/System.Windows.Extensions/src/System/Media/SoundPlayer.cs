@@ -616,7 +616,7 @@ namespace System.Media
 
         private static void ValidateSoundData(byte[] data)
         {
-            int position = 0;
+            int position;
             short wFormatTag = -1;
             bool fmtChunkFound = false;
 

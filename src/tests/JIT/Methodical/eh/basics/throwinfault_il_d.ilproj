@@ -9,6 +9,6 @@
     <Compile Include="throwinfault.il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\common\common.csproj" />
+    <ProjectReference Include="..\..\..\common\eh_common.csproj" />
   </ItemGroup>
 </Project>

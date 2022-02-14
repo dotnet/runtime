@@ -237,8 +237,7 @@ namespace System.Configuration
             ConfigurationSectionGroup configSectionGroup = LookupSectionGroup(configKey);
             if (configSectionGroup != null) return configSectionGroup;
 
-            BaseConfigurationRecord configRecord;
-            FactoryRecord factoryRecord = FindFactoryRecord(configKey, false, out configRecord);
+            FactoryRecord factoryRecord = FindFactoryRecord(configKey, false, out _);
             if (factoryRecord == null) return null;
 
             if (!factoryRecord.IsGroup) throw ExceptionUtil.ParameterInvalid("sectionGroupName");
@@ -359,9 +358,8 @@ namespace System.Configuration
                         FactoryRecord factoryRecord = GetFactoryRecord(configKey, false);
 
                         object resultObject;
-                        object resultRuntimeObject;
                         CreateSectionDefault(configKey, false, factoryRecord, null, out resultObject,
-                            out resultRuntimeObject);
+                            out _);
                         result = (ConfigurationSection)resultObject;
                     }
                     else

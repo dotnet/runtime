@@ -1657,7 +1657,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
 #ifdef FEATURE_SIMD
             // (In)Equality operation that produces bool result, when compared
             // against Vector zero, marks its Vector Zero operand as contained.
-            assert(tree->OperIsLeaf() || tree->IsSIMDZero());
+            assert(tree->OperIsLeaf() || tree->IsSIMDZero() || tree->IsVectorZero());
 #else
             assert(tree->OperIsLeaf());
 #endif
@@ -1912,7 +1912,7 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
         }
         else
         {
-            GenTree* sizeNode = blkNode->AsDynBlk()->gtDynamicSize;
+            GenTree* sizeNode = blkNode->AsStoreDynBlk()->gtDynamicSize;
             inst_Mov(sizeNode->TypeGet(), sizeReg, sizeNode->GetRegNum(), /* canSkip */ true);
         }
     }
@@ -2022,7 +2022,7 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
     // in the case where the size is a constant (i.e. it is not GT_STORE_DYN_BLK).
     if (blkNode->OperGet() == GT_STORE_DYN_BLK)
     {
-        genConsumeReg(blkNode->AsDynBlk()->gtDynamicSize);
+        genConsumeReg(blkNode->AsStoreDynBlk()->gtDynamicSize);
     }
 
     // Next, perform any necessary moves.

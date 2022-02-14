@@ -52,6 +52,31 @@ jobs:
         crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Linux armv6
+- ${{ if containsValue(parameters.platforms, 'Linux_armv6') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      archType: armv6
+      targetRid: linux-armv6
+      platform: Linux_armv6
+      container:
+        image: ubuntu-20.04-cross-armv6-raspbian-10-20211208135931-e6e3ac4
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        crossrootfsDir: '/crossrootfs/armv6'
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Linux arm64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
@@ -273,15 +298,15 @@ jobs:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      hostedOs: Linux
       osGroup: Browser
       archType: wasm
       targetRid: browser-wasm
       platform: Browser_wasm
       container:
-        image: ubuntu-18.04-webassembly-20210707133424-12f133e
+        image: ubuntu-18.04-webassembly-20211208134944-544b18c
         registry: mcr
       jobParameters:
+        hostedOs: Linux
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
@@ -297,12 +322,12 @@ jobs:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      hostedOs: windows
       osGroup: Browser
       archType: wasm
       targetRid: browser-wasm
       platform: Browser_wasm_win
       jobParameters:
+        hostedOs: windows
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
@@ -347,7 +372,7 @@ jobs:
       targetRid: android-x64
       platform: Android_x64
       container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
+        image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -371,7 +396,7 @@ jobs:
       targetRid: android-x86
       platform: Android_x86
       container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
+        image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -395,7 +420,7 @@ jobs:
       targetRid: android-arm
       platform: Android_arm
       container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
+        image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -419,7 +444,7 @@ jobs:
       targetRid: android-arm64
       platform: Android_arm64
       container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
+        image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
       jobParameters:
         runtimeFlavor: mono

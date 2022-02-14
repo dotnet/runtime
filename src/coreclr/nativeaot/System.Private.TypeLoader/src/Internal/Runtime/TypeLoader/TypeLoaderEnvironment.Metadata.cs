@@ -602,9 +602,7 @@ namespace Internal.Runtime.TypeLoader
                     MethodDesc defaultConstructor = ((MetadataType)defType).GetDefaultConstructor();
                     if (defaultConstructor != null)
                     {
-                        IntPtr dummyUnboxingStub;
-                        TypeLoaderEnvironment.MethodAddressType foundAddressType;
-                        TypeLoaderEnvironment.TryGetMethodAddressFromMethodDesc(defaultConstructor, out metadataLookupResult, out dummyUnboxingStub, out foundAddressType);
+                        TypeLoaderEnvironment.TryGetMethodAddressFromMethodDesc(defaultConstructor, out metadataLookupResult, out _, out _);
                     }
                 }
             }
@@ -1605,7 +1603,6 @@ namespace Internal.Runtime.TypeLoader
 
                 rawMethodEntrypoint = _methodEntrypoint;
                 methodEntrypoint = IntPtr.Zero;
-                dictionaryComponent = default(TDictionaryComponentType);
 
                 if (!GetDictionaryComponent(out dictionaryComponent) || !GetMethodEntryPointComponent(dictionaryComponent, out methodEntrypoint))
                     return false;

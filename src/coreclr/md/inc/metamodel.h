@@ -659,7 +659,7 @@ protected:
     // Primitives -- these must be implemented in the Impl class.
 public:
     __checkReturn
-    FORCEINLINE HRESULT getString(UINT32 nIndex, __out LPCSTR *pszString)
+    FORCEINLINE HRESULT getString(UINT32 nIndex, _Out_ LPCSTR *pszString)
     {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
         return static_cast<Impl*>(this)->Impl_GetString(nIndex, pszString);
@@ -677,13 +677,13 @@ public:
         return static_cast<Impl*>(this)->Impl_GetGuid(nIndex, pGuid);
     }
     __checkReturn
-    FORCEINLINE HRESULT getBlob(UINT32 nIndex, __out MetaData::DataBlob *pData)
+    FORCEINLINE HRESULT getBlob(UINT32 nIndex, _Out_ MetaData::DataBlob *pData)
     {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
         return static_cast<Impl*>(this)->Impl_GetBlob(nIndex, pData);
     }
     __checkReturn
-    FORCEINLINE HRESULT getRow(UINT32 nTableIndex, UINT32 nRowIndex, __deref_out void **ppRow)
+    FORCEINLINE HRESULT getRow(UINT32 nTableIndex, UINT32 nRowIndex, _Outptr_ void **ppRow)
     {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
         return static_cast<Impl*>(this)->Impl_GetRow(nTableIndex, nRowIndex, reinterpret_cast<BYTE **>(ppRow));
@@ -694,7 +694,7 @@ public:
               RID          nRowIndex,
               CMiniColDef &columnDefinition,
               UINT32       nTargetTableIndex,
-        __out RID         *pEndRid)
+        _Out_ RID         *pEndRid)
     {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
         return static_cast<Impl*>(this)->Impl_GetEndRidForColumn(nTableIndex, nRowIndex, columnDefinition, nTargetTableIndex, pEndRid);

@@ -247,7 +247,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected void WriteTypedPrimitive(string? name, string? ns, object o, bool xsiType)
         {
-            string? value = null;
+            string? value;
             string type;
             string typeNs = XmlSchema.Namespace;
             bool writeRaw = true;
@@ -964,12 +964,6 @@ namespace System.Xml.Serialization
                 {
                     if (ns == XmlReservedNs.NsXml)
                     {
-                        string? prefix = _w.LookupPrefix(ns);
-
-                        if (prefix == null || prefix.Length == 0)
-                        {
-                            prefix = "xml";
-                        }
                         _w.WriteStartAttribute("xml", localName, ns);
                     }
                     else
@@ -1679,21 +1673,21 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < structMapping.Members!.Length; i++)
                 {
                     MemberMapping member = structMapping.Members[i];
-                    string memberVariable = WriteMemberInfo(type, typeFullName, typeVariable, member.Name);
+                    WriteMemberInfo(type, typeFullName, typeVariable, member.Name);
                     if (member.CheckShouldPersist)
                     {
                         string memberName = $"ShouldSerialize{member.Name}";
-                        memberVariable = WriteMethodInfo(typeFullName, typeVariable, memberName, false);
+                        WriteMethodInfo(typeFullName, typeVariable, memberName, false);
                     }
                     if (member.CheckSpecified != SpecifiedAccessor.None)
                     {
                         string memberName = $"{member.Name}Specified";
-                        memberVariable = WriteMemberInfo(type, typeFullName, typeVariable, memberName);
+                        WriteMemberInfo(type, typeFullName, typeVariable, memberName);
                     }
                     if (member.ChoiceIdentifier != null)
                     {
                         string memberName = member.ChoiceIdentifier.MemberName!;
-                        memberVariable = WriteMemberInfo(type, typeFullName, typeVariable, memberName);
+                        WriteMemberInfo(type, typeFullName, typeVariable, memberName);
                     }
                 }
             }

@@ -1152,7 +1152,7 @@ Dispatch_GetTypeInfo(IDispatch* pDisp, unsigned int itinfo, LCID lcid, ITypeInfo
 }
 
 HRESULT __stdcall
-Dispatch_GetIDsOfNames(IDispatch* pDisp, REFIID riid, __in_ecount(cNames) OLECHAR **rgszNames, unsigned int cNames, LCID lcid, DISPID *rgdispid)
+Dispatch_GetIDsOfNames(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames, unsigned int cNames, LCID lcid, DISPID *rgdispid)
 {
     CONTRACTL
 {
@@ -1231,7 +1231,7 @@ OleAutDispatchImpl_GetIDsOfNames
 (
     IDispatch* pDisp,
     REFIID riid,
-    __in_ecount(cNames) OLECHAR **rgszNames,
+    _In_reads_(cNames) OLECHAR **rgszNames,
     unsigned int cNames,
     LCID lcid,
     DISPID *rgdispid
@@ -1334,7 +1334,7 @@ HRESULT __stdcall
 InternalDispatchImpl_GetIDsOfNames (
     IDispatch* pDisp,
     REFIID riid,
-    __in_ecount(cNames) OLECHAR **rgszNames,
+    _In_reads_(cNames) OLECHAR **rgszNames,
     unsigned int cNames,
     LCID lcid,
     DISPID *rgdispid)
@@ -1560,7 +1560,7 @@ HRESULT __stdcall   DispatchEx_GetTypeInfo (
 HRESULT __stdcall   DispatchEx_GetIDsOfNames (
                                     IDispatchEx* pDisp,
                                     REFIID riid,
-                                    __in_ecount(cNames) OLECHAR **rgszNames,
+                                    _In_reads_(cNames) OLECHAR **rgszNames,
                                     unsigned int cNames,
                                     LCID lcid,
                                     DISPID *rgdispid

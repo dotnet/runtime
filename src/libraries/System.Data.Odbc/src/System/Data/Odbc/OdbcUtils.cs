@@ -445,7 +445,6 @@ namespace System.Data.Odbc
                                     break;
                             }
                         }
-                        endtoken = true;
                         break;
                     }
                 }

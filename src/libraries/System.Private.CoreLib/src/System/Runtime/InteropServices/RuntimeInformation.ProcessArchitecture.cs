@@ -10,6 +10,8 @@ namespace System.Runtime.InteropServices
             => Architecture.X86;
 #elif TARGET_AMD64
             => Architecture.X64;
+#elif TARGET_ARMV6
+            => Architecture.Armv6;
 #elif TARGET_ARM
             => Architecture.Arm;
 #elif TARGET_ARM64
@@ -18,6 +20,8 @@ namespace System.Runtime.InteropServices
             => Architecture.Wasm;
 #elif TARGET_S390X
             => Architecture.S390x;
+#elif TARGET_LOONGARCH64
+            => Architecture.LoongArch64;
 #else
 #error Unknown Architecture
 #endif

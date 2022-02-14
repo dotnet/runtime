@@ -15,6 +15,7 @@ using Internal.TypeSystem.Ecma;
 using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using ILLink.Shared;
 
 using FlowAnnotations = ILCompiler.Dataflow.FlowAnnotations;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
@@ -682,16 +683,12 @@ namespace ILCompiler
 
             if (baseMethodRequiresUnreferencedCode != overridingMethodRequiresUnreferencedCode)
             {
-                Logger.LogWarning(
-                    $"Presence of 'RequiresUnreferencedCodeAttribute' on method '{overridingMethod.GetDisplayName()}' doesn't match overridden method '{baseMethod.GetDisplayName()}'. " +
-                    $"All overridden methods must have 'RequiresUnreferencedCodeAttribute'.", 2046, overridingMethod, MessageSubCategory.TrimAnalysis);
+                Logger.LogWarning(overridingMethod, DiagnosticId.RequiresUnreferencedCodeAttributeMismatch, overridingMethod.GetDisplayName(), baseMethod.GetDisplayName());
             }
 
             if (baseMethodRequiresDynamicCode != overridingMethodRequiresDynamicCode)
             {
-                Logger.LogWarning(
-                    $"Presence of 'RequiresDynamicCodeAttribute' on method '{overridingMethod.GetDisplayName()}' doesn't match overridden method '{baseMethod.GetDisplayName()}'. " +
-                    $"All overridden methods must have 'RequiresDynamicCodeAttribute'.", 2046, overridingMethod, MessageSubCategory.AotAnalysis);
+                Logger.LogWarning(overridingMethod, DiagnosticId.RequiresDynamicCodeAttributeMismatch, overridingMethod.GetDisplayName(), baseMethod.GetDisplayName());
             }
 
             if (baseMethodRequiresDataflow || overridingMethodRequiresDataflow)
@@ -973,7 +970,7 @@ namespace ILCompiler
             }
         }
 
-        private class LinkAttributesReader : ProcessLinkerXmlBase
+        private class LinkAttributesReader : ProcessXmlBase
         {
             private readonly HashSet<TypeDesc> _removedAttributes;
 

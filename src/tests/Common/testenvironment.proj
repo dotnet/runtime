@@ -62,6 +62,9 @@
       COMPlus_JitEdgeProfiling;
       COMPlus_JitRandomGuardedDevirtualization;
       COMPlus_JitRandomEdgeCounts;
+      COMPlus_JitRandomOnStackReplacement;
+      COMPlus_JitForceControlFlowGuard;
+      COMPlus_JitCFGUseDispatcher;
       RunningIlasmRoundTrip
     </COMPlusVariables>
   </PropertyGroup>
@@ -187,12 +190,17 @@
     <TestEnvironment Include="gcstress0xc_jitminopts_heapverify1" GCStress="0xC" JITMinOpts="1" HeapVerify="1" />
     <TestEnvironment Include="jitosr" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitosr_stress" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="1" TieredCompilation="1" />
+    <TestEnvironment Include="jitosr_stress_random" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="2" TieredCompilation="1" JitRandomOnStackReplacement="15"/>
     <TestEnvironment Include="jitosr_pgo" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
     <TestEnvironment Include="jitpartialcompilation" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitpartialcompilation_pgo" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
     <TestEnvironment Include="jitpartialcompilation_osr"  TC_OnStackReplacement="1" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitpartialcompilation_osr_pgo"  TC_OnStackReplacement="1" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
+    <TestEnvironment Include="jitcfg" JitForceControlFlowGuard="1" />
+    <TestEnvironment Include="jitcfg_dispatcher_always" JitForceControlFlowGuard="1" JitCFGUseDispatcher="1" />
+    <TestEnvironment Include="jitcfg_dispatcher_never" JitForceControlFlowGuard="1" JitCFGUseDispatcher="0" />
+    <TestEnvironment Include="jitcfg_gcstress0xc" JitForceControlFlowGuard="1" GCStress="0xC" />
     <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
     <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />
     <TestEnvironment Include="nopgo" JitDisablePGO="1" TieredCompilation="1" />

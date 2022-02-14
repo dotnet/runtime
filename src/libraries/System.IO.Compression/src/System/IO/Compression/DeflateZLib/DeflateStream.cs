@@ -49,11 +49,8 @@ namespace System.IO.Compression
         /// Internal constructor to check stream validity and call the correct initialization function depending on
         /// the value of the CompressionMode given.
         /// </summary>
-        internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
+        internal DeflateStream(Stream stream!!, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             switch (mode)
             {
                 case CompressionMode.Decompress:
@@ -78,11 +75,8 @@ namespace System.IO.Compression
         /// <summary>
         /// Internal constructor to specify the compressionlevel as well as the windowbits
         /// </summary>
-        internal DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
+        internal DeflateStream(Stream stream!!, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             InitializeDeflater(stream, leaveOpen, windowBits, compressionLevel);
         }
 
@@ -457,6 +451,21 @@ namespace System.IO.Compression
             WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
         }
 
+        public override void WriteByte(byte value)
+        {
+            if (GetType() != typeof(DeflateStream))
+            {
+                // DeflateStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
+                // to this WriteByte override being introduced.  In that case, this WriteByte override
+                // should use the behavior of the Write(byte[],int,int) overload.
+                base.WriteByte(value);
+            }
+            else
+            {
+                WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+            }
+        }
+
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             if (GetType() != typeof(DeflateStream))
@@ -577,8 +586,7 @@ namespace System.IO.Compression
                 bool finished;
                 do
                 {
-                    int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
+                    finished = _deflater.Finish(_buffer, out _);
                 } while (!finished);
             }
         }
@@ -625,8 +633,7 @@ namespace System.IO.Compression
                 bool finished;
                 do
                 {
-                    int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
+                    finished = _deflater.Finish(_buffer, out _);
                 } while (!finished);
             }
         }

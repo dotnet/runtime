@@ -1823,10 +1823,9 @@ namespace System.Xml.Serialization
                 //return;
                 name = "";
             }
-            string? idName;
-            if (!_idNames.TryGetValue(name, out idName))
+            if (!_idNames.ContainsKey(name))
             {
-                idName = NextIdName(name);
+                string? idName = NextIdName(name);
                 _idNames.Add(name, idName);
                 _idNameFields.Add(name, this.typeBuilder.DefineField(idName, typeof(string), FieldAttributes.Private));
             }

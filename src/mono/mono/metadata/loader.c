@@ -53,7 +53,7 @@
 #include <mono/utils/mono-path.h>
 
 /*
- * This lock protects the hash tables inside MonoImage used by the metadata 
+ * This lock protects the hash tables inside MonoImage used by the metadata
  * loading functions in class.c and loader.c.
  *
  * See domain-internals.h for locking policy in combination with the
@@ -65,7 +65,7 @@ static gboolean loader_lock_inited;
 static gboolean loader_lock_track_ownership;
 
 /*
- * This TLS variable holds how many times the current thread has acquired the loader 
+ * This TLS variable holds how many times the current thread has acquired the loader
  * lock.
  */
 static MonoNativeTlsKey loader_lock_nest_id;
@@ -105,6 +105,12 @@ mono_loader_init ()
 
 		inited = TRUE;
 	}
+}
+
+MonoDefaults *
+mono_get_defaults (void)
+{
+	return &mono_defaults;
 }
 
 void
@@ -150,7 +156,7 @@ mono_loader_unlock (void)
  *
  *   Set whenever the runtime should track ownership of the loader lock. If set to TRUE,
  * the mono_loader_lock_is_owned_by_self () can be called to query whenever the current
- * thread owns the loader lock. 
+ * thread owns the loader lock.
  */
 void
 mono_loader_lock_track_ownership (gboolean track)
@@ -197,9 +203,9 @@ mono_loader_unlock_if_inited (void)
  *
  *   Return a cached copy of the memberref signature identified by SIG_IDX.
  * We use a gpointer since the cache stores both MonoTypes and MonoMethodSignatures.
- * A cache is needed since the type/signature parsing routines allocate everything 
- * from a mempool, so without a cache, multiple requests for the same signature would 
- * lead to unbounded memory growth. For normal methods/fields this is not a problem 
+ * A cache is needed since the type/signature parsing routines allocate everything
+ * from a mempool, so without a cache, multiple requests for the same signature would
+ * lead to unbounded memory growth. For normal methods/fields this is not a problem
  * since the resulting methods/fields are cached, but inflated methods/fields cannot
  * be cached.
  * LOCKING: Acquires the loader lock.
@@ -350,12 +356,12 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 			mono_error_set_bad_image (error, image, "Bad field token 0x%08x", token);
 			return NULL;
 		}
-		*retklass = result->parent;
+		*retklass = m_field_get_parent (result);
 		return result;
 	}
 
 	if ((field = (MonoClassField *)mono_conc_hashtable_lookup (image->field_cache, GUINT_TO_POINTER (token)))) {
-		*retklass = field->parent;
+		*retklass = m_field_get_parent (field);
 		return field;
 	}
 
@@ -387,7 +393,8 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 		}
 	}
 
-	if (field && field->parent && !mono_class_is_ginst (field->parent) && !mono_class_is_gtd (field->parent)) {
+	MonoClass *field_parent = NULL;
+	if (field && ((field_parent = m_field_get_parent (field))) && !mono_class_is_ginst (field_parent) && !mono_class_is_gtd (field_parent)) {
 		mono_image_lock (image);
 		mono_conc_hashtable_insert (image->field_cache, GUINT_TO_POINTER (token), field);
 		mono_image_unlock (image);
@@ -405,7 +412,7 @@ mono_metadata_signature_vararg_match (MonoMethodSignature *sig1, MonoMethodSigna
 	    sig1->sentinelpos != sig2->sentinelpos)
 		return FALSE;
 
-	for (i = 0; i < sig1->sentinelpos; i++) { 
+	for (i = 0; i < sig1->sentinelpos; i++) {
 		MonoType *p1 = sig1->params[i];
 		MonoType *p2 = sig2->params[i];
 
@@ -458,7 +465,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 			if (method) {
 				other_sig = mono_method_signature_checked (method, error);
 				if (!is_ok (error)) //bail out if we hit a loader error
-					return NULL;				
+					return NULL;
 				if (other_sig && (sig->call_convention != MONO_CALL_VARARG) && mono_metadata_signature_equal (sig, other_sig))
 					return method;
 			}
@@ -493,7 +500,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 		      (name && !strcmp (m->name, name))))
 			continue;
 		msig = mono_method_signature_checked (m, error);
-		if (!is_ok (error)) //bail out if we hit a loader error 
+		if (!is_ok (error)) //bail out if we hit a loader error
 			return NULL;
 
 		if (!msig)
@@ -563,7 +570,7 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 			MonoClass *in_ic = in_class_interfaces_packed [i];
 			MonoClass *from_ic = from_class_interfaces_packed [i];
 			char *ic_qname, *ic_fqname, *ic_class_name;
-			
+
 			ic_class_name = mono_type_get_name_full (m_class_get_byval_arg (in_ic), MONO_TYPE_NAME_FORMAT_IL);
 			ic_qname = g_strconcat (ic_class_name, ".", name, (const char*)NULL);
 			const char *in_ic_name_space = m_class_get_name_space (in_ic);
@@ -591,7 +598,7 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 	//we did not find the method
 	if (!result && is_ok (error))
 		mono_error_set_method_missing (error, initial_class, name, sig, NULL);
-		
+
  out:
 	g_free (class_name);
 	g_free (fqname);
@@ -670,7 +677,7 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context, M
 {
 	size_t locals_size = sizeof (gpointer) * header->num_locals;
 	size_t clauses_size = header->num_clauses * sizeof (MonoExceptionClause);
-	size_t header_size = MONO_SIZEOF_METHOD_HEADER + locals_size + clauses_size; 
+	size_t header_size = MONO_SIZEOF_METHOD_HEADER + locals_size + clauses_size;
 	MonoMethodHeader *res = (MonoMethodHeader *)g_malloc0 (header_size);
 	res->num_locals = header->num_locals;
 	res->clauses = (MonoExceptionClause *) &res->locals [res->num_locals] ;
@@ -1090,8 +1097,8 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	container = mono_class_try_get_generic_container (klass);
 
-	/* 
-	 * load_generic_params does a binary search so only call it if the method 
+	/*
+	 * load_generic_params does a binary search so only call it if the method
 	 * is generic.
 	 */
 	if (*sig & 0x10) {
@@ -1286,7 +1293,7 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 			mono_error_set_for_class_failure (error, constrained_class);
 			return NULL;
 		}
-			
+
 		/* Get the slot of the method in the interface.  Then get the
 		 * interface base in constrained_class */
 		int itf_slot = mono_method_get_vtable_index (method);
@@ -1359,20 +1366,20 @@ mono_free_method  (MonoMethod *method)
 		return;
 
 	MONO_PROFILER_RAISE (method_free, (method));
-	
+
 	/* FIXME: This hack will go away when the profiler will support freeing methods */
 	if (G_UNLIKELY (mono_profiler_installed ()))
 		return;
-	
+
 	if (method->signature) {
-		/* 
+		/*
 		 * FIXME: This causes crashes because the types inside signatures and
 		 * locals are shared.
 		 */
 		/* mono_metadata_free_method_signature (method->signature); */
 		/* g_free (method->signature); */
 	}
-	
+
 	if (method_is_dynamic (method)) {
 		MonoMethodWrapper *mw = (MonoMethodWrapper*)method;
 		int i;
@@ -1431,7 +1438,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 
 	MonoImage *klass_image = m_class_get_image (klass);
 	if (image_is_dynamic (klass_image)) {
-		MonoReflectionMethodAux *method_aux = 
+		MonoReflectionMethodAux *method_aux =
 			(MonoReflectionMethodAux *)g_hash_table_lookup (
 				((MonoDynamicImage*)m_class_get_image (method->klass))->method_aux_hash, method);
 		if (method_aux && method_aux->param_names) {
@@ -1528,7 +1535,7 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 		mspecs [i] = NULL;
 
 	if (image_is_dynamic (m_class_get_image (method->klass))) {
-		MonoReflectionMethodAux *method_aux = 
+		MonoReflectionMethodAux *method_aux =
 			(MonoReflectionMethodAux *)g_hash_table_lookup (
 				((MonoDynamicImage*)m_class_get_image (method->klass))->method_aux_hash, method);
 		if (method_aux && method_aux->param_marshall) {
@@ -1594,7 +1601,7 @@ mono_method_has_marshal_info (MonoMethod *method)
 	guint32 idx;
 
 	if (image_is_dynamic (m_class_get_image (method->klass))) {
-		MonoReflectionMethodAux *method_aux = 
+		MonoReflectionMethodAux *method_aux =
 			(MonoReflectionMethodAux *)g_hash_table_lookup (
 				((MonoDynamicImage*)m_class_get_image (method->klass))->method_aux_hash, method);
 		MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
@@ -1665,6 +1672,7 @@ stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
 	case FRAME_TYPE_INTERP:
+	case FRAME_TYPE_IL_STATE:
 		g_assert (frame->ji);
 		return d->func (frame->actual_method, frame->native_offset, frame->il_offset, frame->managed, d->user_data);
 		break;
@@ -1777,7 +1785,7 @@ mono_method_signature_checked_slow (MonoMethod *m, MonoError *error)
 	MonoMethodSignature *signature = NULL, *sig2;
 	guint32 sig_offset;
 
-	/* We need memory barriers below because of the double-checked locking pattern */ 
+	/* We need memory barriers below because of the double-checked locking pattern */
 
 	error_init (error);
 
@@ -2033,7 +2041,7 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 		return mw->header;
 	}
 
-	/* 
+	/*
 	 * We don't need locks here: the new header is allocated from malloc memory
 	 * and is not stored anywhere in the runtime, the user needs to free it.
 	 */

@@ -9,15 +9,6 @@ namespace System.Net.NetworkInformation
 {
     public partial class NetworkChange
     {
-        static NetworkChange()
-        {
-            // fake usage of static readonly fields to avoid getting CA1823 warning when we are compiling this partial.
-            var addressChangedSubscribers = new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>(s_addressChangedSubscribers);
-            var availabilityChangedSubscribers = new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>(s_availabilityChangedSubscribers);
-            NetworkAvailabilityEventArgs args = addressChangedSubscribers.Count > 0 ? s_availableEventArgs : s_notAvailableEventArgs;
-            ContextCallback callbackContext = s_runAddressChangedHandler != null ? s_runHandlerAvailable : s_runHandlerNotAvailable;
-        }
-
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
         public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
@@ -33,5 +24,8 @@ namespace System.Net.NetworkInformation
             add { throw new PlatformNotSupportedException(); }
             remove { throw new PlatformNotSupportedException(); }
         }
+
+        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
+        public static void RegisterNetworkChange(NetworkChange nc) { }
     }
 }

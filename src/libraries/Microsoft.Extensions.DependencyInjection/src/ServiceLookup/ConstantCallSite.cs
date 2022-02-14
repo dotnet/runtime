@@ -8,11 +8,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     internal sealed class ConstantCallSite : ServiceCallSite
     {
         private readonly Type _serviceType;
-        internal object DefaultValue => Value;
+        internal object? DefaultValue => Value;
 
-        public ConstantCallSite(Type serviceType, object defaultValue): base(ResultCache.None)
+        public ConstantCallSite(Type serviceType!!, object? defaultValue): base(ResultCache.None)
         {
-            _serviceType = serviceType ?? throw new ArgumentNullException(nameof(serviceType));
+            _serviceType = serviceType;
             if (defaultValue != null && !serviceType.IsInstanceOfType(defaultValue))
             {
                 throw new ArgumentException(SR.Format(SR.ConstantCantBeConvertedToServiceType, defaultValue.GetType(), serviceType));

@@ -196,6 +196,9 @@ emit_simd_ins (MonoCompile *cfg, MonoClass *klass, int opcode, int sreg1, int sr
 	} else if (spec [MONO_INST_DEST] == 'f') {
 		ins->dreg = alloc_freg (cfg);
 		ins->type = STACK_R8;
+	} else if (spec [MONO_INST_DEST] == 'v') {
+		ins->dreg = alloc_dreg (cfg, STACK_VTYPE);
+		ins->type = STACK_VTYPE;
 	}
 	ins->sreg1 = sreg1;
 	ins->sreg2 = sreg2;
@@ -560,6 +563,7 @@ type_to_extract_op (MonoTypeEnum type)
 }
 
 static guint16 sri_vector_methods [] = {
+	SN_Abs,
 	SN_As,
 	SN_AsByte,
 	SN_AsDouble,
@@ -576,9 +580,12 @@ static guint16 sri_vector_methods [] = {
 	SN_AsVector256,
 	SN_AsVector3,
 	SN_AsVector4,
+	SN_Ceiling,
+	SN_ConditionalSelect,
 	SN_Create,
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
+	SN_Floor,
 	SN_GetElement,
 	SN_GetLower,
 	SN_GetUpper,
@@ -633,6 +640,23 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
 
 	switch (id) {
+	case SN_Abs: {
+#ifdef TARGET_ARM64
+		switch (arg0_type) {
+			case MONO_TYPE_U1:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_U:
+			return NULL;
+			}
+		gboolean is_float = arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8;
+		int iid = is_float ? INTRINS_AARCH64_ADV_SIMD_FABS : INTRINS_AARCH64_ADV_SIMD_ABS;
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, iid, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
+}
 	case SN_As:
 	case SN_AsByte:
 	case SN_AsDouble:
@@ -649,6 +673,24 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (ret_type) || !MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+	}
+	case SN_Ceiling:
+	case SN_Floor: {
+#ifdef TARGET_ARM64
+		if ((arg0_type != MONO_TYPE_R4) && (arg0_type != MONO_TYPE_R8))
+			return NULL;
+		int ceil_or_floor = id == SN_Ceiling ? INTRINS_AARCH64_ADV_SIMD_FRINTP : INTRINS_AARCH64_ADV_SIMD_FRINTM;
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, ceil_or_floor, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
+	}
+	case SN_ConditionalSelect: {
+#ifdef TARGET_ARM64
+		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BSL, -1, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
 	}
 	case SN_Create: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
@@ -1393,6 +1435,12 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_LoadAndInsertScalar, OP_ARM64_LD1_INSERT},
 	{SN_LoadAndReplicateToVector128, OP_ARM64_LD1R},
 	{SN_LoadAndReplicateToVector64, OP_ARM64_LD1R},
+	{SN_LoadPairScalarVector64, OP_ARM64_LDP_SCALAR},
+	{SN_LoadPairScalarVector64NonTemporal, OP_ARM64_LDNP_SCALAR},
+	{SN_LoadPairVector128, OP_ARM64_LDP},
+	{SN_LoadPairVector128NonTemporal, OP_ARM64_LDNP},
+	{SN_LoadPairVector64, OP_ARM64_LDP},
+	{SN_LoadPairVector64NonTemporal, OP_ARM64_LDNP},
 	{SN_LoadVector128, OP_ARM64_LD1},
 	{SN_LoadVector64, OP_ARM64_LD1},
 	{SN_Max, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMAX, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMAX, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAX},

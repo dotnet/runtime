@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- The optimization is not compatible with multimodule -->
-    <NativeAotMultimoduleIncompatible>true</NativeAotMultimoduleIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DeadCodeElimination.cs" />

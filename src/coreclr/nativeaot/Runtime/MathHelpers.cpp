@@ -33,7 +33,7 @@ EXTERN_C REDHAWK_API float REDHAWK_CALLCONV RhpFltRem(float dividend, float divi
 
     if (divisor==0 || !std::isfinite(dividend))
     {
-        return -nanf(0);
+        return -nanf("");
     }
     else if (!std::isfinite(divisor) && !std::isnan(divisor))
     {
@@ -57,7 +57,7 @@ EXTERN_C REDHAWK_API double REDHAWK_CALLCONV RhpDblRem(double dividend, double d
     //
     if (divisor==0 || !std::isfinite(dividend))
     {
-        return -nan(0);
+        return -nan("");
     }
     else if (!std::isfinite(divisor) && !std::isnan(divisor))
     {

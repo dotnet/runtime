@@ -48,7 +48,7 @@ public:
 
     // This method will acquire data to create a span from a TypeHandle
     // to a field.
-    static FCDECL3(void*, GetSpanDataFrom, FCALLRuntimeFieldHandle structField, FCALLRuntimeTypeHandle targetType, INT32* count);
+    static FCDECL3_VVI(void*, GetSpanDataFrom, FCALLRuntimeFieldHandle structField, FCALLRuntimeTypeHandle targetTypeUnsafe, INT32* count);
 
 private:
     // Helper for CreateInstance

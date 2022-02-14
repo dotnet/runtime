@@ -100,7 +100,7 @@ namespace MS.Internal.Xml.XPath
                 throw XPathException.Create(SR.Xp_InvalidPattern);
             }
             this.Evaluate(new XPathSingletonIterator(navigator!, /*moved:*/true));
-            XPathNavigator? nav = null;
+            XPathNavigator? nav;
             while ((nav = this.Advance()) != null)
             {
                 if (nav.IsSamePosition(navigator!))

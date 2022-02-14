@@ -35,10 +35,7 @@ namespace System.Net.Http
             get { return _version; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 CheckDisposed();
 
                 _version = value;
@@ -88,10 +85,7 @@ namespace System.Net.Http
             get { return _method; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 CheckDisposed();
 
                 _method = value;
@@ -125,12 +119,12 @@ namespace System.Net.Http
         {
         }
 
-        public HttpRequestMessage(HttpMethod method, Uri? requestUri)
+        public HttpRequestMessage(HttpMethod method!!, Uri? requestUri)
         {
             // It's OK to have a 'null' request Uri. If HttpClient is used, the 'BaseAddress' will be added.
             // If there is no 'BaseAddress', sending this request message will throw.
             // Note that we also allow the string to be empty: null and empty are considered equivalent.
-            _method = method ?? throw new ArgumentNullException(nameof(method));
+            _method = method;
             _requestUri = requestUri;
             _version = DefaultRequestVersion;
             _versionPolicy = DefaultVersionPolicy;

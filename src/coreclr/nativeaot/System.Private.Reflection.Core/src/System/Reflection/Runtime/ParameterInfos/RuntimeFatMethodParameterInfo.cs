@@ -50,7 +50,7 @@ namespace System.Reflection.Runtime.ParameterInfos
                 if (rawDefaultValueInfo == null)
                 {
                     object rawDefaultValue;
-                    bool dontCare = GetDefaultValueOrSentinel(raw: true, defaultValue: out rawDefaultValue);
+                    GetDefaultValueOrSentinel(raw: true, defaultValue: out rawDefaultValue);
                     rawDefaultValueInfo = _lazyRawDefaultValueInfo = Tuple.Create(rawDefaultValue);
                 }
                 return rawDefaultValueInfo.Item1;

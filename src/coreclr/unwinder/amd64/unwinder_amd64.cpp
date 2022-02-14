@@ -321,13 +321,13 @@ UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
 //     returned.
 //
 PEXCEPTION_ROUTINE RtlVirtualUnwind_Unsafe(
-    __in ULONG HandlerType,
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
-    __in OUT PCONTEXT ContextRecord,
-    __out PVOID *HandlerData,
-    __out PULONG64 EstablisherFrame,
+    _In_ ULONG HandlerType,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ OUT PCONTEXT ContextRecord,
+    _Out_ PVOID *HandlerData,
+    _Out_ PULONG64 EstablisherFrame,
     __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers
     )
 {
@@ -395,10 +395,10 @@ PEXCEPTION_ROUTINE RtlVirtualUnwind_Unsafe(
 
 HRESULT
 OOPStackUnwinderAMD64::UnwindEpilogue(
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __in ULONG EpilogueOffset,
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _In_ ULONG EpilogueOffset,
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __inout PCONTEXT ContextRecord,
     __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers
 )
@@ -634,13 +634,13 @@ HRESULT.
 
 HRESULT
 OOPStackUnwinderAMD64::UnwindPrologue(
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __in ULONG64 FrameBase,
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _In_ ULONG64 FrameBase,
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __inout PCONTEXT ContextRecord,
     __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
-    __deref_out _PIMAGE_RUNTIME_FUNCTION_ENTRY *FinalFunctionEntry
+    _Outptr_ _PIMAGE_RUNTIME_FUNCTION_ENTRY *FinalFunctionEntry
     )
 
 /*++
@@ -1012,15 +1012,15 @@ Return Value:
 
 HRESULT
 OOPStackUnwinderAMD64::VirtualUnwind(
-    __in DWORD HandlerType,
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ DWORD HandlerType,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __inout PCONTEXT ContextRecord,
-    __out PVOID *HandlerData,
-    __out PULONG64 EstablisherFrame,
+    _Out_ PVOID *HandlerData,
+    _Out_ PULONG64 EstablisherFrame,
     __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
-    __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine
+    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine
     )
 
 /*++
@@ -1663,8 +1663,8 @@ ExitSetHandler:
 
 _PIMAGE_RUNTIME_FUNCTION_ENTRY
 OOPStackUnwinderAMD64::LookupPrimaryFunctionEntry(
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-    __in ULONG64 ImageBase
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase
 
     )
 
@@ -1732,9 +1732,9 @@ Return Value:
 
 _PIMAGE_RUNTIME_FUNCTION_ENTRY
 OOPStackUnwinderAMD64::SameFunction(
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc
     )
 
 /*++
@@ -1812,7 +1812,7 @@ Return Value:
     }
 }
 
-ULONG OOPStackUnwinderAMD64::UnwindOpSlots(__in UNWIND_CODE UnwindCode)
+ULONG OOPStackUnwinderAMD64::UnwindOpSlots(_In_ UNWIND_CODE UnwindCode)
 /*++
 
 Routine Description:
