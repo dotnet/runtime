@@ -2,6 +2,7 @@
   "name": "system.net.websockets.client.tests",
   "private": true,
   "dependencies": {
+    "node-abort-controller": "^3.0.1",
     "node-fetch": "^2.6.7",
     "ws": "8.4.0"
   }

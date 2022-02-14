@@ -374,6 +374,9 @@ if (is_node) {
                 globalThis.Headers = moduleExport.Headers;
                 globalThis.Request = moduleExport.Request;
                 globalThis.Response = moduleExport.Response;
+            } else if(moduleName == "node-abort-controller") {
+                message += ' and attaching to global';
+                globalThis.AbortController = moduleExport.AbortController;
             }
             
             console.log(message);
