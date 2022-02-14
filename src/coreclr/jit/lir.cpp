@@ -1359,7 +1359,7 @@ public:
             }
 
             AliasSet::NodeInfo nodeInfo(compiler, node);
-            if (nodeInfo.IsLclVarRead() && !unusedDefs.Contains(node))
+            if (nodeInfo.IsLclVarRead() && node->IsValue() && !unusedDefs.Contains(node))
             {
                 jitstd::list<GenTree*>* reads;
                 if (!unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
