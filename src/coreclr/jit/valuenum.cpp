@@ -4594,51 +4594,41 @@ bool ValueNumStore::IsVNConstant(ValueNum vn)
     }
 }
 
+//------------------------------------------------------------------------
+// IsVNVectorZero: Checks if the value number is a Vector*_get_Zero.
+//
+// Arguments:
+//    vn – The value number.
+//
+// Return Value:
+//    true  – The value number is a Vector*_get_Zero.
+//    false – The value number is not a Vector*_get_Zero.
 bool ValueNumStore::IsVNVectorZero(ValueNum vn)
 {
-    if (vn == NoVN)
+#ifdef FEATURE_SIMD
+    VNSimdTypeInfo vnInfo = GetVectorZeroSimdTypeOfVN(vn);
+    // Check the size to see if we got a valid SIMD type.
+    // '0' means it is not valid.
+    if (vnInfo.m_simdSize != 0)
     {
-        return false;
-    }
-#if FEATURE_HW_INTRINSICS
-    // REVIEW: This will only return true if Vector.Zero encodes
-    //         its base type as an argument. On XARCH there may be
-    //         scenarios where Vector.Zero will not encode its base type;
-    //         therefore, returning false here.
-    VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp) && funcApp.m_arity == 1)
-    {
-        switch (funcApp.m_func)
-        {
-            case VNF_HWI_Vector128_get_Zero:
-#if defined(TARGET_XARCH)
-            case VNF_HWI_Vector256_get_Zero:
-#elif defined(TARGET_ARM64)
-            case VNF_HWI_Vector64_get_Zero:
-#endif
-            {
-                return true;
-            }
-
-            default:
-                return false;
-        }
+        return true;
     }
 #endif
     return false;
 }
 
-#if FEATURE_SIMD
+#ifdef FEATURE_SIMD
+//------------------------------------------------------------------------
+// GetSimdTypeOfVN: Returns the SIMD type information based on the given value number.
+//
+// Arguments:
+//    vn – The value number.
+//
+// Return Value:
+//    Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type.
 VNSimdTypeInfo ValueNumStore::GetSimdTypeOfVN(ValueNum vn)
 {
     VNSimdTypeInfo vnInfo;
-
-    if (vn == NoVN)
-    {
-        vnInfo.m_simdSize        = 0;
-        vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
-        return vnInfo;
-    }
 
     // The SIMD type is encoded as a function,
     // even though it is not actually a function.
@@ -4656,29 +4646,56 @@ VNSimdTypeInfo ValueNumStore::GetSimdTypeOfVN(ValueNum vn)
     return vnInfo;
 }
 
-// REVIEW: Vector.Zero nodes in VN currently encode their SIMD type for
+//------------------------------------------------------------------------
+// GetVectorZeroSimdTypeOfVN: Returns the SIMD type information based on the given value number
+//                            if it's Vector*_get_Zero.
+//
+// Arguments:
+//    vn – The value number.
+//
+// Return Value:
+//    Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type
+//    for a Vector*_get_Zero value number.
+//
+// REVIEW: Vector*_get_Zero nodes in VN currently encode their SIMD type for
 //         conservative reasons. In the future, it might be possible not do this
-//         on most platforms since Vector.Zero's base type does not matter.
+//         on most platforms since Vector*_get_Zero's base type does not matter.
 VNSimdTypeInfo ValueNumStore::GetVectorZeroSimdTypeOfVN(ValueNum vn)
 {
-    VNSimdTypeInfo vnInfo;
-
-    if (!IsVNVectorZero(vn))
-    {
-        vnInfo.m_simdSize        = 0;
-        vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
-        return vnInfo;
-    }
-
-    // Vector.Zero does not have any arguments,
+#ifdef FEATURE_HW_INTRINSICS
+    // REVIEW: This will only return true if Vector*_get_Zero encodes
+    //         its base type as an argument. On XARCH there may be
+    //         scenarios where Vector*_get_Zero will not encode its base type;
+    //         therefore, returning false here.
+    // Vector*_get_Zero does not have any arguments,
     // but its SIMD type is encoded as an argument.
     VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp))
+    if (GetVNFunc(vn, &funcApp) && funcApp.m_arity == 1)
     {
-        assert(funcApp.m_arity == 1);
-        return GetSimdTypeOfVN(funcApp.m_args[0]);
-    }
+        switch (funcApp.m_func)
+        {
+            case VNF_HWI_Vector128_get_Zero:
+#if defined(TARGET_XARCH)
+            case VNF_HWI_Vector256_get_Zero:
+#elif defined(TARGET_ARM64)
+            case VNF_HWI_Vector64_get_Zero:
+#endif
+            {
+                return GetSimdTypeOfVN(funcApp.m_args[0]);
+            }
 
+            default:
+            {
+                VNSimdTypeInfo vnInfo;
+                vnInfo.m_simdSize        = 0;
+                vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
+                return vnInfo;
+            }
+        }
+    }
+#endif
+
+    VNSimdTypeInfo vnInfo;
     vnInfo.m_simdSize        = 0;
     vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
     return vnInfo;

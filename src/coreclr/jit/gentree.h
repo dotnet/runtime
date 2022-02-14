@@ -5330,7 +5330,7 @@ public:
         {
             case CORINFO_TYPE_NATIVEINT:
             {
-#if TARGET_64BIT
+#ifdef TARGET_64BIT
                 return CORINFO_TYPE_LONG;
 #else
                 return CORINFO_TYPE_INT;
@@ -5339,7 +5339,7 @@ public:
 
             case CORINFO_TYPE_NATIVEUINT:
             {
-#if TARGET_64BIT
+#ifdef TARGET_64BIT
                 return CORINFO_TYPE_ULONG;
 #else
                 return CORINFO_TYPE_UINT;

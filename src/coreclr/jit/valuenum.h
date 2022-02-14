@@ -721,15 +721,11 @@ public:
     // Returns true iff the VN represents a (non-handle) constant.
     bool IsVNConstant(ValueNum vn);
 
-    // Returns true if the VN represents a Vector64/128/256.Zero.
     bool IsVNVectorZero(ValueNum vn);
 
-#if FEATURE_SIMD
-    // Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type.
+#ifdef FEATURE_SIMD
     VNSimdTypeInfo GetSimdTypeOfVN(ValueNum vn);
 
-    // Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type
-    // for a Vector.Zero value number.
     VNSimdTypeInfo GetVectorZeroSimdTypeOfVN(ValueNum vn);
 #endif
 
