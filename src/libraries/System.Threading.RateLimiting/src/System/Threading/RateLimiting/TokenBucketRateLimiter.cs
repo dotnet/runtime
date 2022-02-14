@@ -124,14 +124,13 @@ namespace System.Threading.RateLimiting
                     }
                 }
 
-                TaskCompletionSource<RateLimitLease> tcs = new TaskCompletionSource<RateLimitLease>(TaskCreationOptions.RunContinuationsAsynchronously);
-
+                CancelQueueState tcs = new CancelQueueState(tokenCount, this, cancellationToken);
                 CancellationTokenRegistration ctr = default;
                 if (cancellationToken.CanBeCanceled)
                 {
                     ctr = cancellationToken.Register(static obj =>
                     {
-                        ((TaskCompletionSource<RateLimitLease>)obj!).TrySetException(new OperationCanceledException());
+                        ((CancelQueueState)obj!).TrySetCanceled();
                     }, tcs);
                 }
 
@@ -140,7 +139,6 @@ namespace System.Threading.RateLimiting
                 _queueCount += tokenCount;
                 Debug.Assert(_queueCount <= _options.QueueLimit);
 
-                // handle cancellation
                 return new ValueTask<RateLimitLease>(registration.Tcs.Task);
             }
         }
@@ -276,15 +274,17 @@ namespace System.Threading.RateLimiting
 
                         _queueCount -= nextPendingRequest.Count;
                         _tokenCount -= nextPendingRequest.Count;
-                        Debug.Assert(_queueCount >= 0);
                         Debug.Assert(_tokenCount >= 0);
 
                         if (!nextPendingRequest.Tcs.TrySetResult(SuccessfulLease))
                         {
                             // Queued item was canceled so add count back
                             _tokenCount += nextPendingRequest.Count;
+                            // Updating queue count is handled by the cancellation code
+                            _queueCount += nextPendingRequest.Count;
                         }
                         nextPendingRequest.CancellationTokenRegistration.Dispose();
+                        Debug.Assert(_queueCount >= 0);
                     }
                     else
                     {
@@ -380,7 +380,34 @@ namespace System.Threading.RateLimiting
             public TaskCompletionSource<RateLimitLease> Tcs { get; }
 
             public CancellationTokenRegistration CancellationTokenRegistration { get; }
+        }
 
+        private sealed class CancelQueueState : TaskCompletionSource<RateLimitLease>
+        {
+            private readonly int _tokenCount;
+            private readonly TokenBucketRateLimiter _limiter;
+            private readonly CancellationToken _cancellationToken;
+
+            public CancelQueueState(int tokenCount, TokenBucketRateLimiter limiter, CancellationToken cancellationToken)
+                : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            {
+                _tokenCount = tokenCount;
+                _limiter = limiter;
+                _cancellationToken = cancellationToken;
+            }
+
+            public new bool TrySetCanceled()
+            {
+                if (TrySetCanceled(_cancellationToken))
+                {
+                    lock (_limiter.Lock)
+                    {
+                        _limiter._queueCount -= _tokenCount;
+                    }
+                    return true;
+                }
+                return false;
+            }
         }
     }
 }

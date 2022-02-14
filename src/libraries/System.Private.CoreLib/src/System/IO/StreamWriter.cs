@@ -559,7 +559,7 @@ namespace System.IO
             {
                 if (arg == null)
                 {
-                    throw new ArgumentNullException((format == null) ? nameof(format) : nameof(arg)); // same as base logic
+                    ArgumentNullException.Throw(format is null ? nameof(format) : nameof(arg)); // same as base logic
                 }
                 WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: false);
             }
@@ -609,10 +609,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                if (arg == null)
-                {
-                    throw new ArgumentNullException(nameof(arg));
-                }
+                ArgumentNullException.ThrowIfNull(arg);
                 WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: true);
             }
             else

@@ -56,9 +56,8 @@ namespace System.Xml.Linq
         /// <param name="name">
         /// The name of the element.
         /// </param>
-        public XElement(XName name)
+        public XElement(XName name!!)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
             this.name = name;
         }
 
@@ -270,7 +269,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Name);
                 name = value;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Name);
@@ -311,7 +310,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 RemoveNodes();
                 Add(value);
             }
@@ -490,9 +489,8 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="ns">The <see cref="XNamespace"/> for which to get a prefix</param>
         /// <returns>The namespace prefix string</returns>
-        public string? GetPrefixOfNamespace(XNamespace ns)
+        public string? GetPrefixOfNamespace(XNamespace ns!!)
         {
-            if (ns == null) throw new ArgumentNullException(nameof(ns));
             string namespaceName = ns.NamespaceName;
             bool hasInScopeNamespace = false;
             XElement? e = this;

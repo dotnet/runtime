@@ -16,7 +16,6 @@ namespace SharedTypes
         public string str2;
     }
 
-    [BlittableType]
     public struct StringContainerNative
     {
         public IntPtr str1;
@@ -70,7 +69,6 @@ namespace SharedTypes
         public bool b3;
     }
 
-    [BlittableType]
     public struct BoolStructNative
     {
         public byte b1;

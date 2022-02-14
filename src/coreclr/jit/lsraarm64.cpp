@@ -329,6 +329,7 @@ int LinearScan::BuildNode(GenTree* tree)
             noway_assert((tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs) ||
                          (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Ceiling) ||
                          (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Floor) ||
+                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Truncate) ||
                          (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round) ||
                          (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Sqrt));
 
@@ -352,7 +353,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            srcCount = BuildHWIntrinsic(tree->AsHWIntrinsic());
+            srcCount = BuildHWIntrinsic(tree->AsHWIntrinsic(), &dstCount);
             break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -887,16 +888,28 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 //
 // Arguments:
 //    tree       - The GT_HWINTRINSIC node of interest
+//    pDstCount  - OUT parameter - the number of registers defined for the given node
 //
 // Return Value:
 //    The number of sources consumed by this node.
 //
-int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
+int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount)
 {
+    assert(pDstCount != nullptr);
+
     const HWIntrinsic intrin(intrinsicTree);
 
     int srcCount = 0;
-    int dstCount = intrinsicTree->IsValue() ? 1 : 0;
+    int dstCount = 0;
+
+    if (HWIntrinsicInfo::IsMultiReg(intrin.id))
+    {
+        dstCount = intrinsicTree->GetMultiRegCount();
+    }
+    else if (intrinsicTree->IsValue())
+    {
+        dstCount = 1;
+    }
 
     const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
 
@@ -1139,15 +1152,21 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
     buildInternalRegisterUses();
 
-    if (dstCount == 1)
+    if ((dstCount == 1) || (dstCount == 2))
     {
         BuildDef(intrinsicTree);
+
+        if (dstCount == 2)
+        {
+            BuildDef(intrinsicTree, RBM_NONE, 1);
+        }
     }
     else
     {
         assert(dstCount == 0);
     }
 
+    *pDstCount = dstCount;
     return srcCount;
 }
 #endif
