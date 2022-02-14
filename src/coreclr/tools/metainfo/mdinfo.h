@@ -67,20 +67,20 @@ public:
     void DisplaySignatures(void);
     void DisplaySignatureInfo(mdSignature inSignature);
 
-    LPCWSTR TokenName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen);
+    LPCWSTR TokenName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
 
-    LPCWSTR TypeDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen);
-    LPCWSTR TypeDefName(mdTypeDef inTypeDef, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen);
-    LPCWSTR TypeRefName(mdTypeRef tr, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen);
+    LPCWSTR TypeDeforRefName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
+    LPCWSTR TypeDefName(mdTypeDef inTypeDef, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
+    LPCWSTR TypeRefName(mdTypeRef tr, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
 
-    LPCWSTR MemberDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen);
-    LPCWSTR MemberRefName(mdToken inMemRef, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen);
-    LPCWSTR MemberName(mdToken inMember, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen);
+    LPCWSTR MemberDeforRefName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
+    LPCWSTR MemberRefName(mdToken inMemRef, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
+    LPCWSTR MemberName(mdToken inMember, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
 
-    LPCWSTR MethodName(mdMethodDef inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen);
-    LPCWSTR FieldName(mdFieldDef inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen);
+    LPCWSTR MethodName(mdMethodDef inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
+    LPCWSTR FieldName(mdFieldDef inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
 
-    char *ClassFlags(DWORD flags, __out_ecount(STRING_BUFFER_LEN) char *sFlags);
+    char *ClassFlags(DWORD flags, _Out_writes_(STRING_BUFFER_LEN) char *sFlags);
 
     void DisplayTypeRefs(void);
     void DisplayTypeRefInfo(mdTypeRef tr);
@@ -96,7 +96,7 @@ public:
     void DisplayInterfaceImpls(mdTypeDef inTypeDef);
     void DisplayInterfaceImplInfo(mdInterfaceImpl inImpl);
 
-    LPWSTR GUIDAsString(GUID inGuid, __out_ecount(bufLen) LPWSTR guidString, ULONG bufLen);
+    LPWSTR GUIDAsString(GUID inGuid, _Out_writes_(bufLen) LPWSTR guidString, ULONG bufLen);
 
     const char *TokenTypeName(mdToken inToken);
 
@@ -170,15 +170,15 @@ private:
 
     int DumpHex(const char *szPrefix, const void *pvData, ULONG cbData, int bText=true, ULONG nLine=16);
 
-    int Write(__in_z __in const char *str);
-    int WriteLine(__in_z __in const char *str);
+    int Write(_In_z_ const char *str);
+    int WriteLine(_In_z_ const char *str);
 
-    int VWrite(__in_z __in const char *str, ...);
-    int VWriteLine(__in_z __in const char *str, ...);
-    int VWriteMarker(__in_z __in const char *str, va_list marker);
+    int VWrite(_In_z_ const char *str, ...);
+    int VWriteLine(_In_z_ const char *str, ...);
+    int VWriteMarker(_In_z_ const char *str, va_list marker);
 
     void InitSigBuffer();
-    HRESULT AddToSigBuffer(__in_z __in const char *string);
+    HRESULT AddToSigBuffer(_In_z_ const char *string);
 
     IMetaDataImport2 *m_pRegImport;
     IMetaDataImport2 *m_pImport;

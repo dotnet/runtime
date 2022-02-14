@@ -23,7 +23,7 @@ typedef enum {
 	MONO_VERIFY_NOT_VERIFIABLE = 8,
 
 	/*OR it with other flags*/
-	
+
 	/* Abort the verification if the code is not verifiable.
 	 * The standard behavior is to abort if the code is not valid.
 	 * */

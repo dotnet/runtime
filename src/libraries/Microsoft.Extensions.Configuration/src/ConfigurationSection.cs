@@ -21,18 +21,8 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="root">The configuration root.</param>
         /// <param name="path">The path to this section.</param>
-        public ConfigurationSection(IConfigurationRoot root, string path)
+        public ConfigurationSection(IConfigurationRoot root!!, string path!!)
         {
-            if (root == null)
-            {
-                throw new ArgumentNullException(nameof(root));
-            }
-
-            if (path == null)
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
-
             _root = root;
             _path = path;
         }

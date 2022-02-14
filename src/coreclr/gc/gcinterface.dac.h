@@ -111,7 +111,7 @@ enum oom_reason
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 /* If you modify failure_get_memory and         */
 /* oom_reason be sure to make the corresponding */
-/* changes in toolbox\sos\strike\strike.cpp.    */
+/* changes in tools\sos\strike\strike.cpp.    */
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 enum failure_get_memory
 {

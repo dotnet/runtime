@@ -29,7 +29,7 @@ G_BEGIN_DECLS
  * unloaded, and assemblies loaded by the appdomain are not unloaded either. This
  * allows us to use typed gc in non-default appdomains too, leading to increased
  * performance.
- */ 
+ */
 extern gboolean mono_dont_free_domains;
 
 struct _MonoAppContext {
@@ -136,7 +136,7 @@ mono_runtime_register_runtimeconfig_json_properties (MonovmRuntimeConfigArgument
 void
 mono_runtime_install_appctx_properties (void);
 
-MONO_COMPONENT_API void 
+MONO_COMPONENT_API void
 mono_domain_set_fast (MonoDomain *domain);
 
 G_END_DECLS

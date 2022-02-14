@@ -53,31 +53,16 @@ namespace System.ComponentModel.Composition
             return constraint;
         }
 
-        private static Expression CreateContractConstraintBody(string contractName, ParameterExpression parameter)
+        private static Expression CreateContractConstraintBody(string contractName, ParameterExpression parameter!!)
         {
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
-
             // export.ContractName=<contract>;
             return Expression.Equal(
                     Expression.Property(parameter, ConstraintServices._exportDefinitionContractNameProperty),
                     Expression.Constant(contractName ?? string.Empty, typeof(string)));
         }
 
-        private static Expression? CreateMetadataConstraintBody(IEnumerable<KeyValuePair<string, Type>> requiredMetadata, ParameterExpression parameter)
+        private static Expression? CreateMetadataConstraintBody(IEnumerable<KeyValuePair<string, Type>> requiredMetadata!!, ParameterExpression parameter!!)
         {
-            if (requiredMetadata == null)
-            {
-                throw new ArgumentNullException(nameof(requiredMetadata));
-            }
-
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
-
             Expression? body = null;
             foreach (KeyValuePair<string, Type> requiredMetadataItem in requiredMetadata)
             {
@@ -91,16 +76,11 @@ namespace System.ComponentModel.Composition
             return body;
         }
 
-        private static Expression CreateCreationPolicyContraint(CreationPolicy policy, ParameterExpression parameter)
+        private static Expression CreateCreationPolicyContraint(CreationPolicy policy, ParameterExpression parameter!!)
         {
             if (policy == CreationPolicy.Any)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
-            }
-
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
             }
 
             //    !definition.Metadata.ContainsKey(CompositionConstants.PartCreationPolicyMetadataName) ||
@@ -114,18 +94,8 @@ namespace System.ComponentModel.Composition
                         CreateMetadataValueEqualsExpression(parameter, policy, CompositionConstants.PartCreationPolicyMetadataName));
         }
 
-        private static Expression CreateTypeIdentityContraint(string requiredTypeIdentity, ParameterExpression parameter)
+        private static Expression CreateTypeIdentityContraint(string requiredTypeIdentity!!, ParameterExpression parameter!!)
         {
-            if (requiredTypeIdentity == null)
-            {
-                throw new ArgumentNullException(requiredTypeIdentity);
-            }
-
-            if (parameter == null)
-            {
-                throw new ArgumentException(nameof(parameter));
-            }
-
             //    definition.Metadata.ContainsKey(CompositionServices.ExportTypeIdentity) &&
             //        requiredTypeIdentity.Equals(definition.Metadata[CompositionConstants.ExportTypeIdentityMetadataName]);
 

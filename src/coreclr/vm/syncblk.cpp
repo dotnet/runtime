@@ -1491,7 +1491,7 @@ void DumpSyncBlockCache()
                 param.descrip = descrip;
                 param.oref = oref;
                 param.buffer2 = buffer2;
-                param.cch2 = COUNTOF(buffer2);
+                param.cch2 = ARRAY_SIZE(buffer2);
                 param.isString = isString;
 
                 PAL_TRY(Param *, pParam, &param)
@@ -1514,7 +1514,7 @@ void DumpSyncBlockCache()
                 descrip = param.descrip;
                 isString = param.isString;
             }
-            sprintf_s(buffer, COUNTOF(buffer), "%s", descrip);
+            sprintf_s(buffer, ARRAY_SIZE(buffer), "%s", descrip);
             descrip = buffer;
         }
         if (dumpSBStyle < 2)

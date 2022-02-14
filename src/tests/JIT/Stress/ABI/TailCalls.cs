@@ -24,7 +24,7 @@ namespace ABIStress
             }
 
             string callerName = Config.TailCallerPrefix + callerIndex;
-            Random rand = new Random(Seed);
+            Random rand = new Random(GetSeed(callerName));
             List<TypeEx> callerParams;
             List<Callee> callable;
             do

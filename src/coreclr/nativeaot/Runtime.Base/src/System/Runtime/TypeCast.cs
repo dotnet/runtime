@@ -997,7 +997,7 @@ assigningNull:
             //
             private static Entry[] s_cache = new Entry[InitialCacheSize];   // Initialize the cache eagerly to avoid null checks.
             private static UnsafeGCHandle s_previousCache;
-            private static ulong s_tickCountOfLastOverflow = InternalCalls.PalGetTickCount64();
+            private static ulong s_tickCountOfLastOverflow = InternalCalls.RhpGetTickCount64();
             private static int s_entries;
             private static bool s_roundRobinFlushing;
 
@@ -1054,7 +1054,7 @@ assigningNull:
                     return true;
 
                 Key key = new Key(pSourceType, pTargetType, variation);
-                Entry entry = LookupInCache(s_cache, ref key);
+                Entry? entry = LookupInCache(s_cache, ref key);
                 if (entry == null)
                     return CacheMiss(ref key, pVisited);
 
@@ -1072,7 +1072,7 @@ assigningNull:
             {
                 Debug.Assert(pSourceType != pTargetType, "target is source");
                 Key key = new Key(pSourceType, pTargetType, AssignmentVariation.BoxedSource);
-                Entry entry = LookupInCache(s_cache, ref key);
+                Entry? entry = LookupInCache(s_cache, ref key);
                 if (entry == null)
                     return CacheMiss(ref key, pVisited);
 
@@ -1113,7 +1113,7 @@ assigningNull:
                     Entry[] previousCache = Unsafe.As<Entry[]>(s_previousCache.Target);
                     if (previousCache != null)
                     {
-                        Entry previousEntry = LookupInCache(previousCache, ref key);
+                        Entry? previousEntry = LookupInCache(previousCache, ref key);
                         if (previousEntry != null)
                         {
                             result = previousEntry.Result;
@@ -1140,7 +1140,7 @@ assigningNull:
                     try
                     {
                         // Avoid duplicate entries
-                        Entry existingEntry = LookupInCache(s_cache, ref key);
+                        Entry? existingEntry = LookupInCache(s_cache, ref key);
                         if (existingEntry != null)
                             return existingEntry.Result;
 
@@ -1195,7 +1195,7 @@ assigningNull:
                 s_entries = 0;
 
                 // See how long it has been since the last time the cache was overflowing
-                ulong tickCount = InternalCalls.PalGetTickCount64();
+                ulong tickCount = InternalCalls.RhpGetTickCount64();
                 int tickCountSinceLastOverflow = (int)(tickCount - s_tickCountOfLastOverflow);
                 s_tickCountOfLastOverflow = tickCount;
 

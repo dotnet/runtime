@@ -400,7 +400,7 @@ namespace System.ComponentModel.Tests
             container.Add(component1, "Name1");
             container.Add(component2, "Name2");
 
-            Assert.Throws<ArgumentException>(null, () => component1.Site.Name = "Name2");
+            AssertExtensions.Throws<ArgumentException>(null, () => component1.Site.Name = "Name2");
         }
 
         [Fact]

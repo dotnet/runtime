@@ -25,28 +25,28 @@ public:
     //
 
 protected:
-    HRESULT UnwindPrologue(__in DWORD64 ImageBase,
-                           __in DWORD64 ControlPc,
-                           __in DWORD64 FrameBase,
-                           __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    HRESULT UnwindPrologue(_In_ DWORD64 ImageBase,
+                           _In_ DWORD64 ControlPc,
+                           _In_ DWORD64 FrameBase,
+                           _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
                            __inout PT_CONTEXT ContextRecord);
 
-    HRESULT VirtualUnwind(__in DWORD64 ImageBase,
-                          __in DWORD64 ControlPc,
-                          __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    HRESULT VirtualUnwind(_In_ DWORD64 ImageBase,
+                          _In_ DWORD64 ControlPc,
+                          _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
                           __inout PT_CONTEXT ContextRecord,
-                          __out PDWORD64 EstablisherFrame);
+                          _Out_ PDWORD64 EstablisherFrame);
 
     DWORD64 LookupPrimaryUnwindInfo
-        (__in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-         __in DWORD64 ImageBase,
-         __out _PIMAGE_RUNTIME_FUNCTION_ENTRY PrimaryEntry);
+        (_In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+         _In_ DWORD64 ImageBase,
+         _Out_ _PIMAGE_RUNTIME_FUNCTION_ENTRY PrimaryEntry);
 
     _PIMAGE_RUNTIME_FUNCTION_ENTRY SameFunction
-        (__in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-         __in DWORD64 ImageBase,
-         __in DWORD64 ControlPc,
-         __out _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionReturnBuffer);
+        (_In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+         _In_ DWORD64 ImageBase,
+         _In_ DWORD64 ControlPc,
+         _Out_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionReturnBuffer);
 };
 
 #endif // __unwinder_arm__

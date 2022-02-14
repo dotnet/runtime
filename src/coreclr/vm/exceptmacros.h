@@ -502,11 +502,11 @@ LPCWSTR GetPathForErrorMessagesT(T *pImgObj)
     }
 }
 
-VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(__in_z const char *cond));
+VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const char *cond));
 
 template <typename T>
 NOINLINE
-VOID ThrowBadFormatWorkerT(UINT resID, T * pImgObj DEBUGARG(__in_z const char *cond))
+VOID ThrowBadFormatWorkerT(UINT resID, T * pImgObj DEBUGARG(_In_z_ const char *cond))
 {
 #ifdef DACCESS_COMPILE
     ThrowBadFormatWorker(resID, nullptr DEBUGARG(cond));

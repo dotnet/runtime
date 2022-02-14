@@ -1435,5 +1435,13 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
 
 #endif ; FEATURE_TIERED_COMPILATION
 
+    LEAF_ENTRY  JIT_ValidateIndirectCall
+        ret lr
+    LEAF_END
+
+    LEAF_ENTRY  JIT_DispatchIndirectCall
+        br x15
+    LEAF_END
+
 ; Must be at very end of file
     END

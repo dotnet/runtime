@@ -38,15 +38,55 @@ namespace System.Text.RegularExpressions.Generator.Tests
             Assert.Equal("SYSLIB1041", Assert.Single(diagnostics).Id);
         }
 
+        public static IEnumerable<object[]> Diagnostic_MalformedCtor_MemberData()
+        {
+            const string Pre = "[RegexGenerator";
+            const string Post = "]";
+            const string Middle = "\"abc\", RegexOptions.None, -1, \"extra\"";
+
+            foreach (bool withParens in new[] { false, true })
+            {
+                string preParen = withParens ? "(" : "";
+                string postParen = withParens ? ")" : "";
+                for (int i = 0; i < Middle.Length; i++)
+                {
+                    yield return new object[] { Pre + preParen + Middle.Substring(0, i) + postParen };
+                    yield return new object[] { Pre + preParen + Middle.Substring(0, i) + postParen + Post };
+                }
+            }
+        }
+
         [Theory]
-        [InlineData("ab[]")]
+        [MemberData(nameof(Diagnostic_MalformedCtor_MemberData))]
+        public async Task Diagnostic_MalformedCtor(string attribute)
+        {
+            // Validate the generator doesn't crash with an incomplete attribute
+
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator($@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {{
+                    {attribute}
+                    private static partial Regex MultipleAttributes();
+                }}
+            ");
+
+            if (diagnostics.Count != 0)
+            {
+                Assert.Contains(Assert.Single(diagnostics).Id, new[] { "SYSLIB1040", "SYSLIB1042" });
+            }
+        }
+
+        [Theory]
+        [InlineData("null")]
+        [InlineData("\"ab[]\"")]
         public async Task Diagnostic_InvalidRegexPattern(string pattern)
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator($@"
                 using System.Text.RegularExpressions;
                 partial class C
                 {{
-                    [RegexGenerator(""{pattern}"")]
+                    [RegexGenerator({pattern})]
                     private static partial Regex InvalidPattern();
                 }}
             ");
@@ -297,8 +337,10 @@ namespace System.Text.RegularExpressions.Generator.Tests
             ", compile: true));
         }
 
-        [Fact]
-        public async Task Valid_ClassWithNamespace()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Valid_ClassWithNamespace(bool allowUnsafe)
         {
             Assert.Empty(await RunGenerator(@"
                 using System.Text.RegularExpressions;
@@ -310,7 +352,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
                         private static partial Regex Valid();
                     }
                 }
-            ", compile: true));
+            ", compile: true, allowUnsafe: allowUnsafe));
         }
 
         [Fact]
@@ -440,6 +482,30 @@ namespace System.Text.RegularExpressions.Generator.Tests
             ", compile: true));
         }
 
+        [Fact]
+        public async Task Valid_ClassWithGenericConstraints()
+        {
+            Assert.Empty(await RunGenerator(@"
+                using D;
+                using System.Text.RegularExpressions;
+                namespace A
+                {
+                    public partial class B<U>
+                    {
+                        private partial class C<T> where T : IBlah
+                        {
+                            [RegexGenerator(""ab"")]
+                            private static partial Regex Valid();
+                        }
+                    }
+                }
+                namespace D
+                {
+                    internal interface IBlah { }
+                }
+            ", compile: true));
+        }
+
         public static IEnumerable<object[]> Valid_Modifiers_MemberData()
         {
             foreach (string type in new[] { "class", "struct", "record", "record struct", "record class", "interface" })
@@ -557,13 +623,13 @@ namespace System.Text.RegularExpressions.Generator.Tests
         }
 
         private async Task<IReadOnlyList<Diagnostic>> RunGenerator(
-            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, CancellationToken cancellationToken = default)
+            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, CancellationToken cancellationToken = default)
         {
             var proj = new AdhocWorkspace()
                 .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
                 .AddProject("RegexGeneratorTest", "RegexGeneratorTest.dll", "C#")
                 .WithMetadataReferences(additionalRefs is not null ? s_refs.Concat(additionalRefs) : s_refs)
-                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe)
                 .WithNullableContextOptions(NullableContextOptions.Enable))
                 .WithParseOptions(new CSharpParseOptions(langVersion))
                 .AddDocument("RegexGenerator.g.cs", SourceText.From(code, Encoding.UTF8)).Project;

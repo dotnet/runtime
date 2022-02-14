@@ -5,6 +5,8 @@ internal static partial class Interop
 {
     internal static partial class Libraries
     {
+        internal const string Libc = "libc";
+
         // Shims
         internal const string SystemNative = "libSystem.Native";
         internal const string NetSecurityNative = "libSystem.Net.Security.Native";

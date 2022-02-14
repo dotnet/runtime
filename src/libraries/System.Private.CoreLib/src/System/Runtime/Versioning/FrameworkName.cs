@@ -96,20 +96,9 @@ namespace System.Runtime.Versioning
 
         public FrameworkName(string identifier, Version version, string? profile)
         {
-            if (identifier == null)
-            {
-                throw new ArgumentNullException(nameof(identifier));
-            }
-
-            identifier = identifier.Trim();
-            if (identifier.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(identifier)), nameof(identifier));
-            }
-            if (version == null)
-            {
-                throw new ArgumentNullException(nameof(version));
-            }
+            identifier = identifier?.Trim()!;
+            ArgumentException.ThrowIfNullOrEmpty(identifier);
+            ArgumentNullException.ThrowIfNull(version);
 
             _identifier = identifier;
             _version = version;
@@ -122,14 +111,7 @@ namespace System.Runtime.Versioning
         //  - The version string must be in the System.Version format; an optional "v" or "V" prefix is allowed
         public FrameworkName(string frameworkName)
         {
-            if (frameworkName == null)
-            {
-                throw new ArgumentNullException(nameof(frameworkName));
-            }
-            if (frameworkName.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(frameworkName)), nameof(frameworkName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(frameworkName);
 
             string[] components = frameworkName.Split(ComponentSeparator);
 
@@ -161,7 +143,7 @@ namespace System.Runtime.Versioning
                 string component = components[i];
                 int separatorIndex = component.IndexOf(KeyValueSeparator);
 
-                if (separatorIndex == -1 || separatorIndex != component.LastIndexOf(KeyValueSeparator))
+                if (separatorIndex < 0 || separatorIndex != component.LastIndexOf(KeyValueSeparator))
                 {
                     throw new ArgumentException(SR.Argument_FrameworkNameInvalid, nameof(frameworkName));
                 }

@@ -255,8 +255,12 @@ namespace Internal.StackTraceMetadata
                     EmitString(typeHandle.ToGenericParameterHandle(_metadataReader).GetGenericParameter(_metadataReader).Name);
                     break;
 
+                case HandleType.FunctionPointerSignature:
+                    EmitFunctionPointerTypeName();
+                    break;
+
                 default:
-                    Debug.Assert(false);
+                    Debug.Assert(false, $"Type handle {typeHandle.HandleType} was not handled");
                     _outputBuilder.Append("???");
                     break;
             }
@@ -405,6 +409,14 @@ namespace Internal.StackTraceMetadata
             PointerSignature pointerSig = _metadataReader.GetPointerSignature(pointerSigHandle);
             EmitTypeName(pointerSig.Type, namespaceQualified: false);
             _outputBuilder.Append('*');
+        }
+
+        /// <summary>
+        /// Emit function pointer type.
+        /// </summary>
+        private void EmitFunctionPointerTypeName()
+        {
+            _outputBuilder.Append("IntPtr");
         }
 
         /// <summary>

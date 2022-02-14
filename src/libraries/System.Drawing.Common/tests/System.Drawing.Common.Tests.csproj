@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;net48</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net48</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetsMobile)' == 'true'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>

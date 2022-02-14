@@ -819,9 +819,6 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, Type cls)
         {
-            if (cls != null && cls.IsByRef)
-                throw new ArgumentException("Cannot get TypeToken for a ByRef type.");
-
             make_room(6);
             ll_emit(opcode);
             int token = token_gen.GetToken(cls!, opcode != OpCodes.Ldtoken);

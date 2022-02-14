@@ -201,7 +201,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (ns != null && !ns.Equals(ifc.Namespace))
                     continue;
                 if (match != null)
-                    throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                    throw new AmbiguousMatchException();
                 match = ifc;
             }
             return match;

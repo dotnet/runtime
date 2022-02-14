@@ -17,10 +17,8 @@ namespace DllImportGenerator.UnitTests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class ConvertToGeneratedDllImportFixerTests
     {
-        [ConditionalTheory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task Basic(bool usePreprocessorDefines)
+        [ConditionalFact]
+        public async Task Basic()
         {
             string source = @$"
 using System.Runtime.InteropServices;
@@ -30,20 +28,7 @@ partial class Test
     public static extern int [|Method|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
-            string fixedSource = usePreprocessorDefines
-                ? @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-#if DLLIMPORTGENERATOR_ENABLED
-    [GeneratedDllImport(""DoesNotExist"")]
-    public static partial int {{|CS8795:Method|}}(out int ret);
-#else
-    [DllImport(""DoesNotExist"")]
-    public static extern int Method(out int ret);
-#endif
-}}"
-                : @$"
+            string fixedSource = @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
@@ -52,14 +37,11 @@ partial class Test
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
-                fixedSource,
-                usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
+                fixedSource);
         }
 
-        [ConditionalTheory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task Comments(bool usePreprocessorDefines)
+        [ConditionalFact]
+        public async Task Comments()
         {
             string source = @$"
 using System.Runtime.InteropServices;
@@ -75,32 +57,7 @@ partial class Test
     public static extern int [|Method2|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
-            string fixedSource = usePreprocessorDefines
-                ? @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-    // P/Invoke
-#if DLLIMPORTGENERATOR_ENABLED
-    [GeneratedDllImport(/*name*/""DoesNotExist"")] // comment
-    public static partial int {{|CS8795:Method1|}}(out int ret);
-#else
-    [DllImport(/*name*/""DoesNotExist"")] // comment
-    public static extern int Method1(out int ret);
-#endif
-
-    /** P/Invoke **/
-#if DLLIMPORTGENERATOR_ENABLED
-    [GeneratedDllImport(""DoesNotExist"") /*name*/]
-    // < ... >
-    public static partial int {{|CS8795:Method2|}}(out int ret);
-#else
-    [DllImport(""DoesNotExist"") /*name*/]
-    // < ... >
-    public static extern int Method2(out int ret);
-#endif
-}}"
-                : @$"
+            string fixedSource = @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
@@ -115,14 +72,11 @@ partial class Test
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
-                fixedSource,
-                usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
+                fixedSource);
         }
 
-        [ConditionalTheory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task MultipleAttributes(bool usePreprocessorDefines)
+        [ConditionalFact]
+        public async Task MultipleAttributes()
         {
             string source = @$"
 using System.Runtime.InteropServices;
@@ -137,32 +91,7 @@ partial class Test
     public static extern int [|Method2|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
-            string fixedSource = usePreprocessorDefines
-                ? @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-#if DLLIMPORTGENERATOR_ENABLED
-    [System.ComponentModel.Description(""Test""), GeneratedDllImport(""DoesNotExist"")]
-    public static partial int {{|CS8795:Method1|}}(out int ret);
-#else
-    [System.ComponentModel.Description(""Test""), DllImport(""DoesNotExist"")]
-    public static extern int Method1(out int ret);
-#endif
-
-#if DLLIMPORTGENERATOR_ENABLED
-    [System.ComponentModel.Description(""Test"")]
-    [GeneratedDllImport(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.I4)]
-    public static partial int {{|CS8795:Method2|}}(out int ret);
-#else
-    [System.ComponentModel.Description(""Test"")]
-    [DllImport(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.I4)]
-    public static extern int Method2(out int ret);
-#endif
-}}"
-                : @$"
+            string fixedSource = @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
@@ -176,14 +105,11 @@ partial class Test
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
-                fixedSource,
-                usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
+                fixedSource);
         }
 
-        [ConditionalTheory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task NamedArguments(bool usePreprocessorDefines)
+        [ConditionalFact]
+        public async Task NamedArguments()
         {
             string source = @$"
 using System.Runtime.InteropServices;
@@ -196,27 +122,7 @@ partial class Test
     public static extern int [|Method2|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
-            string fixedSource = usePreprocessorDefines
-                ? @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-#if DLLIMPORTGENERATOR_ENABLED
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
-    public static partial int {{|CS8795:Method1|}}(out int ret);
-#else
-    [DllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
-    public static extern int Method1(out int ret);
-#endif
-
-#if DLLIMPORTGENERATOR_ENABLED
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"", CharSet = CharSet.Unicode)]
-    public static partial int {{|CS8795:Method2|}}(out int ret);
-#else
-    [DllImport(""DoesNotExist"", EntryPoint = ""Entry"", CharSet = CharSet.Unicode)]
-    public static extern int Method2(out int ret);
-#endif
-}}" : @$"
+            string fixedSource = @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
@@ -228,14 +134,11 @@ partial class Test
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
-                fixedSource,
-                usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
+                fixedSource);
         }
 
-        [ConditionalTheory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task RemoveableNamedArguments(bool usePreprocessorDefines)
+        [ConditionalFact]
+        public async Task RemoveableNamedArguments()
         {
             string source = @$"
 using System.Runtime.InteropServices;
@@ -248,27 +151,7 @@ partial class Test
     public static extern int [|Method2|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
-            string fixedSource = usePreprocessorDefines
-                ? @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-#if DLLIMPORTGENERATOR_ENABLED
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
-    public static partial int {{|CS8795:Method1|}}(out int ret);
-#else
-    [DllImport(""DoesNotExist"", EntryPoint = ""Entry"", BestFitMapping = false)]
-    public static extern int Method1(out int ret);
-#endif
-
-#if DLLIMPORTGENERATOR_ENABLED
-    [GeneratedDllImport(""DoesNotExist"")]
-    public static partial int {{|CS8795:Method2|}}(out int ret);
-#else
-    [DllImport(""DoesNotExist"", ThrowOnUnmappableChar = false)]
-    public static extern int Method2(out int ret);
-#endif
-}}" : @$"
+            string fixedSource = @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
@@ -280,14 +163,11 @@ partial class Test
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
-                fixedSource,
-                usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
+                fixedSource);
         }
 
-        [ConditionalTheory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ReplaceableExplicitPlatformDefaultCallingConvention(bool usePreprocessorDefines)
+        [ConditionalFact]
+        public async Task ReplaceableExplicitPlatformDefaultCallingConvention()
         {
             string source = @$"
 using System.Runtime.InteropServices;
@@ -297,19 +177,7 @@ partial class Test
     public static extern int [|Method1|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
-            string fixedSource = usePreprocessorDefines
-                ? @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-#if DLLIMPORTGENERATOR_ENABLED
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
-    public static partial int {{|CS8795:Method1|}}(out int ret);
-#else
-    [DllImport(""DoesNotExist"", EntryPoint = ""Entry"", CallingConvention = CallingConvention.Winapi)]
-    public static extern int Method1(out int ret);
-#endif
-}}" : @$"
+            string fixedSource = @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
@@ -318,20 +186,15 @@ partial class Test
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
-                fixedSource,
-                usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
+                fixedSource);
         }
 
         [ConditionalTheory]
-        [InlineData(CallingConvention.Cdecl, typeof(CallConvCdecl), true)]
-        [InlineData(CallingConvention.Cdecl, typeof(CallConvCdecl), false)]
-        [InlineData(CallingConvention.StdCall, typeof(CallConvStdcall), true)]
-        [InlineData(CallingConvention.StdCall, typeof(CallConvStdcall), false)]
-        [InlineData(CallingConvention.ThisCall, typeof(CallConvThiscall), true)]
-        [InlineData(CallingConvention.ThisCall, typeof(CallConvThiscall), false)]
-        [InlineData(CallingConvention.FastCall, typeof(CallConvFastcall), true)]
-        [InlineData(CallingConvention.FastCall, typeof(CallConvFastcall), false)]
-        public async Task ReplaceableCallingConvention(CallingConvention callConv, Type callConvType, bool usePreprocessorDefines)
+        [InlineData(CallingConvention.Cdecl, typeof(CallConvCdecl))]
+        [InlineData(CallingConvention.StdCall, typeof(CallConvStdcall))]
+        [InlineData(CallingConvention.ThisCall, typeof(CallConvThiscall))]
+        [InlineData(CallingConvention.FastCall, typeof(CallConvFastcall))]
+        public async Task ReplaceableCallingConvention(CallingConvention callConv, Type callConvType)
         {
             string source = @$"
 using System.Runtime.InteropServices;
@@ -341,20 +204,7 @@ partial class Test
     public static extern int [|Method1|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
-            string fixedSource = usePreprocessorDefines
-                ? @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-#if DLLIMPORTGENERATOR_ENABLED
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
-    [UnmanagedCallConv(CallConvs = new System.Type[] {{ typeof({callConvType.FullName}) }})]
-    public static partial int {{|CS8795:Method1|}}(out int ret);
-#else
-    [DllImport(""DoesNotExist"", EntryPoint = ""Entry"", CallingConvention = CallingConvention.{callConv})]
-    public static extern int Method1(out int ret);
-#endif
-}}" : @$"
+            string fixedSource = @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
@@ -364,14 +214,11 @@ partial class Test
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
-                fixedSource,
-                usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
+                fixedSource);
         }
 
-        [ConditionalTheory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task PreferredAttributeOrder(bool usePreprocessorDefines)
+        [ConditionalFact]
+        public async Task PreferredAttributeOrder()
         {
             string source = @$"
 using System.Runtime.InteropServices;
@@ -381,19 +228,7 @@ partial class Test
     public static extern int [|Method|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
-            string fixedSource = usePreprocessorDefines
-                ? @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-#if DLLIMPORTGENERATOR_ENABLED
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
-    public static partial int {{|CS8795:Method|}}(out int ret);
-#else
-    [DllImport(""DoesNotExist"", EntryPoint = ""Entry"", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
-    public static extern int Method(out int ret);
-#endif
-}}" : @$"
+            string fixedSource = @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
@@ -402,8 +237,7 @@ partial class Test
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
-                fixedSource,
-                usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
+                fixedSource);
         }
     }
 }

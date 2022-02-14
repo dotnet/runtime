@@ -363,19 +363,21 @@ class EEClassLayoutInfo
     private:
         enum {
             // TRUE if the GC layout of the class is bit-for-bit identical
-            // to its unmanaged counterpart (i.e. no internal reference fields,
-            // no ansi-unicode char conversions required, etc.) Used to
-            // optimize marshaling.
-            e_BLITTABLE                 = 0x01,
-            // Post V1.0 addition: Is this type also sequential in managed memory?
-            e_MANAGED_SEQUENTIAL        = 0x02,
+            // to its unmanaged counterpart with the runtime marshalling system
+            // (i.e. no internal reference fields, no ansi-unicode char conversions required, etc.)
+            // Used to optimize marshaling.
+            e_BLITTABLE                       = 0x01,
+            // Is this type also sequential in managed memory?
+            e_MANAGED_SEQUENTIAL              = 0x02,
             // When a sequential/explicit type has no fields, it is conceptually
             // zero-sized, but actually is 1 byte in length. This holds onto this
             // fact and allows us to revert the 1 byte of padding when another
             // explicit type inherits from this type.
-            e_ZERO_SIZED                =   0x04,
+            e_ZERO_SIZED                      = 0x04,
             // The size of the struct is explicitly specified in the meta-data.
-            e_HAS_EXPLICIT_SIZE         = 0x08
+            e_HAS_EXPLICIT_SIZE               = 0x08,
+            // The type recursively has a field that is LayoutKind.Auto and not an enum.
+            e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT = 0x10
         };
 
         BYTE        m_bFlags;
@@ -419,6 +421,12 @@ class EEClassLayoutInfo
             return (m_bFlags & e_HAS_EXPLICIT_SIZE) == e_HAS_EXPLICIT_SIZE;
         }
 
+        BOOL HasAutoLayoutField() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_bFlags & e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT) == e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT;
+        }
+
         BYTE GetPackingSize() const
         {
             LIMITED_METHOD_CONTRACT;
@@ -452,6 +460,13 @@ class EEClassLayoutInfo
             LIMITED_METHOD_CONTRACT;
             m_bFlags = hasExplicitSize ? (m_bFlags | e_HAS_EXPLICIT_SIZE)
                                        : (m_bFlags & ~e_HAS_EXPLICIT_SIZE);
+        }
+
+        void SetHasAutoLayoutField(BOOL hasAutoLayoutField)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = hasAutoLayoutField ? (m_bFlags | e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT)
+                                       : (m_bFlags & ~e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT);
         }
 };
 
@@ -1395,6 +1410,8 @@ public:
 
     BOOL HasExplicitSize();
 
+    BOOL IsAutoLayoutOrHasAutoLayoutField();
+
     static void GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL *pfThrowOnUnmappableChar);
 
     /*
@@ -2080,6 +2097,13 @@ inline BOOL EEClass::HasExplicitSize()
 {
     LIMITED_METHOD_CONTRACT;
     return HasLayout() && GetLayoutInfo()->HasExplicitSize();
+}
+
+inline BOOL EEClass::IsAutoLayoutOrHasAutoLayoutField()
+{
+    LIMITED_METHOD_CONTRACT;
+    // If this type is not auto
+    return !HasLayout() || GetLayoutInfo()->HasAutoLayoutField();
 }
 
 //==========================================================================

@@ -32,8 +32,8 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <ItemGroup>
-      <NativeLibrary Include="$(IlcPath)\sdk\$(BootstrapperName)$(LibrarySuffix)" />
-      <NativeLibrary Include="$(IlcPath)\sdk\$(FullRuntimeName)$(LibrarySuffix)" />
+      <NativeLibrary Include="$(IlcSdkPath)$(BootstrapperName)$(LibrarySuffix)" />
+      <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName)$(LibrarySuffix)" />
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
     </ItemGroup>
 
@@ -44,7 +44,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ItemGroup>
       <DirectPInvoke Include="@(NetCoreAppNativeLibrary->'%(Identity)')" />
       <NetCoreAppNativeLibrary Include="@(NetCoreAppNativeLibrary->'%(Identity)')">
-        <EscapedPath>$(IlcPath)\sdk\%(Identity).Aot$(LibrarySuffix)</EscapedPath>
+        <EscapedPath>$(IlcSdkPath)%(Identity).Aot$(LibrarySuffix)</EscapedPath>
       </NetCoreAppNativeLibrary>
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
     </ItemGroup>

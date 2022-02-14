@@ -20,12 +20,8 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Rss20ItemFormatter(Type itemTypeToCreate) : base()
+        public Rss20ItemFormatter(Type itemTypeToCreate!!) : base()
         {
-            if (itemTypeToCreate == null)
-            {
-                throw new ArgumentNullException(nameof(itemTypeToCreate));
-            }
             if (!typeof(SyndicationItem).IsAssignableFrom(itemTypeToCreate))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(itemTypeToCreate), nameof(SyndicationItem)), nameof(itemTypeToCreate));
@@ -85,35 +81,20 @@ namespace System.ServiceModel.Syndication
 
         protected Type ItemType { get; }
 
-        public override bool CanRead(XmlReader reader)
+        public override bool CanRead(XmlReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             return reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
         }
 
         XmlSchema IXmlSerializable.GetSchema() => null;
 
-        void IXmlSerializable.ReadXml(XmlReader reader)
+        void IXmlSerializable.ReadXml(XmlReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             ReadItem(reader);
         }
 
-        void IXmlSerializable.WriteXml(XmlWriter writer)
+        void IXmlSerializable.WriteXml(XmlWriter writer!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             WriteItem(writer);
         }
 
@@ -127,13 +108,8 @@ namespace System.ServiceModel.Syndication
             ReadItem(reader);
         }
 
-        public override void WriteTo(XmlWriter writer)
+        public override void WriteTo(XmlWriter writer!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             writer.WriteStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
             WriteItem(writer);
             writer.WriteEndElement();

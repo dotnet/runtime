@@ -11,7 +11,7 @@ using Internal.Runtime.Augments;
 namespace System
 {
     [StructLayoutAttribute(LayoutKind.Sequential)]
-    public struct RuntimeFieldHandle : ISerializable
+    public struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
     {
         private IntPtr _value;
 

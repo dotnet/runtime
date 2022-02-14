@@ -360,7 +360,7 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif // DACCESS_COMPILE
 
-    static void DebugLogTrackerRanges(__in_z const char *pszTag);
+    static void DebugLogTrackerRanges(_In_z_ const char *pszTag);
 
     bool IsStackOverflowException();
 

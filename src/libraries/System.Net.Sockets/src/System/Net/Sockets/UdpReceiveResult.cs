@@ -18,18 +18,8 @@ namespace System.Net.Sockets
         /// </summary>
         /// <param name="buffer">A buffer for data to receive in the UDP packet</param>
         /// <param name="remoteEndPoint">The remote endpoint of the UDP packet</param>
-        public UdpReceiveResult(byte[] buffer, IPEndPoint remoteEndPoint)
+        public UdpReceiveResult(byte[] buffer!!, IPEndPoint remoteEndPoint!!)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if (remoteEndPoint == null)
-            {
-                throw new ArgumentNullException(nameof(remoteEndPoint));
-            }
-
             _buffer = buffer;
             _remoteEndPoint = remoteEndPoint;
         }

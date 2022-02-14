@@ -274,7 +274,7 @@ from 18 November 2002 to 19 December 2002.
 Special thanks to rodo, lupus, dietmar, miguel, and duncan for patience,
 and motivation.
 
-The macros found in this file are based on the assembler instructions found 
+The macros found in this file are based on the assembler instructions found
 in Motorola and Digital DNA's:
 
 "Programming Enviornments Manual For 32-bit Implementations of the PowerPC Architecture"
@@ -334,7 +334,7 @@ my and Ximian's copyright to this code. ;)
 #define ppc_andisd(c,S,A,ui) ppc_emit32(c, (29 << 26) | ((S) << 21 ) | ((A) << 16) | ((guint16)(ui)))
 
 #define ppc_bcx(c,BO,BI,BD,AA,LK) ppc_emit32(c, (16 << 26) | ((BO) << 21 )| ((BI) << 16) | (BD << 2) | ((AA) << 1) | LK)
-#define ppc_bc(c,BO,BI,BD) ppc_bcx(c,BO,BI,BD,0,0) 
+#define ppc_bc(c,BO,BI,BD) ppc_bcx(c,BO,BI,BD,0,0)
 #define ppc_bca(c,BO,BI,BD) ppc_bcx(c,BO,BI,BD,1,0)
 #define ppc_bcl(c,BO,BI,BD) ppc_bcx(c,BO,BI,BD,0,1)
 #define ppc_bcla(c,BO,BI,BD) ppc_bcx(c,BO,BI,BD,1,1)
@@ -400,15 +400,15 @@ my and Ximian's copyright to this code. ;)
 #define ppc_eqv(c,A,S,B) ppc_eqvx(c,A,S,B,0)
 #define ppc_eqvd(c,A,S,B) ppc_eqvx(c,A,S,B,1)
 
-#define ppc_extsbx(c,A,S,Rc) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (0 << 11) | (954 << 1) | Rc) 
+#define ppc_extsbx(c,A,S,Rc) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (0 << 11) | (954 << 1) | Rc)
 #define ppc_extsb(c,A,S) ppc_extsbx(c,A,S,0)
 #define ppc_extsbd(c,A,S) ppc_extsbx(c,A,S,1)
 
-#define ppc_extshx(c,A,S,Rc) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (0 << 11) | (922 << 1) | Rc) 
+#define ppc_extshx(c,A,S,Rc) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (0 << 11) | (922 << 1) | Rc)
 #define ppc_extsh(c,A,S) ppc_extshx(c,A,S,0)
 #define ppc_extshd(c,A,S) ppc_extshx(c,A,S,1)
 
-#define ppc_fabsx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | (D << 21) | (0 << 16) | (B << 11) | (264 << 1) | Rc) 
+#define ppc_fabsx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | (D << 21) | (0 << 16) | (B << 11) | (264 << 1) | Rc)
 #define ppc_fabs(c,D,B) ppc_fabsx(c,D,B,0)
 #define ppc_fabsd(c,D,B) ppc_fabsx(c,D,B,1)
 
@@ -441,11 +441,11 @@ my and Ximian's copyright to this code. ;)
 
 #define ppc_fmaddx(c,D,A,B,C,Rc) ppc_emit32(c, (63 << 26) | (D << 21) | (A << 16) | (B << 11) | (C << 6) | (29 << 1) | Rc)
 #define ppc_fmadd(c,D,A,B,C) ppc_fmaddx(c,D,A,B,C,0)
-#define ppc_fmaddd(c,D,A,B,C) ppc_fmaddx(c,D,A,B,C,1) 
+#define ppc_fmaddd(c,D,A,B,C) ppc_fmaddx(c,D,A,B,C,1)
 
 #define ppc_fmaddsx(c,D,A,B,C,Rc) ppc_emit32(c, (59 << 26) | (D << 21) | (A << 16) | (B << 11) | (C << 6) | (29 << 1) | Rc)
 #define ppc_fmadds(c,D,A,B,C) ppc_fmaddsx(c,D,A,B,C,0)
-#define ppc_fmaddsd(c,D,A,B,C) ppc_fmaddsx(c,D,A,B,C,1) 
+#define ppc_fmaddsd(c,D,A,B,C) ppc_fmaddsx(c,D,A,B,C,1)
 
 #define ppc_fmrx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | (D << 21) | (0 << 16) | (B << 11) | (72 << 1) | Rc)
 #define ppc_fmr(c,D,B) ppc_fmrx(c,D,B,0)
@@ -459,11 +459,11 @@ my and Ximian's copyright to this code. ;)
 #define ppc_fmsubs(c,D,A,C,B) ppc_fmsubsx(c,D,A,C,B,0)
 #define ppc_fmsubsd(c,D,A,C,B) ppc_fmsubsx(c,D,A,C,B,1)
 
-#define ppc_fmulx(c,D,A,C,Rc) ppc_emit32(c, (63 << 26) | (D << 21) | (A << 16) | (0 << 11) | (C << 6) | (25 << 1) | Rc) 
+#define ppc_fmulx(c,D,A,C,Rc) ppc_emit32(c, (63 << 26) | (D << 21) | (A << 16) | (0 << 11) | (C << 6) | (25 << 1) | Rc)
 #define ppc_fmul(c,D,A,C) ppc_fmulx(c,D,A,C,0)
 #define ppc_fmuld(c,D,A,C) ppc_fmulx(c,D,A,C,1)
 
-#define ppc_fmulsx(c,D,A,C,Rc) ppc_emit32(c, (59 << 26) | (D << 21) | (A << 16) | (0 << 11) | (C << 6) | (25 << 1) | Rc) 
+#define ppc_fmulsx(c,D,A,C,Rc) ppc_emit32(c, (59 << 26) | (D << 21) | (A << 16) | (0 << 11) | (C << 6) | (25 << 1) | Rc)
 #define ppc_fmuls(c,D,A,C) ppc_fmulsx(c,D,A,C,0)
 #define ppc_fmulsd(c,D,A,C) ppc_fmulsx(c,D,A,C,1)
 
@@ -689,9 +689,9 @@ my and Ximian's copyright to this code. ;)
 #define ppc_stfiwx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (983 << 1) | 0)
 
 #define ppc_stfsu(c,S,d,A) ppc_emit32(c, (53 << 26) | (S << 21) | (A << 16) | (guint16)(d))
-#define ppc_stfsux(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (695 << 1) | 0)  
-#define ppc_stfsx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (663 << 1) | 0)  
-#define ppc_sthbrx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (918 << 1) | 0)  
+#define ppc_stfsux(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (695 << 1) | 0)
+#define ppc_stfsx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (663 << 1) | 0)
+#define ppc_sthbrx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (918 << 1) | 0)
 #define ppc_sthu(c,S,d,A) ppc_emit32(c, (45 << 26) | (S << 21) | (A << 16) | (guint16)(d))
 #define ppc_sthux(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (439 << 1) | 0)
 #define ppc_sthx(c,S,A,B) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (407 << 1) | 0)

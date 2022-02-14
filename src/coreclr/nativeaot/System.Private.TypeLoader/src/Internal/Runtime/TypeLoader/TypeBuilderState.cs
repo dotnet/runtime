@@ -155,7 +155,7 @@ namespace Internal.Runtime.TypeLoader
                     if (!_templateComputed)
                     {
                         // Attempt to compute native layout through as a non-ReadyToRun template
-                        object temp = this.TemplateType;
+                        object _ = this.TemplateType;
                     }
                     if (!_nativeLayoutTokenComputed)
                     {

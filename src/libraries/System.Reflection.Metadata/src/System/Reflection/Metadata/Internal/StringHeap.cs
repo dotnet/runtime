@@ -163,19 +163,17 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert(handle.StringKind != StringKind.Virtual);
 
-            int bytesRead;
             char otherTerminator = handle.StringKind == StringKind.DotTerminated ? '.' : '\0';
-            return Block.PeekUtf8NullTerminated(handle.GetHeapOffset(), prefixOpt, utf8Decoder, out bytesRead, otherTerminator);
+            return Block.PeekUtf8NullTerminated(handle.GetHeapOffset(), prefixOpt, utf8Decoder, out _, otherTerminator);
         }
 
         private unsafe MemoryBlock GetNonVirtualStringMemoryBlock(StringHandle handle)
         {
             Debug.Assert(handle.StringKind != StringKind.Virtual);
 
-            int bytesRead;
             char otherTerminator = handle.StringKind == StringKind.DotTerminated ? '.' : '\0';
             int offset = handle.GetHeapOffset();
-            int length = Block.GetUtf8NullTerminatedLength(offset, out bytesRead, otherTerminator);
+            int length = Block.GetUtf8NullTerminatedLength(offset, out _, otherTerminator);
 
             return new MemoryBlock(Block.Pointer + offset, length);
         }

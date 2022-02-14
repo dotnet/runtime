@@ -39,6 +39,7 @@
 #include <mono/metadata/attrdefs.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
@@ -2401,6 +2402,10 @@ mono_class_get_field_idx (MonoClass *klass, int idx)
 					return &klass_fields [idx - first_field_idx];
 				}
 			}
+			if (G_UNLIKELY (m_class_get_image (klass)->has_updates && mono_class_has_metadata_update_info (klass))) {
+				uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, idx + 1);
+				return mono_metadata_update_get_field (klass, token);
+			}
 		}
 		klass = m_class_get_parent (klass);
 	}
@@ -2501,7 +2506,7 @@ mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoTyp
 guint32
 mono_class_get_field_token (MonoClassField *field)
 {
-	MonoClass *klass = field->parent;
+	MonoClass *klass = m_field_get_parent (field);
 	int i;
 
 	mono_class_setup_fields (klass);
@@ -2531,8 +2536,8 @@ mono_class_get_field_token (MonoClassField *field)
 static int
 mono_field_get_index (MonoClassField *field)
 {
-	int index = field - m_class_get_fields (field->parent);
-	g_assert (index >= 0 && index < mono_class_get_field_count (field->parent));
+	int index = field - m_class_get_fields (m_field_get_parent (field));
+	g_assert (index >= 0 && index < mono_class_get_field_count (m_field_get_parent (field)));
 
 	return index;
 }
@@ -2548,7 +2553,7 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 	guint32 cindex;
 	guint32 constant_cols [MONO_CONSTANT_SIZE];
 	int field_index;
-	MonoClass *klass = field->parent;
+	MonoClass *klass = m_field_get_parent (field);
 	MonoFieldDefaultValue *def_values;
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT);
@@ -2563,7 +2568,7 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 	field_index = mono_field_get_index (field);
 
 	if (!def_values [field_index].data) {
-		MonoImage *field_parent_image = m_class_get_image (field->parent);
+		MonoImage *field_parent_image = m_class_get_image (m_field_get_parent (field));
 		cindex = mono_metadata_get_constant_index (field_parent_image, mono_class_get_field_token (field), 0);
 		if (!cindex)
 			return NULL;
@@ -4621,13 +4626,20 @@ mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class,
 	case MONO_TOKEN_TYPE_REF:
 	case MONO_TOKEN_TYPE_SPEC: {
 		MonoType *type;
+		MonoClass *klass;
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
 		type = mono_type_get_checked (image, token, context, error);
 		if (!type)
 			return NULL;
 
-		mono_class_init_internal (mono_class_from_mono_type_internal (type));
+		klass = mono_class_from_mono_type_internal (type);
+		mono_class_init_internal (klass);
+		if (mono_class_has_failure (klass)) {
+			mono_error_set_for_class_failure (error, klass);
+			return NULL;
+		}
+
 		/* We return a MonoType* as handle */
 		return type;
 	}
@@ -5402,7 +5414,7 @@ mono_field_get_type_checked (MonoClassField *field, MonoError *error)
 MonoClass*
 mono_field_get_parent (MonoClassField *field)
 {
-	return field->parent;
+	return m_field_get_parent (field);
 }
 
 /**
@@ -5431,7 +5443,7 @@ mono_field_get_flags (MonoClassField *field)
 guint32
 mono_field_get_offset (MonoClassField *field)
 {
-	mono_class_setup_fields(field->parent);
+	mono_class_setup_fields(m_field_get_parent (field));
 	return field->offset;
 }
 
@@ -5440,7 +5452,7 @@ mono_field_get_rva (MonoClassField *field, int swizzle)
 {
 	guint32 rva;
 	int field_index;
-	MonoClass *klass = field->parent;
+	MonoClass *klass = m_field_get_parent (field);
 	MonoFieldDefaultValue *def_values;
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA);
@@ -5459,11 +5471,11 @@ mono_field_get_rva (MonoClassField *field, int swizzle)
 
 		if (!image_is_dynamic (m_class_get_image (klass))) {
 			int first_field_idx = mono_class_get_first_field_idx (klass);
-			mono_metadata_field_info (m_class_get_image (field->parent), first_field_idx + field_index, NULL, &rva, NULL);
+			mono_metadata_field_info (m_class_get_image (m_field_get_parent (field)), first_field_idx + field_index, NULL, &rva, NULL);
 			if (!rva)
-				g_warning ("field %s in %s should have RVA data, but hasn't", mono_field_get_name (field), m_class_get_name (field->parent));
+				g_warning ("field %s in %s should have RVA data, but hasn't", mono_field_get_name (field), m_class_get_name (m_field_get_parent (field)));
 
-			rvaData = mono_image_rva_map (m_class_get_image (field->parent), rva);
+			rvaData = mono_image_rva_map (m_class_get_image (m_field_get_parent (field)), rva);
 		} else {
 			rvaData = mono_field_get_data (field);
 		}
@@ -5715,6 +5727,14 @@ mono_find_method_in_metadata (MonoClass *klass, const char *name, int param_coun
 		}
 	}
 
+	if (G_UNLIKELY (!res && klass_image->has_updates)) {
+		if (mono_class_has_metadata_update_info (klass)) {
+			ERROR_DECL (error);
+			res = mono_metadata_update_find_method_by_name (klass, name, param_count, flags, error);
+			mono_error_cleanup (error);
+		}
+	}
+
 	return res;
 }
 
@@ -5777,7 +5797,8 @@ mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
 		FIXME we should better report this error to the caller
 		 */
 		MonoMethod **klass_methods = m_class_get_methods (klass);
-		if (!klass_methods)
+		gboolean has_updates = m_class_get_image (klass)->has_updates;
+		if (!klass_methods && !has_updates)
 			return NULL;
 		int mcount = mono_class_get_method_count (klass);
 		for (i = 0; i < mcount; ++i) {
@@ -5790,6 +5811,9 @@ mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
 				res = method;
 				break;
 			}
+		}
+		if (G_UNLIKELY (!res && has_updates && mono_class_has_metadata_update_info (klass))) {
+			res = mono_metadata_update_find_method_by_name (klass, name, param_count, flags, error);
 		}
 	}
 	else {
@@ -6170,11 +6194,11 @@ gboolean
 mono_method_can_access_field (MonoMethod *method, MonoClassField *field)
 {
 	/* FIXME: check all overlapping fields */
-	int can = can_access_member (method->klass, field->parent, NULL, mono_field_get_type_internal (field)->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
+	int can = can_access_member (method->klass, m_field_get_parent (field), NULL, mono_field_get_type_internal (field)->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
 	if (!can) {
 		MonoClass *nested = m_class_get_nested_in (method->klass);
 		while (nested) {
-			can = can_access_member (nested, field->parent, NULL, mono_field_get_type_internal (field)->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
+			can = can_access_member (nested, m_field_get_parent (field), NULL, mono_field_get_type_internal (field)->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
 			if (can)
 				return TRUE;
 			nested = m_class_get_nested_in (nested);
@@ -6282,7 +6306,7 @@ gboolean
 mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, MonoClass *context_klass)
 {
 	MonoClass *access_class = method->klass;
-	MonoClass *member_class = field->parent;
+	MonoClass *member_class = m_field_get_parent (field);
 	/* FIXME: check all overlapping fields */
 	int can = can_access_member (access_class, member_class, context_klass, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
 	if (!can) {
@@ -6413,15 +6437,22 @@ mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass)
 void
 mono_field_resolve_type (MonoClassField *field, MonoError *error)
 {
-	MonoClass *klass = field->parent;
+	MonoClass *klass = m_field_get_parent (field);
 	MonoImage *image = m_class_get_image (klass);
 	MonoClass *gtd = mono_class_is_ginst (klass) ? mono_class_get_generic_type_definition (klass) : NULL;
 	MonoType *ftype;
-	int field_idx = field - m_class_get_fields (klass);
+	int field_idx;
+
+	if (G_UNLIKELY (m_field_is_from_update (field))) {
+		field_idx = -1;
+	} else {
+		field_idx = field - m_class_get_fields (klass);
+	}
 
 	error_init (error);
 
 	if (gtd) {
+		g_assert (field_idx != -1);
 		MonoClassField *gfield = &m_class_get_fields (gtd) [field_idx];
 		MonoType *gtype = mono_field_get_type_checked (gfield, error);
 		if (!is_ok (error)) {
@@ -6440,7 +6471,13 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		const char *sig;
 		guint32 cols [MONO_FIELD_SIZE];
 		MonoGenericContainer *container = NULL;
-		int idx = mono_class_get_first_field_idx (klass) + field_idx;
+		int idx;
+
+		if (G_UNLIKELY (m_field_is_from_update (field))) {
+			idx = mono_metadata_update_get_field_idx (field) - 1;
+		} else {
+			idx = mono_class_get_first_field_idx (klass) + field_idx;
+		}
 
 		/*FIXME, in theory we do not lazy load SRE fields*/
 		g_assert (!image_is_dynamic (image));
@@ -6475,7 +6512,7 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 static guint32
 mono_field_resolve_flags (MonoClassField *field)
 {
-	MonoClass *klass = field->parent;
+	MonoClass *klass = m_field_get_parent (field);
 	MonoImage *image = m_class_get_image (klass);
 	MonoClass *gtd = mono_class_is_ginst (klass) ? mono_class_get_generic_type_definition (klass) : NULL;
 	int field_idx = field - m_class_get_fields (klass);

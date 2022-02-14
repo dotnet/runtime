@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable 436 // SuppressUnmanagedCodeSecurityAttribute defined in source and mscorlib 
+#pragma warning disable 436 // SuppressUnmanagedCodeSecurityAttribute defined in source and mscorlib
 
 using System;
 using System.Collections.Generic;
@@ -11,9 +11,39 @@ using System.Text;
 
 namespace Microsoft.DiaSymReader
 {
-    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("D682FD12-43dE-411C-811B-BE8404CEA126"), SuppressUnmanagedCodeSecurity]
+    /// <summary>
+    /// IUnknown COM type for writing NGen PDBs
+    /// </summary>
+    /// <remarks>
+    /// <code>
+    /// [
+    ///  object,
+    ///  uuid(d682fd12-43de-411c-811b-be8404cea126),
+    ///  pointer_default(unique)
+    /// ]
+    /// interface ISymNGenWriter : IUnknown
+    /// {
+    ///     /*
+    ///      * Add a new public symbol to the NGEN PDB.
+    ///      */
+    ///     HRESULT AddSymbol([in] BSTR pSymbol,
+    ///                       [in] USHORT iSection,
+    ///                       [in] ULONGLONG rva);
+    ///
+    ///     /*
+    ///      * Adds a new section to the NGEN PDB.
+    ///      */
+    ///     HRESULT AddSection([in] USHORT iSection,
+    ///                        [in] USHORT flags,
+    ///                        [in] long offset,
+    ///                        [in] long cb);
+    /// };
+    /// </code>
+    /// </remarks>
     internal interface ISymNGenWriter
     {
+        public static readonly Guid IID = new Guid("D682FD12-43dE-411C-811B-BE8404CEA126");
+
         // Add a new public symbol to the NGEN PDB.
         void AddSymbol([MarshalAs(UnmanagedType.BStr)] string pSymbol,
                         ushort iSection,
@@ -46,9 +76,46 @@ namespace Microsoft.DiaSymReader
     }
 
 
-    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("B029E51B-4C55-4fe2-B993-9F7BC1F10DB4"), SuppressUnmanagedCodeSecurity]
+    /// <summary>
+    /// IUnknown COM type for writing NGen PDBs
+    /// </summary>
+    /// <remarks>
+    /// <code>
+    /// [
+    ///  object,
+    ///  local,
+    ///  uuid(B029E51B-4C55-4fe2-B993-9F7BC1F10DB4),
+    ///  pointer_default(unique)
+    /// ]
+    /// interface ISymNGenWriter2 : ISymNGenWriter
+    /// {
+    ///     HRESULT OpenModW([in] const wchar_t* wszModule,
+    ///                      [in] const wchar_t* wszObjFile,
+    ///                      [out] BYTE** ppmod);
+    ///
+    ///     HRESULT CloseMod([in] BYTE* pmod);
+    ///
+    ///     HRESULT ModAddSymbols([in] BYTE* pmod, [in] BYTE* pbSym, [in] long cb);
+    ///
+    ///     HRESULT ModAddSecContribEx(
+    ///         [in] BYTE* pmod,
+    ///         [in] USHORT isect,
+    ///         [in] long off,
+    ///         [in] long cb,
+    ///         [in] ULONG dwCharacteristics,
+    ///         [in] DWORD dwDataCrc,
+    ///         [in] DWORD dwRelocCrc);
+    ///
+    ///     HRESULT QueryPDBNameExW(
+    ///         [out, size_is(cchMax)] wchar_t wszPDB[],
+    ///         [in] SIZE_T cchMax);
+    /// };
+    /// </remarks>
+    /// </code>
     internal interface ISymNGenWriter2 : ISymNGenWriter
     {
+        public readonly static new Guid IID = new Guid("B029E51B-4C55-4fe2-B993-9F7BC1F10DB4");
+
         // Add a new public symbol to the NGEN PDB.
         new void AddSymbol([MarshalAs(UnmanagedType.BStr)] string pSymbol,
                         ushort iSection,
@@ -78,7 +145,7 @@ namespace Microsoft.DiaSymReader
             uint dwRelocCrc);
 
         void QueryPDBNameExW(
-            [MarshalAs(UnmanagedType.LPWStr)] StringBuilder pdb,
+            [MarshalAs(UnmanagedType.LPWStr)] char[] pdb,
             IntPtr cchMax);
     }
 }

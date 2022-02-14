@@ -65,7 +65,6 @@ nativeStringResourceTable_mscorrc
 #PAL_wcsrchr
 #PAL_wcscmp
 #PAL_wcschr
-#PAL_wcscspn
 #PAL_wcscat
 #PAL_wcsstr
 #PAL__open
@@ -140,8 +139,6 @@ nativeStringResourceTable_mscorrc
 #LoadLibraryA
 #LoadLibraryW
 #LoadLibraryExW
-#LocalAlloc
-#LocalFree
 #MapViewOfFile
 #MapViewOfFileEx
 #MoveFileExW

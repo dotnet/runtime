@@ -527,6 +527,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52393", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void GetTypeByName_InvokeViaReflection_Success()
         {
@@ -928,8 +929,15 @@ namespace System.Tests
         {
             foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
             {
-                Type t = typeof(List<>).MakeGenericType(nonRuntimeType);
-                Assert.NotNull(t);
+                if (PlatformDetection.IsReflectionEmitSupported)
+                {
+                    Type t = typeof(List<>).MakeGenericType(nonRuntimeType);
+                    Assert.NotNull(t);
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => typeof(List<>).MakeGenericType(nonRuntimeType));
+                }
             }
         }
 
@@ -1030,6 +1038,7 @@ namespace System.Tests
             };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/861", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Theory]
         [MemberData(nameof(GetInterfaceMap_TestData))]
         public void GetInterfaceMap(Type interfaceType, Type classType, Tuple<MethodInfo, MethodInfo>[] expectedMap)

@@ -306,7 +306,7 @@ namespace Microsoft.Interop
         {
             if (StackAllocOptimizationValid(info, context))
             {
-                // byte* <managedIdentifier>__stackptr = stackalloc byte[<_nativeLocalType>.StackBufferSize];
+                // byte* <managedIdentifier>__stackptr = stackalloc byte[<_nativeLocalType>.BufferSize];
                 yield return LocalDeclarationStatement(
                 VariableDeclaration(
                     PointerType(PredefinedType(Token(SyntaxKind.ByteKeyword))),
@@ -319,7 +319,7 @@ namespace Microsoft.Interop
                                             SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
                                                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                                     AsNativeType(info),
-                                                    IdentifierName(ManualTypeMarshallingHelper.StackBufferSizeFieldName))
+                                                    IdentifierName(ManualTypeMarshallingHelper.BufferSizeFieldName))
                                             ))))))))));
             }
 
@@ -373,7 +373,7 @@ namespace Microsoft.Interop
                             Argument(IdentifierName(GetStackAllocPointerIdentifier(info, context))),
                             Argument(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                     AsNativeType(info),
-                                    IdentifierName(ManualTypeMarshallingHelper.StackBufferSizeFieldName)))
+                                    IdentifierName(ManualTypeMarshallingHelper.BufferSizeFieldName)))
                         }))));
             }
         }

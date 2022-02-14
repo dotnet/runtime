@@ -40,18 +40,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         /// <param name="optionsAccessor">The options of the cache.</param>
         /// <param name="loggerFactory">The factory used to create loggers.</param>
-        public MemoryCache(IOptions<MemoryCacheOptions> optionsAccessor, ILoggerFactory loggerFactory)
+        public MemoryCache(IOptions<MemoryCacheOptions> optionsAccessor!!, ILoggerFactory loggerFactory!!)
         {
-            if (optionsAccessor == null)
-            {
-                throw new ArgumentNullException(nameof(optionsAccessor));
-            }
-
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
-
             _options = optionsAccessor.Value;
             _logger = loggerFactory.CreateLogger<MemoryCache>();
 
@@ -140,7 +130,7 @@ namespace Microsoft.Extensions.Caching.Memory
             bool exceedsCapacity = UpdateCacheSizeExceedsCapacity(entry, coherentState);
             if (!exceedsCapacity)
             {
-                bool entryAdded = false;
+                bool entryAdded;
 
                 if (priorEntry == null)
                 {
@@ -204,9 +194,8 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <inheritdoc />
-        public bool TryGetValue(object key, out object result)
+        public bool TryGetValue(object key!!, out object result)
         {
-            ValidateCacheKey(key);
             CheckDisposed();
 
             DateTimeOffset utcNow = _options.Clock.UtcNow;
@@ -246,9 +235,8 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <inheritdoc />
-        public void Remove(object key)
+        public void Remove(object key!!)
         {
-            ValidateCacheKey(key);
             CheckDisposed();
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
@@ -329,11 +317,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 return false;
             }
 
-            long newSize = 0L;
             for (int i = 0; i < 100; i++)
             {
                 long sizeRead = coherentState.Size;
-                newSize = sizeRead + entry.Size.Value;
+                long newSize = sizeRead + entry.Size.Value;
 
                 if (newSize < 0 || newSize > _options.SizeLimit)
                 {
@@ -498,14 +485,8 @@ namespace Microsoft.Extensions.Caching.Memory
             static void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
         }
 
-        private static void ValidateCacheKey(object key)
+        private static void ValidateCacheKey(object key!!)
         {
-            if (key == null)
-            {
-                Throw();
-            }
-
-            static void Throw() => throw new ArgumentNullException(nameof(key));
         }
 
         private sealed class CoherentState

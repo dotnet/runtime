@@ -249,7 +249,7 @@ namespace System.Reflection.Tests
             });
 
 
-            Assert.Throws<ArgumentNullException>(null, () =>
+            Assert.Throws<ArgumentNullException>(() =>
             {
                 typeof(RuntimeReflectionExtensionsTests).GetRuntimeField(null);
             });

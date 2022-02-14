@@ -127,7 +127,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoClass *
 mono_class_from_mono_type  (MonoType *type);
 
 MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
-mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, 
+mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 						   mono_bool check_interfaces);
 
 MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
@@ -140,7 +140,7 @@ mono_ldtoken               (MonoImage *image, uint32_t token, MonoClass **retcla
 MONO_API char *
 mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format);
 
-MONO_API char*         
+MONO_API char*
 mono_type_get_name         (MonoType *type);
 
 MONO_API MonoType*

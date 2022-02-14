@@ -426,7 +426,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ArgumentException(SR.Format(SR.NotReturnedAsyncResult, nameof(asyncResult)));
             }
 
-            int messageId = -1;
+            int messageId;
 
             LdapAsyncResult result = (LdapAsyncResult)asyncResult;
             if (!result._partialResults)
@@ -1040,7 +1040,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             // Set the credential.
-            NetworkCredential tempCredential = null;
+            NetworkCredential tempCredential;
             if (needSetCredential)
             {
                 _directoryCredential = tempCredential = (newCredential != null ? new NetworkCredential(newCredential.UserName, newCredential.Password, newCredential.Domain) : null);
@@ -1297,7 +1297,7 @@ namespace System.DirectoryServices.Protocols
                 for (int i = 0; i < directoryAttributes.Count; i++)
                 {
                     // Get the managed attribute first.
-                    DirectoryAttribute modAttribute = null;
+                    DirectoryAttribute modAttribute;
                     if (attributeCollection != null)
                     {
                         modAttribute = attributeCollection[i];
@@ -1334,7 +1334,7 @@ namespace System.DirectoryServices.Protocols
                         berValues = new BerVal[valuesCount];
                         for (int j = 0; j < valuesCount; j++)
                         {
-                            byte[] byteArray = null;
+                            byte[] byteArray;
                             if (modAttribute[j] is string)
                             {
                                 byteArray = encoder.GetBytes((string)modAttribute[j]);
@@ -1362,10 +1362,10 @@ namespace System.DirectoryServices.Protocols
 
                     attributes[i].values = Utility.AllocHGlobalIntPtrArray(valuesCount + 1);
                     int structSize = Marshal.SizeOf(typeof(BerVal));
-                    IntPtr controlPtr = IntPtr.Zero;
-                    IntPtr tempPtr = IntPtr.Zero;
+                    IntPtr controlPtr;
+                    IntPtr tempPtr;
 
-                    int m = 0;
+                    int m;
                     for (m = 0; m < valuesCount; m++)
                     {
                         controlPtr = Marshal.AllocHGlobal(structSize);
@@ -1396,7 +1396,7 @@ namespace System.DirectoryServices.Protocols
             IntPtr requestName = IntPtr.Zero;
             IntPtr requestValue = IntPtr.Zero;
 
-            IntPtr entryMessage = IntPtr.Zero;
+            IntPtr entryMessage;
 
             bool needAbandon = true;
 
@@ -1827,7 +1827,7 @@ namespace System.DirectoryServices.Protocols
                     {
                         BerVal bervalue = new BerVal();
                         Marshal.PtrToStructure(tempPtr, bervalue);
-                        byte[] byteArray = null;
+                        byte[] byteArray;
                         if (bervalue.bv_len > 0 && bervalue.bv_val != IntPtr.Zero)
                         {
                             byteArray = new byte[bervalue.bv_len];
@@ -1861,7 +1861,7 @@ namespace System.DirectoryServices.Protocols
                 if (error == 0)
                 {
                     var referralList = new ArrayList();
-                    IntPtr tempPtr = IntPtr.Zero;
+                    IntPtr tempPtr;
                     int count = 0;
                     if (referenceArray != IntPtr.Zero)
                     {

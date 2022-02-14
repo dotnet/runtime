@@ -49,9 +49,9 @@ namespace System
 
         private const double SCALEB_C3 = 9007199254740992; // 0x1p53
 
-        private const int ILogB_NaN = 0x7fffffff;
+        private const int ILogB_NaN = 0x7FFFFFFF;
 
-        private const int ILogB_Zero = (-1 - 0x7fffffff);
+        private const int ILogB_Zero = (-1 - 0x7FFFFFFF);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
@@ -131,6 +131,26 @@ namespace System
         public static decimal Abs(decimal value)
         {
             return decimal.Abs(value);
+        }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Abs(double value)
+        {
+            const ulong mask = 0x7FFFFFFFFFFFFFFF;
+            ulong raw = BitConverter.DoubleToUInt64Bits(value);
+
+            return BitConverter.UInt64BitsToDouble(raw & mask);
+        }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Abs(float value)
+        {
+            const uint mask = 0x7FFFFFFF;
+            uint raw = BitConverter.SingleToUInt32Bits(value);
+
+            return BitConverter.UInt32BitsToSingle(raw & mask);
         }
 
         [DoesNotReturn]
@@ -1279,6 +1299,18 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Round(double value, MidpointRounding mode)
         {
+            // Inline single-instruction modes
+            if (RuntimeHelpers.IsKnownConstant((int)mode))
+            {
+                if (mode == MidpointRounding.ToEven)
+                    return Round(value);
+
+                // For ARM/ARM64 we can lower it down to a single instruction FRINTA
+                // For XARCH we have to use the common path
+                if (AdvSimd.IsSupported && mode == MidpointRounding.AwayFromZero)
+                    return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalar(value)).ToScalar();
+            }
+
             return Round(value, 0, mode);
         }
 
@@ -1432,6 +1464,7 @@ namespace System
             return decimal.Truncate(d);
         }
 
+        [Intrinsic]
         public static unsafe double Truncate(double d)
         {
             ModF(d, &d);

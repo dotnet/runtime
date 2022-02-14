@@ -34,20 +34,20 @@ gint32 mono_atomic_cas_i32(volatile gint32 *dest, gint32 exch,
 {
 	gint32 old;
 	int ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	ret = pthread_mutex_lock(&spin);
 	g_assert (ret == 0);
-	
+
 	old= *dest;
 	if(old==comp) {
 		*dest=exch;
 	}
-	
+
 	ret = pthread_mutex_unlock(&spin);
 	g_assert (ret == 0);
-	
+
 	pthread_cleanup_pop (0);
 
 	return(old);
@@ -58,20 +58,20 @@ gpointer mono_atomic_cas_ptr(volatile gpointer *dest,
 {
 	gpointer old;
 	int ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	ret = pthread_mutex_lock(&spin);
 	g_assert (ret == 0);
-	
+
 	old= *dest;
 	if(old==comp) {
 		*dest=exch;
 	}
-	
+
 	ret = pthread_mutex_unlock(&spin);
 	g_assert (ret == 0);
-	
+
 	pthread_cleanup_pop (0);
 
 	return(old);
@@ -123,7 +123,7 @@ gint32 mono_atomic_inc_i32(volatile gint32 *dest)
 {
 	gint32 ret;
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
@@ -131,12 +131,12 @@ gint32 mono_atomic_inc_i32(volatile gint32 *dest)
 
 	(*dest)++;
 	ret= *dest;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
-	
+
 	pthread_cleanup_pop (0);
-	
+
 	return(ret);
 }
 
@@ -165,20 +165,20 @@ gint32 mono_atomic_dec_i32(volatile gint32 *dest)
 {
 	gint32 ret;
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
-	
+
 	(*dest)--;
 	ret= *dest;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
-	
+
 	pthread_cleanup_pop (0);
-	
+
 	return(ret);
 }
 
@@ -207,7 +207,7 @@ gint32 mono_atomic_xchg_i32(volatile gint32 *dest, gint32 exch)
 {
 	gint32 ret;
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
@@ -215,12 +215,12 @@ gint32 mono_atomic_xchg_i32(volatile gint32 *dest, gint32 exch)
 
 	ret=*dest;
 	*dest=exch;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
-	
+
 	pthread_cleanup_pop (0);
-	
+
 	return(ret);
 }
 
@@ -249,20 +249,20 @@ gpointer mono_atomic_xchg_ptr(volatile gpointer *dest, gpointer exch)
 {
 	gpointer ret;
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
-	
+
 	ret=*dest;
 	*dest=exch;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
-	
+
 	pthread_cleanup_pop (0);
-	
+
 	return(ret);
 }
 
@@ -270,7 +270,7 @@ gint32 mono_atomic_fetch_add_i32(volatile gint32 *dest, gint32 add)
 {
 	gint32 ret;
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
@@ -278,7 +278,7 @@ gint32 mono_atomic_fetch_add_i32(volatile gint32 *dest, gint32 add)
 
 	ret= *dest;
 	*dest+=add;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
 
@@ -291,7 +291,7 @@ gint64 mono_atomic_fetch_add_i64(volatile gint64 *dest, gint64 add)
 {
 	gint64 ret;
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
@@ -299,7 +299,7 @@ gint64 mono_atomic_fetch_add_i64(volatile gint64 *dest, gint64 add)
 
 	ret= *dest;
 	*dest+=add;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
 
@@ -312,14 +312,14 @@ gint8 mono_atomic_load_i8(volatile gint8 *src)
 {
 	gint8 ret;
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
 
 	ret= *src;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
 
@@ -332,14 +332,14 @@ gint16 mono_atomic_load_i16(volatile gint16 *src)
 {
 	gint16 ret;
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
 
 	ret= *src;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
 
@@ -352,14 +352,14 @@ gint32 mono_atomic_load_i32(volatile gint32 *src)
 {
 	gint32 ret;
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
 
 	ret= *src;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
 
@@ -372,14 +372,14 @@ gint64 mono_atomic_load_i64(volatile gint64 *src)
 {
 	gint64 ret;
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
 
 	ret= *src;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
 
@@ -392,14 +392,14 @@ gpointer mono_atomic_load_ptr(volatile gpointer *src)
 {
 	gpointer ret;
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
 
 	ret= *src;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
 
@@ -411,85 +411,85 @@ gpointer mono_atomic_load_ptr(volatile gpointer *src)
 void mono_atomic_store_i8(volatile gint8 *dst, gint8 val)
 {
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
 
 	*dst=val;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
-	
+
 	pthread_cleanup_pop (0);
 }
 
 void mono_atomic_store_i16(volatile gint16 *dst, gint16 val)
 {
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
 
 	*dst=val;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
-	
+
 	pthread_cleanup_pop (0);
 }
 
 void mono_atomic_store_i32(volatile gint32 *dst, gint32 val)
 {
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
 
 	*dst=val;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
-	
+
 	pthread_cleanup_pop (0);
 }
 
 void mono_atomic_store_i64(volatile gint64 *dst, gint64 val)
 {
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
 
 	*dst=val;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
-	
+
 	pthread_cleanup_pop (0);
 }
 
 void mono_atomic_store_ptr(volatile gpointer *dst, gpointer val)
 {
 	int thr_ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	thr_ret = pthread_mutex_lock(&spin);
 	g_assert (thr_ret == 0);
 
 	*dst=val;
-	
+
 	thr_ret = pthread_mutex_unlock(&spin);
 	g_assert (thr_ret == 0);
-	
+
 	pthread_cleanup_pop (0);
 }
 
@@ -578,20 +578,20 @@ mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp)
 {
 	gint64 old;
 	int ret;
-	
+
 	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
 			      (void *)&spin);
 	ret = pthread_mutex_lock(&spin);
 	g_assert (ret == 0);
-	
+
 	old= *dest;
 	if(old==comp) {
 		*dest=exch;
 	}
-	
+
 	ret = pthread_mutex_unlock(&spin);
 	g_assert (ret == 0);
-	
+
 	pthread_cleanup_pop (0);
 
 	return(old);

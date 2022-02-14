@@ -9,55 +9,55 @@
 }
 .assembly 'gcval_nested' { }
 .assembly extern xunit.core {}
-.namespace JitTest
+.namespace JitTest_compat_gcval_nested
 {
-  .class private sequential ansi sealed beforefieldinit LargeVT
+  .class public sequential ansi sealed beforefieldinit LargeVT
          extends [mscorlib]System.ValueType
   {
     .field private int32[] 'value'
-    .field private valuetype JitTest.LargeVT[] next
+    .field private valuetype JitTest_compat_gcval_nested.LargeVT[] next
     
-    .method private hidebysig static value class JitTest.LargeVT 
+    .method private hidebysig static value class JitTest_compat_gcval_nested.LargeVT 
             callee(int32 retcode) il managed
     {
       // Code size       33 (0x21)
       .maxstack  8
-      .locals (value class JitTest.LargeVT lv)
+      .locals (value class JitTest_compat_gcval_nested.LargeVT lv)
       ldloca lv
-      initobj JitTest.LargeVT
+      initobj JitTest_compat_gcval_nested.LargeVT
       ldloca lv
       
       ldc.i4.1
-      newarr value class JitTest.LargeVT
+      newarr value class JitTest_compat_gcval_nested.LargeVT
       dup
       ldc.i4.0
-      ldelema value class JitTest.LargeVT
+      ldelema value class JitTest_compat_gcval_nested.LargeVT
       dup
-      initobj    JitTest.LargeVT
+      initobj    JitTest_compat_gcval_nested.LargeVT
       ldc.i4.1
       newarr     [mscorlib]System.Int32
       dup
       ldc.i4.0
       ldarg.0
       stelem.i4
-      stfld      int32[] JitTest.LargeVT::'value'
+      stfld      int32[] JitTest_compat_gcval_nested.LargeVT::'value'
 
-      stfld      valuetype JitTest.LargeVT[] JitTest.LargeVT::next
+      stfld      valuetype JitTest_compat_gcval_nested.LargeVT[] JitTest_compat_gcval_nested.LargeVT::next
       ldloc.0
       ret
     } // end of method LargeVT::callee
 
-    .method private hidebysig static value class JitTest.LargeVT 
+    .method private hidebysig static value class JitTest_compat_gcval_nested.LargeVT 
             caller(int32 retcode) il managed
     {
 		// Code size       11 (0xb)
 		.maxstack  8
 		ldarg.0
-		tail. call value class JitTest.LargeVT JitTest.LargeVT::callee(int32)
+		tail. call value class JitTest_compat_gcval_nested.LargeVT JitTest_compat_gcval_nested.LargeVT::callee(int32)
 		ret
     } // end of method LargeVT::caller
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -68,15 +68,15 @@
       .maxstack  2
       .locals (int32 V_0,
                int32 V_1,
-               value class JitTest.LargeVT V_2)
+               value class JitTest_compat_gcval_nested.LargeVT V_2)
       ldc.i4.s   100
-      call       value class JitTest.LargeVT JitTest.LargeVT::caller(int32)
+      call       value class JitTest_compat_gcval_nested.LargeVT JitTest_compat_gcval_nested.LargeVT::caller(int32)
       stloc.2
       ldloca.s   V_2
-      ldfld      value class JitTest.LargeVT[] JitTest.LargeVT::next
+      ldfld      value class JitTest_compat_gcval_nested.LargeVT[] JitTest_compat_gcval_nested.LargeVT::next
       ldc.i4.0
-      ldelema value class JitTest.LargeVT
-      ldfld      int32[] JitTest.LargeVT::'value'
+      ldelema value class JitTest_compat_gcval_nested.LargeVT
+      ldfld      int32[] JitTest_compat_gcval_nested.LargeVT::'value'
       
       ldc.i4.0
       ldelem.i4
@@ -98,6 +98,6 @@
 
   } // end of class LargeVT
 
-} // end of namespace JitTest
+} // end of namespace JitTest_compat_gcval_nested
 
 //*********** DISASSEMBLY COMPLETE ***********************

@@ -176,7 +176,7 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const uint8_t *raw_conten
 			mono_file_map_close (f);
 		}
 	}
-	
+
 	if (load_symfile (handle, symfile, in_the_debugger)) {
 		mono_debugger_unlock ();
 		return symfile;
@@ -233,7 +233,7 @@ read_leb128 (const uint8_t *ptr, const uint8_t **rptr)
 
 	do {
 		b = *ptr++;
-				
+
 		ret = ret | ((b & 0x7f) << shift);
 		shift += 7;
 	} while ((b & 0x80) == 0x80);
@@ -290,7 +290,7 @@ check_line (StatementMachine *stm, int offset, MonoDebugSourceLocation **locatio
 	}
 
 	if (stm->last_line == 0) {
-		/* 
+		/*
 		 * The IL offset is less than the first IL offset which has a corresponding
 		 * source line.
 		 */
@@ -658,7 +658,7 @@ mono_debug_symfile_get_seq_points (MonoDebugMethodInfo *minfo, char **source_fil
 			if (source_files)
 				(*source_files) [i] = (*source_file_list)->len - 1;
 		}
-	}				
+	}
 
 	if (n_seq_points) {
 		g_assert (seq_points);

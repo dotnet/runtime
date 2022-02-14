@@ -495,6 +495,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowFileLoadException_InvalidAssemblyName(string name)
+        {
+            throw new FileLoadException(SR.InvalidAssemblyName, name);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
@@ -852,6 +858,8 @@ namespace System
                     return "offset";
                 case ExceptionArgument.stream:
                     return "stream";
+                case ExceptionArgument.anyOf:
+                    return "anyOf";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1119,7 +1127,8 @@ namespace System
         buffer,
         buffers,
         offset,
-        stream
+        stream,
+        anyOf,
     }
 
     //

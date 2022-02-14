@@ -126,7 +126,7 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
 // cBufSizeInChars - the size of the buffer in characters, including the null.
 // pPrefx - The undecorated name of the event.
 //-----------------------------------------------------------------------------
-void GetPidDecoratedName(__out_z __out_ecount(cBufSizeInChars) WCHAR * pBuf, int cBufSizeInChars, const WCHAR * pPrefix, DWORD pid)
+void GetPidDecoratedName(_Out_writes_z_(cBufSizeInChars) WCHAR * pBuf, int cBufSizeInChars, const WCHAR * pPrefix, DWORD pid)
 {
     const WCHAR szGlobal[] = W("Global\\");
     int szGlobalLen;

@@ -1,7 +1,7 @@
 /**
  * \file
  * System.Type icalls and related reflection queries.
- * 
+ *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *
@@ -238,7 +238,7 @@ mono_assembly_get_object_handle (MonoAssembly *assembly, MonoError *error)
 /**
  * mono_module_get_object:
  */
-MonoReflectionModule*   
+MonoReflectionModule*
 mono_module_get_object (MonoDomain *domain, MonoImage *image)
 {
 	MonoReflectionModuleHandle result;
@@ -255,7 +255,7 @@ static MonoReflectionModuleHandle
 module_object_construct (MonoClass *unused_klass, MonoImage *image, gpointer user_data, MonoError *error)
 {
 	char* basename;
-	
+
 	error_init (error);
 	MonoReflectionModuleHandle res = MONO_HANDLE_CAST (MonoReflectionModule, mono_object_new_handle (mono_class_get_mono_module_class (), error));
 	goto_if_nok (error, fail);
@@ -328,7 +328,7 @@ mono_module_file_get_object_handle (MonoImage *image, int table_index, MonoError
 	const char *name;
 	guint32 i, name_idx;
 	const char *val;
-	
+
 	error_init (error);
 
 	MonoReflectionModuleHandle res = MONO_HANDLE_CAST (MonoReflectionModule, mono_object_new_handle (mono_class_get_mono_module_class (), error));
@@ -448,7 +448,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	/*we must avoid using @type as it might have come
 	 * from a mono_metadata_type_dup and the caller
 	 * expects that is can be freed.
-	 * Using the right type from 
+	 * Using the right type from
 	 */
 	type = m_type_is_byref (m_class_get_byval_arg (klass)) == m_type_is_byref (type) ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
 
@@ -469,9 +469,9 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	/*
 	 * If the vtable of the given class was already created, we can use
 	 * the MonoType from there and avoid all locking and hash table lookups.
-	 * 
+	 *
 	 * We cannot do this for TypeBuilders as mono_reflection_create_runtime_class expects
-	 * that the resulting object is different.   
+	 * that the resulting object is different.
 	 */
 	if (type == m_class_get_byval_arg (klass) && !image_is_dynamic (m_class_get_image (klass))) {
 		MonoVTable *vtable = mono_class_try_get_vtable (klass);
@@ -594,7 +594,7 @@ method_object_construct (MonoClass *refclass, MonoMethod *method, gpointer user_
 	error_init (error);
 	g_assert (refclass != NULL);
 	/*
-	 * We use the same C representation for methods and constructors, but the type 
+	 * We use the same C representation for methods and constructors, but the type
 	 * name in C# is different.
 	 */
 	MonoClass *klass;
@@ -746,7 +746,7 @@ MonoReflectionFieldHandle
 mono_field_get_object_handle (MonoClass *klass, MonoClassField *field, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionField, m_class_get_mem_manager (field->parent), field, klass, field_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionField, m_class_get_mem_manager (m_field_get_parent (field)), field, klass, field_object_construct, NULL);
 }
 
 /*
@@ -1053,7 +1053,7 @@ param_objects_construct (MonoClass *refclass, MonoMethodSignature **addr_of_sig,
 	int i;
 
 	error_init (error);
-	
+
 	MonoReflectionMethodHandle member = mono_method_get_object_handle (method, refclass, error);
 	goto_if_nok (error, leave);
 	names = g_new (char *, sig->param_count);
@@ -1107,7 +1107,7 @@ leave:
 
 	if (!is_ok (error))
 		return NULL_HANDLE_ARRAY;
-	
+
 	return res;
 }
 
@@ -1444,7 +1444,7 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 		if (!crow) {
 			continue;
 		}
-	
+
 		mono_metadata_decode_row (constt, crow - 1, const_cols, MONO_CONSTANT_SIZE);
 		blobs [paramseq - 1] = (char *)mono_metadata_blob_heap (image, const_cols [MONO_CONSTANT_VALUE]);
 		types [paramseq - 1] = const_cols [MONO_CONSTANT_TYPE];
@@ -1479,7 +1479,7 @@ mono_get_object_from_blob (MonoType *type, const char *blob, MonoStringHandleOut
 		if (m_class_is_enumtype (klass))
 			basetype = mono_class_enum_basetype_internal (klass);
 	}
-			
+
 	if (mono_get_constant_value_from_blob (basetype->type,  blob, retval, string_handle, error))
 		MONO_HANDLE_ASSIGN_RAW (object_handle, object);
 	else
@@ -1685,7 +1685,7 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 		// *w++ = *p++;
 		p++;
 	}
-	
+
 	if (!info->name) {
 		if (last_point) {
 			info->name_space = start;
@@ -1936,7 +1936,7 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info)
  * \param name the string to parse
  * \param info the parsed name components
  * \param error set on error
- * 
+ *
  * Parse the given \p name and write the results to \p info, setting \p error
  * on error.  The string \p name is modified in place and \p info points into
  * its memory and into allocated memory.
@@ -1969,7 +1969,7 @@ _mono_reflection_get_type_from_info (MonoAssemblyLoadContext *alc, MonoTypeNameP
 	if (info->assembly.name) {
 		MonoAssembly *assembly = mono_assembly_loaded_internal (alc, &info->assembly);
 		if (!assembly && image && image->assembly && mono_assembly_check_name_match (&info->assembly, &image->assembly->aname))
-			/* 
+			/*
 			 * This could happen in the AOT compiler case when the search hook is not
 			 * installed.
 			 */
@@ -2015,7 +2015,7 @@ mono_reflection_get_type_internal (MonoAssemblyLoadContext *alc, MonoImage *root
 	int modval;
 	gboolean bounded = FALSE;
 	MonoType* type = NULL;
-	
+
 	error_init (error);
 	if (!image)
 		image = mono_defaults.corlib;
@@ -2151,7 +2151,7 @@ leave:
  * \param type_resolve whenever type resolve was already tried
  *
  * Build a MonoType from the type description in \p info.
- * 
+ *
  */
 MonoType*
 mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve)
@@ -2253,7 +2253,7 @@ mono_reflection_get_type_internal_dynamic (MonoAssemblyLoadContext *alc, MonoIma
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (type);
 }
-	
+
 MonoType*
 mono_reflection_get_type_with_rootimage (MonoAssemblyLoadContext *alc, MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean search_mscorlib, gboolean *type_resolve, MonoError *error)
 {
@@ -2279,11 +2279,11 @@ mono_reflection_get_type_with_rootimage (MonoAssemblyLoadContext *alc, MonoImage
 		goto return_null;
 
 	if (type_resolve) {
-		if (*type_resolve) 
+		if (*type_resolve)
 			goto return_null;
 		*type_resolve = TRUE;
 	}
-	
+
 	/* Reconstruct the type name */
 	fullName = g_string_new ("");
 	if (info->name_space && (info->name_space [0] != '\0'))
@@ -2354,7 +2354,7 @@ mono_reflection_free_type_info (MonoTypeNameParse *info)
  * Retrieves a \c MonoType from its \p name. If the name is not fully qualified,
  * it defaults to get the type from \p image or, if \p image is NULL or loading
  * from it fails, uses corlib.
- * 
+ *
  */
 MonoType*
 mono_reflection_type_from_name (char *name, MonoImage *image)
@@ -2392,7 +2392,7 @@ mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc
 	error_init (error);
 	/* Make a copy since parse_type modifies its argument */
 	tmp = g_strdup (name);
-	
+
 	/*g_print ("requested type %s\n", str);*/
 	ERROR_DECL (parse_error);
 	if (!mono_reflection_parse_type_checked (tmp, &info, parse_error)) {
@@ -2421,7 +2421,7 @@ mono_reflection_get_token (MonoObject *obj_raw)
 	ERROR_DECL (error);
 	result = mono_reflection_get_token_checked (obj, error);
 	mono_error_assert_ok (error);
-	
+
 	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
@@ -2570,7 +2570,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionTypeHandle reftype, int t
 	MonoClass *geninst;
 
 	error_init (error);
-	
+
 	mono_loader_lock ();
 
 	MonoClass *klass = mono_handle_class (reftype);
@@ -2803,7 +2803,7 @@ mono_declsec_flags_from_method (MonoMethod *method)
  * mono_declsec_flags_from_class:
  * \param klass The class for which we want the declarative security flags.
  * Get the security actions (in the form of flags) associated with the specified class.
- * We cache the flags inside the \c MonoClass structure as this will get 
+ * We cache the flags inside the \c MonoClass structure as this will get
  * called very often (at least for each method).
  * \returns the declarative security flags for the class.
  */
@@ -2900,7 +2900,7 @@ fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityAction
 }
 
 static MonoBoolean
-mono_declsec_get_class_demands_params (MonoClass *klass, MonoDeclSecurityActions* demands, 
+mono_declsec_get_class_demands_params (MonoClass *klass, MonoDeclSecurityActions* demands,
 	guint32 id_std, guint32 id_noncas, guint32 id_choice)
 {
 	guint32 idx = mono_metadata_token_index (m_class_get_type_token (klass));
@@ -2910,7 +2910,7 @@ mono_declsec_get_class_demands_params (MonoClass *klass, MonoDeclSecurityActions
 }
 
 static MonoBoolean
-mono_declsec_get_method_demands_params (MonoMethod *method, MonoDeclSecurityActions* demands, 
+mono_declsec_get_method_demands_params (MonoMethod *method, MonoDeclSecurityActions* demands,
 	guint32 id_std, guint32 id_noncas, guint32 id_choice)
 {
 	guint32 idx = mono_method_get_index (method);
@@ -2928,7 +2928,7 @@ mono_declsec_get_method_demands_params (MonoMethod *method, MonoDeclSecurityActi
 MonoBoolean
 mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
 {
-	guint32 mask = MONO_DECLSEC_FLAG_DEMAND | MONO_DECLSEC_FLAG_NONCAS_DEMAND | 
+	guint32 mask = MONO_DECLSEC_FLAG_DEMAND | MONO_DECLSEC_FLAG_NONCAS_DEMAND |
 		MONO_DECLSEC_FLAG_DEMAND_CHOICE;
 	MonoBoolean result = FALSE;
 	guint32 flags;
@@ -2949,7 +2949,7 @@ mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
 		mono_class_init_internal (method->klass);
 		memset (demands, 0, sizeof (MonoDeclSecurityActions));
 
-		result = mono_declsec_get_method_demands_params (method, demands, 
+		result = mono_declsec_get_method_demands_params (method, demands,
 			SECURITY_ACTION_DEMAND, SECURITY_ACTION_NONCASDEMAND, SECURITY_ACTION_DEMANDCHOICE);
 	}
 
@@ -2960,7 +2960,7 @@ mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
 			mono_class_init_internal (method->klass);
 			memset (demands, 0, sizeof (MonoDeclSecurityActions));
 		}
-		result |= mono_declsec_get_class_demands_params (method->klass, demands, 
+		result |= mono_declsec_get_class_demands_params (method->klass, demands,
 			SECURITY_ACTION_DEMAND, SECURITY_ACTION_NONCASDEMAND, SECURITY_ACTION_DEMANDCHOICE);
 	}
 
@@ -3000,7 +3000,7 @@ mono_declsec_get_linkdemands (MonoMethod *method, MonoDeclSecurityActions* klass
 	if (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) {
 		mono_class_init_internal (method->klass);
 
-		result = mono_declsec_get_method_demands_params (method, cmethod, 
+		result = mono_declsec_get_method_demands_params (method, cmethod,
 			SECURITY_ACTION_LINKDEMAND, SECURITY_ACTION_NONCASLINKDEMAND, SECURITY_ACTION_LINKDEMANDCHOICE);
 	}
 
@@ -3009,7 +3009,7 @@ mono_declsec_get_linkdemands (MonoMethod *method, MonoDeclSecurityActions* klass
 	if (flags & (MONO_DECLSEC_FLAG_LINKDEMAND | MONO_DECLSEC_FLAG_NONCAS_LINKDEMAND | MONO_DECLSEC_FLAG_LINKDEMAND_CHOICE)) {
 		mono_class_init_internal (method->klass);
 
-		result |= mono_declsec_get_class_demands_params (method->klass, klass, 
+		result |= mono_declsec_get_class_demands_params (method->klass, klass,
 			SECURITY_ACTION_LINKDEMAND, SECURITY_ACTION_NONCASLINKDEMAND, SECURITY_ACTION_LINKDEMANDCHOICE);
 	}
 
@@ -3040,7 +3040,7 @@ mono_declsec_get_inheritdemands_class (MonoClass *klass, MonoDeclSecurityActions
 		mono_class_init_internal (klass);
 		memset (demands, 0, sizeof (MonoDeclSecurityActions));
 
-		result |= mono_declsec_get_class_demands_params (klass, demands, 
+		result |= mono_declsec_get_class_demands_params (klass, demands,
 			SECURITY_ACTION_INHERITDEMAND, SECURITY_ACTION_NONCASINHERITANCE, SECURITY_ACTION_INHERITDEMANDCHOICE);
 	}
 
@@ -3070,7 +3070,7 @@ mono_declsec_get_inheritdemands_method (MonoMethod *method, MonoDeclSecurityActi
 		mono_class_init_internal (method->klass);
 		memset (demands, 0, sizeof (MonoDeclSecurityActions));
 
-		return mono_declsec_get_method_demands_params (method, demands, 
+		return mono_declsec_get_method_demands_params (method, demands,
 			SECURITY_ACTION_INHERITDEMAND, SECURITY_ACTION_NONCASINHERITANCE, SECURITY_ACTION_INHERITDEMANDCHOICE);
 	}
 	return FALSE;
@@ -3164,7 +3164,7 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 		g_assert (method);
 	}
 
-	/* 
+	/*
 	 * The result of mono_type_get_object_checked () might be a System.MonoType but we
 	 * need a TypeBuilder so use mono_class_get_ref_info (klass).
 	 */

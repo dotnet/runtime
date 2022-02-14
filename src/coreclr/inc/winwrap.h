@@ -188,15 +188,10 @@
 #define WszWideCharToMultiByte WideCharToMultiByte
 #define WszCreateSemaphore(_secattr, _count, _maxcount, _name) CreateSemaphoreExW((_secattr), (_count), (_maxcount), (_name), 0, MAXIMUM_ALLOWED | SYNCHRONIZE | SEMAPHORE_MODIFY_STATE)
 
-#ifdef FEATURE_CORESYSTEM
-
-// CoreSystem has GetFileVersionInfo{Size}Ex but not GetFileVersionInfoSize{Size}
 #undef GetFileVersionInfo
 #define GetFileVersionInfo(_filename, _handle, _len, _data) GetFileVersionInfoEx(0, (_filename), (_handle), (_len), (_data))
 #undef GetFileVersionInfoSize
 #define GetFileVersionInfoSize(_filename, _handle) GetFileVersionInfoSizeEx(0, (_filename), (_handle))
-
-#endif // FEATURE_CORESYSTEM
 
 #ifndef _T
 #define _T(str) W(str)
@@ -259,12 +254,6 @@ inline DWORD GetMaxDBCSCharByteSize()
 #endif // HOST_UNIX
 }
 
-#ifndef HOST_UNIX
-BOOL RunningInteractive();
-#else // !HOST_UNIX
-#define RunningInteractive() FALSE
-#endif // !HOST_UNIX
-
 #ifndef Wsz_mbstowcs
 #define Wsz_mbstowcs(szOut, szIn, iSize) WszMultiByteToWideChar(CP_ACP, 0, szIn, -1, szOut, iSize)
 #endif
@@ -320,8 +309,8 @@ FORCEINLINE
 PVOID
 InterlockedCompareExchangePointer (
     __inout  PVOID volatile *Destination,
-    __in_opt PVOID ExChange,
-    __in_opt PVOID Comperand
+    _In_opt_ PVOID ExChange,
+    _In_opt_ PVOID Comperand
     )
 {
     return((PVOID)(LONG_PTR)_InterlockedCompareExchange((LONG volatile *)Destination, (LONG)(LONG_PTR)ExChange, (LONG)(LONG_PTR)Comperand));
@@ -481,11 +470,7 @@ inline int LateboundMessageBoxA(HWND hWnd,
     return LateboundMessageBoxW(hWnd, wszText, wszCaption, uType);
 }
 
-#if defined(FEATURE_CORESYSTEM)
-
 #define MessageBoxW LateboundMessageBoxW
 #define MessageBoxA LateboundMessageBoxA
-
-#endif // FEATURE_CORESYSTEM
 
 #endif  // __WIN_WRAP_H__

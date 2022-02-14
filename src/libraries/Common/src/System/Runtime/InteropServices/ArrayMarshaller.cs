@@ -5,7 +5,6 @@
 
 //
 // Types in this file are used for generated p/invokes (docs/design/features/source-generator-pinvokes.md).
-// See the DllImportGenerator experiment in https://github.com/dotnet/runtimelab.
 //
 #if DLLIMPORTGENERATOR_INTERNALUNSAFE
 using Internal.Runtime.CompilerServices;
@@ -67,7 +66,8 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         /// Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
         /// blow the stack since this is a new optimization in the code-generated interop.
         /// </summary>
-        public const int StackBufferSize = 0x200;
+        public const int BufferSize = 0x200;
+        public const bool RequiresStackBuffer = true;
 
         public Span<T> ManagedValues => _managedArray;
 
@@ -160,7 +160,8 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         /// Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
         /// blow the stack since this is a new optimization in the code-generated interop.
         /// </summary>
-        public const int StackBufferSize = 0x200;
+        public const int BufferSize = 0x200;
+        public const bool RequiresStackBuffer = true;
 
         public Span<IntPtr> ManagedValues => Unsafe.As<IntPtr[]>(_managedArray);
 

@@ -2211,7 +2211,7 @@ public:
     COM_METHOD SetManagedHandler(ICorDebugManagedCallback *pCallback);
     COM_METHOD SetUnmanagedHandler(ICorDebugUnmanagedCallback *pCallback);
     COM_METHOD CreateProcess(LPCWSTR lpApplicationName,
-                             __in_z LPWSTR lpCommandLine,
+                             _In_z_ LPWSTR lpCommandLine,
                              LPSECURITY_ATTRIBUTES lpProcessAttributes,
                              LPSECURITY_ATTRIBUTES lpThreadAttributes,
                              BOOL bInheritHandles,
@@ -2243,7 +2243,7 @@ public:
 
     COM_METHOD CreateProcessEx(ICorDebugRemoteTarget * pRemoteTarget,
                                LPCWSTR lpApplicationName,
-                               __in_z LPWSTR lpCommandLine,
+                               _In_z_ LPWSTR lpCommandLine,
                                LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                BOOL bInheritHandles,
@@ -2267,7 +2267,7 @@ public:
 
     HRESULT CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
                                 LPCWSTR lpApplicationName,
-                                __in_z LPWSTR lpCommandLine,
+                                _In_z_ LPWSTR lpCommandLine,
                                 LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                 LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                 BOOL bInheritHandles,
@@ -2324,9 +2324,7 @@ public:
 
     CorDebugInterfaceVersion    GetDebuggerVersion() const;
 
-#ifdef FEATURE_CORESYSTEM
     HMODULE GetTargetCLR() { return m_targetCLR; }
-#endif
 
 private:
     bool IsCreateProcessSupported();
@@ -2347,11 +2345,7 @@ private:
     // Store information about the process to be debugged
     ProcessDescriptor m_pd;
 
-//Note - this code could be useful outside coresystem, but keeping the change localized
-// because we are late in the win8 release
-#ifdef FEATURE_CORESYSTEM
     HMODULE m_targetCLR;
-#endif
 };
 
 
@@ -2463,7 +2457,7 @@ public:
     // Returns the friendly name of the AppDomain
     COM_METHOD GetName(ULONG32   cchName,
                        ULONG32 * pcchName,
-                       __out_ecount_part_opt(cchName, *pcchName) WCHAR     szName[]);
+                       _Out_writes_to_opt_(cchName, *pcchName) WCHAR     szName[]);
 
     /*
      * GetObject returns the runtime app domain object.
@@ -2511,13 +2505,13 @@ public:
     CordbModule * GetModuleFromMetaDataInterface(IUnknown *pIMetaData);
 
     // Lookup a module from the cache.  Create and to the cache if needed.
-    CordbModule * LookupOrCreateModule(VMPTR_Module vmModuleToken, VMPTR_DomainFile vmDomainFileToken);
+    CordbModule * LookupOrCreateModule(VMPTR_Module vmModuleToken, VMPTR_DomainAssembly vmDomainAssemblyToken);
 
     // Lookup a module from the cache.  Create and to the cache if needed.
-    CordbModule * LookupOrCreateModule(VMPTR_DomainFile vmDomainFileToken);
+    CordbModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssemblyToken);
 
     // Callback from DAC for module enumeration
-    static void ModuleEnumerationCallback(VMPTR_DomainFile vmModule, void * pUserData);
+    static void ModuleEnumerationCallback(VMPTR_DomainAssembly vmModule, void * pUserData);
 
     // Use DAC to add any modules for this assembly.
     void PrepopulateModules();
@@ -2549,7 +2543,7 @@ public:
     // Cache of modules in this appdomain. In the VM, modules live in an assembly.
     // This cache lives on the appdomain because we generally want to do appdomain (or process)
     // wide lookup.
-    // This is indexed by VMPTR_DomainFile, which has appdomain affinity.
+    // This is indexed by VMPTR_DomainAssembly, which has appdomain affinity.
     // This is populated by code:CordbAppDomain::LookupOrCreateModule (which may be invoked
     // anytime the RS gets hold of a VMPTR), and are removed at the unload event.
     CordbSafeHashTable<CordbModule>      m_modules;
@@ -2646,12 +2640,12 @@ public:
      */
     COM_METHOD GetCodeBase(ULONG32   cchName,
                            ULONG32 * pcchName,
-                           __out_ecount_part_opt(cchName, *pcchName) WCHAR     szName[]);
+                           _Out_writes_to_opt_(cchName, *pcchName) WCHAR     szName[]);
 
     // returns the filename of the assembly, or "<unknown>" for in-memory assemblies
     COM_METHOD GetName(ULONG32   cchName,
                        ULONG32 * pcchName,
-                       __out_ecount_part_opt(cchName, *pcchName) WCHAR     szName[]);
+                       _Out_writes_to_opt_(cchName, *pcchName) WCHAR     szName[]);
 
 
     //-----------------------------------------------------------
@@ -3079,7 +3073,7 @@ public:
     /*
      * ModifyLogSwitch modifies the specified switch's severity level.
      */
-    COM_METHOD ModifyLogSwitch(__in_z WCHAR *pLogSwitchName, LONG lLevel);
+    COM_METHOD ModifyLogSwitch(_In_z_ WCHAR *pLogSwitchName, LONG lLevel);
 
     COM_METHOD EnumerateAppDomains(ICorDebugAppDomainEnum **ppAppDomains);
     COM_METHOD GetObject(ICorDebugValue **ppObject);
@@ -3460,9 +3454,9 @@ public:
 
     // Looks up a previously constructed CordbClass instance without creating. May return NULL if the
     // CordbClass instance doesn't exist.
-    CordbClass * LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_DomainFile vmDomainFile, mdTypeDef classToken);
+    CordbClass * LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_DomainAssembly vmDomainAssembly, mdTypeDef classToken);
 
-    CordbModule * LookupOrCreateModule(VMPTR_DomainFile vmDomainFile);
+    CordbModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     CordbUnmanagedThread *GetUnmanagedThread(DWORD dwThreadId)
@@ -4147,7 +4141,7 @@ class CordbModule : public CordbBase,
 public:
     CordbModule(CordbProcess *      process,
                 VMPTR_Module        vmModule,
-                VMPTR_DomainFile    vmDomainFile);
+                VMPTR_DomainAssembly    vmDomainAssembly);
 
     virtual ~CordbModule();
     virtual void Neuter();
@@ -4180,7 +4174,7 @@ public:
     COM_METHOD GetProcess(ICorDebugProcess **ppProcess);
     COM_METHOD GetBaseAddress(CORDB_ADDRESS *pAddress);
     COM_METHOD GetAssembly(ICorDebugAssembly **ppAssembly);
-    COM_METHOD GetName(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    COM_METHOD GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
     COM_METHOD EnableJITDebugging(BOOL bTrackJITInfo, BOOL bAllowJitOpts);
     COM_METHOD EnableClassLoadCallbacks(BOOL bClassLoadCallbacks);
 
@@ -4252,7 +4246,7 @@ public:
 #endif // _DEBUG
 
     // Internal help to get the "name" (filename or pretty name) of the module.
-    HRESULT GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    HRESULT GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     // Marks that the module's metadata has become invalid and needs to be refetched.
     void RefreshMetaData();
@@ -4354,9 +4348,9 @@ public:
 
     const WCHAR * GetNGenImagePath();
 
-    const VMPTR_DomainFile GetRuntimeDomainFile ()
+    const VMPTR_DomainAssembly GetRuntimeDomainAssembly ()
     {
-        return m_vmDomainFile;
+        return m_vmDomainAssembly;
     }
 
     const VMPTR_Module GetRuntimeModule()
@@ -4391,7 +4385,7 @@ public:
 
     // The real handle into the VM for a module. This is appdomain aware.
     // This is the primary VM counterpart for the CordbModule.
-    VMPTR_DomainFile m_vmDomainFile;
+    VMPTR_DomainAssembly m_vmDomainAssembly;
 
     VMPTR_Module m_vmModule;
 
@@ -4484,15 +4478,15 @@ public:
     // Get the string for the type of the MDA. Never empty.
     // This is a convenient performant alternative to getting the XML stream and extracting
     // the type from that based off the schema.
-    COM_METHOD GetName(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    COM_METHOD GetName(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     // Get a string description of the MDA. This may be empty (0-length).
-    COM_METHOD GetDescription(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    COM_METHOD GetDescription(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     // Get the full associated XML for the MDA. This may be empty.
     // This could be a potentially expensive operation if the xml stream is large.
     // See the MDA documentation for the schema for this XML stream.
-    COM_METHOD GetXML(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    COM_METHOD GetXML(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     COM_METHOD GetFlags(CorDebugMDAFlags * pFlags);
 
@@ -4806,7 +4800,7 @@ public:
     void DestNaryType(Instantiation *pInst);
 
     CorElementType GetElementType() { return m_elementType; }
-    VMPTR_DomainFile GetDomainFile();
+    VMPTR_DomainAssembly GetDomainAssembly();
     VMPTR_Module GetModule();
 
     // If this is a ptr type, get the CordbType that it points to.
@@ -6266,10 +6260,6 @@ public:
    BOOL ConvertFrameForILMethodWithoutMetadata(ICorDebugFrame *           pFrame,
                                                ICorDebugInternalFrame2 ** ppInternalFrame2);
 
-    // Gets/sets m_fCreationEventQueued
-    bool CreateEventWasQueued();
-    void SetCreateEventQueued();
-
     //-----------------------------------------------------------
     // Data members
     //-----------------------------------------------------------
@@ -6326,11 +6316,6 @@ private:
     // and a debugger may normally just skip the first one knowing it can stop on the 2nd once.
     // Both events will set this bit high. Be careful not to reset this bit inbetween them.
     bool                  m_fException;
-
-    // True if a creation event has been queued for this thread
-    // The event may or may not have been dispatched yet
-    // Bugfix DevDiv2\DevDiv 77523 - this is only being set from ShimProcess::QueueFakeThreadAttachEventsNativeOrder
-    bool                  m_fCreationEventQueued;
 
     // Object handle for Exception object in debuggee.
     VMPTR_OBJECTHANDLE    m_vmExcepObjHandle;
@@ -9292,7 +9277,7 @@ public:
     COM_METHOD GetLength(ULONG32 * pcchString);
     COM_METHOD GetString(ULONG32   cchString,
                          ULONG32 * ppcchStrin,
-                         __out_ecount_opt(cchString) WCHAR     szString[]);
+                         _Out_writes_bytes_opt_(cchString) WCHAR     szString[]);
 
     //-----------------------------------------------------------
     // ICorDebugExceptionObjectValue
@@ -10120,7 +10105,7 @@ public:
 
     HRESULT SendCreateProcessEvent(MachineInfo machineInfo,
                                    LPCWSTR programName,
-                                   __in_z LPWSTR  programArgs,
+                                   _In_z_ LPWSTR  programArgs,
                                    LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                    LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                    BOOL bInheritHandles,
@@ -10811,7 +10796,7 @@ public:
      */
     COM_METHOD GetDisplayName(ULONG32 cchName,
                                 ULONG32 *pcchName,
-                                __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+                                _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     CorpubProcess   *GetNextProcess () { return m_pNext;}
     void SetNext (CorpubProcess *pNext) { m_pNext = pNext;}
@@ -10838,7 +10823,7 @@ private:
 class CorpubAppDomain  : public CordbCommonBase, public ICorPublishAppDomain
 {
 public:
-    CorpubAppDomain (__in LPWSTR szAppDomainName, ULONG Id);
+    CorpubAppDomain (_In_ LPWSTR szAppDomainName, ULONG Id);
     virtual ~CorpubAppDomain();
 
 #ifdef _DEBUG
@@ -10873,7 +10858,7 @@ public:
      */
     COM_METHOD GetName (ULONG32 cchName,
                         ULONG32 *pcchName,
-                        __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+                        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     CorpubAppDomain *GetNextAppDomain () { return m_pNext;}
     void SetNext (CorpubAppDomain *pNext) { m_pNext = pNext;}
@@ -11142,7 +11127,7 @@ private:
 void CheckAgainstDAC(CordbFunction * pFunc, void * pIP, mdMethodDef mdExpected);
 #endif
 
-HRESULT CopyOutString(const WCHAR * pInputString, ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+HRESULT CopyOutString(const WCHAR * pInputString, ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
 
 

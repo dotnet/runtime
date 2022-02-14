@@ -36,6 +36,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_details.Variance != null)
             {
+                sb.Append("__Variance__");
                 for (int i = 0; i < _details.Variance.Length; i++)
                 {
                     sb.Append('_');

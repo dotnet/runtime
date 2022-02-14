@@ -109,9 +109,7 @@ namespace System.Text.Json
 #if BUILDING_INBOX_LIBRARY
             return Utf8Formatter.TryFormat(value, destination, out bytesWritten);
 #else
-            const string FormatString = "G17";
-
-            string utf16Text = value.ToString(FormatString, CultureInfo.InvariantCulture);
+            string utf16Text = value.ToString(JsonConstants.DoubleFormatString, CultureInfo.InvariantCulture);
 
             // Copy the value to the destination, if it's large enough.
 

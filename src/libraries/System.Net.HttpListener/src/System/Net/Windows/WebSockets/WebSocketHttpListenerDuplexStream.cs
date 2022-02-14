@@ -194,8 +194,7 @@ namespace System.Net.WebSockets
             eventArgs.StartOperationCommon(this, _inputStream.InternalHttpContext.RequestQueueBoundHandle);
             eventArgs.StartOperationReceive();
 
-            uint statusCode = 0;
-            bool completedAsynchronouslyOrWithError = false;
+            bool completedAsynchronouslyOrWithError;
             try
             {
                 Debug.Assert(eventArgs.Buffer != null, "'BufferList' is not supported for read operations.");
@@ -242,7 +241,7 @@ namespace System.Net.WebSockets
 
                 uint flags = 0;
                 uint bytesReturned = 0;
-                statusCode =
+                uint statusCode =
                     Interop.HttpApi.HttpReceiveRequestEntityBody(
                         _inputStream.InternalHttpContext.RequestQueueHandle,
                         _inputStream.InternalHttpContext.RequestId,
@@ -445,7 +444,7 @@ namespace System.Net.WebSockets
             eventArgs.StartOperationSend();
 
             uint statusCode;
-            bool completedAsynchronouslyOrWithError = false;
+            bool completedAsynchronouslyOrWithError;
             try
             {
                 if (_outputStream.Closed ||

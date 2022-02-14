@@ -965,18 +965,14 @@ namespace Internal.Metadata.NativeFormat.Writer
 
     public static class EnumHelpers
     {
-        public static string FlagsToString<T>(this T value) where T : IConvertible
+        public static string FlagsToString<T>(this T value) where T : struct, Enum, IConvertible
         {
-            if (!(value is Enum))
-                throw new ArgumentException();
-
-            var eType = value.GetType();
-            var flags = ((T[])Enum.GetValues(eType)).Where(
+            var flags = Enum.GetValues<T>().Where(
                 eVal => (((IConvertible)eVal).ToInt32(null) != 0) && ((((IConvertible)value).ToInt32(null) & ((IConvertible)eVal).ToInt32(null)) == ((IConvertible)eVal).ToInt32(null)));
             if (flags.Count() == 0)
                 return "";
             else
-                return "[" + String.Join(" | ", flags.Select(eVal => Enum.GetName(eType, eVal))) + "] ";
+                return "[" + String.Join(" | ", flags.Select(eVal => Enum.GetName<T>(eVal))) + "] ";
         }
     }
 

@@ -29,7 +29,7 @@ namespace test
             // Create and initialize test log object
             testLog = new TestUtil.TestLog(expectedOut);
         }
-        static int Main(string[] args)
+        static int Main()
         {
             int x = 7, y = 0, z;
             //Start recording

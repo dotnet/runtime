@@ -98,6 +98,7 @@ MONO_JIT_ICALL (__emul_ldiv_un) \
 MONO_JIT_ICALL (__emul_lmul) \
 MONO_JIT_ICALL (__emul_lmul_ovf) \
 MONO_JIT_ICALL (__emul_lmul_ovf_un) \
+MONO_JIT_ICALL (__emul_lmul_ovf_un_oom) \
 MONO_JIT_ICALL (__emul_lrem) \
 MONO_JIT_ICALL (__emul_lrem_un) \
 MONO_JIT_ICALL (__emul_lshl) \
@@ -108,6 +109,7 @@ MONO_JIT_ICALL (__emul_op_idiv_un) \
 MONO_JIT_ICALL (__emul_op_imul) \
 MONO_JIT_ICALL (__emul_op_imul_ovf) \
 MONO_JIT_ICALL (__emul_op_imul_ovf_un) \
+MONO_JIT_ICALL (__emul_op_imul_ovf_un_oom) \
 MONO_JIT_ICALL (__emul_op_irem) \
 MONO_JIT_ICALL (__emul_op_irem_un) \
 MONO_JIT_ICALL (__emul_rconv_to_i8) \

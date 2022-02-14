@@ -602,15 +602,8 @@ namespace System.Net.Security
                 throw new InvalidOperationException(SR.net_auth_reauth);
             }
 
-            if (credential == null)
-            {
-                throw new ArgumentNullException(nameof(credential));
-            }
-
-            if (servicePrincipalName == null)
-            {
-                throw new ArgumentNullException(nameof(servicePrincipalName));
-            }
+            ArgumentNullException.ThrowIfNull(credential);
+            ArgumentNullException.ThrowIfNull(servicePrincipalName);
 
             NegotiateStreamPal.ValidateImpersonationLevel(impersonationLevel);
             if (_context != null && IsServer != isServer)

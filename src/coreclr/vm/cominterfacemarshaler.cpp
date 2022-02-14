@@ -14,7 +14,6 @@
 #include "runtimecallablewrapper.h"
 #include "cominterfacemarshaler.h"
 #include "interopconverter.h"
-#include "notifyexternals.h"
 #include "comdelegate.h"
 #include "olecontexthelpers.h"
 

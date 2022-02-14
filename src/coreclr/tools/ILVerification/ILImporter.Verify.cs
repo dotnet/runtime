@@ -2060,7 +2060,7 @@ namespace Internal.IL
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
                 var declaredThis = owningType.IsValueType ?
-                    StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
+                    StackValue.CreateByRef(owningType, readOnly : true) : StackValue.CreateObjRef(owningType);
 
                 CheckIsAssignable(actualThis, declaredThis);
 

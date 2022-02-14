@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -13,8 +12,6 @@ using Mono.Cecil.Cil;
 using Mono.Linker.Steps;
 
 using BindingFlags = System.Reflection.BindingFlags;
-
-#nullable enable
 
 namespace Mono.Linker.Dataflow
 {
@@ -894,8 +891,7 @@ namespace Mono.Linker.Dataflow
 								// We have one of the accessors for the property. The Expression.Property will in this case search
 								// for the matching PropertyInfo and store that. So to be perfectly correct we need to mark the
 								// respective PropertyInfo as "accessed via reflection".
-								var propertyDefinition = methodBaseValue.MethodRepresented.GetProperty ();
-								if (propertyDefinition != null) {
+								if (methodBaseValue.MethodRepresented.TryGetProperty (out PropertyDefinition? propertyDefinition)) {
 									MarkProperty (ref reflectionContext, propertyDefinition);
 									continue;
 								}
@@ -1051,15 +1047,14 @@ namespace Mono.Linker.Dataflow
 						}
 						foreach (var typeNameValue in methodParams[0].UniqueValues ()) {
 							if (typeNameValue is KnownStringValue knownStringValue) {
-								TypeReference foundTypeRef = _context.TypeNameResolver.ResolveTypeName (knownStringValue.Contents, callingMethodDefinition, out AssemblyDefinition typeAssembly, false);
-								TypeDefinition? foundType = ResolveToTypeDefinition (foundTypeRef);
-								if (foundType == null) {
+								if (!_context.TypeNameResolver.TryResolveTypeName (knownStringValue.Contents, callingMethodDefinition, out TypeReference? foundTypeRef, out AssemblyDefinition? typeAssembly, false)
+									|| ResolveToTypeDefinition (foundTypeRef) is not TypeDefinition foundType) {
 									// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
 									reflectionContext.RecordHandledPattern ();
 								} else {
 									reflectionContext.RecordRecognizedPattern (foundType, () => _markStep.MarkTypeVisibleToReflection (foundTypeRef, foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, callingMethodDefinition)));
 									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new SystemTypeValue (foundType));
-									_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.AccessedViaReflection, foundType));
+									_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.AccessedViaReflection, foundType), reflectionContext.Origin);
 								}
 							} else if (typeNameValue == NullValue.Instance) {
 								reflectionContext.RecordHandledPattern ();
@@ -1200,7 +1195,7 @@ namespace Mono.Linker.Dataflow
 											// We have chosen not to populate the methodReturnValue for now
 											RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes, value, calledMethodDefinition);
 										else {
-											TypeDefinition[] matchingNestedTypes = MarkNestedTypesOnType (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
+											TypeDefinition[]? matchingNestedTypes = MarkNestedTypesOnType (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
 
 											if (matchingNestedTypes != null) {
 												for (int i = 0; i < matchingNestedTypes.Length; i++)
@@ -1936,9 +1931,9 @@ namespace Mono.Linker.Dataflow
 								continue;
 							}
 
-							var typeRef = _context.TypeNameResolver.ResolveTypeName (resolvedAssembly, typeNameStringValue.Contents);
-							var resolvedType = _context.TryResolve (typeRef);
-							if (resolvedType == null || typeRef is ArrayType) {
+							if (!_context.TypeNameResolver.TryResolveTypeName (resolvedAssembly, typeNameStringValue.Contents, out TypeReference? typeRef)
+								|| _context.TryResolve (typeRef) is not TypeDefinition resolvedType
+								|| typeRef is ArrayType) {
 								// It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
 								// Note that we did find the assembly, so it's not a linker config problem, it's either intentional, or wrong versions of assemblies
 								// but linker can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user
@@ -2232,15 +2227,14 @@ namespace Mono.Linker.Dataflow
 				} else if (uniqueValue is SystemTypeValue systemTypeValue) {
 					MarkTypeForDynamicallyAccessedMembers (ref reflectionContext, systemTypeValue.TypeRepresented, requiredMemberTypes, DependencyKind.DynamicallyAccessedMember);
 				} else if (uniqueValue is KnownStringValue knownStringValue) {
-					TypeReference typeRef = _context.TypeNameResolver.ResolveTypeName (knownStringValue.Contents, reflectionContext.Source, out AssemblyDefinition typeAssembly);
-					TypeDefinition? foundType = ResolveToTypeDefinition (typeRef);
-					if (foundType == null) {
+					if (!_context.TypeNameResolver.TryResolveTypeName (knownStringValue.Contents, reflectionContext.Source, out TypeReference? typeRef, out AssemblyDefinition? typeAssembly)
+						|| ResolveToTypeDefinition (typeRef) is not TypeDefinition foundType) {
 						// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
 						reflectionContext.RecordHandledPattern ();
 					} else {
 						MarkType (ref reflectionContext, typeRef);
 						MarkTypeForDynamicallyAccessedMembers (ref reflectionContext, foundType, requiredMemberTypes, DependencyKind.DynamicallyAccessedMember);
-						_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.DynamicallyAccessedMember, foundType));
+						_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.DynamicallyAccessedMember, foundType), reflectionContext.Origin);
 					}
 				} else if (uniqueValue == NullValue.Instance) {
 					// Ignore - probably unreachable path as it would fail at runtime anyway.
@@ -2387,7 +2381,7 @@ namespace Mono.Linker.Dataflow
 				MarkField (ref reflectionContext, field);
 		}
 
-		TypeDefinition[] MarkNestedTypesOnType (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<TypeDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
+		TypeDefinition[]? MarkNestedTypesOnType (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<TypeDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			var result = new ArrayBuilder<TypeDefinition> ();
 

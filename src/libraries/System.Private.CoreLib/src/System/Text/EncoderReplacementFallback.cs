@@ -18,12 +18,8 @@ namespace System.Text
         {
         }
 
-        public EncoderReplacementFallback(string replacement)
+        public EncoderReplacementFallback(string replacement!!)
         {
-            // Must not be null
-            if (replacement == null)
-                throw new ArgumentNullException(nameof(replacement));
-
             // Make sure it doesn't have bad surrogate pairs
             bool bFoundHigh = false;
             foreach (char c in replacement)
@@ -58,7 +54,7 @@ namespace System.Text
                     break;
             }
             if (bFoundHigh)
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequenceNoIndex, nameof(replacement)));
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(replacement));
 
             _strDefault = replacement;
         }

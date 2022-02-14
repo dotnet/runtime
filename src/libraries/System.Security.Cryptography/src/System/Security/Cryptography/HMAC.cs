@@ -31,10 +31,7 @@ namespace System.Security.Cryptography
             get => _hashName;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(HashName));
-                }
+                ArgumentNullException.ThrowIfNull(value, nameof(HashName));
 
                 // On the desktop, setting the HashName selects (or switches over to) a new hashing algorithm via CryptoConfig.
                 // Our intended refactoring turns HMAC back into an abstract class with no algorithm-specific implementation.

@@ -75,11 +75,10 @@ namespace System.Security.Cryptography
             get => _oid;
             private set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(Oid));
+                ArgumentNullException.ThrowIfNull(value, nameof(Oid));
 
                 if (string.IsNullOrEmpty(value.Value) && string.IsNullOrEmpty(value.FriendlyName))
-                    throw new ArgumentException(SR.Cryptography_InvalidCurveOid);
+                    throw new ArgumentException(SR.Format(SR.Cryptography_InvalidCurveOid, value.Value));
 
                 _oid = value;
             }
@@ -103,12 +102,8 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="oidFriendlyName">The Oid friendly name to use.</param>
         /// <returns>An ECCurve representing a named curve.</returns>
-        public static ECCurve CreateFromFriendlyName(string oidFriendlyName)
+        public static ECCurve CreateFromFriendlyName(string oidFriendlyName!!)
         {
-            if (oidFriendlyName == null)
-            {
-                throw new ArgumentNullException(nameof(oidFriendlyName));
-            }
             return ECCurve.CreateFromValueAndName(null, oidFriendlyName);
         }
 
@@ -117,12 +112,8 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="oidValue">The Oid value to use.</param>
         /// <returns>An ECCurve representing a named curve.</returns>
-        public static ECCurve CreateFromValue(string oidValue)
+        public static ECCurve CreateFromValue(string oidValue!!)
         {
-            if (oidValue == null)
-            {
-                throw new ArgumentNullException(nameof(oidValue));
-            }
             return ECCurve.CreateFromValueAndName(oidValue, null);
         }
 
@@ -197,7 +188,7 @@ namespace System.Security.Cryptography
                 if (Oid == null ||
                     (string.IsNullOrEmpty(Oid.FriendlyName) && string.IsNullOrEmpty(Oid.Value)))
                 {
-                    throw new CryptographicException(SR.Cryptography_InvalidCurveOid);
+                    throw new CryptographicException(SR.Format(SR.Cryptography_InvalidCurveOid, Oid?.Value));
                 }
             }
             else if (IsExplicit)

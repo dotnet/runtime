@@ -18,7 +18,6 @@
 #option (NEED_LINK_UNLINK "Define if Unix sockets cannot be created in an anonymous namespace")
 #option (HAVE_CLASSIC_WINAPI_SUPPORT "Use classic Windows API support")
 #option (HAVE_UWP_WINAPI_SUPPORT "Don't use UWP Windows API support")
-#option (HAVE_SYS_ZLIB "Use OS-provided zlib")
 #option (MONO_XEN_OPT "Xen-specific behaviour")
 #option (MONO_SMALL_CONFIG "Reduce runtime requirements (and capabilities)")
 #option (AC_APPLE_UNIVERSAL_BUILD "Define if building universal (internal helper macro)")

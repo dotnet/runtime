@@ -13,6 +13,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Static Interface Methods](#static-interface-methods)
 - [Covariant Return Types](#covariant-return-types)
 - [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
+- [Rules for IL rewriters](#rules-for-il-rewriters)
 
 ## Signatures
 
@@ -452,7 +453,7 @@ https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 
 (Add second paragraph)
 
-Static interface methods may be marked as virtual. Valid object types implementing such interfaces shall provide implementations
+Static interface methods may be marked as virtual. Valid object types implementing such interfaces may provide implementations
 for these methods by means of Method Implementations (II.15.1.4). Polymorphic behavior of calls to these methods is facilitated
 by the constrained. call IL instruction where the constrained. prefix specifies the type to use for lookup of the static interface
 method.
@@ -530,7 +531,6 @@ or static method actually implemented directly on the type.
 (Add to the end of the 1st paragraph)
 
 Interfaces may define static virtual methods that get resolved at runtime based on actual types involved.
-These static virtual methods must be marked as abstract in the defining interfaces.
 
 ### II.12.2 Implementing virtual methods on interfaces
 
@@ -753,7 +753,7 @@ the call itself doesn't involve any instance or `this` pointer.
 (Edit bulleted section "This contains informative text only" starting at the bottom of page
 233):
 
-Edit section *7.b*: Static | Virtual | !Abstract
+Remove section *7.b*: ~~Static | Virtual~~
 
 (Add new section 41 after the last section 40:)
 
@@ -948,3 +948,12 @@ Conversions from floating-point numbers to integral values truncate the number t
 on the top of the stack is reinterpreted as an unsigned value before the conversion.
 Note that integer values of less than 4 bytes are extended to int32 (not native int) on the
 evaluation stack.
+
+## Rules for IL Rewriters
+
+There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<T>(...)` which require that the PE file have a particular structure. In particular, that api requires that the associated RVA of a FieldDef which is used to create a span must be naturally aligned over the data type that `CreateSpan` is instantiated over. There are 2 major concerns.
+
+1. That the RVA be aligned when the PE file is constructed. This may be achieved by whatever means is most convenient for the compiler.
+2. That in the presence of IL rewriters that the RVA remains aligned. This section descibes metadata which will be processed by IL rewriters in order to maintain the required alignment.
+
+In order to maintain alignment, if the field needs alignment to be preserved, the field must be of a type locally defined within the module which has a Pack (§II.10.7) value of the desired alignment. Unlike other uses of the .pack directive, in this circumstance the .pack specifies a minimum alignment.

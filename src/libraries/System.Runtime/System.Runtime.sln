@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Drawing.Common", "..
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Drawing.Common", "..\System.Drawing.Common\src\System.Drawing.Common.csproj", "{F27DC16B-64F4-4BD7-AF9C-1C76F7ACC88B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib.Generators", "..\System.Private.CoreLib\generators\System.Private.CoreLib.Generators.csproj", "{CF79B5AE-38CB-4B80-BF92-CF634C0B7EC3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib.Generators", "..\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj", "{CF79B5AE-38CB-4B80-BF92-CF634C0B7EC3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Uri", "..\System.Private.Uri\src\System.Private.Uri.csproj", "{E7A05515-DABE-4C09-83CB-CE84EFDCD4CC}"
 EndProject

@@ -5,6 +5,7 @@ using System;
 using Internal.IL;
 using Debug = System.Diagnostics.Debug;
 using Internal.IL.Stubs;
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem.Interop
 {
@@ -75,6 +76,7 @@ namespace Internal.TypeSystem.Interop
 #if !READYTORUN
                 case MarshallerKind.Struct:
                 case MarshallerKind.LayoutClass:
+                    Debug.Assert(interopStateManager is not null, "An InteropStateManager is required to look up the native representation of a non-blittable struct or class with layout.");
                     return interopStateManager.GetStructMarshallingNativeType((MetadataType)type);
 #endif
 
@@ -92,6 +94,9 @@ namespace Internal.TypeSystem.Interop
 
                 case MarshallerKind.OleDateTime:
                     return context.GetWellKnownType(WellKnownType.Double);
+
+                case MarshallerKind.FailedTypeLoad:
+                    return context.GetWellKnownType(WellKnownType.IntPtr);
 
                 case MarshallerKind.SafeHandle:
                 case MarshallerKind.CriticalHandle:
@@ -168,6 +173,9 @@ namespace Internal.TypeSystem.Interop
 #if !READYTORUN
                 case MarshallerKind.Variant:
                     return InteropTypes.GetVariant(context);
+
+                case MarshallerKind.CustomMarshaler:
+                    return context.GetWellKnownType(WellKnownType.IntPtr);
 #endif
 
                 case MarshallerKind.OleCurrency:
@@ -243,6 +251,14 @@ namespace Internal.TypeSystem.Interop
 
             if (marshalAs != null)
                 nativeType = marshalAs.Type;
+
+            if (nativeType == NativeTypeKind.CustomMarshaler)
+            {
+                if (isField)
+                    return MarshallerKind.FailedTypeLoad;
+                else
+                    return MarshallerKind.CustomMarshaler;
+            }
 
             //
             // Determine MarshalerKind
@@ -454,7 +470,7 @@ namespace Internal.TypeSystem.Interop
                     case NativeTypeKind.Array:
                         {
                             if (isField)
-                                return MarshallerKind.Invalid;
+                                return MarshallerKind.FailedTypeLoad;
 
                             var arrayType = (ArrayType)type;
 
@@ -521,7 +537,7 @@ namespace Internal.TypeSystem.Interop
                 else
                     return MarshallerKind.Invalid;
             }
-            else if (type.IsDelegate)
+            else if (type.IsDelegate || InteropTypes.IsSystemDelegate(context, type) || InteropTypes.IsSystemMulticastDelegate(context, type))
             {
                 if (type.HasInstantiation)
                 {
@@ -569,6 +585,9 @@ namespace Internal.TypeSystem.Interop
                     case NativeTypeKind.AnsiBStr:
                         return MarshallerKind.AnsiBSTRString;
 
+                    case NativeTypeKind.CustomMarshaler:
+                        return MarshallerKind.CustomMarshaler;
+
                     case NativeTypeKind.Default:
                         if (isAnsi)
                             return MarshallerKind.AnsiString;
@@ -581,6 +600,8 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsObject)
             {
+                if (nativeType == NativeTypeKind.AsAny && isField)
+                    return MarshallerKind.FailedTypeLoad;
                 if (nativeType == NativeTypeKind.AsAny)
                     return isAnsi ? MarshallerKind.AsAnyA : MarshallerKind.AsAnyW;
                 else
@@ -656,7 +677,9 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
             }
             else
+            {
                 return MarshallerKind.Invalid;
+            }
         }
 
         private static MarshallerKind GetArrayElementMarshallerKind(
@@ -827,6 +850,8 @@ namespace Internal.TypeSystem.Interop
                         return MarshallerKind.BSTRString;
                     case NativeTypeKind.AnsiBStr:
                         return MarshallerKind.AnsiBSTRString;
+                    case NativeTypeKind.CustomMarshaler:
+                        return MarshallerKind.CustomMarshaler;
                     default:
                         return MarshallerKind.Invalid;
                 }
@@ -842,6 +867,39 @@ namespace Internal.TypeSystem.Interop
             {
                 return MarshallerKind.Invalid;
             }
+        }
+
+        internal static MarshallerKind GetDisabledMarshallerKind(
+            TypeDesc type)
+        {
+            // Get the underlying type for enum types.
+            TypeDesc underlyingType = type.UnderlyingType;
+            if (underlyingType.Category == TypeFlags.Void)
+            {
+                return MarshallerKind.VoidReturn;
+            }
+            else if (underlyingType.IsByRef)
+            {
+                // Managed refs are not supported when runtime marshalling is disabled.
+                return MarshallerKind.Invalid;
+            }
+            else if (underlyingType.IsPrimitive)
+            {
+                return MarshallerKind.BlittableValue;
+            }
+            else if (underlyingType.IsPointer || underlyingType.IsFunctionPointer)
+            {
+                return MarshallerKind.BlittableValue;
+            }
+            else if (underlyingType.IsValueType)
+            {
+                var defType = (DefType)underlyingType;
+                if (!defType.ContainsGCPointers && !defType.IsAutoLayoutOrHasAutoLayoutFields)
+                {
+                    return MarshallerKind.BlittableValue;
+                }
+            }
+            return MarshallerKind.Invalid;
         }
 
         internal static bool ShouldCheckForPendingException(TargetDetails target, PInvokeMetadata metadata)
@@ -860,6 +918,11 @@ namespace Internal.TypeSystem.Interop
             //   objc_msgSendSuper_stret
             return metadata.Module.Equals(ObjectiveCLibrary)
                 && metadata.Name.StartsWith(ObjectiveCMsgSend);
+        }
+
+        public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)
+        {
+            return module.Assembly is not EcmaAssembly assembly || !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
         }
     }
 }

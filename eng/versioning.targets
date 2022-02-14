@@ -25,8 +25,8 @@
     </AssemblyMetadata>
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true' and !$(TargetFrameworks.Contains('$(TargetFramework)-Browser'))">
-      <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == '' and !$(TargetFrameworks.Contains('$(TargetFramework)-Browser'))">
+    <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
   </PropertyGroup>
 
   <!-- Enables warnings for Android, iOS, tvOS and macCatalyst for all builds -->
@@ -38,16 +38,18 @@
   </ItemGroup>
 
   <!-- Enables browser warnings for cross platform or Browser targeted builds -->
-  <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
+  <ItemGroup Condition="('$(TargetPlatformIdentifier)' == 'Browser' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Include="browser"/>
   </ItemGroup>
 
   <!-- Add target platforms into MSBuild SupportedPlatform list -->
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true' and '$(IsTestProject)' != 'true'">
-    <SupportedPlatform Condition="'$(Targetsillumos)' == 'true'" Include="illumos"/>
-    <SupportedPlatform Condition="'$(TargetsSolaris)' == 'true'" Include="Solaris"/>
-    <SupportedPlatform Condition="'$(TargetstvOS)' == 'true'" Include="tvOS"/>
-    <SupportedPlatform Condition="'$(TargetsUnix)' == 'true'" Include="Unix"/>
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'illumos'" Include="illumos" />
+    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'Solaris'" Include="Solaris" />
+    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'tvOS'" Include="tvOS" />
+    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' != '' and
+                                  '$(TargetPlatformIdentifier)' != 'Browser' and
+                                  '$(TargetPlatformIdentifier)' != 'windows'" Include="Unix" />
   </ItemGroup>
 
   <!-- Adds UnsupportedOSPlatform and SupportedOSPlatform attributes to the assembly when:
@@ -55,8 +57,10 @@
       * This is a cross-platform target
       * The build isn't targeting .NET Framework
     -->
-  <Target Name="AddOSPlatformAttributes" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild"
-    Condition="'$(TargetsAnyOS)' == 'true' and '$(IsTestProject)' != 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
+  <Target Name="AddOSPlatformAttributes"
+          BeforeTargets="GenerateAssemblyInfo"
+          AfterTargets="PrepareForBuild"
+          Condition="'$(TargetPlatformIdentifier)' == '' and '$(IsTestProject)' != 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <!-- Defensively de-dupe the values -->
     <ItemGroup>
       <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
@@ -85,7 +89,7 @@
   </Target>
 
   <!-- Add PlatformNeutralAssembly property for targeted builds of cross platform assemblies -->
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true' and '$(IsTestProject)' != 'true' and '@(SupportedOSPlatforms)' == ''">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(IsTestProject)' != 'true' and '@(SupportedOSPlatforms)' == ''">
     <CompilerVisibleProperty Include="PlatformNeutralAssembly" />
   </ItemGroup>
 

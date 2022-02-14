@@ -15,7 +15,7 @@ namespace ILCompiler
     {
         private HashSet<ModuleDesc> _compilationModuleSet;
 
-        public MultiFileCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+        public MultiFileCompilationModuleGroup(CompilerTypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
         {
             _compilationModuleSet = new HashSet<ModuleDesc>(compilationModuleSet);
 
@@ -94,7 +94,7 @@ namespace ILCompiler
     /// </summary>
     public class MultiFileSharedCompilationModuleGroup : MultiFileCompilationModuleGroup
     {
-        public MultiFileSharedCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+        public MultiFileSharedCompilationModuleGroup(CompilerTypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
             : base(context, compilationModuleSet)
         {
         }

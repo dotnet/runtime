@@ -70,11 +70,8 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If the contentType string has leading or
         /// trailing Linear White Spaces(LWS) characters</exception>
         /// <exception cref="ArgumentException">If the contentType string invalid CR-LF characters</exception>
-        internal ContentType(string contentType)
+        internal ContentType(string contentType!!)
         {
-            if (contentType == null)
-                throw new ArgumentNullException(nameof(contentType));
-
             if (contentType.Length == 0)
             {
                 _contentType = string.Empty;
@@ -369,7 +366,7 @@ namespace System.IO.Packaging
         {
             Debug.Assert(s != null);
 
-            int length = 0;
+            int length;
 
             //if the parameter value does not start with a '"' then,
             //we expect a valid token. So we look for Linear White Spaces or

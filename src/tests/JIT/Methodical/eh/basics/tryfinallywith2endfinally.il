@@ -9,7 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib {}
-.assembly extern common {}
+.assembly extern eh_common {}
 .assembly 'tryfinallywith2endfinally' {}
 .assembly extern xunit.core {}
 
@@ -18,7 +18,7 @@
   .class private auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
-    .field private static class [common]TestUtil.TestLog testLog
+    .field private static class [eh_common]TestUtil.TestLog testLog
     .method private hidebysig specialname rtspecialname static void .cctor() cil managed
     {
       .maxstack  2
@@ -32,13 +32,13 @@
       ldstr      "in finally"
       callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
       ldloc.s    expectedOut
-      newobj     instance void [common]TestUtil.TestLog::.ctor(object)
-      stsfld     class [common]TestUtil.TestLog hello.Class1::testLog
+      newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
+      stsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
       ret
     } 
 
     .method public hidebysig static int32 
-            Main(string[] args) cil managed
+            Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -46,8 +46,8 @@
       .entrypoint
       .maxstack  1
 
-      ldsfld     class [common]TestUtil.TestLog hello.Class1::testLog
-      callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+      ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
       .try
       {
@@ -67,11 +67,11 @@
       }  
 
       IL_0017:  
-      ldsfld     class [common]TestUtil.TestLog hello.Class1::testLog
-      callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+      ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
       
-      ldsfld     class [common]TestUtil.TestLog hello.Class1::testLog
-      callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+      ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 
       ret
     } 

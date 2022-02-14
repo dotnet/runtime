@@ -1016,7 +1016,7 @@ VOID __stdcall Dispatch_GetIDsOfNames_CallBack(LPVOID ptr)
     }
 }
 
-HRESULT __stdcall Dispatch_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, __in_ecount(cNames) OLECHAR **rgszNames,
+HRESULT __stdcall Dispatch_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames,
                                unsigned int cNames, LCID lcid, DISPID *rgdispid)
 {
     SetupForComCallHR();
@@ -1062,7 +1062,7 @@ VOID __stdcall InternalDispatchImpl_GetIDsOfNames_CallBack(LPVOID ptr)
     }
 }
 
-HRESULT __stdcall InternalDispatchImpl_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, __in_ecount(cNames) OLECHAR **rgszNames,
+HRESULT __stdcall InternalDispatchImpl_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames,
                                            unsigned int cNames, LCID lcid, DISPID *rgdispid)
 {
     SetupForComCallHR();
@@ -1341,7 +1341,7 @@ VOID __stdcall DispatchEx_GetIDsOfNames_CallBack(LPVOID ptr)
     }
 }
 
-HRESULT __stdcall DispatchEx_GetIDsOfNames_Wrapper(IDispatchEx* pDisp, REFIID riid, __in_ecount(cNames) OLECHAR **rgszNames,
+HRESULT __stdcall DispatchEx_GetIDsOfNames_Wrapper(IDispatchEx* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames,
                                  unsigned int cNames, LCID lcid, DISPID *rgdispid)
 {
     SetupForComCallHR();

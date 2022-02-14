@@ -852,7 +852,7 @@ STRINGREF* StringObject::InitEmptyStringRefPtr() {
 // strAChars must be null-terminated, with an appropriate aLength
 // strBChars must be null-terminated, with an appropriate bLength OR bLength == -1
 // If bLength == -1, we stop on the first null character in strBChars
-BOOL StringObject::CaseInsensitiveCompHelper(__in_ecount(aLength) WCHAR *strAChars, __in_z INT8 *strBChars, INT32 aLength, INT32 bLength, INT32 *result) {
+BOOL StringObject::CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR *strAChars, _In_z_ INT8 *strBChars, INT32 aLength, INT32 bLength, INT32 *result) {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -1916,6 +1916,13 @@ void ExceptionObject::SetStackTrace(I1ARRAYREF stackTrace, PTRARRAYREF dynamicMe
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
+
+#ifdef STRESS_LOG
+    if (StressLog::StressLogOn(~0u, 0))
+    {
+        StressLog::CreateThreadStressLog();
+    }
+#endif
 
     SpinLock::AcquireLock(&g_StackTraceArrayLock);
 

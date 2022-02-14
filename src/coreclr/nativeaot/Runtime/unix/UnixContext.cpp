@@ -49,6 +49,27 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 
 #ifdef __APPLE__
 
+#ifdef HOST_ARM64
+
+#define MCREG_Pc(mc)      ((mc)->__ss.__pc)
+#define MCREG_Sp(mc)      ((mc)->__ss.__sp)
+#define MCREG_Lr(mc)      ((mc)->__ss.__lr)
+#define MCREG_X0(mc)      ((mc)->__ss.__x[0])
+#define MCREG_X1(mc)      ((mc)->__ss.__x[1])
+#define MCREG_X19(mc)     ((mc)->__ss.__x[19])
+#define MCREG_X20(mc)     ((mc)->__ss.__x[20])
+#define MCREG_X21(mc)     ((mc)->__ss.__x[21])
+#define MCREG_X22(mc)     ((mc)->__ss.__x[22])
+#define MCREG_X23(mc)     ((mc)->__ss.__x[23])
+#define MCREG_X24(mc)     ((mc)->__ss.__x[24])
+#define MCREG_X25(mc)     ((mc)->__ss.__x[25])
+#define MCREG_X26(mc)     ((mc)->__ss.__x[26])
+#define MCREG_X27(mc)     ((mc)->__ss.__x[27])
+#define MCREG_X28(mc)     ((mc)->__ss.__x[28])
+#define MCREG_Fp(mc)      ((mc)->__ss.__fp)
+
+#elif HOST_AMD64 // HOST_ARM64
+
 #define MCREG_Rip(mc)       ((mc)->__ss.__rip)
 #define MCREG_Rsp(mc)       ((mc)->__ss.__rsp)
 #define MCREG_Rax(mc)       ((mc)->__ss.__rax)
@@ -66,6 +87,12 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 #define MCREG_R13(mc)       ((mc)->__ss.__r13)
 #define MCREG_R14(mc)       ((mc)->__ss.__r14)
 #define MCREG_R15(mc)       ((mc)->__ss.__r15)
+
+#else // HOST_ARM64
+
+#error "Unsupported arch"
+
+#endif // HOST_ARM64
 
 #else
 

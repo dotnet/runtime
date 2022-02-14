@@ -182,8 +182,6 @@ public:
     CHECK CheckILFormat();
     CHECK CheckUniqueInstance();
 
-    void VerifyIsAssembly();
-
     void SetModuleFileNameHintForDAC();
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

@@ -260,7 +260,7 @@ namespace System.Text.Json
             sourceUnescaped = sourceUnescaped.Slice(0, written);
             Debug.Assert(!sourceUnescaped.IsEmpty);
 
-            if (sourceUnescaped.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
+            if (JsonHelpers.IsValidUnescapedDateTimeOffsetParseLength(sourceUnescaped.Length)
                 && JsonHelpers.TryParseAsISO(sourceUnescaped, out DateTime tmp))
             {
                 value = tmp;
@@ -285,7 +285,7 @@ namespace System.Text.Json
             sourceUnescaped = sourceUnescaped.Slice(0, written);
             Debug.Assert(!sourceUnescaped.IsEmpty);
 
-            if (sourceUnescaped.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
+            if (JsonHelpers.IsValidUnescapedDateTimeOffsetParseLength(sourceUnescaped.Length)
                 && JsonHelpers.TryParseAsISO(sourceUnescaped, out DateTimeOffset tmp))
             {
                 value = tmp;
