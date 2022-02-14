@@ -1729,7 +1729,7 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
 
     // WARNING: To change an event's GC level, perfcollect script needs to be updated simultaneously to reflect it.
     BOOL keyword_gc_verbose = EventXplatEnabledGCJoin_V2() || EventPipeEventEnabledGCJoin_V2();
-    BOOL keyword_gc_informational = EventXplatEnabledGCStart() || EventPipeEventEnabledGCStart();
+    BOOL keyword_gc_informational = EventXplatEnabledGCStart() || EventPipeEventEnabledGCStart() || EventXplatEnabledGCGenerationRange() || EventPipeEventEnabledGCGenerationRange();
 
     BOOL keyword_gc_heapsurvival_and_movement_informational = EventXplatEnabledGCGenerationRange() || EventPipeEventEnabledGCGenerationRange();
     BOOL keyword_gchandle_informational = EventXplatEnabledSetGCHandle() || EventPipeEventEnabledSetGCHandle();
