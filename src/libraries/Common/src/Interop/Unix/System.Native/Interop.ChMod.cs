@@ -11,7 +11,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ChMod", CharSet = CharSet.Ansi, SetLastError = true)]
         internal static partial int ChMod(string path, int mode);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FChMod", CharSet = CharSet.Ansi, SetLastError = true)]
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FChMod", SetLastError = true)]
         internal static partial int FChMod(SafeHandle fd, int mode);
     }
 }
