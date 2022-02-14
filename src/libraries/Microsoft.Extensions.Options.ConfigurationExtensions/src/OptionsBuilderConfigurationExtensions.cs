@@ -61,9 +61,6 @@ namespace Microsoft.Extensions.DependencyInjection
             Action<BinderOptions> configureBinder = null)
             where TOptions : class
         {
-            _ = optionsBuilder;
-            _ = configSectionPath;
-
             optionsBuilder.Configure<IConfiguration>((opts, config) => BindFromOptions<TOptions>(opts, config, configSectionPath, configureBinder));
             optionsBuilder.Services.AddSingleton<IOptionsChangeTokenSource<TOptions>, ConfigurationChangeTokenSource<TOptions>>();
             return optionsBuilder;
