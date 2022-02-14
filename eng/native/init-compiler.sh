@@ -119,3 +119,9 @@ fi
 SCAN_BUILD_COMMAND="$(command -v "scan-build$desired_version")"
 
 export CC CXX LDFLAGS SCAN_BUILD_COMMAND
+
+echo "Sapana debug msg"
+echo "CC = $CC"
+echo "CXX = $CXX"
+echo "LDFLAGS = $LADFLAGS"
+echo "SCAN_BUILD_COMMAND = $SCAN_BUILD_COMMAND"

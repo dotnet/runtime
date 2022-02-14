@@ -27,7 +27,7 @@ isMSBuildOnNETCoreSupported()
         return
     fi
 
-    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" || "$__HostArch" == "s390x" ) ]]; then
+    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" || "$__HostArch" == "s390x" ||  "$__HostArch" == "ppc64le" ) ]]; then
         __IsMSBuildOnNETCoreSupported=1
     elif [[ ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) && "$__HostArch" == "x64" ]]; then
         __IsMSBuildOnNETCoreSupported=1
@@ -437,6 +437,10 @@ while :; do
 
         s390x|-s390x)
             __BuildArch=s390x
+            ;;
+
+	ppc64le|-ppc64le)
+            __BuildArch=ppc64le
             ;;
 
         wasm|-wasm)

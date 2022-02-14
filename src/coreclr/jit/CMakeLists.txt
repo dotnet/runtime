@@ -33,6 +33,8 @@ function(create_standalone_jit)
     set(JIT_ARCH_SOURCES ${JIT_ARM64_SOURCES})
   elseif(TARGETDETAILS_ARCH STREQUAL "s390x")
     set(JIT_ARCH_SOURCES ${JIT_S390X_SOURCES})
+  elseif(TARGETDETAILS_ARCH STREQUAL "ppc64le")
+	  set(JIT_ARCH_SOURCES ${JIT_POWERPC64_SOURCES})
   else()
     clr_unknown_arch()
   endif()
@@ -348,6 +350,10 @@ set( JIT_ARM64_SOURCES
   hwintrinsiccodegenarm64.cpp
 )
 
+set( JIT_POWERPC64_SOURCES
+  # Not supported as JIT target
+)
+
 set( JIT_S390X_SOURCES
   # Not supported as JIT target
 )
@@ -362,6 +368,8 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
   set(JIT_ARCH_SOURCES ${JIT_ARM64_SOURCES})
 elseif(CLR_CMAKE_TARGET_ARCH_S390X)
   set(JIT_ARCH_SOURCES ${JIT_S390X_SOURCES})
+elseif(CLR_CMAKE_TARGET_ARCH_POWERPC64)
+	set(JIT_ARCH_SOURCES ${JIT_POWERPC64_SOURCES})
 else()
   clr_unknown_arch()
 endif()

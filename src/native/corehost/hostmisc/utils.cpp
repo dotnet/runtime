@@ -197,6 +197,8 @@ const pal::char_t* get_arch()
     return _X("arm64");
 #elif defined(TARGET_S390X)
     return _X("s390x");
+#elif defined(TARGET_PPC64LE)
+    return _X("ppc64le");
 #else
 #error "Unknown target"
 #endif
