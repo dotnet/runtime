@@ -321,8 +321,6 @@ endif()
 
 if(NOT DISABLE_LIBS)
   install(TARGETS monosgen-static LIBRARY)
-  install(FILES ${mini_public_headers}
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
 endif()
 if(NOT DISABLE_SHARED_LIBS)
   if(HOST_WIN32)
