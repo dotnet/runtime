@@ -3810,8 +3810,8 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
     // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
     GenTree* xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, type, simdSize, false);
     GenTree* xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, type, simdSize, false);
-    GenTree* or   = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, type, simdSize, false);
-    return gtNewSimdHWIntrinsicNode(TYP_BOOL, useSingleVector ? xor1 : or, zero, niEquals, type, simdSize);
+    GenTree* orr   = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, type, simdSize, false);
+    return gtNewSimdHWIntrinsicNode(TYP_BOOL, useSingleVector ? xor1 : orr, zero, niEquals, type, simdSize);
 #else
     return nullptr;
 #endif
