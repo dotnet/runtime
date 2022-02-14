@@ -3,10 +3,9 @@
 
 using System;
 using System.Diagnostics;
-using System.Security.Cryptography;
 using Internal.NativeCrypto;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     internal sealed class BasicSymmetricCipherLiteBCrypt : ILiteSymmetricCipher
     {

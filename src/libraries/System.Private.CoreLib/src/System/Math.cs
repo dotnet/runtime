@@ -1299,6 +1299,18 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Round(double value, MidpointRounding mode)
         {
+            // Inline single-instruction modes
+            if (RuntimeHelpers.IsKnownConstant((int)mode))
+            {
+                if (mode == MidpointRounding.ToEven)
+                    return Round(value);
+
+                // For ARM/ARM64 we can lower it down to a single instruction FRINTA
+                // For XARCH we have to use the common path
+                if (AdvSimd.IsSupported && mode == MidpointRounding.AwayFromZero)
+                    return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalar(value)).ToScalar();
+            }
+
             return Round(value, 0, mode);
         }
 
