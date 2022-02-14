@@ -29,6 +29,7 @@
 #define MINT_STACK_SLOT_SIZE (sizeof (stackval))
 
 #define INTERP_STACK_SIZE (1024*1024)
+#define INTERP_REDZONE_SIZE (8*1024)
 
 enum {
 	VAL_I32     = 0,
@@ -218,6 +219,9 @@ typedef struct {
 	MonoGCHandle exc_gchandle;
 	/* This is a contiguous space allocated for interp execution stack */
 	guchar *stack_start;
+	/* End of the stack space excluding the redzone used to handle stack overflows */
+	guchar *stack_end;
+	guchar *stack_real_end;
 	/*
 	 * This stack pointer is the highest stack memory that can be used by the current frame. This does not
 	 * change throughout the execution of a frame and it is essentially the upper limit of the execution
