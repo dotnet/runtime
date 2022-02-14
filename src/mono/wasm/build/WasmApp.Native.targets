@@ -151,6 +151,7 @@
     <PropertyGroup>
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
       <_EmccDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_EmccDefaultFlagsRsp>
+      <_EmccDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-link.rsp'))</_EmccDefaultLinkFlagsRsp>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">false</WasmNativeStrip>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
@@ -216,10 +217,11 @@
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
-      <_EmccLDFlags Include="-s TOTAL_MEMORY=$(EmccTotalMemory)" />
+      <_EmccLDFlags Include="-Wl,--allow-undefined" />
+      <_EmccLDSFlags Include="-s TOTAL_MEMORY=$(EmccTotalMemory)" />
 
       <!-- ILLinker should have removed unused imports, so error for Publish -->
-      <_EmccLDFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=0" Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
+      <_EmccLDSFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=0" Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
 
       <_DriverCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
       <_DriverCDependencies Include="$(_DriverGenCPath)" Condition="'$(_DriverGenCNeeded)' == 'true'" />
@@ -371,6 +373,7 @@
       <_WasmExtraJSFile Include="@(Content)" Condition="'%(Content.Extension)' == '.js'" />
 
       <_EmccLinkStepArgs Include="@(_EmccLDFlags)" />
+      <_EmccLinkStepArgs Include="@(_EmccLDSFlags)" />
 
       <_EmccLinkStepArgs Include="--%(_WasmExtraJSFile.Kind) &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' != ''" />
       <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" />
@@ -391,14 +394,14 @@
   </Target>
 
   <Target Name="_WasmLinkDotNet"
-          Inputs="@(_WasmLinkDependencies);$(_EmccDefaultFlagsRsp);$(_EmccLinkRsp)"
+          Inputs="@(_WasmLinkDependencies);$(_EmccDefaultFlagsRsp);$(_EmccDefaultLinkFlagsRsp);$(_EmccLinkRsp)"
           Outputs="$(_WasmIntermediateOutputPath)dotnet.js;$(_WasmIntermediateOutputPath)dotnet.wasm"
           DependsOnTargets="_CheckEmccIsExpectedVersion;_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking"
           Returns="@(FileWrites)" >
 
     <Message Text="Linking with emcc with $(EmccLinkOptimizationFlag). This may take a while ..." Importance="High" />
     <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
-    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccDefaultLinkFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
     <ItemGroup>
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.js" />

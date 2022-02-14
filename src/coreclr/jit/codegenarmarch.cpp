@@ -622,7 +622,7 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
     assert(varTypeIsFloating(srcNode));
     assert(srcNode->TypeGet() == treeNode->TypeGet());
 
-    // Right now only Abs/Ceiling/Floor/Round/Sqrt are treated as math intrinsics.
+    // Right now only Abs/Ceiling/Floor/Truncate/Round/Sqrt are treated as math intrinsics.
     //
     switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
@@ -640,6 +640,11 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
         case NI_System_Math_Floor:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintm, emitActualTypeSize(treeNode), treeNode, srcNode);
+            break;
+
+        case NI_System_Math_Truncate:
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitInsBinary(INS_frintz, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
         case NI_System_Math_Round:
@@ -1508,7 +1513,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     genConsumeRegs(op1);
     regNumber targetReg = REG_ZR;
 
-    GetEmitter()->emitInsLoadStoreOp(INS_ldr, EA_4BYTE, targetReg, tree);
+    GetEmitter()->emitInsLoadStoreOp(ins_Load(tree->TypeGet()), emitActualTypeSize(tree), targetReg, tree);
 #endif
 }
 
@@ -3134,9 +3139,6 @@ void CodeGen::genCall(GenTreeCall* call)
     // into a volatile register that won't be restored by epilog sequence.
     if (call->IsFastTailCall())
     {
-        // Don't support fast tail calling JIT helpers
-        assert(call->gtCallType != CT_HELPER);
-
         GenTree* target = getCallTarget(call, nullptr);
 
         if (target != nullptr)
@@ -3177,22 +3179,28 @@ void CodeGen::genCall(GenTreeCall* call)
 
     genCallInstruction(call);
 
-    // if it was a pinvoke we may have needed to get the address of a label
-    if (genPendingCallLabel)
+    // for pinvoke/intrinsic/tailcalls we may have needed to get the address of
+    // a label. In case it is indirect with CFG enabled make sure we do not get
+    // the address after the validation but only after the actual call that
+    // comes after.
+    if (genPendingCallLabel && !call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
     {
         genDefineInlineTempLabel(genPendingCallLabel);
         genPendingCallLabel = nullptr;
     }
 
-    // Update GC info:
-    // All Callee arg registers are trashed and no longer contain any GC pointers.
-    // TODO-Bug?: As a matter of fact shouldn't we be killing all of callee trashed regs here?
-    // For now we will assert that other than arg regs gc ref/byref set doesn't contain any other
-    // registers from RBM_CALLEE_TRASH
-    assert((gcInfo.gcRegGCrefSetCur & (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)) == 0);
-    assert((gcInfo.gcRegByrefSetCur & (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)) == 0);
-    gcInfo.gcRegGCrefSetCur &= ~RBM_ARG_REGS;
-    gcInfo.gcRegByrefSetCur &= ~RBM_ARG_REGS;
+#ifdef DEBUG
+    // Killed registers should no longer contain any GC pointers.
+    regMaskTP killMask = RBM_CALLEE_TRASH;
+    if (call->IsHelperCall())
+    {
+        CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
+        killMask                 = compiler->compHelperCallKillSet(helpFunc);
+    }
+
+    assert((gcInfo.gcRegGCrefSetCur & killMask) == 0);
+    assert((gcInfo.gcRegByrefSetCur & killMask) == 0);
+#endif
 
     var_types returnType = call->TypeGet();
     if (returnType != TYP_VOID)

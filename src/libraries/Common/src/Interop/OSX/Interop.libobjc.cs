@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libobjc
+    internal static partial class @libobjc
     {
         [StructLayout(LayoutKind.Sequential)]
         private struct NSOperatingSystemVersion

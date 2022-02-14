@@ -13,12 +13,11 @@ namespace System.Text
 
         public void AppendFormat(string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                string paramName = (format == null) ? nameof(format) : nameof(args);
-                throw new ArgumentNullException(paramName);
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             AppendFormatHelper(null, format, new ParamsArray(args));
@@ -32,12 +31,11 @@ namespace System.Text
 
         public void AppendFormat(IFormatProvider? provider, string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                string paramName = (format == null) ? nameof(format) : nameof(args);
-                throw new ArgumentNullException(paramName);
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             AppendFormatHelper(provider, format, new ParamsArray(args));
@@ -57,16 +55,11 @@ namespace System.Text
 
         // Copied from StringBuilder, can't be done via generic extension
         // as ValueStringBuilder is a ref struct and cannot be used in a generic.
-        internal void AppendFormatHelper(IFormatProvider? provider, string format, ParamsArray args)
+        internal void AppendFormatHelper(IFormatProvider? provider, string format!!, ParamsArray args)
         {
             // Undocumented exclusive limits on the range for Argument Hole Index and Argument Hole Alignment.
             const int IndexLimit = 1000000; // Note:            0 <= ArgIndex < IndexLimit
             const int WidthLimit = 1000000; // Note:  -WidthLimit <  ArgAlign < WidthLimit
-
-            if (format == null)
-            {
-                throw new ArgumentNullException(nameof(format));
-            }
 
             int pos = 0;
             int len = format.Length;

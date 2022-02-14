@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.Debug", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.Debug.Tests", "tests\System.Diagnostics.Debug.Tests.csproj", "{5B121A9E-061D-4FED-AA3A-26054F41E2B4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib.Generators", "..\System.Private.CoreLib\generators\System.Private.CoreLib.Generators.csproj", "{6ED522FD-D0B0-4574-8F1A-82D339C7D0D3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib.Generators", "..\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj", "{6ED522FD-D0B0-4574-8F1A-82D339C7D0D3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Uri", "..\System.Private.Uri\src\System.Private.Uri.csproj", "{8CCE7756-F004-4EF2-ABCE-0DDD03D5BE04}"
 EndProject

@@ -1350,7 +1350,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
 intptr_t SystemNative_INotifyInit(void)
 {
 #if HAVE_INOTIFY
-    return inotify_init();
+    return inotify_init1(IN_CLOEXEC);
 #else
     errno = ENOTSUP;
     return -1;

@@ -10,13 +10,9 @@ namespace System.Xml
     {
         // Internal methods
 
-        internal async Task<int> ReadContentAsBase64Async(byte[] buffer, int index, int count)
+        internal async Task<int> ReadContentAsBase64Async(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -66,13 +62,9 @@ namespace System.Xml
             return await ReadContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
         }
 
-        internal async Task<int> ReadContentAsBinHexAsync(byte[] buffer, int index, int count)
+        internal async Task<int> ReadContentAsBinHexAsync(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -122,13 +114,9 @@ namespace System.Xml
             return await ReadContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
         }
 
-        internal async Task<int> ReadElementContentAsBase64Async(byte[] buffer, int index, int count)
+        internal async Task<int> ReadElementContentAsBase64Async(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -178,13 +166,9 @@ namespace System.Xml
             return await ReadElementContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
         }
 
-        internal async Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count)
+        internal async Task<int> ReadElementContentAsBinHexAsync(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

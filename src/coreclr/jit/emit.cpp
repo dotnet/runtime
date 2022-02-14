@@ -1454,9 +1454,10 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     assert(IsCodeAligned(emitCurIGsize));
 
-    /* Make sure we have enough space for the new instruction */
+    // Make sure we have enough space for the new instruction.
+    // `igInsCnt` is currently a byte, so we can't have more than 255 instructions in a single insGroup.
 
-    if ((emitCurIGfreeNext + sz >= emitCurIGfreeEndp) || emitForceNewIG)
+    if ((emitCurIGfreeNext + sz >= emitCurIGfreeEndp) || emitForceNewIG || (emitCurIGinsCnt >= 255))
     {
         emitNxtIG(true);
     }
@@ -2507,6 +2508,8 @@ bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
 
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
+
+        case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             return true;
 
         default:
@@ -9322,6 +9325,10 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             result = RBM_INIT_PINVOKE_FRAME_TRASH;
             break;
 #endif // defined(TARGET_X86)
+
+        case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+            result = RBM_VALIDATE_INDIRECT_CALL_TRASH;
+            break;
 
         default:
             result = RBM_CALLEE_TRASH_NOGC;

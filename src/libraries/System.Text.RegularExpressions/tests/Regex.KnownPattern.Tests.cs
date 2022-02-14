@@ -38,27 +38,18 @@ namespace System.Text.RegularExpressions.Tests
 
             Match m = r.Match(InputString);
             Assert.True(m.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal("http://msdn2.microsoft.com", m.Groups[1].ToString());
-                Assert.Equal(43, m.Groups[1].Index);
-            }
+            Assert.Equal("http://msdn2.microsoft.com", m.Groups[1].ToString());
+            Assert.Equal(43, m.Groups[1].Index);
 
             m = m.NextMatch();
             Assert.True(m.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal("http://www.microsoft.com", m.Groups[1].ToString());
-                Assert.Equal(102, m.Groups[1].Index);
-            }
+            Assert.Equal("http://www.microsoft.com", m.Groups[1].ToString());
+            Assert.Equal(102, m.Groups[1].Index);
 
             m = m.NextMatch();
             Assert.True(m.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal("http://blogs.msdn.com/bclteam", m.Groups[1].ToString());
-                Assert.Equal(176, m.Groups[1].Index);
-            }
+            Assert.Equal("http://blogs.msdn.com/bclteam", m.Groups[1].ToString());
+            Assert.Equal(176, m.Groups[1].Index);
 
             m = m.NextMatch();
             Assert.False(m.Success);
@@ -69,12 +60,6 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Docs_Examples_MDYtoDMY(RegexEngine engine)
         {
-            if (RegexHelpers.IsNonBacktracking(engine))
-            {
-                // named group replacements not supported
-                return;
-            }
-
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"\b(?<month>\d{1,2})/(?<day>\d{1,2})/(?<year>\d{2,4})\b");
 
             string dt = new DateTime(2020, 1, 8, 0, 0, 0, DateTimeKind.Utc).ToString("d", DateTimeFormatInfo.InvariantInfo);
@@ -89,10 +74,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"^(?<proto>\w+)://[^/]+?(?<port>:\d+)?/");
             Match m = r.Match("http://www.contoso.com:8080/letters/readme.html");
             Assert.True(m.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal("http:8080", m.Result("${proto}${port}"));
-            }
+            Assert.Equal("http:8080", m.Result("${proto}${port}"));
         }
 
         public static IEnumerable<object[]> Docs_Examples_ValidateEmail_TestData()
@@ -218,7 +200,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                // subcaptures not supported
+                // backreferences not supported
                 return;
             }
 
@@ -250,7 +232,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                // subcaptures not supported
+                // multiple captures not supported
                 return;
             }
 
@@ -536,7 +518,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                // subcaptures not supported
+                // multiple captures not supported
                 return;
             }
 
@@ -585,7 +567,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                // subcaptures not supported
+                // multiple captures not supported
                 return;
             }
 
@@ -643,7 +625,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                // subcaptures not supported
+                // multiple captures not supported
                 return;
             }
 
@@ -762,10 +744,7 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(m.Success);
             Assert.Equal("Essential services are provided by regular expres", m.Value);
             Assert.Equal(0, m.Index);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal(47, m.Groups[1].Index);
-            }
+            Assert.Equal(47, m.Groups[1].Index);
 
             Assert.False(m.NextMatch().Success);
         }
@@ -849,18 +828,12 @@ namespace System.Text.RegularExpressions.Tests
             Regex rGreedy = await RegexHelpers.GetRegexAsync(engine, @".+(\d+)\.");
             Match match = rGreedy.Match(Input);
             Assert.True(match.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal("5", match.Groups[1].Value);
-            }
+            Assert.Equal("5", match.Groups[1].Value);
 
             Regex rLazy = await RegexHelpers.GetRegexAsync(engine, @".+?(\d+)\.");
             match = rLazy.Match(Input);
             Assert.True(match.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal("107325", match.Groups[1].Value);
-            }
+            Assert.Equal("107325", match.Groups[1].Value);
         }
 
         // https://docs.microsoft.com/en-us/dotnet/standard/base-types/details-of-regular-expression-behavior#net-framework-engine-capabilities
@@ -991,12 +964,6 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Docs_InlineOptions(RegexEngine engine)
         {
-            if (RegexHelpers.IsNonBacktracking(engine))
-            {
-                // subcaptures not supported
-                return;
-            }
-
             const string Input = "double dare double Double a Drooling dog The Dreaded Deep";
 
             var actual = new StringBuilder();
@@ -1052,20 +1019,14 @@ namespace System.Text.RegularExpressions.Tests
             Match match = r.Match(Input);
             Assert.True(match.Success);
             Assert.Equal("Drooling dog", match.Value);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal(2, match.Groups.Count);
-                Assert.Equal("Drooling", match.Groups[1].Value);
-            }
+            Assert.Equal(2, match.Groups.Count);
+            Assert.Equal("Drooling", match.Groups[1].Value);
 
             match = match.NextMatch();
             Assert.True(match.Success);
             Assert.Equal("Dreaded Deep", match.Value);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal(2, match.Groups.Count);
-                Assert.Equal("Dreaded", match.Groups[1].Value);
-            }
+            Assert.Equal(2, match.Groups.Count);
+            Assert.Equal("Dreaded", match.Groups[1].Value);
 
             Assert.False(match.NextMatch().Success);
         }
@@ -1228,11 +1189,8 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"/providers/(.+?)\?");
             Match m = r.Match(url);
             Assert.True(m.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal(2, m.Groups.Count);
-                Assert.Equal(expected, m.Groups[1].Value);
-            }
+            Assert.Equal(2, m.Groups.Count);
+            Assert.Equal(expected, m.Groups[1].Value);
         }
 
         public static IEnumerable<object[]> RealWorld_IsValidCSharpName_MemberData()
@@ -1338,10 +1296,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"(?<value>-?\d+(\.\d+)?)");
             Match m = r.Match(value);
             Assert.True(m.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine)) // named capture groups unsupported
-            {
-                Assert.Equal(expected, m.Groups["value"].Value);
-            }
+            Assert.Equal(expected, m.Groups["value"].Value);
         }
 
         public static IEnumerable<object[]> RealWorld_FirebirdVersionString_MemberData()
@@ -1360,10 +1315,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"\w{2}-\w(\d+\.\d+\.\d+\.\d+)");
             Match m = r.Match(value);
             Assert.True(m.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                Assert.Equal(expected, m.Groups[1].Value);
-            }
+            Assert.Equal(expected, m.Groups[1].Value);
         }
 
         public static IEnumerable<object[]> RealWorld_ExternalEntryPoint_MemberData()
@@ -1384,12 +1336,9 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"^(.+)!(.+)\.([^.]+)$");
             Match m = r.Match(value);
             Assert.True(m.Success);
-            if (!RegexHelpers.IsNonBacktracking(engine)) // subcaptures aren't supported
-            {
-                Assert.Equal(a, m.Groups[1].Value);
-                Assert.Equal(b, m.Groups[2].Value);
-                Assert.Equal(c, m.Groups[3].Value);
-            }
+            Assert.Equal(a, m.Groups[1].Value);
+            Assert.Equal(b, m.Groups[2].Value);
+            Assert.Equal(c, m.Groups[3].Value);
         }
 
         /// <summary>

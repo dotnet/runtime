@@ -551,14 +551,12 @@ namespace DebuggerTests
                 label: "this#0");
         }
 
-#if false // https://github.com/dotnet/runtime/issues/63560
         [Fact]
         public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
             wait_for_event_fn: async (pause_location) =>
            {
-
                int frame_idx = 1;
                var frame_locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
                var c_obj = GetAndAssertObjectWithName(frame_locals, "c");
@@ -568,56 +566,12 @@ namespace DebuggerTests
                // Invalid format
                await GetProperties("dotnet:array:4123", expect_ok: false);
 
-               // Invalid object id
-               await GetProperties("dotnet:array:{ \"arrayId\": 234980 }", expect_ok: false);
-
                // Trying to access object as an array
                if (!DotnetObjectId.TryParse(c_obj_id, out var id) || id.Scheme != "object")
                    Assert.True(false, "Unexpected object id format. Maybe this test is out of sync with the object id format in dotnet.cjs.lib.js?");
 
-               if (!int.TryParse(id.Value, out var idNum))
-                   Assert.True(false, "Expected a numeric value part of the object id: {c_obj_id}");
-               await GetProperties($"dotnet:array:{{\"arrayId\":{idNum}}}", expect_ok: false);
+               await GetProperties($"dotnet:array:{id.Value}", expect_ok: false);
            });
-
-        [Fact]
-        public async Task InvalidValueTypeArrayIndex() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
-            locals_fn: async (locals) =>
-           {
-               var this_obj = GetAndAssertObjectWithName(locals, "this");
-               var c_obj = GetAndAssertObjectWithName(await GetProperties(this_obj["value"]["objectId"].Value<string>()), "c");
-               var c_obj_id = c_obj["value"]?["objectId"]?.Value<string>();
-               Assert.NotNull(c_obj_id);
-
-               var c_props = await GetProperties(c_obj_id);
-
-               var pf_arr = GetAndAssertObjectWithName(c_props, "PointsField");
-               var pf_arr_elems = await GetProperties(pf_arr["value"]["objectId"].Value<string>());
-
-               if (!DotnetObjectId.TryParse(pf_arr_elems[0]["value"]?["objectId"]?.Value<string>(), out var id))
-                   Assert.True(false, "Couldn't parse objectId for PointsFields' elements");
-
-               AssertEqual("valuetype", id.Scheme, "Expected a valuetype id");
-               var id_args = id.ValueAsJson;
-               Assert.True(id_args["arrayId"] != null, "ObjectId format for array seems to have changed. Expected to find 'arrayId' in the value. Update this test");
-               Assert.True(id_args != null, "Expected to get a json as the value part of {id}");
-
-               // Try one valid query, to confirm that the id format hasn't changed!
-               id_args["arrayIdx"] = 0;
-               await GetProperties($"dotnet:valuetype:{id_args.ToString(Newtonsoft.Json.Formatting.None)}", expect_ok: true);
-
-               id_args["arrayIdx"] = 12399;
-               await GetProperties($"dotnet:valuetype:{id_args.ToString(Newtonsoft.Json.Formatting.None)}", expect_ok: false);
-
-               id_args["arrayIdx"] = -1;
-               await GetProperties($"dotnet:valuetype:{id_args.ToString(Newtonsoft.Json.Formatting.None)}", expect_ok: false);
-
-               id_args["arrayIdx"] = "qwe";
-               await GetProperties($"dotnet:valuetype:{id_args.ToString(Newtonsoft.Json.Formatting.None)}", expect_ok: false);
-           });
-#endif
 
         [Fact]
         public async Task InvalidAccessors() => await CheckInspectLocalsAtBreakpointSite(

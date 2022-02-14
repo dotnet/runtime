@@ -367,12 +367,8 @@ namespace System.IO
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // prevent WriteSpan from bloating call sites
-        public override void Write(char[] buffer, int index, int count)
+        public override void Write(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -563,7 +559,7 @@ namespace System.IO
             {
                 if (arg == null)
                 {
-                    throw new ArgumentNullException((format == null) ? nameof(format) : nameof(arg)); // same as base logic
+                    ArgumentNullException.Throw(format is null ? nameof(format) : nameof(arg)); // same as base logic
                 }
                 WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: false);
             }
@@ -613,10 +609,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                if (arg == null)
-                {
-                    throw new ArgumentNullException(nameof(arg));
-                }
+                ArgumentNullException.ThrowIfNull(arg);
                 WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: true);
             }
             else
@@ -700,12 +693,8 @@ namespace System.IO
             }
         }
 
-        public override Task WriteAsync(char[] buffer, int index, int count)
+        public override Task WriteAsync(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -860,12 +849,8 @@ namespace System.IO
             return task;
         }
 
-        public override Task WriteLineAsync(char[] buffer, int index, int count)
+        public override Task WriteLineAsync(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);

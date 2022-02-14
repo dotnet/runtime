@@ -125,11 +125,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ReliableEnterTimeout(object obj, int timeout, ref bool lockTaken);
 
-        public static bool IsEntered(object obj)
+        public static bool IsEntered(object obj!!)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
-
             return IsEnteredNative(obj);
         }
 
@@ -167,13 +164,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ObjPulse(object obj);
 
-        public static void Pulse(object obj)
+        public static void Pulse(object obj!!)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             ObjPulse(obj);
         }
         /*========================================================================
@@ -182,13 +174,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ObjPulseAll(object obj);
 
-        public static void PulseAll(object obj)
+        public static void PulseAll(object obj!!)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             ObjPulseAll(obj);
         }
 

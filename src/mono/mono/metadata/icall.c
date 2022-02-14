@@ -2065,8 +2065,16 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_PTR:
 			isref = FALSE;
-			if (!MONO_HANDLE_IS_NULL (value))
-				v = (char*)mono_object_handle_pin_unbox (value, &value_gchandle);
+			if (!MONO_HANDLE_IS_NULL (value)) {
+				if (m_class_is_valuetype (mono_handle_class (value)))
+					v = (char*)mono_object_handle_pin_unbox (value, &value_gchandle);
+				else {
+					char* n = g_strdup_printf ("Object of type '%s' cannot be converted to type '%s'.", m_class_get_name (mono_handle_class (value)), m_class_get_name (mono_class_from_mono_type_internal (type)));
+					mono_error_set_argument (error, cf->name, n);
+					g_free (n);
+					return;
+				}
+			}
 			break;
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_OBJECT:
