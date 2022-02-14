@@ -16,7 +16,7 @@ namespace System.Net.Security.Tests
     {
         [Fact]
         // not supported on Windows, not implemented elsewhere
-        [PlatformSpecific(TestPlatforms.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.OSX)]
         public async Task SslStream_SendCertificateTrust_CertificateCollection()
         {
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
@@ -68,6 +68,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
         public async Task SslStream_SendCertificateTrust_CertificateStore()
         {
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();

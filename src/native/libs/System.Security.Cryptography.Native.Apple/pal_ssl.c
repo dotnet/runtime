@@ -641,6 +641,15 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
     }
 }
 
+PALEXPORT int32_t AppleCryptoNative_SslSetCertificateAuthorities(SSLContextRef sslContext, CFArrayRef certificates, int32_t replaceExisting)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // The underlying call handles NULL inputs, so just pass it through
+    return SSLSetCertificateAuthorities(sslContext, certificates, replaceExisting);
+#pragma clang diagnostic pop
+}
+
 __attribute__((constructor)) static void InitializeAppleCryptoSslShim()
 {
     SSLSetALPNProtocolsPtr = (OSStatus(*)(SSLContextRef, CFArrayRef))dlsym(RTLD_DEFAULT, "SSLSetALPNProtocols");
