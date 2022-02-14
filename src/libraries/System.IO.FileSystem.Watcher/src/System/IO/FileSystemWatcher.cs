@@ -620,7 +620,22 @@ namespace System.IO
         }
 
         public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType, TimeSpan timeout) =>
-            WaitForChanged(changeType, checked((int)timeout.TotalMilliseconds));
+            WaitForChanged(changeType, ToTimeoutMilliseconds(timeout));
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long timeoutMilliseconds = (long)timeout.TotalMilliseconds;
+            if (timeoutMilliseconds < -1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            }
+
+            if (timeoutMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
+            }
+            return (int)timeoutMilliseconds;
+        }
 
         /// <devdoc>
         ///     Stops and starts this object.

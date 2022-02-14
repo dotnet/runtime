@@ -79,10 +79,21 @@ namespace System.ServiceProcess
         /// Service Control Manager to avoid having the service marked as not responding.
         /// </summary>
         /// <param name="time"></param>
-        public unsafe void RequestAdditionalTime(TimeSpan time)
+        public void RequestAdditionalTime(TimeSpan time) => RequestAdditionalTime(ToTimeoutMilliseconds(time));
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
         {
-            int milliseconds = (int)time.TotalMilliseconds;
-            RequestAdditionalTime(milliseconds);
+            long timeoutMilliseconds = (long)timeout.TotalMilliseconds;
+            if (timeoutMilliseconds < -1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            }
+
+            if (timeoutMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
+            }
+            return (int)timeoutMilliseconds;
         }
 #endif
 

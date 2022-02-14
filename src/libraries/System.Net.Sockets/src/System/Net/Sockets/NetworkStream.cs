@@ -341,7 +341,22 @@ namespace System.Net.Sockets
             Dispose();
         }
 
-        public void Close(TimeSpan timeout) => Close(checked((int)timeout.TotalMilliseconds));
+        public void Close(TimeSpan timeout) => Close(ToTimeoutMilliseconds(timeout));
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long timeoutMilliseconds = (long)timeout.TotalMilliseconds;
+            if (timeoutMilliseconds < -1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            }
+
+            if (timeoutMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
+            }
+            return (int)timeoutMilliseconds;
+        }
 
         protected override void Dispose(bool disposing)
         {

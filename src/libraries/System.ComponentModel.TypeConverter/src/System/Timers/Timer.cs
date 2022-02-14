@@ -62,7 +62,7 @@ namespace System.Timers
         /// <summary>
         /// Initializes a new instance of the <see cref='Timer'/> class, setting the <see cref='Interval'/> property to the specified period.
         /// </summary>
-        public Timer(TimeSpan timeSpan) : this(timeSpan.TotalMilliseconds)
+        public Timer(TimeSpan interval) : this(interval.TotalMilliseconds)
         {
         }
 

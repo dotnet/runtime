@@ -299,6 +299,12 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
+  <data name="ArgumentOutOfRange_NeedNonNegOrNegative1" xml:space="preserve">
+    <value>Number must be either non-negative and less than or equal to Int32.MaxValue or -1.</value>
+  </data>
+  <data name="ArgumentOutOfRange_LessEqualToIntegerMaxVal" xml:space="preserve">
+    <value>Argument must be less than or equal to 2^31 - 1 milliseconds.</value>
+  </data>
   <data name="CantStartAsUser" xml:space="preserve">
     <value>The Process object must have the UseShellExecute property set to false in order to start a process as a user.</value>
   </data>

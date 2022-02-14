@@ -16,6 +16,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -428,7 +429,7 @@ namespace System
             return (GCNotificationStatus)_WaitForFullGCApproach(millisecondsTimeout);
         }
 
-        public static GCNotificationStatus WaitForFullGCApproach(TimeSpan timeout) => WaitForFullGCApproach(checked((int)timeout.TotalMilliseconds));
+        public static GCNotificationStatus WaitForFullGCApproach(TimeSpan timeout) => WaitForFullGCApproach(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         public static GCNotificationStatus WaitForFullGCComplete()
         {
@@ -442,7 +443,7 @@ namespace System
             return (GCNotificationStatus)_WaitForFullGCComplete(millisecondsTimeout);
         }
 
-        public static GCNotificationStatus WaitForFullGCComplete(TimeSpan timeout) => WaitForFullGCComplete(checked((int)timeout.TotalMilliseconds));
+        public static GCNotificationStatus WaitForFullGCComplete(TimeSpan timeout) => WaitForFullGCComplete(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         private enum StartNoGCRegionStatus
         {

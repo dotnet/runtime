@@ -1431,7 +1431,22 @@ namespace System.Diagnostics
         /// Instructs the Process component to wait the specified number of milliseconds for
         /// the associated process to exit.
         /// </summary>
-        public bool WaitForExit(TimeSpan timeout) => WaitForExit(checked((int)timeout.TotalMilliseconds));
+        public bool WaitForExit(TimeSpan timeout) => WaitForExit(ToTimeoutMilliseconds(timeout));
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long timeoutMilliseconds = (long)timeout.TotalMilliseconds;
+            if (timeoutMilliseconds < -1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            }
+
+            if (timeoutMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
+            }
+            return (int)timeoutMilliseconds;
+        }
 
         /// <summary>
         /// Instructs the Process component to wait for the associated process to exit, or

@@ -238,10 +238,10 @@ namespace System.Net.NetworkInformation
         }
 
         public PingReply Send(IPAddress address, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null) =>
-            Send(address, checked((int)timeout.TotalMilliseconds), buffer ?? DefaultSendBuffer, options);
+            Send(address, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
 
         public PingReply Send(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null,
-            PingOptions? options = null) => Send(hostNameOrAddress, checked((int)timeout.TotalMilliseconds), buffer ?? DefaultSendBuffer, options);
+            PingOptions? options = null) => Send(hostNameOrAddress, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
 
         public void SendAsync(string hostNameOrAddress, object? userToken)
         {
@@ -344,9 +344,9 @@ namespace System.Net.NetworkInformation
         public Task<PingReply> SendPingAsync(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null,
             PingOptions? options = null, CancellationToken cancellationToken = default)
         {
-            int milliseconds = checked((int)timeout.TotalMilliseconds);
-
             cancellationToken.ThrowIfCancellationRequested();
+
+            int milliseconds = ToTimeoutMilliseconds(timeout);
             Task<PingReply> task = SendPingAsync(hostNameOrAddress, milliseconds, buffer ?? DefaultSendBuffer, options);
 
             return task.WaitAsync(cancellationToken);
@@ -389,6 +389,21 @@ namespace System.Net.NetworkInformation
             CheckArgs(timeout, buffer, options);
 
             return GetAddressAndSendAsync(hostNameOrAddress, timeout, buffer, options);
+        }
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long timeoutMilliseconds = (long)timeout.TotalMilliseconds;
+            if (timeoutMilliseconds < -1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            }
+
+            if (timeoutMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
+            }
+            return (int)timeoutMilliseconds;
         }
 
         public void SendAsyncCancel()

@@ -129,7 +129,7 @@ namespace System.IO.Pipes
             ConnectInternal(timeout, CancellationToken.None, Environment.TickCount);
         }
 
-        public void Connect(TimeSpan timeout) => Connect(checked((int)timeout.TotalMilliseconds));
+        public void Connect(TimeSpan timeout) => Connect(ToTimeoutMilliseconds(timeout));
 
         private void ConnectInternal(int timeout, CancellationToken cancellationToken, int startTime)
         {
@@ -200,7 +200,22 @@ namespace System.IO.Pipes
         }
 
         public Task ConnectAsync(TimeSpan timeout, CancellationToken cancellationToken = default) =>
-            ConnectAsync(checked((int)timeout.TotalMilliseconds), cancellationToken);
+            ConnectAsync(ToTimeoutMilliseconds(timeout), cancellationToken);
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long timeoutMilliseconds = (long)timeout.TotalMilliseconds;
+            if (timeoutMilliseconds < -1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            }
+
+            if (timeoutMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
+            }
+            return (int)timeoutMilliseconds;
+        }
 
         // override because named pipe clients can't get/set properties when waiting to connect
         // or broken

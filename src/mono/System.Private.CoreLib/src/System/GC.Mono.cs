@@ -5,6 +5,7 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 using System.Diagnostics.Tracing;
+using System.Threading;
 
 namespace System
 {
@@ -205,7 +206,7 @@ namespace System
         }
 
         public static GCNotificationStatus WaitForFullGCApproach(TimeSpan timeout) =>
-            WaitForFullGCApproach(checked((int)timeout.TotalMilliseconds));
+            WaitForFullGCApproach(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         public static GCNotificationStatus WaitForFullGCComplete()
         {
@@ -220,7 +221,7 @@ namespace System
         }
 
         public static GCNotificationStatus WaitForFullGCComplete(TimeSpan timeout) =>
-            WaitForFullGCComplete(checked((int)timeout.TotalMilliseconds));
+            WaitForFullGCComplete(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         private static bool StartNoGCRegion(long totalSize, bool hasLohSize, long lohSize, bool disallowFullBlockingGC)
         {
