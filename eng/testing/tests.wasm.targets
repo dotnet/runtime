@@ -161,6 +161,7 @@
       <_WasmPropertyNames Include="WasmNativeStrip" />
       <_WasmPropertyNames Include="WasmEnableES6" />
       <_WasmPropertyNames Include="_WasmDevel" />
+      <_WasmPropertyNames Include="WasmEmitSymbolMap" />
 
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
@@ -168,7 +169,10 @@
         ConditionToUse__="%(_WasmPropertyNames.ConditionToUse__)" />
 
       <_WasmVFSFilesToCopy Include="@(WasmFilesToIncludeInFileSystem)" />
-      <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(TargetPath)' == ''" />
+      <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(_WasmVFSFilesToCopy.TargetPath)' == ''" />
+
+      <_WasmExtraFilesToCopy Include="@(WasmExtraFilesToDeploy)" />
+      <_WasmExtraFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(_WasmExtraFilesToCopy.TargetPath)' == ''" />
 
       <!-- Example of passing items to the project
 
@@ -184,7 +188,8 @@
         OutputFile="$(BundleDir)publish\ProxyProjectForAOTOnHelix.props" />
 
     <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
-    <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
+    <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\vfsFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
+    <Copy SourceFiles="@(_WasmExtraFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmExtraFilesToCopy.TargetPath)" />
   </Target>
 
   <Target Name="PrepareForWasmBuildApp">
