@@ -118,20 +118,22 @@ namespace System.Text.Json
             private static readonly ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> s_cache =
                 new(concurrencyLevel: 1, capacity: MaxTrackedContexts, new EqualityComparer());
 
-            private const int EvictionCountHistory = 10;
+            private const int EvictionCountHistory = 16;
             private static Queue<int> s_recentEvictionCounts = new(EvictionCountHistory);
             private static int s_evictionRunsToSkip;
 
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
-                if (s_cache.TryGetValue(options, out WeakReference<CachingContext>? wr) && wr.TryGetTarget(out CachingContext? ctx))
+                ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> cache = s_cache;
+
+                if (cache.TryGetValue(options, out WeakReference<CachingContext>? wr) && wr.TryGetTarget(out CachingContext? ctx))
                 {
                     return ctx;
                 }
 
-                lock (s_cache)
+                lock (cache)
                 {
-                    if (s_cache.TryGetValue(options, out wr))
+                    if (cache.TryGetValue(options, out wr))
                     {
                         if (!wr.TryGetTarget(out ctx))
                         {
@@ -143,7 +145,7 @@ namespace System.Text.Json
                         return ctx;
                     }
 
-                    if (s_cache.Count == MaxTrackedContexts)
+                    if (cache.Count == MaxTrackedContexts)
                     {
                         if (!TryEvictDanglingEntries())
                         {
@@ -152,7 +154,7 @@ namespace System.Text.Json
                         }
                     }
 
-                    Debug.Assert(s_cache.Count < MaxTrackedContexts);
+                    Debug.Assert(cache.Count < MaxTrackedContexts);
 
                     // Use a defensive copy of the options instance as key to
                     // avoid capturing references to any caching contexts.
@@ -160,7 +162,7 @@ namespace System.Text.Json
                     Debug.Assert(key._cachingContext == null);
 
                     ctx = new CachingContext(options);
-                    bool success = s_cache.TryAdd(key, new(ctx));
+                    bool success = cache.TryAdd(key, new(ctx));
                     Debug.Assert(success);
 
                     return ctx;
@@ -169,11 +171,12 @@ namespace System.Text.Json
 
             private static bool TryEvictDanglingEntries()
             {
-                // Worst case scenario, the cache has been saturated with permanent entries.
-                // We want to avoid iterating needlessly through the entire cache every time
-                // a new options instance is created. For this reason we implement a backoff
-                // strategy to average out the cost of eviction across multiple cache initializations.
-                // The backoff count is determined by the eviction rates of the most recent eviction runs.
+                // Worst case scenario, the cache has been filled with permanent entries.
+                // Evictions are synchronized and each run is in the order of microseconds,
+                // so we want to avoid triggering runs every time an instance is initialized,
+                // For this reason we use a backoff strategy to average out the cost of eviction
+                // across multiple initializations. The backoff count is determined by the eviction
+                // rates of the most recent runs.
 
                 if (s_evictionRunsToSkip > 0)
                 {
@@ -198,33 +201,38 @@ namespace System.Text.Json
                 // Estimate the number of eviction runs to skip based on recent eviction rates.
                 static int EstimateEvictionRunsToSkip(int latestEvictionCount)
                 {
-                    if (s_recentEvictionCounts.Count < EvictionCountHistory)
+                    Queue<int> recentEvictionCounts = s_recentEvictionCounts;
+
+                    if (recentEvictionCounts.Count < EvictionCountHistory - 1)
                     {
-                        // Insufficient data to determine a skip count.
-                        s_recentEvictionCounts.Enqueue(latestEvictionCount);
+                        // Insufficient data points to determine a skip count.
+                        recentEvictionCounts.Enqueue(latestEvictionCount);
                         return 0;
                     }
-                    else
+                    else if (recentEvictionCounts.Count == EvictionCountHistory)
                     {
-                        s_recentEvictionCounts.Dequeue();
-                        s_recentEvictionCounts.Enqueue(latestEvictionCount);
-
-                        // Calculate the average evictions per run.
-                        double avgEvictionsPerRun = 0;
-
-                        foreach (int rate in s_recentEvictionCounts)
-                        {
-                            avgEvictionsPerRun += rate;
-                        }
-
-                        avgEvictionsPerRun /= EvictionCountHistory;
-
-                        // - If avgEvictionsPerRun >= 1 we skip no subsequent eviction calls.
-                        // - If avgEvictionsPerRun < 1 we skip ~ `1 / avgEvictionsPerRun` calls.
-                        int runsPerEviction = (int)Math.Round(1 / Math.Min(Math.Max(avgEvictionsPerRun, 0.1), 1));
-                        Debug.Assert(runsPerEviction >= 1 && runsPerEviction <= 10);
-                        return runsPerEviction - 1;
+                        recentEvictionCounts.Dequeue();
                     }
+
+                    recentEvictionCounts.Enqueue(latestEvictionCount);
+
+                    // Calculate the total number of eviction in the latest runs
+                    // - If we have at least one eviction per run, on average,
+                    //   do not skip any future eviction runs.
+                    // - Otherwise, skip ~the number of runs needed per one eviction.
+
+                    int totalEvictions = 0;
+                    foreach (int evictionCount in recentEvictionCounts)
+                    {
+                        totalEvictions += evictionCount;
+                    }
+
+                    int evictionRunsToSkip =
+                        totalEvictions >= EvictionCountHistory ? 0 :
+                        (int)Math.Round((double)EvictionCountHistory / Math.Max(totalEvictions, 1));
+
+                    Debug.Assert(0 <= evictionRunsToSkip && evictionRunsToSkip <= EvictionCountHistory);
+                    return evictionRunsToSkip;
                 }
             }
         }
