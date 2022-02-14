@@ -360,19 +360,20 @@ if (is_node) {
     const modulesToLoad = processedArguments.setenv["NPM_MODULES"];
     if (modulesToLoad) {
         modulesToLoad.split(',').forEach(module => {
-            const parts = module.split(':');
-            const nameParts = parts[0].split(".");
+            const { 0:moduleName, 1:globalAlias } = module.split(':');
 
-            let message = `Loading npm '${nameParts[0]}'`;
-            let moduleExport = require(nameParts[0]);
-            if (nameParts.length == 2) {
-                message += `, taking the '${nameParts[1]}'`;
-                moduleExport = moduleExport[nameParts[1]];
-            }
-
-            if (parts.length == 2) {
-                message += ` and attaching to global as '${parts[1]}'.`;
-                globalThis[parts[1]] = moduleExport;
+            let message = `Loading npm '${moduleName}'`;
+            let moduleExport = require(moduleName);
+            
+            if (globalAlias) {
+                message += ` and attaching to global as '${globalAlias}'`;
+                globalThis[globalAlias] = moduleExport;
+            } else if(moduleName == "node-fetch") {
+                message += ' and attaching to global';
+                globalThis.fetch = moduleExport.default;
+                globalThis.Headers = moduleExport.Headers;
+                globalThis.Request = moduleExport.Request;
+                globalThis.Response = moduleExport.Response;
             }
             
             console.log(message);
