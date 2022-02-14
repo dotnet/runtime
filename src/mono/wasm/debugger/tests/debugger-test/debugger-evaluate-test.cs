@@ -868,9 +868,26 @@ namespace DebuggerTests
             public ulong GetUInt64(ulong param = 1) => param;
             public float GetSingle(float param = 1.23f) => param;
             public double GetDouble(double param = 1.23) => param;
-            public string GetString(string param = "1.23") => param;
+            public string GetString(string param = "1.23") => param;            
+            
+            #nullable enable
+            public bool? GetBoolNullable(bool? param = true) => param;
+            public char? GetCharNullable(char? param = 'T') => param;
+            public byte? GetByteNullable(byte? param = 1) => param;
+            public sbyte? GetSByteNullable(sbyte? param = 1) => param;
+            public short? GetInt16Nullable(short? param = 1) => param;
+            public ushort? GetUInt16Nullable(ushort? param = 1) => param;
+            public int? GetInt32Nullable(int? param = 1) => param;
+            public uint? GetUInt32Nullable(uint? param = 1) => param;
+            public long? GetInt64Nullable(long? param = 1) => param;
+            public ulong? GetUInt64Nullable(ulong? param = 1) => param;
+            public float? GetSingleNullable(float? param = 1.23f) => param;
+            public double? GetDoubleNullable(double? param = 1.23) => param;
+            public string? GetStringNullable(string? param = "1.23") => param;
+            #nullable disable
+
             public bool GetNull(object param = null) => param == null ? true : false;
-            public int GetInt32TwoParams(int requiredParam, int optionalParam = 3) => requiredParam + optionalParam;
+            public int GetDefaultAndRequiredParam(int requiredParam, int optionalParam = 3) => requiredParam + optionalParam;
         }
 
         public static void Evaluate()

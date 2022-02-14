@@ -1049,21 +1049,42 @@ namespace DebuggerTests
                 await EvaluateOnCallFrameAndCheck(id,
                    ("test.GetByte()", TNumber(1)),
                    ("test.GetSByte()", TNumber(1)),
+                   ("test.GetByteNullable()", TNumber(1)),
+                   ("test.GetSByteNullable()", TNumber(1)),
+
                    ("test.GetInt16()", TNumber(1)),
                    ("test.GetUInt16()", TNumber(1)),
+                   ("test.GetInt16Nullable()", TNumber(1)),
+                   ("test.GetUInt16Nullable()", TNumber(1)),
+
                    ("test.GetInt32()", TNumber(1)),
                    ("test.GetUInt32()", TNumber(1)),
+                   ("test.GetInt32Nullable()", TNumber(1)),
+                   ("test.GetUInt32Nullable()", TNumber(1)),
+
                    ("test.GetInt64()", TNumber(1)),
                    ("test.GetUInt64()", TNumber(1)),
-                //    ("test.GetChar()", TString("A")), //fails, Evaluate of this datatype symbol not implemented yet (for non optional parameters either)
+                   ("test.GetInt64Nullable()", TNumber(1)),
+                   ("test.GetUInt64Nullable()", TNumber(1)),
+
+                //    ("test.GetChar()", TString("T")), //fails, Evaluate of this datatype symbol not implemented yet (for non optional parameters either)
+                //    ("test.GetCharNullable()", TString("T")),
                    ("test.GetString()", TString("1.23")),
+                   ("test.GetString(\"TEST\")", TString("TEST")),
+                   ("test.GetString(null)", TObject("string", is_null: true)),
+                   ("test.GetStringNullable()", TString("1.23")),
+
                    ("test.GetSingle()", JObject.FromObject( new { type = "number", value = 1.23, description = "1,23" })),
                    ("test.GetDouble()", JObject.FromObject( new { type = "number", value = 1.23, description = "1,23" })),
+                   ("test.GetSingleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1,23" })),
+                   ("test.GetDoubleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1,23" })),
+                   
                    ("test.GetBool()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
+                   ("test.GetBoolNullable()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
                    ("test.GetNull()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
                    
-                   ("test.GetInt32TwoParams(2)", TNumber(5)),
-                   ("test.GetInt32TwoParams(3, 2)", TNumber(5))
+                   ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
+                   ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5))
                    );
            });
     }
