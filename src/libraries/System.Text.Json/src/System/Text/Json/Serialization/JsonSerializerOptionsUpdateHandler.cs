@@ -21,7 +21,7 @@ namespace System.Text.Json
                 options.Key.ClearCaches();
             }
 
-            // Flush the shared caching context cache
+            // Flush the shared caching contexts
             JsonSerializerOptions.TrackedCachingContexts.Clear();
 
             // Flush the dynamic method cache
