@@ -42,7 +42,6 @@ namespace System.Net.Security.Tests
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
                 {
                     TargetHost = "localhost",
-                    EnabledSslProtocols = SslProtocols.Tls12,
                     RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
                     LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, issuers) =>
                     {
@@ -93,7 +92,6 @@ namespace System.Net.Security.Tests
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
                 {
                     TargetHost = "localhost",
-                    EnabledSslProtocols = SslProtocols.Tls12,
                     RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
                     LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, issuers) =>
                     {

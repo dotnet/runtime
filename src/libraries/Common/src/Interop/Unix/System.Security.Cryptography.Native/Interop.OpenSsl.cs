@@ -353,12 +353,21 @@ internal static partial class Interop
                         X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
 
                         Debug.Assert(certList != null, "certList != null");
-                        foreach (X509Certificate2 cert in certList)
+                        Span<IntPtr> handles = certList.Count <= 256
+                            ? stackalloc IntPtr[256]
+                            : new IntPtr[certList.Count];
+
+                        for (int i = 0; i < certList.Count; i++)
                         {
-                            if (!Ssl.SslAddClientCA(sslHandle, cert.Handle))
-                            {
-                                Debug.Fail("Failed to add issuer to trusted CA list.");
-                            }
+                            handles[i] = certList[i].Handle;
+                        }
+
+                        if (!Ssl.SslAddClientCAs(sslHandle, handles.Slice(0, certList.Count)))
+                        {
+                            // The method can fail only when the number of cert names exceeds the maximum capacity
+                            // supported by STACK_OF(X509_NAME) structure, which should not happen under normal
+                            // operation.
+                            Debug.Fail("Failed to add issuer to trusted CA list.");
                         }
                     }
                 }
