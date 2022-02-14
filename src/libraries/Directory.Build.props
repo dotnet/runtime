@@ -66,7 +66,6 @@
 
   <Import Project="NetCoreAppLibrary.props" />
   <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" Condition="'$(IsReferenceAssembly)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)targetframeworksuffix.props" Condition="'$(DesignTimeBuild)' != 'true'" />
 
   <PropertyGroup>
     <!-- Default any assembly not specifying a key to use the Open Key -->

@@ -10,7 +10,7 @@ using Xunit.Sdk;
 
 namespace System.ComponentModel.Composition.Registration.Tests
 {
-    [SkipOnCoreClr("Test failures on stress tests", RuntimeConfiguration.Checked)]
+    [SkipOnCoreClr("Test failures on stress tests", ~RuntimeConfiguration.Release)]
     [SkipOnMono("Test failures on stress tests")]
     public class RegistrationBuilderAttributedOverrideUnitTests
     {

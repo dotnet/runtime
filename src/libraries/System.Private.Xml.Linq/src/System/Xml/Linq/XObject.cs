@@ -113,9 +113,8 @@ namespace System.Xml.Linq
         /// The first matching annotation object, or null
         /// if no annotation is the specified type.
         /// </returns>
-        public object? Annotation(Type type)
+        public object? Annotation(Type type!!)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
             if (annotations != null)
             {
                 object?[]? a = annotations as object[];
@@ -192,9 +191,8 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="type">The type of the annotations to retrieve.</param>
         /// <returns>An enumerable collection of annotations for this XObject.</returns>
-        public IEnumerable<object> Annotations(Type type)
+        public IEnumerable<object> Annotations(Type type!!)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
             return AnnotationsIterator(type);
         }
 
@@ -252,9 +250,8 @@ namespace System.Xml.Linq
         /// Removes the annotations of the specified type from this <see cref="XObject"/>.
         /// </summary>
         /// <param name="type">The type of annotations to remove.</param>
-        public void RemoveAnnotations(Type type)
+        public void RemoveAnnotations(Type type!!)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
             if (annotations != null)
             {
                 object?[]? a = annotations as object[];

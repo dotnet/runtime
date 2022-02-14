@@ -218,8 +218,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to use for serialization and deserialization.</param>
         /// <returns>A <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T"/> values.</returns>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
-        public static JsonConverter<T> GetEnumConverter<T>(JsonSerializerOptions options) where T : struct, Enum
-            => new EnumConverter<T>(EnumConverterOptions.AllowNumbers, options ?? throw new ArgumentNullException(nameof(options)));
+        public static JsonConverter<T> GetEnumConverter<T>(JsonSerializerOptions options!!) where T : struct, Enum
+            => new EnumConverter<T>(EnumConverterOptions.AllowNumbers, options);
 
         /// <summary>
         /// Creates a <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T?"/> values.

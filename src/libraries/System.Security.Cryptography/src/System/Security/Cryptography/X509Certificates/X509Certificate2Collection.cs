@@ -176,9 +176,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// </param>
         public void Import(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
         {
-            if (rawData == null)
-                throw new ArgumentNullException(nameof(rawData));
-
             X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
 
             using (var safePasswordHandle = new SafePasswordHandle(password))

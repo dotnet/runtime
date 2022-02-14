@@ -14,7 +14,7 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime
 {
-    internal static class RuntimeExports
+    internal static partial class RuntimeExports
     {
         //
         // internal calls for allocation
@@ -301,8 +301,9 @@ namespace System.Runtime
                 return RhpGetCurrentThreadStackTrace(pOutputBuffer, (uint)((outputBuffer != null) ? outputBuffer.Length : 0), new UIntPtr(&pOutputBuffer));
         }
 
-        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern unsafe int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
+        [GeneratedDllImport(Redhawk.BaseName)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        private static unsafe partial int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
 
         // Worker for RhGetCurrentThreadStackTrace.  RhGetCurrentThreadStackTrace just allocates a transition
         // frame that will be used to seed the stack trace and this method does all the real work.

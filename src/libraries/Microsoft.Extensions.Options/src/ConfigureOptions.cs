@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Options
         /// Constructor.
         /// </summary>
         /// <param name="action">The action to register.</param>
-        public ConfigureOptions(Action<TOptions> action)
+        public ConfigureOptions(Action<TOptions>? action)
         {
             Action = action;
         }
@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The configuration action.
         /// </summary>
-        public Action<TOptions> Action { get; }
+        public Action<TOptions>? Action { get; }
 
         /// <summary>
         /// Invokes the registered configure <see cref="Action"/>.
