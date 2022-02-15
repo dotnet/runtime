@@ -1576,16 +1576,20 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
         return BuildSimple(putArgStk);
     }
 
-    ClassLayout* layout = src->AsObj()->GetLayout();
-
     ssize_t size = putArgStk->GetStackByteSize();
     switch (putArgStk->gtPutArgStkKind)
     {
         case GenTreePutArgStk::Kind::Push:
-        case GenTreePutArgStk::Kind::PushAllSlots:
+            // Zero-diff quirk: remove.
+            if (size >= 8)
+            {
+                SetContainsAVXFlags();
+            }
+            break;
+
         case GenTreePutArgStk::Kind::Unroll:
             // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
-            if (!layout->HasGCPtr() && (size & (XMM_REGSIZE_BYTES - 1)) != 0)
+            if ((size % XMM_REGSIZE_BYTES) != 0)
             {
                 regMaskTP regMask = allRegs(TYP_INT);
                 buildInternalIntRegisterDefForNode(putArgStk, regMask);
@@ -1606,6 +1610,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             break;
 
         case GenTreePutArgStk::Kind::RepInstr:
+        case GenTreePutArgStk::Kind::PartialRepInstr:
             buildInternalIntRegisterDefForNode(putArgStk, RBM_RDI);
             buildInternalIntRegisterDefForNode(putArgStk, RBM_RCX);
             buildInternalIntRegisterDefForNode(putArgStk, RBM_RSI);
