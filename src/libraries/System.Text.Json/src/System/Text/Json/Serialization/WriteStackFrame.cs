@@ -114,7 +114,7 @@ namespace System.Text.Json
             // if the current element is the same type as the previous element.
             if (PolymorphicJsonPropertyInfo?.RuntimePropertyType != type)
             {
-                JsonTypeInfo typeInfo = options.GetOrAddClass(type);
+                JsonTypeInfo typeInfo = options.GetOrAddJsonTypeInfo(type);
                 PolymorphicJsonPropertyInfo = typeInfo.PropertyInfoForTypeInfo;
             }
 

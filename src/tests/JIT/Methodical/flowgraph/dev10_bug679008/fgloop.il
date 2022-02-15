@@ -10,6 +10,7 @@
 .assembly extern System { auto }
 .assembly 'fgloop' {}
 .assembly extern xunit.core {}
+.namespace Test_fgloop {
 .class public EHTest
 {
   .field private static int64 fld0
@@ -32,12 +33,12 @@
   }
    .method public static int32 GetInt32_tailcall()
   {
-  	tail. call   int32 EHTest::GetInt32()
+  	tail. call   int32 Test_fgloop.EHTest::GetInt32()
   	ret
   }
    .method public static int64 GetInt64_tailcall()
   {
-  	tail. call   int64 EHTest::GetInt64()
+  	tail. call   int64 Test_fgloop.EHTest::GetInt64()
   	ret
   }
 .method public static int64 f0(int64 arg0,int32 arg1,int64 arg2) cil managed
@@ -56,7 +57,7 @@ start_try1:
 br try1_br
 try1_br: 
 start_try2: 
-call void EHTest::f2()
+call void Test_fgloop.EHTest::f2()
 try2_out:
 newobj instance void [mscorlib]System.CannotUnloadAppDomainException::.ctor()
 throw
@@ -76,7 +77,7 @@ nop
 	  ldc.i4 94
 	  starg.s arg1
 	  ldc.i4 118
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 33
 	  ldc.i4 64
 	  or
@@ -91,7 +92,7 @@ nop
 	  ldc.i4 64
 	  stloc.0
 	  ldc.i4.5
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 75
 	  ldc.i4 52
 	  starg.s arg1
@@ -99,13 +100,13 @@ nop
 	  starg.s arg1
 	  ldc.i4 16
 	  ldc.i4 64
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 67
 	  ldc.i4 38
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 100
 	  ldc.i4 32
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 63
 	  ldc.i4 121
 	  ldc.i4 80
@@ -113,21 +114,21 @@ nop
 	  ldc.i4 51
 	  ldc.i4 37
 	  ldc.i4 43
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 88
 	  ldc.i4 67
 	  ldc.i4 110
 	  stloc.0
 	  ldc.i4 93
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 35
 	  ldc.i4 69
 	  starg.s arg1
 	  ldc.i4 30
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 117
 	  ldc.i4 68
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 88
 	  ldc.i4 32
 	  ldc.i4 55
@@ -141,7 +142,7 @@ nop
 	  stloc.0
 	  ldc.i4 22
 	  ldc.i4 68
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 108
 	  ldc.i4 81
 	  ldc.i4 54
@@ -162,7 +163,7 @@ nop
 	  ldc.i4 71
 	  starg.s arg1
 	  ldc.i4 63
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 40
 	  ldc.i4.5
 	  starg.s arg1
@@ -179,11 +180,11 @@ nop
 	  starg.s arg1
 	  ldc.i4 98
 	  ldc.i4.2
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 94
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 82
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 38
 	  ldc.i4 72
 	  starg.s arg1
@@ -208,7 +209,7 @@ nop
 	  ldc.i4 114
 	  stloc.0
 	  ldc.i4 75
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 108
 	  ldc.i4 61
 	  ldc.i4 94
@@ -226,7 +227,7 @@ nop
 	  starg.s arg1
 	  ldc.i4 89
 	  ldc.i4 90
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 47
 	  ldc.i4 120
 	  ldc.i4 47
@@ -239,13 +240,13 @@ nop
 	  ldc.i4 81
 	  bge	TARGET_0_3
 	TARGET_0_2:
-	  call int32 EHTest::GetInt32()
+	  call int32 Test_fgloop.EHTest::GetInt32()
 	  ldc.i4 85
 	  cgt
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 32
 	  ldc.i4 59
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 37
 	  starg.s arg1
 	  ldc.i4 71
@@ -265,7 +266,7 @@ nop
 	  starg.s arg0
 	  ldc.i8 109
 	  ldc.i8 64
-	  stsfld int64 EHTest::fld1
+	  stsfld int64 Test_fgloop.EHTest::fld1
 	  ldc.i8 62
 	  mul
 	  ldc.i8 52
@@ -278,7 +279,7 @@ fault1_out: endfault
 end_fault1:
 
 
-call void EHTest::f2()
+call void Test_fgloop.EHTest::f2()
 try1_out:
 leave OUT0
 end_try1:
@@ -309,7 +310,7 @@ nop
 	  rem
 	  ldc.i8 105
 	  ceq
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4.0
 	  starg.s arg1
 	  ldc.i4 57
@@ -330,14 +331,14 @@ nop
 	  ldc.i4 32
 	  starg.s arg1
 	  ldc.i4 50
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 126
 	  ldc.i4 113
 	  newobj instance void int32[13...,68...,1...,3...,98...,23...]::.ctor(int32,int32,int32,int32,int32,int32)
 	  ldc.i4 18
 	  ldc.i4 71
 	  ldc.i4 106
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 92
 	  ldc.i4 74
 	  ldc.i4 92
@@ -347,8 +348,8 @@ nop
 	  blt.un	TARGET_1_1
 	TARGET_1_3:
 	  ldc.i8 114
-     stsfld int64 EHTest::fld4
-	  ldsfld int64 EHTest::fld4
+     stsfld int64 Test_fgloop.EHTest::fld4
+	  ldsfld int64 Test_fgloop.EHTest::fld4
 	  starg.s arg0
 	  sizeof [mscorlib]System.UIntPtr
 	  starg.s arg1
@@ -420,7 +421,7 @@ nop
 	  ldc.i4 17
 	  starg.s arg1
 	  ldc.i4 65
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 88
 	  ldc.i4 35
 	  ldc.i4 94
@@ -430,7 +431,7 @@ nop
 	  ldc.i4 112
 	  call instance int64 int64[89...,0...,2...,34...,75...,124...,10...,86...,126...,126...,78...,113...,42...,2...,105...,44...]::Get(int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32)
 	  ldc.i4.8
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 103
 	  newarr     [mscorlib]System.Int64
 	  ldc.i4 122
@@ -455,7 +456,7 @@ nop
 	  starg.s arg0
 	  ldc.i8 117
 	  or
-	  stsfld int64 EHTest::fld3
+	  stsfld int64 Test_fgloop.EHTest::fld3
 	  ldc.i8 49
 	  ldc.i8 17
 	  ble.un	TARGET_2_4
@@ -473,7 +474,7 @@ ldc.i8 0
 	  ldc.i4 112
 	  blt.un	TARGET_2_3
 	TARGET_2_3:
-	  ldsfld int32 EHTest::fld2
+	  ldsfld int32 Test_fgloop.EHTest::fld2
 	  newarr     [mscorlib]System.Int32
 	  ldc.i4 91
 	  ldelem.i4
@@ -482,7 +483,7 @@ ldc.i8 0
 	  ldc.i4 34
 	  stloc.0
 	  ldc.i4 114
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 109
 	  stloc.0
 	  ldc.i4 99
@@ -490,7 +491,7 @@ ldc.i8 0
 	  mul
 	  ble.un	TARGET_2_0
 	TARGET_2_4:
-	  ldsfld int64 EHTest::fld4
+	  ldsfld int64 Test_fgloop.EHTest::fld4
 	  ldc.i8 41
      stloc 2
      ldloca 2
@@ -499,7 +500,7 @@ ldc.i8 0
 	  ldind.i8
 	  stloc.2
 	  ldarg.0
-	  stsfld int64 EHTest::fld3
+	  stsfld int64 Test_fgloop.EHTest::fld3
 	  ldc.i8 100
 	  neg
 	  ble.un	TARGET_2_3
@@ -545,7 +546,7 @@ nop
 	  ldc.i8 56
 	  ble.un	TARGET_3_2
 	TARGET_3_2:
-	  call int32 EHTest::GetInt32()
+	  call int32 Test_fgloop.EHTest::GetInt32()
 	  ldc.i4 117
 	  add
 	  ldc.i4 102
@@ -560,9 +561,9 @@ nop
 	  ldind.i8
 	  bge.un	TARGET_3_3
 	TARGET_3_4:
-	  call int64 EHTest::GetInt64()
+	  call int64 Test_fgloop.EHTest::GetInt64()
 	  stloc.1
-	  ldsfld int32 EHTest::fld5
+	  ldsfld int32 Test_fgloop.EHTest::fld5
 	  newarr     [mscorlib]System.Int64
 	  ldc.i4 59
 	  ldc.i4 12
@@ -575,7 +576,7 @@ nop
 	  ldc.i8 102
 	  starg.s arg0
 	  ldc.i8 99
-	  stsfld int64 EHTest::fld1
+	  stsfld int64 Test_fgloop.EHTest::fld1
 	  ldc.i8 43
 	  stloc.2
 	  ldc.i8 83
@@ -603,7 +604,7 @@ ldc.i4.1
 endfilter
 start_filter1: 
 pop
-call void EHTest::f2()
+call void Test_fgloop.EHTest::f2()
 filter1_out: leave OUT1
 end_filter1:
 
@@ -659,9 +660,9 @@ nop
 	  rem
 	  ldc.i4 107
 	  or
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 19
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 65
 	  ldc.i4 31
 	  starg.s arg3
@@ -671,14 +672,14 @@ nop
 	  ldc.i4 90
 	  ldc.i4 62
 	  ldc.i4 88
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 10
 	  ldc.i4 55
 	  stloc.0
 	  ldc.i4 99
 	  stloc.0
 	  ldc.i4 124
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 100
 	  ldc.i4 112
 	  ldc.i4 39
@@ -686,7 +687,7 @@ nop
 	  starg.s arg0
 	  ldc.i4 121
 	  ldc.i4 51
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 53
 	  ldc.i4 33
 	  ldc.i4 47
@@ -718,18 +719,18 @@ nop
 	  ldc.i4 22
 	  ldc.i4 82
 	  ldc.i4 73
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 83
 	  ldc.i4 114
 	  stloc.0
 	  ldc.i4 68
 	  ldc.i4 31
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 59
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 118
 	  ldc.i4 25
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 70
 	  ldc.i4 32
 	  stloc.0
@@ -737,12 +738,12 @@ nop
 	  ldc.i4 33
 	  starg.s arg3
 	  ldc.i4 47
-	  stsfld int32 EHTest::fld5
+	  stsfld int32 Test_fgloop.EHTest::fld5
 	  ldc.i4 9
 	  ldc.i4 89
 	  ldc.i4 18
 	  ldc.i4 37
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 44
 	  starg.s arg0
 	  ldc.i4 43
@@ -763,9 +764,9 @@ nop
 	  refanyval	[mscorlib]System.Int64
 	  ldind.i8
 	  ldc.i8 80
-	  stsfld int64 EHTest::fld3
+	  stsfld int64 Test_fgloop.EHTest::fld3
 	  ldc.i8 27
-	  stsfld int64 EHTest::fld4
+	  stsfld int64 Test_fgloop.EHTest::fld4
 	  ldc.i8 102
 	  not
 	  bgt.un	TARGET_4_3
@@ -791,9 +792,9 @@ nop
 	  beq	TARGET_4_0
 	TARGET_4_4:
 	  ldloc.1
-	  stsfld int64 EHTest::fld0
+	  stsfld int64 Test_fgloop.EHTest::fld0
 	  ldc.i8 9
-	  stsfld int64 EHTest::fld3
+	  stsfld int64 Test_fgloop.EHTest::fld3
 	  ldc.i8 98
 	  ldc.i8 85
 	  bge	TARGET_4_1
@@ -802,7 +803,7 @@ newobj instance void [mscorlib]System.ArgumentNullException::.ctor()
 throw
 end_try2:
 
-call void EHTest::f2()
+call void Test_fgloop.EHTest::f2()
 try1_out:
 newobj instance void [mscorlib]System.OutOfMemoryException::.ctor()
 throw
@@ -838,7 +839,7 @@ nop
 	  ldc.i4 14
 	  mul
 	  ldc.i4 72
-	  stsfld int32 EHTest::fld2
+	  stsfld int32 Test_fgloop.EHTest::fld2
 	  ldc.i4 27
 	  cgt
 	  ldc.i4.6
@@ -846,7 +847,7 @@ nop
 	  ldc.i4 19
 	  bgt.un	TARGET_5_4
 	TARGET_5_1:
-	  ldsfld int64 EHTest::fld1
+	  ldsfld int64 Test_fgloop.EHTest::fld1
 	  ldc.i8 103
 	  bgt	TARGET_5_2
 	TARGET_5_2:
@@ -883,7 +884,7 @@ nop
 	  stloc.0
 	  ldc.i4 61
 	  ldelem.i8
-	  stsfld int64 EHTest::fld1
+	  stsfld int64 Test_fgloop.EHTest::fld1
 	  ldc.i8 45
 	  ldc.i8 75
 	  starg.s arg1
@@ -909,31 +910,31 @@ start_filter3:
 pop
 br filter3_br
 start_finally3: 
-call void EHTest::f2()
+call void Test_fgloop.EHTest::f2()
 finally3_out: endfinally
 end_finally3:
 
 
 filter3_br: 
 start_try4: 
-call void EHTest::f2()
+call void Test_fgloop.EHTest::f2()
 try4_out:
 newobj instance void [mscorlib]System.MissingFieldException::.ctor()
 throw
 end_try4:
 
-call void EHTest::f2()
+call void Test_fgloop.EHTest::f2()
 filter3_out: leave finally2_out
 end_filter3:
 
 finally2_br: 
 start_try3: 
-call void EHTest::f2()
+call void Test_fgloop.EHTest::f2()
 try3_out:
 leave finally2_out
 end_try3:
 
-call void EHTest::f2()
+call void Test_fgloop.EHTest::f2()
 finally2_out: endfinally
 end_finally2:
 
@@ -978,7 +979,7 @@ ret
 	  ldc.i8 90
 	  ldc.i4 113
 	  ldc.i8 22
-call int32 EHTest::f1(int32 ,int64 ,int64 ,int32 ,int64 )
+call int32 Test_fgloop.EHTest::f1(int32 ,int64 ,int64 ,int32 ,int64 )
 leave RET
 }
 catch [mscorlib]System.Exception
@@ -991,4 +992,5 @@ call void [System.Console]System.Console::WriteLine(string)
 ret
 }
 
+}
 }

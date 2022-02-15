@@ -89,11 +89,8 @@ namespace System.Threading
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="valueFactory"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        public ThreadLocal(Func<T> valueFactory)
+        public ThreadLocal(Func<T> valueFactory!!)
         {
-            if (valueFactory == null)
-                throw new ArgumentNullException(nameof(valueFactory));
-
             Initialize(valueFactory, false);
         }
 
@@ -109,11 +106,8 @@ namespace System.Threading
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="valueFactory"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        public ThreadLocal(Func<T> valueFactory, bool trackAllValues)
+        public ThreadLocal(Func<T> valueFactory!!, bool trackAllValues)
         {
-            if (valueFactory == null)
-                throw new ArgumentNullException(nameof(valueFactory));
-
             Initialize(valueFactory, trackAllValues);
         }
 

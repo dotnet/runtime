@@ -254,5 +254,18 @@ namespace System.Globalization.Tests
                 Assert.Equal(expected, regionInfo1.GetHashCode().Equals(obj.GetHashCode()));
             }
         }
+
+        [Fact]
+        public void ValidateThrowingWhenUsingCustomUnspecifiedLcid()
+        {
+            // When trying to create RegionInfo using Lcid, we call LcidToLocaleName to map the Lcid to the culture name.
+            // LOCALE_CUSTOM_UNSPECIFIED (0x1000) is considered invalid Lcid to create cultures with. Sometimes Windows can
+            // map which is wrong. This happen if we enumerate the cultures before trying to create the RegionInfo object.
+            // This test is to ensure we'll not allow this creation in .NET.
+
+            CultureInfo [] cultures = CultureInfo.GetCultures(CultureTypes.SpecificCultures);
+
+            AssertExtensions.Throws<ArgumentException>("culture", () => new RegionInfo(4096));
+        }
     }
 }

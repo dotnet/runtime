@@ -157,6 +157,11 @@ namespace XmlCoreTest.Common
             }
         }
 
+        public override void Close()
+        {
+            Dispose(disposing:true);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)

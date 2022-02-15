@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 if (_elementTypeInfo == null && ElementType != null)
                 {
-                    _elementTypeInfo = Options.GetOrAddClass(ElementType);
+                    _elementTypeInfo = Options.GetOrAddJsonTypeInfo(ElementType);
                 }
 
                 return _elementTypeInfo;
@@ -85,7 +85,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Dictionary);
 
-                    _keyTypeInfo = Options.GetOrAddClass(KeyType);
+                    _keyTypeInfo = Options.GetOrAddJsonTypeInfo(KeyType);
                 }
 
                 return _keyTypeInfo;
@@ -138,10 +138,10 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(false, "This constructor should not be called.");
         }
 
-        internal JsonTypeInfo(Type type, JsonSerializerOptions options, bool dummy)
+        internal JsonTypeInfo(Type type, JsonSerializerOptions options!!, bool dummy)
         {
             Type = type;
-            Options = options ?? throw new ArgumentNullException(nameof(options));
+            Options = options;
             // Setting this option is deferred to the initialization methods of the various metadada info types.
             PropertyInfoForTypeInfo = null!;
         }
@@ -600,7 +600,7 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(type != null);
             ValidateType(type, parentClassType, memberInfo, options);
 
-            JsonConverter converter = options.DetermineConverter(parentClassType, type, memberInfo);
+            JsonConverter converter = options.GetConverterFromMember(parentClassType, type, memberInfo);
 
             // The runtimeType is the actual value being assigned to the property.
             // There are three types to consider for the runtimeType:
@@ -649,7 +649,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private static void ValidateType(Type type, Type? parentClassType, MemberInfo? memberInfo, JsonSerializerOptions options)
         {
-            if (!options.TypeIsCached(type) && IsInvalidForSerialization(type))
+            if (!options.IsJsonTypeInfoCached(type) && IsInvalidForSerialization(type))
             {
                 ThrowHelper.ThrowInvalidOperationException_CannotSerializeInvalidType(type, parentClassType, memberInfo);
             }

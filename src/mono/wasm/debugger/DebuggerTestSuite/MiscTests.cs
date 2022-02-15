@@ -954,5 +954,24 @@ namespace DebuggerTests
             );
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
+
+        [Theory]
+        [InlineData(
+            "DebuggerTests.CheckSpecialCharactersInPath", 
+            "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]
+        [InlineData(
+            "DebuggerTests.CheckSNonAsciiCharactersInPath", 
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ął.cs")]
+        public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
+            string classWithNamespace, string expectedFileLocation)
+        {
+            var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
+            await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
+                expectedFileLocation,
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                "Evaluate");
+        }
     }
 }

@@ -29,8 +29,4 @@
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunInstructionSet.cs" Link="Common\ReadyToRunInstructionSet.cs" />
     <Compile Include="..\..\Common\Pgo\PgoFormat.cs" Link="Common\PgoFormat.cs" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
-  </ItemGroup>
 </Project>

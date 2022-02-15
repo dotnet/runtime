@@ -11,23 +11,13 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        protected override void InsertItem(int index, TCollectionItem item)
+        protected override void InsertItem(int index, TCollectionItem item!!)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
-
             base.InsertItem(index, item);
         }
 
-        protected override void SetItem(int index, TCollectionItem item)
+        protected override void SetItem(int index, TCollectionItem item!!)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
-
             base.SetItem(index, item);
         }
     }
