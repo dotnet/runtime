@@ -1,6 +1,6 @@
 #include "config.h"
 
-#include "metadata/attrdefs.h"
+#include <mono/metadata/attrdefs.h>
 #include "metadata/marshal-internals.h"
 #include "metadata/marshal.h"
 #include "utils/mono-compiler.h"

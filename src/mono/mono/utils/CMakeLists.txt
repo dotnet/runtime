@@ -100,9 +100,7 @@ set(utils_common_sources
     mono-error-internals.h
     monobitset.h
     mono-codeman.h
-    mono-counters.h
     mono-digest.h
-    mono-error.h
     mono-forward-internal.h
     mono-machine.h
     mono-math.h
@@ -234,14 +232,3 @@ else()
 endif()
 
 addprefix(utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
-
-set(utils_public_headers_base
-    mono-logger.h
-    mono-error.h
-    mono-forward.h
-    mono-publib.h
-    mono-jemalloc.h
-    mono-dl-fallback.h
-    mono-private-unstable.h
-    mono-counters.h)
-addprefix(utils_public_headers ../utils "${utils_public_headers_base}")

@@ -1118,6 +1118,15 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             }
 
+            // Internal calls typically turn into fcalls that do not always
+            // probe for GC. Be conservative here and always let JIT know that
+            // this method may not do GC checks so the JIT might need to make
+            // callers fully interruptible.
+            if (method.IsInternalCall)
+            {
+                result |= CorInfoFlag.CORINFO_FLG_NOGCCHECK;
+            }
+
             return (uint)result;
         }
 
