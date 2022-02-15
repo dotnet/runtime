@@ -7640,6 +7640,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoGenericContext *cmethod_context = mono_method_get_context (cmethod);
 
 				context_used = mini_method_check_context_used (cfg, cmethod);
+				if (!context_used && gshared_static_virtual)
+					context_used = mini_class_check_context_used (cfg, constrained_class);
 
 				if (context_used && mono_class_is_interface (cmethod->klass) && !m_method_is_static (cmethod)) {
 					/* Generic method interface
