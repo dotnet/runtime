@@ -1846,7 +1846,7 @@ class_has_ref_fields (MonoClass *klass)
 static gboolean
 type_has_ref_fields (MonoType *ftype)
 {
-	if (m_type_is_byref (ftype) || class_has_ref_fields (mono_class_from_mono_type_internal (ftype)))
+	if (m_type_is_byref (ftype) || (MONO_TYPE_ISSTRUCT (ftype) && class_has_ref_fields (mono_class_from_mono_type_internal (ftype))))
 		return TRUE;
 
 	return FALSE;
