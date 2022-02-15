@@ -125,13 +125,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         public JObject Value { get; private set; }
         public JObject Error { get; private set; }
 
-        public bool IsOk => Value != null;
-        public bool IsErr => Error != null;
+        public bool IsOk => Error == null;
 
         private Result(JObject resultOrError, bool isError)
         {
             bool resultHasError = isError || string.Equals((resultOrError?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
-            if (resultOrError != null && resultHasError)
+            if (resultHasError)
             {
                 Value = null;
                 Error = resultOrError;
@@ -187,7 +186,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override string ToString()
         {
-            return $"[Result: IsOk: {IsOk}, IsErr: {IsErr}, Value: {Value?.ToString()}, Error: {Error?.ToString()} ]";
+            return $"[Result: IsOk: {IsOk}, IsErr: {!IsOk}, Value: {Value?.ToString()}, Error: {Error?.ToString()} ]";
         }
     }
 
