@@ -126,14 +126,12 @@ steps:
     displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
 
-  #### Commented out to mitigate https://github.com/dotnet/performance/issues/2254 on main
-  #- script: |
-  #    chmod -R a+r .
-  #    ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release -p:RunAOTCompilation=false -p:AndroidEnableProfiledAot=false
-  #    ls -l -R
-  #    mv ./bin/Release/net6.0-android/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
-  #  displayName: Build MAUI Android
-  #  workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+  - script: |
+      chmod -R a+r .
+      ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
+      mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
+    displayName: Build MAUI Android
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - script: |
       chmod -R a+r .
@@ -149,13 +147,12 @@ steps:
     displayName: Build MAUI MacCatalyst
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
-  #### Commented out to mitigate https://github.com/dotnet/performance/issues/2254 on main
-  #- task: PublishBuildArtifacts@1
-  #  displayName: 'Publish MauiAndroid binlog'
-  #  condition: always()
-  #  inputs:
-  #    pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
-  #    artifactName:  ${{ parameters.artifactName }}
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish MauiAndroid binlog'
+    condition: always()
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
+      artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiiOS binlog'
@@ -171,16 +168,15 @@ steps:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog
       artifactName:  ${{ parameters.artifactName }}
 
-  #### Commented out to mitigate https://github.com/dotnet/performance/issues/2254 on main
-  #- template: /eng/pipelines/common/upload-artifact-step.yml
-  #  parameters:
-  #      rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk
-  #      includeRootFolder: true
-  #      displayName: Maui Android App
-  #      artifactName: MauiAndroidApp
-  #      archiveExtension: '.tar.gz'
-  #      archiveType: tar
-  #      tarCompression: gz
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk
+        includeRootFolder: true
+        displayName: Maui Android App
+        artifactName: MauiAndroidApp
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
