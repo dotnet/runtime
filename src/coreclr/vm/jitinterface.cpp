@@ -9372,7 +9372,7 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
-                    pMethodTable  = pFieldStart->LookupApproxFieldTypeHandle().GetMethodTable();
+                    pMethodTable  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
                         size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
@@ -9400,7 +9400,7 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
-                    pMethodTable  = pFieldStart->LookupApproxFieldTypeHandle().GetMethodTable();
+                    pMethodTable  = pFieldStart->GetFieldTypeHandleThrowing().GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
                         size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
@@ -9439,7 +9439,7 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
-                    pMethodTable  = pFieldStart->LookupApproxFieldTypeHandle().GetMethodTable();
+                    pMethodTable  = pFieldStart[1].GetFieldTypeHandleThrowing().GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
                         DWORD size2 = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
@@ -9549,7 +9549,6 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
                         else
                         {
                             UNREACHABLE_MSG("Invalid NativeFieldCategory.----LoongArch64----");
-                            //size = STRUCT_NO_FLOAT_FIELD;
                         }
                     }
                     else
@@ -9601,12 +9600,6 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
                 {
                     const NativeFieldDescriptor *pNativeFieldDescs = pMethodTable->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
 
-                    //bool isFixedBuffer = numIntroducedFields == 1 && (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                    //                    || fieldType == ELEMENT_TYPE_VALUETYPE)
-                    //                && (pFieldStart->GetOffset() == 0)
-                    //                && pMethodTable->HasLayout()
-                    //                && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
-
                     if (pNativeFieldDescs->GetCategory() == NativeFieldCategory::NESTED)
                     {
                         MethodTable* pMethodTable2 = pNativeFieldDescs->GetNestedNativeMethodTable();
@@ -9641,12 +9634,11 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
                         else
                         {
                             UNREACHABLE_MSG("Invalid NativeFieldCategory.----LoongArch64----2");
-                            //size = STRUCT_NO_FLOAT_FIELD;
                         }
                     }
                     else
                     {
-                        MethodTable* pMethodTable2 = pFieldStart[0].LookupApproxFieldTypeHandle().AsMethodTable();
+                        MethodTable* pMethodTable2 = pFieldStart[0].GetFieldTypeHandleThrowing().AsMethodTable();
                         if (pMethodTable2->GetNumIntroducedInstanceFields() == 1)
                         {
                             size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
@@ -9683,7 +9675,7 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
-                    MethodTable* pMethodTable2 = pFieldStart[1].LookupApproxFieldTypeHandle().AsMethodTable();
+                    MethodTable* pMethodTable2 = pFieldStart[1].GetFieldTypeHandleThrowing().AsMethodTable();
                     if ((pMethodTable2->GetNumInstanceFieldBytes() > 8) || (pMethodTable2->GetNumIntroducedInstanceFields() > 1))
                     {
                         size = STRUCT_NO_FLOAT_FIELD;
@@ -9736,7 +9728,6 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
                             else
                             {
                                 UNREACHABLE_MSG("Invalid NativeFieldCategory.----LoongArch64----3");
-                                //size = STRUCT_NO_FLOAT_FIELD;
                             }
                         }
                         else
@@ -9761,14 +9752,9 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
                                 size = STRUCT_NO_FLOAT_FIELD;
                             }
                         }
-                        //else
-                        //{
-                        //    assert(!"------------should amend for LOONGARCH64!!!");
-                        //    goto _End_arg;
-                        //}
                     }
                     else
-                    {//whether should confirm the nested ?
+                    {
                         if (getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2) == 1)
                         {
                             if (pMethodTable2->GetNumInstanceFieldBytes() == 4)

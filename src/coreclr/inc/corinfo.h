@@ -334,7 +334,7 @@ private:
 //   bit 5: `1` means the second field's size is 8.
 //
 // Note that bit 0 and 3 cannot both be set.
-enum StructFloatFieldInfoFlags : uint8_t
+enum StructFloatFieldInfoFlags
 {
     STRUCT_NO_FLOAT_FIELD         = 0x0,
     STRUCT_FLOAT_FIELD_ONLY_ONE   = 0x1,
