@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);DRAWING_NAMESPACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -18,7 +18,7 @@ System.Drawing.Font
 System.Drawing.Graphics
 System.Drawing.Icon
 
-Since .NET 7, non-Windows platforms are not supported. See https://aka.ms/systemdrawingnonwindows for more information.</PackageDescription>
+Since .NET 7, non-Windows platforms are not supported, even with the runtime configuration switch. See https://aka.ms/systemdrawingnonwindows for more information.</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
