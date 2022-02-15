@@ -122,7 +122,7 @@ internal static partial class Interop
 #endif
             HandleRef hDC, int x1, int y1, int x2, int y2);
 
-        [GeneratedDllImport(Libraries.Gdi32, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Gdi32, EntryPoint = "GetObjectW", SetLastError = true)]
         internal static partial int GetObject(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]

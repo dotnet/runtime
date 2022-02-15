@@ -136,7 +136,7 @@ internal static partial class Interop
         [GeneratedDllImport("kernel32.dll")]
         internal static partial int GetUserGeoID(int geoClass);
 
-        [GeneratedDllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport("kernel32.dll", EntryPoint = "GetGeoInfoW", CharSet = CharSet.Unicode)]
         internal static unsafe partial int GetGeoInfo(int location, int geoType, char* lpGeoData, int cchData, int LangId);
 
         [GeneratedDllImport("kernel32.dll", CharSet = CharSet.Unicode)]
