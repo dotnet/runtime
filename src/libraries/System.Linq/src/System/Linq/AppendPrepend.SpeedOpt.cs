@@ -23,7 +23,7 @@ namespace System.Linq
             {
                 Debug.Assert(GetCount(onlyIfCheap: true) == -1);
 
-                var builder = new LargeArrayBuilder<TSource>(initialize: true);
+                var builder = new LargeArrayBuilder<TSource>(int.MaxValue);
 
                 if (!_appending)
                 {
@@ -106,7 +106,7 @@ namespace System.Linq
             {
                 Debug.Assert(GetCount(onlyIfCheap: true) == -1);
 
-                var builder = new SparseArrayBuilder<TSource>(initialize: true);
+                var builder = new SparseArrayBuilder<TSource>();
 
                 if (_prepended != null)
                 {

@@ -22,7 +22,7 @@ namespace System.Linq
         {
             public TResult[] ToArray()
             {
-                var builder = new LargeArrayBuilder<TResult>(initialize: true);
+                var builder = new LargeArrayBuilder<TResult>(int.MaxValue);
 
                 foreach (TSource item in _source)
                 {
@@ -585,7 +585,7 @@ namespace System.Linq
             {
                 Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
 
-                var builder = new LargeArrayBuilder<TResult>(initialize: true);
+                var builder = new LargeArrayBuilder<TResult>(int.MaxValue);
                 foreach (TSource input in _source)
                 {
                     builder.Add(_selector(input));

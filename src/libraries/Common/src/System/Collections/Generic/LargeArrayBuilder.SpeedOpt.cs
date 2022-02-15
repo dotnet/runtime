@@ -23,18 +23,6 @@ namespace System.Collections.Generic
         private int _count;                 // Count of all of the items in this builder.
 
         /// <summary>
-        /// Constructs a new builder.
-        /// </summary>
-        /// <param name="initialize">Pass <c>true</c>.</param>
-        public LargeArrayBuilder(bool initialize)
-            : this(maxCapacity: int.MaxValue)
-        {
-            // This is a workaround for C# not having parameterless struct constructors yet.
-            // Once it gets them, replace this with a parameterless constructor.
-            Debug.Assert(initialize);
-        }
-
-        /// <summary>
         /// Constructs a new builder with the specified maximum capacity.
         /// </summary>
         /// <param name="maxCapacity">The maximum capacity this builder can have.</param>
