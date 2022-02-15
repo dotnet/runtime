@@ -5279,18 +5279,15 @@ void CodeGen::genCall(GenTreeCall* call)
         genPendingCallLabel = nullptr;
     }
 
-#ifdef DEBUG
-    // Killed registers should no longer contain any GC pointers.
-    regMaskTP killMask = RBM_CALLEE_TRASH;
-    if (call->IsHelperCall())
-    {
-        CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
-        killMask                 = compiler->compHelperCallKillSet(helpFunc);
-    }
-
-    assert((gcInfo.gcRegGCrefSetCur & killMask) == 0);
-    assert((gcInfo.gcRegByrefSetCur & killMask) == 0);
-#endif
+    // Update GC info:
+    // All Callee arg registers are trashed and no longer contain any GC pointers.
+    // TODO-XArch-Bug?: As a matter of fact shouldn't we be killing all of callee trashed regs here?
+    // For now we will assert that other than arg regs gc ref/byref set doesn't contain any other
+    // registers from RBM_CALLEE_TRASH.
+    assert((gcInfo.gcRegGCrefSetCur & (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)) == 0);
+    assert((gcInfo.gcRegByrefSetCur & (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)) == 0);
+    gcInfo.gcRegGCrefSetCur &= ~RBM_ARG_REGS;
+    gcInfo.gcRegByrefSetCur &= ~RBM_ARG_REGS;
 
     var_types returnType = call->TypeGet();
     if (returnType != TYP_VOID)
