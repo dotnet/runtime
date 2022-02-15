@@ -561,13 +561,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     (EndLocation.Line == containerMethod.EndLocation.Line && EndLocation.Column < containerMethod.EndLocation.Column));
     }
 
-    internal record ParameterInfo(string name, ConstantTypeCode? typeCode = null, byte[] value = null)
+    internal record ParameterInfo(string Name, ConstantTypeCode? TypeCode = null, byte[] Value = null)
     {
-        public string Name => name;
-        public ConstantTypeCode? TypeCode => typeCode;
-        public byte[] Value => value;
-
-        public bool HasDefaultValue = value != null;
+        public bool HasDefaultValue = Value != null;
     }
 
     internal class TypeInfo
