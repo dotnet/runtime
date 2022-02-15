@@ -347,6 +347,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         break;
 
                     case TransitionRegexKind.Union:
+                    case TransitionRegexKind.OrderedUnion:
                         Debug.Assert(_first is not null && _second is not null);
                         foreach ((S, SymbolicRegexNode<S>?, int) path in _first.EnumeratePaths(solver, pathCondition))
                         {

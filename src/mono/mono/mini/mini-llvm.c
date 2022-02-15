@@ -7713,29 +7713,73 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				break;
 			case OP_FMAX:
 			case OP_FMIN: {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
 				LLVMValueRef args [] = { l, r };
-
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+				LLVMTypeRef t = LLVMTypeOf (l);
+				unsigned int elems = LLVMGetVectorSize (t);
 				gboolean is_r4 = ins->inst_c1 == MONO_TYPE_R4;
-				if (ins->inst_c0 == OP_FMAX)
-					result = call_intrins (ctx, is_r4 ? INTRINS_SSE_MAXPS : INTRINS_SSE_MAXPD, args, dname);
-				else
-					result = call_intrins (ctx, is_r4 ? INTRINS_SSE_MINPS : INTRINS_SSE_MINPD, args, dname);
+				int iid = -1;
+				if (ins->inst_c0 == OP_FMAX) {
+					if (elems == 1)
+						iid = is_r4 ? INTRINS_SSE_MAXSS : INTRINS_SSE_MAXSD;
+					else
+						iid = is_r4 ? INTRINS_SSE_MAXPS : INTRINS_SSE_MAXPD;
+				} else {
+					if (elems == 1)
+						iid = is_r4 ? INTRINS_SSE_MINSS : INTRINS_SSE_MINSD;
+					else
+						iid = is_r4 ? INTRINS_SSE_MINPS : INTRINS_SSE_MINPD;
+				}
+				result = call_intrins (ctx, iid, args, dname);
+#elif defined(TARGET_ARM64)
+				int instc0_arm64 = ins->inst_c0 == OP_FMAX ? INTRINS_AARCH64_ADV_SIMD_FMAX : INTRINS_AARCH64_ADV_SIMD_FMIN;
+				IntrinsicId iid = (IntrinsicId) instc0_arm64;
+				llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+				result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 #else
 				NOT_IMPLEMENTED;
 #endif
 				break;
 			}
-			case OP_IMAX: {
-				gboolean is_unsigned = ins->inst_c1 == MONO_TYPE_U1 || ins->inst_c1 == MONO_TYPE_U2 || ins->inst_c1 == MONO_TYPE_U4 || ins->inst_c1 == MONO_TYPE_U8;
-				LLVMValueRef cmp = LLVMBuildICmp (builder, is_unsigned ? LLVMIntUGT : LLVMIntSGT, l, r, "");
-				result = LLVMBuildSelect (builder, cmp, l, r, "");
-				break;
-			}
+			case OP_IMAX:
 			case OP_IMIN: {
 				gboolean is_unsigned = ins->inst_c1 == MONO_TYPE_U1 || ins->inst_c1 == MONO_TYPE_U2 || ins->inst_c1 == MONO_TYPE_U4 || ins->inst_c1 == MONO_TYPE_U8;
-				LLVMValueRef cmp = LLVMBuildICmp (builder, is_unsigned ? LLVMIntULT : LLVMIntSLT, l, r, "");
+				LLVMIntPredicate op;
+				switch (ins->inst_c0) {
+				case OP_IMAX:
+					op = is_unsigned ? LLVMIntUGT : LLVMIntSGT;
+					break;
+				case OP_IMIN:
+					op = is_unsigned ? LLVMIntULT : LLVMIntSLT;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+#if defined(TARGET_ARM64)
+				if ((ins->inst_c1 == MONO_TYPE_U8) || (ins->inst_c1 == MONO_TYPE_I8)) {
+					LLVMValueRef cmp = LLVMBuildICmp (builder, op, l, r, "");
+					result = LLVMBuildSelect (builder, cmp, l, r, "");
+				} else {
+					int instc0_arm64;
+					switch (ins->inst_c0) {
+					case OP_IMAX:
+						instc0_arm64 = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UMAX : INTRINS_AARCH64_ADV_SIMD_SMAX;
+						break;
+					case OP_IMIN:
+						instc0_arm64 = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UMIN : INTRINS_AARCH64_ADV_SIMD_SMIN;
+						break;
+					default:
+						g_assert_not_reached ();
+					}
+					IntrinsicId iid = (IntrinsicId) instc0_arm64;
+					LLVMValueRef args [] = { l, r };
+					llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+					result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+				}
+#else
+				LLVMValueRef cmp = LLVMBuildICmp (builder, op, l, r, "");
 				result = LLVMBuildSelect (builder, cmp, l, r, "");
+#endif
 				break;
 			}
 
