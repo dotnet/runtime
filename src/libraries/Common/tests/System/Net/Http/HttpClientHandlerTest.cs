@@ -976,7 +976,6 @@ namespace System.Net.Http.Functional.Tests
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
                         Assert.False(responseStream.CanWrite);
-                        Console.WriteLine($"IsBrowser: '{PlatformDetection.IsBrowser}', enableWasmStreaming: '{enableWasmStreaming}', canSeek: '{responseStream.CanSeek}'.");
                         Assert.Equal(PlatformDetection.IsBrowser && !enableWasmStreaming, responseStream.CanSeek);
 
                         // Not supported operations
