@@ -220,6 +220,14 @@ namespace ILCompiler.PEWriter
                         break;
                     }
 
+                case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
+                case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
+                    {
+                        relocationLength = 4;
+                        delta = targetRVA - sourceRVA;
+                        break;
+                    }
+
                 default:
                     throw new NotSupportedException();
             }

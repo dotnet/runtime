@@ -200,6 +200,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                     case Machine.Arm64:
                         return TargetArchitecture.ARM64;
 
+                    case Machine.LoongArch64:
+                        return TargetArchitecture.LoongArch64;
+
                     default:
                         throw new NotImplementedException(_machine.ToString());
                 }
@@ -639,6 +642,11 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case Machine.Arm64:
                     _architecture = Architecture.Arm64;
+                    _pointerSize = 8;
+                    break;
+
+                case Machine.LoongArch64:
+                    _architecture = Architecture.LoongArch64;
                     _pointerSize = 8;
                     break;
 
