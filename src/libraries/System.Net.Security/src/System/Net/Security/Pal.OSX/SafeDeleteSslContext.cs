@@ -118,14 +118,16 @@ namespace System.Net
                     X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
 
                     Debug.Assert(certList != null, "certList != null");
-                    IntPtr[] handles = new IntPtr[certList.Count];
+                    Span<IntPtr> handles = certList.Count <= 256
+                        ? stackalloc IntPtr[256]
+                        : new IntPtr[certList.Count];
 
                     for (int i = 0; i < certList.Count; i++)
                     {
                         handles[i] = certList[i].Handle;
                     }
 
-                    Interop.AppleCrypto.SslSetCertificateAuthorities(_sslContext, handles, true);
+                    Interop.AppleCrypto.SslSetCertificateAuthorities(_sslContext, handles.Slice(0, certList.Count), true);
                 }
             }
         }

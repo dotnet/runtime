@@ -164,9 +164,9 @@ internal static partial class Interop
         [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetCertificateAuthorities")]
         internal static partial int SslSetCertificateAuthorities(SafeSslHandle sslHandle, SafeCreateHandle certificateOrArray, int replaceExisting);
 
-        internal static unsafe void SslSetCertificateAuthorities(SafeSslHandle sslHandle, IntPtr[] certificates, bool replaceExisting)
+        internal static unsafe void SslSetCertificateAuthorities(SafeSslHandle sslHandle, Span<IntPtr> certificates, bool replaceExisting)
         {
-            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certificates, (UIntPtr)certificates.Length))
+            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certificates))
             {
                 int osStatus = SslSetCertificateAuthorities(sslHandle, cfCertRefs, replaceExisting ? 1 : 0);
 
