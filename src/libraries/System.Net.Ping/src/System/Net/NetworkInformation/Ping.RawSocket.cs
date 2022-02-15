@@ -340,7 +340,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static PingReply CreatePingReply(IPStatus status, IPAddress? address = null, int rtt = 0)
+        private static PingReply CreatePingReply(IPStatus status, IPAddress? address = null, long rtt = 0)
         {
             // Documentation indicates that you should only pay attention to the IPStatus value when
             // its value is not "Success", but the rest of these values match that of the Windows implementation.
