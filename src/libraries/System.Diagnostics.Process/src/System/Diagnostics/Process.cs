@@ -829,7 +829,7 @@ namespace System.Diagnostics
             return WaitForInputIdleCore(milliseconds);
         }
 
-        public bool WaitForInputIdle(TimeSpan timeout) => WaitForInputIdle(checked((int)timeout.TotalMilliseconds));
+        public bool WaitForInputIdle(TimeSpan timeout) => WaitForInputIdle(ToTimeoutMilliseconds(timeout));
 
         public ISynchronizeInvoke? SynchronizingObject { get; set; }
 
