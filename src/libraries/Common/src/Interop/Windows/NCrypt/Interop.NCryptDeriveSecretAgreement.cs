@@ -43,7 +43,7 @@ internal static partial class Interop
 
             if (error != ErrorCode.ERROR_SUCCESS)
             {
-                throw error.ToCryptographicException();
+                throw ((int)error).ToCryptographicException();
             }
 
             return secretAgreement;
