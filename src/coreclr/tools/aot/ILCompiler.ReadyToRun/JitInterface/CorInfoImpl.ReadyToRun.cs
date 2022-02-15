@@ -2595,8 +2595,8 @@ namespace Internal.JitInterface
             throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(canGetCookieForPInvokeCalliSig)}");
         }
 
-        private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
-        private int SizeOfReversePInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits(_compilation.NodeFactory.Target.Architecture) * _compilation.NodeFactory.Target.PointerSize;
+        private int SizeOfPInvokeTransitionFrame => 11 * _compilation.NodeFactory.Target.PointerSize;
+        private int SizeOfReversePInvokeTransitionFrame => (_compilation.NodeFactory.Target.Architecture == TargetArchitecture.X86 ? 5 : 2) * _compilation.NodeFactory.Target.PointerSize;
 
         private void setEHcount(uint cEH)
         {
