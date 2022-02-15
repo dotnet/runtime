@@ -156,14 +156,14 @@ set(libunwind_elfxx_la_SOURCES
 )
 
 # The list of files that go into libunwind and libunwind-loongarch64:
-SET(libunwind_la_SOURCES_loongarch_common
+set(libunwind_la_SOURCES_loongarch_common
     ${libunwind_la_SOURCES_common}
     loongarch64/is_fpreg.c
     loongarch64/regname.c
 )
 
 # The list of files that go into libunwind:
-SET(libunwind_la_SOURCES_loongarch
+set(libunwind_la_SOURCES_loongarch
     ${libunwind_la_SOURCES_loongarch_common}
     ${libunwind_la_SOURCES_local}
     loongarch64/Lget_proc_info.c  loongarch64/Linit.c  loongarch64/Lis_signal_frame.c
@@ -174,7 +174,7 @@ SET(libunwind_la_SOURCES_loongarch
     loongarch64/Lcreate_addr_space.c  loongarch64/Lglobal.c  loongarch64/Linit_remote.c  loongarch64/Lresume.c
 )
 
-SET(libunwind_loongarch_la_SOURCES_loongarch
+set(libunwind_loongarch_la_SOURCES_loongarch
     ${libunwind_la_SOURCES_loongarch_common}
     ${libunwind_la_SOURCES_generic}
 	loongarch64/Gcreate_addr_space.c loongarch64/Gget_proc_info.c loongarch64/Gget_save_loc.c
@@ -346,9 +346,9 @@ if(CLR_CMAKE_HOST_UNIX)
         set(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
         list(APPEND libunwind_setjmp_la_SOURCES     arm/siglongjmp.S)
     elseif(CLR_CMAKE_HOST_ARCH_ARMV6)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_arm})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_arm_la_SOURCES_arm})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
+        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_arm})
+        set(libunwind_remote_la_SOURCES             ${libunwind_arm_la_SOURCES_arm})
+        set(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
         list(APPEND libunwind_setjmp_la_SOURCES     arm/siglongjmp.S)
     elseif(CLR_CMAKE_HOST_ARCH_I386)
         set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86} ${libunwind_x86_la_SOURCES_os})
@@ -361,13 +361,13 @@ if(CLR_CMAKE_HOST_UNIX)
         set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
         list(APPEND libunwind_setjmp_la_SOURCES     x86_64/longjmp.S x86_64/siglongjmp.SA)
     elseif(CLR_CMAKE_HOST_ARCH_S390X)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_s390x})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_s390x_la_SOURCES_s390x})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_s390x})
+        set(libunwind_remote_la_SOURCES             ${libunwind_s390x_la_SOURCES_s390x})
+        set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
     elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_loongarch})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_loongarch_la_SOURCES_loongarch})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_loongarch})
+        set(libunwind_remote_la_SOURCES             ${libunwind_loongarch_la_SOURCES_loongarch})
+        set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
         list(APPEND libunwind_setjmp_la_SOURCES     loongarch64/siglongjmp.S)
     endif()
 
@@ -400,9 +400,9 @@ else(CLR_CMAKE_HOST_UNIX)
         set(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
         list(APPEND libunwind_setjmp_la_SOURCES     arm/siglongjmp.S)
     elseif(CLR_CMAKE_TARGET_ARCH_ARMV6)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_arm})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_arm_la_SOURCES_arm})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
+        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_arm})
+        set(libunwind_remote_la_SOURCES             ${libunwind_arm_la_SOURCES_arm})
+        set(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
         list(APPEND libunwind_setjmp_la_SOURCES     arm/siglongjmp.S)
     elseif(CLR_CMAKE_TARGET_ARCH_I386)
         set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86} ${libunwind_x86_la_SOURCES_os})
