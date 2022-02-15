@@ -1402,8 +1402,8 @@ namespace System.Collections.Immutable
         private class MultiSet
         {
             private readonly IEqualityComparer<T> _equalityComparer;
-            private readonly int[] _bucketHeaders; // initialized as zeroed array so its valid item value is 1-based index of _entries
-            private readonly Entry[] _entries;
+            private int[] _bucketHeaders; // initialized as zeroed array so its valid item value is 1-based index of _entries
+            private Entry[] _entries;
             private int _startOffset;
 
             public MultiSet(int capacity, IEqualityComparer<T>? equalityComparer)
@@ -1412,6 +1412,14 @@ namespace System.Collections.Immutable
 
                 _bucketHeaders = new int[capacity];
                 _entries = new Entry[capacity];
+            }
+
+            public MultiSet(IEqualityComparer<T>? equalityComparer)
+            {
+                _equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
+
+                _bucketHeaders = new int[1];
+                _entries = new Entry[1];
             }
 
             public void Add(T item)
@@ -1430,12 +1438,47 @@ namespace System.Collections.Immutable
                     entryIndex = entry.Next;
                 }
 
-                Debug.Assert(_startOffset < _bucketHeaders.Length);
-                Debug.Assert(_startOffset < _entries.Length);
+                if (_startOffset == _bucketHeaders.Length)
+                {
+                    EnsureCapacity();
+                    bucketHeader = ref GetBucketHeaderIndexRef(item);
+                }
 
                 _entries[_startOffset].SetInfo(item, bucketHeader - 1, 1);
-
                 bucketHeader = ++_startOffset; // 1-based bucketHeader
+            }
+
+            private void EnsureCapacity()
+            {
+                const uint arrayMaxLength = 0X7FFFFFC7;
+
+                int expectedSize = _bucketHeaders.Length + 1;
+                uint newSize = (uint)_bucketHeaders.Length << 1;
+                if (newSize > arrayMaxLength)
+                {
+                    newSize = arrayMaxLength;
+                }
+
+                if (newSize < expectedSize)
+                {
+                    newSize = (uint)expectedSize;
+                }
+
+                var entries = new Entry[newSize];
+                Array.Copy(_entries, entries, _entries.Length);
+                _bucketHeaders = new int[newSize];
+                for (int i = 0; i < _entries.Length; i++)
+                {
+                    ref Entry entry = ref _entries[i];
+                    if (entry.Count != 0)
+                    {
+                        ref int bucketHeader = ref GetBucketHeaderIndexRef(entry.Key);
+                        entry.Next = bucketHeader - 1;
+                        bucketHeader = i + 1;
+                    }
+                }
+
+                _entries = entries;
             }
 
             public bool TryRemove(T item)
