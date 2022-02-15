@@ -26,8 +26,6 @@
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs"
              Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs"
-             Link="Common\Internal\Cryptography\HashProvider.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
              Link="Common\Internal\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
@@ -329,6 +327,7 @@
     <Compile Include="System\Security\Cryptography\HashAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmName.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmNames.cs" />
+    <Compile Include="System\Security\Cryptography\HashProvider.cs" />
     <Compile Include="System\Security\Cryptography\Helpers.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.cs" />
     <Compile Include="System\Security\Cryptography\HMAC.cs" />
@@ -1316,12 +1315,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.iOS.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="$(CommonPath)Internal\Cryptography\CngCommon.Hash.cs"
-             Link="Common\Internal\Cryptography\CngCommon.Hash.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\CngCommon.SignVerify.cs"
-             Link="Common\Internal\Cryptography\CngCommon.SignVerify.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\HashProviderCng.cs"
-             Link="Common\Internal\Cryptography\HashProviderCng.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Windows\CryptoThrowHelper.cs"
              Link="Common\Internal\Cryptography\Windows\CryptoThrowHelper.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Windows\ErrorCodeHelper.cs"
@@ -1714,6 +1707,8 @@
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.Windows.cs" />
     <Compile Include="System\Security\Cryptography\CngAlgorithmCore.cs" />
     <Compile Include="System\Security\Cryptography\CngAsnFormatter.cs" />
+    <Compile Include="System\Security\Cryptography\CngCommon.Hash.cs" />
+    <Compile Include="System\Security\Cryptography\CngCommon.SignVerify.cs" />
     <Compile Include="System\Security\Cryptography\CngHelpers.cs" />
     <Compile Include="System\Security\Cryptography\CngKey.cs" />
     <Compile Include="System\Security\Cryptography\CngKey.Create.cs" />
@@ -1751,6 +1746,7 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanCng.Xml.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanCngPublicKey.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanWrapper.cs" />
+    <Compile Include="System\Security\Cryptography\HashProviderCng.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Windows.cs" />
     <Compile Include="System\Security\Cryptography\ICngSymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Windows.cs" />
