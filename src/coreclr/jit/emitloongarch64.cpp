@@ -2225,7 +2225,7 @@ void emitter::emitIns_R_AI(instruction ins,
     //   addi_d  reg, reg, off-lo-12bits
     //  case:EA_PTR_DSP_RELOC
     //   pcaddu12i  reg, off-hi-20bits
-    //   ldptr_d  reg, reg, off-lo-12bits
+    //   ld_d  reg, reg, off-lo-12bits
 
     instrDesc* id = emitNewInstr(attr);
 
@@ -2853,15 +2853,14 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         //   pcaddu18i  t2, addr-hi20
         //   jilr r0/1,t2,addr-lo18
 
+        *(code_t*)dst = 0x1e00000e;
+
         long addr = (long)id->idAddr()->iiaAddr; // get addr.
         // should assert(addr-dst < 38bits);
 
         int reg2 = (int)addr & 1;
         addr     = addr ^ 1;
 
-        emitRecordRelocation(dst, (BYTE*)addr, IMAGE_REL_LOONGARCH64_PC);
-
-        *(code_t*)dst = 0x1e00000e;
         dst += 4;
 #ifdef DEBUG
         code = emitInsCode(INS_pcaddu18i);
@@ -2871,6 +2870,8 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         assert(code == 0x4c000000);
 #endif
         *(code_t*)dst = 0x4c000000 | (14 << 5) | reg2;
+
+        emitRecordRelocation(dst - 4, (BYTE*)addr, IMAGE_REL_LOONGARCH64_JIR);
     }
     else
     {
@@ -2907,10 +2908,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         D_INST_JIRL(code, reg2, REG_T2, 0);
     }
 
-    // Now output the call instruction and update the 'dst' pointer
-    //
-    unsigned outputInstrSize = emitOutput_Instr(dst, code);
-    dst += outputInstrSize;
+    dst += 4;
 
     // update volatile regs within emitThisGCrefRegs and emitThisByrefRegs.
     if (gcrefRegs != emitThisGCrefRegs)
@@ -2921,10 +2919,6 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
     {
         emitUpdateLiveGCregs(GCT_BYREF, byrefRegs, dst);
     }
-
-    // All call instructions are 4-byte in size on LOONGARCH64
-    // not including delay-slot which processed later.
-    assert(outputInstrSize == callInstrSize);
 
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
     if (id->idGCref() == GCT_GCREF)
@@ -3041,23 +3035,22 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //   addi_d  reg, reg, off-lo-12bits
             //  case:EA_PTR_DSP_RELOC
             //   pcaddu12i  reg, off-hi-20bits
-            //   ldptr_d  reg, reg, off-lo-12bits
+            //   ld_d  reg, reg, off-lo-12bits
 
             regNumber reg1 = id->idReg1();
 
-            emitRecordRelocation(dst, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
-
             *(code_t*)dst = 0x1c000000 | (code_t)reg1;
-            dst += 4;
+
             dst2 = dst;
+            dst += 4;
 
 #ifdef DEBUG
             code = emitInsCode(INS_pcaddu12i);
             assert(code == 0x1c000000);
             code = emitInsCode(INS_addi_d);
             assert(code == 0x02c00000);
-            code = emitInsCode(INS_ldptr_d);
-            assert(code == 0x26000000);
+            code = emitInsCode(INS_ld_d);
+            assert(code == 0x28c00000);
 #endif
 
             if (id->idIsCnsReloc())
@@ -3065,11 +3058,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 ins           = INS_addi_d;
                 *(code_t*)dst = 0x02c00000 | (code_t)reg1 | (code_t)(reg1 << 5);
             }
-            else // if (id->idIsDspReloc())
+            else
             {
                 assert(id->idIsDspReloc());
-                ins           = INS_ldptr_d;
-                *(code_t*)dst = 0x26000000 | (code_t)reg1 | (code_t)(reg1 << 5);
+                ins           = INS_ld_d;
+                *(code_t*)dst = 0x28c00000 | (code_t)reg1 | (code_t)(reg1 << 5);
             }
 
             if (id->idGCref() != GCT_NONE)
@@ -3082,6 +3075,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
             dst += 4;
+
+            emitRecordRelocation(dst2, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
+
+            dst2 += 4;
 
             sz = sizeof(instrDesc);
         }
