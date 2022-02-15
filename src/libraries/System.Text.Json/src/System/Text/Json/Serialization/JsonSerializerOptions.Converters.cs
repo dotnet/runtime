@@ -93,7 +93,7 @@ namespace System.Text.Json
         /// </remarks>
         public IList<JsonConverter> Converters { get; }
 
-        internal JsonConverter GetConverterFromMember(Type? parentClassType, Type runtimePropertyType, MemberInfo? memberInfo)
+        internal JsonConverter GetConverterFromMember(Type? parentClassType, Type propertyType, MemberInfo? memberInfo)
         {
             JsonConverter converter = null!;
 
@@ -107,19 +107,19 @@ namespace System.Text.Json
 
                 if (converterAttribute != null)
                 {
-                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: runtimePropertyType, classTypeAttributeIsOn: parentClassType!, memberInfo);
+                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: propertyType, classTypeAttributeIsOn: parentClassType!, memberInfo);
                 }
             }
 
             if (converter == null)
             {
-                converter = GetConverterInternal(runtimePropertyType);
+                converter = GetConverterInternal(propertyType);
                 Debug.Assert(converter != null);
             }
 
             if (converter is JsonConverterFactory factory)
             {
-                converter = factory.GetConverterInternal(runtimePropertyType, this);
+                converter = factory.GetConverterInternal(propertyType, this);
 
                 // A factory cannot return null; GetConverterInternal checked for that.
                 Debug.Assert(converter != null);
@@ -133,10 +133,10 @@ namespace System.Text.Json
             //
             // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
             // which would cause an InvalidProgramException when the generated IL is invoked.
-            if (runtimePropertyType.IsValueType && converter.IsValueType &&
-                (runtimePropertyType.IsNullableOfT() ^ converter.TypeToConvert.IsNullableOfT()))
+            if (propertyType.IsValueType && converter.IsValueType &&
+                (propertyType.IsNullableOfT() ^ converter.TypeToConvert.IsNullableOfT()))
             {
-                ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(runtimePropertyType, converter);
+                ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(propertyType, converter);
             }
 
             return converter;
