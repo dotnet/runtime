@@ -4,8 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Internal.Cryptography;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     //
     // The common base class for the cross-platform CreateEncryptor()/CreateDecryptor() implementations.
@@ -105,8 +106,6 @@ namespace Internal.Cryptography
             byte[] output = UncheckedTransformFinalBlock(inputBuffer, inputOffset, inputCount);
             return output;
         }
-
-        public abstract bool TransformOneShot(ReadOnlySpan<byte> input, Span<byte> output, out int bytesWritten);
 
         protected virtual void Dispose(bool disposing)
         {

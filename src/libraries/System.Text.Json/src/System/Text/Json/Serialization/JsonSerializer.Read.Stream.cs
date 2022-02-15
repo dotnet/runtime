@@ -287,9 +287,9 @@ namespace System.Text.Json
             CancellationToken cancellationToken = default)
         {
             options ??= JsonSerializerOptions.Default;
-            if (!options.IsInitializedForReflectionSerializer)
+            if (!JsonSerializerOptions.IsInitializedForReflectionSerializer)
             {
-                options.InitializeForReflectionSerializer();
+                JsonSerializerOptions.InitializeForReflectionSerializer();
             }
 
             return CreateAsyncEnumerableDeserializer(utf8Json, options, cancellationToken);

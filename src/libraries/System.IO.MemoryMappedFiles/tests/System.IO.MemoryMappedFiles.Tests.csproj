@@ -15,8 +15,8 @@
     <Compile Include="MemoryMappedViewStream.Tests.cs" />
     <Compile Include="MemoryMappedViewAccessor.Tests.cs" />
     <Compile Include="MemoryMappedFilesTestsBase.cs" />
-    <Compile Include="MemoryMappedFilesTestsBase.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'" />
-    <Compile Include="MemoryMappedFilesTestsBase.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="MemoryMappedFilesTestsBase.Unix.cs" Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'" />
+    <Compile Include="MemoryMappedFilesTestsBase.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
     <Compile Include="SafeMemoryMappedViewHandleTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />

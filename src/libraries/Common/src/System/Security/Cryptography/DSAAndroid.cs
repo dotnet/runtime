@@ -197,14 +197,14 @@ namespace System.Security.Cryptography
                 Debug.Assert(count >= 0 && count <= data.Length);
                 Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
-                return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
+                return HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
             }
 
             protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
+                HashOneShotHelpers.HashData(hashAlgorithm, data);
 
             protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
+                HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
 
             public override byte[] CreateSignature(byte[] rgbHash!!)
             {
