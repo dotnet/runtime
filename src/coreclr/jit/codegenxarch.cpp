@@ -3337,108 +3337,64 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     GenTree* src = putArgNode->AsOp()->gtOp1;
     // We will never call this method for SIMD types, which are stored directly
     // in genPutStructArgStk().
-    noway_assert(src->TypeGet() == TYP_STRUCT);
+    assert(src->isContained() && src->OperIs(GT_OBJ) && src->TypeIs(TYP_STRUCT));
+    assert(!src->AsObj()->GetLayout()->HasGCPtr());
+#ifdef TARGET_X86
+    assert(!m_pushStkArg);
+#endif
 
     unsigned size = putArgNode->GetStackByteSize();
-    assert(size <= CPBLK_UNROLL_LIMIT);
-
-    emitter* emit         = GetEmitter();
-    unsigned putArgOffset = putArgNode->getArgOffset();
-
-    assert(src->isContained());
-
-    assert(src->gtOper == GT_OBJ);
+    assert((XMM_REGSIZE_BYTES <= size) && (size <= CPBLK_UNROLL_LIMIT));
 
     if (src->AsOp()->gtOp1->isUsedFromReg())
     {
         genConsumeReg(src->AsOp()->gtOp1);
     }
 
-    unsigned offset = 0;
-
+    unsigned  offset     = 0;
     regNumber xmmTmpReg  = REG_NA;
     regNumber intTmpReg  = REG_NA;
     regNumber longTmpReg = REG_NA;
-#ifdef TARGET_X86
-    // On x86 we use an XMM register for both 16 and 8-byte chunks, but if it's
-    // less than 16 bytes, we will just be using pushes
-    if (size >= 8)
-    {
-        xmmTmpReg  = putArgNode->GetSingleTempReg(RBM_ALLFLOAT);
-        longTmpReg = xmmTmpReg;
-    }
-    if ((size & 0x7) != 0)
-    {
-        intTmpReg = putArgNode->GetSingleTempReg(RBM_ALLINT);
-    }
-#else  // !TARGET_X86
-    // On x64 we use an XMM register only for 16-byte chunks.
+
     if (size >= XMM_REGSIZE_BYTES)
     {
         xmmTmpReg = putArgNode->GetSingleTempReg(RBM_ALLFLOAT);
     }
-    if ((size & 0xf) != 0)
+    if ((size % XMM_REGSIZE_BYTES) != 0)
     {
-        intTmpReg  = putArgNode->GetSingleTempReg(RBM_ALLINT);
-        longTmpReg = intTmpReg;
+        intTmpReg = putArgNode->GetSingleTempReg(RBM_ALLINT);
     }
-#endif // !TARGET_X86
 
-    // If the size of this struct is larger than 16 bytes
-    // let's use SSE2 to be able to do 16 byte at a time
-    // loads and stores.
-    if (size >= XMM_REGSIZE_BYTES)
-    {
 #ifdef TARGET_X86
-        assert(!m_pushStkArg);
-#endif // TARGET_X86
-        size_t slots = size / XMM_REGSIZE_BYTES;
+    longTmpReg = xmmTmpReg;
+#else
+    longTmpReg             = intTmpReg;
+#endif
 
-        assert(putArgNode->gtGetOp1()->isContained());
-        assert(putArgNode->gtGetOp1()->AsOp()->gtOper == GT_OBJ);
-
+    // Let's use SSE2 to be able to do 16 byte at a time with loads and stores.
+    size_t slots = size / XMM_REGSIZE_BYTES;
+    while (slots-- > 0)
+    {
         // TODO: In the below code the load and store instructions are for 16 bytes, but the
-        //          type is EA_8BYTE. The movdqa/u are 16 byte instructions, so it works, but
-        //          this probably needs to be changed.
-        while (slots-- > 0)
-        {
-            // Load
-            genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmTmpReg, src->gtGetOp1(), offset);
+        //       type is EA_8BYTE. The movdqa/u are 16 byte instructions, so it works, but
+        //       this probably needs to be changed.
 
-            // Store
-            genStoreRegToStackArg(TYP_STRUCT, xmmTmpReg, offset);
+        // Load
+        genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmTmpReg, src->gtGetOp1(), offset);
+        // Store
+        genStoreRegToStackArg(TYP_STRUCT, xmmTmpReg, offset);
 
-            offset += XMM_REGSIZE_BYTES;
-        }
+        offset += XMM_REGSIZE_BYTES;
     }
 
     // Fill the remainder (15 bytes or less) if there's one.
-    if ((size & 0xf) != 0)
+    if ((size % XMM_REGSIZE_BYTES) != 0)
     {
-#ifdef TARGET_X86
-        if (m_pushStkArg)
-        {
-            // This case is currently supported only for the case where the total size is
-            // less than XMM_REGSIZE_BYTES. We need to push the remaining chunks in reverse
-            // order. However, morph has ensured that we have a struct that is an even
-            // multiple of TARGET_POINTER_SIZE, so we don't need to worry about alignment.
-            assert(((size & 0xc) == size) && (offset == 0));
-            // If we have a 4 byte chunk, load it from either offset 0 or 8, depending on
-            // whether we've got an 8 byte chunk, and then push it on the stack.
-            unsigned pushedBytes = genMove4IfNeeded(size, intTmpReg, src->AsOp()->gtOp1, size & 0x8);
-            // Now if we have an 8 byte chunk, load it from offset 0 (it's the first chunk)
-            // and push it on the stack.
-            pushedBytes += genMove8IfNeeded(size, longTmpReg, src->AsOp()->gtOp1, 0);
-        }
-        else
-#endif // TARGET_X86
-        {
-            offset += genMove8IfNeeded(size, longTmpReg, src->AsOp()->gtOp1, offset);
-            offset += genMove4IfNeeded(size, intTmpReg, src->AsOp()->gtOp1, offset);
-            offset += genMove2IfNeeded(size, intTmpReg, src->AsOp()->gtOp1, offset);
-            offset += genMove1IfNeeded(size, intTmpReg, src->AsOp()->gtOp1, offset);
-            assert(offset == size);
-        }
+        offset += genMove8IfNeeded(size, longTmpReg, src->AsOp()->gtOp1, offset);
+        offset += genMove4IfNeeded(size, intTmpReg, src->AsOp()->gtOp1, offset);
+        offset += genMove2IfNeeded(size, intTmpReg, src->AsOp()->gtOp1, offset);
+        offset += genMove1IfNeeded(size, intTmpReg, src->AsOp()->gtOp1, offset);
+        assert(offset == size);
     }
 }
 
@@ -3474,15 +3430,16 @@ void CodeGen::genStructPutArgRepMovs(GenTreePutArgStk* putArgNode)
 //     putArgNode  - the PutArgStk tree.
 //
 // Notes:
-//     Used only on x86, for structs that contain GC pointers - they are guaranteed to be sized
-//     correctly (to a multiple of TARGET_POINTER_SIZE) by the VM.
+//     Used only on x86, in two cases:
+//      - Structs 4, 8, or 12 bytes in size (less than XMM_REGSIZE_BYTES, multiple of TARGET_POINTER_SIZE).
+//      - Structs that contain GC pointers - they are guaranteed to be sized correctly by the VM.
 //
 void CodeGen::genStructPutArgPush(GenTreePutArgStk* putArgNode)
 {
-    // On x86, any struct that has contains GC references must be stored to the stack using `push` instructions so
+    // On x86, any struct that contains GC references must be stored to the stack using `push` instructions so
     // that the emitter properly detects the need to update the method's GC information.
     //
-    // Strictly speaking, it is only necessary to use `push` to store the GC references themselves, so for structs
+    // Strictly speaking, it is only necessary to use "push" to store the GC references themselves, so for structs
     // with large numbers of consecutive non-GC-ref-typed fields, we may be able to improve the code size in the
     // future.
     assert(m_pushStkArg);
@@ -7574,40 +7531,30 @@ bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
     }
 #endif // FEATURE_SIMD
 
-    // Determine if we need to pre-adjust the stack, that is, we're not
-    // going to use "push"es. We'll be using those if and only if:
-    //
-    // - We have a "push" kind set in Lowering (see "LowerPutArgStk" for details).
-    // - We have an "Unroll" kind set for a struct less than 16 bytes in size.
-    //   This is a special case in which we're going to call "genStructPutArgUnroll"
-    //   and use "push".
-
-    bool preAdjustStack;
+#ifdef DEBUG
     switch (putArgStk->gtPutArgStkKind)
     {
         case GenTreePutArgStk::Kind::RepInstr:
-            assert(!source->AsObj()->GetLayout()->HasGCPtr());
-            preAdjustStack = true;
-            break;
-
         case GenTreePutArgStk::Kind::Unroll:
             assert(!source->AsObj()->GetLayout()->HasGCPtr());
-            preAdjustStack = argSize >= XMM_REGSIZE_BYTES;
             break;
 
         case GenTreePutArgStk::Kind::Push:
         case GenTreePutArgStk::Kind::PushAllSlots:
-            assert(source->OperIs(GT_FIELD_LIST) || source->AsObj()->GetLayout()->HasGCPtr());
-            preAdjustStack = false;
+            assert(source->OperIs(GT_FIELD_LIST) || source->AsObj()->GetLayout()->HasGCPtr() ||
+                   (argSize < XMM_REGSIZE_BYTES));
             break;
 
         default:
             unreached();
     }
+#endif // DEBUG
 
-    m_pushStkArg = !preAdjustStack;
-
-    if (preAdjustStack)
+    // In lowering (see "LowerPutArgStk") we have determined what sort of instructions
+    // are going to be used for this node. If we'll not be using "push"es, the stack
+    // needs to be adjusted first (s. t. the SP points to the base of the outgoing arg).
+    //
+    if (!putArgStk->isPushKind())
     {
         // If argSize is large, we need to probe the stack like we do in the prolog (genAllocLclFrame)
         // or for localloc (genLclHeap), to ensure we touch the stack pages sequentially, and don't miss
@@ -7629,9 +7576,13 @@ bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
         }
 
         AddStackLevel(argSize);
+        m_pushStkArg = false;
+        return true;
     }
 
-    return preAdjustStack;
+    // Otherwise, "push" will be adjusting the stack for us.
+    m_pushStkArg = true;
+    return false;
 }
 
 //---------------------------------------------------------------------

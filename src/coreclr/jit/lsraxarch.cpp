@@ -1587,22 +1587,19 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
                 buildInternalIntRegisterDefForNode(putArgStk, regMask);
             }
 
-#ifdef TARGET_X86
-            if (size >= 8)
-#else  // !TARGET_X86
             if (size >= XMM_REGSIZE_BYTES)
-#endif // !TARGET_X86
             {
-                // If we have a buffer larger than or equal to XMM_REGSIZE_BYTES on x64/ux,
-                // or larger than or equal to 8 bytes on x86, reserve an XMM register to use it for a
-                // series of 16-byte loads and stores.
+                // If we have a buffer larger than or equal to XMM_REGSIZE_BYTES, reserve
+                // an XMM register to use it for a series of 16-byte loads and stores.
                 buildInternalFloatRegisterDefForNode(putArgStk, internalFloatRegCandidates());
                 SetContainsAVXFlags();
             }
             break;
 
         case GenTreePutArgStk::Kind::RepInstr:
+#ifndef TARGET_X86
         case GenTreePutArgStk::Kind::PartialRepInstr:
+#endif
             buildInternalIntRegisterDefForNode(putArgStk, RBM_RDI);
             buildInternalIntRegisterDefForNode(putArgStk, RBM_RCX);
             buildInternalIntRegisterDefForNode(putArgStk, RBM_RSI);

@@ -6775,12 +6775,7 @@ public:
     // block node.
 
     enum class Kind : __int8{
-        Invalid,
-        RepInstr,
-        PartialRepInstr,
-        Unroll,
-        Push,
-        PushAllSlots,
+        Invalid, RepInstr, PartialRepInstr, Unroll, Push, PushAllSlots,
     };
     Kind gtPutArgStkKind;
 #endif
