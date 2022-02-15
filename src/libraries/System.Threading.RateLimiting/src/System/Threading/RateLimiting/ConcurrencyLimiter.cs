@@ -31,9 +31,9 @@ namespace System.Threading.RateLimiting
         /// Initializes the <see cref="ConcurrencyLimiter"/>.
         /// </summary>
         /// <param name="options">Options to specify the behavior of the <see cref="ConcurrencyLimiter"/>.</param>
-        public ConcurrencyLimiter(ConcurrencyLimiterOptions options)
+        public ConcurrencyLimiter(ConcurrencyLimiterOptions options!!)
         {
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _options = options;
             _permitCount = _options.PermitLimit;
         }
 
@@ -95,19 +95,36 @@ namespace System.Threading.RateLimiting
                     return new ValueTask<RateLimitLease>(lease);
                 }
 
-                // Don't queue if queue limit reached
-                if (_queueCount + permitCount > _options.QueueLimit)
+                // Avoid integer overflow by using subtraction instead of addition
+                Debug.Assert(_options.QueueLimit >= _queueCount);
+                if (_options.QueueLimit - _queueCount < permitCount)
                 {
-                    return new ValueTask<RateLimitLease>(QueueLimitLease);
+                    if (_options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst && permitCount <= _options.QueueLimit)
+                    {
+                        // remove oldest items from queue until there is space for the newest request
+                        do
+                        {
+                            RequestRegistration oldestRequest = _queue.DequeueHead();
+                            _queueCount -= oldestRequest.Count;
+                            Debug.Assert(_queueCount >= 0);
+                            oldestRequest.Tcs.TrySetResult(FailedLease);
+                        }
+                        while (_options.QueueLimit - _queueCount < permitCount);
+                    }
+                    else
+                    {
+                        // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst
+                        return new ValueTask<RateLimitLease>(QueueLimitLease);
+                    }
                 }
 
-                TaskCompletionSource<RateLimitLease> tcs = new TaskCompletionSource<RateLimitLease>(TaskCreationOptions.RunContinuationsAsynchronously);
+                CancelQueueState tcs = new CancelQueueState(permitCount, this, cancellationToken);
                 CancellationTokenRegistration ctr = default;
                 if (cancellationToken.CanBeCanceled)
                 {
                     ctr = cancellationToken.Register(static obj =>
                     {
-                        ((TaskCompletionSource<RateLimitLease>)obj!).TrySetException(new OperationCanceledException());
+                        ((CancelQueueState)obj!).TrySetCanceled();
                     }, tcs);
                 }
 
@@ -177,7 +194,6 @@ namespace System.Threading.RateLimiting
 
                         _permitCount -= nextPendingRequest.Count;
                         _queueCount -= nextPendingRequest.Count;
-                        Debug.Assert(_queueCount >= 0);
                         Debug.Assert(_permitCount >= 0);
 
                         ConcurrencyLease lease = nextPendingRequest.Count == 0 ? SuccessfulLease : new ConcurrencyLease(true, this, nextPendingRequest.Count);
@@ -186,8 +202,11 @@ namespace System.Threading.RateLimiting
                         {
                             // Queued item was canceled so add count back
                             _permitCount += nextPendingRequest.Count;
+                            // Updating queue count is handled by the cancellation code
+                            _queueCount += nextPendingRequest.Count;
                         }
                         nextPendingRequest.CancellationTokenRegistration.Dispose();
+                        Debug.Assert(_queueCount >= 0);
                     }
                     else
                     {
@@ -301,6 +320,34 @@ namespace System.Threading.RateLimiting
             public TaskCompletionSource<RateLimitLease> Tcs { get; }
 
             public CancellationTokenRegistration CancellationTokenRegistration { get; }
+        }
+
+        private sealed class CancelQueueState : TaskCompletionSource<RateLimitLease>
+        {
+            private readonly int _permitCount;
+            private readonly ConcurrencyLimiter _limiter;
+            private readonly CancellationToken _cancellationToken;
+
+            public CancelQueueState(int permitCount, ConcurrencyLimiter limiter, CancellationToken cancellationToken)
+                : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            {
+                _permitCount = permitCount;
+                _limiter = limiter;
+                _cancellationToken = cancellationToken;
+            }
+
+            public new bool TrySetCanceled()
+            {
+                if (TrySetCanceled(_cancellationToken))
+                {
+                    lock (_limiter.Lock)
+                    {
+                        _limiter._queueCount -= _permitCount;
+                    }
+                    return true;
+                }
+                return false;
+            }
         }
     }
 }

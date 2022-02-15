@@ -624,11 +624,10 @@ namespace System.Data
             if ((null != constraintName) && (0 < constraintName.Length))
             {
                 int constraintCount = List.Count;
-                int result = 0;
                 for (int i = 0; i < constraintCount; i++)
                 {
                     Constraint constraint = (Constraint)List[i]!;
-                    result = NamesEqual(constraint.ConstraintName, constraintName, false, _table.Locale);
+                    int result = NamesEqual(constraint.ConstraintName, constraintName, false, _table.Locale);
                     if (result == 1)
                         return i;
 

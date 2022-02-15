@@ -807,9 +807,8 @@ private:
         // unused                   = 0x00000001,
         COMPUTED_GLOBAL_CLASS       = 0x00000002,
 
-        // This flag applies to assembly, but it is stored so it can be cached in ngen image
-        COMPUTED_STRING_INTERNING   = 0x00000004,
-        NO_STRING_INTERNING         = 0x00000008,
+        // unused                   = 0x00000004,
+        // unused                   = 0x00000008,
 
         // This flag applies to assembly, but it is stored so it can be cached in ngen image
         COMPUTED_WRAP_EXCEPTIONS    = 0x00000010,
@@ -834,8 +833,12 @@ private:
         //If m_MethodDefToPropertyInfoMap has been generated
         COMPUTED_METHODDEF_TO_PROPERTYINFO_MAP = 0x00002000,
 
-        // Low level system assembly. Used by preferred zap module computation.
-        LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME = 0x00004000,
+        // unused                   = 0x00004000,
+
+        //If setting has been cached
+        RUNTIME_MARSHALLING_ENABLED_IS_CACHED = 0x00008000,
+        //If runtime marshalling is enabled for this assembly
+        RUNTIME_MARSHALLING_ENABLED = 0x00010000,
     };
 
     Volatile<DWORD>          m_dwTransientFlags;
@@ -1129,13 +1132,9 @@ protected:
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();
 
-    // This works for manifest modules too
-    DomainFile *GetDomainFile();
-
-    // Operates on assembly of module
     DomainAssembly *GetDomainAssembly();
 
-    void SetDomainFile(DomainFile *pDomainFile);
+    void SetDomainAssembly(DomainAssembly *pDomainAssembly);
 
     OBJECTREF GetExposedObject();
 
@@ -1192,14 +1191,6 @@ protected:
         LIMITED_METHOD_CONTRACT;
         FastInterlockOr(&m_dwTransientFlags, MODULE_IS_TENURED);
     }
-
-    // CAUTION: This should only be used as backout code if an assembly is unsuccessfully
-    //          added to the shared domain assembly map.
-    VOID UnsetIsTenured()
-    {
-        LIMITED_METHOD_CONTRACT;
-        FastInterlockAnd(&m_dwTransientFlags, ~MODULE_IS_TENURED);
-    }
 #endif // !DACCESS_COMPILE
 
 
@@ -1219,13 +1210,6 @@ protected:
         FastInterlockOr(&m_dwTransientFlags, MODULE_READY_FOR_TYPELOAD);
     }
 #endif
-
-    BOOL IsLowLevelSystemAssemblyByName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        // The flag is set during initialization, so we can skip the memory barrier
-        return m_dwPersistedFlags.LoadWithoutBarrier() & LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME;
-    }
 
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
@@ -1417,7 +1401,7 @@ protected:
     void InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb);
 
     // Resolving
-    OBJECTHANDLE ResolveStringRef(DWORD Token, BaseDomain *pDomain, bool bNeedToSyncWithFixups);
+    OBJECTHANDLE ResolveStringRef(DWORD Token, BaseDomain *pDomain);
 
     CHECK CheckStringRef(RVA rva);
 
@@ -1433,7 +1417,7 @@ public:
 
     DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
     Module *GetModuleIfLoaded(mdFile kFile);
-    DomainFile *LoadModule(AppDomain *pDomain, mdFile kFile);
+    DomainAssembly *LoadModule(AppDomain *pDomain, mdFile kFile);
     PTR_Module LookupModule(mdToken kFile); //wrapper over GetModuleIfLoaded, takes modulerefs as well
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 
@@ -1716,7 +1700,7 @@ public:
 public:
 
     // Debugger stuff
-    BOOL NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainFile, int level, BOOL attaching);
+    BOOL NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAssembly, int level, BOOL attaching);
     void NotifyDebuggerUnload(AppDomain *pDomain);
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);
@@ -1987,18 +1971,6 @@ public:
         return dac_cast<TADDR>(m_ModuleID);
     }
 
-    SIZE_T *             GetAddrModuleID()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (SIZE_T*) &m_ModuleID;
-    }
-
-    static SIZE_T       GetOffsetOfModuleID()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(Module, m_ModuleID);
-    }
-
     PTR_DomainLocalModule   GetDomainLocalModule();
 
     // LoaderHeap for storing IJW thunks
@@ -2054,13 +2026,6 @@ protected:
 
 public:
     //-----------------------------------------------------------------------------------------
-    // If true,  strings only need to be interned at a per module basis, instead of at a
-    // per appdomain basis, which is the default. Use the module accessor so you don't need
-    // to touch the metadata in the ngen case
-    //-----------------------------------------------------------------------------------------
-    BOOL                    IsNoStringInterning();
-
-    //-----------------------------------------------------------------------------------------
     // Returns a BOOL to indicate if we have computed whether compiler has instructed us to
     // wrap the non-CLS compliant exceptions or not.
     //-----------------------------------------------------------------------------------------
@@ -2072,6 +2037,18 @@ public:
     // words, they become compliant
     //-----------------------------------------------------------------------------------------
     BOOL                    IsRuntimeWrapExceptions();
+
+    //-----------------------------------------------------------------------------------------
+    // If true, the built-in runtime-generated marshalling subsystem will be used for
+    // P/Invokes, function pointer invocations, and delegates defined in this module
+    //-----------------------------------------------------------------------------------------
+    BOOL                    IsRuntimeMarshallingEnabled();
+
+    BOOL                    IsRuntimeMarshallingEnabledCached()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED);
+    }
 
     BOOL                    HasDefaultDllImportSearchPathsAttribute();
 
@@ -2199,7 +2176,6 @@ class ReflectionModule : public Module
  protected:
     ICeeGenInternal * m_pCeeFileGen;
 private:
-    Assembly             *m_pCreatingAssembly;
     RefClassWriter       *m_pInMemoryWriter;
 
 
@@ -2235,20 +2211,6 @@ public:
     // Overrides functions to access sections
     virtual TADDR GetIL(RVA target);
     virtual PTR_VOID GetRvaField(RVA rva);
-
-    Assembly* GetCreatingAssembly( void )
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_pCreatingAssembly;
-    }
-
-    void SetCreatingAssembly( Assembly* assembly )
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_pCreatingAssembly = assembly;
-    }
 
     ICeeGenInternal *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
 

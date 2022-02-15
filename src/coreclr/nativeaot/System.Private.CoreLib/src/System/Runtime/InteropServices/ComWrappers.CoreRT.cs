@@ -213,8 +213,6 @@ namespace System.Runtime.InteropServices
                     {
                         return (IntPtr)(Dispatches + i);
                     }
-
-                    i++;
                 }
 
                 return IntPtr.Zero;
@@ -506,7 +504,7 @@ namespace System.Runtime.InteropServices
                     if (_rcwCache.TryGetValue(externalComObject, out GCHandle handle))
                     {
                         retValue = handle.Target;
-                        return false;
+                        return true;
                     }
                 }
             }

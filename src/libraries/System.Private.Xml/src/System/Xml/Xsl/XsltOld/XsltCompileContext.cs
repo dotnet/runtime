@@ -178,7 +178,6 @@ namespace System.Xml.Xsl.XsltOld
                     methods[free++] = methods[i];
                 }
             }
-            length = free;
             return methods[0];
         }
 
@@ -215,7 +214,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public override IXsltContextFunction ResolveFunction(string prefix, string name, XPathResultType[] argTypes)
         {
-            IXsltContextFunction? func = null;
+            IXsltContextFunction? func;
             if (prefix.Length == 0)
             {
                 func = s_FunctionTable[name] as IXsltContextFunction;
@@ -485,8 +484,7 @@ namespace System.Xml.Xsl.XsltOld
             else
             {
                 // Is this script or extention function?
-                object? extension;
-                return GetExtentionMethod(ns, name, /*argTypes*/null, out extension) != null;
+                return GetExtentionMethod(ns, name, /*argTypes*/null, out _) != null;
             }
         }
 

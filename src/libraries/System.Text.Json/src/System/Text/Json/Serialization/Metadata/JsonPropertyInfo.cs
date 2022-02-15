@@ -473,7 +473,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 if (_runtimeTypeInfo == null)
                 {
-                    _runtimeTypeInfo = Options.GetOrAddClass(RuntimePropertyType!);
+                    _runtimeTypeInfo = Options.GetOrAddJsonTypeInfo(RuntimePropertyType!);
                 }
 
                 return _runtimeTypeInfo;

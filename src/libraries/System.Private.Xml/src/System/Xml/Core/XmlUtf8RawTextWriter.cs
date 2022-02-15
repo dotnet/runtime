@@ -1722,7 +1722,7 @@ namespace System.Xml
             }
             else
             {
-                string error = null;
+                string error;
                 for (int i = 0; i < chars.Length; i++)
                 {
                     if (!XmlCharType.IsTextChar(chars[i]))

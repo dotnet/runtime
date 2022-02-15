@@ -34,15 +34,10 @@ namespace System.Data
         ///      type is string.  If this cannot convert to the destination type, this will
         ///      throw a NotSupportedException.
         /// </summary>
-        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
-
-            System.Reflection.ConstructorInfo? ctor = null;
-            object[]? values = null;
+            System.Reflection.ConstructorInfo? ctor;
+            object[]? values;
 
             if (destinationType == typeof(InstanceDescriptor) && value is DataRelation)
             {

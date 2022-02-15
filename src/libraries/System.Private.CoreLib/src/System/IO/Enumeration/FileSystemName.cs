@@ -161,7 +161,7 @@ namespace System.IO.Enumeration
                     return true;
 
                 ReadOnlySpan<char> expressionEnd = expression.Slice(1);
-                if (expressionEnd.IndexOfAny(useExtendedWildcards ? s_wildcardChars : s_simpleWildcardChars) == -1)
+                if (expressionEnd.IndexOfAny(useExtendedWildcards ? s_wildcardChars : s_simpleWildcardChars) < 0)
                 {
                     // Handle the special case of a single starting *, which essentially means "ends with"
 

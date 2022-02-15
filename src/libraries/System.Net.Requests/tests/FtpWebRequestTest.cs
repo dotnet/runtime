@@ -40,9 +40,9 @@ namespace System.Net.Tests
             Assert.NotNull(request.Headers);
             Assert.Equal(0, request.Headers.Count);
             Assert.True(request.KeepAlive);
-            Assert.Equal(request.Method, WebRequestMethods.Ftp.DownloadFile);
+            Assert.Equal(WebRequestMethods.Ftp.DownloadFile, request.Method);
             Assert.Null(request.Proxy);
-            Assert.Equal(request.ReadWriteTimeout, 5 * 60 * 1000);
+            Assert.Equal(5 * 60 * 1000, request.ReadWriteTimeout);
             Assert.Null(request.RenameTo);
             Assert.Equal("ftp", request.RequestUri.Scheme);
             Assert.Equal("foo.com", request.RequestUri.Host);

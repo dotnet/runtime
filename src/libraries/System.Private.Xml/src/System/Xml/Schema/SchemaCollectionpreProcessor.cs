@@ -174,7 +174,7 @@ namespace System.Xml.Schema
                             _schemaLocations.Add(include.Schema.BaseUri, include.Schema.BaseUri);
                         }
                         //To avoid re-including components that were already included through a different path
-                        Uri? subUri = null;
+                        Uri? subUri;
                         for (int j = 0; j < include.Schema.Includes.Count; ++j)
                         {
                             XmlSchemaExternal subInc = (XmlSchemaExternal)include.Schema.Includes[j];

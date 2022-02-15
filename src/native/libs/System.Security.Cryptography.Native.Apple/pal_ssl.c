@@ -156,6 +156,14 @@ int32_t AppleCryptoNative_SslSetBreakOnServerAuth(SSLContextRef sslContext, int3
 #pragma clang diagnostic pop
 }
 
+int32_t AppleCryptoNative_SslSetBreakOnCertRequested(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnCertRequested, setBreak, pOSStatus);
+#pragma clang diagnostic pop
+}
+
 int32_t AppleCryptoNative_SslSetBreakOnClientAuth(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
 {
 #pragma clang diagnostic push
@@ -275,6 +283,8 @@ PAL_TlsHandshakeState AppleCryptoNative_SslHandshake(SSLContextRef sslContext)
             return PAL_TlsHandshakeState_WouldBlock;
         case errSSLServerAuthCompleted:
             return PAL_TlsHandshakeState_ServerAuthCompleted;
+        case errSSLClientCertRequested:
+            return PAL_TlsHandshakeState_ClientCertRequested;
         default:
             return osStatus;
     }

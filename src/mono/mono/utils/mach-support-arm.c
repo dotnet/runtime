@@ -80,7 +80,7 @@ mono_mach_arch_get_thread_states (thread_port_t thread, thread_state_t state, ma
 {
 #if defined(HOST_WATCHOS)
 	g_error ("thread_get_state() is not supported by this platform");
-#else	
+#else
 	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
 	kern_return_t ret;
 

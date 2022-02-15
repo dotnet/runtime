@@ -114,7 +114,7 @@ namespace System.Text.RegularExpressions.Symbolic
             Stack<Transition> todo = new();
             todo.Push(transition._second);
             todo.Push(transition._first);
-            while (todo.TryPop(out Transition? top))
+            while (todo.TryPop(out _))
             {
                 switch (transition._kind)
                 {
@@ -347,6 +347,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         break;
 
                     case TransitionRegexKind.Union:
+                    case TransitionRegexKind.OrderedUnion:
                         Debug.Assert(_first is not null && _second is not null);
                         foreach ((S, SymbolicRegexNode<S>?, int) path in _first.EnumeratePaths(solver, pathCondition))
                         {

@@ -4304,7 +4304,7 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // We are never going to have an DistributedTransaction for this one.
-            DistributedTransaction? distributedTx = null;
+            DistributedTransaction? distributedTx;
             try
             {
                 // Ask the delegation interface to promote the transaction.

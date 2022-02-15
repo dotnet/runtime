@@ -27,7 +27,7 @@ mono_networkinterface_list (int *size)
 	char name [256];
 
 	f = fopen ("/proc/net/dev", "r");
-	if (!f) 
+	if (!f)
 		return NULL;
 
 	if (!fgets (buf, sizeof (buf) / sizeof (char), f))
@@ -86,7 +86,7 @@ mono_network_get_data (char* name, MonoNetworkData data, MonoNetworkError *error
 	*error = MONO_NETWORK_ERROR_OTHER;
 
 	f = fopen ("/proc/net/dev", "r");
-	if (!f) 
+	if (!f)
 		return -1;
 
 	if (!fgets (buf, sizeof (buf) / sizeof (char), f))
@@ -109,7 +109,7 @@ mono_network_get_data (char* name, MonoNetworkData data, MonoNetworkError *error
 							 &rx_bytes, &rx_packets, &rx_errs, &rx_drops,
 							 &rx_fifo, &rx_frame, &rx_multi,
 							 &tx_bytes, &tx_packets, &tx_errs, &tx_drops,
-							 &tx_fifo, &tx_colls, &tx_carrier) != 14) 
+							 &tx_fifo, &tx_colls, &tx_carrier) != 14)
 			goto out;
 
 		switch (data) {

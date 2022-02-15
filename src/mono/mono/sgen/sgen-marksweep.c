@@ -712,7 +712,7 @@ alloc_obj (GCVTable vtable, size_t size, gboolean pinned, gboolean has_reference
 	/* FIXME: assumes object layout */
 	*(GCVTable*)obj = vtable;
 
-	sgen_total_allocated_major += block_obj_sizes [size_index]; 
+	sgen_total_allocated_major += block_obj_sizes [size_index];
 
 	return (GCObject *)obj;
 }
@@ -767,7 +767,7 @@ get_block:
 	*(GCVTable*)obj = vtable;
 
 	/* FIXME is it worth CAS-ing here */
-	sgen_total_allocated_major += block_obj_sizes [size_index]; 
+	sgen_total_allocated_major += block_obj_sizes [size_index];
 
 	return (GCObject *)obj;
 }

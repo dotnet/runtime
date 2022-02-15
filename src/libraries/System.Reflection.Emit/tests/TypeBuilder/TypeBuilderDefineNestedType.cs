@@ -210,15 +210,9 @@ namespace System.Reflection.Emit.Tests
             AssertExtensions.Throws<ArgumentNullException>("interfaces", () => type.DefineNestedType("Name", TypeAttributes.NestedPublic, typeof(object), new Type[] { null }));
         }
 
-        [Fact]
-        public void DefineNestedType_ByRefInterfaceType_ThrowsArgumentException()
-        {
-            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineNestedType("Name", TypeAttributes.NestedPublic, typeof(object), new Type[] { typeof(int).MakeByRefType() }));
-        }
-
         public static IEnumerable<object[]> InvalidInterfaceType_TestData()
         {
+            yield return new object[] { typeof(int).MakeByRefType() };
             yield return new object[] { typeof(EmptyNonGenericClass) };
             yield return new object[] { typeof(EmptyNonGenericStruct) };
             yield return new object[] { typeof(EmptyGenericClass<int>) };

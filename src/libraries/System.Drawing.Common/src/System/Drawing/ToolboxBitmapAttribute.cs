@@ -88,7 +88,7 @@ namespace System.Drawing
         {
             if ((large && _largeImage == null) || (!large && _smallImage == null))
             {
-                Image? img = null;
+                Image? img;
                 if (large)
                 {
                     img = _largeImage;

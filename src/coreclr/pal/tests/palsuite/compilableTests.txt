@@ -348,7 +348,6 @@ c_runtime/wcsrchr/test1/paltest_wcsrchr_test1
 c_runtime/wcsstr/test1/paltest_wcsstr_test1
 c_runtime/wcstod/test1/paltest_wcstod_test1
 c_runtime/wcstod/test2/paltest_wcstod_test2
-c_runtime/wcstok/test1/paltest_wcstok_test1
 c_runtime/wcstoul/test1/paltest_wcstoul_test1
 c_runtime/wcstoul/test2/paltest_wcstoul_test2
 c_runtime/wcstoul/test3/paltest_wcstoul_test3
@@ -487,9 +486,6 @@ filemapping_memmgt/GetModuleFileNameW/test1/paltest_getmodulefilenamew_test1
 filemapping_memmgt/GetModuleFileNameW/test2/paltest_getmodulefilenamew_test2
 filemapping_memmgt/GetProcAddress/test1/paltest_getprocaddress_test1
 filemapping_memmgt/GetProcAddress/test2/paltest_getprocaddress_test2
-filemapping_memmgt/LocalAlloc/test1/paltest_localalloc_test1
-filemapping_memmgt/LocalFree/test1/paltest_localfree_test1
-filemapping_memmgt/LocalFree/test2/paltest_localfree_test2
 filemapping_memmgt/MapViewOfFile/test1/paltest_mapviewoffile_test1
 filemapping_memmgt/MapViewOfFile/test2/paltest_mapviewoffile_test2
 filemapping_memmgt/MapViewOfFile/test3/paltest_mapviewoffile_test3

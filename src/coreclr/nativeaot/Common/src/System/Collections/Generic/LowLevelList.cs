@@ -40,7 +40,7 @@ namespace System.Collections.Generic
     {
         private const int _defaultCapacity = 4;
 
-        protected T?[] _items;
+        protected T[] _items;
         protected int _size;
         protected int _version;
 
@@ -447,7 +447,7 @@ namespace System.Collections.Generic
             {
                 Array.Copy(_items, index + 1, _items, index, _size - index);
             }
-            _items[_size] = default(T);
+            _items[_size] = default!;
             _version++;
         }
 
@@ -549,7 +549,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            object System.Collections.IEnumerator.Current
+            object? System.Collections.IEnumerator.Current
             {
                 get
                 {

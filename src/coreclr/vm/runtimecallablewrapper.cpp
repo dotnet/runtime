@@ -31,7 +31,6 @@ class Object;
 #include "eeconfig.h"
 #include "comdelegate.h"
 #include "comcache.h"
-#include "notifyexternals.h"
 #include "../md/compiler/custattr.h"
 #include "olevariant.h"
 #include "interopconverter.h"

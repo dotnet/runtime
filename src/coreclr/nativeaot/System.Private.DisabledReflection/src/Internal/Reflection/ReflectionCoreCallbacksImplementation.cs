@@ -26,7 +26,7 @@ namespace Internal.Reflection
             Type type, bool nonPublic) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override object ActivatorCreateInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes) => throw new NotSupportedException(SR.Reflection_Disabled);
+            Type type, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override Delegate CreateDelegate(Type type, object firstArgument, MethodInfo method, bool throwOnBindFailure) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure) => throw new NotSupportedException(SR.Reflection_Disabled);
         [RequiresUnreferencedCode("The target method might be removed")]

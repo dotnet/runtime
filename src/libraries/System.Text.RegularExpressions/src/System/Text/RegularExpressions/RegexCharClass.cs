@@ -716,9 +716,8 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         public static int GetSetChars(string set, Span<char> chars)
         {
-            // If the set is negated, it's likely to contain a large number of characters,
-            // so we don't even try.  We also get the characters by enumerating the set
-            // portion, so we validate that it's set up to enable that, e.g. no categories.
+            // We get the characters by enumerating the set portion, so we validate that it's
+            // set up to enable that, e.g. no categories.
             if (!CanEasilyEnumerateSetContents(set))
             {
                 return 0;
@@ -1816,7 +1815,7 @@ namespace System.Text.RegularExpressions
         /// Produces a human-readable description for a set string.
         /// </summary>
         [ExcludeFromCodeCoverage]
-        public static string SetDescription(string set)
+        public static string DescribeSet(string set)
         {
             int setLength = set[SetLengthIndex];
             int categoryLength = set[CategoryLengthIndex];
@@ -1842,7 +1841,7 @@ namespace System.Text.RegularExpressions
                     (char)(set[index + 1] - 1) :
                     LastChar;
 
-                desc.Append(CharDescription(ch1));
+                desc.Append(DescribeChar(ch1));
 
                 if (ch2 != ch1)
                 {
@@ -1851,7 +1850,7 @@ namespace System.Text.RegularExpressions
                         desc.Append('-');
                     }
 
-                    desc.Append(CharDescription(ch2));
+                    desc.Append(DescribeChar(ch2));
                 }
                 index += 2;
             }
@@ -1900,7 +1899,7 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
-                    desc.Append(CategoryDescription(ch1));
+                    desc.Append(DescribeCategory(ch1));
                 }
 
                 index++;
@@ -1908,7 +1907,7 @@ namespace System.Text.RegularExpressions
 
             if (set.Length > endPosition)
             {
-                desc.Append('-').Append(SetDescription(set.Substring(endPosition)));
+                desc.Append('-').Append(DescribeSet(set.Substring(endPosition)));
             }
 
             return desc.Append(']').ToString();
@@ -1916,7 +1915,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Produces a human-readable description for a single character.</summary>
         [ExcludeFromCodeCoverage]
-        public static string CharDescription(char ch) =>
+        public static string DescribeChar(char ch) =>
             ch switch
             {
                 '\a' => "\\a",
@@ -1932,7 +1931,7 @@ namespace System.Text.RegularExpressions
             };
 
         [ExcludeFromCodeCoverage]
-        private static string CategoryDescription(char ch) =>
+        private static string DescribeCategory(char ch) =>
             (short)ch switch
             {
                 SpaceConst => @"\s",

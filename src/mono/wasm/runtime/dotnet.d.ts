@@ -100,10 +100,7 @@ declare class WasmRootBuffer {
     release(): void;
     toString(): string;
 }
-declare class WasmRoot<T extends ManagedPointer | NativePointer> {
-    private __buffer;
-    private __index;
-    constructor(buffer: WasmRootBuffer, index: number);
+interface WasmRoot<T extends ManagedPointer | NativePointer> {
     get_address(): NativePointer;
     get_address_32(): number;
     get(): T;
@@ -155,6 +152,7 @@ declare type AssetEntry = {
     culture?: string;
     load_remote?: boolean;
     is_optional?: boolean;
+    buffer?: ArrayBuffer;
 };
 interface AssemblyEntry extends AssetEntry {
     name: "assembly";
@@ -195,8 +193,7 @@ declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig | MonoConfigError;
     configSrc?: string;
-    scriptDirectory?: string;
-    onConfigLoaded?: () => void;
+    onConfigLoaded?: (config: MonoConfig) => Promise<void>;
     onDotnetReady?: () => void;
     imports?: DotnetModuleConfigImports;
 } & Partial<EmscriptenModule>;
@@ -253,12 +250,13 @@ declare function mono_call_assembly_entry_point(assembly: string, args?: any[], 
 declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 
 declare type _MemOffset = number | VoidPtr | NativePointer;
+declare type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 declare function setU8(offset: _MemOffset, value: number): void;
 declare function setU16(offset: _MemOffset, value: number): void;
-declare function setU32(offset: _MemOffset, value: number): void;
+declare function setU32(offset: _MemOffset, value: _NumberOrPointer): void;
 declare function setI8(offset: _MemOffset, value: number): void;
 declare function setI16(offset: _MemOffset, value: number): void;
-declare function setI32(offset: _MemOffset, value: number): void;
+declare function setI32(offset: _MemOffset, value: _NumberOrPointer): void;
 declare function setI64(offset: _MemOffset, value: number): void;
 declare function setF32(offset: _MemOffset, value: number): void;
 declare function setF64(offset: _MemOffset, value: number): void;

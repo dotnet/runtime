@@ -63,15 +63,15 @@ void
 mono_llvm_dump_type (LLVMTypeRef type);
 
 LLVMValueRef
-mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, 
+mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty,
 						LLVMValueRef ArraySize,
 						int alignment, const char *Name);
 
-LLVMValueRef 
+LLVMValueRef
 mono_llvm_build_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 					  const char *Name, gboolean is_volatile);
 
-LLVMValueRef 
+LLVMValueRef
 mono_llvm_build_atomic_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 							 const char *Name, gboolean is_volatile, int alignment, BarrierKind barrier);
 
@@ -79,11 +79,11 @@ LLVMValueRef
 mono_llvm_build_aligned_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 							  const char *Name, gboolean is_volatile, int alignment);
 
-LLVMValueRef 
+LLVMValueRef
 mono_llvm_build_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
 					   gboolean is_volatile, BarrierKind kind);
 
-LLVMValueRef 
+LLVMValueRef
 mono_llvm_build_aligned_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
 							   gboolean is_volatile, int alignment);
 
@@ -233,4 +233,4 @@ mono_llvm_inline_asm (LLVMBuilderRef builder, LLVMTypeRef type,
 
 G_END_DECLS
 
-#endif /* __MONO_MINI_LLVM_CPP_H__ */  
+#endif /* __MONO_MINI_LLVM_CPP_H__ */

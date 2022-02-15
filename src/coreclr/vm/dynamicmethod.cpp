@@ -20,7 +20,7 @@
 #ifndef DACCESS_COMPILE
 
 // get the method table for dynamic methods
-DynamicMethodTable* DomainFile::GetDynamicMethodTable()
+DynamicMethodTable* DomainAssembly::GetDynamicMethodTable()
 {
     CONTRACT (DynamicMethodTable*)
     {

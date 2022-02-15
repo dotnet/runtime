@@ -66,13 +66,8 @@ namespace System.Runtime.CompilerServices
         }
 
         [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object? userData)
+        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code!!, CleanupCode backoutCode!!, object? userData)
         {
-            if (code == null)
-                throw new ArgumentNullException(nameof(code));
-            if (backoutCode == null)
-                throw new ArgumentNullException(nameof(backoutCode));
-
             bool exceptionThrown = true;
 
             try
@@ -117,5 +112,19 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method is intended for compiler use rather than use directly in code. T must be one of byte, sbyte, char, short, ushort, int, long, ulong, float, or double.</remarks>
         [Intrinsic]
         public static unsafe ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle) => new ReadOnlySpan<T>(GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length), length);
+
+
+        // The following intrinsics return true if input is a compile-time constant
+        // Feel free to add more overloads on demand
+#pragma warning disable IDE0060
+        [Intrinsic]
+        internal static bool IsKnownConstant(string? t) => false;
+
+        [Intrinsic]
+        internal static bool IsKnownConstant(char t) => false;
+
+        [Intrinsic]
+        internal static bool IsKnownConstant(int t) => false;
+#pragma warning restore IDE0060
     }
 }

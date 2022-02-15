@@ -57,8 +57,10 @@ namespace hello
             Console.WriteLine("in Finally");
         }
 
-        static public int Main(string[] args)
+        static public int Main()
         {
+            string[] args = new string[] {};
+
             //Start recording
             testLog.StartRecording();
 

@@ -52,20 +52,6 @@ namespace System.Net.Security.Tests
             await ClientAsyncSslHelper(protocol, protocol);
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public async Task ClientAsyncAuthenticate_Ssl2WithSelf_Success()
-        {
-            // Test Ssl2 against itself. This is a standalone test as even on versions where Windows supports Ssl2,
-            // it appears to have rules around not using it when other protocols are mentioned.
-            if (PlatformDetection.SupportsSsl2)
-            {
-#pragma warning disable 0618
-                await ClientAsyncSslHelper(SslProtocols.Ssl2, SslProtocols.Ssl2);
-#pragma warning restore 0618
-            }
-        }
-
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
         public async Task ClientAsyncAuthenticate_MismatchProtocols_Fails(

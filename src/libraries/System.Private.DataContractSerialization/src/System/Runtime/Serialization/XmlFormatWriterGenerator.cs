@@ -407,7 +407,7 @@ namespace System.Runtime.Serialization
                     }
 
                     bool isDictionary = false, isGenericDictionary = false;
-                    Type? enumeratorType = null;
+                    Type? enumeratorType;
                     Type[]? keyValueTypes = null;
                     if (collectionContract.Kind == CollectionKind.GenericDictionary)
                     {

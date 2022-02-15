@@ -41,5 +41,8 @@
     <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 --mime .mjs=text/javascript" IgnoreExitCode="true" YieldDuringToolExecution="true" />
   </Target>
 
-  <Target Name="TriggerGenerateRunScript" BeforeTargets="CopyAppZipToHelixTestDir" DependsOnTargets="GenerateRunScriptForRunningSampleOnHelix" />
+  <Target Name="TriggerGenerateRunScript"
+          Condition="'$(GenerateRunScriptForSample)' == 'true'"
+          BeforeTargets="CopyAppZipToHelixTestDir"
+          DependsOnTargets="GenerateRunScriptForRunningSampleOnHelix" />
 </Project>
