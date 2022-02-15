@@ -359,18 +359,34 @@ namespace Microsoft.Interop
                         continue;
                     case nameof(GeneratedDllImportData.CharSet):
                         userDefinedValues |= DllImportMember.CharSet;
+                        if (namedArg.Value.Value is not CharSet)
+                        {
+                            return null;
+                        }
                         charSet = (CharSet)namedArg.Value.Value!;
                         break;
                     case nameof(GeneratedDllImportData.EntryPoint):
                         userDefinedValues |= DllImportMember.EntryPoint;
+                        if (namedArg.Value.Value is not string)
+                        {
+                            return null;
+                        }
                         entryPoint = (string)namedArg.Value.Value!;
                         break;
                     case nameof(GeneratedDllImportData.ExactSpelling):
                         userDefinedValues |= DllImportMember.ExactSpelling;
+                        if (namedArg.Value.Value is not bool)
+                        {
+                            return null;
+                        }
                         exactSpelling = (bool)namedArg.Value.Value!;
                         break;
                     case nameof(GeneratedDllImportData.SetLastError):
                         userDefinedValues |= DllImportMember.SetLastError;
+                        if (namedArg.Value.Value is not bool)
+                        {
+                            return null;
+                        }
                         setLastError = (bool)namedArg.Value.Value!;
                         break;
                 }
@@ -432,7 +448,7 @@ namespace Microsoft.Interop
             if (stubDllImportData is null)
             {
                 generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr!, "Invalid syntax");
-                stubDllImportData = new GeneratedDllImportData("");
+                stubDllImportData = new GeneratedDllImportData("INVALID_CSHARP_SYNTAX");
             }
 
             if (lcidConversionAttr is not null)
