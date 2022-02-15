@@ -1882,7 +1882,7 @@ struct TlsDestructionMonitor
 
     void SetThread(Thread* thread)
     {
-        _ASSERTE(m_thread == NULL || m_thread == thread);
+        _ASSERTE(thread == GetThreadNULLOk());
         m_thread = thread;
     }
 
