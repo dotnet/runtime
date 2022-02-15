@@ -331,14 +331,13 @@ namespace Microsoft.Interop
             };
         }
 
-        private static GeneratedDllImportData ProcessGeneratedDllImportAttribute(AttributeData attrData)
+        private static GeneratedDllImportData? ProcessGeneratedDllImportAttribute(AttributeData attrData)
         {
             // Found the GeneratedDllImport, but it has an error so report the error.
             // This is most likely an issue with targeting an incorrect TFM.
             if (attrData.AttributeClass?.TypeKind is null or TypeKind.Error)
             {
-                // [TODO] Report GeneratedDllImport has an error - corrupt metadata?
-                throw new InvalidProgramException();
+                return null;
             }
 
             // Default values for these properties are based on the
@@ -375,6 +374,11 @@ namespace Microsoft.Interop
                         setLastError = (bool)namedArg.Value.Value!;
                         break;
                 }
+            }
+
+            if (attrData.ConstructorArguments.Length == 0)
+            {
+                return null;
             }
 
             return new GeneratedDllImportData(attrData.ConstructorArguments[0].Value!.ToString())
@@ -423,9 +427,15 @@ namespace Microsoft.Interop
             var generatorDiagnostics = new GeneratorDiagnostics();
 
             // Process the GeneratedDllImport attribute
-            GeneratedDllImportData stubDllImportData = ProcessGeneratedDllImportAttribute(generatedDllImportAttr!);
+            GeneratedDllImportData? stubDllImportData = ProcessGeneratedDllImportAttribute(generatedDllImportAttr!);
 
-            if (lcidConversionAttr != null)
+            if (stubDllImportData is null)
+            {
+                generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr!, "Invalid syntax");
+                stubDllImportData = new GeneratedDllImportData("");
+            }
+
+            if (lcidConversionAttr is not null)
             {
                 // Using LCIDConversion with GeneratedDllImport is not supported
                 generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
