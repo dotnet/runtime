@@ -590,6 +590,7 @@ static guint16 sri_vector_methods [] = {
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
 	SN_Divide,
+	SN_Dot,
 	SN_Floor,
 	SN_GetElement,
 	SN_GetLower,
@@ -720,6 +721,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if ((arg0_type != MONO_TYPE_R4) && (arg0_type != MONO_TYPE_R8))
 			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FDIV, arg0_type, fsig, args);
+	}
+	case SN_Dot: {
+#ifdef TARGET_ARM64
+		int instc0 = type_is_unsigned (fsig->params [0]) ? INTRINS_AARCH64_ADV_SIMD_UDOT : INTRINS_AARCH64_ADV_SIMD_SDOT;
+		MonoInst *zero = emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
+		MonoInst *ins = emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X_X, instc0, arg0_type, fsig, args);
+		ins->sreg3 = zero->dreg;
+		return ins;
+#else
+		return NULL;
+#endif
 	}
 	case SN_AndNot:
 #ifdef TARGET_ARM64
