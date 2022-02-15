@@ -1887,9 +1887,6 @@ struct TlsDestructionMonitor
 
     ~TlsDestructionMonitor()
     {
-        // Don't destroy threads here if we're in shutdown (shutdown will
-        // clean up for us instead).
-
         if (m_activated)
         {
             Thread* thread = GetThreadNULLOk();
