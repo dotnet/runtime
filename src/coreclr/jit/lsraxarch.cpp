@@ -1579,14 +1579,6 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
     ssize_t size = putArgStk->GetStackByteSize();
     switch (putArgStk->gtPutArgStkKind)
     {
-        case GenTreePutArgStk::Kind::Push:
-            // Zero-diff quirk: remove.
-            if (size >= 8)
-            {
-                SetContainsAVXFlags();
-            }
-            break;
-
         case GenTreePutArgStk::Kind::Unroll:
             // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
             if ((size % XMM_REGSIZE_BYTES) != 0)
@@ -1615,6 +1607,11 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             buildInternalIntRegisterDefForNode(putArgStk, RBM_RCX);
             buildInternalIntRegisterDefForNode(putArgStk, RBM_RSI);
             break;
+
+#ifdef TARGET_X86
+        case GenTreePutArgStk::Kind::Push:
+            break;
+#endif // TARGET_X86
 
         default:
             unreached();
