@@ -45,8 +45,10 @@ namespace Internal.TypeSystem.Interop
         LayoutClassPtr,
         AsAnyA,
         AsAnyW,
+        FailedTypeLoad,
         ComInterface,
         BlittableValueClassWithCopyCtor,
+        CustomMarshaler,
         Invalid
     }
 

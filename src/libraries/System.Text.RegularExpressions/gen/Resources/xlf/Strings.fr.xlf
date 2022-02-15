@@ -47,11 +47,6 @@
         <target state="translated">La taille du tableau de destination ne permet pas de copier tous les éléments de la collection. Vérifiez l'index et la longueur du tableau.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">Le tableau ne peut pas contenir d'éléments null.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">L'index de début ne peut pas être inférieur à 0 ou supérieur à la longueur d'entrée.</target>
@@ -210,11 +205,6 @@
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">La collection est en lecture seule.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">Cette opération n'est autorisée qu'une fois par objet.</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">

@@ -47,11 +47,6 @@
         <target state="translated">目标数组不够长，无法复制集合中的所有项。请检查数组索引和长度。</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">数组不能包含 null 元素。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">起始索引不能小于 0 或大于输入长度。</target>
@@ -210,11 +205,6 @@
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">集合是只读的。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">对每个对象只能执行一次此操作。</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">

@@ -810,50 +810,29 @@ public class MyIncrementer
 
 public class DebuggerAttribute
 {
-    static int currentCount = 0;
-
     [System.Diagnostics.DebuggerHidden]
     public static void HiddenMethod()
     {
-        currentCount++;
+        var a = 9;
     }
 
     [System.Diagnostics.DebuggerHidden]
-    public static void HiddenMethodDebuggerBreak()
-    {
-        var local_var = 12;
-        System.Diagnostics.Debugger.Break();
-        currentCount++;
-    }
-
-    public static void VisibleMethod()
-    {
-        currentCount++;
-    }
-
-    public static void VisibleMethodDebuggerBreak()
+    public static void HiddenMethodUserBreak()
     {
         System.Diagnostics.Debugger.Break();
-        currentCount++;
     }
 
-    public static void Run()
+    public static void RunDebuggerHidden()
     {
         HiddenMethod();
-        VisibleMethod();
-    }
-
-    public static void RunDebuggerBreak()
-    {
-        HiddenMethodDebuggerBreak();
-        VisibleMethodDebuggerBreak();
+        HiddenMethodUserBreak();
     }
     
     [System.Diagnostics.DebuggerStepThroughAttribute]
     public static void StepThrougBp()
     {
         var a = 0;
-        currentCount++;
+        a++;
         var b = 1;
     }
 
@@ -870,10 +849,10 @@ public class DebuggerAttribute
     }
 
     [System.Diagnostics.DebuggerNonUserCode]
-    public static void NonUserCodeBp(Action boundaryTestFun=null)
+    public static void NonUserCodeBp()
     {
         var a = 0;
-        currentCount++;
+        a++;
         var b = 1;
     }
 
@@ -911,6 +890,68 @@ public class DebuggerAttribute
     {
         NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryBp);
         NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryUserBp);
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    [System.Diagnostics.DebuggerHidden]
+    public static void StepThroughWithHiddenBp()
+    {
+        var a = 9;
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    [System.Diagnostics.DebuggerHidden]
+    public static void StepThroughWithHiddenUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunStepThroughWithHidden()
+    {
+        StepThroughWithHiddenBp();
+        StepThroughWithHiddenUserBp();
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void StepThroughWithNonUserCodeBp()
+    {
+        var a = 0;
+        a++;
+        var b = 1;
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void StepThroughWithNonUserCodeUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunStepThroughWithNonUserCode()
+    {
+        StepThroughWithNonUserCodeBp();
+        StepThroughWithNonUserCodeUserBp();
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    [System.Diagnostics.DebuggerHidden]
+    public static void NonUserCodeWithHiddenBp()
+    {
+        var a = 9;
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    [System.Diagnostics.DebuggerHidden]
+    public static void NonUserCodeWithHiddenUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunNonUserCodeWithHidden()
+    {
+        NonUserCodeWithHiddenBp();
+        NonUserCodeWithHiddenUserBp();
     }
 }
 

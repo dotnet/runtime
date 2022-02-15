@@ -49,12 +49,12 @@ This table of images might often become stale as we change our images as our req
 
 | OS                          | Target Arch     | Image location                                                                                       | crossrootfs location | Clang Version |
 | --------------------------- | --------------- | ---------------------------------------------------------------------------------------------------- | -------------------- | ------------- |
-| Ubuntu 16.04                | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-a50a721-20191120200116`                    | -                    | -clang9       |
-| Alpine                      | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-WithNode-20200602002639-0fc54a3`             | -                    | -clang5.0     |
-| CentOS 7 (build for RHEL 7) | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-359e48e-20200313130914`                        | -                    | -clang9       |
-| Ubuntu 16.04                | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-20200413125008-09ec757`              | `/crossrootfs/arm`   | -clang9       |
-| Ubuntu 16.04                | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-20201022204150-b2c2436`        | `/crossrootfs/arm64` | -clang9       |
-| Alpine                      | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-20200413125008-406629a` | `/crossrootfs/arm64` | -clang9       |
+| Alpine                      | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-WithNode-20210910135845-c401c85`             | -                    | -clang5.0     |
+| CentOS 7 (build for RHEL 7) | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-20210714125435-9b5bbc2`                        | -                    | -clang9       |
+| Ubuntu 16.04 (x64, arm ROOTFS) | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-20210719121212-8a8d3be`              | `/crossrootfs/arm`   | -clang9       |
+| Ubuntu 16.04  (x64, arm64 ROOTFS) | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-20210719121212-8a8d3be`        | `/crossrootfs/arm64` | -clang9       |
+| Alpine (x64, arm ROOTFS)    | arm             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm-alpine-20210923140502-78f7860`   | `/crossrootfs/arm64` | -clang9       |
+| Alpine (x64, arm64 ROOTFS)  | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-20210719121212-b2c2436` | `/crossrootfs/arm64` | -clang9       |
 
 Environment
 ===========

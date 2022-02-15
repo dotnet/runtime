@@ -2229,7 +2229,7 @@ void Compiler::fgAdjustForAddressExposedOrWrittenThis()
     LclVarDsc* thisVarDsc = lvaGetDesc(info.compThisArg);
 
     // Optionally enable adjustment during stress.
-    if (!tiVerificationNeeded && compStressCompile(STRESS_GENERIC_VARN, 15))
+    if (compStressCompile(STRESS_GENERIC_VARN, 15))
     {
         thisVarDsc->lvHasILStoreOp = true;
     }
@@ -3516,9 +3516,6 @@ void Compiler::fgFindBasicBlocks()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-#ifndef DEBUG
-    if (tiVerificationNeeded)
-#endif
     {
         // always run these checks for a debug build
         verCheckNestingLevel(initRoot);
@@ -3527,7 +3524,7 @@ void Compiler::fgFindBasicBlocks()
 #ifndef DEBUG
     // fgNormalizeEH assumes that this test has been passed.  And Ssa assumes that fgNormalizeEHTable
     // has been run.  So do this unless we're in minOpts mode (and always in debug).
-    if (tiVerificationNeeded || !opts.MinOpts())
+    if (!opts.MinOpts())
 #endif
     {
         fgCheckBasicBlockControlFlow();
@@ -4552,7 +4549,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
     BasicBlock* bPrev = block->bbPrev;
 
-    JITDUMP("fgRemoveBlock " FMT_BB "\n", block->bbNum);
+    JITDUMP("fgRemoveBlock " FMT_BB ", unreachable=%s\n", block->bbNum, dspBool(unreachable));
 
     // If we've cached any mappings from switch blocks to SwitchDesc's (which contain only the
     // *unique* successors of the switch block), invalidate that cache, since an entry in one of
@@ -4575,12 +4572,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         PREFIX_ASSUME(bPrev != nullptr);
 
         fgUnreachableBlock(block);
-
-        /* If this is the last basic block update fgLastBB */
-        if (block == fgLastBB)
-        {
-            fgLastBB = bPrev;
-        }
 
 #if defined(FEATURE_EH_FUNCLETS)
         // If block was the fgFirstFuncletBB then set fgFirstFuncletBB to block->bbNext
@@ -4634,7 +4625,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             leaveBlk->bbRefs  = 0;
             leaveBlk->bbPreds = nullptr;
 
-            fgRemoveBlock(leaveBlk, true);
+            fgRemoveBlock(leaveBlk, /* unreachable */ true);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
             fgClearFinallyTargetBit(leaveBlk->bbJumpDest);

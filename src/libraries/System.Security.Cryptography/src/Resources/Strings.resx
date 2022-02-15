@@ -60,14 +60,44 @@
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
   </data>
+  <data name="Arg_EmptyOrNullArray" xml:space="preserve">
+    <value>Array may not be empty or null.</value>
+  </data>
+  <data name="Arg_EmptyOrNullString" xml:space="preserve">
+    <value>String cannot be empty or null.</value>
+  </data>
+  <data name="Arg_EmptyOrNullString_Named" xml:space="preserve">
+    <value>The '{0}' string cannot be empty or null.</value>
+  </data>
+  <data name="Arg_EnumIllegalVal" xml:space="preserve">
+    <value>Illegal enum value: {0}.</value>
+  </data>
+  <data name="Arg_InvalidHandle" xml:space="preserve">
+    <value>Invalid handle.</value>
+  </data>
+  <data name="Arg_InvalidType" xml:space="preserve">
+    <value>Invalid type.</value>
+  </data>
   <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
     <value>Only single dimensional arrays are supported for the requested action.</value>
   </data>
   <data name="Argument_DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>
   </data>
+  <data name="Argument_Invalid_SafeHandleInvalidOrClosed" xml:space="preserve">
+    <value>The method cannot be called with an invalid or closed SafeHandle.</value>
+  </data>
+  <data name="Argument_InvalidFlag" xml:space="preserve">
+    <value>Value of flags is invalid.</value>
+  </data>
+  <data name="Argument_InvalidNameType" xml:space="preserve">
+    <value>The value of 'nameType' is invalid.</value>
+  </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="Argument_InvalidOidValue" xml:space="preserve">
+    <value>The OID value was invalid.</value>
   </data>
   <data name="Argument_InvalidRandomRange" xml:space="preserve">
     <value>Range of random number does not contain at least one possibility.</value>
@@ -111,6 +141,18 @@
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
   </data>
+  <data name="Chain_EmptyCustomTrustNotSupported" xml:space="preserve">
+    <value>An empty custom trust store is not supported on this platform.</value>
+  </data>
+  <data name="Chain_NoPolicyMatch" xml:space="preserve">
+    <value>The certificate has invalid policy.</value>
+  </data>
+  <data name="Chain_PartialChain" xml:space="preserve">
+    <value>The certificate chain is incomplete.</value>
+  </data>
+  <data name="Chain_RevocationStatusUnknown" xml:space="preserve">
+    <value>The certificate's revocation status could not be determined.</value>
+  </data>
   <data name="CryptoConfigNotSupported" xml:space="preserve">
     <value>Accessing a hash algorithm by manipulating the HashName property is not supported on this platform. Instead, you must instantiate one of the supplied subtypes (such as HMACSHA1.)</value>
   </data>
@@ -126,11 +168,20 @@
   <data name="Cryptography_AlgorithmTypesMustBeVisible" xml:space="preserve">
     <value>Algorithms added to CryptoConfig must be accessible from outside their assembly.</value>
   </data>
+  <data name="Cryptography_ArgDSARequiresDSAKey" xml:space="preserve">
+    <value>Keys used with the DSACng algorithm must have an algorithm group of DSA.</value>
+  </data>
   <data name="Cryptography_ArgECDHKeySizeMismatch" xml:space="preserve">
     <value>The keys from both parties must be the same size to generate a secret agreement.</value>
   </data>
   <data name="Cryptography_ArgECDHRequiresECDHKey" xml:space="preserve">
     <value>Keys used with the ECDiffieHellmanCng algorithm must have an algorithm group of ECDiffieHellman.</value>
+  </data>
+  <data name="Cryptography_ArgECDsaRequiresECDsaKey" xml:space="preserve">
+    <value>Keys used with the ECDsaCng algorithm must have an algorithm group of ECDsa.</value>
+  </data>
+  <data name="Cryptography_ArgRSARequiresRSAKey" xml:space="preserve">
+    <value>Keys used with the RSACng algorithm must have an algorithm group of RSA.</value>
   </data>
   <data name="Cryptography_AuthTagMismatch" xml:space="preserve">
     <value>The computed authentication tag did not match the input authentication tag.</value>
@@ -138,11 +189,53 @@
   <data name="Cryptography_BadHashSize_ForAlgorithm" xml:space="preserve">
     <value>The provided value of {0} bytes does not match the expected size of {1} bytes for the algorithm ({2}).</value>
   </data>
+  <data name="Cryptography_CAPI_Required" xml:space="preserve">
+    <value>'{0}' requires Windows Cryptographic API (CAPI), which is not available on this platform.</value>
+  </data>
+  <data name="Cryptography_Cert_AlreadyHasPrivateKey" xml:space="preserve">
+    <value>The certificate already has an associated private key.</value>
+  </data>
+  <data name="Cryptography_CertReq_AlgorithmMustMatch" xml:space="preserve">
+    <value>The issuer certificate public key algorithm ({0}) does not match the value for this certificate request ({1}), use the X509SignatureGenerator overload.</value>
+  </data>
+  <data name="Cryptography_CertReq_BasicConstraintsRequired" xml:space="preserve">
+    <value>The issuer certificate does not have a Basic Constraints extension.</value>
+  </data>
+  <data name="Cryptography_CertReq_DatesReversed" xml:space="preserve">
+    <value>The provided notBefore value is later than the notAfter value.</value>
+  </data>
+  <data name="Cryptography_CertReq_DuplicateExtension" xml:space="preserve">
+    <value>An X509Extension with OID '{0}' has already been specified.</value>
+  </data>
+  <data name="Cryptography_CertReq_IssuerBasicConstraintsInvalid" xml:space="preserve">
+    <value>The issuer certificate does not have an appropriate value for the Basic Constraints extension.</value>
+  </data>
+  <data name="Cryptography_CertReq_IssuerKeyUsageInvalid" xml:space="preserve">
+    <value>The issuer certificate's Key Usage extension is present but does not contain the KeyCertSign flag.</value>
+  </data>
+  <data name="Cryptography_CertReq_IssuerRequiresPrivateKey" xml:space="preserve">
+    <value>The provided issuer certificate does not have an associated private key.</value>
+  </data>
+  <data name="Cryptography_CertReq_NoKeyProvided" xml:space="preserve">
+    <value>This method cannot be used since no signing key was provided via a constructor, use an overload accepting an X509SignatureGenerator instead.</value>
+  </data>
+  <data name="Cryptography_CertReq_NotAfterNotNested" xml:space="preserve">
+    <value>The requested notAfter value ({0}) is later than issuerCertificate.NotAfter ({1}).</value>
+  </data>
+  <data name="Cryptography_CertReq_NotBeforeNotNested" xml:space="preserve">
+    <value>The requested notBefore value ({0}) is earlier than issuerCertificate.NotBefore ({1}).</value>
+  </data>
+  <data name="Cryptography_CertReq_RSAPaddingRequired" xml:space="preserve">
+    <value>The issuer certificate uses an RSA key but no RSASignaturePadding was provided to a constructor. If one cannot be provided, use the X509SignatureGenerator overload.</value>
+  </data>
   <data name="Cryptography_CipherModeFeedbackNotSupported" xml:space="preserve">
     <value>The specified feedback size '{0}' for CipherMode '{1}' is not supported.</value>
   </data>
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
+  </data>
+  <data name="Cryptography_CngKeyWrongAlgorithm" xml:space="preserve">
+    <value>This key is for algorithm '{0}'. Expected '{1}'.</value>
   </data>
   <data name="Cryptography_Config_EncodedOIDError" xml:space="preserve">
     <value>Encoded OID length is too large (greater than 0x7f bytes).</value>
@@ -153,8 +246,17 @@
   <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
     <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
   </data>
+  <data name="Cryptography_CSP_NotFound" xml:space="preserve">
+    <value>The requested key container was not found.</value>
+  </data>
+  <data name="Cryptography_CSP_WrongKeySpec" xml:space="preserve">
+    <value>The specified cryptographic service provider (CSP) does not support this key algorithm: {0}.</value>
+  </data>
   <data name="Cryptography_CurveNotSupported" xml:space="preserve">
     <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
+  </data>
+  <data name="Cryptography_CustomTrustCertsInSystemMode" xml:space="preserve">
+    <value>Custom trust certificates were provided while in System trust mode.</value>
   </data>
   <data name="Cryptography_DefaultAlgorithm_NotSupported" xml:space="preserve">
     <value>This platform does not allow the automatic selection of an algorithm.</value>
@@ -180,6 +282,9 @@
   <data name="Cryptography_FeedbackSizeNotSupported" xml:space="preserve">
     <value>The current platform does not support the specified feedback size.</value>
   </data>
+  <data name="Cryptography_FileStatusError" xml:space="preserve">
+    <value>Unable to get file status.</value>
+  </data>
   <data name="Cryptography_FormatterMissingAlgorithm" xml:space="preserve">
     <value>No hash algorithm has been associated with this formatter object, assign one via the SetHashAlgorithm method.</value>
   </data>
@@ -201,11 +306,17 @@
   <data name="Cryptography_InvalidCipherMode" xml:space="preserve">
     <value>Specified cipher mode is not valid for this algorithm.</value>
   </data>
+  <data name="Cryptography_InvalidContextHandle" xml:space="preserve">
+    <value>The chain context handle is invalid.</value>
+  </data>
   <data name="Cryptography_InvalidCurveKeyParameters" xml:space="preserve">
     <value>The specified key parameters are not valid. Q.X and Q.Y, or D, must be specified. Q.X, Q.Y must be the same length. If D is specified it must be the same length as Q.X and Q.Y if also specified for named curves or the same length as Order for explicit curves.</value>
   </data>
   <data name="Cryptography_InvalidCurveOid" xml:space="preserve">
-    <value>The specified Oid is not valid. The Oid.FriendlyName or Oid.Value property must be set.</value>
+    <value>The specified Oid ({0}) is not valid. The Oid.FriendlyName or Oid.Value property must be set.</value>
+  </data>
+  <data name="Cryptography_InvalidDirectoryPermissions" xml:space="preserve">
+    <value>Invalid directory permissions. The directory '{0}' must be readable, writable and executable by the owner.</value>
   </data>
   <data name="Cryptography_InvalidDsaParameters_MismatchedPGY" xml:space="preserve">
     <value>The specified DSA parameters are not valid; P, G and Y must be the same length (the key size).</value>
@@ -228,6 +339,9 @@
   <data name="Cryptography_InvalidDsaParameters_SeedRestriction_ShortKey" xml:space="preserve">
     <value>The specified DSA parameters are not valid; Seed, if present, must be 20 bytes long for keys shorter than 1024 bits.</value>
   </data>
+  <data name="Cryptography_InvalidDSASignatureSize" xml:space="preserve">
+    <value>Length of the DSA signature was not 40 bytes.</value>
+  </data>
   <data name="Cryptography_InvalidECCharacteristic2Curve" xml:space="preserve">
     <value>The specified Characteristic2 curve parameters are not valid. Polynomial, A, B, G.X, G.Y, and Order are required. A, B, G.X, G.Y must be the same length, and the same length as Q.X, Q.Y and D if those are specified. Cofactor is required. Seed and Hash are optional. Other parameters are not allowed.</value>
   </data>
@@ -240,11 +354,20 @@
   <data name="Cryptography_InvalidFeedbackSize" xml:space="preserve">
     <value>Specified feedback size is not valid for this algorithm.</value>
   </data>
+  <data name="Cryptography_InvalidFilePermissions" xml:space="preserve">
+    <value>Invalid file permissions. The file '{0}' must readable and writable by the current owner and by no one else, and the permissions could not be changed to meet that criteria.</value>
+  </data>
   <data name="Cryptography_InvalidFromXmlString" xml:space="preserve">
     <value>Input string does not contain a valid encoding of the '{0}' '{1}' parameter.</value>
   </data>
+  <data name="Cryptography_InvalidHandle" xml:space="preserve">
+    <value>{0} is an invalid handle.</value>
+  </data>
   <data name="Cryptography_InvalidHashAlgorithmOid" xml:space="preserve">
     <value>The specified OID ({0}) does not represent a known hash algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidHashSize" xml:space="preserve">
+    <value>{0} algorithm hash size is {1} bytes.</value>
   </data>
   <data name="Cryptography_InvalidIVSize" xml:space="preserve">
     <value>Specified initialization vector (IV) does not match the block size for this algorithm.</value>
@@ -264,17 +387,32 @@
   <data name="Cryptography_InvalidOID" xml:space="preserve">
     <value>Object identifier (OID) is unknown.</value>
   </data>
+  <data name="Cryptography_InvalidOperation" xml:space="preserve">
+    <value>This operation is not supported for this class.</value>
+  </data>
   <data name="Cryptography_InvalidPadding" xml:space="preserve">
     <value>Padding is invalid and cannot be removed.</value>
   </data>
   <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
   </data>
-  <data name="Cryptography_InvalidOperation" xml:space="preserve">
-    <value>This operation is not supported for this class.</value>
+  <data name="Cryptography_InvalidStoreHandle" xml:space="preserve">
+    <value>The store handle is invalid.</value>
   </data>
   <data name="Cryptography_InvalidTagLength" xml:space="preserve">
     <value>The specified tag is not a valid size for this algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidTrustCertificate" xml:space="preserve">
+    <value>A null or disposed certificate was present in CustomTrustStore.</value>
+  </data>
+  <data name="Cryptography_Invalid_IA5String" xml:space="preserve">
+    <value>The string contains a character not in the 7 bit ASCII character set.</value>
+  </data>
+  <data name="Cryptography_Invalid_X500Name" xml:space="preserve">
+    <value>The string contains an invalid X500 name attribute key, oid, value or delimiter.</value>
+  </data>
+  <data name="Cryptography_KeyBlobParsingError" xml:space="preserve">
+    <value>Key Blob not in expected format.</value>
   </data>
   <data name="Cryptography_KeyTooSmall" xml:space="preserve">
     <value>The key is too small for the requested operation.</value>
@@ -321,11 +459,38 @@
   <data name="Cryptography_Okm_TooLarge" xml:space="preserve">
     <value>Output keying material length can be at most {0} bytes (255 * hash length).</value>
   </data>
+  <data name="Cryptography_OpenEphemeralKeyHandleWithoutEphemeralFlag" xml:space="preserve">
+    <value>The CNG key handle being opened was detected to be ephemeral, but the EphemeralKey open option was not specified.</value>
+  </data>
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
   </data>
+  <data name="Cryptography_OwnerNotCurrentUser" xml:space="preserve">
+    <value>The owner of '{0}' is not the current user.</value>
+  </data>
   <data name="Cryptography_PartialBlock" xml:space="preserve">
     <value>The input data is not a complete block.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_InvalidAlgorithm" xml:space="preserve">
+    <value>Algorithm is unavailable or is not supported for this operation.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_InvalidIV" xml:space="preserve">
+    <value>The Initialization vector should have the same length as the algorithm block size in bytes.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_TooManyBytes" xml:space="preserve">
+    <value>Requested number of bytes exceeds the maximum.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_ValuesFixed" xml:space="preserve">
+    <value>Value of '{0}' cannot be changed after the bytes have been retrieved.</value>
+  </data>
+  <data name="Cryptography_Pfx_BadKeyReference" xml:space="preserve">
+    <value>A certificate referenced a private key which was already referenced, or could not be loaded.</value>
+  </data>
+  <data name="Cryptography_Pfx_BadPassword" xml:space="preserve">
+    <value>The certificate data cannot be read with the provided password, the password may be incorrect.</value>
+  </data>
+  <data name="Cryptography_Pfx_NoCertificates" xml:space="preserve">
+    <value>The provided PFX data contains no certificates.</value>
   </data>
   <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
     <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>
@@ -335,6 +500,12 @@
   </data>
   <data name="Cryptography_PlaintextTooLarge" xml:space="preserve">
     <value>The specified plaintext size is too large.</value>
+  </data>
+  <data name="Cryptography_PrivateKey_DoesNotMatch" xml:space="preserve">
+    <value>The provided key does not match the public key for this certificate.</value>
+  </data>
+  <data name="Cryptography_PrivateKey_WrongAlgorithm" xml:space="preserve">
+    <value>The provided key does not match the public key algorithm for this certificate.</value>
   </data>
   <data name="Cryptography_Prk_TooSmall" xml:space="preserve">
     <value>The pseudo-random key length must be at least {0} bytes.</value>
@@ -363,14 +534,41 @@
   <data name="Cryptography_TlsRequires64ByteSeed" xml:space="preserve">
     <value>The TLS key derivation function requires a seed value of exactly 64 bytes.</value>
   </data>
+  <data name="Cryptography_TlsRequiresLabelAndSeed" xml:space="preserve">
+    <value>The TLS key derivation function requires both the label and seed properties to be set.</value>
+  </data>
   <data name="Cryptography_UnexpectedTransformTruncation" xml:space="preserve">
     <value>CNG provider unexpectedly terminated encryption or decryption prematurely.</value>
+  </data>
+  <data name="Cryptography_Unix_X509_DisallowedStoreNotEmpty" xml:space="preserve">
+    <value>The Disallowed store is not supported on this platform, but already has data. All files under '{0}' must be removed.</value>
+  </data>
+  <data name="Cryptography_Unix_X509_MachineStoresReadOnly" xml:space="preserve">
+    <value>Unix LocalMachine X509Stores are read-only for all users.</value>
+  </data>
+  <data name="Cryptography_Unix_X509_MachineStoresRootOnly" xml:space="preserve">
+    <value>Unix LocalMachine X509Store is limited to the Root and CertificateAuthority stores.</value>
+  </data>
+  <data name="Cryptography_Unix_X509_NoDisallowedStore" xml:space="preserve">
+    <value>The Disallowed store is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_Unix_X509_PropertyNotSettable" xml:space="preserve">
+    <value>The {0} value cannot be set on Unix.</value>
+  </data>
+  <data name="Cryptography_Unix_X509_SerializedExport" xml:space="preserve">
+    <value>X509ContentType.SerializedCert and X509ContentType.SerializedStore are not supported on Unix.</value>
   </data>
   <data name="Cryptography_UnknownAlgorithmIdentifier" xml:space="preserve">
     <value>The algorithm identified by '{0}' is unknown, not valid for the requested usage, or was not handled.</value>
   </data>
+  <data name="Cryptography_UnknownCertContentType" xml:space="preserve">
+    <value>The certificate content type could not be determined.</value>
+  </data>
   <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
     <value>'{0}' is not a known hash algorithm.</value>
+  </data>
+  <data name="Cryptography_UnknownKeyAlgorithm" xml:space="preserve">
+    <value>'{0}' is not a known key algorithm.</value>
   </data>
   <data name="Cryptography_UnknownPaddingMode" xml:space="preserve">
     <value>Unknown padding mode used.</value>
@@ -384,14 +582,116 @@
   <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
     <value>The specified PaddingMode is not supported.</value>
   </data>
+  <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
+    <value>Certificate '{0}' is corrupted.</value>
+  </data>
+  <data name="Cryptography_X509_ExportFailed" xml:space="preserve">
+    <value>The certificate export operation failed.</value>
+  </data>
+  <data name="Cryptography_X509_ExtensionMismatch" xml:space="preserve">
+    <value>The parameter should be an X509Extension.</value>
+  </data>
+  <data name="Cryptography_X509_InvalidContentType" xml:space="preserve">
+    <value>Invalid content type.</value>
+  </data>
+  <data name="Cryptography_X509_InvalidFindType" xml:space="preserve">
+    <value>Invalid find type.</value>
+  </data>
+  <data name="Cryptography_X509_InvalidFindValue" xml:space="preserve">
+    <value>Invalid find value.</value>
+  </data>
+  <data name="Cryptography_X509_InvalidFlagCombination" xml:space="preserve">
+    <value>The flags '{0}' may not be specified together.</value>
+  </data>
+  <data name="Cryptography_X509_NoEphemeralPfx" xml:space="preserve">
+    <value>This platform does not support loading with EphemeralKeySet. Remove the flag to allow keys to be temporarily created on disk.</value>
+  </data>
+  <data name="Cryptography_X509_NoOrMismatchedPemKey" xml:space="preserve">
+    <value>The key contents do not contain a PEM, the content is malformed, or the key does not match the certificate.</value>
+  </data>
+  <data name="Cryptography_X509_NoPemCertificate" xml:space="preserve">
+    <value>The certificate contents do not contain a PEM with a CERTIFICATE label, or the content is malformed.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS7_NoSigner" xml:space="preserve">
+    <value>Cannot find the original signer.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS7_Unsupported" xml:space="preserve">
+    <value>PKCS#7 certificate format is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS12_ExportableNotSupported" xml:space="preserve">
+    <value>The PKCS#12 Exportable flag is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS12_PersistKeySetNotSupported" xml:space="preserve">
+    <value>The PKCS#12 PersistKeySet flag is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_X509_Store_RootUnsupported" xml:space="preserve">
+    <value>Root certificate store is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_X509_StoreAddFailure" xml:space="preserve">
+    <value>The X509 certificate could not be added to the store.</value>
+  </data>
+  <data name="Cryptography_X509_StoreCannotCreate" xml:space="preserve">
+    <value>The platform does not have a definition for an X509 certificate store named '{0}' with a StoreLocation of '{1}', and does not support creating it.</value>
+  </data>
+  <data name="Cryptography_X509_StoreDSAPrivateKeyNotSupported" xml:space="preserve">
+    <value>Adding a DSA private key to the store is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_X509_StoreEnumerateFailure" xml:space="preserve">
+    <value>Failed to enumerate certificates from the store.</value>
+  </data>
+  <data name="Cryptography_X509_StoreNoFileAvailable" xml:space="preserve">
+    <value>The X509 certificate could not be added to the store because all candidate file names were in use.</value>
+  </data>
+  <data name="Cryptography_X509_StoreNotFound" xml:space="preserve">
+    <value>The specified X509 certificate store does not exist.</value>
+  </data>
+  <data name="Cryptography_X509_StoreNotOpen" xml:space="preserve">
+    <value>The X509 certificate store has not been opened.</value>
+  </data>
+  <data name="Cryptography_X509_StoreReadOnly" xml:space="preserve">
+    <value>The X509 certificate store is read-only.</value>
+  </data>
+  <data name="Cryptography_X509_StoreRemoveFailure" xml:space="preserve">
+    <value>The X509 certificate could not be removed from the store.</value>
+  </data>
+  <data name="Cryptography_X509Store_WouldModifyAdminTrust" xml:space="preserve">
+    <value>Removing the requested certificate would modify admin trust settings, and has been denied.</value>
+  </data>
+  <data name="Cryptography_X509Store_WouldModifyUserTrust" xml:space="preserve">
+    <value>Removing the requested certificate would modify user trust settings, and has been denied.</value>
+  </data>
+  <data name="CryptSetKeyParam_Failed" xml:space="preserve">
+    <value>CryptSetKeyParam failed with error code {0}.</value>
+  </data>
+  <data name="CspParameter_invalid" xml:space="preserve">
+    <value>CSPParameters cannot be null</value>
+  </data>
   <data name="HashNameMultipleSetNotSupported" xml:space="preserve">
     <value>Setting the hashname after it's already been set is not supported on this platform.</value>
+  </data>
+  <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
+    <value>Enumeration has not started. Call MoveNext.</value>
   </data>
   <data name="InvalidOperation_IncorrectImplementation" xml:space="preserve">
     <value>The algorithm's implementation is incorrect.</value>
   </data>
   <data name="InvalidOperation_UnsupportedBlockSize" xml:space="preserve">
     <value>The algorithm's block size is not supported.</value>
+  </data>
+  <data name="NotSupported_ECDsa_Csp" xml:space="preserve">
+    <value>CryptoApi ECDsa keys are not supported.</value>
+  </data>
+  <data name="NotSupported_ECDiffieHellman_Csp" xml:space="preserve">
+    <value>CryptoApi ECDiffieHellman keys are not supported.</value>
+  </data>
+  <data name="NotSupported_ImmutableX509Certificate" xml:space="preserve">
+    <value>X509Certificate is immutable on this platform. Use the equivalent constructor instead.</value>
+  </data>
+  <data name="NotSupported_KeyAlgorithm" xml:space="preserve">
+    <value>The certificate key algorithm is not supported.</value>
+  </data>
+  <data name="NotSupported_LegacyBasicConstraints" xml:space="preserve">
+    <value>The X509 Basic Constraints extension with OID 2.5.29.10 is not supported.</value>
   </data>
   <data name="NotSupported_Method" xml:space="preserve">
     <value>Method not supported.</value>
@@ -408,7 +708,28 @@
   <data name="NotSupported_UnwritableStream" xml:space="preserve">
     <value>Stream does not support writing.</value>
   </data>
+  <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
+    <value>The home directory of the current user could not be determined.</value>
+  </data>
+  <data name="PlatformNotSupported_CryptographyCng" xml:space="preserve">
+    <value>Windows Cryptography Next Generation (CNG) is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_CryptographyOpenSSL" xml:space="preserve">
+    <value>OpenSSL is not supported on this platform.</value>
+  </data>
+  <data name="Security_AccessDenied" xml:space="preserve">
+    <value>Access is denied.</value>
+  </data>
+  <data name="Security_InvalidValue" xml:space="preserve">
+    <value>The {0} value was invalid.</value>
+  </data>
   <data name="SystemSecurityCryptography_PlatformNotSupported" xml:space="preserve">
     <value>System.Security.Cryptography is not supported on this platform.</value>
+  </data>
+  <data name="SystemSecurityCryptographyX509Certificates_PlatformNotSupported" xml:space="preserve">
+    <value>System.Security.Cryptography.X509Certificates is not supported on this platform.</value>
+  </data>
+  <data name="Unknown_Error" xml:space="preserve">
+    <value>Unknown error.</value>
   </data>
 </root>

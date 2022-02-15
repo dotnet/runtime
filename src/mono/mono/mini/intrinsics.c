@@ -509,7 +509,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
 
-		if (fsig->params [1]->type == MONO_TYPE_I) {
+		if (fsig->params [1]->type == MONO_TYPE_I || fsig->params [1]->type == MONO_TYPE_U) {
 			int dreg = alloc_preg (cfg);
 			EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, args [1]->dreg);
 			ins->type = STACK_PTR;
@@ -582,6 +582,23 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 	else if (!strcmp (cmethod->name, "SkipInit")) {
  		MONO_INST_NEW (cfg, ins, OP_NOP);
 		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
+	} else if (!strcmp (cmethod->name, "IsNullRef")) {
+		g_assert (fsig->param_count == 1);
+
+		MONO_EMIT_NEW_COMPARE_IMM (cfg, args [0]->dreg, 0);
+		int dreg = alloc_ireg (cfg);
+		EMIT_NEW_UNALU (cfg, ins, OP_PCEQ, dreg, -1);
+		return ins;
+	} else if (!strcmp (cmethod->name, "NullRef")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 0);
+
+		EMIT_NEW_PCONST (cfg, ins, NULL);
+		ins->type = STACK_MP;
+		ins->klass = mono_class_from_mono_type_internal (fsig->ret);
 		return ins;
 	}
 
@@ -1924,7 +1941,11 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.iOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.TVOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.MacCatalyst") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.Mac")) &&
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.Mac") ||
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.iOS") ||
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.tvOS") ||
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.MacCatalyst") ||
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.macOS")) &&
 				!strcmp (cmethod_klass_name_space, "ObjCRuntime") &&
 				!strcmp (cmethod_klass_name, "Selector"))
 			   ) {

@@ -232,7 +232,7 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 	void *lib;
 	MonoDlFallbackHandler *dl_fallback = NULL;
 	int lflags = mono_dl_convert_flags (mono_flags, native_flags);
-	char *found_name;
+	char *found_name = NULL;
 
 	if (error_msg)
 		*error_msg = NULL;

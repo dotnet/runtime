@@ -166,10 +166,8 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute? root, string? defaultNamespace)
+        public XmlTypeMapping ImportTypeMapping(Type type!!, XmlRootAttribute? root, string? defaultNamespace)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
             XmlTypeMapping xmlMapping = new XmlTypeMapping(_typeScope, ImportElement(_modelScope.GetTypeModel(type), root, defaultNamespace, new RecursionLimiter()));
             xmlMapping.SetKeyInternal(XmlMapping.GenerateKey(type, root, defaultNamespace));
             xmlMapping.GenerateSerializer = true;
@@ -485,10 +483,7 @@ namespace System.Xml.Serialization
                 // do not validate the schema provider method for wildcard types.
                 return null;
             }
-            else if (provider.MethodName == null)
-            {
-                throw new ArgumentNullException(nameof(provider.MethodName));
-            }
+            ArgumentNullException.ThrowIfNull(provider.MethodName, nameof(provider.MethodName));
             if (!CSharpHelpers.IsValidLanguageIndependentIdentifier(provider.MethodName))
                 throw new ArgumentException(SR.Format(SR.XmlGetSchemaMethodName, provider.MethodName), nameof(provider.MethodName));
 

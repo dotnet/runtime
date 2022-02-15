@@ -29,10 +29,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(platform), platform, SR.Format(SR.Arg_EnumIllegalVal, platform));
             }
 
-            if (version == null)
-            {
-                throw new ArgumentNullException(nameof(version));
-            }
+            ArgumentNullException.ThrowIfNull(version);
 
             _platform = platform;
             _version = version;
@@ -90,13 +87,8 @@ namespace System
         /// Indicates whether the current application is running on the specified platform.
         /// </summary>
         /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
-        public static bool IsOSPlatform(string platform)
+        public static bool IsOSPlatform(string platform!!)
         {
-            if (platform == null)
-            {
-                throw new ArgumentNullException(nameof(platform));
-            }
-
 #if TARGET_BROWSER
             return platform.Equals("BROWSER", StringComparison.OrdinalIgnoreCase);
 #elif TARGET_WINDOWS

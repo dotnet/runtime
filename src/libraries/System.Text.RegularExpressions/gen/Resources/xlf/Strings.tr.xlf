@@ -47,11 +47,6 @@
         <target state="translated">Hedef dizi, koleksiyondaki tüm öğeleri kopyalamak için yeterince uzun değil. Dizi dizinini ve uzunluğunu denetleyin.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">Dizi null öğeler içeremez.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">Başlangıç dizini sıfırdan küçük veya giriş uzunluğundan büyük olamaz.</target>
@@ -210,11 +205,6 @@
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Koleksiyon salt okunur.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">Bu işleme her nesne için yalnızca bir kez izin verilir.</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">

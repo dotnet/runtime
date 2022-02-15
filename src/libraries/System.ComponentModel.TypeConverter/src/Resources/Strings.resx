@@ -193,9 +193,6 @@
   <data name="MaskedTextProviderInvalidCharError" xml:space="preserve">
     <value>The specified character value is not allowed for this property.</value>
   </data>
-  <data name="MaskedTextProviderMaskNullOrEmpty" xml:space="preserve">
-    <value>The Mask value cannot be null or empty.</value>
-  </data>
   <data name="MaskedTextProviderMaskInvalidChar" xml:space="preserve">
     <value>The specified mask contains invalid characters.</value>
   </data>

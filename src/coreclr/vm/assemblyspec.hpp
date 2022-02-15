@@ -16,7 +16,7 @@
 #define _ASSEMBLYSPEC_H
 #include "hash.h"
 #include "assemblyspecbase.h"
-#include "domainfile.h"
+#include "domainassembly.h"
 #include "holder.h"
 
 class AppDomain;
@@ -103,9 +103,7 @@ class AssemblySpec  : public BaseAssemblySpec
 
 
     void InitializeSpec(PEAssembly* pPEAssembly);
-    HRESULT InitializeSpec(StackingAllocator* alloc,
-                        ASSEMBLYNAMEREF* pName,
-                        BOOL fParse);
+    void InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pName);
 
     void AssemblyNameInit(ASSEMBLYNAMEREF* pName, PEImage* pImageInfo); //[in,out], [in]
 

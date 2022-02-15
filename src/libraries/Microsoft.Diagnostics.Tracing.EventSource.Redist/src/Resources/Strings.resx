@@ -272,9 +272,6 @@
   <data name="EventSource_RecursiveTypeDefinition" xml:space="preserve">
     <value>Recursive type definition is not supported.</value>
   </data>
-  <data name="EventSource_SessionIdError" xml:space="preserve">
-    <value>Bit position in AllKeywords ({0}) must equal the command argument named "EtwSessionKeyword" ({1}).</value>
-  </data>
   <data name="EventSource_StopsFollowStarts" xml:space="preserve">
     <value>An event with stop suffix must follow a corresponding event with a start suffix.</value>
   </data>

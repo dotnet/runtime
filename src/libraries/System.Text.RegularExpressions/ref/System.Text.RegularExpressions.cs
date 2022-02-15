@@ -161,6 +161,10 @@ namespace System.Text.RegularExpressions
         public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[]? attributes) { }
         [System.ObsoleteAttribute("Regex.CompileToAssembly is obsolete and not supported. Use the RegexGeneratorAttribute with the regular expression source generator instead.", DiagnosticId = "SYSLIB0036", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[]? attributes, string? resourceFile) { }
+        public int Count(string input) { throw null; }
+        public static int Count(string input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { throw null; }
+        public static int Count(string input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
+        public static int Count(string input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         public static string Escape(string str) { throw null; }
         public string[] GetGroupNames() { throw null; }
         public int[] GetGroupNumbers() { throw null; }

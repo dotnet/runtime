@@ -1692,9 +1692,6 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 #if defined(ALLOW_METHOD_ADD) || defined(ALLOW_FIELD_ADD)
 	MonoClass *add_member_klass = NULL;
 #endif
-#ifdef ALLOW_METHOD_ADD
-	uint32_t add_param_method_index = 0;
-#endif
 
 	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {
@@ -1731,7 +1728,6 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 
 		case ENC_FUNC_ADD_PARAM: {
 			g_assert (token_table == MONO_TABLE_METHOD);
-			add_param_method_index = token_index;
 			break;
 		}
 #endif

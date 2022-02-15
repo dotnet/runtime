@@ -16,9 +16,9 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include "assembly.h"
+#include <mono/metadata/assembly.h>
 #include "assembly-internals.h"
-#include "image.h"
+#include <mono/metadata/image.h>
 #include "image-internals.h"
 #include "object-internals.h"
 #include <mono/metadata/loader.h>

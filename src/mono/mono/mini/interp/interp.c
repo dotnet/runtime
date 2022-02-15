@@ -3361,7 +3361,13 @@ mono_interp_get_native_func_wrapper (InterpMethod* imethod, MonoMethodSignature*
 	MonoMethodPInvoke iinfo;
 	memset (&iinfo, 0, sizeof (iinfo));
 
-	MonoMethod* m = mono_marshal_get_native_func_wrapper (m_class_get_image (imethod->method->klass), csignature, &iinfo, mspecs, code);
+	MonoMethod *method = imethod->method;
+	MonoImage *image = NULL;
+	if (imethod->method->dynamic)
+		image = ((MonoDynamicMethod*)method)->assembly->image;
+	else
+		image = m_class_get_image (method->klass);
+	MonoMethod* m = mono_marshal_get_native_func_wrapper (image, csignature, &iinfo, mspecs, code);
 
 	for (int i = csignature->param_count; i >= 0; i--)
 		if (mspecs [i])
@@ -5169,7 +5175,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U4_R8)
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_U4
-			LOCAL_VAR (ip [1], gint32) = mono_fconv_u4_2 (LOCAL_VAR (ip [2], double));
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_u4 (LOCAL_VAR (ip [2], double));
 #else
 			LOCAL_VAR (ip [1], gint32) = (guint32) LOCAL_VAR (ip [2], double);
 #endif
@@ -5225,7 +5231,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U8_R8)
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_U8
-			LOCAL_VAR (ip [1], gint64) = mono_fconv_u8_2 (LOCAL_VAR (ip [2], double));
+			LOCAL_VAR (ip [1], gint64) = mono_fconv_u8 (LOCAL_VAR (ip [2], double));
 #else
 			LOCAL_VAR (ip [1], gint64) = (guint64) LOCAL_VAR (ip [2], double);
 #endif

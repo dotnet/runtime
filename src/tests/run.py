@@ -92,8 +92,6 @@ parser.add_argument("--long_gc", dest="long_gc", action="store_true", default=Fa
 parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", default=False)
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
-parser.add_argument("--run_nativeaot_tests", dest="run_nativeaot_tests", action="store_true", default=False)
-parser.add_argument("--nativeaot_multimodule", dest="nativeaot_multimodule", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests.")
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
@@ -103,6 +101,7 @@ parser.add_argument("--verbose", dest="verbose", action="store_true", default=Fa
 parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="store_true", default=False)
 parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
 parser.add_argument("--tiering_test", dest="tiering_test", action="store_true", default=False)
+parser.add_argument("--run_nativeaot_tests", dest="run_nativeaot_tests", action="store_true", default=False)
 
 ################################################################################
 # Globals
@@ -871,16 +870,6 @@ def run_tests(args,
         print("Setting RunCrossGen2=true")
         os.environ["RunCrossGen2"] = "true"
 
-    if args.run_nativeaot_tests:
-        print("Running tests Native AOT")
-        print("Setting RunNativeAot=true")
-        os.environ["RunNativeAot"] = "true"
-
-    if args.nativeaot_multimodule:
-        print("Native AOT will be compiled in multimodule mode")
-        print("Setting NativeAotMultimodule=true")
-        os.environ["NativeAotMultimodule"] = "true"
-
     if args.large_version_bubble:
         print("Large Version Bubble enabled")
         os.environ["LargeVersionBubble"] = "true"
@@ -901,6 +890,10 @@ def run_tests(args,
     if args.tiering_test:
         print("Running test repeatedly to promote methods to tier1")
         os.environ["CLRCustomTestLauncher"] = args.tieringtest_script_path
+
+    if args.run_nativeaot_tests:
+        print("Running tests NativeAOT")
+        os.environ["CLRCustomTestLauncher"] = args.nativeaottest_script_path
 
     # Set __TestTimeout environment variable, which is the per-test timeout in milliseconds.
     # This is read by the test wrapper invoker, in src\tests\Common\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs.
@@ -1004,16 +997,6 @@ def setup_args(args):
                               "Error setting run_crossgen2_tests")
 
     coreclr_setup_args.verify(args,
-                              "run_nativeaot_tests",
-                              lambda unused: True,
-                              "Error setting run_nativeaot_tests")
-
-    coreclr_setup_args.verify(args,
-                              "nativeaot_multimodule",
-                              lambda unused: True,
-                              "Error setting nativeaot_multimodule")
-
-    coreclr_setup_args.verify(args,
                               "skip_test_run",
                               lambda arg: True,
                               "Error setting skip_test_run")
@@ -1043,6 +1026,12 @@ def setup_args(args):
                               lambda arg: True,
                               "Error setting tiering_test")
 
+    coreclr_setup_args.verify(args,
+                              "run_nativeaot_tests",
+                              lambda arg: True,
+                              "Error setting run_nativeaot_tests")
+
+
     print("host_os                  : %s" % coreclr_setup_args.host_os)
     print("arch                     : %s" % coreclr_setup_args.arch)
     print("build_type               : %s" % coreclr_setup_args.build_type)
@@ -1056,6 +1045,7 @@ def setup_args(args):
     coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.runtime_repo_location, "src", "tests")
     coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.tieringtest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "tieringtest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
+    coreclr_setup_args.nativeaottest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "nativeaottest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.logs_dir = os.path.join(coreclr_setup_args.artifacts_location, "log")
 
     return coreclr_setup_args

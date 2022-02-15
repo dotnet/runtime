@@ -73,12 +73,7 @@ namespace ILCompiler
                     reportedMethod = delegateThunkMethod.InvokeMethod;
                 }
 
-                var message = new DiagnosticString(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(method));
-                _logger.LogWarning(
-                    message,
-                    (int)DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed,
-                    reportedMethod,
-                    MessageSubCategory.AotAnalysis);
+                _logger.LogWarning(reportedMethod, DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed, DiagnosticUtilities.GetMethodSignatureDisplayName(method));
             }
 
             // struct may contain delegate fields, hence we need to add dependencies for it

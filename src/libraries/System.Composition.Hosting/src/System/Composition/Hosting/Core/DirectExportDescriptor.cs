@@ -10,16 +10,8 @@ namespace System.Composition.Hosting.Core
         private readonly CompositeActivator _activator;
         private readonly IDictionary<string, object> _metadata;
 
-        public DirectExportDescriptor(CompositeActivator activator, IDictionary<string, object> metadata)
+        public DirectExportDescriptor(CompositeActivator activator!!, IDictionary<string, object> metadata!!)
         {
-            if (activator == null)
-            {
-                throw new ArgumentNullException(nameof(activator));
-            }
-            if (metadata == null)
-            {
-                throw new ArgumentNullException(nameof(metadata));
-            }
             _activator = activator;
             _metadata = metadata;
         }
