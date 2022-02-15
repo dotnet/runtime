@@ -101,11 +101,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// A property assignment is really a call to the property setter.
 				var setMethod = propertyRef.Property.SetMethod!;
 				TValue instanceValue = Visit (propertyRef.Instance, state);
-				return HandleMethodCall (
+				// The return value of a property set expression is the value,
+				// even though a property setter has no return value.
+				HandleMethodCall (
 					setMethod,
 					instanceValue,
 					ImmutableArray.Create (value),
 					operation);
+				break;
 			// TODO: when setting a property in an attribute, target is an IPropertyReference.
 			case IArrayElementReferenceOperation:
 				// TODO
