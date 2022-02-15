@@ -861,6 +861,9 @@
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
         <Destination>$(RuntimeBinDir)libmono-profiler-aot.a</Destination>
       </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsAndroid)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.so">
+        <Destination>$(RuntimeBinDir)\..\..\monoprofiler\$(PlatformConfigPathPart)\libmono-profiler-aot.so</Destination>
+      </_MonoRuntimeArtifacts>
       <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)dbgshim$(LibSuffix)">
         <Destination>$(RuntimeBinDir)$(LibPrefix)dbgshim$(LibSuffix)</Destination>
       </_MonoICorDebugArtifacts>

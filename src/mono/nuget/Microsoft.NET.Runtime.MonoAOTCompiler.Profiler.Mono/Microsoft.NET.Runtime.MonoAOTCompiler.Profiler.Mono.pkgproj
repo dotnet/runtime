@@ -1,0 +1,19 @@
+<Project DefaultTargets="Pack">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <GeneratePackage>true</GeneratePackage>
+    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
+    <PackageDescription>Provides AOT profiler for Mono runtime</PackageDescription>
+    <ApplyMetaPackages>false</ApplyMetaPackages>
+    <IsShipping>false</IsShipping>
+    <IdPrefix>transport.$(PackageRID).</IdPrefix>
+    <Id>Microsoft.NET.Runtime.MonoAOTCompiler.Profiler.Mono</Id>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageFile Include="$(RepoRoot)\artifacts\bin\monoprofiler\Android.$(TargetArchitecture).$(Configuration)\libmono-profiler-aot.so" TargetPath="runtimes\$(PackageRID)\native\lib\%(Filename)%(Extension)" SkipPackageFileCheck="true" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

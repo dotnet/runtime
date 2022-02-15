@@ -65,6 +65,7 @@
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'Browser'">$(DefaultMonoSubsets)mono.wasmruntime+</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="'$(TargetOS)' == 'Android'">$(DefaultMonoSubsets)mono.aotprofiler+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">$(DefaultMonoSubsets)mono.aotcross+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages</DefaultMonoSubsets>
 
@@ -128,6 +129,7 @@
     <SubsetName Include="Mono" Description="The Mono runtime and CoreLib. Equivalent to: $(DefaultMonoSubsets)" />
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
     <SubsetName Include="Mono.AotCross" Description="The cross-compiler runtime for Mono AOT." />
+    <SubsetName Include="Mono.AotProfiler" Description="The profiler for Mono AOT." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
     <SubsetName Include="Mono.Packages" Description="The projects that produce NuGet packages for the Mono runtime." />
     <SubsetName Include="Mono.WasmRuntime" Description="The WebAssembly runtime." />
@@ -332,6 +334,10 @@
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasmruntime+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)wasm\wasm.proj" Category="mono" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+mono.aotprofiler+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)nuget\Microsoft.NET.Runtime.MonoAOTCompiler.Profiler.Mono\Microsoft.NET.Runtime.MonoAOTCompiler.Profiler.Mono.pkgproj" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">
