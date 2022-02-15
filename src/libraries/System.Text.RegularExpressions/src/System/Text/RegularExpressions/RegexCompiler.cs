@@ -2447,20 +2447,30 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Multi, $"Unexpected type: {node.Kind}");
 
-                bool caseInsensitive = IsCaseInsensitive(node);
+                string str = node.Str!;
+                Debug.Assert(str.Length >= 2);
 
-                // If the multi string's length exceeds the maximum length we want to unroll, instead generate a call to StartsWith.
-                // Each character that we unroll results in code generation that increases the size of both the IL and the resulting asm,
-                // and with a large enough string, that can cause significant overhead as well as even risk stack overflow due to
-                // having an obscenely long method.  Such long string lengths in a pattern are generally quite rare.  However, we also
-                // want to unroll for shorter strings, because the overhead of invoking StartsWith instead of doing a few simple
-                // inline comparisons is very measurable, especially if we're doing a culture-sensitive comparison and StartsWith
-                // accesses CultureInfo.CurrentCulture on each call.  We need to be cognizant not only of the cost if the whole
-                // string matches, but also the cost when the comparison fails early on, and thus we pay for the call overhead
-                // but don't reap the benefits of all the vectorization StartsWith can do.
-                const int MaxUnrollLength = 64;
-                if (!caseInsensitive && // StartsWith(..., XxIgnoreCase) won't necessarily be the same as char-by-char comparison
-                    node.Str!.Length > MaxUnrollLength)
+                if (IsCaseInsensitive(node)) // StartsWith(..., XxIgnoreCase) won't necessarily be the same as char-by-char comparison
+                {
+                    // This case should be relatively rare.  It will only occur with IgnoreCase and a series of non-ASCII characters.
+
+                    if (emitLengthCheck)
+                    {
+                        EmitSpanLengthCheck(str.Length);
+                    }
+
+                    foreach (char c in str)
+                    {
+                        // if (c != slice[sliceStaticPos++]) goto doneLabel;
+                        EmitTextSpanOffset();
+                        sliceStaticPos++;
+                        LdindU2();
+                        CallToLower();
+                        Ldc(c);
+                        BneFar(doneLabel);
+                    }
+                }
+                else
                 {
                     // if (!slice.Slice(sliceStaticPos).StartsWith("...") goto doneLabel;
                     Ldloca(slice);
@@ -2471,71 +2481,6 @@ namespace System.Text.RegularExpressions
                     Call(s_spanStartsWith);
                     BrfalseFar(doneLabel);
                     sliceStaticPos += node.Str.Length;
-                    return;
-                }
-
-                // Emit the length check for the whole string.  If the generated code gets past this point,
-                // we know the span is at least sliceStaticPos + s.Length long.
-                ReadOnlySpan<char> s = node.Str;
-                if (emitLengthCheck)
-                {
-                    EmitSpanLengthCheck(s.Length);
-                }
-
-                // If we're doing a case-insensitive comparison, we need to lower case each character,
-                // so we just go character-by-character.  But if we're not, we try to process multiple
-                // characters at a time; this is helpful not only for throughput but also in reducing
-                // the amount of IL and asm that results from this unrolling. This optimization
-                // is subject to endianness issues if the generated code is used on a machine with a
-                // different endianness, but that's not a concern when the code is emitted by the
-                // same process that then uses it.
-                if (!caseInsensitive)
-                {
-                    // On 64-bit, process 4 characters at a time until the string isn't at least 4 characters long.
-                    if (IntPtr.Size == 8)
-                    {
-                        const int CharsPerInt64 = 4;
-                        while (s.Length >= CharsPerInt64)
-                        {
-                            // if (Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref MemoryMarshal.GetReference(slice), sliceStaticPos)) != value) goto doneLabel;
-                            EmitTextSpanOffset();
-                            Unaligned(1);
-                            LdindI8();
-                            LdcI8(MemoryMarshal.Read<long>(MemoryMarshal.AsBytes(s)));
-                            BneFar(doneLabel);
-                            sliceStaticPos += CharsPerInt64;
-                            s = s.Slice(CharsPerInt64);
-                        }
-                    }
-
-                    // Of what remains, process 2 characters at a time until the string isn't at least 2 characters long.
-                    const int CharsPerInt32 = 2;
-                    while (s.Length >= CharsPerInt32)
-                    {
-                        // if (Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref MemoryMarshal.GetReference(slice), sliceStaticPos)) != value) goto doneLabel;
-                        EmitTextSpanOffset();
-                        Unaligned(1);
-                        LdindI4();
-                        Ldc(MemoryMarshal.Read<int>(MemoryMarshal.AsBytes(s)));
-                        BneFar(doneLabel);
-                        sliceStaticPos += CharsPerInt32;
-                        s = s.Slice(CharsPerInt32);
-                    }
-                }
-
-                // Finally, process all of the remaining characters one by one.
-                for (int i = 0; i < s.Length; i++)
-                {
-                    // if (s[i] != slice[sliceStaticPos++]) goto doneLabel;
-                    EmitTextSpanOffset();
-                    sliceStaticPos++;
-                    LdindU2();
-                    if (caseInsensitive)
-                    {
-                        CallToLower();
-                    }
-                    Ldc(s[i]);
-                    BneFar(doneLabel);
                 }
             }
 
