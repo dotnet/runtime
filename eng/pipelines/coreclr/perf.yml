@@ -252,7 +252,7 @@ jobs:
         isOfficialBuild: false
         pool:
           vmImage: 'macos-11'
-        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps.yml
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-podcast.yml
         extraStepsParameters:
           rootFolder: '$(Build.SourcesDirectory)/artifacts/'
           includeRootFolder: true
@@ -681,7 +681,7 @@ jobs:
         isOfficialBuild: false
         pool:
           vmImage: 'macos-11'
-        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps.yml
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-podcast.yml
         extraStepsParameters:
           rootFolder: '$(Build.SourcesDirectory)/artifacts/'
           includeRootFolder: true
