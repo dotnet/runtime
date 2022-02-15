@@ -14,6 +14,8 @@
 #include <unistd.h>
 #endif
 
+#include <platformdefines.h>
+
 #ifndef HOST_WIN32
 #include <dlfcn.h>
 #endif
@@ -2801,8 +2803,6 @@ void VariantInit(VARIANT* vt)
 	vt->vt = VT_EMPTY;
 }
 
-#define S_OK 0
-
 #endif
 
 LIBTEST_API int STDCALL
@@ -4876,23 +4876,23 @@ mono_test_marshal_bool_in (int arg, unsigned int expected, unsigned int bDefault
 {
 	switch (arg) {
 	case 1:
-		if (bDefaultMarsh != expected)
+		if (bDefaultMarsh != (char)expected)
 			return 1;
 		break;
 	case 2:
-		if (bBoolCustMarsh != expected)
+		if (bBoolCustMarsh != (char)expected)
 			return 2;
 		break;
 	case 3:
-		if (bI1CustMarsh != expected)
+		if (bI1CustMarsh != (char)expected)
 			return 3;
 		break;
 	case 4:
-		if (bU1CustMarsh != expected)
+		if (bU1CustMarsh != (char)expected)
 			return 4;
 		break;
 	case 5:
-		if (bVBCustMarsh != expected)
+		if (bVBCustMarsh != (char)expected)
 			return 5;
 		break;
 	default:
