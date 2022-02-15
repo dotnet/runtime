@@ -159,6 +159,7 @@ namespace System.Net.Security.Tests
             _log.WriteLine("Server: " + serverSslProtocols + "; Client: " + clientSslProtocols);
 
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, 0);
+
             using (var server = new DummyTcpServer(endPoint, encryptionPolicy))
             using (var client = new TcpClient())
             {

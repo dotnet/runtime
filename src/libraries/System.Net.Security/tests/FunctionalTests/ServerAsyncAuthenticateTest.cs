@@ -10,7 +10,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.XUnitExtensions;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -43,14 +43,13 @@ namespace System.Net.Security.Tests
             await ServerAsyncSslHelper(protocol, protocol);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols serverProtocol,
             SslProtocols clientProtocol,
             Type expectedException)
         {
-
             Exception e = await Record.ExceptionAsync(
                 () =>
                 {
