@@ -957,12 +957,13 @@ namespace System.DirectoryServices.ActiveDirectory
             });
 #else
             char[] cBuf = new char[PASSWORD_LENGTH];
+            byte[] randomBuffer = new byte[1];
 
             using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
                 for (int i = 0; i < PASSWORD_LENGTH; i++)
                 {
-                    cBuf[i] = PasswordCharacterSet[GetRandomByte(rng, PasswordCharacterSet.Length)];
+                    cBuf[i] = PasswordCharacterSet[GetRandomByte(rng, PasswordCharacterSet.Length, randomBuffer)];
                 }
             }
 
@@ -974,9 +975,12 @@ namespace System.DirectoryServices.ActiveDirectory
             // We know the upper-bound is < 255, so we can avoid converting random
             // bytes to integers and mask a single byte instead. We also know the
             // lower-bound is 0.
-            static int GetRandomByte(RandomNumberGenerator rng, int toExclusive)
+            // randomBuffer is a scratch buffer that is populated with random data
+            // so we don't allocate an array per-invocation.
+            static int GetRandomByte(RandomNumberGenerator rng, int toExclusive, byte[] randomBuffer)
             {
                 Debug.Assert(toExclusive > 0 && toExclusive < byte.MaxValue);
+                Debug.Assert(randomBuffer.Length == 1);
 
                 // The total possible range is [0, 255).
                 int range = toExclusive - 1;
@@ -988,13 +992,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 mask |= mask >> 4;
                 // Don't need >> 8 or >> 16 since it is known the range is less than 255.
 
-                byte[] randomByte = new byte[1];
                 int result;
 
                 do
                 {
-                    rng.GetBytes(randomByte);
-                    result = mask & randomByte[0];
+                    rng.GetBytes(randomBuffer);
+                    result = mask & randomBuffer[0];
                 }
                 while (result > range);
 
