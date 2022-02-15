@@ -105,7 +105,6 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-
         private static bool ExistsInvalidValue(HeaderStoreItemInfo info)
         {
             foreach (var item in info.ParsedAndInvalidValues)
@@ -121,7 +120,7 @@ namespace System.Net.Http.Headers
 
         public void Add(string name, IEnumerable<string?> values) => Add(GetHeaderDescriptor(name), values);
 
-        internal void Add(HeaderDescriptor descriptor, IEnumerable<string?> values!!)
+        internal void Add(HeaderDescriptor descriptor, IEnumerable<string?> values)
         {
             PrepareHeaderInfoForAdd(descriptor, out HeaderStoreItemInfo info, out bool addToStore);
 
@@ -187,7 +186,7 @@ namespace System.Net.Http.Headers
             TryGetHeaderDescriptor(name, out HeaderDescriptor descriptor) &&
             TryAddWithoutValidation(descriptor, values);
 
-        internal bool TryAddWithoutValidation(HeaderDescriptor descriptor, IEnumerable<string?> values!!)
+        internal bool TryAddWithoutValidation(HeaderDescriptor descriptor, IEnumerable<string?> values)
         {
             using IEnumerator<string?> enumerator = values.GetEnumerator();
             if (enumerator.MoveNext())
@@ -664,7 +663,8 @@ namespace System.Net.Http.Headers
                             CloneAndAddValue(destinationInfo, item.Value);
                             break;
                         default:
-                            throw new NotImplementedException(item.Type.ToString());
+                            Debug.Fail($@"Get value reach an invalid type: {item.Type}");
+                            break;
                     }
                 }
             }
@@ -1214,7 +1214,8 @@ namespace System.Net.Http.Headers
                         ReadStoreValues<object?>(values, item.Value, descriptor.Parser, ref currentIndex);
                         break;
                     default:
-                        throw new NotImplementedException(item.Type.ToString());
+                        Debug.Fail($@"Get value reach an invalid type: {item.Type}");
+                        break;
                 }
             }
 
@@ -1261,7 +1262,8 @@ namespace System.Net.Http.Headers
                             ReadStoreValues<object?>(values, item.Value, descriptor.Parser, ref currentIndex);
                             break;
                         default:
-                            throw new NotImplementedException(item.Type.ToString());
+                            Debug.Fail($@"Get value reach an invalid type: {item.Type}");
+                            break;
                     }
                 }
 
@@ -1287,7 +1289,8 @@ namespace System.Net.Http.Headers
                         valueCount += Count<object>(item.Value);
                         break;
                     default:
-                        throw new NotImplementedException(item.Type.ToString());
+                        Debug.Fail($@"Get value reach an invalid type: {item.Type}");
+                        break;
                 }
             }
 
