@@ -1228,6 +1228,61 @@ bool GenTreeCall::AreArgsComplete() const
     return false;
 }
 
+//-----------------------------------------------------------------------------------------
+// GetIndirectionCellArg: Get the arg table entry for the indirection cell.
+//
+// Arguments:
+//     entry [out, optional] - The entry for the argument in the arg table.
+//     Left undefined if this function returns false.
+//
+// Return Value:
+//     True if this function has an indirection cell argument; otherwise false.
+//
+bool GenTreeCall::HasIndirectionCellArg(fgArgTabEntry** entry) const
+{
+#ifdef TARGET_X86
+    // On x86 we disassemble the call site.
+    return false;
+#else
+    NonStandardArgKind kind = NonStandardArgKind::None;
+    if (IsVirtualStub())
+    {
+        kind = NonStandardArgKind::VirtualStubCell;
+    }
+
+#if defined(TARGET_ARMARCH)
+    // For ARM architectures, we always use an indirection cell for R2R calls.
+    if (IsR2RRelativeIndir())
+    {
+        kind = NonStandardArgKind::R2RIndirectionCell;
+    }
+#elif defined(TARGET_XARCH)
+    // On XARCH we disassemble it from callsite except for tailcalls that need indirection cell.
+    if (IsR2RRelativeIndir() && IsFastTailCall())
+    {
+        kind = NonStandardArgKind::R2RIndirectionCell;
+    }
+#endif
+
+    if (kind != NonStandardArgKind::None && entry != nullptr)
+    {
+        for (unsigned i = 0; i < fgArgInfo->ArgCount(); i++)
+        {
+            fgArgTabEntry* tableEntry = fgArgInfo->GetArgEntry(i);
+            if (tableEntry->nonStandardArgKind == kind)
+            {
+                *entry = tableEntry;
+                return true;
+            }
+        }
+
+        assert(!"Could not find arg table entry for indirection cell");
+    }
+
+    return kind != NonStandardArgKind::None;
+#endif
+}
+
 //--------------------------------------------------------------------------
 // Equals: Check if 2 CALL nodes are equal.
 //

@@ -4045,22 +4045,19 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         case IAT_PVALUE:
         {
-            // If we are using an indirection cell for a direct call then apply
-            // an optimization that loads the call target directly from the
-            // indirection cell, instead of duplicating the tree.
-            bool hasIndirectionCell = call->GetIndirectionCellArgKind() != NonStandardArgKind::None;
-
-            if (!hasIndirectionCell)
+            GenTree*       addrNode;
+            fgArgTabEntry* indirCellArg;
+            if (call->HasIndirectionCellArg(&indirCellArg))
             {
-                // Non-virtual direct calls to addresses accessed by
-                // a single indirection.
-                GenTree* cellAddr = AddrGen(addr);
-#ifdef DEBUG
-                cellAddr->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
-#endif
-                GenTree* indir = Ind(cellAddr);
-                result         = indir;
+                addrNode = CreateMultiUseForIndirectionCellAddress(call, indirCellArg);
             }
+            else
+            {
+                addrNode                             = AddrGen(addr);
+                addrNode->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+            }
+
+            result = Ind(addrNode);
             break;
         }
 
@@ -5090,18 +5087,23 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
     }
     else
     {
-        // Direct stub call.
-        // Get stub addr. This will return NULL if virtual call stubs are not active
-        void* stubAddr = call->gtStubCallStubAddr;
-        noway_assert(stubAddr != nullptr);
-
-        // If not CT_INDIRECT,  then it should always be relative indir call.
+        // If CT_INDIRECT,  then it should always be relative indir call.
         // This is ensured by VM.
         noway_assert(call->IsVirtualStubRelativeIndir());
 
-        // Direct stub calls, though the stubAddr itself may still need to be
-        // accessed via an indirection.
-        GenTree* addr = AddrGen(stubAddr);
+        GenTree*       addr = nullptr;
+        fgArgTabEntry* entry;
+        if (call->HasIndirectionCellArg(&entry))
+        {
+            addr = CreateMultiUseForIndirectionCellAddress(call, entry);
+        }
+        else
+        {
+            // If we don't pass stub address as an arg then just create the constant tree here.
+            assert(call->gtStubCallStubAddr != nullptr);
+            GenTree* addr                    = AddrGen(call->gtStubCallStubAddr);
+            addr->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+        }
 
         // On x86, for tailcall via helper, the JIT_TailCall helper takes the stubAddr as
         // the target address, and we set a flag that it's a VSD call. The helper then
@@ -5112,23 +5114,63 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         }
         else
         {
-            bool shouldOptimizeVirtualStubCall = false;
-#if defined(TARGET_ARMARCH) || defined(TARGET_AMD64)
-            // Skip inserting the indirection node to load the address that is already
-            // computed in the VSD stub arg register as a hidden parameter. Instead during the
-            // codegen, just load the call target from there.
-            shouldOptimizeVirtualStubCall = !comp->opts.IsCFGEnabled();
-#endif
-
-            if (!shouldOptimizeVirtualStubCall)
-            {
-                result = Ind(addr);
-            }
+            result = Ind(addr);
         }
     }
 
     // TODO-Cleanup: start emitting random NOPS
     return result;
+}
+
+//------------------------------------------------------------------------
+// CreateMultiUseForIndirectionCellAddress: Create another use of the
+// indirection cell address passed as the specified argument.
+//
+// Arguments:
+//    call - the call that has the argument
+//    indirCellArg - the arg table entry for the indirection cell
+//
+// Returns: A new tree that represents another use.
+//
+// Remarks:
+//   For calls with indirection cell arguments it is beneficial to save these in
+//   a local and load the call target from that local, even if the indirection
+//   cell argument is a constant. This is because the arg will require placement
+//   in a register anyway, and we can load the call target after this has been
+//   done. This function creates such a temp when necessary and returns another
+//   use of it.
+//
+GenTree* Lowering::CreateMultiUseForIndirectionCellAddress(GenTreeCall* call, fgArgTabEntry* indirCellArg)
+{
+    assert(call->gtCallType == CT_USER_FUNC);
+    assert(indirCellArg->isIndirectionCellArg());
+
+    // Indirection cell is always in a register so is always a late arg.
+    assert(indirCellArg->isLateArg());
+
+    // We will create an indir off of this arg. To avoid reloading the cell
+    // address we copy it into a local. We do this here instead of morph
+    // because otherwise we would evaluate it as an early arg and the
+    // longer lifetime gives RA a harder job.
+    assert(indirCellArg->lateUse->GetNode()->OperIsPutArgReg());
+    GenTree*& slot = indirCellArg->lateUse->GetNode()->AsUnOp()->gtOp1;
+
+    GenTree* addr;
+    if (!slot->OperIsLocal())
+    {
+        unsigned lcl = comp->lvaGrabTemp(true, "Indirection cell address");
+        LIR::Use use(BlockRange(), &slot, indirCellArg->lateUse->GetNode());
+        ReplaceWithLclVar(use, lcl);
+
+        addr = comp->gtNewLclvNode(lcl, TYP_I_IMPL);
+    }
+    else
+    {
+        addr = comp->gtClone(slot);
+        assert(addr != nullptr);
+    }
+
+    return addr;
 }
 
 //------------------------------------------------------------------------

@@ -2536,7 +2536,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             call->gtCallArgs = gtPrependNewCallArg(stubAddrArg, call->gtCallArgs);
 
             numArgs++;
-            nonStandardArgs.Add(stubAddrArg, stubAddrArg->GetRegNum(), NonStandardArgKind::VirtualStubCell);
+            nonStandardArgs.Add(stubAddrArg, virtualStubParamInfo->GetReg(), NonStandardArgKind::VirtualStubCell);
         }
         else
         {
@@ -2596,7 +2596,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #ifdef DEBUG
         indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
-        indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
+
 #ifdef TARGET_ARM
         // Issue #xxxx : Don't attempt to CSE this constant on ARM32
         //
@@ -2609,8 +2609,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         call->gtCallArgs = gtPrependNewCallArg(indirectCellAddress, call->gtCallArgs);
 
         numArgs++;
-        nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum(),
-                            NonStandardArgKind::R2RIndirectionCell);
+        nonStandardArgs.Add(indirectCellAddress, REG_R2R_INDIRECT_PARAM, NonStandardArgKind::R2RIndirectionCell);
     }
 #endif
 
@@ -8723,7 +8722,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 //    call - a call that needs virtual stub dispatching.
 //
 // Return Value:
-//    addr tree with set resister requirements.
+//    addr tree
 //
 GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
 {
@@ -8743,7 +8742,6 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
 #endif
     }
     assert(stubAddrArg != nullptr);
-    stubAddrArg->SetRegNum(virtualStubParamInfo->GetReg());
     return stubAddrArg;
 }
 

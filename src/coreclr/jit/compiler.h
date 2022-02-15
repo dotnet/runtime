@@ -1756,6 +1756,12 @@ public:
         }
     }
 
+    bool isIndirectionCellArg() const
+    {
+        return (nonStandardArgKind == NonStandardArgKind::R2RIndirectionCell) ||
+               (nonStandardArgKind == NonStandardArgKind::VirtualStubCell);
+    }
+
     bool isLateArg() const
     {
         bool isLate = (_lateArgInx != UINT_MAX);

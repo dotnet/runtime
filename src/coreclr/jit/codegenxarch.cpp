@@ -5641,34 +5641,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     }
     else
     {
-        // If we have no target and this is a call with indirection cell
-        // then emit call through that indir cell. This means we generate e.g.
-        // lea r11, [addr of cell]
-        // call [r11]
-        // which is more efficent than
-        // lea r11, [addr of cell]
-        // call [addr of cell]
-        regNumber indirCellReg = getCallIndirectionCellReg(call);
-        if (indirCellReg != REG_NA)
-        {
-            // clang-format off
-            GetEmitter()->emitIns_Call(
-                emitter::EC_INDIR_ARD,
-                methHnd,
-                INDEBUG_LDISASM_COMMA(sigInfo)
-                nullptr,
-                0,
-                retSize
-                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                gcInfo.gcVarPtrSetCur,
-                gcInfo.gcRegGCrefSetCur,
-                gcInfo.gcRegByrefSetCur,
-                di, indirCellReg, REG_NA, 0, 0,
-                call->IsFastTailCall());
-            // clang-format on
-        }
 #ifdef FEATURE_READYTORUN
-        else if (call->gtEntryPoint.addr != nullptr)
+        if (call->gtEntryPoint.addr != nullptr)
         {
             emitter::EmitCallType type =
                 (call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN : emitter::EC_FUNC_TOKEN_INDIR;

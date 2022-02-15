@@ -3396,115 +3396,66 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else
     {
-        // If we have no target and this is a call with indirection cell then
-        // we do an optimization where we load the call address directly from
-        // the indirection cell instead of duplicating the tree. In BuildCall
-        // we ensure that get an extra register for the purpose. Note that for
-        // CFG the call might have changed to
-        // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
-        // indirection cell but we should not try to optimize.
-        regNumber callThroughIndirReg = REG_NA;
-        if (!call->IsHelperCall(compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        // Generate a direct call to a non-virtual user defined or helper method
+        assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
+
+        void* addr = nullptr;
+#ifdef FEATURE_READYTORUN
+        if (call->gtEntryPoint.addr != NULL)
         {
-            callThroughIndirReg = getCallIndirectionCellReg(call);
+            assert(call->gtEntryPoint.accessType == IAT_VALUE);
+            addr = call->gtEntryPoint.addr;
+        }
+        else
+#endif // FEATURE_READYTORUN
+            if (call->gtCallType == CT_HELPER)
+        {
+            CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
+            noway_assert(helperNum != CORINFO_HELP_UNDEF);
+
+            void* pAddr = nullptr;
+            addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
+            assert(pAddr == nullptr);
+        }
+        else
+        {
+            // Direct call to a non-virtual user function.
+            addr = call->gtDirectCallAddress;
         }
 
-        if (callThroughIndirReg != REG_NA)
+        assert(addr != nullptr);
+
+// Non-virtual direct call to known addresses
+#ifdef TARGET_ARM
+        if (!validImmForBL((ssize_t)addr))
         {
-            assert(call->IsR2ROrVirtualStubRelativeIndir());
-            regNumber targetAddrReg = call->GetSingleTempReg();
-            // For fast tailcalls we have already loaded the call target when processing the call node.
-            if (!call->IsFastTailCall())
-            {
-                GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
-                                          callThroughIndirReg);
-            }
-            else
-            {
-                // Register where we save call address in should not be overridden by epilog.
-                assert((targetAddrReg & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == targetAddrReg);
-            }
-
-            // We have now generated code loading the target address from the indirection cell into `targetAddrReg`.
-            // We just need to emit "bl targetAddrReg" in this case.
-            //
-            assert(genIsValidIntReg(targetAddrReg));
-
+            regNumber tmpReg = call->GetSingleTempReg();
+            instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)addr);
             // clang-format off
             genEmitCall(emitter::EC_INDIR_R,
                         methHnd,
                         INDEBUG_LDISASM_COMMA(sigInfo)
-                        nullptr, // addr
-                        retSize
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        NULL,
+                        retSize,
                         di,
-                        targetAddrReg,
+                        tmpReg,
                         call->IsFastTailCall());
             // clang-format on
         }
         else
-        {
-            // Generate a direct call to a non-virtual user defined or helper method
-            assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
-
-            void* addr = nullptr;
-#ifdef FEATURE_READYTORUN
-            if (call->gtEntryPoint.addr != NULL)
-            {
-                assert(call->gtEntryPoint.accessType == IAT_VALUE);
-                addr = call->gtEntryPoint.addr;
-            }
-            else
-#endif // FEATURE_READYTORUN
-                if (call->gtCallType == CT_HELPER)
-            {
-                CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
-                noway_assert(helperNum != CORINFO_HELP_UNDEF);
-
-                void* pAddr = nullptr;
-                addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-                assert(pAddr == nullptr);
-            }
-            else
-            {
-                // Direct call to a non-virtual user function.
-                addr = call->gtDirectCallAddress;
-            }
-
-            assert(addr != nullptr);
-
-// Non-virtual direct call to known addresses
-#ifdef TARGET_ARM
-            if (!validImmForBL((ssize_t)addr))
-            {
-                regNumber tmpReg = call->GetSingleTempReg();
-                instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)addr);
-                // clang-format off
-                genEmitCall(emitter::EC_INDIR_R,
-                            methHnd,
-                            INDEBUG_LDISASM_COMMA(sigInfo)
-                            NULL,
-                            retSize,
-                            di,
-                            tmpReg,
-                            call->IsFastTailCall());
-                // clang-format on
-            }
-            else
 #endif // TARGET_ARM
-            {
-                // clang-format off
-                genEmitCall(emitter::EC_FUNC_TOKEN,
-                            methHnd,
-                            INDEBUG_LDISASM_COMMA(sigInfo)
-                            addr,
-                            retSize
-                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                            di,
-                            REG_NA,
-                            call->IsFastTailCall());
-                // clang-format on
-            }
+        {
+            // clang-format off
+            genEmitCall(emitter::EC_FUNC_TOKEN,
+                        methHnd,
+                        INDEBUG_LDISASM_COMMA(sigInfo)
+                        addr,
+                        retSize
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        di,
+                        REG_NA,
+                        call->IsFastTailCall());
+            // clang-format on
         }
     }
 }

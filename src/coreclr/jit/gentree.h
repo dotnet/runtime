@@ -3987,6 +3987,7 @@ public:
 };
 
 class fgArgInfo;
+struct fgArgTabEntry;
 
 enum class NonStandardArgKind : unsigned
 {
@@ -4683,39 +4684,7 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_EXPANDED_EARLY) != 0;
     }
 
-    //-----------------------------------------------------------------------------------------
-    // GetIndirectionCellArgKind: Get the kind of indirection cell used by this call.
-    //
-    // Arguments:
-    //     None
-    //
-    // Return Value:
-    //     The kind (either R2RIndirectionCell or VirtualStubCell),
-    //     or NonStandardArgKind::None if this call does not have an indirection cell.
-    //
-    NonStandardArgKind GetIndirectionCellArgKind() const
-    {
-        if (IsVirtualStub())
-        {
-            return NonStandardArgKind::VirtualStubCell;
-        }
-
-#if defined(TARGET_ARMARCH)
-        // For ARM architectures, we always use an indirection cell for R2R calls.
-        if (IsR2RRelativeIndir())
-        {
-            return NonStandardArgKind::R2RIndirectionCell;
-        }
-#elif defined(TARGET_XARCH)
-        // On XARCH we disassemble it from callsite except for tailcalls that need indirection cell.
-        if (IsR2RRelativeIndir() && IsFastTailCall())
-        {
-            return NonStandardArgKind::R2RIndirectionCell;
-        }
-#endif
-
-        return NonStandardArgKind::None;
-    }
+    bool HasIndirectionCellArg(fgArgTabEntry** entry) const;
 
     CFGCallKind GetCFGCallKind()
     {
@@ -4723,7 +4692,7 @@ struct GenTreeCall final : public GenTree
         // On x64 the dispatcher is more performant, but we cannot use it when
         // we need to pass indirection cells as those go into registers that
         // are clobbered by the dispatch helper.
-        bool mayUseDispatcher    = GetIndirectionCellArgKind() == NonStandardArgKind::None;
+        bool mayUseDispatcher    = !HasIndirectionCellArg(nullptr);
         bool shouldUseDispatcher = true;
 #elif defined(TARGET_ARM64)
         bool mayUseDispatcher = true;
