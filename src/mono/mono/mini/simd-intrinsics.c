@@ -266,6 +266,12 @@ emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
 	return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
 }
 
+static MonoInst*
+emit_xzero (MonoCompile *cfg, MonoClass *klass)
+{
+	return emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
+}
+
 static gboolean
 is_intrinsics_vector_type (MonoType *vector_type)
 {
@@ -498,7 +504,7 @@ emit_vector_create_elementwise (
 {
 	int op = type_to_insert_op (etype);
 	MonoClass *vklass = mono_class_from_mono_type_internal (vtype);
-	MonoInst *ins = emit_simd_ins (cfg, vklass, OP_XZERO, -1, -1);
+	MonoInst *ins = emit_xzero (cfg, vklass);
 	for (int i = 0; i < fsig->param_count; ++i) {
 		ins = emit_simd_ins (cfg, vklass, op, ins->dreg, args [i]->dreg);
 		ins->inst_c0 = i;
@@ -593,6 +599,7 @@ static guint16 sri_vector_methods [] = {
 	SN_CreateScalarUnsafe,
 	SN_Equals,
 	SN_EqualsAll,
+	SN_EqualsAny,
 	SN_Floor,
 	SN_GetElement,
 	SN_GetLower,
@@ -722,6 +729,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
 	case SN_EqualsAll:
 		return emit_xequal (cfg, klass, args [0], args [1]);
+	case SN_EqualsAny: {
+		MonoInst *cmp_eq = emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
+		MonoInst *zero = emit_xzero (cfg, klass);
+		MonoInst *ins = emit_xequal (cfg, klass, cmp_eq, zero);
+		int sreg = ins->dreg;
+		int dreg = alloc_ireg (cfg);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sreg, 0);
+		EMIT_NEW_UNALU (cfg, ins, OP_CEQ, dreg, -1);
+		return ins;
+	}
 	case SN_GetElement: {
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
@@ -870,10 +887,10 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return ins;
 	}
 	case SN_get_Zero: {
-		return emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
+		return emit_xzero (cfg, klass);
 	}
 	case SN_get_AllBitsSet: {
-		MonoInst *ins = emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
+		MonoInst *ins = emit_xzero (cfg, klass);
 		return emit_xcompare (cfg, klass, etype->type, ins, ins);
 	}
 	case SN_Equals: {
@@ -1038,7 +1055,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return ins;
 	case SN_get_Zero:
 		g_assert (fsig->param_count == 0 && mono_metadata_type_equal (fsig->ret, type));
-		return emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
+		return emit_xzero (cfg, klass);
 	case SN_get_One: {
 		g_assert (fsig->param_count == 0 && mono_metadata_type_equal (fsig->ret, type));
 		MonoInst *one = NULL;
@@ -1067,7 +1084,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	}
 	case SN_get_AllBitsSet: {
 		/* Compare a zero vector with itself */
-		ins = emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
+		ins = emit_xzero (cfg, klass);
 		return emit_xcompare (cfg, klass, etype->type, ins, ins);
 	}
 	case SN_get_Item: {
