@@ -13,6 +13,9 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
+    <!-- We only use the COM interfaces from DiaSymReader so this effectively removes warnings until DiaSymReader
+         can be made fully trimmable. -->
+    <TrimmerDefaultAction>link</TrimmerDefaultAction>
   </PropertyGroup>
 
   <ItemGroup Label="Embedded Resources">
@@ -89,10 +92,6 @@
       Link="%(FileName)%(Extension)"
       Condition="'$(PgoInstrument)' != ''"
       />
-
-    <!-- We only use the COM interfaces from DiaSymReader so this effectively removes warnings until DiaSymReader
-         can be made fully trimmable. -->
-    <TrimmableAssembly Include="Microsoft.DiaSymReader" />
 
     <PackageReference Include="Microsoft.DiaSymReader.Native"
       Version="$(MicrosoftDiaSymReaderNativeVersion)"
