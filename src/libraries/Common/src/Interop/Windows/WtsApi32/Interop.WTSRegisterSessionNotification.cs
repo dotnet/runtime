@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Wtsapi32
     {
-        [GeneratedDllImport(Libraries.Wtsapi32, ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Wtsapi32)]
         public static partial bool WTSRegisterSessionNotification(IntPtr hWnd, int dwFlags);
     }
 }

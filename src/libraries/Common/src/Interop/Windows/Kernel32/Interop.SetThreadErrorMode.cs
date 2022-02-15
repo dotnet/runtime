@@ -8,7 +8,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [SuppressGCTransition]
-        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
         internal static partial bool SetThreadErrorMode(
             uint dwNewMode,
             out uint lpOldMode);

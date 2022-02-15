@@ -11,7 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Winspool
     {
-        [GeneratedDllImport(Libraries.Winspool, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Winspool, EntryPoint = "DeviceCapabilitiesW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial int DeviceCapabilities(string pDevice, string pPort, short fwCapabilities, IntPtr pOutput, IntPtr /*DEVMODE*/ pDevMode);
 
         [GeneratedDllImport(Libraries.Winspool, CharSet = CharSet.Auto, SetLastError = true)]
