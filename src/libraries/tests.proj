@@ -44,7 +44,7 @@
     <!-- https://github.com/dotnet/runtime/issues/64724 -->
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.HostFactoryResolver\tests\Microsoft.Extensions.HostFactoryResolver.Tests.csproj" />-->
     <!-- https://github.com/dotnet/runtime/issues/64725 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging\tests\Common\Microsoft.Extensions.Logging.Tests.csproj" />
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging\tests\Common\Microsoft.Extensions.Logging.Tests.csproj" />-->
   </ItemGroup>
 
   <!-- Projects that don't support code coverage measurement. -->
@@ -291,7 +291,7 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' != 'true'">
     <!-- https://github.com/dotnet/runtime/issues/64774 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />-->
 
     <!-- https://github.com/dotnet/runtime/issues/64775 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
@@ -344,13 +344,13 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows' and '$(Scenario)' == 'WasmTestOnBrowser' and '$(RunDisabledWasmTestsOnWindows)' != 'true'">
     <!-- Issue: https://github.com/dotnet/runtime/issues/55429 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\tests\Microsoft.VisualBasic.Core.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO\tests\System.IO.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory\tests\System.Memory.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Writers\XmlWriterApi\System.Xml.RW.XmlWriterApi.Tests.csproj" />
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\BuildWasmApps\Wasm.Build.Tests\Wasm.Build.Tests.csproj" />
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\tests\Microsoft.VisualBasic.Core.Tests.csproj" />-->
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO\tests\System.IO.Tests.csproj" />-->
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />-->
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory\tests\System.Memory.Tests.csproj" />-->
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />-->
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Writers\XmlWriterApi\System.Xml.RW.XmlWriterApi.Tests.csproj" />-->
+    <!--<ProjectExclusions Include="$(RepoRoot)\src\tests\BuildWasmApps\Wasm.Build.Tests\Wasm.Build.Tests.csproj" />-->
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisabledAppleSiliconTests)' != 'true'">
