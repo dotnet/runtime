@@ -1,8 +1,5 @@
 import sys, json, os, shutil
 
-emsdk_path = sys.argv[1]
-emscripten_path = os.path.join(emsdk_path, "upstream/emscripten")
-
 def glob(path):
     return [os.path.join(path, filename) for filename in os.listdir(path)]
 
@@ -26,13 +23,39 @@ def rewrite_package_json(path):
     json.dump(settings, package, indent=4)
     package.close()
 
+emsdk_path = sys.argv[1]
+emscripten_path = os.path.join(emsdk_path, "upstream", "emscripten")
+node_root = os.path.join(emsdk_path, "node")
+node_paths = glob(node_root)
+upgrade = False
+
+npm = os.path.join(node_paths[0], "bin", "npm")
+if not os.path.exists(npm):
+    npm = "npm"
+
+def update_npm(path):
+    try:
+        os.chdir(os.path.join(path, "lib"))
+        os.system(npm + " install npm@latest")
+        prune()
+    except OSError as error:
+        print("npm update failed")
+        print(error)
+
+def remove_npm(path):
+    os.chdir(path)
+    remove("bin/npx", "bin/npm", "include", "lib", "share")
+
+def prune():
+    try:
+        os.system(npm + " prune --production")
+    except OSError as error:
+        print("npm prune failed")
+        print(error)
+
 os.chdir(emscripten_path)
 rewrite_package_json("package.json")
-
-try:
-    os.system("npm prune --production")
-except:
-    print("npm prune failed")
+prune()
 
 remove("tests",
     "node_modules/google-closure-compiler",
@@ -46,11 +69,8 @@ remove("tests",
     "third_party/uglify-js",
     "third_party/websockify")
 
-for node_path in glob(os.path.join(emsdk_path, "node")):
-    os.chdir(node_path)
-    remove("bin/npx",
-        "bin/npm",
-        "bin/node_modules",
-        "include",
-        "lib",
-        "share")
+for path in node_paths:
+    if upgrade:
+        update_npm(path)
+    else:
+        remove_npm(path)
