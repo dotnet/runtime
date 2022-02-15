@@ -30,14 +30,10 @@ namespace System.Collections.Specialized
             this.comparer = comparer;
         }
 
-        public object? this[object key]
+        public object? this[object key!!]
         {
             get
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key));
-                }
                 DictionaryNode? node = head;
                 if (comparer == null)
                 {
@@ -67,10 +63,6 @@ namespace System.Collections.Specialized
             }
             set
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key));
-                }
                 version++;
                 DictionaryNode? last = null;
                 DictionaryNode? node;
@@ -155,12 +147,8 @@ namespace System.Collections.Specialized
             }
         }
 
-        public void Add(object key, object? value)
+        public void Add(object key!!, object? value)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
             version++;
             DictionaryNode? last = null;
 
@@ -195,12 +183,8 @@ namespace System.Collections.Specialized
             version++;
         }
 
-        public bool Contains(object key)
+        public bool Contains(object key!!)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
             for (DictionaryNode? node = head; node != null; node = node.next)
             {
                 object oldKey = node.key;
@@ -212,10 +196,8 @@ namespace System.Collections.Specialized
             return false;
         }
 
-        public void CopyTo(Array array, int index)
+        public void CopyTo(Array array!!, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
 
@@ -239,12 +221,8 @@ namespace System.Collections.Specialized
             return new NodeEnumerator(this);
         }
 
-        public void Remove(object key)
+        public void Remove(object key!!)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
             version++;
             DictionaryNode? last = null;
             DictionaryNode? node;
@@ -373,10 +351,8 @@ namespace System.Collections.Specialized
                 _isKeys = isKeys;
             }
 
-            void ICollection.CopyTo(Array array, int index)
+            void ICollection.CopyTo(Array array!!, int index)
             {
-                if (array == null)
-                    throw new ArgumentNullException(nameof(array));
                 if (index < 0)
                     throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
 

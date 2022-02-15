@@ -271,6 +271,7 @@ endif()
 
 if(ENABLE_INTERP_LIB)
 add_library(mono-ee-interp STATIC "${interp_sources}")
+target_link_libraries(mono-ee-interp monoapi)
 install(TARGETS mono-ee-interp LIBRARY)
 endif()
 
@@ -293,11 +294,6 @@ else()
 set(llvm_runtime_sources)
 endif()
 
-set(mini_public_headers_base
-  jit.h
-  mono-private-unstable.h)
-addprefix(mini_public_headers ../mini "${mini_public_headers_base}")
-
 set(mini_sources "${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h;main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
 
 if(LLVM_INCLUDEDIR)
@@ -313,7 +309,9 @@ endif()
 set(monosgen-sources "${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${mini_sources};${ZLIB_SOURCES}")
 
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
+target_link_libraries (monosgen-objects PRIVATE monoapi)
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>;$<TARGET_OBJECTS:eglib_objects>)
+target_link_libraries (monosgen-static PRIVATE monoapi)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
 
 if(DISABLE_COMPONENTS)
@@ -323,12 +321,6 @@ endif()
 
 if(NOT DISABLE_LIBS)
   install(TARGETS monosgen-static LIBRARY)
-  install(FILES ${metadata_public_headers}
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/metadata)
-  install(FILES ${utils_public_headers}
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/utils)
-  install(FILES ${mini_public_headers}
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
 endif()
 if(NOT DISABLE_SHARED_LIBS)
   if(HOST_WIN32)
@@ -340,6 +332,8 @@ if(NOT DISABLE_SHARED_LIBS)
   endif()
   target_sources(monosgen-shared PRIVATE $<TARGET_OBJECTS:eglib_objects>)
   set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME})
+  target_link_libraries (monosgen-shared PRIVATE monoapi)
+  target_include_directories (monosgen-shared PRIVATE monoapi)
   if(TARGET_WIN32)
     # on Windows the import library for the shared mono library will have the same name as the static library,
     # to avoid a conflict we rename the import library with the .import.lib suffix
@@ -373,6 +367,7 @@ if(NOT DISABLE_SHARED_LIBS)
   install(TARGETS monosgen-shared LIBRARY)
   if(HOST_WIN32 AND TARGET_AMD64)
     add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
+    target_link_libraries(monosgen-shared-dac monoapi)
     set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME}-dac)
   endif()
 
@@ -469,7 +464,7 @@ if(NOT DISABLE_EXECUTABLES)
   if(MONO_CROSS_COMPILE_EXECUTABLE_NAME)
     set_target_properties(mono-sgen PROPERTIES OUTPUT_NAME mono-aot-cross)
   endif()
-  target_link_libraries(mono-sgen PRIVATE monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  target_link_libraries(mono-sgen PRIVATE monoapi monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
   if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND NOT DISABLE_LINK_STATIC_COMPONENTS)
     # if components are built statically, link them into runtime.
     target_sources(mono-sgen PRIVATE "${mono-components-objects}")

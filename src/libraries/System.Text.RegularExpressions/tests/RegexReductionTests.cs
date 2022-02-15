@@ -7,7 +7,7 @@ using Xunit;
 namespace System.Text.RegularExpressions.Tests
 {
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in .NET Framework.")]
-    [SkipOnPlatform(TestPlatforms.Browser, "Internal members accessed via reflection may have been trimmed away")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
     public class RegexReductionTests
     {
         // These tests depend on using reflection to access internals of Regex in order to validate
@@ -26,7 +26,7 @@ namespace System.Text.RegularExpressions.Tests
 
         static RegexReductionTests()
         {
-            if (PlatformDetection.IsNetFramework || PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsNetFramework || PlatformDetection.IsBuiltWithAggressiveTrimming)
             {
                 // These members may not exist or may have been trimmed away, and the tests won't run.
                 return;
@@ -390,12 +390,12 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("this|this", "this")]
         [InlineData("this|this|this", "this")]
         [InlineData("hello there|hello again|hello|hello|hello|hello", "hello(?> there| again|)")]
-        [InlineData("hello there|hello again|hello|hello|hello|hello|hello world", "hello(?> there| again|| world)")]
-        [InlineData("hello there|hello again|hello|hello|hello|hello|hello world|hello", "hello(?> there| again|| world)")]
-        [InlineData("ab|cd|||ef", "ab|cd||ef")]
-        [InlineData("|ab|cd|e||f", "|ab|cd|ef")]
-        [InlineData("ab|cd|||||||||||ef", "ab|cd||ef")]
-        [InlineData("ab|cd|||||||||||e||f|||", "ab|cd||ef")]
+        [InlineData("hello there|hello again|hello|hello|hello|hello|hello world", "hello(?> there| again|)")]
+        [InlineData("hello there|hello again|hello|hello|hello|hello|hello world|hello", "hello(?> there| again|)")]
+        [InlineData("ab|cd|||ef", "ab|cd|")]
+        [InlineData("|ab|cd|e||f", "")]
+        [InlineData("ab|cd|||||||||||ef", "ab|cd|")]
+        [InlineData("ab|cd|||||||||||e||f|||", "ab|cd|")]
         [InlineData("ab|cd|(?!)|ef", "ab|cd|ef")]
         [InlineData("abcd(?:(?i:e)|(?i:f))", "abcd(?i:[ef])")]
         [InlineData("(?i:abcde)|(?i:abcdf)", "(?i:abcd[ef])")]

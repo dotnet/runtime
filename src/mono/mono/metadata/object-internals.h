@@ -1222,7 +1222,7 @@ struct _MonoReflectionTypeBuilder {
 	MonoGenericContainer *generic_container;
 	MonoArray *generic_params;
 	MonoReflectionType *created;
-	gboolean is_byreflike_set;
+	gint32 is_byreflike_set;
 	gint32 state;
 };
 

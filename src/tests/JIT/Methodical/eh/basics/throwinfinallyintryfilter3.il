@@ -10,10 +10,10 @@
 }
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly test {}
-.module test.exe
+.assembly 'throwinfinallyintryfilter3' {}
 
 
+.class public auto ansi Test_throwinfinallyintryfilter3 extends [mscorlib] System.Object {
 .method public static int32 Main()
 {
   .entrypoint
@@ -87,7 +87,7 @@
   
   ret
 }
-
+}
 
 .method public static void  func(int32 i)
 {

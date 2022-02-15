@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -57,18 +58,11 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-
-  <data name="net_emptystringcall" xml:space="preserve">
-    <value>The parameter '{0}' cannot be an empty string.</value>
-  </data>
   <data name="net_io_invalidasyncresult" xml:space="preserve">
     <value>The IAsyncResult object was not returned from the corresponding asynchronous method on this class.</value>
   </data>
   <data name="net_io_invalidendcall" xml:space="preserve">
     <value>{0} can only be called once for each asynchronous operation.</value>
-  </data>
-  <data name="net_emptystringset" xml:space="preserve">
-    <value>This property cannot be set to an empty string.</value>
   </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
@@ -333,5 +327,8 @@
   </data>
   <data name="SmtpGetIisPickupDirectoryNotSupported" xml:space="preserve">
     <value>IIS delivery is not supported.</value>
+  </data>
+  <data name="PlatformNotSupported_NetMail" xml:space="preserve">
+    <value>System.Net.Mail is not supported on this platform.</value>
   </data>
 </root>

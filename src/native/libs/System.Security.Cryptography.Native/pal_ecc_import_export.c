@@ -39,6 +39,7 @@ static const EC_METHOD* CurveTypeToMethod(ECCurveType curveType)
 static ECCurveType EcKeyGetCurveType(
     const EC_KEY* key)
 {
+    // Simple accessors, no error queue impact.
     const EC_GROUP* group = EC_KEY_get0_group(key);
     if (!group) return Unspecified;
 
@@ -66,6 +67,8 @@ int32_t CryptoNative_GetECKeyParameters(
     int rc = 0;
     BIGNUM *xBn = NULL;
     BIGNUM *yBn = NULL;
+
+    ERR_clear_error();
 
     ECCurveType curveType = EcKeyGetCurveType(key);
     const EC_POINT* Q = EC_KEY_get0_public_key(key);
@@ -164,6 +167,8 @@ int32_t CryptoNative_GetECCurveParameters(
     assert(cbCofactor != NULL);
     assert(seed != NULL);
     assert(cbSeed != NULL);
+
+    ERR_clear_error();
 
     // Get the public key parameters first in case any of its 'out' parameters are not initialized
     int32_t rc = CryptoNative_GetECKeyParameters(key, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
@@ -315,6 +320,8 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
 
     *key = NULL;
 
+    ERR_clear_error();
+
     // oid can be friendly name or value
     int nid = OBJ_txt2nid(oid);
     if (!nid)
@@ -425,6 +432,8 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
         assert(false);
         return 0;
     }
+
+    ERR_clear_error();
 
     EC_KEY* key = NULL;
     EC_POINT* G = NULL;

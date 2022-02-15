@@ -32,7 +32,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="item">The element to store in the array.</param>
-        /// <returns>A 1-element array.</returns>
+        /// <returns>A 1-element immutable array containing the specified item.</returns>
         public static ImmutableArray<T> Create<T>(T item)
         {
             T[] array = new[] { item };
@@ -45,7 +45,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="item1">The first element to store in the array.</param>
         /// <param name="item2">The second element to store in the array.</param>
-        /// <returns>A 2-element array.</returns>
+        /// <returns>A 2-element immutable array containing the specified items.</returns>
         public static ImmutableArray<T> Create<T>(T item1, T item2)
         {
             T[] array = new[] { item1, item2 };
@@ -59,7 +59,7 @@ namespace System.Collections.Immutable
         /// <param name="item1">The first element to store in the array.</param>
         /// <param name="item2">The second element to store in the array.</param>
         /// <param name="item3">The third element to store in the array.</param>
-        /// <returns>A 3-element array.</returns>
+        /// <returns>A 3-element immutable array containing the specified items.</returns>
         public static ImmutableArray<T> Create<T>(T item1, T item2, T item3)
         {
             T[] array = new[] { item1, item2, item3 };
@@ -74,11 +74,61 @@ namespace System.Collections.Immutable
         /// <param name="item2">The second element to store in the array.</param>
         /// <param name="item3">The third element to store in the array.</param>
         /// <param name="item4">The fourth element to store in the array.</param>
-        /// <returns>A 4-element array.</returns>
+        /// <returns>A 4-element immutable array containing the specified items.</returns>
         public static ImmutableArray<T> Create<T>(T item1, T item2, T item3, T item4)
         {
             T[] array = new[] { item1, item2, item3, item4 };
             return new ImmutableArray<T>(array);
+        }
+
+        /// <summary>
+        /// Creates an <see cref="ImmutableArray{T}"/> with the specified elements.
+        /// </summary>
+        /// <typeparam name="T">The type of element stored in the array.</typeparam>
+        /// <param name="items">The elements to store in the array.</param>
+        /// <returns>An immutable array containing the specified items.</returns>
+        public static ImmutableArray<T> Create<T>(ReadOnlySpan<T> items)
+        {
+            if (items.IsEmpty)
+            {
+                return ImmutableArray<T>.Empty;
+            }
+
+            T[] array = items.ToArray();
+            return new ImmutableArray<T>(array);
+        }
+
+        /// <summary>
+        /// Creates an <see cref="ImmutableArray{T}"/> with the specified elements.
+        /// </summary>
+        /// <typeparam name="T">The type of element stored in the array.</typeparam>
+        /// <param name="items">The elements to store in the array.</param>
+        /// <returns>An immutable array containing the specified items.</returns>
+        public static ImmutableArray<T> Create<T>(Span<T> items)
+        {
+            return Create((ReadOnlySpan<T>)items);
+        }
+
+        /// <summary>
+        /// Produce an immutable array of contents from specified elements.
+        /// </summary>
+        /// <typeparam name="T">The type of element in the list.</typeparam>
+        /// <param name="items">The elements to store in the array.</param>
+        /// <returns>An immutable array containing the specified items.</returns>
+        public static ImmutableArray<T> ToImmutableArray<T>(this ReadOnlySpan<T> items)
+        {
+            return Create(items);
+        }
+
+        /// <summary>
+        /// Produce an immutable array of contents from specified elements.
+        /// </summary>
+        /// <typeparam name="T">The type of element in the list.</typeparam>
+        /// <param name="items">The elements to store in the array.</param>
+        /// <returns>An immutable array containing the specified items.</returns>
+        public static ImmutableArray<T> ToImmutableArray<T>(this Span<T> items)
+        {
+            return Create((ReadOnlySpan<T>)items);
         }
 
         /// <summary>
@@ -133,7 +183,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="items">The elements to store in the array.</param>
-        /// <returns>An immutable array.</returns>
+        /// <returns>An immutable array containing the specified items.</returns>
         public static ImmutableArray<T> Create<T>(params T[]? items)
         {
             if (items == null || items.Length == 0)
@@ -368,7 +418,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <typeparam name="TSource">The type of element in the sequence.</typeparam>
         /// <param name="items">The sequence to enumerate.</param>
-        /// <returns>An immutable array.</returns>
+        /// <returns>An immutable array containing the specified items.</returns>
         public static ImmutableArray<TSource> ToImmutableArray<TSource>(this IEnumerable<TSource> items)
         {
             if (items is ImmutableArray<TSource>)
@@ -383,7 +433,7 @@ namespace System.Collections.Immutable
         /// Returns an immutable copy of the current contents of the builder's collection.
         /// </summary>
         /// <param name="builder">The builder to create the immutable array from.</param>
-        /// <returns>An immutable array.</returns>
+        /// <returns>An immutable array containing the specified items from <paramref name="builder"/>.</returns>
         public static ImmutableArray<TSource> ToImmutableArray<TSource>(this ImmutableArray<TSource>.Builder builder)
         {
             Requires.NotNull(builder, nameof(builder));

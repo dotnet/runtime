@@ -47,11 +47,6 @@
         <target state="translated">目的地陣列的長度不足以複製集合中的所有項目。請檢查陣列索引以及長度。</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">陣列不可包含 null 元素。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">起始索引不能小於 0 或大於輸入長度。</target>
@@ -210,11 +205,6 @@
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">集合是唯讀的。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">每一個物件只允許執行此項作業一次。</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">

@@ -18,10 +18,11 @@ Shims the ERR_clear_error method.
 PALEXPORT void CryptoNative_ErrClearError(void);
 
 /*
-Shim to ERR_get_error which also returns whether the error
-was caused by an allocation failure.
+Returns the error code to use as the basis for an exception.
+
+If the error represents an allocation error, *isAllocFailure is set to 1.
 */
-PALEXPORT uint64_t CryptoNative_ErrGetErrorAlloc(int32_t* isAllocFailure);
+PALEXPORT uint64_t CryptoNative_ErrGetExceptionError(int32_t* isAllocFailure);
 
 PALEXPORT uint64_t CryptoNative_ErrPeekError(void);
 

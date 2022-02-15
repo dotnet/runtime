@@ -83,7 +83,7 @@ namespace System.Text.Json
 
         public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
+            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
             Initialize(jsonTypeInfo, supportContinuation);
         }
 

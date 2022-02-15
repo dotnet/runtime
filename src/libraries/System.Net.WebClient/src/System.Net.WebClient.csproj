@@ -5,9 +5,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetWebClient_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'Browser'">SR.SystemNetWebClient_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
     <Compile Include="System\Net\WebClient.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
              Link="Common\System\IO\DelegatingStream.cs" />

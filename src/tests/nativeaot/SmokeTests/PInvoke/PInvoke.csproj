@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- Look for MULTIMODULE_BUILD #define for the more specific incompatible parts -->
-    <NativeAotMultimoduleIncompatible Condition="'$(Optimize)' == 'true'">true</NativeAotMultimoduleIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvoke.cs" />

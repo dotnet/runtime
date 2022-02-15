@@ -900,7 +900,7 @@ namespace System.Net.Http
         {
             if (descriptor.Name[0] == ':')
             {
-                if (descriptor.KnownHeader != KnownHeaders.PseudoStatus)
+                if (!descriptor.Equals(KnownHeaders.PseudoStatus))
                 {
                     if (NetEventSource.Log.IsEnabled()) Trace($"Received unknown pseudo-header '{descriptor.Name}'.");
                     throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);

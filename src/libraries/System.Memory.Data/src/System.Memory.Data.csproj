@@ -1,11 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
-    <!--- TODO: Remove after this package shipped with NET6. -->
-    <PackageValidationBaselineVersion>1.0.2</PackageValidationBaselineVersion>
     <PackageDescription>A lightweight abstraction for a payload of bytes. Provides methods for converting between strings, streams, JSON, and bytes.
 
 Commonly Used Types:

@@ -13,6 +13,8 @@
   .class private auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
+    .field private static int32 s_exitCode;
+
     .method private hidebysig static void
             test_token(object boxed_vt,
                        valuetype [mscorlib]System.RuntimeTypeHandle vt) cil managed
@@ -33,7 +35,7 @@
       call       string [mscorlib]System.String::Concat(string, string)
       call       void [System.Console]System.Console::WriteLine(string)
       ldc.i4.s   101
-      call       void [System.Runtime.Extensions]System.Environment::Exit(int32)
+      stsfld     int32 JitTest.Test::s_exitCode
       IL_EXIT:
       ret
     }
@@ -45,6 +47,8 @@
       )
       .entrypoint
       .maxstack  8
+      ldc.i4     100
+      stsfld     int32 JitTest.Test::s_exitCode
       ldc.i4.1
       box        [mscorlib]System.Byte
       ldtoken    [mscorlib]System.Byte
@@ -195,7 +199,7 @@
 
       ldstr      "Passed"
       call       void [System.Console]System.Console::WriteLine(string)
-      ldc.i4.s   100
+      ldsfld     int32 JitTest.Test::s_exitCode
       ret
     }
     .method public hidebysig specialname rtspecialname

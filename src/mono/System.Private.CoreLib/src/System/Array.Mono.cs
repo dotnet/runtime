@@ -167,6 +167,7 @@ namespace System
 
             Type src_type = sourceArray.GetType().GetElementType()!;
             Type dst_type = destinationArray.GetType().GetElementType()!;
+            Type dst_elem_type = dst_type;
             bool dst_type_vt = dst_type.IsValueType && Nullable.GetUnderlyingType(dst_type) == null;
 
             bool src_is_enum = src_type.IsEnum;
@@ -199,11 +200,8 @@ namespace System
                 {
                     object srcval = sourceArray.GetValueImpl(source_pos + i);
 
-                    if (!src_type.IsValueType && dst_is_enum)
+                    if (dst_type_vt && (srcval == null || (src_type == typeof(object) && !dst_elem_type.IsAssignableFrom (srcval.GetType()))))
                         throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
-
-                    if (dst_type_vt && (srcval == null || (src_type == typeof(object) && srcval.GetType() != dst_type)))
-                        throw new InvalidCastException();
 
                     try
                     {
@@ -540,12 +538,12 @@ namespace System
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
-        internal void InternalArray__ICollection_Add<T>(T item)
+        internal void InternalArray__ICollection_Add<T>(T _)
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
 
-        internal bool InternalArray__ICollection_Remove<T>(T item)
+        internal bool InternalArray__ICollection_Remove<T>(T _)
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
             return default;
@@ -577,12 +575,12 @@ namespace System
             return Length;
         }
 
-        internal void InternalArray__Insert<T>(int index, T item)
+        internal void InternalArray__Insert<T>(int _, T _1)
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
 
-        internal void InternalArray__RemoveAt(int index)
+        internal void InternalArray__RemoveAt(int _)
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }

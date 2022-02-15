@@ -504,7 +504,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
@@ -515,6 +515,7 @@ namespace System.Net.Sockets.Tests
             int SO_RCVBUF;
 
             if (OperatingSystem.IsWindows() ||
+                OperatingSystem.IsFreeBSD() ||
                 OperatingSystem.IsMacOS())
             {
                 SOL_SOCKET = 0xffff;
@@ -558,7 +559,7 @@ namespace System.Net.Sockets.Tests
                 s.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                 s.Listen();
 
-                Assert.Equal(1, s.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.AcceptConnection));
+                Assert.NotEqual(0, s.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.AcceptConnection));
             }
         }
 

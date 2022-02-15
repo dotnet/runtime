@@ -11,7 +11,7 @@
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
              Link="CommonTest\System\Net\SslProtocolSupport.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"

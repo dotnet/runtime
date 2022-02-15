@@ -47,11 +47,6 @@
         <target state="translated">A matriz de destino não é longa o suficiente para copiar todos os itens da coleção. Verifique o índice e o tamanho da matriz.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">A matriz não pode conter elementos nulos.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">Índice inicial não pode ser menor que 0 ou maior que o comprimento de entrada.</target>
@@ -210,11 +205,6 @@
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">A coleção é somente leitura.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">Esta operação só é permitida uma vez por objeto.</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">

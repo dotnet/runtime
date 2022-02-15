@@ -4,7 +4,8 @@
           DependsOnTargets="PrepareForAssembliesTrim">
 
     <PropertyGroup>
-      <OOBAssembliesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-oobs'))</OOBAssembliesTrimmedArtifactsPath>
+      <OOBAssembliesTrimmedArtifactsPath>$([MSBuild]::NormalizeDirectory('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-oobs'))</OOBAssembliesTrimmedArtifactsPath>
+      <OOBAssembliesMarkerFile>$(IntermediateOutputPath)oob-linker-$(TargetOS)-$(TargetArchitecture)-marker.txt</OOBAssembliesMarkerFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,7 +25,7 @@
       <OOBAssemblyToIgnore Include="System.Speech" />
 
       <NetCoreAppCurrentAssembly Include="$(NetCoreAppCurrentRuntimePath)*.dll"
-                                 Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;
+                                 Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator*.dll;
                                           $(NetCoreAppCurrentRuntimePath)*.Native.dll;
                                           $(NetCoreAppCurrentRuntimePath)*msquic.dll" />
       <SharedFrameworkAssembly Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
@@ -56,7 +57,7 @@
           AfterTargets="Build"
           DependsOnTargets="GetOOBAssembliesToTrim;PrepareForAssembliesTrim"
           Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
-          Outputs="@(OOBLibraryTrimmed)">
+          Outputs="$(OOBAssembliesMarkerFile)">
 
     <Message Text="Trimming $(PackageRID) out-of-band assemblies with ILLinker..." Importance="high" />
 
@@ -72,6 +73,11 @@
         ExtraArgs="$(OOBILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"
         ToolPath="$(_DotNetHostDirectory)" />
+
+    <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(OOBAssembliesMarkerFile)'))" />
+    <Touch Files="$(OOBAssembliesMarkerFile)"
+           AlwaysCreate="true" />
 
   </Target>
 

@@ -567,15 +567,7 @@ namespace System.Xml
 
         public XmlTextReaderImpl(string url, XmlNameTable nt) : this(nt)
         {
-            if (url == null)
-            {
-                throw new ArgumentNullException(nameof(url));
-            }
-
-            if (url.Length == 0)
-            {
-                throw new ArgumentException(SR.Xml_EmptyUrl, nameof(url));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(url);
 
             _namespaceManager = new XmlNamespaceManager(nt);
 
@@ -1604,13 +1596,9 @@ namespace System.Xml
         }
 
         // Reads and concatenates content nodes, base64-decodes the results and copies the decoded bytes into the provided buffer
-        public override int ReadContentAsBase64(byte[] buffer, int index, int count)
+        public override int ReadContentAsBase64(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1664,13 +1652,9 @@ namespace System.Xml
 
 
         // Reads and concatenates content nodes, binhex-decodes the results and copies the decoded bytes into the provided buffer
-        public override int ReadContentAsBinHex(byte[] buffer, int index, int count)
+        public override int ReadContentAsBinHex(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1723,13 +1707,9 @@ namespace System.Xml
         }
 
         // Reads and concatenates content of an element, base64-decodes the results and copies the decoded bytes into the provided buffer
-        public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
+        public override int ReadElementContentAsBase64(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1783,13 +1763,9 @@ namespace System.Xml
 
 
         // Reads and concatenates content of an element, binhex-decodes the results and copies the decoded bytes into the provided buffer
-        public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
+        public override int ReadElementContentAsBinHex(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1859,10 +1835,7 @@ namespace System.Xml
                 throw new InvalidOperationException(SR.Format(SR.Xml_InvalidReadValueChunk, _curNode.type));
             }
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
