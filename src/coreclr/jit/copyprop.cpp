@@ -294,6 +294,7 @@ void Compiler::optCopyPropPushDef(GenTreeOp*           asg,
     if ((gsShadowVarInfo != nullptr) && lvaGetDesc(lclNum)->lvIsParam &&
         (gsShadowVarInfo[lclNum].shadowCopy != BAD_VAR_NUM))
     {
+        assert(!curSsaName->Lookup(lclNum));
         return;
     }
 
@@ -308,9 +309,11 @@ void Compiler::optCopyPropPushDef(GenTreeOp*           asg,
     else
     {
         assert((lclNode->gtFlags & GTF_VAR_DEF) != 0);
+        ssaDefNum = GetSsaNumForLocalVarDef(lclNode);
+
         // This will be "RESERVED_SSA_NUM" for promoted struct fields assigned using the parent struct.
         // TODO-CQ: fix this.
-        ssaDefNum = GetSsaNumForLocalVarDef(lclNode);
+        assert((ssaDefNum != SsaConfig::RESERVED_SSA_NUM) || lvaGetDesc(lclNode)->CanBeReplacedWithItsField(this));
     }
 
     // The default is "not available".
