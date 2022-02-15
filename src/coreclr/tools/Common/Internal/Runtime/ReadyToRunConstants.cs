@@ -339,4 +339,11 @@ namespace Internal.ReadyToRunConstants
         Vector64 = 3,
         Vector128 = 4,
     }
+
+    public static class ReadyToRunRuntimeConstants
+    {
+        public const int READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11;
+        public const int READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits_X86 = 5;
+        public const int READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits_Universal = 2;
+    }
 }
