@@ -1878,12 +1878,20 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
 struct TlsDestructionMonitor
 {
+    Thread* m_thread = nullptr;
+
+    void SetThread(Thread* thread)
+    {
+        _ASSERTE(m_thread == NULL || m_thread == thread);
+        m_thread = thread;
+    }
+
     ~TlsDestructionMonitor()
     {
         // Don't destroy threads here if we're in shutdown (shutdown will
         // clean up for us instead).
 
-        Thread* thread = GetThreadNULLOk();
+        Thread* thread = m_thread;
         if (thread)
         {
 #ifdef FEATURE_COMINTEROP
@@ -1913,6 +1921,11 @@ struct TlsDestructionMonitor
 // This thread local object is used to detect thread shutdown. Its destructor
 // is called when a thread is being shut down.
 thread_local TlsDestructionMonitor tls_destructionMonitor;
+
+void EnsureTlsDestructionMonitor(void* thread)
+{
+    tls_destructionMonitor.SetThread((Thread*)thread);
+}
 
 #ifdef DEBUGGING_SUPPORTED
 //

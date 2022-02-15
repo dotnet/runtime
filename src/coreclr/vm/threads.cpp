@@ -376,6 +376,7 @@ void SetThread(Thread* t)
     LIMITED_METHOD_CONTRACT
 
     gCurrentThreadInfo.m_pThread = t;
+    EnsureTlsDestructionMonitor(t);
 }
 
 void SetAppDomain(AppDomain* ad)
