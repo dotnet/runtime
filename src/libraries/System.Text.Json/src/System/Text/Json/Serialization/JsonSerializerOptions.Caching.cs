@@ -90,10 +90,11 @@ namespace System.Text.Json
             public CachingContext(JsonSerializerOptions options)
             {
                 Options = options;
-                _ = Count;
             }
 
             public JsonSerializerOptions Options { get; }
+            // Property only accessed by reflection in testing -- do not remove.
+            // If changing please ensure that src/ILLink.Descriptors.LibraryBuild.xml is up-to-date.
             public int Count => _converterCache.Count + _jsonTypeInfoCache.Count;
             public JsonConverter GetOrAddConverter(Type type) => _converterCache.GetOrAdd(type, Options.GetConverterFromType);
             public JsonTypeInfo GetOrAddJsonTypeInfo(Type type) => _jsonTypeInfoCache.GetOrAdd(type, Options.GetJsonTypeInfoFromContextOrCreate);
