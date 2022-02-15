@@ -391,7 +391,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("TBD", TestPlatforms.Browser)]
+        [ActiveIssue("TBD", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -939,7 +939,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, true)]
         [InlineData(false, false)]
         [InlineData(null, false)]
-        [ActiveIssue("TBD", TestPlatforms.Browser)]
+        [ActiveIssue("TBD", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)

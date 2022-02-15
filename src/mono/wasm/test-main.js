@@ -316,6 +316,7 @@ function processArguments(incomingArguments) {
 
     // cheap way to let the testing infrastructure know we're running in a browser context (or not)
     setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
+    setenv["IsNodeJS"] = is_node.toString().toLowerCase();
 
     console.log("Application arguments: " + incomingArguments.join(' '));
 

@@ -17,7 +17,7 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandlerTest_Http1(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        [ActiveIssue("TBD", TestPlatforms.Browser)]
+        [ActiveIssue("TBD", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task SendAsync_HostHeader_First()
         {
             // RFC 7230  3.2.2.  Field Order
