@@ -1,3 +1,5 @@
+include(CheckSymbolExists)
+
 check_symbol_exists(
     accept4
     sys/socket.h
