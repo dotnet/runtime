@@ -22146,25 +22146,18 @@ void gc_heap::sync_promoted_bytes()
 }
 
 #ifdef MULTIPLE_HEAPS
-heap_segment* gc_heap::peek_first_rw_region (int gen_idx)
+void gc_heap::set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp)
 {
-    generation* gen = generation_of (gen_idx);
-    heap_segment* prev_region = generation_tail_ro_region (gen);
-    heap_segment* region = nullptr;
-    if (prev_region)
+    uint8_t* region_start = get_region_start (region);
+    uint8_t* region_end = heap_segment_reserved (region);
+
+    int num_basic_regions = (int)((region_end - region_start) >> min_segment_size_shr);
+    for (int i = 0; i < num_basic_regions; i++)
     {
-        assert (heap_segment_read_only_p (prev_region));
-        region = heap_segment_next (prev_region);
-        assert (region != nullptr);
+        uint8_t* basic_region_start = region_start + ((size_t)i << min_segment_size_shr);
+        heap_segment* basic_region = get_region_info (basic_region_start);
+        heap_segment_heap (basic_region) = hp;
     }
-    else
-    {
-        region = generation_start_segment (gen);
-        assert (region != nullptr);
-    }
-    assert (!heap_segment_read_only_p (region));
-    dprintf (REGIONS_LOG, ("peek_first_rw_region on heap: %d gen: %d region: %Ix", heap_number, gen_idx, heap_segment_mem (region)));
-    return region;
 }
 
 heap_segment* gc_heap::unlink_first_rw_region (int gen_idx)
@@ -22201,16 +22194,7 @@ heap_segment* gc_heap::unlink_first_rw_region (int gen_idx)
     assert (!heap_segment_read_only_p (region));
     dprintf (REGIONS_LOG, ("unlink_first_rw_region on heap: %d gen: %d region: %Ix", heap_number, gen_idx, heap_segment_mem (region)));
 
-    uint8_t* region_start = get_region_start (region);
-    uint8_t* region_end = heap_segment_reserved (region);
-
-    int num_basic_regions = (int)((region_end - region_start) >> min_segment_size_shr);
-    for (int i = 0; i < num_basic_regions; i++)
-    {
-        uint8_t* basic_region_start = region_start + ((size_t)i << min_segment_size_shr);
-        heap_segment* basic_region = get_region_info (basic_region_start);
-        heap_segment_heap (basic_region) = nullptr;
-    }
+    set_heap_for_contained_basic_regions (region, nullptr);
 
     return region;
 }
@@ -22232,16 +22216,7 @@ void gc_heap::thread_rw_region_front (int gen_idx, heap_segment* region)
     }
     dprintf (REGIONS_LOG, ("thread_rw_region_front on heap: %d gen: %d region: %Ix", heap_number, gen_idx, heap_segment_mem (region)));
 
-    uint8_t* region_start = get_region_start (region);
-    uint8_t* region_end = heap_segment_reserved (region);
-
-    int num_basic_regions = (int)((region_end - region_start) >> min_segment_size_shr);
-    for (int i = 0; i < num_basic_regions; i++)
-    {
-        uint8_t* basic_region_start = region_start + ((size_t)i << min_segment_size_shr);
-        heap_segment* basic_region = get_region_info (basic_region_start);
-        heap_segment_heap (basic_region) = this;
-    }
+    set_heap_for_contained_basic_regions (region, this);
 }
 #endif // MULTIPLE_HEAPS
 
@@ -22292,114 +22267,20 @@ void gc_heap::equalize_promoted_bytes()
         {
             dprintf (REGIONS_LOG, ("before equalize: gen: %d avg surv: %Id max_surv: %Id imbalance: %d", gen_idx, avg_surv_per_heap, max_surv_per_heap, max_surv_per_heap*100/avg_surv_per_heap));
         }
-#if 0 // see code for more sophisticated approach below
-        // step 2:
-        int deficit_heaps[MAX_SUPPORTED_CPUS];
-        int num_deficit_heaps = 0;
-        int surplus_heaps[MAX_SUPPORTED_CPUS];
-        int num_surplus_heaps = 0;
-
-        //  go through all the heaps
-        for (int i = 0; i < n_heaps; i++)
-        {
-            //  heaps that have less than average promoted bytes go into deficit_heaps
-            if (surv_per_heap[i] < avg_surv_per_heap)
-            {
-                assert (num_deficit_heaps < MAX_SUPPORTED_CPUS-1);
-                deficit_heaps[num_deficit_heaps++] = i;
-            }
-
-            else
-            {
-                //  heaps that have average or more promoted bytes, and where we can remove the first region without
-                //  dipping below the average, go into surplus heaps
-                heap_segment* first_region = g_heaps[i]->peek_first_rw_region (gen_idx);
-                assert (surv_per_heap[i] >= heap_segment_survived (first_region));
-                if (surv_per_heap[i] - heap_segment_survived (first_region) >= avg_surv_per_heap)
-                {
-                    assert (num_surplus_heaps < MAX_SUPPORTED_CPUS-1);
-                    surplus_heaps[num_surplus_heaps++] = i;
-                }
-            }
-            //  all other heaps are not looked at further
-        }
-
-        // step 3:
-        //  as long as we have surplus heaps and deficit heaps,
-        //  move regions from surplus heaps to deficit heaps
-        while (num_surplus_heaps > 0 && num_deficit_heaps > 0)
-        {
-            // get a surplus_heap and a deficit heap
-            int surplus_heap_num = surplus_heaps[num_surplus_heaps-1];
-            gc_heap* surplus_heap = g_heaps[surplus_heap_num];
-            int deficit_heap_num = deficit_heaps[num_deficit_heaps-1];
-            gc_heap* deficit_heap = g_heaps[deficit_heap_num];
-
-            // take one region from the surplus_heap
-            heap_segment* first_region = surplus_heap->unlink_first_rw_region (gen_idx);
-            if (first_region == nullptr)
-            {
-                num_surplus_heaps--;
-                continue;
-            }
-
-            // move it to the deficit heap
-            deficit_heap->thread_rw_region_front (gen_idx, first_region);
-
-            size_t region_index = get_basic_region_index_for_address (heap_segment_mem (first_region));
-
-            dprintf (REGIONS_LOG, ("gen: %d moving region %Id with %Id surviving bytes from heap %d (%Id bytes) to heap %d (%Id bytes)",
-                    gen_idx,
-                    region_index,
-                    heap_segment_survived (first_region),
-                    surplus_heap_num,
-                    surv_per_heap[surplus_heap_num],
-                    deficit_heap_num,
-                    surv_per_heap[deficit_heap_num]));
-
-            // adjust survivorship accordingly
-            surv_per_heap[surplus_heap_num] -= heap_segment_survived (first_region);
-            surv_per_heap[deficit_heap_num] += heap_segment_survived (first_region);
-
-            // if the surplus heap will dip below average if we remove another region, remove it from surplus heaps
-            heap_segment* next_region = surplus_heap->peek_first_rw_region (gen_idx);
-            if (surv_per_heap[surplus_heap_num] - heap_segment_survived (next_region) < avg_surv_per_heap)
-            {
-                dprintf (REGIONS_LOG, ("gen: %d heap %d ended up with %Id bytes", gen_idx, surplus_heap_num, surv_per_heap[surplus_heap_num]));
-                num_surplus_heaps--;
-            }
-
-            // if the deficit heap no longer has a deficit, remove it from deficit heaps
-            if (surv_per_heap[deficit_heap_num] >= avg_surv_per_heap)
-            {
-                dprintf (REGIONS_LOG, ("gen: %d heap %d ended up with %Id bytes", gen_idx, deficit_heap_num, surv_per_heap[deficit_heap_num]));
-                num_deficit_heaps--;
-            }
-        }
-#else
-        // idea for more sophisticated approach
         // 
         // step 2:
         //   remove regions from surplus heaps until all heaps are <= average
-        //   put these in surplus regions
+        //   put removed regions into surplus regions
         // 
         // step 3:
-        //   sort surplus regions by decreasing survivorship
-        //   sort heaps by decreasing deficit
+        //   put regions into size classes by survivorship
+        //   put deficit heaps into size classes by deficit
         //
         // step 4:
-        //   while (surplus regions is non-empy)
-        //     get biggest surplus region
-        //     put it into heap with biggest deficit
-        //     sort heaps again by decreasing deficit
-        //
-        // modification to keep computational complexity lower:
-        //   put regions into size classes by survivorship (say we have 16 size classes) 
-        //   put deficit heaps into size classes by deficit
-        //   this will make the sorts above essentially O(N)
-        //   always move regions from the biggest size class to a heap
-        //   in the biggest deficit size class. heap gets re-inserted by
-        //   deficit size class, but that's now O(1)
+        //   while (surplus regions is non-empty)
+        //     get surplus region from biggest size class
+        //     put it into heap from biggest deficit size class
+        //     re-insert heap gets re-inserted by deficit size class
 
         heap_segment* surplus_regions = nullptr;
         size_t max_deficit = 0;
@@ -22551,7 +22432,7 @@ void gc_heap::equalize_promoted_bytes()
             }
         }
         // we will generally be left with some heaps with deficits here, but that's ok
-#endif
+
         // check we didn't screw up the data structures
         for (int i = 0; i < n_heaps; i++)
         {

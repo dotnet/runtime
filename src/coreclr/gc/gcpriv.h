@@ -2271,7 +2271,7 @@ protected:
     void sync_promoted_bytes();
 
     PER_HEAP
-    heap_segment* peek_first_rw_region (int gen_idx);
+    void set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp);
 
     PER_HEAP
     heap_segment* unlink_first_rw_region (int gen_idx);
