@@ -4054,7 +4054,9 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             else
             {
                 addrNode                             = AddrGen(addr);
+#ifdef DEBUG
                 addrNode->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+#endif
             }
 
             result = Ind(addrNode);
@@ -5102,7 +5104,9 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
             // If we don't pass stub address as an arg then just create the constant tree here.
             assert(call->gtStubCallStubAddr != nullptr);
             GenTree* addr                    = AddrGen(call->gtStubCallStubAddr);
+#ifdef DEBUG
             addr->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+#endif
         }
 
         // On x86, for tailcall via helper, the JIT_TailCall helper takes the stubAddr as
@@ -5158,7 +5162,7 @@ GenTree* Lowering::CreateMultiUseForIndirectionCellAddress(GenTreeCall* call, fg
     GenTree* addr;
     if (!slot->OperIsLocal())
     {
-        unsigned lcl = comp->lvaGrabTemp(true, "Indirection cell address");
+        unsigned lcl = comp->lvaGrabTemp(true DEBUGARG("Indirection cell address"));
         LIR::Use use(BlockRange(), &slot, indirCellArg->lateUse->GetNode());
         ReplaceWithLclVar(use, lcl);
 
