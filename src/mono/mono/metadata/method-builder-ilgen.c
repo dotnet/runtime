@@ -4,7 +4,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include "config.h"
-#include "loader.h"
+#include <mono/metadata/loader.h>
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/method-builder.h"
 #include "mono/metadata/method-builder-ilgen.h"

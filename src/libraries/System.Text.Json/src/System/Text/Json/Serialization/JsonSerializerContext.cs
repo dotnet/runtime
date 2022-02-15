@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization
                 if (_options == null)
                 {
                     _options = new JsonSerializerOptions();
-                    _options._context = this;
+                    _options._serializerContext = this;
                 }
 
                 return _options;
@@ -97,13 +97,13 @@ namespace System.Text.Json.Serialization
         {
             if (options != null)
             {
-                if (options._context != null)
+                if (options._serializerContext != null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext();
                 }
 
                 _options = options;
-                options._context = this;
+                options._serializerContext = this;
             }
         }
 
