@@ -23,7 +23,7 @@
 #define USE_CHECKED_OBJECTREFS
 #endif
 
-#ifdef TARGET_64BIT
+#ifndef TARGET_64BIT
 #define FAT_DISPATCH_TOKENS
 #endif
 
