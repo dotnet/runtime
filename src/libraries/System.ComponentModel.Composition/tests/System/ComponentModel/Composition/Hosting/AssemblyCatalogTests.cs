@@ -84,19 +84,12 @@ namespace System.ComponentModel.Composition
             }
         }
 
-        internal static void Constructor_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad(Func<string, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException(Func<string, AssemblyCatalog> catalogCreator)
         {
             string filename = Path.GetTempFileName();
             using (FileStream stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.None))
             {
-                if (PlatformDetection.IsWindows) // File locking is Windows specific.
-                {
-                    Assert.Throws<FileLoadException>(() => catalogCreator(filename));
-                }
-                else
-                {
-                    Assert.Throws<BadImageFormatException>(() => catalogCreator(filename));
-                }
+                Assert.Throws<System.IO.IOException>(() => catalogCreator(filename));
             }
         }
 
@@ -184,7 +177,7 @@ namespace System.ComponentModel.Composition
         [Fact]
         public void Constructor1_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
-            AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad((s) =>
+            AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
             {
                 return new AssemblyCatalog(s);
             });
@@ -294,7 +287,7 @@ namespace System.ComponentModel.Composition
         [Fact]
         public void Constructor2_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
-            AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad((s) =>
+            AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
             {
                 return new AssemblyCatalog(s, new AssemblyCatalogTestsReflectionContext());
             });
@@ -403,7 +396,7 @@ namespace System.ComponentModel.Composition
         [Fact]
         public void Constructor3_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
-            AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad((s) =>
+            AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
             {
                 return new AssemblyCatalog(s, (ICompositionElement)new AssemblyCatalog(s));
             });
@@ -511,7 +504,7 @@ namespace System.ComponentModel.Composition
         [Fact]
         public void Constructor4_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
-            AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad((s) =>
+            AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
             {
                 return new AssemblyCatalog(s, new AssemblyCatalogTestsReflectionContext(), (ICompositionElement)new AssemblyCatalog(s));
             });

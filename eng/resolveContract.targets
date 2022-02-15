@@ -42,12 +42,10 @@
     </PropertyGroup>
     <!-- Clear the ReferenceAssembly attribute on resolved P2Ps that set SkipUseReferenceAssembly to true. -->
     <ItemGroup>
-       <_resolvedP2PFiltered Include="@(ProjectReference)">
-        <ProjectReferenceItemSpec>$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)'))</ProjectReferenceItemSpec>
-        <SkipUseReferenceAssembly>%(ProjectReference.SkipUseReferenceAssembly)</SkipUseReferenceAssembly>
-      </_resolvedP2PFiltered>
-      <_ResolvedProjectReferencePaths Update="@(_resolvedP2PFiltered)"
-                                      Condition="'%(_resolvedP2PFiltered.ProjectReferenceItemSpec)' == '%(_resolvedP2PFiltered.MSBuildSourceProjectFile)' and
+      <_resolvedP2PFiltered Include="@(ProjectReference)"
+                            ProjectReferenceItemSpec="$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)'))" 
+                            SkipUseReferenceAssembly="%(ProjectReference.SkipUseReferenceAssembly)" />
+      <_ResolvedProjectReferencePaths Condition="'%(_resolvedP2PFiltered.ProjectReferenceItemSpec)' == '%(_resolvedP2PFiltered.MSBuildSourceProjectFile)' and
                                                  '%(_resolvedP2PFiltered.SkipUseReferenceAssembly)' == 'true'"
                                       ReferenceAssembly="" />
     </ItemGroup>

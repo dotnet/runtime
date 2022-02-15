@@ -4,7 +4,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include "config.h"
-#include "loader.h"
+#include <mono/metadata/loader.h>
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/method-builder.h"
 #include "mono/metadata/method-builder-ilgen.h"
@@ -616,10 +616,10 @@ mono_mb_emit_exception_for_error (MonoMethodBuilder *mb, MonoError *error)
 void
 mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint16 local, gint32 incr)
 {
-	mono_mb_emit_ldloc (mb, local); 
+	mono_mb_emit_ldloc (mb, local);
 	mono_mb_emit_icon (mb, incr);
 	mono_mb_emit_byte (mb, CEE_ADD);
-	mono_mb_emit_stloc (mb, local); 
+	mono_mb_emit_stloc (mb, local);
 }
 
 void

@@ -37,12 +37,8 @@ namespace System.Xml
             }
         }
 
-        internal override int Decode(char[] chars, int startPos, int len)
+        internal override int Decode(char[] chars!!, int startPos, int len)
         {
-            if (chars == null)
-            {
-                throw new ArgumentNullException(nameof(chars));
-            }
             if (len < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(len));
@@ -69,12 +65,8 @@ namespace System.Xml
             return charsDecoded;
         }
 
-        internal override int Decode(string str, int startPos, int len)
+        internal override int Decode(string str!!, int startPos, int len)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
             if (len < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(len));
@@ -124,13 +116,8 @@ namespace System.Xml
         //
         // Static methods
         //
-        public static byte[] Decode(char[] chars, bool allowOddChars)
+        public static byte[] Decode(char[] chars!!, bool allowOddChars)
         {
-            if (chars == null)
-            {
-                throw new ArgumentNullException(nameof(chars));
-            }
-
             int len = chars.Length;
             if (len == 0)
             {

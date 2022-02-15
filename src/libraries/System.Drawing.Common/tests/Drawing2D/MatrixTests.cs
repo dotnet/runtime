@@ -910,7 +910,7 @@ namespace System.Drawing.Drawing2D.Tests
             {
                 try
                 {
-                    Assert.Equal(expected[i], actual[i], 3);
+                    Assert.Equal((double)expected[i], (double)actual[i], 3);
                 }
                 catch
                 {

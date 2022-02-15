@@ -689,7 +689,5 @@ namespace System.IO.Compression
             _state = InflaterState.DecodeTop;
             return true;
         }
-
-        public void Dispose() { }
     }
 }

@@ -9,8 +9,8 @@ internal static partial class Interop
 {
     internal static unsafe partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32)]
+        [GeneratedDllImport(Libraries.Kernel32)]
         [SuppressGCTransition]
-        internal static extern ulong GetTickCount64();
+        internal static partial ulong GetTickCount64();
     }
 }

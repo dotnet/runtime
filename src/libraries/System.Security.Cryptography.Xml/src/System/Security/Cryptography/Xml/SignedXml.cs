@@ -90,17 +90,13 @@ namespace System.Security.Cryptography.Xml
             Initialize(null);
         }
 
-        public SignedXml(XmlDocument document)
+        public SignedXml(XmlDocument document!!)
         {
-            if (document == null)
-                throw new ArgumentNullException(nameof(document));
             Initialize(document.DocumentElement);
         }
 
-        public SignedXml(XmlElement elem)
+        public SignedXml(XmlElement elem!!)
         {
-            if (elem == null)
-                throw new ArgumentNullException(nameof(elem));
             Initialize(elem);
         }
 
@@ -211,11 +207,8 @@ namespace System.Security.Cryptography.Xml
                 return m_signature.GetXml();
         }
 
-        public void LoadXml(XmlElement value)
+        public void LoadXml(XmlElement value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             m_signature.LoadXml(value);
 
             if (_context == null)
@@ -418,11 +411,8 @@ namespace System.Security.Cryptography.Xml
             m_signature.SignatureValue = asymmetricSignatureFormatter.CreateSignature(hashAlg);
         }
 
-        public void ComputeSignature(KeyedHashAlgorithm macAlg)
+        public void ComputeSignature(KeyedHashAlgorithm macAlg!!)
         {
-            if (macAlg == null)
-                throw new ArgumentNullException(nameof(macAlg));
-
             HMAC hash = macAlg as HMAC;
             if (hash == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch);
@@ -991,11 +981,8 @@ namespace System.Security.Cryptography.Xml
             return formatValid;
         }
 
-        private bool CheckSignedInfo(AsymmetricAlgorithm key)
+        private bool CheckSignedInfo(AsymmetricAlgorithm key!!)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo);
 
             SignatureDescription signatureDescription = CryptoHelpers.CreateFromName<SignatureDescription>(SignatureMethod);
@@ -1023,11 +1010,8 @@ namespace System.Security.Cryptography.Xml
             return asymmetricSignatureDeformatter.VerifySignature(hashval, m_signature.SignatureValue);
         }
 
-        private bool CheckSignedInfo(KeyedHashAlgorithm macAlg)
+        private bool CheckSignedInfo(KeyedHashAlgorithm macAlg!!)
         {
-            if (macAlg == null)
-                throw new ArgumentNullException(nameof(macAlg));
-
             SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo);
 
             int signatureLength;

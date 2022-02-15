@@ -8,12 +8,6 @@ namespace System
     public partial class Math
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern double Abs(double value);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern float Abs(float value);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Acos(double d);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

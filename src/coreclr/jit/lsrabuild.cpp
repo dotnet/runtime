@@ -861,7 +861,7 @@ regMaskTP LinearScan::getKillSetForModDiv(GenTreeOp* node)
 //
 regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 {
-    regMaskTP killMask = RBM_NONE;
+    regMaskTP killMask = RBM_CALLEE_TRASH;
 #ifdef TARGET_X86
     if (compiler->compFloatingPointUsed)
     {
@@ -875,38 +875,30 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
         }
     }
 #endif // TARGET_X86
-#if defined(TARGET_X86) || defined(TARGET_ARM)
     if (call->IsHelperCall())
     {
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
         killMask                 = compiler->compHelperCallKillSet(helpFunc);
     }
-    else
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
+
+    // if there is no FP used, we can ignore the FP kills
+    if (!compiler->compFloatingPointUsed)
     {
-        // if there is no FP used, we can ignore the FP kills
-        if (compiler->compFloatingPointUsed)
-        {
-            killMask = RBM_CALLEE_TRASH;
-        }
-        else
-        {
-            killMask = RBM_INT_CALLEE_TRASH;
-        }
-#ifdef TARGET_ARM
-        if (call->IsVirtualStub())
-        {
-            killMask |= compiler->virtualStubParamInfo->GetRegMask();
-        }
-#else  // !TARGET_ARM
-        // Verify that the special virtual stub call registers are in the kill mask.
-        // We don't just add them unconditionally to the killMask because for most architectures
-        // they are already in the RBM_CALLEE_TRASH set,
-        // and we don't want to introduce extra checks and calls in this hot function.
-        assert(!call->IsVirtualStub() || ((killMask & compiler->virtualStubParamInfo->GetRegMask()) ==
-                                          compiler->virtualStubParamInfo->GetRegMask()));
-#endif // !TARGET_ARM
+        killMask &= ~RBM_FLT_CALLEE_TRASH;
     }
+#ifdef TARGET_ARM
+    if (call->IsVirtualStub())
+    {
+        killMask |= compiler->virtualStubParamInfo->GetRegMask();
+    }
+#else  // !TARGET_ARM
+    // Verify that the special virtual stub call registers are in the kill mask.
+    // We don't just add them unconditionally to the killMask because for most architectures
+    // they are already in the RBM_CALLEE_TRASH set,
+    // and we don't want to introduce extra checks and calls in this hot function.
+    assert(!call->IsVirtualStub() ||
+           ((killMask & compiler->virtualStubParamInfo->GetRegMask()) == compiler->virtualStubParamInfo->GetRegMask()));
+#endif // !TARGET_ARM
     return killMask;
 }
 
@@ -1621,12 +1613,12 @@ void LinearScan::buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, Ls
 int LinearScan::ComputeOperandDstCount(GenTree* operand)
 {
     // GT_ARGPLACE is the only non-LIR node that is currently in the trees at this stage, though
-    // note that it is not in the linear order. It seems best to check for !IsLIR() rather than
-    // GT_ARGPLACE directly, since it's that characteristic that makes it irrelevant for this method.
-    if (!operand->IsLIR())
+    // note that it is not in the linear order.
+    if (operand->OperIs(GT_ARGPLACE))
     {
         return 0;
     }
+
     if (operand->isContained())
     {
         int dstCount = 0;
@@ -3080,6 +3072,15 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         return 1;
     }
 
+#ifdef TARGET_ARM64
+    // Must happen before OperIsHWIntrinsic case,
+    // but this occurs when a vector zero node is marked as contained.
+    if (node->IsVectorZero())
+    {
+        return 0;
+    }
+#endif
+
 #if !defined(TARGET_64BIT)
     if (node->OperIs(GT_LONG))
     {
@@ -3166,6 +3167,14 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     {
         use = BuildUse(node, candidates);
     }
+#ifdef TARGET_ARM64
+    // Must happen before OperIsHWIntrinsic case,
+    // but this occurs when a vector zero node is marked as contained.
+    else if (node->IsVectorZero())
+    {
+        return 0;
+    }
+#endif
 #ifdef FEATURE_HW_INTRINSICS
     else if (node->OperIsHWIntrinsic())
     {
@@ -3569,7 +3578,7 @@ int LinearScan::BuildSimple(GenTree* tree)
 {
     unsigned kind     = tree->OperKind();
     int      srcCount = 0;
-    if ((kind & (GTK_CONST | GTK_LEAF)) == 0)
+    if ((kind & GTK_LEAF) == 0)
     {
         assert((kind & GTK_SMPOP) != 0);
         srcCount = BuildBinaryUses(tree->AsOp());

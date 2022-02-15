@@ -37,7 +37,7 @@ internal class Test
         }
     }
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         //Console.WriteLine("64 bit = {0}", Environment.Is64BitProcess);
 

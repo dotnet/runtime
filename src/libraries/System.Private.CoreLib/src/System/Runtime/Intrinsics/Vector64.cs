@@ -62,7 +62,7 @@ namespace System.Runtime.Intrinsics
 
                 for (int index = 0; index < Vector64<T>.Count; index++)
                 {
-                    var value = Scalar<T>.Abs(vector.GetElementUnsafe(index));
+                    T value = Scalar<T>.Abs(vector.GetElementUnsafe(index));
                     result.SetElementUnsafe(index, value);
                 }
 
@@ -252,7 +252,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<float>.Count; index++)
             {
-                var value = Scalar<float>.Ceiling(vector.GetElementUnsafe(index));
+                float value = Scalar<float>.Ceiling(vector.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -269,7 +269,7 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.SkipInit(out Vector64<double> result);
 
-            var value = Scalar<double>.Ceiling(vector.GetElementUnsafe(0));
+            double value = Scalar<double>.Ceiling(vector.GetElementUnsafe(0));
             result.SetElementUnsafe(0, value);
 
             return result;
@@ -296,7 +296,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<double>.Count; i++)
             {
-                var value = (double)vector.GetElementUnsafe(i);
+                double value = vector.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -314,7 +314,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<double>.Count; i++)
             {
-                var value = (double)vector.GetElementUnsafe(i);
+                double value = vector.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -331,7 +331,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<int>.Count; i++)
             {
-                var value = (int)vector.GetElementUnsafe(i);
+                int value = (int)vector.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -348,7 +348,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<long>.Count; i++)
             {
-                var value = (long)vector.GetElementUnsafe(i);
+                long value = (long)vector.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -365,7 +365,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<float>.Count; i++)
             {
-                var value = (float)vector.GetElementUnsafe(i);
+                float value = vector.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -383,7 +383,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<float>.Count; i++)
             {
-                var value = (float)vector.GetElementUnsafe(i);
+                float value = vector.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -401,7 +401,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<uint>.Count; i++)
             {
-                var value = (uint)vector.GetElementUnsafe(i);
+                uint value = (uint)vector.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -419,7 +419,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<ulong>.Count; i++)
             {
-                var value = (ulong)vector.GetElementUnsafe(i);
+                ulong value = (ulong)vector.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -677,14 +677,11 @@ namespace System.Runtime.Intrinsics
 
             static Vector64<nint> SoftwareFallback(nint value)
             {
-                if (Environment.Is64BitProcess)
-                {
-                    return Create((long)value).AsNInt();
-                }
-                else
-                {
-                    return Create((int)value).AsNInt();
-                }
+#if TARGET_64BIT
+                return Create((long)value).AsNInt();
+#else
+                return Create((int)value).AsNInt();
+#endif
             }
         }
 
@@ -704,14 +701,11 @@ namespace System.Runtime.Intrinsics
 
             static Vector64<nuint> SoftwareFallback(nuint value)
             {
-                if (Environment.Is64BitProcess)
-                {
-                    return Create((ulong)value).AsNUInt();
-                }
-                else
-                {
-                    return Create((uint)value).AsNUInt();
-                }
+#if TARGET_64BIT
+                return Create((ulong)value).AsNUInt();
+#else
+                return Create((uint)value).AsNUInt();
+#endif
             }
         }
 
@@ -1139,7 +1133,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector64<byte> SoftwareFallback(byte value)
             {
-                var result = Vector64<byte>.Zero;
+                Vector64<byte> result = Vector64<byte>.Zero;
                 Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<byte>, byte>(ref result), value);
                 return result;
             }
@@ -1179,7 +1173,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector64<short> SoftwareFallback(short value)
             {
-                var result = Vector64<short>.Zero;
+                Vector64<short> result = Vector64<short>.Zero;
                 Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<short>, byte>(ref result), value);
                 return result;
             }
@@ -1200,7 +1194,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector64<int> SoftwareFallback(int value)
             {
-                var result = Vector64<int>.Zero;
+                Vector64<int> result = Vector64<int>.Zero;
                 Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<int>, byte>(ref result), value);
                 return result;
             }
@@ -1231,14 +1225,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<nint> CreateScalar(nint value)
         {
-            if (Environment.Is64BitProcess)
-            {
-                return CreateScalar((long)value).AsNInt();
-            }
-            else
-            {
-                return CreateScalar((int)value).AsNInt();
-            }
+#if TARGET_64BIT
+            return CreateScalar((long)value).AsNInt();
+#else
+            return CreateScalar((int)value).AsNInt();
+#endif
         }
 
         /// <summary>Creates a new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -1248,14 +1239,11 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<nuint> CreateScalar(nuint value)
         {
-            if (Environment.Is64BitProcess)
-            {
-                return CreateScalar((ulong)value).AsNUInt();
-            }
-            else
-            {
-                return CreateScalar((uint)value).AsNUInt();
-            }
+#if TARGET_64BIT
+            return CreateScalar((ulong)value).AsNUInt();
+#else
+            return CreateScalar((uint)value).AsNUInt();
+#endif
         }
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -1274,7 +1262,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector64<sbyte> SoftwareFallback(sbyte value)
             {
-                var result = Vector64<sbyte>.Zero;
+                Vector64<sbyte> result = Vector64<sbyte>.Zero;
                 Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<sbyte>, byte>(ref result), value);
                 return result;
             }
@@ -1295,7 +1283,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector64<float> SoftwareFallback(float value)
             {
-                var result = Vector64<float>.Zero;
+                Vector64<float> result = Vector64<float>.Zero;
                 Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<float>, byte>(ref result), value);
                 return result;
             }
@@ -1317,7 +1305,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector64<ushort> SoftwareFallback(ushort value)
             {
-                var result = Vector64<ushort>.Zero;
+                Vector64<ushort> result = Vector64<ushort>.Zero;
                 Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<ushort>, byte>(ref result), value);
                 return result;
             }
@@ -1339,7 +1327,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector64<uint> SoftwareFallback(uint value)
             {
-                var result = Vector64<uint>.Zero;
+                Vector64<uint> result = Vector64<uint>.Zero;
                 Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<uint>, byte>(ref result), value);
                 return result;
             }
@@ -1414,14 +1402,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<nint> CreateScalarUnsafe(nint value)
         {
-            if (Environment.Is64BitProcess)
-            {
-                return Create((long)value).AsNInt();
-            }
-            else
-            {
-                return CreateScalarUnsafe((int)value).AsNInt();
-            }
+#if TARGET_64BIT
+            return Create((long)value).AsNInt();
+#else
+            return CreateScalarUnsafe((int)value).AsNInt();
+#endif
         }
 
         /// <summary>Creates a new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
@@ -1431,14 +1416,11 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<nuint> CreateScalarUnsafe(nuint value)
         {
-            if (Environment.Is64BitProcess)
-            {
-                return Create((ulong)value).AsNUInt();
-            }
-            else
-            {
-                return CreateScalarUnsafe((uint)value).AsNUInt();
-            }
+#if TARGET_64BIT
+            return Create((ulong)value).AsNUInt();
+#else
+            return CreateScalarUnsafe((uint)value).AsNUInt();
+#endif
         }
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
@@ -1523,7 +1505,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<T>.Count; index++)
             {
-                var value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result = Scalar<T>.Add(result, value);
             }
 
@@ -1543,7 +1525,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<T>.Count; index++)
             {
-                var value = Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
+                T value = Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
                 result.SetElementUnsafe(index, value);
             }
 
@@ -1603,7 +1585,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<float>.Count; index++)
             {
-                var value = Scalar<float>.Floor(vector.GetElementUnsafe(index));
+                float value = Scalar<float>.Floor(vector.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -1620,7 +1602,7 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.SkipInit(out Vector64<double> result);
 
-            var value = Scalar<double>.Floor(vector.GetElementUnsafe(0));
+            double value = Scalar<double>.Floor(vector.GetElementUnsafe(0));
             result.SetElementUnsafe(0, value);
 
             return result;
@@ -1971,13 +1953,13 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<double>.Count; i++)
             {
-                var value = (float)lower.GetElementUnsafe(i);
+                float value = (float)lower.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector64<double>.Count; i < Vector64<float>.Count; i++)
             {
-                var value = (float)upper.GetElementUnsafe(i - Vector64<double>.Count);
+                float value = (float)upper.GetElementUnsafe(i - Vector64<double>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -1996,13 +1978,13 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<short>.Count; i++)
             {
-                var value = (sbyte)lower.GetElementUnsafe(i);
+                sbyte value = (sbyte)lower.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector64<short>.Count; i < Vector64<sbyte>.Count; i++)
             {
-                var value = (sbyte)upper.GetElementUnsafe(i - Vector64<short>.Count);
+                sbyte value = (sbyte)upper.GetElementUnsafe(i - Vector64<short>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -2020,13 +2002,13 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<int>.Count; i++)
             {
-                var value = (short)lower.GetElementUnsafe(i);
+                short value = (short)lower.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector64<int>.Count; i < Vector64<short>.Count; i++)
             {
-                var value = (short)upper.GetElementUnsafe(i - Vector64<int>.Count);
+                short value = (short)upper.GetElementUnsafe(i - Vector64<int>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -2044,13 +2026,13 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<long>.Count; i++)
             {
-                var value = (int)lower.GetElementUnsafe(i);
+                int value = (int)lower.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector64<long>.Count; i < Vector64<int>.Count; i++)
             {
-                var value = (int)upper.GetElementUnsafe(i - Vector64<long>.Count);
+                int value = (int)upper.GetElementUnsafe(i - Vector64<long>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -2069,13 +2051,13 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<ushort>.Count; i++)
             {
-                var value = (byte)lower.GetElementUnsafe(i);
+                byte value = (byte)lower.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector64<ushort>.Count; i < Vector64<byte>.Count; i++)
             {
-                var value = (byte)upper.GetElementUnsafe(i - Vector64<ushort>.Count);
+                byte value = (byte)upper.GetElementUnsafe(i - Vector64<ushort>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -2094,13 +2076,13 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<uint>.Count; i++)
             {
-                var value = (ushort)lower.GetElementUnsafe(i);
+                ushort value = (ushort)lower.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector64<uint>.Count; i < Vector64<ushort>.Count; i++)
             {
-                var value = (ushort)upper.GetElementUnsafe(i - Vector64<uint>.Count);
+                ushort value = (ushort)upper.GetElementUnsafe(i - Vector64<uint>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -2119,13 +2101,13 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<ulong>.Count; i++)
             {
-                var value = (uint)lower.GetElementUnsafe(i);
+                uint value = (uint)lower.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector64<ulong>.Count; i < Vector64<uint>.Count; i++)
             {
-                var value = (uint)upper.GetElementUnsafe(i - Vector64<ulong>.Count);
+                uint value = (uint)upper.GetElementUnsafe(i - Vector64<ulong>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -2162,7 +2144,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
-                var element = Scalar<byte>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
+                byte element = Scalar<byte>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -2181,7 +2163,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<short>.Count; index++)
             {
-                var element = Scalar<short>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
+                short element = Scalar<short>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -2200,7 +2182,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<int>.Count; index++)
             {
-                var element = Scalar<int>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
+                int element = Scalar<int>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -2219,7 +2201,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<long>.Count; index++)
             {
-                var element = Scalar<long>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
+                long element = Scalar<long>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -2238,7 +2220,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<nint>.Count; index++)
             {
-                var element = Scalar<nint>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
+                nint element = Scalar<nint>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -2250,7 +2232,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<nuint> ShiftLeft(Vector64<nuint> vector, int shiftCount)
         {
@@ -2258,7 +2240,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<nuint>.Count; index++)
             {
-                var element = Scalar<nuint>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
+                nuint element = Scalar<nuint>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -2270,7 +2252,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<sbyte> ShiftLeft(Vector64<sbyte> vector, int shiftCount)
         {
@@ -2278,7 +2260,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
-                var element = Scalar<sbyte>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
+                sbyte element = Scalar<sbyte>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -2290,7 +2272,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<ushort> ShiftLeft(Vector64<ushort> vector, int shiftCount)
         {
@@ -2298,7 +2280,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<ushort>.Count; index++)
             {
-                var element = Scalar<ushort>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
+                ushort element = Scalar<ushort>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -2310,7 +2292,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<uint> ShiftLeft(Vector64<uint> vector, int shiftCount)
         {
@@ -2318,7 +2300,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<uint>.Count; index++)
             {
-                var element = Scalar<uint>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
+                uint element = Scalar<uint>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -2330,7 +2312,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<ulong> ShiftLeft(Vector64<ulong> vector, int shiftCount)
         {
@@ -2338,14 +2320,14 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<ulong>.Count; index++)
             {
-                var element = Scalar<ulong>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
+                ulong element = Scalar<ulong>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -2357,14 +2339,14 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<short>.Count; index++)
             {
-                var element = Scalar<short>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
+                short element = Scalar<short>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -2376,14 +2358,14 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<int>.Count; index++)
             {
-                var element = Scalar<int>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
+                int element = Scalar<int>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -2395,14 +2377,14 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<long>.Count; index++)
             {
-                var element = Scalar<long>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
+                long element = Scalar<long>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -2414,19 +2396,19 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<nint>.Count; index++)
             {
-                var element = Scalar<nint>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
+                nint element = Scalar<nint>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<sbyte> ShiftRightArithmetic(Vector64<sbyte> vector, int shiftCount)
         {
@@ -2434,14 +2416,14 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
-                var element = Scalar<sbyte>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
+                sbyte element = Scalar<sbyte>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -2453,14 +2435,14 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
-                var element = Scalar<byte>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
+                byte element = Scalar<byte>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -2472,14 +2454,14 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<short>.Count; index++)
             {
-                var element = Scalar<short>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
+                short element = Scalar<short>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -2491,14 +2473,14 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<int>.Count; index++)
             {
-                var element = Scalar<int>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
+                int element = Scalar<int>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -2510,14 +2492,14 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<long>.Count; index++)
             {
-                var element = Scalar<long>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
+                long element = Scalar<long>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -2529,19 +2511,19 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<nint>.Count; index++)
             {
-                var element = Scalar<nint>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
+                nint element = Scalar<nint>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<nuint> ShiftRightLogical(Vector64<nuint> vector, int shiftCount)
         {
@@ -2549,19 +2531,19 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<nuint>.Count; index++)
             {
-                var element = Scalar<nuint>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
+                nuint element = Scalar<nuint>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<sbyte> ShiftRightLogical(Vector64<sbyte> vector, int shiftCount)
         {
@@ -2569,19 +2551,19 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
-                var element = Scalar<sbyte>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
+                sbyte element = Scalar<sbyte>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<ushort> ShiftRightLogical(Vector64<ushort> vector, int shiftCount)
         {
@@ -2589,19 +2571,19 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<ushort>.Count; index++)
             {
-                var element = Scalar<ushort>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
+                ushort element = Scalar<ushort>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<uint> ShiftRightLogical(Vector64<uint> vector, int shiftCount)
         {
@@ -2609,19 +2591,19 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<uint>.Count; index++)
             {
-                var element = Scalar<uint>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
+                uint element = Scalar<uint>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<ulong> ShiftRightLogical(Vector64<ulong> vector, int shiftCount)
         {
@@ -2629,7 +2611,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<ulong>.Count; index++)
             {
-                var element = Scalar<ulong>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
+                ulong element = Scalar<ulong>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -2648,7 +2630,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<T>.Count; index++)
             {
-                var value = Scalar<T>.Sqrt(vector.GetElementUnsafe(index));
+                T value = Scalar<T>.Sqrt(vector.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -2719,7 +2701,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
-            Unsafe.WriteUnaligned<Vector64<T>>(ref Unsafe.As<T, byte>(ref destination), source);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
         }
 
         /// <summary>Stores a vector at the given destination.</summary>
@@ -2735,7 +2717,7 @@ namespace System.Runtime.Intrinsics
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
             destination = ref Unsafe.Add(ref destination, (nint)elementOffset);
-            Unsafe.WriteUnaligned<Vector64<T>>(ref Unsafe.As<T, byte>(ref destination), source);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
         }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
@@ -2935,7 +2917,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<ushort>.Count; i++)
             {
-                var value = (ushort)source.GetElementUnsafe(i);
+                ushort value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -2949,7 +2931,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<int>.Count; i++)
             {
-                var value = (int)source.GetElementUnsafe(i);
+                int value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -2963,7 +2945,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<long>.Count; i++)
             {
-                var value = (long)source.GetElementUnsafe(i);
+                long value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -2977,7 +2959,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<short>.Count; i++)
             {
-                var value = (short)source.GetElementUnsafe(i);
+                short value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -2991,7 +2973,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<double>.Count; i++)
             {
-                var value = (double)source.GetElementUnsafe(i);
+                double value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -3005,7 +2987,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<uint>.Count; i++)
             {
-                var value = (uint)source.GetElementUnsafe(i);
+                uint value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -3019,7 +3001,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<ulong>.Count; i++)
             {
-                var value = (ulong)source.GetElementUnsafe(i);
+                ulong value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -3033,7 +3015,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = Vector64<ushort>.Count; i < Vector64<byte>.Count; i++)
             {
-                var value = (ushort)source.GetElementUnsafe(i);
+                ushort value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector64<ushort>.Count, value);
             }
 
@@ -3047,7 +3029,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = Vector64<int>.Count; i < Vector64<short>.Count; i++)
             {
-                var value = (int)source.GetElementUnsafe(i);
+                int value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector64<int>.Count, value);
             }
 
@@ -3061,7 +3043,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = Vector64<long>.Count; i < Vector64<int>.Count; i++)
             {
-                var value = (long)source.GetElementUnsafe(i);
+                long value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector64<long>.Count, value);
             }
 
@@ -3075,7 +3057,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = Vector64<short>.Count; i < Vector64<sbyte>.Count; i++)
             {
-                var value = (short)source.GetElementUnsafe(i);
+                short value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector64<short>.Count, value);
             }
 
@@ -3089,7 +3071,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = Vector64<double>.Count; i < Vector64<float>.Count; i++)
             {
-                var value = (double)source.GetElementUnsafe(i);
+                double value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector64<double>.Count, value);
             }
 
@@ -3103,7 +3085,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = Vector64<uint>.Count; i < Vector64<ushort>.Count; i++)
             {
-                var value = (uint)source.GetElementUnsafe(i);
+                uint value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector64<uint>.Count, value);
             }
 
@@ -3117,7 +3099,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = Vector64<ulong>.Count; i < Vector64<uint>.Count; i++)
             {
-                var value = (ulong)source.GetElementUnsafe(i);
+                ulong value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector64<ulong>.Count, value);
             }
 

@@ -1049,7 +1049,8 @@ void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regN
 //
 void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival)
 {
-    noway_assert(GetEmitter()->emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
+    emitter* emit = GetEmitter();
+    noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
 
     if (rmOp->isContained() || rmOp->isUsedFromSpillTemp())
     {
@@ -1101,7 +1102,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 
                 case GT_CLS_VAR_ADDR:
                 {
-                    GetEmitter()->emitIns_R_C_I(ins, attr, reg1, addr->AsClsVar()->gtClsVarHnd, 0, ival);
+                    emit->emitIns_R_C_I(ins, attr, reg1, addr->AsClsVar()->gtClsVarHnd, 0, ival);
                     return;
                 }
 
@@ -1116,7 +1117,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
                         // temporary GT_IND to generate code with.
                         memIndir = &load;
                     }
-                    GetEmitter()->emitIns_R_A_I(ins, attr, reg1, memIndir, ival);
+                    emit->emitIns_R_A_I(ins, attr, reg1, memIndir, ival);
                     return;
                 }
             }
@@ -1138,6 +1139,14 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
                     break;
                 }
 
+                case GT_CNS_DBL:
+                {
+                    GenTreeDblCon*       cns = rmOp->AsDblCon();
+                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(cns->gtDconVal, emitTypeSize(cns));
+                    emit->emitIns_R_C_I(ins, attr, reg1, hnd, 0, ival);
+                    return;
+                }
+
                 default:
                     unreached();
             }
@@ -1149,12 +1158,12 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
         assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
         assert(offset != (unsigned)-1);
 
-        GetEmitter()->emitIns_R_S_I(ins, attr, reg1, varNum, offset, ival);
+        emit->emitIns_R_S_I(ins, attr, reg1, varNum, offset, ival);
     }
     else
     {
         regNumber rmOpReg = rmOp->GetRegNum();
-        GetEmitter()->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpReg, ival);
+        emit->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpReg, ival);
     }
 }
 
@@ -1174,7 +1183,8 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 void CodeGen::inst_RV_RV_TT(
     instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW)
 {
-    noway_assert(GetEmitter()->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
+    emitter* emit = GetEmitter();
+    noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
 
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
@@ -1229,7 +1239,7 @@ void CodeGen::inst_RV_RV_TT(
 
                 case GT_CLS_VAR_ADDR:
                 {
-                    GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, addr->AsClsVar()->gtClsVarHnd, 0);
+                    emit->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, addr->AsClsVar()->gtClsVarHnd, 0);
                     return;
                 }
 
@@ -1244,7 +1254,7 @@ void CodeGen::inst_RV_RV_TT(
                         // temporary GT_IND to generate code with.
                         memIndir = &load;
                     }
-                    GetEmitter()->emitIns_SIMD_R_R_A(ins, size, targetReg, op1Reg, memIndir);
+                    emit->emitIns_SIMD_R_R_A(ins, size, targetReg, op1Reg, memIndir);
                     return;
                 }
             }
@@ -1270,10 +1280,9 @@ void CodeGen::inst_RV_RV_TT(
 
                 case GT_CNS_DBL:
                 {
-                    GenTreeDblCon*       dblCns = op2->AsDblCon();
-                    CORINFO_FIELD_HANDLE cnsDblHnd =
-                        GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns));
-                    GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, cnsDblHnd, 0);
+                    GenTreeDblCon*       cns = op2->AsDblCon();
+                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(cns->gtDconVal, emitTypeSize(cns));
+                    emit->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, hnd, 0);
                     return;
                 }
 
@@ -1290,7 +1299,7 @@ void CodeGen::inst_RV_RV_TT(
         assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
         assert(offset != (unsigned)-1);
 
-        GetEmitter()->emitIns_SIMD_R_R_S(ins, size, targetReg, op1Reg, varNum, offset);
+        emit->emitIns_SIMD_R_R_S(ins, size, targetReg, op1Reg, varNum, offset);
     }
     else
     {
@@ -1309,7 +1318,7 @@ void CodeGen::inst_RV_RV_TT(
             op1Reg = targetReg;
         }
 
-        GetEmitter()->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg);
+        emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg);
     }
 }
 #endif // TARGET_XARCH
@@ -2281,8 +2290,10 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 {
 #if defined(TARGET_XARCH)
     GetEmitter()->emitIns_R_R(INS_xor, size, reg, reg);
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARM)
     GetEmitter()->emitIns_R_I(INS_mov, size, reg, 0 ARM_ARG(flags));
+#elif defined(TARGET_ARM64)
+    GetEmitter()->emitIns_Mov(INS_mov, size, reg, REG_ZR, /* canSkip */ true);
 #elif defined(TARGET_LOONGARCH64)
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
 #else

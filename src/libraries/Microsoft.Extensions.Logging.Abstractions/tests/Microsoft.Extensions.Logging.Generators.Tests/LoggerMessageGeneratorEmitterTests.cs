@@ -10,7 +10,8 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsMonoRuntime))]
     public class LoggerMessageGeneratorEmitterTests
     {
         [Fact]
@@ -27,7 +28,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     new[] { typeof(ILogger).Assembly, typeof(LoggerMessageAttribute).Assembly },
                     new[] { testSourceCode }).ConfigureAwait(false);
 
-                Assert.Empty(d);
+                Assert.True(src.Contains("WithDiagnostics") ? !d.IsEmpty : d.IsEmpty);
                 Assert.Single(r);
             }
         }

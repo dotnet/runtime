@@ -47,9 +47,8 @@ namespace System.Composition.Hosting
         /// </summary>
         /// <param name="exportDescriptorProvider">An export descriptor provider.</param>
         /// <returns>A configuration object allowing configuration to continue.</returns>
-        public ContainerConfiguration WithProvider(ExportDescriptorProvider exportDescriptorProvider)
+        public ContainerConfiguration WithProvider(ExportDescriptorProvider exportDescriptorProvider!!)
         {
-            if (exportDescriptorProvider == null) throw new ArgumentNullException(nameof(exportDescriptorProvider));
             _addedSources.Add(exportDescriptorProvider);
             return this;
         }
@@ -61,10 +60,8 @@ namespace System.Composition.Hosting
         /// </summary>
         /// <param name="conventions"></param>
         /// <returns>A configuration object allowing configuration to continue.</returns>
-        public ContainerConfiguration WithDefaultConventions(AttributedModelProvider conventions)
+        public ContainerConfiguration WithDefaultConventions(AttributedModelProvider conventions!!)
         {
-            if (conventions == null) throw new ArgumentNullException(nameof(conventions));
-
             if (_defaultAttributeContext != null)
                 throw new InvalidOperationException(SR.ContainerConfiguration_DefaultConventionSet);
 
@@ -148,9 +145,8 @@ namespace System.Composition.Hosting
         /// <param name="partTypes">The part types.</param>
         /// <param name="conventions">Conventions represented by a <see cref="AttributedModelProvider"/>, or null.</param>
         /// <returns>A configuration object allowing configuration to continue.</returns>
-        public ContainerConfiguration WithParts(IEnumerable<Type> partTypes, AttributedModelProvider conventions)
+        public ContainerConfiguration WithParts(IEnumerable<Type> partTypes!!, AttributedModelProvider conventions)
         {
-            if (partTypes == null) throw new ArgumentNullException(nameof(partTypes));
             _types.Add(Tuple.Create(partTypes, conventions));
             return this;
         }
@@ -196,9 +192,8 @@ namespace System.Composition.Hosting
         /// <param name="assemblies">Assemblies containing part types.</param>
         /// <param name="conventions">Conventions represented by a <see cref="AttributedModelProvider"/>, or null.</param>
         /// <returns>A configuration object allowing configuration to continue.</returns>
-        public ContainerConfiguration WithAssemblies(IEnumerable<Assembly> assemblies, AttributedModelProvider conventions)
+        public ContainerConfiguration WithAssemblies(IEnumerable<Assembly> assemblies!!, AttributedModelProvider conventions)
         {
-            if (assemblies == null) throw new ArgumentNullException(nameof(assemblies));
             return WithParts(assemblies.SelectMany(a => a.DefinedTypes.Select(dt => dt.AsType())), conventions);
         }
 

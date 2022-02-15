@@ -53,14 +53,14 @@ namespace hello
 
         }
 
-        static public int Main(string[] args)
+        static public int Main()
         {
             //Start recording
             testLog.StartRecording();
             try
             {
                 Console.WriteLine("In main's try");
-                Middle(args.Length);
+                Middle(0);
             }
             catch
             {

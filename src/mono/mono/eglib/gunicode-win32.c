@@ -30,7 +30,7 @@ g_get_charset (G_CONST_RETURN char **charset)
 		eg_my_charset = buf;
 		is_utf8 = FALSE;
 	}
-	
+
 	if (charset != NULL)
 		*charset = eg_my_charset;
 

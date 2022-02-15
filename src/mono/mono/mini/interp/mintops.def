@@ -708,7 +708,6 @@ OPDEF(MINT_LD_DELEGATE_METHOD_PTR, "ld_delegate_method_ptr", 3, 1, 1, MintOpNoAr
 
 // Math intrinsics
 // double
-OPDEF(MINT_ABS, "abs", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ASIN, "asin", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ASINH, "asinh", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ACOS, "acos", 3, 1, 1, MintOpNoArgs)
@@ -735,7 +734,6 @@ OPDEF(MINT_TAN, "tan", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_TANH, "tanh", 3, 1, 1, MintOpNoArgs)
 
 // float. These must be kept in the same order as their double counterpart
-OPDEF(MINT_ABSF, "absf", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ASINF, "asinf", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ASINHF, "asinhf", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ACOSF, "acosf", 3, 1, 1, MintOpNoArgs)

@@ -132,8 +132,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
   # files already in /cores/ at this point. This is being done to prevent
   # inadvertently flooding the CI machines with dumps.
   if [[ ! -d "/cores" || ! "$(ls -A /cores)" ]]; then
-    # FIXME: temporarily disable core dumps
-    ulimit -c 0
+    ulimit -c unlimited
   fi
 
 elif [[ "$(uname -s)" == "Linux" ]]; then

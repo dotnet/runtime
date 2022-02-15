@@ -1683,17 +1683,6 @@ typedef enum CorAttributeTargets
 #define DEBUGGABLE_ATTRIBUTE_TYPE_NAME          "DebuggableAttribute"
 
 
-// Keep in sync with CompilationRelaxations.cs
-typedef enum CompilationRelaxationsEnum
-{
-    CompilationRelaxations_NoStringInterning       = 0x0008,
-
-} CompilationRelaxationEnum;
-
-#define COMPILATIONRELAXATIONS_TYPE_W           W("System.Runtime.CompilerServices.CompilationRelaxationsAttribute")
-#define COMPILATIONRELAXATIONS_TYPE             "System.Runtime.CompilerServices.CompilationRelaxationsAttribute"
-
-
 // Keep in sync with RuntimeCompatibilityAttribute.cs
 #define RUNTIMECOMPATIBILITY_TYPE_W             W("System.Runtime.CompilerServices.RuntimeCompatibilityAttribute")
 #define RUNTIMECOMPATIBILITY_TYPE               "System.Runtime.CompilerServices.RuntimeCompatibilityAttribute"

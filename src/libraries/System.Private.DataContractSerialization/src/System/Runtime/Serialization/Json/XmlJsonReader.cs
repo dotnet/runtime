@@ -732,10 +732,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (IsAttributeValue)
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
+                ArgumentNullException.ThrowIfNull(buffer);
                 if (offset < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
@@ -763,10 +760,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (IsAttributeValue)
             {
-                if (chars == null)
-                {
-                    throw new ArgumentNullException(nameof(chars));
-                }
+                ArgumentNullException.ThrowIfNull(chars);
                 if (offset < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
@@ -805,13 +799,9 @@ namespace System.Runtime.Serialization.Json
             return base.ReadValueChunk(chars, offset, count);
         }
 
-        public void SetInput(byte[] buffer, int offset, int count, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
+        public void SetInput(byte[] buffer!!, int offset, int count, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
             OnXmlDictionaryReaderClose? onClose)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
@@ -836,13 +826,9 @@ namespace System.Runtime.Serialization.Json
             ResetState();
         }
 
-        public void SetInput(Stream stream, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
+        public void SetInput(Stream stream!!, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
             OnXmlDictionaryReaderClose? onClose)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
             MoveToInitial(quotas, onClose);
 
             stream = new JsonEncodingStreamWrapper(stream, encoding, true);
@@ -857,12 +843,8 @@ namespace System.Runtime.Serialization.Json
             throw new NotSupportedException();
         }
 
-        internal static void CheckArray(Array array, int offset, int count)
+        internal static void CheckArray(Array array!!, int offset, int count)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);

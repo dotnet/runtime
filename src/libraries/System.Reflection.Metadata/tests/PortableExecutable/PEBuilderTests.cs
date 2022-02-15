@@ -64,7 +64,8 @@ namespace System.Reflection.PortableExecutable.Tests
             Blob mvidFixup = default(Blob),
             byte[] privateKeyOpt = null,
             bool publicSigned = false,
-            Machine machine = 0)
+            Machine machine = 0,
+            BlobBuilder? mappedFieldData = null)
         {
             var peHeaderBuilder = new PEHeaderBuilder(imageCharacteristics: entryPointHandle.IsNil ? Characteristics.Dll : Characteristics.ExecutableImage,
                                                       machine: machine);
@@ -75,7 +76,8 @@ namespace System.Reflection.PortableExecutable.Tests
                 ilBuilder,
                 entryPoint: entryPointHandle,
                 flags: CorFlags.ILOnly | (privateKeyOpt != null || publicSigned ? CorFlags.StrongNameSigned : 0),
-                deterministicIdProvider: content => s_contentId);
+                deterministicIdProvider: content => s_contentId,
+                mappedFieldData: mappedFieldData);
 
             var peBlob = new BlobBuilder();
 
@@ -485,6 +487,98 @@ namespace System.Reflection.PortableExecutable.Tests
                 default(ParameterHandle));
 
             return default(MethodDefinitionHandle);
+        }
+
+        [Theory] // Validate FieldRVA alignment on common machine types
+        [MemberData(nameof(AllMachineTypes))]
+        public void FieldRVAAlignmentVerify(Machine machine)
+        {
+            using (var peStream = new MemoryStream())
+            {
+                var ilBuilder = new BlobBuilder();
+                var mappedRVADataBuilder = new BlobBuilder();
+                var metadataBuilder = new MetadataBuilder();
+                double validationNumber = 0.100001;
+                var fieldDef = FieldRVAValidationEmit(metadataBuilder, mappedRVADataBuilder, validationNumber);
+
+                WritePEImage(peStream, metadataBuilder, ilBuilder, default(MethodDefinitionHandle),
+                    mappedFieldData: mappedRVADataBuilder,
+                    machine: machine);
+
+                // Validate FieldRVA is aligned as ManagedPEBuilder.MappedFieldDataAlignemnt
+                peStream.Position = 0;
+                using (var peReader = new PEReader(peStream, PEStreamOptions.LeaveOpen))
+                {
+                    var mdReader = peReader.GetMetadataReader();
+
+                    // Validate that there is only 1 field rva entry
+                    Assert.Equal(1, mdReader.FieldRvaTable.NumberOfRows);
+
+                    // Validate that the RVA is aligned properly (which should be at least an 8 byte alignment
+                    Assert.Equal(0, mdReader.FieldRvaTable.GetRva(1) % ManagedPEBuilder.MappedFieldDataAlignment);
+
+                    // Validate that the correct data is at the RVA
+                    var fieldRVAData = peReader.GetSectionData(mdReader.FieldRvaTable.GetRva(1));
+                    Assert.Equal(validationNumber, fieldRVAData.GetReader().ReadDouble());
+                }
+
+                VerifyPE(peStream, machine);
+            }
+        }
+
+        private static FieldDefinitionHandle FieldRVAValidationEmit(MetadataBuilder metadata, BlobBuilder mappedRVAData, double doubleToWriteAsData)
+        {
+            metadata.AddModule(
+                0,
+                metadata.GetOrAddString("ConsoleApplication.exe"),
+                metadata.GetOrAddGuid(s_guid),
+                default(GuidHandle),
+                default(GuidHandle));
+
+            metadata.AddAssembly(
+                metadata.GetOrAddString("ConsoleApplication"),
+                version: new Version(1, 0, 0, 0),
+                culture: default(StringHandle),
+                publicKey: metadata.GetOrAddBlob(ImmutableArray.Create(Misc.KeyPair_PublicKey)),
+                flags: AssemblyFlags.PublicKey,
+                hashAlgorithm: AssemblyHashAlgorithm.Sha1);
+
+            var mscorlibAssemblyRef = metadata.AddAssemblyReference(
+                name: metadata.GetOrAddString("mscorlib"),
+                version: new Version(4, 0, 0, 0),
+                culture: default(StringHandle),
+                publicKeyOrToken: metadata.GetOrAddBlob(ImmutableArray.Create<byte>(0xB7, 0x7A, 0x5C, 0x56, 0x19, 0x34, 0xE0, 0x89)),
+                flags: default(AssemblyFlags),
+                hashValue: default(BlobHandle));
+
+            var systemObjectTypeRef = metadata.AddTypeReference(
+                mscorlibAssemblyRef,
+                metadata.GetOrAddString("System"),
+                metadata.GetOrAddString("Object"));
+
+            mappedRVAData.WriteDouble(doubleToWriteAsData);
+
+            var rvaFieldSignature = new BlobBuilder();
+
+            new BlobEncoder(rvaFieldSignature).
+                FieldSignature().Double();
+
+            var fieldRVADef = metadata.AddFieldDefinition(
+            FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.HasFieldRVA,
+            metadata.GetOrAddString("RvaField"),
+            metadata.GetOrAddBlob(rvaFieldSignature));
+
+            metadata.AddFieldRelativeVirtualAddress(fieldRVADef, 0);
+
+            metadata.AddTypeDefinition(
+                TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.BeforeFieldInit,
+                metadata.GetOrAddString("ConsoleApplication"),
+                metadata.GetOrAddString("Program"),
+                systemObjectTypeRef,
+                fieldList: fieldRVADef,
+                methodList: MetadataTokens.MethodDefinitionHandle(1));
+
+            return fieldRVADef;
         }
 
         private class TestResourceSectionBuilder : ResourceSectionBuilder

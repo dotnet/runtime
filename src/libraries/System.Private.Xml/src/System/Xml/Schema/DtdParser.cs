@@ -269,10 +269,7 @@ namespace System.Xml
         {
             Initialize(adapter);
 
-            if (docTypeName == null || docTypeName.Length == 0)
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(docTypeName, nameof(docTypeName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(docTypeName);
 
             // check doctype name
             XmlConvert.VerifyName(docTypeName);

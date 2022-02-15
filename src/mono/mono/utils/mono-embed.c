@@ -29,12 +29,12 @@ static void *
 dl_mapping_open (const char *file, int flags, char **err, void *user_data)
 {
 	MonoDlMapping *mappings;
-	
+
 	if (mono_dls == NULL){
 		*err = g_strdup ("Library not registered");
 		return NULL;
 	}
-		
+
 	mappings = (MonoDlMapping *) g_hash_table_lookup (mono_dls, file);
 	*err = g_strdup (mappings == NULL ? "File not registered" : "");
 	return mappings;
@@ -44,7 +44,7 @@ static void *
 dl_mapping_symbol (void *handle, const char *symbol, char **err, void *user_data)
 {
 	MonoDlMapping *mappings = (MonoDlMapping *) handle;
-	
+
 	for (;mappings->name; mappings++){
 		if (strcmp (symbol, mappings->name) == 0){
 			*err = g_strdup ("");
@@ -60,11 +60,11 @@ dl_mapping_symbol (void *handle, const char *symbol, char **err, void *user_data
  * \param name Library name, this is the name used by the DllImport as the external library name
  * \param mappings the mappings to register for P/Invoke.
  *
- * The mappings registered using this function are used as fallbacks if the dynamic linker 
+ * The mappings registered using this function are used as fallbacks if the dynamic linker
  * fails, or if the platform doesn't have a dynamic linker.
  *
  * \p mappings is a pointer to the first element of an array of
- * \c MonoDlMapping values.  The list must be terminated with both 
+ * \c MonoDlMapping values.  The list must be terminated with both
  * the \c name and \c addr fields set to NULL.
  *
  * This is typically used like this:
@@ -93,7 +93,7 @@ mono_dl_register_library (const char *name, MonoDlMapping *mappings)
 		mono_dls = g_hash_table_new (g_str_hash, g_str_equal);
 		mono_dl_fallback_register (dl_mapping_open, dl_mapping_symbol, NULL, NULL);
 	}
-	
+
 	g_hash_table_insert (mono_dls, g_strdup (name), mappings);
 }
 

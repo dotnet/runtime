@@ -19,7 +19,7 @@
 #endif
 
 /*
- * This is a platform-independent interface for unwinding through stack frames 
+ * This is a platform-independent interface for unwinding through stack frames
  * based on the Dwarf unwinding interface.
  * See http://dwarfstd.org/Dwarf3.pdf, section "Call Frame Information".
  */
@@ -89,7 +89,7 @@ typedef struct {
 	guint32 when; /* The offset _after_ the cpu instruction this unwind op belongs to */
 } MonoUnwindOp;
 
-/* 
+/*
  * Macros for emitting MonoUnwindOp structures.
  * These should be called _after_ emitting the cpu instruction the unwind op
  * belongs to.
@@ -178,7 +178,7 @@ guint8*
 mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len);
 
 gboolean
-mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
+mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, guint8 **mark_locations,
 				   mono_unwind_reg_t *regs, int nregs,
 				   host_mgreg_t **save_locations, int save_locations_len,

@@ -206,6 +206,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     const HWIntrinsic intrin(node);
 
+    // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
+    assert(compiler->compIsaSupportedDebugOnly(HWIntrinsicInfo::lookupIsa(intrin.id)));
+
     regNumber targetReg = node->GetRegNum();
 
     regNumber op1Reg = REG_NA;
@@ -496,6 +499,29 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
 
+            case NI_AdvSimd_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqualScalar:
+                if (intrin.op1->isContained())
+                {
+                    assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
+                    assert(intrin.op1->IsVectorZero());
+
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                }
+                else if (intrin.op2->isContained())
+                {
+                    assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
+                    assert(intrin.op2->IsVectorZero());
+
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                }
+                break;
+
             case NI_AdvSimd_AbsoluteCompareLessThan:
             case NI_AdvSimd_AbsoluteCompareLessThanOrEqual:
             case NI_AdvSimd_CompareLessThan:
@@ -667,6 +693,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
             }
             break;
+
+            case NI_AdvSimd_Arm64_LoadPairVector128:
+            case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector64:
+            case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, node->GetOtherReg(), op1Reg);
+                break;
+
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+                GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), targetReg, node->GetOtherReg(), op1Reg);
+                break;
 
             case NI_AdvSimd_Store:
                 GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);

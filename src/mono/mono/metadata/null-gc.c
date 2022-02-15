@@ -635,7 +635,7 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 	return TRUE;
 }
 
-guint64 mono_gc_get_total_allocated_bytes (MonoBoolean precise) 
+guint64 mono_gc_get_total_allocated_bytes (MonoBoolean precise)
 {
 	return 0;
 }
