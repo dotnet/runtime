@@ -9558,60 +9558,43 @@ GenTreeLclVar* Compiler::fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroy
 {
     if (opts.OptimizationEnabled())
     {
-        GenTree* const op1    = obj->Addr();
-        GenTreeLclVar* lclVar = nullptr;
-        GenTreeUnOp*   addr   = nullptr;
-
+        GenTree* op1 = obj->Addr();
+        assert(!op1->OperIs(GT_LCL_VAR_ADDR) && "missed an opt opportunity");
         if (op1->OperIs(GT_ADDR))
         {
-            addr                  = op1->AsUnOp();
-            GenTree* const addrOp = addr->gtGetOp1();
+            GenTreeUnOp* addr   = op1->AsUnOp();
+            GenTree*     addrOp = addr->gtGetOp1();
             if (addrOp->TypeIs(obj->TypeGet()) && addrOp->OperIs(GT_LCL_VAR))
             {
-                lclVar = addrOp->AsLclVar();
-            }
-        }
-        else if (op1->OperIs(GT_LCL_VAR_ADDR))
-        {
-            lclVar = op1->AsLclVar();
-        }
+                GenTreeLclVar* lclVar = addrOp->AsLclVar();
 
-        if (lclVar != nullptr)
-        {
-            ClassLayout* lclVarLayout = lvaGetDesc(lclVar)->GetLayout();
-            ClassLayout* objLayout    = obj->GetLayout();
-            if (ClassLayout::AreCompatible(lclVarLayout, objLayout))
-            {
+                ClassLayout* lclVarLayout = lvaGetDesc(lclVar)->GetLayout();
+                ClassLayout* objLayout    = obj->GetLayout();
+                if (ClassLayout::AreCompatible(lclVarLayout, objLayout))
+                {
 #ifdef DEBUG
-                CORINFO_CLASS_HANDLE objClsHandle = obj->GetLayout()->GetClassHandle();
-                assert(objClsHandle != NO_CLASS_HANDLE);
-                if (verbose)
-                {
-                    CORINFO_CLASS_HANDLE lclClsHnd = gtGetStructHandle(lclVar);
-                    printf("fold OBJ(ADDR(X)) [%06u] into X [%06u], ", dspTreeID(obj), dspTreeID(lclVar));
-                    printf("with %s handles\n", ((lclClsHnd == objClsHandle) ? "matching" : "different"));
-                }
-#endif
-                if (!lclVar->OperIs(GT_LCL_VAR))
-                {
-                    lclVar->ChangeOper(GT_LCL_VAR);
-                }
-
-                // Keep the DONT_CSE flag in sync
-                // (as the addr always marks it for its op1)
-                lclVar->gtFlags &= ~GTF_DONT_CSE;
-                lclVar->gtFlags |= (obj->gtFlags & GTF_DONT_CSE);
-
-                if (destroyNodes)
-                {
-                    DEBUG_DESTROY_NODE(obj);
-                    if (addr != nullptr)
+                    CORINFO_CLASS_HANDLE objClsHandle = obj->GetLayout()->GetClassHandle();
+                    assert(objClsHandle != NO_CLASS_HANDLE);
+                    if (verbose)
                     {
+                        CORINFO_CLASS_HANDLE lclClsHnd = gtGetStructHandle(lclVar);
+                        printf("fold OBJ(ADDR(X)) [%06u] into X [%06u], ", dspTreeID(obj), dspTreeID(lclVar));
+                        printf("with %s handles\n", ((lclClsHnd == objClsHandle) ? "matching" : "different"));
+                    }
+#endif
+                    // Keep the DONT_CSE flag in sync
+                    // (as the addr always marks it for its op1)
+                    lclVar->gtFlags &= ~GTF_DONT_CSE;
+                    lclVar->gtFlags |= (obj->gtFlags & GTF_DONT_CSE);
+
+                    if (destroyNodes)
+                    {
+                        DEBUG_DESTROY_NODE(obj);
                         DEBUG_DESTROY_NODE(addr);
                     }
-                }
 
-                return lclVar;
+                    return lclVar;
+                }
             }
         }
     }
