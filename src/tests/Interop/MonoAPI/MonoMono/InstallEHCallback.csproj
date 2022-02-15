@@ -4,10 +4,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="*.cs" />
-    <Compile Include="..\..\Common\*.cs" />
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <Compile Include="..\Common\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../Native/mono-embedding-api-test/CMakeLists.txt" />
+    <ProjectReference Include="..\Native\mono-embedding-api-test\CMakeLists.txt" />
   </ItemGroup>
 </Project>
