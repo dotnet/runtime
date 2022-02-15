@@ -20,6 +20,37 @@ namespace ILLink.RoslynAnalyzer.Tests
 				expected: expected);
 		}
 
+		[Fact]
+		public Task NoWarningsIfAnalyzerIsNotEnabled ()
+		{
+			var TargetParameterWithAnnotations = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+public class Foo
+{
+}
+
+class C
+{
+	public static void Main()
+	{
+		M(typeof(Foo));
+	}
+
+	private static void NeedsPublicMethodsOnParameter(
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type parameter)
+	{
+	}
+
+	private static void M(Type type)
+	{
+		NeedsPublicMethodsOnParameter(type);
+	}
+}";
+			return VerifyCS.VerifyAnalyzerAsync (TargetParameterWithAnnotations);
+		}
+
 		#region SourceParameter
 		[Fact]
 		public Task SourceParameterDoesNotMatchTargetParameterAnnotations ()
