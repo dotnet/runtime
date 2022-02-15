@@ -38,10 +38,10 @@ namespace Microsoft.Extensions.Hosting
     }
     public partial class HostBuilderContext
     {
-        public HostBuilderContext(System.Collections.Generic.IDictionary<object, object> properties) { }
-        public Microsoft.Extensions.Configuration.IConfiguration Configuration { get { throw null; } set { } }
-        public Microsoft.Extensions.Hosting.IHostEnvironment HostingEnvironment { get { throw null; } set { } }
-        public System.Collections.Generic.IDictionary<object, object> Properties { get { throw null; } }
+        public HostBuilderContext(System.Collections.Generic.IDictionary<object, object?> properties) { }
+        public Microsoft.Extensions.Configuration.IConfiguration? Configuration { get { throw null; } set { } }
+        public Microsoft.Extensions.Hosting.IHostEnvironment? HostingEnvironment { get { throw null; } set { } }
+        public System.Collections.Generic.IDictionary<object, object?> Properties { get { throw null; } }
     }
     public static partial class HostDefaults
     {
@@ -100,14 +100,14 @@ namespace Microsoft.Extensions.Hosting
     }
     public partial interface IHostBuilder
     {
-        System.Collections.Generic.IDictionary<object, object> Properties { get; }
+        System.Collections.Generic.IDictionary<object, object?> Properties { get; }
         Microsoft.Extensions.Hosting.IHost Build();
         Microsoft.Extensions.Hosting.IHostBuilder ConfigureAppConfiguration(System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.Configuration.IConfigurationBuilder> configureDelegate);
         Microsoft.Extensions.Hosting.IHostBuilder ConfigureContainer<TContainerBuilder>(System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, TContainerBuilder> configureDelegate);
         Microsoft.Extensions.Hosting.IHostBuilder ConfigureHostConfiguration(System.Action<Microsoft.Extensions.Configuration.IConfigurationBuilder> configureDelegate);
         Microsoft.Extensions.Hosting.IHostBuilder ConfigureServices(System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.DependencyInjection.IServiceCollection> configureDelegate);
-        Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory);
-        Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(System.Func<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder>> factory);
+        Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull;
+        Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(System.Func<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull;
     }
     public partial interface IHostedService
     {
@@ -116,7 +116,7 @@ namespace Microsoft.Extensions.Hosting
     }
     public partial interface IHostEnvironment
     {
-        string ApplicationName { get; set; }
+        string? ApplicationName { get; set; }
         Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; }
         string ContentRootPath { get; set; }
         string EnvironmentName { get; set; }
@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.Hosting
     [System.ObsoleteAttribute("IHostingEnvironment has been deprecated. Use Microsoft.Extensions.Hosting.IHostEnvironment instead.")]
     public partial interface IHostingEnvironment
     {
-        string ApplicationName { get; set; }
+        string? ApplicationName { get; set; }
         Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; }
         string ContentRootPath { get; set; }
         string EnvironmentName { get; set; }
