@@ -59,7 +59,6 @@ namespace System.Net.Security.Tests
             SslProtocols clientProtocol,
             Type expectedException)
         {
-            Console.WriteLine("PlatformDetection.SupportsTls12 = {0} 11 {1} 10 {2}", PlatformDetection.SupportsTls12, PlatformDetection.SupportsTls11, PlatformDetection.SupportsTls10);
             Exception e = await Record.ExceptionAsync(() => ClientAsyncSslHelper(serverProtocol, clientProtocol));
             Assert.NotNull(e);
             Assert.IsAssignableFrom(expectedException, e);
