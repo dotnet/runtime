@@ -17948,7 +17948,7 @@ SPILLSTACK:
 // Spill clique has decided this should be "byref", but this block only pushes an "int".
 // Insert a sign-extension to "native int" so we match the clique size.
 #ifdef TARGET_LOONGARCH64
-            if (tree->gtOper == GT_CNS_INT)
+                if (tree->gtOper == GT_CNS_INT)
                 {
                     tree->gtType = TYP_I_IMPL;
                     tree->SetContained();

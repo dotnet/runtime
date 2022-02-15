@@ -3466,7 +3466,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 }
                 else
                 {
-                    GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset>>12);
+                    GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
                     GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
                 }
                 GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, -8);
@@ -3518,7 +3518,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                             }
                             else
                             {
-                                GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset>>12);
+                                GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
                                 GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
                             }
                             GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, -8);
@@ -3556,7 +3556,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                             }
                             else
                             {
-                                GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset>>12);
+                                GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
                                 GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
                             }
                             GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_ARG_LAST, varNum, -8);
