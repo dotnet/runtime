@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,8 +13,8 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public abstract class BackgroundService : IHostedService, IDisposable
     {
-        private Task _executeTask;
-        private CancellationTokenSource _stoppingCts;
+        private Task? _executeTask;
+        private CancellationTokenSource? _stoppingCts;
 
         /// <summary>
         /// Gets the Task that executes the background operation.
@@ -21,7 +22,7 @@ namespace Microsoft.Extensions.Hosting
         /// <remarks>
         /// Will return <see langword="null"/> if the background operation hasn't started.
         /// </remarks>
-        public virtual Task ExecuteTask => _executeTask;
+        public virtual Task? ExecuteTask => _executeTask;
 
         /// <summary>
         /// This method is called when the <see cref="IHostedService"/> starts. The implementation should return a task that represents
@@ -69,7 +70,7 @@ namespace Microsoft.Extensions.Hosting
             try
             {
                 // Signal cancellation to the executing method
-                _stoppingCts.Cancel();
+                _stoppingCts!.Cancel();
             }
             finally
             {
