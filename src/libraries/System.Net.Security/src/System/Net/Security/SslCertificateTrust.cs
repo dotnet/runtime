@@ -24,7 +24,7 @@ namespace System.Net.Security
             if (sendTrustInHandshake && !System.OperatingSystem.IsLinux() && !System.OperatingSystem.IsMacOS())
             {
                 // to be removed when implemented.
-                throw new PlatformNotSupportedException("Not supported yet.");
+                throw new PlatformNotSupportedException(SR.net_ssl_trust_handshake);
             }
 #endif
             if (!store.IsOpen)
@@ -44,7 +44,7 @@ namespace System.Net.Security
             if (sendTrustInHandshake && !System.OperatingSystem.IsLinux() && !System.OperatingSystem.IsMacOS())
             {
                 // to be removed when implemented.
-                throw new PlatformNotSupportedException("Not supported yet.");
+                throw new PlatformNotSupportedException(SR.net_ssl_trust_handshake);
             }
 
 #if TARGET_WINDOWS
