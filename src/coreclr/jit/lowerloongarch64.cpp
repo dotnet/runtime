@@ -161,6 +161,46 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 }
 
 //------------------------------------------------------------------------
+// LowerBinaryArithmetic: lowers the given binary arithmetic node.
+//
+// Arguments:
+//    node - the arithmetic node to lower
+//
+// Returns:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
+{
+    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND))
+    {
+        GenTree* opNode  = nullptr;
+        GenTree* notNode = nullptr;
+        if (binOp->gtGetOp1()->OperIs(GT_NOT))
+        {
+            notNode = binOp->gtGetOp1();
+            opNode  = binOp->gtGetOp2();
+        }
+        else if (binOp->gtGetOp2()->OperIs(GT_NOT))
+        {
+            notNode = binOp->gtGetOp2();
+            opNode  = binOp->gtGetOp1();
+        }
+
+        if (notNode != nullptr)
+        {
+            binOp->gtOp1 = opNode;
+            binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
+            binOp->ChangeOper(GT_AND_NOT);
+            BlockRange().Remove(notNode);
+        }
+    }
+
+    ContainCheckBinary(binOp);
+
+    return binOp->gtNext;
+}
+
+//------------------------------------------------------------------------
 // LowerStoreLoc: Lower a store of a lclVar
 //
 // Arguments:
