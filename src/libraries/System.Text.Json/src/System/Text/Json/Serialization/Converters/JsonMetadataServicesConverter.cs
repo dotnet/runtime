@@ -89,5 +89,8 @@ namespace System.Text.Json.Serialization.Converters
 
             return Converter.OnTryWrite(writer, value, options, ref state);
         }
+
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
+            => Converter.ConfigureJsonTypeInfo(jsonTypeInfo, options);
     }
 }

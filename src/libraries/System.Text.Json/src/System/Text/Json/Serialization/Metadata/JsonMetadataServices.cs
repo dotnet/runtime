@@ -82,6 +82,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonTypeInfo<T> info = new JsonTypeInfoInternal<T>(options);
             info.PropertyInfoForTypeInfo = CreateJsonPropertyInfoForClassInfo(typeof(T), info, converter, options);
+            converter.ConfigureJsonTypeInfo(info, options);
             return info;
         }
 
