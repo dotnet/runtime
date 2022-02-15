@@ -22,7 +22,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public bool Invoke (MethodProxy calledMethod, MultiValue instanceValue, IReadOnlyList<MultiValue> argumentValues, out MultiValue methodReturnValue)
 		{
-			MultiValue returnValue = default;
+			MultiValue? returnValue = null;
 
 			bool requiresDataFlowAnalysis = MethodRequiresDataFlowAnalysis (calledMethod);
 			DynamicallyAccessedMemberTypes returnValueDynamicallyAccessedMemberTypes = requiresDataFlowAnalysis ?
@@ -56,13 +56,16 @@ namespace ILLink.Shared.TrimAnalysis
 
 			case IntrinsicId.Type_GetTypeFromHandle:
 				// Infrastructure piece to support "typeof(Foo)" in IL and direct calls everywhere
+				if (argumentValues[0].IsEmpty ()) {
+					returnValue = MultiValueLattice.Top;
+					break;
+				}
+
 				foreach (var value in argumentValues[0]) {
 					if (value is RuntimeTypeHandleValue typeHandle)
 						AddReturnValue (new SystemTypeValue (typeHandle.RepresentedType));
 					else if (value is RuntimeTypeHandleForGenericParameterValue typeHandleForGenericParameter)
 						AddReturnValue (GetGenericParameterValue (typeHandleForGenericParameter.GenericParameter));
-					else if (value == NullValue.Instance)
-						AddReturnValue (value); // Have to return null as that represents "do nothing" value, not returning could lead to noise warnings
 					else
 						AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
 				}
@@ -75,7 +78,8 @@ namespace ILLink.Shared.TrimAnalysis
 					else if (value is GenericParameterValue genericParameterValue)
 						AddReturnValue (new RuntimeTypeHandleForGenericParameterValue (genericParameterValue.GenericParameter));
 					else if (value == NullValue.Instance) {
-						AddReturnValue (value); // Have to return null as that represents "do nothing" value, not returning could lead to noise warnings
+						// Throws if the input is null, so no return value.
+						returnValue ??= MultiValueLattice.Top;
 					} else
 						AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
 				}
@@ -119,7 +123,8 @@ namespace ILLink.Shared.TrimAnalysis
 							// as the annotation does not come from that call, but from its input.
 							AddReturnValue (valueWithDynamicallyAccessedMembers);
 						} else if (value == NullValue.Instance) {
-							AddReturnValue (value); // Have to return null as that represents "do nothing" value, not returning could lead to noise warnings
+							// NullReferenceException, no return value.
+							returnValue ??= MultiValueLattice.Top;
 						} else {
 							AddReturnValue (UnknownValue.Instance);
 						}
@@ -136,8 +141,6 @@ namespace ILLink.Shared.TrimAnalysis
 				foreach (var typeHandleValue in argumentValues[0]) {
 					if (typeHandleValue is RuntimeTypeHandleValue runtimeTypeHandleValue) {
 						MarkStaticConstructor (runtimeTypeHandleValue.RepresentedType);
-					} else if (typeHandleValue == NullValue.Instance) {
-						// Nothing to do, it should throw at runtime, but it doesn't change behavior of data flow in any way
 					} else {
 						_diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedTypeInRuntimeHelpersRunClassConstructor, calledMethod.GetDisplayName ());
 					}
@@ -156,13 +159,13 @@ namespace ILLink.Shared.TrimAnalysis
 				return true;
 			}
 
-			if (returnValue.IsEmpty () && !calledMethod.ReturnsVoid ()) {
-				returnValue = GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes);
-			}
+			// For some intrinsics we just use the return value from the annotations.
+			if (returnValue == null)
+				returnValue = calledMethod.ReturnsVoid () ? MultiValueLattice.Top : GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes);
 
 			// Validate that the return value has the correct annotations as per the method return value annotations
 			if (returnValueDynamicallyAccessedMemberTypes != 0) {
-				foreach (var uniqueValue in returnValue) {
+				foreach (var uniqueValue in returnValue.Value) {
 					if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes) {
 						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (returnValueDynamicallyAccessedMemberTypes))
 							throw new InvalidOperationException ($"Internal linker error: in {GetContainingSymbolDisplayName ()} processing call to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
@@ -175,13 +178,13 @@ namespace ILLink.Shared.TrimAnalysis
 				}
 			}
 
-			methodReturnValue = returnValue;
+			methodReturnValue = returnValue.Value;
 
 			return true;
 
 			void AddReturnValue (MultiValue value)
 			{
-				returnValue = MultiValueLattice.Meet (returnValue, value);
+				returnValue = (returnValue == null) ? value : MultiValueLattice.Meet (returnValue.Value, value);
 			}
 		}
 

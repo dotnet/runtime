@@ -33,8 +33,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		// https://github.com/dotnet/linker/issues/2528
-		[ExpectedWarning ("IL2059", nameof (RuntimeHelpers) + "." + nameof (RuntimeHelpers.RunClassConstructor), ProducedBy = ProducedBy.Analyzer)]
 		static void TestNull ()
 		{
 			Type type = null;

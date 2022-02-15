@@ -83,6 +83,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			return TopValue;
 		}
 
+		public override MultiValue VisitLiteral (ILiteralOperation literalOperation, StateValue state)
+		{
+			return literalOperation.ConstantValue.Value == null ? NullValue.Instance : TopValue;
+		}
+
 		// Override handlers for situations where annotated locations may be involved in reflection access:
 		// - assignments
 		// - method calls

@@ -904,7 +904,7 @@ namespace Mono.Linker.Dataflow
 			if (!handledFunction) {
 				if (isNewObj) {
 					if (newObjValue == null)
-						PushUnknown (currentStack);
+						methodReturnValue = new MultiValue (UnknownValue.Instance);
 					else
 						methodReturnValue = newObjValue;
 				} else {
@@ -914,7 +914,7 @@ namespace Mono.Linker.Dataflow
 				}
 			}
 
-			if (!methodReturnValue.IsEmpty ())
+			if (isNewObj || GetReturnTypeWithoutModifiers (calledMethod.ReturnType).MetadataType != MetadataType.Void)
 				currentStack.Push (new StackSlot (methodReturnValue, calledMethod.ReturnType.IsByRefOrPointer ()));
 
 			foreach (var param in methodParams) {
