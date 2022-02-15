@@ -19,7 +19,20 @@ public class PInvokeDetach {
 
 	public static int Main ()
 	{
-		return TestDriver.RunTests (typeof (PInvokeDetach));
+		int result;
+		result = test_0_attach_invoke_foreign_thread ();
+		if (result != 0)
+			return 100 + result;
+		result = test_0_attach_invoke_foreign_thread_delegate ();
+		if (result != 0)
+			return 100 + result;
+		result = test_0_attach_invoke_block_foreign_thread ();
+		if (result != 0)
+			return 100 + result;
+		result = test_0_attach_invoke_block_foreign_thread_delegate ();
+		if (result != 0)
+			return 100 + result;
+		return 100;
 	}
 
 	public delegate void VoidVoidDelegate ();

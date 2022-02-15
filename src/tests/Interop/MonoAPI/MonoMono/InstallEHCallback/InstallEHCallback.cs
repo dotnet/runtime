@@ -170,6 +170,13 @@ public class InstallEHCallback {
 
 	static int Main ()
 	{
-	    return TestDriver.RunTests (typeof (InstallEHCallback));
+		int result;
+		result = test_0_setjmp_exn_handler ();
+		if (result != 0)
+			return 100 + result;
+		result = test_0_throw_and_raise_exception ();
+		if (result != 0)
+			return 100 + result;
+		return 100;
 	}
 }
