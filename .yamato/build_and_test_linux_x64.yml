@@ -2,7 +2,7 @@ name: Build and Test Linux x64
 
 agent:
   type: Unity::VM
-  image: platform-foundation/linux-ubuntu-18.04-mono-bokken:latest
+  image: platform-foundation/linux-ubuntu-18.04-mono-bokken:0.1.7-978398
   flavor: b1.large
 
 commands:
