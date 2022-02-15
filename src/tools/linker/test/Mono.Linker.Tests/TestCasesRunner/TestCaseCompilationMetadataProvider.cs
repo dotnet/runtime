@@ -111,7 +111,27 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			string runtimeDir = Path.GetDirectoryName (typeof (object).Assembly.Location);
 			string ncaVersion = Path.GetFileName (runtimeDir);
 			var dotnetDir = Path.GetDirectoryName (Path.GetDirectoryName (Path.GetDirectoryName (runtimeDir)));
-			return Path.Combine (dotnetDir, "packs", "Microsoft.NETCore.App.Ref", ncaVersion, "ref", PathUtilities.TFMDirectoryName);
+			string candidatePath = Path.Combine (dotnetDir, "packs", "Microsoft.NETCore.App.Ref", ncaVersion, "ref", PathUtilities.TFMDirectoryName);
+			if (Directory.Exists (candidatePath))
+				return candidatePath;
+
+			// There's no rule that runtime version must match the reference pack version exactly. So in this case use the major.minor only
+			// and find the highest available patch version (since the runtime should also be the highest available patch version in that range)
+			string ncaVersionWithoutPatch = ncaVersion.Substring (0, ncaVersion.LastIndexOf ('.'));
+			candidatePath = null;
+			foreach (var dir in Directory.GetDirectories (Path.Combine (dotnetDir, "Packs", "Microsoft.NETCore.App.Ref"), ncaVersionWithoutPatch + ".*")) {
+				if (candidatePath == null || StringComparer.Ordinal.Compare (dir, candidatePath) > 0)
+					candidatePath = dir;
+			}
+
+			if (candidatePath == null)
+				throw new InvalidOperationException ($"Could not determine ref pack path. Based on runtime directory {runtimeDir}.");
+
+			candidatePath = Path.Combine (candidatePath, "ref", PathUtilities.TFMDirectoryName);
+			if (Directory.Exists (candidatePath))
+				return candidatePath;
+
+			throw new InvalidOperationException ($"Could not determine ref pack path. Computed path {candidatePath} doesn't exist.");
 		}
 
 		public virtual IEnumerable<string> GetCommonReferencedAssemblies (NPath workingDirectory)
