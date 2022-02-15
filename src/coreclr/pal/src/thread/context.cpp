@@ -268,11 +268,7 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
 
     if (processId == GetCurrentProcessId())
     {
-#ifndef HOST_LOONGARCH64
         CONTEXT_CaptureContext(lpContext);
-#else
-        _ASSERT(!"unimplemented on LOONGARCH64 yet");
-#endif
     }
     else
     {

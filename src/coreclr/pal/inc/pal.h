@@ -2602,7 +2602,6 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_
 #elif defined(__sun) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 48
 #elif defined(__linux__) && defined(__loongarch64)
-////TODO for LOONGARCH64: should confirm !!!
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #else
 #warning
