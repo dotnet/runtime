@@ -368,25 +368,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             // This handles optimizations for instructions that have
             // an implicit 'zero' vector of what would be the second operand.
-            if ((numOperands == 2) && intrin.op2->IsVectorZero() && intrin.op2->isContained())
+            if (HWIntrinsicInfo::SupportsContainmentZero(intrin.id))
             {
-                assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
-
-                switch (ins)
+                assert(numOperands == 2);
+                if (intrin.op2->isContained() && intrin.op2->IsVectorZero())
                 {
-                    case INS_cmeq:
-                    case INS_cmge:
-                    case INS_cmgt:
-                    case INS_fcmeq:
-                    case INS_fcmge:
-                    case INS_fcmgt:
-                    {
-                        numOperands = 1;
-                        break;
-                    }
-
-                    default:
-                        unreached();
+                    numOperands = 1;
                 }
             }
 
