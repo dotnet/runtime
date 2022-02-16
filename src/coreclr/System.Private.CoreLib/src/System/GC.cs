@@ -12,10 +12,11 @@
 **
 ===========================================================*/
 
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -83,14 +84,6 @@ namespace System
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EndNoGCRegion")]
         internal static partial int _EndNoGCRegion();
-
-        // keep in sync with GC_ALLOC_FLAGS in gcinterface.h
-        internal enum GC_ALLOC_FLAGS
-        {
-            GC_ALLOC_NO_FLAGS = 0,
-            GC_ALLOC_ZEROING_OPTIONAL = 16,
-            GC_ALLOC_PINNED_OBJECT_HEAP = 64,
-        };
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Array AllocateNewArray(IntPtr typeHandle, int length, GC_ALLOC_FLAGS flags);

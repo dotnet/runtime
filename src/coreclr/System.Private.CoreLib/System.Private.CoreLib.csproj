@@ -251,6 +251,9 @@
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.CoreCLR.cs" />
+    <Compile Include="$(CoreClrProjectRoot)\tools\Common\Internal\Runtime\GC_ALLOC_FLAGS.cs">
+      <Link>Tools\Common\Internal\Runtime\GC_ALLOC_FLAGS.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />

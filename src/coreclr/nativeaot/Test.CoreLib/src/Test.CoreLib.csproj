@@ -135,6 +135,9 @@
     <Compile Include="..\..\Runtime.Base\src\System\GC.cs">
       <Link>System\GC.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\GC_ALLOC_FLAGS.cs">
+      <Link>Internal\Runtime\GC_ALLOC_FLAGS.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\MulticastDelegate.cs">
       <Link>System\MulticastDelegate.cs</Link>
     </Compile>

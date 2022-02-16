@@ -175,6 +175,9 @@
     <Compile Include="System\Enum.CoreRT.cs" />
     <Compile Include="System\Environment.CoreRT.cs" />
     <Compile Include="System\GC.cs" />
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\GC_ALLOC_FLAGS.cs">
+      <Link>Internal\Runtime\GC_ALLOC_FLAGS.cs</Link>
+    </Compile>
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\Math.CoreRT.cs" />
     <Compile Include="System\MathF.CoreRT.cs" />
