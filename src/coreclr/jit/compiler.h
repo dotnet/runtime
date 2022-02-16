@@ -4581,10 +4581,13 @@ public:
                                            GenTreeCall::Use*       args               = nullptr,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr);
 
+    bool impIsProfileableCastHelper(GenTree* tree);
+
     GenTree* impCastClassOrIsInstToTree(GenTree*                op1,
                                         GenTree*                op2,
                                         CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                        bool                    isCastClass);
+                                        bool                    isCastClass,
+                                        IL_OFFSET               ilOffset);
 
     GenTree* impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass);
 
