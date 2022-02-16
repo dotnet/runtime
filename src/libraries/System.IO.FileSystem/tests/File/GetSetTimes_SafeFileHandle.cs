@@ -75,6 +75,7 @@ namespace System.IO.Tests
                 GetLastWriteTimeUsingHandleUtc,
                 DateTimeKind.Utc);
         }
+
         private static SafeFileHandle OpenFileHandle(string path)
         {
             return File.OpenHandle(
@@ -198,23 +199,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void SetLastWriteTimeTicks()
-        {
-            string firstFile = GetTestFilePath();
-            string secondFile = GetTestFilePath();
-
-            File.WriteAllText(firstFile, "");
-            File.WriteAllText(secondFile, "");
-
-            File.SetLastAccessTimeUtc(secondFile, DateTime.UtcNow);
-            long firstFileTicks = File.GetLastWriteTimeUtc(firstFile).Ticks;
-            long secondFileTicks = File.GetLastWriteTimeUtc(secondFile).Ticks;
-            Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
-        }
-
-        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void SetLastWriteTimeTicks_SafeFileHandle()
+        public void SetLastWriteTimeTicks()
         {
             string firstFilePath = GetTestFilePath();
             string secondFilePath = GetTestFilePath();

@@ -10,14 +10,14 @@ namespace System.IO.Tests
         protected override FileAttributes GetAttributes(string path)
         {
             using var fileHandle =
-                File.OpenHandle(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+                File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
             return File.GetAttributes(fileHandle);
         }
 
         protected override void SetAttributes(string path, FileAttributes attributes)
         {
             using var fileHandle =
-                File.OpenHandle(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+                File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
             File.SetAttributes(fileHandle, attributes);
         }
 
