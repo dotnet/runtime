@@ -1,4 +1,9 @@
 {
+  "sdk": {
+    "version": "6.0.100",
+    "allowPrerelease": true,
+    "rollForward": "major"
+  },
   "tools": {
     "dotnet": "6.0.100"
   },
