@@ -16,6 +16,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.FlowAnalysis;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -64,6 +65,28 @@ namespace ILLink.RoslynAnalyzer
 				context.RegisterOperationBlockAction (context => {
 					if (context.OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope ())
 						return;
+
+					// See https://github.com/dotnet/linker/issues/2587
+					// Need to punt on handling compiler generated methods until the linker is fixed
+					// async is handled here and the rest are handled just below
+					// iterators could be handled here once https://github.com/dotnet/roslyn/issues/20179 is fixed
+					if (context.OwningSymbol is IMethodSymbol methodSymbol && methodSymbol.IsAsync) {
+						return;
+					}
+
+					// Sub optimal way to handle analyzer not to generate warnings until the linker is fixed
+					// Iterators, local functions and lambdas are handled 
+					foreach (IOperation blockOperation in context.OperationBlocks) {
+						if (blockOperation is IBlockOperation blocks) {
+							foreach (IOperation operation in blocks.Operations) {
+								if (operation.Kind == OperationKind.AnonymousFunction ||
+								operation.Kind == OperationKind.LocalFunction ||
+								operation.Kind == OperationKind.YieldBreak ||
+								operation.Kind == OperationKind.YieldReturn)
+									return;
+							}
+						}
+					}
 
 					foreach (var operationBlock in context.OperationBlocks) {
 						ControlFlowGraph cfg = context.GetControlFlowGraph (operationBlock);

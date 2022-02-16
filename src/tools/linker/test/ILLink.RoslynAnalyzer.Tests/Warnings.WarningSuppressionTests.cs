@@ -10,7 +10,7 @@ namespace ILLink.RoslynAnalyzer.Tests.Warnings
 		[Fact]
 		public Task SuppressWarningsInCompilerGeneratedCode ()
 		{
-			return RunTest (allowMissingWarnings: true);
+			return RunTest ();
 		}
 
 		[Fact]

@@ -117,7 +117,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2063",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnUnknownValue) + "()")]
+			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnUnknownValue) + "()", ProducedBy = ProducedBy.Trimmer)]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		Type ReturnUnknownValue ()
 		{
