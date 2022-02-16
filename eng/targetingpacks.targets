@@ -142,16 +142,18 @@
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
       <_targetingPackReferenceExclusion Include="$(TargetName)" />
-      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->'%(Filename)')" />
+      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->Metadata('Filename'))" />
       <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
     </ItemGroup>
 
     <ItemGroup>
-      <_targetingPackReferenceWithExclusion Include="@(Reference)">
-        <Exclusion>%(_targetingPackReferenceExclusion.Identity)</Exclusion>
-      </_targetingPackReferenceWithExclusion>
-      <Reference Remove="@(_targetingPackReferenceWithExclusion)"
-                 Condition="'%(_targetingPackReferenceWithExclusion.ExternallyResolved)' == 'true' and '%(_targetingPackReferenceWithExclusion.Filename)' == '%(_targetingPackReferenceWithExclusion.Exclusion)'" />
+      <_targetingPackReferenceWithProjectName Include="@(Reference->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
+                                              OriginalIdentity="%(Identity)" />
+      <_targetingPackIncludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
+                                                      Exclude="@(_targetingPackReferenceExclusion)" />
+      <_targetingPackExcludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
+                                                      Exclude="@(_targetingPackIncludedReferenceWithProjectName)" />
+      <Reference Remove="@(_targetingPackExcludedReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
   </Target>
 </Project>

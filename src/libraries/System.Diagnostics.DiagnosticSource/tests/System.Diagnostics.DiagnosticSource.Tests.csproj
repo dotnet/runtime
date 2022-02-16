@@ -6,7 +6,7 @@
   <PropertyGroup>
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);MEMORYMARSHAL_SUPPORT</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />
   </ItemGroup>
   <ItemGroup>

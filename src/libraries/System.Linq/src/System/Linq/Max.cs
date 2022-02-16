@@ -10,14 +10,9 @@ namespace System.Linq
     {
         public static int Max(this IEnumerable<int> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<int> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            if (source.GetType() == typeof(int[]))
-            {
-                return Max((int[])source);
+                return Max(span);
             }
 
             int value;
@@ -42,29 +37,29 @@ namespace System.Linq
             return value;
         }
 
-        private static int Max(int[] array)
+        private static int Max(ReadOnlySpan<int> span)
         {
-            if (array.Length == 0)
+            if (span.IsEmpty)
             {
                 ThrowHelper.ThrowNoElementsException();
             }
 
             // Vectorize the search if possible.
             int index, value;
-            if (Vector.IsHardwareAccelerated && array.Length >= Vector<int>.Count * 2)
+            if (Vector.IsHardwareAccelerated && span.Length >= Vector<int>.Count * 2)
             {
-                // The array is at least two vectors long. Create a vector from the first N elements,
-                // and then repeatedly compare that against the next vector from the array.  At the end,
+                // The span is at least two vectors long. Create a vector from the first N elements,
+                // and then repeatedly compare that against the next vector from the span.  At the end,
                 // the resulting vector will contain the maximum values found, and we then need only
                 // to find the max of those.
-                var maxes = new Vector<int>(array);
+                var maxes = new Vector<int>(span);
                 index = Vector<int>.Count;
                 do
                 {
-                    maxes = Vector.Max(maxes, new Vector<int>(array, index));
+                    maxes = Vector.Max(maxes, new Vector<int>(span.Slice(index)));
                     index += Vector<int>.Count;
                 }
-                while (index + Vector<int>.Count <= array.Length);
+                while (index + Vector<int>.Count <= span.Length);
 
                 value = maxes[0];
                 for (int i = 1; i < Vector<int>.Count; i++)
@@ -77,16 +72,16 @@ namespace System.Linq
             }
             else
             {
-                value = array[0];
+                value = span[0];
                 index = 1;
             }
 
             // Iterate through the remaining elements, comparing against the max.
-            for (int i = index; (uint)i < (uint)array.Length; i++)
+            for (int i = index; (uint)i < (uint)span.Length; i++)
             {
-                if (array[i] > value)
+                if (span[i] > value)
                 {
-                    value = array[i];
+                    value = span[i];
                 }
             }
 
@@ -157,14 +152,9 @@ namespace System.Linq
 
         public static long Max(this IEnumerable<long> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<long> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            if (source.GetType() == typeof(long[]))
-            {
-                return Max((long[])source);
+                return Max(span);
             }
 
             long value;
@@ -189,9 +179,9 @@ namespace System.Linq
             return value;
         }
 
-        private static long Max(long[] array)
+        private static long Max(ReadOnlySpan<long> span)
         {
-            if (array.Length == 0)
+            if (span.IsEmpty)
             {
                 ThrowHelper.ThrowNoElementsException();
             }
@@ -199,20 +189,20 @@ namespace System.Linq
             // Vectorize the search if possible.
             int index;
             long value;
-            if (Vector.IsHardwareAccelerated && array.Length >= Vector<long>.Count * 2)
+            if (Vector.IsHardwareAccelerated && span.Length >= Vector<long>.Count * 2)
             {
-                // The array is at least two vectors long. Create a vector from the first N elements,
-                // and then repeatedly compare that against the next vector from the array.  At the end,
+                // The span is at least two vectors long. Create a vector from the first N elements,
+                // and then repeatedly compare that against the next vector from the span.  At the end,
                 // the resulting vector will contain the maximum values found, and we then need only
                 // to find the max of those.
-                var maxes = new Vector<long>(array);
+                var maxes = new Vector<long>(span);
                 index = Vector<long>.Count;
                 do
                 {
-                    maxes = Vector.Max(maxes, new Vector<long>(array, index));
+                    maxes = Vector.Max(maxes, new Vector<long>(span.Slice(index)));
                     index += Vector<long>.Count;
                 }
-                while (index + Vector<long>.Count <= array.Length);
+                while (index + Vector<long>.Count <= span.Length);
 
                 value = maxes[0];
                 for (int i = 1; i < Vector<long>.Count; i++)
@@ -225,16 +215,16 @@ namespace System.Linq
             }
             else
             {
-                value = array[0];
+                value = span[0];
                 index = 1;
             }
 
             // Iterate through the remaining elements, comparing against the max.
-            for (int i = index; (uint)i < (uint)array.Length; i++)
+            for (int i = index; (uint)i < (uint)span.Length; i++)
             {
-                if (array[i] > value)
+                if (span[i] > value)
                 {
-                    value = array[i];
+                    value = span[i];
                 }
             }
 
@@ -299,9 +289,9 @@ namespace System.Linq
 
         public static double Max(this IEnumerable<double> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<double> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                return Max(span);
             }
 
             double value;
@@ -335,6 +325,33 @@ namespace System.Linq
                     {
                         value = x;
                     }
+                }
+            }
+
+            return value;
+        }
+
+        private static double Max(ReadOnlySpan<double> span)
+        {
+            if (span.IsEmpty)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            int i;
+            for (i = 0; i < span.Length && double.IsNaN(span[i]); i++);
+
+            if (i == span.Length)
+            {
+                return span[^1];
+            }
+
+            double value;
+            for (value = span[i]; (uint)i < (uint)span.Length; i++)
+            {
+                if (span[i] > value)
+                {
+                    value = span[i];
                 }
             }
 
@@ -397,9 +414,9 @@ namespace System.Linq
 
         public static float Max(this IEnumerable<float> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<float> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                return Max(span);
             }
 
             float value;
@@ -428,6 +445,33 @@ namespace System.Linq
                     {
                         value = x;
                     }
+                }
+            }
+
+            return value;
+        }
+
+        private static float Max(ReadOnlySpan<float> span)
+        {
+            if (span.IsEmpty)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            int i;
+            for (i = 0; i < span.Length && float.IsNaN(span[i]); i++);
+
+            if (i == span.Length)
+            {
+                return span[^1];
+            }
+
+            float value;
+            for (value = span[i]; (uint)i < (uint)span.Length; i++)
+            {
+                if (span[i] > value)
+                {
+                    value = span[i];
                 }
             }
 
@@ -490,9 +534,9 @@ namespace System.Linq
 
         public static decimal Max(this IEnumerable<decimal> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<decimal> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                return Max(span);
             }
 
             decimal value;
@@ -511,6 +555,25 @@ namespace System.Linq
                     {
                         value = x;
                     }
+                }
+            }
+
+            return value;
+        }
+
+        private static decimal Max(ReadOnlySpan<decimal> span)
+        {
+            if (span.IsEmpty)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            decimal value = span[0];
+            for (int i = 1; (uint)i < (uint)span.Length; i++)
+            {
+                if (span[i] > value)
+                {
+                    value = span[i];
                 }
             }
 

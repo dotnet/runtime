@@ -8,7 +8,6 @@ using Xunit;
 
 namespace DllImportGenerator.IntegrationTests
 {
-    [BlittableType]
     public struct SetLastErrorMarshaller
     {
         public int val;

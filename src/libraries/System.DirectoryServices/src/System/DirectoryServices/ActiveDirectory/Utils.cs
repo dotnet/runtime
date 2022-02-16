@@ -99,7 +99,7 @@ namespace System.DirectoryServices.ActiveDirectory
         // To disable public/protected constructors for this class
         private Utils() { }
 
-        internal static string GetDnsNameFromDN(string distinguishedName)
+        internal static unsafe string GetDnsNameFromDN(string distinguishedName)
         {
             int result = 0;
             string? dnsName = null;
@@ -108,18 +108,26 @@ namespace System.DirectoryServices.ActiveDirectory
             Debug.Assert(distinguishedName != null);
 
             // call DsCrackNamesW
-            IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
-            if (functionPtr == (IntPtr)0)
+            /*DWORD DsCrackNames(
+                HANDLE hDS,
+                DS_NAME_FLAGS flags,
+                DS_NAME_FORMAT formatOffered,
+                DS_NAME_FORMAT formatDesired,
+                DWORD cNames,
+                LPTSTR* rpNames,
+                PDS_NAME_RESULT* ppResult
+                );*/
+            var dsCrackNames = (delegate* unmanaged<IntPtr, int, int, int, int, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
+            if (dsCrackNames == null)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
             }
-            NativeMethods.DsCrackNames dsCrackNames = (NativeMethods.DsCrackNames)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsCrackNames));
 
             IntPtr name = Marshal.StringToHGlobalUni(distinguishedName);
             IntPtr ptr = Marshal.AllocHGlobal(IntPtr.Size);
             Marshal.WriteIntPtr(ptr, name);
             result = dsCrackNames(IntPtr.Zero, NativeMethods.DS_NAME_FLAG_SYNTACTICAL_ONLY,
-                   NativeMethods.DS_FQDN_1779_NAME, NativeMethods.DS_CANONICAL_NAME, 1, ptr, out results);
+                   NativeMethods.DS_FQDN_1779_NAME, NativeMethods.DS_CANONICAL_NAME, 1, ptr, &results);
             if (result == 0)
             {
                 try
@@ -164,12 +172,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (results != IntPtr.Zero)
                     {
                         // call DsFreeNameResultW
-                        functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
-                        if (functionPtr == (IntPtr)0)
+                        var dsFreeNameResultW = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                        if (dsFreeNameResultW == null)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                         }
-                        UnsafeNativeMethods.DsFreeNameResultW dsFreeNameResultW = (UnsafeNativeMethods.DsFreeNameResultW)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsFreeNameResultW));
                         dsFreeNameResultW(results);
                     }
                 }
@@ -187,7 +194,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return dnsName!;
         }
 
-        internal static string GetDNFromDnsName(string dnsName)
+        internal static unsafe string GetDNFromDnsName(string dnsName)
         {
             int result = 0;
             string? dn = null;
@@ -196,17 +203,25 @@ namespace System.DirectoryServices.ActiveDirectory
             Debug.Assert(dnsName != null);
 
             // call DsCrackNamesW
-            IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
-            if (functionPtr == (IntPtr)0)
+            /*DWORD DsCrackNames(
+                HANDLE hDS,
+                DS_NAME_FLAGS flags,
+                DS_NAME_FORMAT formatOffered,
+                DS_NAME_FORMAT formatDesired,
+                DWORD cNames,
+                LPTSTR* rpNames,
+                PDS_NAME_RESULT* ppResult
+                );*/
+            var dsCrackNames = (delegate* unmanaged<IntPtr, int, int, int, int, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
+            if (dsCrackNames == null)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
             }
-            NativeMethods.DsCrackNames dsCrackNames = (NativeMethods.DsCrackNames)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsCrackNames));
             IntPtr name = Marshal.StringToHGlobalUni(dnsName + "/");
             IntPtr ptr = Marshal.AllocHGlobal(IntPtr.Size);
             Marshal.WriteIntPtr(ptr, name);
             result = dsCrackNames(IntPtr.Zero, NativeMethods.DS_NAME_FLAG_SYNTACTICAL_ONLY,
-                         NativeMethods.DS_CANONICAL_NAME, NativeMethods.DS_FQDN_1779_NAME, 1, ptr, out results);
+                         NativeMethods.DS_CANONICAL_NAME, NativeMethods.DS_FQDN_1779_NAME, 1, ptr, &results);
             if (result == 0)
             {
                 try
@@ -232,12 +247,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (results != IntPtr.Zero)
                     {
                         // call DsFreeNameResultW
-                        functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
-                        if (functionPtr == (IntPtr)0)
+                        var dsFreeNameResultW = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                        if (dsFreeNameResultW == null)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                         }
-                        UnsafeNativeMethods.DsFreeNameResultW dsFreeNameResultW = (UnsafeNativeMethods.DsFreeNameResultW)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsFreeNameResultW));
                         dsFreeNameResultW(results);
                     }
                 }
@@ -607,7 +621,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static IntPtr GetAuthIdentity(DirectoryContext context, SafeLibraryHandle libHandle)
+        internal static unsafe IntPtr GetAuthIdentity(DirectoryContext context, SafeLibraryHandle libHandle)
         {
             IntPtr authIdentity;
             int result = 0;
@@ -620,17 +634,25 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // create the credentials
             // call DsMakePasswordCredentialsW
-            IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsMakePasswordCredentialsW");
-            if (functionPtr == (IntPtr)0)
+
+            /*DWORD DsMakePasswordCredentials(
+                LPTSTR User,
+                LPTSTR Domain,
+                LPTSTR Password,
+                RPC_AUTH_IDENTITY_HANDLE* pAuthIdentity
+                );*/
+            var dsMakePasswordCredentials = (delegate* unmanaged<char*, char*, char*, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsMakePasswordCredentialsW");
+            if (dsMakePasswordCredentials == null)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
             }
-            NativeMethods.DsMakePasswordCredentials dsMakePasswordCredentials = (NativeMethods.DsMakePasswordCredentials)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsMakePasswordCredentials));
 
-            result = dsMakePasswordCredentials(username,
-                domain,
-                context.Password,
-                out authIdentity);
+            fixed (char* usernamePtr = username)
+            fixed (char* domainPtr = domain)
+            fixed (char* passwordPtr = context.Password)
+            {
+                result = dsMakePasswordCredentials(usernamePtr, domainPtr, passwordPtr, &authIdentity);
+            }
 
             if (result != 0)
             {
@@ -639,37 +661,48 @@ namespace System.DirectoryServices.ActiveDirectory
             return authIdentity;
         }
 
-        internal static void FreeAuthIdentity(IntPtr authIdentity, SafeLibraryHandle libHandle)
+        internal static unsafe void FreeAuthIdentity(IntPtr authIdentity, SafeLibraryHandle libHandle)
         {
             // free the credentials object
             if (authIdentity != IntPtr.Zero)
             {
-                // call DsMakePasswordCredentialsW
-                IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsFreePasswordCredentials");
-                if (functionPtr == (IntPtr)0)
+                // call DsMakePasswordCredentials
+                /*VOID DsFreePasswordCredentials(
+                    RPC_AUTH_IDENTITY_HANDLE AuthIdentity
+                    );*/
+                var dsFreePasswordCredentials = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsFreePasswordCredentials");
+                if (dsFreePasswordCredentials == null)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                 }
-                NativeMethods.DsFreePasswordCredentials dsFreePasswordCredentials = (NativeMethods.DsFreePasswordCredentials)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsFreePasswordCredentials));
                 dsFreePasswordCredentials(authIdentity);
             }
         }
 
-        internal static IntPtr GetDSHandle(string? domainControllerName, string? domainName, IntPtr authIdentity, SafeLibraryHandle libHandle)
+        internal static unsafe IntPtr GetDSHandle(string? domainControllerName, string? domainName, IntPtr authIdentity, SafeLibraryHandle libHandle)
         {
             int result = 0;
             IntPtr handle;
 
             // call DsBindWithCred
+            /*DWORD DsBindWithCred(
+                TCHAR* DomainController,
+                TCHAR*DnsDomainName,
+                RPC_AUTH_IDENTITY_HANDLE AuthIdentity,
+                HANDLE*phDS
+                ); */
             Debug.Assert((domainControllerName != null && domainName == null) || (domainName != null && domainControllerName == null));
-            IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsBindWithCredW");
-            if (functionPtr == (IntPtr)0)
+            var bindWithCred = (delegate* unmanaged<char*, char*, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsBindWithCredW");
+            if (bindWithCred == null)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
             }
-            NativeMethods.DsBindWithCred bindWithCred = (NativeMethods.DsBindWithCred)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsBindWithCred));
 
-            result = bindWithCred(domainControllerName, domainName, authIdentity, out handle);
+            fixed (char* domainControllerNamePtr = domainControllerName)
+            fixed (char* domainNamePtr = domainName)
+            {
+                result = bindWithCred(domainControllerNamePtr, domainNamePtr, authIdentity, &handle);
+            }
             if (result != 0)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(result, (domainControllerName != null) ? domainControllerName : domainName);
@@ -677,19 +710,21 @@ namespace System.DirectoryServices.ActiveDirectory
             return handle;
         }
 
-        internal static void FreeDSHandle(IntPtr dsHandle, SafeLibraryHandle libHandle)
+        internal static unsafe void FreeDSHandle(IntPtr dsHandle, SafeLibraryHandle libHandle)
         {
             // DsUnbind
             if (dsHandle != IntPtr.Zero)
             {
                 // call DsUnbind
-                IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsUnBindW");
-                if (functionPtr == (IntPtr)0)
+                /*DWORD DsUnBind(
+                    HANDLE* phDS
+                    );*/
+                var dsUnBind = (delegate* unmanaged<IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsUnBindW");
+                if (dsUnBind == null)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                 }
-                NativeMethods.DsUnBind dsUnBind = (NativeMethods.DsUnBind)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsUnBind));
-                _ = dsUnBind(ref dsHandle);
+                _ = dsUnBind(&dsHandle);
             }
         }
 

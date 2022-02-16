@@ -38,11 +38,8 @@ namespace System.IO
         }
 
         // Expands the given path to a fully qualified path.
-        public static string GetFullPath(string path)
+        public static string GetFullPath(string path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             // If the path would normalize to string empty, we'll consider it empty
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
@@ -56,14 +53,8 @@ namespace System.IO
             return GetFullPathInternal(path);
         }
 
-        public static string GetFullPath(string path, string basePath)
+        public static string GetFullPath(string path!!, string basePath!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (basePath == null)
-                throw new ArgumentNullException(nameof(basePath));
-
             if (!IsPathFullyQualified(basePath))
                 throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
 

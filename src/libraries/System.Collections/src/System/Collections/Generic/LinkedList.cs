@@ -28,13 +28,8 @@ namespace System.Collections.Generic
         {
         }
 
-        public LinkedList(IEnumerable<T> collection)
+        public LinkedList(IEnumerable<T> collection!!)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
-
             foreach (T item in collection)
             {
                 AddLast(item);
@@ -191,13 +186,8 @@ namespace System.Collections.Generic
             return Find(value) != null;
         }
 
-        public void CopyTo(T[] array, int index)
+        public void CopyTo(T[] array!!, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
-
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -331,15 +321,11 @@ namespace System.Collections.Generic
             InternalRemoveNode(head.prev!);
         }
 
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        public virtual void GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
             // Customized serialization for LinkedList.
             // We need to do this because it will be too expensive to Serialize each node.
             // This will give us the flexiblility to change internal implementation freely in future.
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
 
             info.AddValue(VersionName, version);
             info.AddValue(CountName, count); // this is the length of the bucket array.
@@ -427,26 +413,16 @@ namespace System.Collections.Generic
             version++;
         }
 
-        internal void ValidateNewNode(LinkedListNode<T> node)
+        internal void ValidateNewNode(LinkedListNode<T> node!!)
         {
-            if (node == null)
-            {
-                throw new ArgumentNullException(nameof(node));
-            }
-
             if (node.list != null)
             {
                 throw new InvalidOperationException(SR.LinkedListNodeIsAttached);
             }
         }
 
-        internal void ValidateNode(LinkedListNode<T> node)
+        internal void ValidateNode(LinkedListNode<T> node!!)
         {
-            if (node == null)
-            {
-                throw new ArgumentNullException(nameof(node));
-            }
-
             if (node.list != this)
             {
                 throw new InvalidOperationException(SR.ExternalLinkedListNode);
@@ -460,13 +436,8 @@ namespace System.Collections.Generic
 
         object ICollection.SyncRoot => this;
 
-        void ICollection.CopyTo(Array array, int index)
+        void ICollection.CopyTo(Array array!!, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
-
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));

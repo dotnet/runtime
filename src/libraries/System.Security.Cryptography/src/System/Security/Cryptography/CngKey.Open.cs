@@ -32,13 +32,8 @@ namespace System.Security.Cryptography
         }
 
         [SupportedOSPlatform("windows")]
-        public static CngKey Open(string keyName, CngProvider provider, CngKeyOpenOptions openOptions)
+        public static CngKey Open(string keyName!!, CngProvider provider!!, CngKeyOpenOptions openOptions)
         {
-            if (keyName == null)
-                throw new ArgumentNullException(nameof(keyName));
-            if (provider == null)
-                throw new ArgumentNullException(nameof(provider));
-
             SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider();
             SafeNCryptKeyHandle keyHandle;
             ErrorCode errorCode = Interop.NCrypt.NCryptOpenKey(providerHandle, out keyHandle, keyName, 0, openOptions);

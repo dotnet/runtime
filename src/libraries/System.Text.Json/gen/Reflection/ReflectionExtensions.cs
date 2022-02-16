@@ -21,13 +21,8 @@ namespace System.Text.Json.Reflection
             return index < customAttributeData.ConstructorArguments.Count ? (TValue)customAttributeData.ConstructorArguments[index].Value! : default!;
         }
 
-        public static bool IsInitOnly(this MethodInfo method)
+        public static bool IsInitOnly(this MethodInfo method!!)
         {
-            if (method == null)
-            {
-                throw new ArgumentNullException(nameof(method));
-            }
-
             MethodInfoWrapper methodInfoWrapper = (MethodInfoWrapper)method;
             return methodInfoWrapper.IsInitOnly;
         }

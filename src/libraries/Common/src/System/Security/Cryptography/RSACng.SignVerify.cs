@@ -40,13 +40,8 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Computes the signature of a hash that was produced by the hash algorithm specified by "hashAlgorithm."
         /// </summary>
-        public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        public override byte[] SignHash(byte[] hash!!, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (hash == null)
-            {
-                throw new ArgumentNullException(nameof(hash));
-            }
-
             string? hashAlgorithmName = hashAlgorithm.Name;
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithmName, nameof(hashAlgorithm));
 
@@ -127,17 +122,8 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Verifies that alleged signature of a hash is, in fact, a valid signature of that hash.
         /// </summary>
-        public override bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        public override bool VerifyHash(byte[] hash!!, byte[] signature!!, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (hash == null)
-            {
-                throw new ArgumentNullException(nameof(hash));
-            }
-            if (signature == null)
-            {
-                throw new ArgumentNullException(nameof(signature));
-            }
-
             return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature, hashAlgorithm, padding);
         }
 

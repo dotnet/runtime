@@ -71,11 +71,8 @@ namespace System
             _value = (void*)l;
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
             info.AddValue("value", ToUInt64());
         }
 
