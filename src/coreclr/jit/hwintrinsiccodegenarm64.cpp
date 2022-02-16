@@ -364,28 +364,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(!hasImmediateOperand);
 
-            size_t numOperands = intrin.numOperands;
-
-            // This handles optimizations for instructions that have
-            // an implicit 'zero' vector of what would be the second operand.
-            if (HWIntrinsicInfo::SupportsContainmentZero(intrin.id))
-            {
-                assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
-                assert(numOperands == 2);
-                if (intrin.op2->isContained() && intrin.op2->IsVectorZero())
-                {
-                    numOperands = 1;
-                }
-            }
-
-            switch (numOperands)
+            switch (intrin.numOperands)
             {
                 case 1:
                     GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     break;
 
                 case 2:
-                    if (isRMW)
+                    // This handles optimizations for instructions that have
+                    // an implicit 'zero' vector of what would be the second operand.
+                    if (HWIntrinsicInfo::SupportsContainment(intrin.id) && intrin.op2->isContained() &&
+                        intrin.op2->IsVectorZero())
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
+                    else if (isRMW)
                     {
                         assert(targetReg != op2Reg);
 

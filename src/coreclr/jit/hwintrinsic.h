@@ -158,8 +158,7 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_SIMDScalar = 0x1000,
 
     // The intrinsic supports some sort of containment analysis
-    HW_Flag_SupportsContainment = 0x2000,
-    HW_Flag_SupportsContainmentZero = 0x4000
+    HW_Flag_SupportsContainment = 0x2000
 
 #else
 #error Unsupported platform
@@ -637,18 +636,6 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_NoContainment) == 0;
 #elif defined(TARGET_ARM64)
         return (flags & HW_Flag_SupportsContainment) != 0;
-#else
-#error Unsupported platform
-#endif
-    }
-
-    static bool SupportsContainmentZero(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-#if defined(TARGET_XARCH)
-        return false;
-#elif defined(TARGET_ARM64)
-        return (flags & HW_Flag_SupportsContainmentZero) != 0;
 #else
 #error Unsupported platform
 #endif
