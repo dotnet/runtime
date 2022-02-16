@@ -76,7 +76,6 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
 
     NamedIntrinsic niZero;
     NamedIntrinsic niEquals;
-    NamedIntrinsic loadIntrinsic;
 
     GenTree* cnsVec1;
     GenTree* cnsVec2;
@@ -112,8 +111,6 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
         GenTree* long7 = gtNewIconNode(*(ssize_t*)(cns + len - 8), TYP_LONG);
         GenTree* long8 = gtNewIconNode(*(ssize_t*)(cns + len - 4), TYP_LONG);
         cnsVec2 = gtNewSimdHWIntrinsicNode(simdType, long5, long6, long7, long8, NI_Vector256_Create, type, simdSize);
-
-        loadIntrinsic = NI_AVX_LoadVector256;
     }
     else
 #endif
@@ -140,12 +137,6 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
         GenTree* long3 = gtNewIconNode(*(ssize_t*)(cns + len - 8), TYP_LONG);
         GenTree* long4 = gtNewIconNode(*(ssize_t*)(cns + len - 4), TYP_LONG);
         cnsVec2        = gtNewSimdHWIntrinsicNode(simdType, long3, long4, NI_Vector128_Create, type, simdSize);
-
-#if defined(TARGET_XARCH)
-        loadIntrinsic = NI_SSE2_LoadVector128;
-#else
-        loadIntrinsic = NI_AdvSimd_LoadVector128;
-#endif
     }
     else
     {
@@ -161,8 +152,8 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
     GenTree* dataPtr1 = gtNewOperNode(GT_ADD, TYP_BYREF, data, offset1);
     GenTree* dataPtr2 = gtNewOperNode(GT_ADD, TYP_BYREF, gtClone(data), offset2);
 
-    GenTree* vec1 = gtNewSimdHWIntrinsicNode(simdType, dataPtr1, loadIntrinsic, type, simdSize);
-    GenTree* vec2 = gtNewSimdHWIntrinsicNode(simdType, dataPtr2, loadIntrinsic, type, simdSize);
+    GenTree* vec1 = gtNewIndir(simdType, dataPtr1);
+    GenTree* vec2 = gtNewIndir(simdType, dataPtr2);
 
     // TODO-CQ: Spill vec1 and vec2 for better pipelining, currently we end up emitting:
     //
