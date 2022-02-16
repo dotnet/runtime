@@ -75,5 +75,7 @@ namespace Microsoft.Interop
         }
 
         public const string System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute = "System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute";
+        public const string DefaultDllImportSearchPathsAttribute = "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute";
+        public const string DllImportSearchPath = "System.Runtime.InteropServices.DllImportSearchPath";
     }
 }
