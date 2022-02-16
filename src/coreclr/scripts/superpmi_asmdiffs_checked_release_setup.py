@@ -133,7 +133,6 @@ def main(main_args):
     superpmi_scripts_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
     base_jit_directory = os.path.join(correlation_payload_directory, "base")
     diff_jit_directory = os.path.join(correlation_payload_directory, "diff")
-    jit_analyze_build_directory = os.path.join(correlation_payload_directory, "jit-analyze")
 
     ######## Copy SuperPMI python scripts
 

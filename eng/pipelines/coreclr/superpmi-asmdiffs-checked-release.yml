@@ -1,11 +1,12 @@
-trigger:
-  batch: false
+trigger: none
+
+schedules:
+- cron: "0 10 * * 6,0"
+  displayName: Sat and Sun at 2:00 AM (UTC-8:00)
   branches:
     include:
     - main
-  paths:
-    include:
-    - src/coreclr/jit/*
+  always: true
 
 jobs:
 

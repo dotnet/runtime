@@ -3560,9 +3560,8 @@ def main(args):
 
         base_jit_path = coreclr_args.base_jit_path
         diff_jit_path = coreclr_args.diff_jit_path
-        diff_with_release = coreclr_args.diff_with_release
 
-        if diff_with_release is True:
+        if coreclr_args.diff_with_release:
             logging.info("Diff between Checked and Release.")
         logging.info("Base JIT Path: %s", base_jit_path)
         logging.info("Diff JIT Path: %s", diff_jit_path)
