@@ -85,7 +85,7 @@ namespace Microsoft.Interop.Analyzers
                 context.Diagnostics);
         }
 
-        private async Task<Document> ConvertToGeneratedDllImport(
+        private static async Task<Document> ConvertToGeneratedDllImport(
             Document doc,
             MethodDeclarationSyntax methodSyntax,
             IMethodSymbol methodSymbol,
@@ -116,7 +116,19 @@ namespace Microsoft.Interop.Analyzers
 
             if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
             {
-                generatedDeclaration = await RemoveNoPreserveSigTransform(editor, generatedDeclaration, methodSymbol, cancellationToken).ConfigureAwait(false);
+                generatedDeclaration = editor.Generator.WithType(
+                    generatedDeclaration,
+                    editor.Generator.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Int32)));
+
+                if (!methodSymbol.ReturnsVoid)
+                {
+                    generatedDeclaration = editor.Generator.AddParameters(
+                        generatedDeclaration,
+                        new[]
+                        {
+                        editor.Generator.ParameterDeclaration("@return", editor.Generator.GetType(generatedDeclaration), refKind: RefKind.Out)
+                        });
+                }
             }
 
             if (unmanagedCallConvAttributeMaybe is not null)
@@ -131,13 +143,22 @@ namespace Microsoft.Interop.Analyzers
                     .WithIsExtern(false)
                     .WithPartial(true));
 
+            if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
+            {
+                bool shouldWarn = await TransformCallersOfNoPreserveSigMethod(editor, methodSymbol, cancellationToken).ConfigureAwait(false);
+                if (shouldWarn)
+                {
+                    generatedDeclaration = generatedDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(Resources.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
+                }
+            }
+
             // Replace the original method with the updated one
             editor.ReplaceNode(methodSyntax, generatedDeclaration);
 
             return editor.GetChangedDocument();
         }
 
-        private async Task<SyntaxNode> RemoveNoPreserveSigTransform(DocumentEditor editor, SyntaxNode generatedDeclaration, IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+        private static async Task<bool> TransformCallersOfNoPreserveSigMethod(DocumentEditor editor, IMethodSymbol methodSymbol, CancellationToken cancellationToken)
         {
             Document? document = editor.OriginalDocument;
             IEnumerable<ReferencedSymbol>? referencedSymbols = await SymbolFinder.FindReferencesAsync(
@@ -147,8 +168,6 @@ namespace Microsoft.Interop.Analyzers
 
             // Sometimes we can't validate that we've fixed all callers, so we warn the user that this fix might produce invalid code.
             bool shouldWarn = false;
-
-            List<(SyntaxNode invocation, Func<SyntaxNode, SyntaxGenerator, SyntaxNode> action)> invocations = new();
 
             foreach (ReferencedSymbol? referencedSymbol in referencedSymbols)
             {
@@ -188,12 +207,12 @@ namespace Microsoft.Interop.Analyzers
                     {
                         // There is no return value, so we don't need to add any arguments to the invocation.
                         // We only need to wrap the invocation with a call to ThrowExceptionForHR
-                        invocations.Add((invocation, WrapInvocationWithHRExceptionThrow));
+                        editor.ReplaceNode(invocation, WrapInvocationWithHRExceptionThrow);
                     }
                     else if (invocation.Parent.IsKind(SyntaxKind.ExpressionStatement))
                     {
                         // The return value isn't used, so discard the new out parameter value
-                        invocations.Add((invocation,
+                        editor.ReplaceNode(invocation,
                            (node, generator) =>
                            {
                                return WrapInvocationWithHRExceptionThrow(
@@ -208,7 +227,7 @@ namespace Microsoft.Interop.Analyzers
                                            .WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.OutKeyword))),
                                    generator);
                            }
-                        ));
+                        );
                     }
                     else if (invocation.Parent.IsKind(SyntaxKind.EqualsValueClause))
                     {
@@ -226,7 +245,7 @@ namespace Microsoft.Interop.Analyzers
                         }
                         // The result was used to initialize a variable,
                         // so initialize the variable inline
-                        invocations.Add((declaration,
+                        editor.ReplaceNode(declaration,
                            (node, generator) =>
                            {
                                var declaration = (LocalDeclarationStatementSyntax)node;
@@ -241,11 +260,11 @@ namespace Microsoft.Interop.Analyzers
                                                .WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.OutKeyword))),
                                                generator));
                            }
-                        ));
+                        );
                     }
                     else if (invocation.Parent.IsKind(SyntaxKind.SimpleAssignmentExpression) && invocation.Parent.Parent.IsKind(SyntaxKind.ExpressionStatement))
                     {
-                        invocations.Add((invocation.Parent,
+                        editor.ReplaceNode(invocation.Parent,
                            (node, generator) =>
                            {
                                var assignment = (AssignmentExpressionSyntax)node;
@@ -256,7 +275,7 @@ namespace Microsoft.Interop.Analyzers
                                            .WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.OutKeyword))),
                                    generator);
                            }
-                        ));
+                        );
                     }
                     else
                     {
@@ -265,34 +284,7 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
-            foreach ((SyntaxNode node, Func<SyntaxNode, SyntaxGenerator, SyntaxNode> action) nodesWithReplaceAction in invocations)
-            {
-                editor.ReplaceNode(
-                    nodesWithReplaceAction.node, (node, generator) =>
-                    {
-                        return nodesWithReplaceAction.action(node, generator);
-                    });
-            }
-
-            SyntaxNode noPreserveSigDeclaration = editor.Generator.WithType(
-                generatedDeclaration,
-                editor.Generator.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Int32)));
-
-            if (!methodSymbol.ReturnsVoid)
-            {
-                noPreserveSigDeclaration = editor.Generator.AddParameters(
-                    noPreserveSigDeclaration,
-                    new[]
-                    {
-                        editor.Generator.ParameterDeclaration("@return", editor.Generator.GetType(generatedDeclaration), refKind: RefKind.Out)
-                    });
-            }
-
-            if (shouldWarn)
-            {
-                noPreserveSigDeclaration = noPreserveSigDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(Resources.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
-            }
-            return noPreserveSigDeclaration;
+            return shouldWarn;
 
             SyntaxNode WrapInvocationWithHRExceptionThrow(SyntaxNode node, SyntaxGenerator generator)
             {
@@ -306,7 +298,7 @@ namespace Microsoft.Interop.Analyzers
             }
         }
 
-        private SyntaxNode GetGeneratedDllImportAttribute(
+        private static SyntaxNode GetGeneratedDllImportAttribute(
             DocumentEditor editor,
             SyntaxGenerator generator,
             AttributeSyntax dllImportSyntax,
@@ -385,7 +377,7 @@ namespace Microsoft.Interop.Analyzers
             return generator.ReplaceNode(attribute, attribute.ArgumentList, updatedArgList);
         }
 
-        private bool TryCreateUnmanagedCallConvAttributeToEmit(
+        private static bool TryCreateUnmanagedCallConvAttributeToEmit(
             DocumentEditor editor,
             SyntaxGenerator generator,
             CallingConvention callingConvention,
