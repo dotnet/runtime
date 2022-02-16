@@ -296,7 +296,7 @@ void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode)
 #ifdef HAS_CONSOLE_SIGNALS
             UninitializeTerminal();
 #endif
-            kill(getpid(), signalCode);
+            kill(g_pid, signalCode);
             break;
     }
 }
