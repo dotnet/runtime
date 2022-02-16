@@ -259,8 +259,8 @@ namespace Microsoft.Extensions.Hosting.Tests
                 // Only update the config after we've registered the change callback
                 var dynamicConfigMessage2 = SaveRandomConfig(appSettingsPath);
 
-                // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
-                await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
+                // Wait for up to 5 minutes, if config reloads at any time, cancel the wait.
+                await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(5), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
                 Assert.NotEqual(dynamicConfigMessage1, dynamicConfigMessage2); // Messages are different.
                 Assert.Equal(dynamicConfigMessage2, config["Hello"]); // Config DID reload from disk
             }
@@ -311,8 +311,8 @@ namespace Microsoft.Extensions.Hosting.Tests
             // Only update the secrets after we've registered the change callback
             var dynamicSecretMessage2 = SaveRandomSecret(secretPath);
 
-            // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
-            await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
+            // Wait for up to 5 minutes, if config reloads at any time, cancel the wait.
+            await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(5), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
             Assert.NotEqual(dynamicSecretMessage1, dynamicSecretMessage2); // Messages are different.
             Assert.Equal(dynamicSecretMessage2, config["Hello"]);
         }
