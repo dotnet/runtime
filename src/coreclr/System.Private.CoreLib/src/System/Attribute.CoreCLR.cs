@@ -438,9 +438,6 @@ namespace System
         {
             return (Attribute[])Array.CreateInstance(elementType, elementCount);
         }
-
-        private static Attribute[] ToAttributeArray(object[] getCustomAttributesResult) =>
-            getCustomAttributesResult as Attribute[] ?? Array.Empty<Attribute>();
         #endregion
 
         #endregion
@@ -462,7 +459,7 @@ namespace System
             {
                 MemberTypes.Property => InternalGetCustomAttributes((PropertyInfo)element, attributeType, inherit),
                 MemberTypes.Event => InternalGetCustomAttributes((EventInfo)element, attributeType, inherit),
-                _ => ToAttributeArray(element.GetCustomAttributes(attributeType, inherit))
+                _ => (Attribute[])element.GetCustomAttributes(attributeType, inherit)
             };
         }
 
@@ -477,7 +474,7 @@ namespace System
             {
                 MemberTypes.Property => InternalGetCustomAttributes((PropertyInfo)element, typeof(Attribute), inherit),
                 MemberTypes.Event => InternalGetCustomAttributes((EventInfo)element, typeof(Attribute), inherit),
-                _ => ToAttributeArray(element.GetCustomAttributes(typeof(Attribute), inherit))
+                _ => (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit)
             };
         }
 
@@ -543,7 +540,7 @@ namespace System
             if (member.MemberType == MemberTypes.Method && inherit)
                 return InternalParamGetCustomAttributes(element, attributeType, inherit);
 
-            return ToAttributeArray(element.GetCustomAttributes(attributeType, inherit));
+            return (Attribute[])element.GetCustomAttributes(attributeType, inherit);
         }
 
         public static Attribute[] GetCustomAttributes(ParameterInfo element!!, bool inherit)
@@ -555,7 +552,7 @@ namespace System
             if (member.MemberType == MemberTypes.Method && inherit)
                 return InternalParamGetCustomAttributes(element, null, inherit);
 
-            return ToAttributeArray(element.GetCustomAttributes(typeof(Attribute), inherit));
+            return (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit);
         }
 
         public static bool IsDefined(ParameterInfo element, Type attributeType)

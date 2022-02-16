@@ -20,6 +20,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Xunit;
 
+[assembly: System.Tests.GenericAttribute<System.Type>]
+[module: System.Tests.GenericAttribute<bool>]
 [module:Debuggable(true,false)]
 namespace System.Tests
 {
@@ -231,7 +233,8 @@ namespace System.Tests
             // [TestAttributes.FooAttribute()]
             // [TestAttributes.ComplicatedAttribute((Int32)1, Stuff = 2)]
             // [System.Diagnostics.DebuggableAttribute((Boolean)True, (Boolean)False)]
-            Assert.Equal(4, customAttributes.Count);
+            // [System.Tests.GenericAttribute<bool>]
+            Assert.Equal(5, customAttributes.Count);
         }
 
         [Fact]
@@ -534,33 +537,66 @@ namespace System.Tests
 
         }
 
-        // reproduces https://github.com/dotnet/runtime/issues/64335
         [Fact]
-        [SkipOnMono("Mono throws on open generic type passed to GetCustomAttributes")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
         public static void GetCustomAttributesDoesNotReturnNullForOpenGenericType()
         {
-            Attribute[] openGenericAttributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<>));
-            Assert.Empty(openGenericAttributes);
-            Assert.Equal(typeof(Attribute[]), openGenericAttributes.GetType());
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            Check<Type>(t => Attribute.GetCustomAttributes(assembly, t));
 
-            Attribute[] closedGenericAttributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<string>));
-            Assert.Equal(1, closedGenericAttributes.Length);
-            Assert.Equal(typeof(GenericAttribute<string>[]), closedGenericAttributes.GetType());
+            Module module = typeof(HasGenericAttribute).Module;
+            Check<bool>(t => Attribute.GetCustomAttributes(module, t));
+
+            Check<string>(t => Attribute.GetCustomAttributes(typeof(HasGenericAttribute)));
+
+            FieldInfo field = typeof(HasGenericAttribute).GetField(nameof(HasGenericAttribute.Field), BindingFlags.NonPublic | BindingFlags.Instance);
+            Check<TimeSpan>(t => Attribute.GetCustomAttributes(field, t));
+
+            MethodInfo method = typeof(HasGenericAttribute).GetMethod(nameof(HasGenericAttribute.Method));
+            Check<long>(t => Attribute.GetCustomAttributes(method, t));
+
+            ParameterInfo parameter = method.GetParameters()[0];
+            Check<ulong>(t => Attribute.GetCustomAttributes(parameter, t));
+
+            PropertyInfo property = typeof(HasGenericAttribute).GetProperty(nameof(HasGenericAttribute.Property));
+            Check<List<object>>(t => Attribute.GetCustomAttributes(property, t));
+
+            EventInfo @event = typeof(HasGenericAttribute).GetEvent(nameof(HasGenericAttribute.Event));
+            Check<DateTime?>(t => Attribute.GetCustomAttributes(@event, t));
+
+            void Check<T>(Func<Type, Attribute[]> getCustomAttributes)
+            {
+                Attribute[] openGenericAttributes = getCustomAttributes(typeof(GenericAttribute<>));
+                Assert.Empty(openGenericAttributes);
+
+                Attribute[] closedGenericAttributes = getCustomAttributes(typeof(GenericAttribute<T>));
+                Assert.Equal(1, closedGenericAttributes.Length);
+                Assert.Equal(typeof(GenericAttribute<T>[]), closedGenericAttributes.GetType());
+            }
         }
 
         [Fact]
-        [SkipOnMono("Mono throws NullReferenceException internally if ICustomAttributeProvider.GetCustomAttributes returns null")]
         public static void GetCustomAttributesReturnsAttributeArrayForMisbehavingCustomMemberInfo()
         {
             FieldInfo fieldWithNullAttributes = new CustomFieldInfo(null!);
-            Attribute[] fieldWithNullAttributesAttributes = Attribute.GetCustomAttributes(fieldWithNullAttributes);
-            Assert.NotNull(fieldWithNullAttributesAttributes);
-            Assert.Empty(fieldWithNullAttributesAttributes);
+            if (PlatformDetection.IsMonoRuntime)
+            {
+                Assert.Throws<NullReferenceException>(() => Attribute.GetCustomAttributes(fieldWithNullAttributes));
+            }
+            else
+            {
+                Attribute[] fieldWithNullAttributesAttributes = Attribute.GetCustomAttributes(fieldWithNullAttributes);
+                Assert.Null(fieldWithNullAttributesAttributes);
+            }
 
-            FieldInfo fieldWithStringAttributes = new CustomFieldInfo(new[] { "a", "b" });
-            Attribute[] fieldWithStringAttributesAttributes = Attribute.GetCustomAttributes(fieldWithStringAttributes);
-            Assert.NotNull(fieldWithStringAttributesAttributes);
-            Assert.Empty(fieldWithStringAttributesAttributes);
+            FieldInfo fieldWithEmptyObjectAttributes = new CustomFieldInfo(Array.Empty<object>());
+            Assert.Throws<InvalidCastException>(() => Attribute.GetCustomAttributes(fieldWithEmptyObjectAttributes));
+
+            FieldInfo fieldWithStringAttributes = new CustomFieldInfo(new[] { "a" });
+            Assert.Throws<InvalidCastException>(() => Attribute.GetCustomAttributes(fieldWithStringAttributes));
+
+            FieldInfo fieldWithAttributeInObjectArray = new CustomFieldInfo(new object[] { new TestAttribute(0) });
+            Assert.Throws<InvalidCastException>(() => Attribute.GetCustomAttributes(fieldWithAttributeInObjectArray));
         }
     }
     [AttributeUsage(AttributeTargets.All)]
@@ -861,6 +897,17 @@ namespace System.Tests
     [GenericAttribute<string>]
     public class HasGenericAttribute
     {
+        [GenericAttribute<TimeSpan>]
+        internal bool Field;
+
+        [GenericAttribute<long>]
+        public void Method([GenericAttribute<ulong>] int parameter) { this.Field = true; }
+
+        [GenericAttribute<List<object>>]
+        public int Property { get; set; }
+
+        [GenericAttribute<DateTime?>]
+        public Action Event; 
     }
 
     public class CustomFieldInfo : FieldInfo
