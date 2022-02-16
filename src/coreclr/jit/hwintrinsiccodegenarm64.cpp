@@ -370,6 +370,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             // an implicit 'zero' vector of what would be the second operand.
             if (HWIntrinsicInfo::SupportsContainmentZero(intrin.id))
             {
+                assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
                 assert(numOperands == 2);
                 if (intrin.op2->isContained() && intrin.op2->IsVectorZero())
                 {
