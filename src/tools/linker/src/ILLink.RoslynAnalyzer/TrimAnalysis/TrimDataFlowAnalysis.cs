@@ -83,6 +83,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			Console.Write ("block " + block.Block.Ordinal + ": ");
 			if (block.Block.Operations.FirstOrDefault () is IOperation firstBlockOp) {
 				Console.WriteLine (firstBlockOp.Syntax.ToString ());
+			} else if (block.Block.BranchValue is IOperation branchOp) {
+				Console.WriteLine (branchOp.Syntax.ToString ());
 			} else {
 				Console.WriteLine ();
 			}

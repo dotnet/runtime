@@ -7,7 +7,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		protected override string TestSuiteName => "Advanced";
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2415")]
+		[Fact]
 		public Task TypeCheckRemoval ()
 		{
 			return RunTest (allowMissingWarnings: true);
