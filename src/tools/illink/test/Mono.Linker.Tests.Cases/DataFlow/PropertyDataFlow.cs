@@ -392,9 +392,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 				public Type this[int index] {
-					// TODO: warn about unknown types in analyzer: https://github.com/dotnet/linker/issues/2273
-					[ExpectedWarning ("IL2063", "PropertyWithIndexer.Item.get",
-						ProducedBy = ProducedBy.Trimmer)]
+					// Trimmer and analyzer handle formatting of indexers differently.
+					[ExpectedWarning ("IL2063", nameof (PropertyWithIndexer) + ".Item.get", ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2063", nameof (PropertyWithIndexer) + ".this[Int32].get", ProducedBy = ProducedBy.Analyzer)]
 					get => Property_Field[index];
 					set => Property_Field[index] = value;
 				}

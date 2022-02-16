@@ -135,9 +135,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TypeStore._staticTypeWithPublicParameterlessConstructor = GetUnknownType ();
 		}
 
-		// TODO: warn about unknown types in analyzer: https://github.com/dotnet/linker/issues/2273
-		[ExpectedWarning ("IL2064", nameof (TypeStore) + "." + nameof (TypeStore._staticTypeWithPublicParameterlessConstructor),
-			ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2064", nameof (TypeStore) + "." + nameof (TypeStore._staticTypeWithPublicParameterlessConstructor))]
 		private void WriteUnknownValue ()
 		{
 			var array = new object[1];

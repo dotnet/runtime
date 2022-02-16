@@ -116,10 +116,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			return publicConstructorsType;
 		}
 
-		// TODO: https://github.com/dotnet/linker/issues/2273
 		[ExpectedWarning ("IL2063",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnUnknownValue) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnUnknownValue) + "()")]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		Type ReturnUnknownValue ()
 		{

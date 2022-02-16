@@ -66,6 +66,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public abstract void HandleAssignment (TValue source, TValue target, IOperation operation);
 
+		public abstract TValue HandleArrayElementAccess (IOperation arrayReference);
+
 		// This takes an IOperation rather than an IReturnOperation because the return value
 		// may (must?) come from BranchValue of an operation whose FallThroughSuccessor is the exit block.
 		public abstract void HandleReturnValue (TValue returnValue, IOperation operation);
@@ -173,7 +175,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			if (operation.GetValueUsageInfo (operation.Property).HasFlag (ValueUsageInfo.Read)) {
+			if (operation.GetValueUsageInfo (Context.OwningSymbol).HasFlag (ValueUsageInfo.Read)) {
 				// Accessing property for reading is really a call to the getter
 				// The setter case is handled in assignment operation since here we don't have access to the value to pass to the setter
 				TValue instanceValue = Visit (operation.Instance, state);
@@ -182,6 +184,17 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					instanceValue,
 					ImmutableArray<TValue>.Empty,
 					operation);
+			}
+
+			return TopValue;
+		}
+
+		public override TValue VisitArrayElementReference (IArrayElementReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			if (operation.GetValueUsageInfo (Context.OwningSymbol).HasFlag (ValueUsageInfo.Read)) {
+				// Accessing an array element for reading is a call to the indexer
+				// or a plain array access. Just handle plain array access for now.
+				return HandleArrayElementAccess (operation.ArrayReference);
 			}
 
 			return TopValue;

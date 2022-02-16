@@ -17,6 +17,9 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public void Invoke (in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
 		{
+			if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None)
+				return;
+
 			foreach (var uniqueValue in value) {
 				if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
 					&& uniqueValue is GenericParameterValue genericParam
