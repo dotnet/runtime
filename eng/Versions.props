@@ -51,7 +51,7 @@
     <MicrosoftCodeAnalysisAnalyzersVersion>3.3.2</MicrosoftCodeAnalysisAnalyzersVersion>
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.0.1</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpVersion>4.0.1</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22114.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22115.3</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- TODO: Remove pinned compiler version once arcade supplies runtime with a compiler capable of handling !! -->
     <MicrosoftNetCompilersToolsetVersion>4.2.0-2.22105.4</MicrosoftNetCompilersToolsetVersion>
     <!-- SDK dependencies -->
