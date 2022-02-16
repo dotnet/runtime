@@ -1,3 +1,5 @@
+#include <platformdefines.h>
+
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -13,8 +15,6 @@
 #ifndef WIN32
 #include <unistd.h>
 #endif
-
-#include <platformdefines.h>
 
 #ifndef HOST_WIN32
 #include <dlfcn.h>
@@ -1865,7 +1865,7 @@ typedef struct {
 LIBTEST_API int STDCALL
 mono_test_marshal_long_struct (LongStruct *s)
 {
-	return s->i + s->l.l;
+	return (int)(s->i + s->l.l);
 }
 
 LIBTEST_API int STDCALL
@@ -2043,8 +2043,8 @@ typedef struct test_struct5 {
 LIBTEST_API test_struct5 STDCALL
 mono_test_marshal_ia64_pass_return_struct5 (double d1, double d2, test_struct5 s, int i, double d3, double d4)
 {
-	s.d1 += d1 + d2 + i;
-	s.d2 += d3 + d4 + i;
+	s.d1 += (float)(d1 + d2 + i);
+	s.d2 += (float)(d3 + d4 + i);
 
 	return s;
 }
@@ -2056,8 +2056,8 @@ typedef struct test_struct6 {
 LIBTEST_API test_struct6 STDCALL
 mono_test_marshal_ia64_pass_return_struct6 (double d1, double d2, test_struct6 s, int i, double d3, double d4)
 {
-	s.d1 += d1 + d2 + i;
-	s.d2 += d3 + d4;
+	s.d1 += (float)(d1 + d2 + i);
+	s.d2 += (float)(d3 + d4);
 
 	return s;
 }
@@ -3104,7 +3104,7 @@ LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_float(VARIANT* variant)
 {
 	variant->vt = VT_R4;
-	variant->fltVal = 3.14;
+	variant->fltVal = 3.14f;
 
 	return 0;
 }
@@ -3114,7 +3114,7 @@ mono_test_marshal_variant_out_float_byref(VARIANT* variant)
 {
 	variant->vt = VT_R4|VT_BYREF;
 	variant->byref = marshal_alloc(4);
-	*((float*)variant->byref) = 3.14;
+	*((float*)variant->byref) = 3.14f;
 
 	return 0;
 }
@@ -3275,7 +3275,7 @@ mono_test_marshal_variant_in_float_unmanaged(VarFunc func)
 {
 	VARIANT vt;
 	vt.vt = VT_R4;
-	vt.fltVal = 3.14;
+	vt.fltVal = 3.14f;
 	return func (VT_R4, vt);
 }
 
@@ -4192,7 +4192,7 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		F = (int (STDCALL *)(gpointer, guint8, gint16, gint32, gint64, float, double, gpointer, gpointer *))test_method;
 		obj = CreateObject (&ex);
 
-		res = F (obj, 254, 32700, -245378, 6789600, 3.1415, 3.1415, str, &ex);
+		res = F (obj, 254, 32700, -245378, 6789600, 3.1415f, 3.1415, str, &ex);
 		if (ex) {
 			ret = 4;
 			goto done;
@@ -5188,7 +5188,7 @@ mono_test_marshal_safearray_out_1dim_vt_bstr (SAFEARRAY** safearray)
 	dimensions [0].cElements = 10;
 
 	pSA= SafeArrayCreate (VT_VARIANT, 1, dimensions);
-	for (i= dimensions [0].lLbound; i< (dimensions [0].cElements + dimensions [0].lLbound); i++) {
+	for (i= dimensions [0].lLbound; i< (long)(dimensions [0].cElements + dimensions [0].lLbound); i++) {
 		VARIANT vOut;
 		VariantInit (&vOut);
 		vOut.vt = VT_BSTR;
@@ -5222,8 +5222,8 @@ mono_test_marshal_safearray_out_2dim_vt_i4 (SAFEARRAY** safearray)
 	dimensions [1].cElements = 3;
 
 	pSA= SafeArrayCreate(VT_VARIANT, 2, dimensions);
-	for (i= dimensions [0].lLbound; i< (dimensions [0].cElements + dimensions [0].lLbound); i++) {
-		for (j= dimensions [1].lLbound; j< (dimensions [1].cElements + dimensions [1].lLbound); j++) {
+	for (i= dimensions [0].lLbound; i< (long)(dimensions [0].cElements + dimensions [0].lLbound); i++) {
+		for (j= dimensions [1].lLbound; j< (long)(dimensions [1].cElements + dimensions [1].lLbound); j++) {
 			VARIANT vOut;
 			VariantInit (&vOut);
 			vOut.vt = VT_I4;
@@ -5539,7 +5539,7 @@ mono_test_marshal_safearray_in_out_byref_1dim_empty (SAFEARRAY** safearray)
 	if (hr != S_OK)
 		return 1;
 
-	for (i= dimensions [0].lLbound; i< (dimensions [0].lLbound + dimensions [0].cElements); i++) {
+	for (i= dimensions [0].lLbound; i< (long)(dimensions [0].lLbound + dimensions [0].cElements); i++) {
 		VARIANT vOut;
 		VariantInit (&vOut);
 		vOut.vt = VT_BSTR;
@@ -5626,7 +5626,7 @@ mono_test_marshal_safearray_in_out_byref_3dim_vt_bstr (SAFEARRAY** safearray)
 
 	*safearray = SafeArrayCreate (VT_VARIANT, 1, dimensions);
 
-	for (i= dimensions [0].lLbound; i< (dimensions [0].lLbound + dimensions [0].cElements); i++) {
+	for (i= dimensions [0].lLbound; i< (long)(dimensions [0].lLbound + dimensions [0].cElements); i++) {
 		VARIANT vOut;
 		VariantInit (&vOut);
 		vOut.vt = VT_BSTR;
