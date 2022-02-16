@@ -16,6 +16,9 @@ internal static partial class Interop
             IntPtr bufferPtr,
             ulong length);
 
+        [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_EnsureGssInitialized")]
+        private static extern int EnsureGssInitialized();
+
         [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_DisplayMinorStatus")]
         internal static partial Status DisplayMinorStatus(
             out Status minorStatus,
@@ -168,6 +171,18 @@ internal static partial class Interop
             Debug.Assert(count >= 0 && count <= inputBytes.Length, "count must be valid");
 
             return Unwrap(out minorStatus, contextHandle, inputBytes, offset, count, ref outBuffer);
+        }
+
+        // This constructor is added to address the issue with net6 regarding 
+        // Shim gss api on Linux to delay loading libgssapi_krb5.so
+        // issue https://github.com/dotnet/SqlClient/issues/1390
+        // dotnet runtime issue https://github.com/dotnet/runtime/pull/55037
+        static NetSecurityNative()
+        {
+            if (Environment.Version.Major >= 6)
+            {
+                EnsureGssInitialized();
+            }
         }
     }
 }
