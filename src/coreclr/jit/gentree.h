@@ -7653,6 +7653,9 @@ inline bool GenTree::IsFloatPositiveZero() const
 {
     if (IsCnsFltOrDbl())
     {
+        // This implementation is almost identical to IsCnsNonZeroFltOrDbl
+        // but it is easier to parse out
+        // rather than using !IsCnsNonZeroFltOrDbl.
         double constValue = AsDblCon()->gtDconVal;
         return *(__int64*)&constValue == 0;
     }
@@ -7679,14 +7682,11 @@ inline bool GenTree::IsVectorZero() const
         const GenTreeHWIntrinsic* node        = AsHWIntrinsic();
         const NamedIntrinsic      intrinsicId = node->GetHWIntrinsicId();
 
-        if (node->GetOperandCount() == 0)
-        {
 #if defined(TARGET_XARCH)
-            return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
+        return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
 #elif defined(TARGET_ARM64)
-            return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
+        return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
 #endif // !TARGET_XARCH && !TARGET_ARM64
-        }
     }
 #endif // FEATURE_HW_INTRINSICS
 
