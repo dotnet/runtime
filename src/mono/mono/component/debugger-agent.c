@@ -414,6 +414,7 @@ static gboolean buffer_replies;
 	DebuggerTlsData *tls; \
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 #else
+/* the thread argument is omitted on wasm, to avoid compiler warning */
 #define GET_TLS_DATA_FROM_THREAD(...) \
 	DebuggerTlsData *tls; \
 	tls = &debugger_wasm_thread;
