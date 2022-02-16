@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -179,7 +180,7 @@ namespace System.Net.NetworkInformation
                     if (result != Interop.Error.SUCCESS ||
                         result != Interop.Error.EAGAIN)
                     {
-                        return;
+                        throw new Win32Exception(result.Info().RawErrno);
                     }
                 }
             }
@@ -187,8 +188,12 @@ namespace System.Net.NetworkInformation
             { } // Socket disposed.
             catch (SocketException se) when (se.SocketErrorCode == SocketError.OperationAborted)
             { } // ReceiveAsync aborted by disposing Socket.
-            catch
-            { } // Unexpected error.
+            catch (Exception ex)
+            {
+                // Unexpected error.
+                Debug.Fail($"Unexpected error: {ex}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+            }
 
             static unsafe Interop.Error ReadEvents(Socket socket)
                 => Interop.Sys.ReadEvents(socket.SafeHandle, &ProcessEvent);
