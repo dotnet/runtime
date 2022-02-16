@@ -359,10 +359,12 @@ namespace Microsoft.Interop
                         continue;
                     case nameof(GeneratedDllImportData.CharSet):
                         userDefinedValues |= DllImportMember.CharSet;
-                        if (namedArg.Value.Value is not CharSet)
+                        // TypedConstant's Value property only contains primitive values.
+                        if (namedArg.Value.Value is not int)
                         {
                             return null;
                         }
+                        // A boxed primitive can be unboxed to an enum with the same underlying type.
                         charSet = (CharSet)namedArg.Value.Value!;
                         break;
                     case nameof(GeneratedDllImportData.EntryPoint):
