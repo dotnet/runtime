@@ -111,14 +111,14 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
         GenTree* long2 = gtNewIconNode(*(ssize_t*)(cns + 4), TYP_LONG);
         GenTree* long3 = gtNewIconNode(*(ssize_t*)(cns + 8), TYP_LONG);
         GenTree* long4 = gtNewIconNode(*(ssize_t*)(cns + 12), TYP_LONG);
-        cnsVec1 = gtNewSimdHWIntrinsicNode(simdType, long1, long2, long3, long4, niCreate, baseType, simdSize);
+        cnsVec1        = gtNewSimdHWIntrinsicNode(simdType, long1, long2, long3, long4, niCreate, baseType, simdSize);
 
         // cnsVec2 most likely overlaps with cnsVec1:
         GenTree* long5 = gtNewIconNode(*(ssize_t*)(cns + len - 16), TYP_LONG);
         GenTree* long6 = gtNewIconNode(*(ssize_t*)(cns + len - 12), TYP_LONG);
         GenTree* long7 = gtNewIconNode(*(ssize_t*)(cns + len - 8), TYP_LONG);
         GenTree* long8 = gtNewIconNode(*(ssize_t*)(cns + len - 4), TYP_LONG);
-        cnsVec2 = gtNewSimdHWIntrinsicNode(simdType, long5, long6, long7, long8, niCreate, baseType, simdSize);
+        cnsVec2        = gtNewSimdHWIntrinsicNode(simdType, long5, long6, long7, long8, niCreate, baseType, simdSize);
     }
     else
 #endif
