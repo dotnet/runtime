@@ -16,17 +16,19 @@ namespace System.IO.Tests
             {
                 FileName = "stat",
                 ArgumentList = { PlatformDetection.IsBsdLike ? "-f"    : "-c",
-                                 PlatformDetection.IsBsdLike ? "%z" : "%b %B",
+                                 PlatformDetection.IsBsdLike ? "%b %k" : "%b %B",
                                  fileStream.Name },
                 RedirectStandardOutput = true
             });
             string stdout = px.StandardOutput.ReadToEnd();
 
             string[] parts = stdout.Split(' ');
-            return PlatformDetection.IsBsdLike ? long.Parse(parts[0]) : long.Parse(parts[0]) * long.Parse(parts[1]);
+            return long.Parse(parts[0]) * long.Parse(parts[1]);
         }
 
-        private static bool SupportsPreallocation => OperatingSystem.IsLinux() || PlatformDetection.IsBsdLike;
+        private static bool SupportsPreallocation =>
+            RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
         // Mobile platforms don't support Process.Start.
         private static bool IsGetAllocatedSizeImplemented => !PlatformDetection.IsMobile;
