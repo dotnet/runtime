@@ -810,19 +810,21 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	case SN_Negate:
-	case SN_Not:
+	case SN_Not: {
 #ifdef TARGET_ARM64
 		int op = id == SN_Negate ? OP_ARM64_XNEG : OP_ARM64_MVN;
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif
-	case SN_Sqrt:
+	}
+	case SN_Sqrt: {
 #ifdef TARGET_ARM64
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif
+	}
 	case SN_ToScalar: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
 		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
