@@ -196,11 +196,10 @@ LOCAL_LABEL(NoRestore_\reg):
 //   t7  : the object reference (RHS of the assignment)
 //
 // On exit:
-//   $t4  : trashed
 //   $t0  : trashed
 //   $t1  : trashed
-//   $t2  : trashed
 //   $t3  : trashed
+//   $t4  : trashed
 //   $t6  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
 //   $t7  : trashed
 //
@@ -528,7 +527,7 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //
 // On exit:
 //   $t1  : trashed
-//   $t2  : trashed
+//   $t0  : trashed
 //   $t3  : trashed
 //   $t4  : trashed
 //   t6  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
@@ -541,8 +540,8 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
 
     la.local  $t1, wbs_highest_address
     ld.d  $t1, $t1, 0
-    slt  $t2, $t1, $t6
-    or  $t4, $t2, $t4
+    slt  $t0, $t1, $t6
+    or  $t4, $t0, $t4
     beq  $t4, $zero, C_FUNC(JIT_WriteBarrier)
 
     st.d  $t7, $t6, 0
