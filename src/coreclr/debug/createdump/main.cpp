@@ -152,13 +152,13 @@ int __cdecl main(const int argc, const char* argv[])
         {
             if (::GetTempPathA(MAX_LONGPATH, tmpPath) == 0)
             {
-                printf_error("GetTempPath failed (0x%08x)", ::GetLastError());
+                printf_error("GetTempPath failed (0x%08x)\n", ::GetLastError());
                 return ::GetLastError();
             }
             exitCode = strcat_s(tmpPath, MAX_LONGPATH, DEFAULT_DUMP_TEMPLATE);
             if (exitCode != 0)
             {
-                printf_error("strcat_s failed (%d)", exitCode);
+                printf_error("strcat_s failed (%d)\n", exitCode);
                 return exitCode;
             }
             dumpPathTemplate = tmpPath;
