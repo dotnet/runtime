@@ -325,6 +325,8 @@ jobs:
       # map dependencies variables to local variables
       - name: wasmbuildtestsContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'] ]
+      - name: allWasmContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
     jobParameters:
       isExtraPlatforms: ${{ variables.isExtraPlatformsBuild }}
       testGroup: innerloop
@@ -332,7 +334,9 @@ jobs:
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
       timeoutInMinutes: 180
       condition: >-
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true)
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -342,7 +346,9 @@ jobs:
         scenarios:
         - buildwasmapps
         condition: >-
-            eq(variables['wasmbuildtestsContainsChange'], true)
+          or(
+            eq(variables['wasmbuildtestsContainsChange'], true),
+            eq(variables['allWasmContainsChange'], true),
 
 #
 # Build Browser_wasm, on windows, run console and browser tests
@@ -361,6 +367,8 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+      - name: allWasmContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: LibraryTests
@@ -370,6 +378,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -384,6 +393,7 @@ jobs:
           or(
             eq(variables['librariesContainsChange'], true),
             eq(variables['monoContainsChange'], true),
+            eq(variables['allWasmContainsChange'], true),
             eq(variables['isRollingBuild'], true))
 
 #
@@ -403,6 +413,8 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+      - name: allWasmContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
     jobParameters:
       isExtraPlatforms: ${{ variables.isExtraPlatformsBuild }}
       testGroup: innerloop
@@ -413,6 +425,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -424,8 +437,9 @@ jobs:
         - normal
         condition: >-
           or(
-          eq(variables['librariesContainsChange'], true),
-          eq(variables['monoContainsChange'], true))
+            eq(variables['librariesContainsChange'], true),
+            eq(variables['monoContainsChange'], true),
+            eq(variables['allWasmContainsChange'], true))
 
 # Wasm debugger tests - windows
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -440,6 +454,8 @@ jobs:
       # map dependencies variables to local variables
       - name: wasmdebuggertestsContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'] ]
+      - name: allWasmContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: Mono_DebuggerTests
@@ -448,6 +464,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -471,6 +488,8 @@ jobs:
       # map dependencies variables to local variables
       - name: wasmdebuggertestsContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'] ]
+      - name: allWasmContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: Mono_DebuggerTests
@@ -479,6 +498,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml

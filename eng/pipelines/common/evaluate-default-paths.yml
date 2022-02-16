@@ -124,6 +124,9 @@ jobs:
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
       - src/mono/mono/*
+    - subset: allwasm
+      - eng/Version.Details.xml
+      - src/mono/wasm/emscripten-version.txt
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}
