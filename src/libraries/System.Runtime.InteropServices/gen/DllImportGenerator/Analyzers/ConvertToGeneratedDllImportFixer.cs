@@ -25,7 +25,7 @@ namespace Microsoft.Interop.Analyzers
     {
         public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(Ids.ConvertToGeneratedDllImport);
 
-        public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+        public override FixAllProvider GetFixAllProvider() => CustomFixAllProvider.Instance;
 
         private const string ConvertToGeneratedDllImportKey = "ConvertToGeneratedDllImport";
 
@@ -65,6 +65,48 @@ namespace Microsoft.Interop.Analyzers
                 context.Diagnostics);
         }
 
+        private class CustomFixAllProvider : DocumentBasedFixAllProvider
+        {
+            public static readonly CustomFixAllProvider Instance = new();
+
+            protected override async Task<Document?> FixAllAsync(FixAllContext fixAllContext, Document document, ImmutableArray<Diagnostic> diagnostics)
+            {
+                DocumentEditor editor = await DocumentEditor.CreateAsync(document, fixAllContext.CancellationToken).ConfigureAwait(false);
+                SyntaxGenerator generator = editor.Generator;
+
+                SyntaxNode? root = await document.GetSyntaxRootAsync(fixAllContext.CancellationToken).ConfigureAwait(false);
+                if (root == null)
+                    return document;
+
+                foreach (Diagnostic diagnostic in diagnostics)
+                {
+                    // Get the syntax node tied to the diagnostic and check that it is a method declaration
+                    if (root.FindNode(diagnostic.Location.SourceSpan) is not MethodDeclarationSyntax methodSyntax)
+                        continue;
+                    if (editor.SemanticModel.GetDeclaredSymbol(methodSyntax, fixAllContext.CancellationToken) is not IMethodSymbol methodSymbol)
+                        continue;
+
+                    SyntaxNode generatedDeclaration = ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, fixAllContext.CancellationToken);
+
+                    if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
+                    {
+                        bool shouldWarn = await TransformCallersOfNoPreserveSigMethod(editor, methodSymbol, fixAllContext.CancellationToken).ConfigureAwait(false);
+                        if (shouldWarn)
+                        {
+                            generatedDeclaration = generatedDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(Resources.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
+                        }
+                    }
+
+                    // Replace the original method with the updated one
+                    editor.ReplaceNode(methodSyntax, generatedDeclaration);
+
+                    MakeEnclosingTypesPartial(editor, methodSyntax);
+                }
+
+                return editor.GetChangedDocument();
+            }
+        }
+
         private static async Task<Document> ConvertToGeneratedDllImport(
             Document doc,
             MethodDeclarationSyntax methodSyntax,
@@ -74,7 +116,7 @@ namespace Microsoft.Interop.Analyzers
             SyntaxGenerator generator = editor.Generator;
 
             if (editor.SemanticModel.GetDeclaredSymbol(methodSyntax, cancellationToken) is not IMethodSymbol methodSymbol)
-                return editor.GetChangedDocument();
+                return doc;
 
             SyntaxNode generatedDeclaration = ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, cancellationToken);
 
@@ -159,7 +201,7 @@ namespace Microsoft.Interop.Analyzers
         {
             for (TypeDeclarationSyntax typeDecl = method.FirstAncestorOrSelf<TypeDeclarationSyntax>(); typeDecl is not null; typeDecl = typeDecl.Parent.FirstAncestorOrSelf<TypeDeclarationSyntax>())
             {
-                editor.ReplaceNode(typeDecl, editor.Generator.WithModifiers(typeDecl, editor.Generator.GetModifiers(typeDecl).WithPartial(true)));
+                editor.ReplaceNode(typeDecl, (node, generator) => generator.WithModifiers(node, generator.GetModifiers(node).WithPartial(true)));
             }
         }
 
