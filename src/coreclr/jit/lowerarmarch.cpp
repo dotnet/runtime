@@ -1970,8 +1970,15 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 if (intrin.op1->IsVectorZero())
                 {
+                    GenTree* op1 = intrin.op1;
+                    GenTree* op2 = intrin.op2;
+
                     assert(HWIntrinsicInfo::IsCommutative(intrin.id));
-                    MakeSrcContained(node, intrin.op1);
+                    MakeSrcContained(node, op1);
+
+                    // Swap the operands here to make the containment checks in codegen simpler
+                    node->Op(1) = op2;
+                    node->Op(2) = op1;
                 }
                 else if (intrin.op2->IsVectorZero())
                 {
