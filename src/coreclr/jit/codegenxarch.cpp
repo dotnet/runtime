@@ -3466,7 +3466,7 @@ void CodeGen::genStructPutArgPush(GenTreePutArgStk* putArgNode)
 
     ClassLayout*   layout   = src->AsObj()->GetLayout();
     const unsigned byteSize = putArgNode->GetStackByteSize();
-    assert(byteSize % TARGET_POINTER_SIZE == 0);
+    assert((byteSize % TARGET_POINTER_SIZE == 0) && ((byteSize < XMM_REGSIZE_BYTES) || layout->HasGCPtr()));
     const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
     assert(putArgNode->gtNumSlots == numSlots);
 
