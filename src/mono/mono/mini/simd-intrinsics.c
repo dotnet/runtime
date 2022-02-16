@@ -564,6 +564,8 @@ type_to_extract_op (MonoTypeEnum type)
 
 static guint16 sri_vector_methods [] = {
 	SN_Abs,
+	SN_Add,
+	SN_AndNot,
 	SN_As,
 	SN_AsByte,
 	SN_AsDouble,
@@ -575,6 +577,8 @@ static guint16 sri_vector_methods [] = {
 	SN_AsUInt16,
 	SN_AsUInt32,
 	SN_AsUInt64,
+	SN_BitwiseAnd,
+	SN_BitwiseOr,
 	SN_AsVector128,
 	SN_AsVector2,
 	SN_AsVector256,
@@ -585,16 +589,22 @@ static guint16 sri_vector_methods [] = {
 	SN_Create,
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
+	SN_Divide,
 	SN_Floor,
 	SN_GetElement,
 	SN_GetLower,
 	SN_GetUpper,
+	SN_Max,
+	SN_Min,
+	SN_Multiply,
+	SN_Subtract,
 	SN_ToScalar,
 	SN_ToVector128,
 	SN_ToVector128Unsafe,
 	SN_ToVector256,
 	SN_ToVector256Unsafe,
 	SN_WithElement,
+	SN_Xor,
 };
 
 /* nint and nuint haven't been enabled yet for System.Runtime.Intrinsics.
@@ -657,6 +667,75 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 }
+	case SN_Add:
+	case SN_Max:
+	case SN_Min:
+	case SN_Multiply:
+	case SN_Subtract: {
+		int instc0 = -1;
+		if (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8) {
+			switch (id) {
+			case SN_Add:
+				instc0 = OP_FADD;
+				break;
+			case SN_Max:
+				instc0 = OP_FMAX;
+				break;
+			case SN_Min:
+				instc0 = OP_FMIN;
+				break;
+			case SN_Multiply:
+				instc0 = OP_FMUL;
+				break;
+			case SN_Subtract:
+				instc0 = OP_FSUB;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		} else {
+			switch (id) {
+			case SN_Add:
+				instc0 = OP_IADD;
+				break;
+			case SN_Max:
+				instc0 = OP_IMAX;
+				break;
+			case SN_Min:
+				instc0 = OP_IMIN;
+				break;
+			case SN_Multiply:
+				instc0 = OP_IMUL;
+				break;
+			case SN_Subtract:
+				instc0 = OP_ISUB;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		}
+		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
+	}
+	case SN_Divide: {
+		if ((arg0_type != MONO_TYPE_R4) && (arg0_type != MONO_TYPE_R8))
+			return NULL;
+		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FDIV, arg0_type, fsig, args);
+	}
+	case SN_AndNot:
+#ifdef TARGET_ARM64
+		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BIC, -1, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
+	case SN_BitwiseAnd:
+		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IAND, arg0_type, fsig, args);
+	case SN_BitwiseOr:
+		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IOR, arg0_type, fsig, args);
+	case SN_Xor: {
+		if ((arg0_type == MONO_TYPE_R4) || (arg0_type == MONO_TYPE_R8))
+			return NULL;
+		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IXOR, arg0_type, fsig, args);
+	}
 	case SN_As:
 	case SN_AsByte:
 	case SN_AsDouble:
@@ -3107,17 +3186,30 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (m_class_get_nested_in (cmethod->klass))
 		class_ns = m_class_get_name_space (m_class_get_nested_in (cmethod->klass));
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128") || !strcmp (class_name, "Vector64"))
 			return emit_sri_vector (cfg, cmethod, fsig, args);
 	}
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
-		if (!strcmp (class_name, "Vector64`1") || !strcmp (class_name, "Vector128`1"))
+		if (!strcmp (class_name, "Vector128`1") || !strcmp (class_name, "Vector64`1"))
 			return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
 	}
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_ARM64)
+
+// There isn't any SIMD intrinsitcs to replace with for Vector64 methods on non-arm architectures
+#if defined(TARGET_AMD64)
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
+		if (!strcmp (class_name, "Vector128"))
+			return emit_sri_vector (cfg, cmethod, fsig, args);
+	}
+
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
+		if (!strcmp (class_name, "Vector128`1"))
+			return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
+	}
+#endif // defined(TARGET_AMD64)
 
 	return emit_simd_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
 }

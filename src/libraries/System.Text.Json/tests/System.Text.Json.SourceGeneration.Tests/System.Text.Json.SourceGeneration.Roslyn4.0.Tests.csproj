@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <ItemGroup>
+    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
+  </ItemGroup>
+
   <Import Project="System.Text.Json.SourceGeneration.Tests.targets" />
 
   <ItemGroup>
