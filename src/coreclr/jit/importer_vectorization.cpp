@@ -7,15 +7,42 @@
 #endif
 
 //------------------------------------------------------------------------
+// importer_vectorization.cpp
+//
+// This file is responsible for various (partial) vectorizations during import phase,
+// e.g. the following APIs are currently supported:
+//
+//   1) String.Equals(string, string)
+//   2) String.Equals(string, string, StringComparison.Ordinal)
+//   3) str.Equals(string)
+//   4) str.Equals(String, StringComparison.Ordinal)
+//   5) str.StartsWith(string, StringComparison.Ordinal)
+//   6) MemoryExtensions.SequenceEqual<char>(ROS<char>, ROS<char>)
+//   7) MemoryExtensions.Equals(ROS<char>, ROS<char>, StringComparison.Ordinal)
+//   8) MemoryExtensions.StartsWith<char>(ROS<char>, ROS<char>)
+//   9) MemoryExtensions.StartsWith(ROS<char>, ROS<char>, StringComparison.Ordinal)
+//
+// When one of the arguments is a constant string of a [0..32] size so we can inline
+// a vectorized comparison against it using SWAR or SIMD techniques (e.g. via two V256 vectors)
+//
+// We might add these in future:
+//   1) OrdinalIgnoreCase for everything above
+//   2) Span.CopyTo
+//   3) Spans/Arrays of bytes (e.g. UTF8) against a constant RVA data
+//
+
+//------------------------------------------------------------------------
 // impExpandHalfConstEqualsSIMD: Attempts to unroll and vectorize
 //    Equals against a constant WCHAR data for Length in [8..32] range
 //    using SIMD instructions. It uses the following expression:
 //
-//      bool equasl = ((v1 ^ cns1) | (v2 ^ cns2)) == Vector128.Zero
+//       bool equasl = ((v1 ^ cns1) | (v2 ^ cns2)) == Vector128.Zero
 //
 //    or if a single vector is enough (len == 8 or len == 16 with AVX):
 //
-//      bool equasl = (v1 ^ cns1) == Vector128.Zero
+//       bool equasl = (v1 ^ cns1) == Vector128.Zero
+//
+//    C# equivalent of what this function emits: https://gist.github.com/EgorBo/085f9c15da11eecc00f482710f48aef6
 //
 // Arguments:
 //    data -       Pointer to a data to vectorize
@@ -54,6 +81,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
     GenTree* cnsVec1;
     GenTree* cnsVec2;
 
+    // Optimization: don't use two vectors for Length == 8 or 16
     bool useSingleVector = false;
 
 #if defined(TARGET_XARCH)
@@ -68,7 +96,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
         niZero   = NI_Vector256_get_Zero;
         niEquals = NI_Vector256_op_Equality;
 
-        // Special case: use a single vector for len=16
+        // Special case: use a single vector for Length == 16
         useSingleVector = len == 16;
 
         assert(sizeof(ssize_t) == 8); // this code is guarded with TARGET_64BIT
@@ -100,7 +128,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
         niZero   = NI_Vector128_get_Zero;
         niEquals = NI_Vector128_op_Equality;
 
-        // Special case: use a single vector for len=8
+        // Special case: use a single vector for Length == 8
         useSingleVector = len == 8;
 
         assert(sizeof(ssize_t) == 8); // this code is guarded with TARGET_64BIT
@@ -121,7 +149,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
     }
     else
     {
-        JITDUMP("impExpandHalfConstEqualsSIMD: No V256 and data is too big for V128\n");
+        JITDUMP("impExpandHalfConstEqualsSIMD: No V256 support and data is too big for V128\n");
         // NOTE: We might consider using four V128 for ARM64
         return nullptr;
     }
@@ -136,8 +164,20 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
     GenTree* vec1 = gtNewSimdHWIntrinsicNode(simdType, dataPtr1, loadIntrinsic, type, simdSize);
     GenTree* vec2 = gtNewSimdHWIntrinsicNode(simdType, dataPtr2, loadIntrinsic, type, simdSize);
 
-    // TODO-CQ: Spill vec1 and vec2 for better pipelining
-    // However, Forward-Sub most likely will glue it back
+    // TODO-CQ: Spill vec1 and vec2 for better pipelining, currently we end up emitting:
+    //
+    //   vmovdqu  xmm0, xmmword ptr [rcx+12]
+    //   vpxor    xmm0, xmm0, xmmword ptr[reloc @RWD00]
+    //   vmovdqu  xmm1, xmmword ptr [rcx + 20]
+    //   vpxor    xmm1, xmm1, xmmword ptr[reloc @RWD16]
+    //
+    // While we should re-order them to be:
+    //
+    //   vmovdqu  xmm0, xmmword ptr [rcx+12]
+    //   vmovdqu  xmm1, xmmword ptr [rcx + 20]
+    //   vpxor    xmm0, xmm0, xmmword ptr[reloc @RWD00]
+    //   vpxor    xmm1, xmm1, xmmword ptr[reloc @RWD16]
+    //
 
     // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
     GenTree* xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, type, simdSize, false);
@@ -147,6 +187,40 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
 #else
     return nullptr;
 #endif
+}
+
+//------------------------------------------------------------------------
+// impCreateCompareInd: creates the following tree:
+//
+//  *  EQ        int
+//  +--*  IND       <type>
+//  |  \--*  ADD       byref
+//  |     +--*  <obj>
+//  |     \--*  CNS_INT   <offset>
+//  \--*  CNS_INT   <value>
+//
+// Arguments:
+//    comp -       Compiler object
+//    obj -        GenTree representing data pointer
+//    type -       type for the IND node
+//    offset -     offset for the data pointer
+//    value -      constant value to compare against
+//
+// Return Value:
+//    A tree with indirect load and comparison
+//
+static GenTree* impCreateCompareInd(Compiler* comp, GenTree* obj, var_types type, ssize_t offset, ssize_t value)
+{
+    GenTree* offsetTree    = comp->gtNewIconNode(offset, TYP_I_IMPL);
+    GenTree* addOffsetTree = comp->gtNewOperNode(GT_ADD, TYP_BYREF, obj, offsetTree);
+    GenTree* indirTree     = comp->gtNewIndir(type, addOffsetTree);
+    GenTree* valueTree     = comp->gtNewIconNode(value, type);
+    if (varTypeIsSmall(indirTree))
+    {
+        indirTree = comp->gtNewCastNode(TYP_INT, indirTree, true, TYP_UINT);
+        valueTree->ChangeType(TYP_INT);
+    }
+    return comp->gtNewOperNode(GT_EQ, TYP_INT, indirTree, valueTree);
 }
 
 //------------------------------------------------------------------------
@@ -172,70 +246,70 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int l
 {
     assert(len >= 1 && len <= 8);
 
-    auto compareValue = [](Compiler* comp, GenTree* obj, var_types type, ssize_t offset, ssize_t value) {
-        GenTree* offsetTree    = comp->gtNewIconNode(offset, TYP_I_IMPL);
-        GenTree* addOffsetTree = comp->gtNewOperNode(GT_ADD, TYP_BYREF, obj, offsetTree);
-        GenTree* indirTree     = comp->gtNewIndir(type, addOffsetTree);
-        GenTree* valueTree     = comp->gtNewIconNode(value, type);
-        if (varTypeIsSmall(indirTree))
-        {
-            indirTree = comp->gtNewCastNode(TYP_INT, indirTree, true, TYP_UINT);
-            valueTree->ChangeType(TYP_INT);
-        }
-        return comp->gtNewOperNode(GT_EQ, TYP_INT, indirTree, valueTree);
-    };
-
 // Compose Int32 or Int64 values from ushort components
 #define MAKEINT32(c1, c2) ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
 #define MAKEINT64(c1, c2, c3, c4) ((UINT64)c4 << 48) | ((UINT64)c3 << 32) | ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
 
     if (len == 1)
     {
-        return compareValue(this, data, TYP_SHORT, dataOffset, cns[0]);
+        return impCreateCompareInd(this, data, TYP_SHORT, dataOffset, cns[0]);
     }
-    else if (len == 2)
+    if (len == 2)
     {
+        //   [ ch1 ][ ch2 ]
+        //   [   value    ]
+        //
         const UINT32 value = MAKEINT32(cns[0], cns[1]);
-        return compareValue(this, data, TYP_INT, dataOffset, value);
+        return impCreateCompareInd(this, data, TYP_INT, dataOffset, value);
     }
 #ifdef TARGET_64BIT
-    else if (len == 3)
+    if (len == 3)
     {
-        // handle len = 3 via two Int32 with overlapping
+        // handle len = 3 via two Int32 with overlapping:
+        //
+        //   [ ch1 ][ ch2 ][ ch3 ]
+        //   [   value1   ]
+        //          [   value2   ]
+        //
         UINT32   value1      = MAKEINT32(cns[0], cns[1]);
         UINT32   value2      = MAKEINT32(cns[1], cns[2]);
-        GenTree* firstIndir  = compareValue(this, data, TYP_INT, dataOffset, value1);
-        GenTree* secondIndir = compareValue(this, gtClone(data), TYP_INT, dataOffset + 2, value2);
+        GenTree* firstIndir  = impCreateCompareInd(this, data, TYP_INT, dataOffset, value1);
+        GenTree* secondIndir = impCreateCompareInd(this, gtClone(data), TYP_INT, dataOffset + 2, value2);
 
         // TODO: Consider marging two indirs via XOR instead of QMARK
         // e.g. gtNewOperNode(GT_XOR, TYP_INT, firstIndir, secondIndir);
-        // but it currently has CQ issues
-        GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtFalse());
+        // but it currently has CQ issues (redundant movs)
+        GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtNewFalse());
         return gtNewQmarkNode(TYP_INT, firstIndir, doubleIndirColon);
     }
-    else
+
+    assert(len >= 4 && len <= 8);
+
+    UINT64 value1 = MAKEINT64(cns[0], cns[1], cns[2], cns[3]);
+    if (len == 4)
     {
-        assert(len >= 4 && len <= 8);
-
-        UINT64 value1 = MAKEINT64(cns[0], cns[1], cns[2], cns[3]);
-        if (len == 4)
-        {
-            return compareValue(this, data, TYP_LONG, dataOffset, value1);
-        }
-        else // [5..8] range
-        {
-            // For 5..7 value2 will overlap with value1
-            UINT64   value2     = MAKEINT64(cns[len - 4], cns[len - 3], cns[len - 2], cns[len - 1]);
-            GenTree* firstIndir = compareValue(this, data, TYP_LONG, dataOffset, value1);
-
-            ssize_t  offset      = dataOffset + len * 2 - sizeof(UINT64);
-            GenTree* secondIndir = compareValue(this, gtClone(data), TYP_LONG, offset, value2);
-
-            // TODO: Consider marging two indirs via XOR instead of QMARK
-            GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtFalse());
-            return gtNewQmarkNode(TYP_INT, firstIndir, doubleIndirColon);
-        }
+        //   [ ch1 ][ ch2 ][ ch3 ][ ch4 ]
+        //   [          value           ]
+        //
+        return impCreateCompareInd(this, data, TYP_LONG, dataOffset, value1);
     }
+
+    // For 5..7 value2 will overlap with value1, e.g. for Length == 6:
+    //
+    //
+    //   [ ch1 ][ ch2 ][ ch3 ][ ch4 ][ ch5 ][ ch6 ]
+    //   [          value1          ]
+    //                 [          value2          ]
+    //
+    UINT64   value2     = MAKEINT64(cns[len - 4], cns[len - 3], cns[len - 2], cns[len - 1]);
+    GenTree* firstIndir = impCreateCompareInd(this, data, TYP_LONG, dataOffset, value1);
+
+    ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT64);
+    GenTree* secondIndir = impCreateCompareInd(this, gtClone(data), TYP_LONG, offset, value2);
+
+    // TODO: Consider marging two indirs via XOR instead of QMARK
+    GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtNewFalse());
+    return gtNewQmarkNode(TYP_INT, firstIndir, doubleIndirColon);
 #else // TARGET_64BIT
     return nullptr;
 #endif
@@ -249,13 +323,13 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int l
 //    bool equals = obj != null && obj.Length == len && (SWAR or SIMD)
 //
 // Arguments:
-//    data -         Pointer to a data to vectorize
-//    lengthFld -    Pointer to Length field
+//    data         - Pointer to a data to vectorize
+//    lengthFld    - Pointer to Length field
 //    checkForNull - Check data for null
-//    startsWith -   true - StartsWith, false - Equals
-//    cns -          Constant data (array of 2-byte chars)
-//    len -          Number of 2-byte chars in the cns
-//    dataOffset -   Offset for data
+//    startsWith   - Is it StartsWith or Equals?
+//    cns          - Constant data (array of 2-byte chars)
+//    len          - Number of 2-byte chars in the cns
+//    dataOffset   - Offset for data
 //
 // Return Value:
 //    A pointer to the newly created SIMD node or nullptr if unrolling is not
@@ -288,7 +362,7 @@ GenTree* Compiler::impExpandHalfConstEquals(
         if (startsWith)
         {
             // Any string starts with ""
-            return gtTrue();
+            return gtNewTrue();
         }
 
         // For zero length we don't need to compare content, the following expression is enough:
@@ -317,7 +391,9 @@ GenTree* Compiler::impExpandHalfConstEquals(
             return nullptr;
         }
 
-        GenTreeColon* lenCheckColon = gtNewColonNode(TYP_INT, indirCmp, gtFalse());
+        GenTreeColon* lenCheckColon = gtNewColonNode(TYP_INT, indirCmp, gtNewFalse());
+
+        // For StartsWith we use GT_GE, e.g.: `x.Length >= 10`
         lenCheckNode =
             gtNewQmarkNode(TYP_INT, gtNewOperNode(startsWith ? GT_GE : GT_EQ, TYP_INT, lengthFld, elementsCount),
                            lenCheckColon);
@@ -327,8 +403,8 @@ GenTree* Compiler::impExpandHalfConstEquals(
     if (checkForNull)
     {
         // varData == nullptr
-        GenTreeColon* nullCheckColon = gtNewColonNode(TYP_INT, lenCheckNode, gtFalse());
-        rootQmark = gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_NE, TYP_INT, data, gtNull()), nullCheckColon);
+        GenTreeColon* nullCheckColon = gtNewColonNode(TYP_INT, lenCheckNode, gtNewFalse());
+        rootQmark = gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_NE, TYP_INT, data, gtNewNull()), nullCheckColon);
     }
     else
     {
@@ -340,8 +416,9 @@ GenTree* Compiler::impExpandHalfConstEquals(
 }
 
 //------------------------------------------------------------------------
-// impGetStrConFromSpan: Try to obtain string literal out of a span
-//    if it was inited with one.
+// impGetStrConFromSpan: Try to obtain string literal out of a span:
+//  var span = "str".AsSpan();
+//  var span = (ReadOnlySpan<char>)"str"
 //
 // Arguments:
 //    span - ReadOnlySpan tree
@@ -375,27 +452,36 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// impStringEqualsOrStartsWith: The main entry-point for String methods
+//   We're going to unroll & vectorize the following cases:
+//    1) String.Equals(obj, "cns")
+//    2) String.Equals(obj, "cns", StringComparison.Ordinal)
+//    3) String.Equals("cns", obj)
+//    4) String.Equals("cns", obj, StringComparison.Ordinal)
+//    5) obj.Equals("cns")
+//    5) obj.Equals("cns")
+//    6) obj.Equals("cns", StringComparison.Ordinal)
+//    7) "cns".Equals(obj)
+//    8) "cns".Equals(obj, StringComparison.Ordinal)
+//    9) obj.StartsWith("cns", StringComparison.Ordinal)
+//   10) "cns".StartsWith(obj, StringComparison.Ordinal)
+//
+//   For cases 5, 6 and 9 we don't emit "obj != null"
+//   NOTE: String.Equals(object) is not supported currently
+//
+// Arguments:
+//    startsWith  - Is it StartsWith or Equals?
+//    sig         - signature of StartsWith or Equals method
+//    methodFlags - its flags
+//
+// Returns:
+//    GenTree representing vectorized comparison or nullptr
+//
 GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags)
 {
-    // We're going to unroll & vectorize the following cases:
-    //
-    //   1) String.Equals(obj, "cns")
-    //   2) String.Equals(obj, "cns", StringComparison.Ordinal)
-    //   3) String.Equals("cns", obj)
-    //   4) String.Equals("cns", obj, StringComparison.Ordinal)
-    //   5) obj.Equals("cns")
-    //   6) obj.Equals("cns", StringComparison.Ordinal)
-    //   7) "cns".Equals(obj)
-    //   8) "cns".Equals(obj, StringComparison.Ordinal)
-    //
-    //   9) obj.StartsWith("cns", StringComparison.Ordinal)
-    //  10) "cns".StartsWith(obj, StringComparison.Ordinal)
-    //
-    // For cases 5, 6 and 9 we don't emit "obj != null"
-    // NOTE: String.Equals(object) is not supported currently
-
-    bool isStatic  = methodFlags & CORINFO_FLG_STATIC;
-    int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
+    const bool isStatic  = methodFlags & CORINFO_FLG_STATIC;
+    const int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
 
     GenTree* op1;
     GenTree* op2;
@@ -442,6 +528,7 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
         //
         //  obj.Equals("cns")
         //  obj.Equals("cns", StringComparison.Ordinal)
+        //  obj.StartsWith("cns", StringComparison.Ordinal)
         //
         // instead, it should throw NRE if it's null
         needsNullcheck = false;
@@ -466,20 +553,20 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
         JITDUMP("Trying to unroll String.Equals(op1, \"%ws\")...\n", str)
     }
 
-    // Create a temp safe to gtClone for varStr
-    // We're not appending it as a statement untill we figure out unrolling is profitable (and possible)
+    // Create a temp which is safe to gtClone for varStr
+    // We're not appending it as a statement until we figure out unrolling is profitable (and possible)
     unsigned varStrTmp         = lvaGrabTemp(true DEBUGARG("spilling varStr"));
     lvaTable[varStrTmp].lvType = varStr->TypeGet();
     GenTree* varStrLcl         = gtNewLclvNode(varStrTmp, varStr->TypeGet());
 
+    // Create a tree representing string's Length:
     // TODO: Consider using ARR_LENGTH here, but we'll have to modify QMARK to propagate BBF_HAS_IDX_LEN
     int      strLenOffset = OFFSETOF__CORINFO_String__stringLen;
     GenTree* lenOffset    = gtNewIconNode(strLenOffset, TYP_I_IMPL);
     GenTree* lenNode      = gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_BYREF, varStrLcl, lenOffset));
+
     GenTree* unrolled = impExpandHalfConstEquals(gtClone(varStrLcl), lenNode, needsNullcheck, startsWith, (WCHAR*)str,
                                                  cnsLength, strLenOffset + sizeof(int));
-
-    GenTree* retNode = nullptr;
     if (unrolled != nullptr)
     {
         impAssignTempGen(varStrTmp, varStr);
@@ -488,40 +575,43 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
             // QMARK nodes cannot reside on the evaluation stack
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
             impAssignTempGen(rootTmp, unrolled);
-            retNode = gtNewLclvNode(rootTmp, TYP_INT);
-        }
-        else
-        {
-            retNode = unrolled;
+            unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
         JITDUMP("\n... Successfully unrolled to:\n")
         DISPTREE(unrolled)
         for (int i = 0; i < argsCount; i++)
         {
-            // max(2, numArgs) just to handle instance-method Equals that
-            // doesn't report "this" as an argument
             impPopStack();
         }
     }
-    return retNode;
+    return unrolled;
 }
 
+//------------------------------------------------------------------------
+// impSpanEqualsOrStartsWith: The main entry-point for [ReadOnly]Span<char> methods
+//    We're going to unroll & vectorize the following cases:
+//    1) MemoryExtensions.SequenceEqual<char>(var, "cns")
+//    2) MemoryExtensions.SequenceEqual<char>("cns", var)
+//    3) MemoryExtensions.Equals(var, "cns", StringComparison.Ordinal)
+//    4) MemoryExtensions.Equals("cns", var, StringComparison.Ordinal)
+//    5) MemoryExtensions.StartsWith<char>("cns", var)
+//    6) MemoryExtensions.StartsWith<char>(var, "cns")
+//    7) MemoryExtensions.StartsWith("cns", var, StringComparison.Ordinal)
+//    8) MemoryExtensions.StartsWith(var, "cns", StringComparison.Ordinal)
+//
+// Arguments:
+//    startsWith  - Is it StartsWith or Equals?
+//    sig         - signature of StartsWith or Equals method
+//    methodFlags - its flags
+//
+// Returns:
+//    GenTree representing vectorized comparison or nullptr
+//
 GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags)
 {
-    // We're going to unroll & vectorize the following cases:
-    //
-    //   1) MemoryExtensions.SequenceEqual<char>(var, "cns")
-    //   2) MemoryExtensions.SequenceEqual<char>("cns", var)
-    //   3) MemoryExtensions.Equals(var, "cns", StringComparison.Ordinal)
-    //   4) MemoryExtensions.Equals("cns", var, StringComparison.Ordinal)
-    //   5) MemoryExtensions.StartsWith<char>("cns", var)
-    //   6) MemoryExtensions.StartsWith<char>(var, "cns")
-    //   7) MemoryExtensions.StartsWith("cns", var, StringComparison.Ordinal)
-    //   8) MemoryExtensions.StartsWith(var, "cns", StringComparison.Ordinal)
-
-    bool isStatic  = methodFlags & CORINFO_FLG_STATIC;
-    int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
+    const bool isStatic  = methodFlags & CORINFO_FLG_STATIC;
+    const int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
 
     GenTree* op1;
     GenTree* op2;
@@ -553,6 +643,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         }
     }
 
+    // Try to obtain original string literals out of span arguments
     GenTreeStrCon* op1Str = impGetStrConFromSpan(op1);
     GenTreeStrCon* op2Str = impGetStrConFromSpan(op2);
 
@@ -562,17 +653,17 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         return nullptr;
     }
 
-    GenTree*       varStr;
+    GenTree*       spanObj;
     GenTreeStrCon* cnsStr;
     if (op1Str != nullptr)
     {
-        cnsStr = op1Str;
-        varStr = op2;
+        cnsStr  = op1Str;
+        spanObj = op2;
     }
     else
     {
-        cnsStr = op2Str;
-        varStr = op1;
+        cnsStr  = op2Str;
+        spanObj = op1;
     }
 
     int             cnsLength = -1;
@@ -594,48 +685,38 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         JITDUMP("Trying to unroll String.Equals(op1, \"%ws\")...\n", str)
     }
 
-    // Rewrite this nonsense (to fields)
-
-    CORINFO_CLASS_HANDLE spanCls      = gtGetStructHandle(varStr);
+    CORINFO_CLASS_HANDLE spanCls      = gtGetStructHandle(spanObj);
     CORINFO_FIELD_HANDLE pointerHnd   = info.compCompHnd->getFieldInClass(spanCls, 0);
     CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(spanCls, 1);
     const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
 
-    GenTree* spanRef = varStr;
-    if (varStr->TypeIs(TYP_STRUCT))
-    {
-        spanRef = gtNewOperNode(GT_ADDR, TYP_BYREF, varStr);
-    }
-    assert(spanRef->TypeIs(TYP_BYREF));
+    // Create a placeholder for Span object - we're not going to Append it to statements
+    // in advance to avoid redundant spills in case if we fail to vectorize
+    unsigned spanObjRef         = lvaGrabTemp(true DEBUGARG("spanObjRef"));
+    lvaTable[spanObjRef].lvType = TYP_BYREF;
 
-    unsigned varStrTmp         = lvaGrabTemp(true DEBUGARG("t1"));
-    lvaTable[varStrTmp].lvType = TYP_BYREF;
+    GenTree* spanObjRefLcl = gtNewLclvNode(spanObjRef, TYP_BYREF);
+    GenTree* spanLength    = gtNewFieldRef(TYP_INT, lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
+    GenTree* spanData      = gtNewFieldRef(TYP_BYREF, pointerHnd, spanObjRefLcl);
 
-    GenTree* spanRefLcl = gtNewLclvNode(varStrTmp, spanRef->TypeGet());
-    GenTree* spanData   = gtNewFieldRef(TYP_BYREF, pointerHnd, spanRefLcl);
-    GenTree* spanLength = gtNewFieldRef(TYP_INT, lengthHnd, gtClone(spanRefLcl), lengthOffset);
+    // Additionally spill spanData to a local which we might need to clone then:
+    unsigned spanDataTmp         = lvaGrabTemp(true DEBUGARG("spanData tmp"));
+    lvaTable[spanDataTmp].lvType = TYP_BYREF;
+    GenTree* spanDataTmpLcl      = gtNewLclvNode(spanDataTmp, spanData->TypeGet());
 
-    unsigned spanDataTmp = lvaGrabTemp(true DEBUGARG("t2"));
-    lvaSetStruct(spanDataTmp, spanCls, false);
-    lvaTable[spanDataTmp].lvType = spanData->TypeGet();
-
-    GenTree* result   = nullptr;
-    GenTree* unrolled = impExpandHalfConstEquals(gtNewLclvNode(spanDataTmp, spanData->TypeGet()), spanLength, false,
-                                                 startsWith, (WCHAR*)str, cnsLength, 0);
+    GenTree* unrolled =
+        impExpandHalfConstEquals(spanDataTmpLcl, spanLength, false, startsWith, (WCHAR*)str, cnsLength, 0);
     if (unrolled != nullptr)
     {
-        impAssignTempGen(varStrTmp, spanRef);
+        // We succeeded, fill the placeholders:
+        impAssignTempGen(spanObjRef, impGetStructAddr(spanObj, spanCls, (unsigned)CHECK_SPILL_ALL, true));
         impAssignTempGen(spanDataTmp, spanData);
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK can't be a root node, spill it to a temp
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
             impAssignTempGen(rootTmp, unrolled);
-            result = gtNewLclvNode(rootTmp, TYP_INT);
-        }
-        else
-        {
-            result = unrolled;
+            unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
         JITDUMP("... Successfully unrolled to:\n")
@@ -646,18 +727,15 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
             impPopStack();
         }
 
-        // We have to clean up GT_RET_EXPR for String.op_Implicit
-        if (op1->OperIs(GT_RET_EXPR))
+        // We have to clean up GT_RET_EXPR for String.op_Implicit or MemoryExtensions.AsSpans
+        if ((spanObj != op1) && op1->OperIs(GT_RET_EXPR))
         {
             op1->AsRetExpr()->gtInlineCandidate->ReplaceWith(gtNewNothingNode(), this);
-            DEBUG_DESTROY_NODE(op1);
         }
-        else if (op2->OperIs(GT_RET_EXPR))
+        else if ((spanObj != op2) && op2->OperIs(GT_RET_EXPR))
         {
-            assert(op2Str != nullptr);
             op2->AsRetExpr()->gtInlineCandidate->ReplaceWith(gtNewNothingNode(), this);
-            DEBUG_DESTROY_NODE(op2);
         }
     }
-    return result;
+    return unrolled;
 }

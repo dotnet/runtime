@@ -5708,17 +5708,17 @@ GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
 }
 
-GenTreeIntCon* Compiler::gtNull()
+GenTreeIntCon* Compiler::gtNewNull()
 {
     return gtNewIconNode(0, TYP_REF);
 }
 
-GenTreeIntCon* Compiler::gtTrue()
+GenTreeIntCon* Compiler::gtNewTrue()
 {
     return gtNewIconNode(1, TYP_INT);
 }
 
-GenTreeIntCon* Compiler::gtFalse()
+GenTreeIntCon* Compiler::gtNewFalse()
 {
     return gtNewIconNode(0, TYP_INT);
 }
