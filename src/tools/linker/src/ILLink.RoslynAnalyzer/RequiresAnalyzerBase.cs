@@ -107,7 +107,7 @@ namespace ILLink.RoslynAnalyzer
 				context.RegisterOperationAction (operationContext => {
 					var propAccess = (IPropertyReferenceOperation) operationContext.Operation;
 					var prop = propAccess.Property;
-					var usageInfo = propAccess.GetValueUsageInfo (prop);
+					var usageInfo = propAccess.GetValueUsageInfo (operationContext.ContainingSymbol);
 					if (usageInfo.HasFlag (ValueUsageInfo.Read) && prop.GetMethod != null)
 						CheckCalledMember (operationContext, prop.GetMethod, incompatibleMembers);
 

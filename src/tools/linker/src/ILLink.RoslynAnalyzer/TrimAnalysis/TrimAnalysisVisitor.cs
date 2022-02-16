@@ -106,6 +106,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			);
 		}
 
+		public override MultiValue HandleArrayElementAccess (IOperation arrayReferene)
+		{
+			return UnknownValue.Instance;
+		}
+
 		public override MultiValue HandleMethodCall (IMethodSymbol calledMethod, MultiValue instance, ImmutableArray<MultiValue> arguments, IOperation operation)
 		{
 			// For .ctors:
