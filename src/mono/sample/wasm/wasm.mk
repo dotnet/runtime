@@ -1,7 +1,7 @@
 DOTNET=$(TOP)/dotnet.sh
 
 ifeq ($(V),)
-DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
+DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary -bl
 else
 DOTNET_Q_ARGS=--nologo -bl
 endif
