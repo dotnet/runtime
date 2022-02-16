@@ -160,6 +160,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
+#pragma warning disable IDE0060
         internal static Type? GetTypeFromProgID(string progID!!, string? server, bool throwOnError)
         {
             if (throwOnError)
@@ -167,6 +168,7 @@ namespace System.Runtime.InteropServices
 
             return null;
         }
+#pragma warning restore IDE0060
 
         /// <summary>
         /// Get the last system error on the current thread

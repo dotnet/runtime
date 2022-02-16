@@ -2800,7 +2800,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             binder ??= DefaultBinder;
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
@@ -2836,7 +2836,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
+                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
             binder ??= DefaultBinder;
             return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);

@@ -9756,7 +9756,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 //
 var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 {
-    if (varTypeIsIntegralOrI(tree))
+    if (varTypeIsIntegral(tree))
     {
 #if defined(TARGET_XARCH)
         // Just an optimization for XARCH - smaller mov

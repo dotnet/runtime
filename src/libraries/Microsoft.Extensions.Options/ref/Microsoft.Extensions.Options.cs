@@ -121,7 +121,7 @@ namespace Microsoft.Extensions.Options
     {
         TOptions CurrentValue { get; }
         TOptions Get(string? name);
-        System.IDisposable OnChange(System.Action<TOptions, string?> listener);
+        System.IDisposable? OnChange(System.Action<TOptions, string?> listener);
     }
     public partial interface IOptionsSnapshot<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] out TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
     {
@@ -197,7 +197,7 @@ namespace Microsoft.Extensions.Options
     }
     public static partial class OptionsMonitorExtensions
     {
-        public static System.IDisposable OnChange<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(this Microsoft.Extensions.Options.IOptionsMonitor<TOptions> monitor, System.Action<TOptions> listener) { throw null; }
+        public static System.IDisposable? OnChange<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(this Microsoft.Extensions.Options.IOptionsMonitor<TOptions> monitor, System.Action<TOptions> listener) { throw null; }
     }
     public partial class OptionsMonitor<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptionsMonitor<TOptions>, System.IDisposable where TOptions : class
     {

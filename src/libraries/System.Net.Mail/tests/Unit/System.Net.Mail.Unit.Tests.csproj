@@ -19,7 +19,7 @@
     <Compile Include="MessageTests\MessageHeaderBehaviorTest.cs" />
     <Compile Include="MessageTests\ReplyToListTest.cs" />
     <Compile Include="QuotedPrintableStreamTest.cs" />
-    <Compile Include="SmtpConnectionTests\EhloParseExtensionsTest.cs" Condition="'$(TargetsBrowser)' != 'true'" />
+    <Compile Include="SmtpConnectionTests\EhloParseExtensionsTest.cs" Condition="'$(TargetPlatformIdentifier)' != 'Browser'" />
     <Compile Include="SmtpDateTimeTest.cs" />
     <Compile Include="WriteStateInfoTest.cs" />
   </ItemGroup>
@@ -148,7 +148,7 @@
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
              Link="Common\System\Net\ContextAwareResult.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Unix.cs"
@@ -183,7 +183,7 @@
              Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
-  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
              Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs"
@@ -265,7 +265,7 @@
   </ItemGroup>
 
   <!-- Non Browser specific files - internal and security -->
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
     <Compile Include="..\..\src\System\Net\Mail\SmtpLoginAuthenticationModule.cs"
              Link="ProductionCode\SmtpLoginAuthenticationModule.cs" />
     <Compile Include="..\..\src\System\Net\Mail\SmtpNegotiateAuthenticationModule.cs"
