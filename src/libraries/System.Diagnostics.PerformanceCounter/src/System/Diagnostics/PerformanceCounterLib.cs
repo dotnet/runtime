@@ -85,7 +85,14 @@ namespace System.Diagnostics
             {
                 if (s_englishCulture is null)
                 {
-                    try { s_englishCulture = CultureInfo.GetCultureInfo("en"); } catch { s_englishCulture = CultureInfo.InvariantCulture; }
+                    try
+                    {
+                        s_englishCulture = CultureInfo.GetCultureInfo("en");
+                    }
+                    catch
+                    {
+                        s_englishCulture = CultureInfo.InvariantCulture;
+                    }
                 }
                 return s_englishCulture;
             }
