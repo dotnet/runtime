@@ -111,7 +111,7 @@ namespace System.Text.RegularExpressions.Symbolic
             // nextCharKind will be the PrevCharKind of the target state
             // use an existing state instead if one exists already
             // otherwise create a new new id for it
-            return Node._builder.MkState(derivative, nextCharKind);
+            return Node._builder.MkState(derivative, nextCharKind, capturing: false);
         }
 
         /// <summary>
@@ -135,7 +135,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // nextCharKind will be the PrevCharKind of the target state
                 // use an existing state instead if one exists already
                 // otherwise create a new new id for it
-                yield return (Node._builder.MkState(derivative, nextCharKind), effects);
+                yield return (Node._builder.MkState(derivative, nextCharKind, capturing: true), effects);
             }
         }
 

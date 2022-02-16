@@ -14,7 +14,7 @@
 
 #include "mono-codeman.h"
 #include "mono-mmap.h"
-#include "mono-counters.h"
+#include <mono/utils/mono-counters.h>
 #if _WIN32
 static void* mono_code_manager_heap;
 #else

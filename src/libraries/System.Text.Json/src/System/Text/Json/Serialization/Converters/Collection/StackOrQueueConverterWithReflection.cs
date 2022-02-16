@@ -12,16 +12,12 @@ namespace System.Text.Json.Serialization.Converters
         : StackOrQueueConverter<TCollection>
         where TCollection : IEnumerable
     {
-        internal override bool RequiresDynamicMemberAccessors => true;
-
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         public StackOrQueueConverterWithReflection() { }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        internal override void Initialize(JsonSerializerOptions options, JsonTypeInfo? jsonTypeInfo = null)
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal override void ConfigureJsonTypeInfoUsingReflection(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            Debug.Assert(jsonTypeInfo != null);
             jsonTypeInfo.AddMethodDelegate = options.MemberAccessorStrategy.CreateAddMethodDelegate<TCollection>();
         }
     }
