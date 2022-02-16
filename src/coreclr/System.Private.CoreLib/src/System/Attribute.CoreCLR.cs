@@ -434,10 +434,8 @@ namespace System
                 SR.Format(SR.Format_AttributeUsage, type));
         }
 
-        private static Attribute[] CreateAttributeArrayHelper(Type elementType, int elementCount)
-        {
-            return (Attribute[])Array.CreateInstance(elementType, elementCount);
-        }
+        private static Attribute[] CreateAttributeArrayHelper(Type elementType, int elementCount) =>
+            elementType.ContainsGenericParameters ? new Attribute[elementCount] : (Attribute[])Array.CreateInstance(elementType, elementCount);
         #endregion
 
         #endregion
