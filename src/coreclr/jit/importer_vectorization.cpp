@@ -34,15 +34,21 @@
 //------------------------------------------------------------------------
 // impExpandHalfConstEqualsSIMD: Attempts to unroll and vectorize
 //    Equals against a constant WCHAR data for Length in [8..32] range
-//    using SIMD instructions. It uses the following expression:
+//    using SIMD instructions. C# equivalent of what this function emits:
 //
-//       bool equasl = ((v1 ^ cns1) | (v2 ^ cns2)) == Vector128.Zero
+//    bool IsTestString(ReadOnlySpan<char> span)
+//    {
+//        // Length and Null checks are not handled here
+//        ref char s = ref MemoryMarshal.GetReference(span);
+//        var v1 = Vector128.LoadUnsafe(ref s);
+//        var v1 = Vector128.LoadUnsafe(ref s, span.Length - Vector128<ushort>.Count);
+//        var cns1 = Vector128.Create('T', 'e', 's', 't', 'S', 't', 'r', 'i');
+//        var cns2 = Vector128.Create('s', 't', 'S', 't', 'r', 'i', 'n', 'g');
+//        return ((v1 ^ cns1) | (v2 ^ cns2)) == Vector<ushort>.Zero;
 //
-//    or if a single vector is enough (len == 8 or len == 16 with AVX):
-//
-//       bool equasl = (v1 ^ cns1) == Vector128.Zero
-//
-//    C# equivalent of what this function emits: https://gist.github.com/EgorBo/085f9c15da11eecc00f482710f48aef6
+//        // for:
+//        // return span.SequenceEqual("TestString");
+//    }
 //
 // Arguments:
 //    data -       Pointer to a data to vectorize
@@ -69,13 +75,14 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
         return nullptr;
     }
 
-    CorInfoType type = CORINFO_TYPE_ULONG;
+    CorInfoType baseType = CORINFO_TYPE_ULONG;
 
     int       simdSize;
     var_types simdType;
 
     NamedIntrinsic niZero;
     NamedIntrinsic niEquals;
+    NamedIntrinsic niCreate;
 
     GenTree* cnsVec1;
     GenTree* cnsVec2;
@@ -94,6 +101,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
 
         niZero   = NI_Vector256_get_Zero;
         niEquals = NI_Vector256_op_Equality;
+        niCreate = NI_Vector256_Create;
 
         // Special case: use a single vector for Length == 16
         useSingleVector = len == 16;
@@ -103,14 +111,14 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
         GenTree* long2 = gtNewIconNode(*(ssize_t*)(cns + 4), TYP_LONG);
         GenTree* long3 = gtNewIconNode(*(ssize_t*)(cns + 8), TYP_LONG);
         GenTree* long4 = gtNewIconNode(*(ssize_t*)(cns + 12), TYP_LONG);
-        cnsVec1 = gtNewSimdHWIntrinsicNode(simdType, long1, long2, long3, long4, NI_Vector256_Create, type, simdSize);
+        cnsVec1 = gtNewSimdHWIntrinsicNode(simdType, long1, long2, long3, long4, niCreate, baseType, simdSize);
 
         // cnsVec2 most likely overlaps with cnsVec1:
         GenTree* long5 = gtNewIconNode(*(ssize_t*)(cns + len - 16), TYP_LONG);
         GenTree* long6 = gtNewIconNode(*(ssize_t*)(cns + len - 12), TYP_LONG);
         GenTree* long7 = gtNewIconNode(*(ssize_t*)(cns + len - 8), TYP_LONG);
         GenTree* long8 = gtNewIconNode(*(ssize_t*)(cns + len - 4), TYP_LONG);
-        cnsVec2 = gtNewSimdHWIntrinsicNode(simdType, long5, long6, long7, long8, NI_Vector256_Create, type, simdSize);
+        cnsVec2 = gtNewSimdHWIntrinsicNode(simdType, long5, long6, long7, long8, niCreate, baseType, simdSize);
     }
     else
 #endif
@@ -124,6 +132,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
 
         niZero   = NI_Vector128_get_Zero;
         niEquals = NI_Vector128_op_Equality;
+        niCreate = NI_Vector128_Create;
 
         // Special case: use a single vector for Length == 8
         useSingleVector = len == 8;
@@ -131,12 +140,12 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
         assert(sizeof(ssize_t) == 8); // this code is guarded with TARGET_64BIT
         GenTree* long1 = gtNewIconNode(*(ssize_t*)(cns + 0), TYP_LONG);
         GenTree* long2 = gtNewIconNode(*(ssize_t*)(cns + 4), TYP_LONG);
-        cnsVec1        = gtNewSimdHWIntrinsicNode(simdType, long1, long2, NI_Vector128_Create, type, simdSize);
+        cnsVec1        = gtNewSimdHWIntrinsicNode(simdType, long1, long2, niCreate, baseType, simdSize);
 
         // cnsVec2 most likely overlaps with cnsVec1:
         GenTree* long3 = gtNewIconNode(*(ssize_t*)(cns + len - 8), TYP_LONG);
         GenTree* long4 = gtNewIconNode(*(ssize_t*)(cns + len - 4), TYP_LONG);
-        cnsVec2        = gtNewSimdHWIntrinsicNode(simdType, long3, long4, NI_Vector128_Create, type, simdSize);
+        cnsVec2        = gtNewSimdHWIntrinsicNode(simdType, long3, long4, niCreate, baseType, simdSize);
     }
     else
     {
@@ -145,7 +154,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
         return nullptr;
     }
 
-    GenTree* zero = gtNewSimdHWIntrinsicNode(simdType, niZero, type, simdSize);
+    GenTree* zero = gtNewSimdHWIntrinsicNode(simdType, niZero, baseType, simdSize);
 
     GenTree* offset1  = gtNewIconNode(dataOffset, TYP_I_IMPL);
     GenTree* offset2  = gtNewIconNode(dataOffset + len * 2 - simdSize, TYP_I_IMPL);
@@ -171,10 +180,10 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
     //
 
     // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
-    GenTree* xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, type, simdSize, false);
-    GenTree* xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, type, simdSize, false);
-    GenTree* orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, type, simdSize, false);
-    return gtNewSimdHWIntrinsicNode(TYP_BOOL, useSingleVector ? xor1 : orr, zero, niEquals, type, simdSize);
+    GenTree* xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize, false);
+    GenTree* xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, baseType, simdSize, false);
+    GenTree* orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, baseType, simdSize, false);
+    return gtNewSimdHWIntrinsicNode(TYP_BOOL, useSingleVector ? xor1 : orr, zero, niEquals, baseType, simdSize);
 #else
     return nullptr;
 #endif
@@ -243,6 +252,9 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int l
 
     if (len == 1)
     {
+        //   [ ch1 ]
+        //   [value]
+        //
         return impCreateCompareInd(this, data, TYP_SHORT, dataOffset, cns[0]);
     }
     if (len == 2)
@@ -286,7 +298,6 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int l
     }
 
     // For 5..7 value2 will overlap with value1, e.g. for Length == 6:
-    //
     //
     //   [ ch1 ][ ch2 ][ ch3 ][ ch4 ][ ch5 ][ ch6 ]
     //   [          value1          ]
@@ -412,7 +423,8 @@ GenTree* Compiler::impExpandHalfConstEquals(
 //  var span = (ReadOnlySpan<char>)"str"
 //
 // Arguments:
-//    span - ReadOnlySpan tree
+//    span - String_op_Implicit or MemoryExtensions_AsSpan call
+//           with a string literal
 //
 // Returns:
 //    GenTreeStrCon node or nullptr
@@ -434,6 +446,9 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
         NamedIntrinsic ni = lookupNamedIntrinsic(argCall->gtCallMethHnd);
         if ((ni == NI_System_MemoryExtensions_AsSpan) || (ni == NI_System_String_op_Implicit))
         {
+            // To make sure only single-arg methods are marked as [Intrinsic]
+            assert(argCall->fgArgInfo->ArgCount() == 1);
+
             if (argCall->gtCallArgs->GetNode()->OperIs(GT_CNS_STR))
             {
                 return argCall->gtCallArgs->GetNode()->AsStrCon();
@@ -488,6 +503,7 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     }
     else
     {
+        assert(argsCount == 2);
         op1 = impStackTop(1).val;
         op2 = impStackTop(0).val;
     }
@@ -618,6 +634,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     }
     else
     {
+        assert(argsCount == 2);
         op1 = impStackTop(1).val;
         op2 = impStackTop(0).val;
     }
