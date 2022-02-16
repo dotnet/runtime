@@ -9,7 +9,18 @@ set(utils_public_headers_base
     mono-jemalloc.h
     mono-dl-fallback.h
     mono-private-unstable.h
-    mono-counters.h)
+    mono-counters.h
+    details/mono-publib-types.h
+    details/mono-publib-functions.h
+    details/mono-logger-types.h
+    details/mono-logger-functions.h
+    details/mono-error-types.h
+    details/mono-error-functions.h
+    details/mono-dl-fallback-types.h
+    details/mono-dl-fallback-functions.h
+    details/mono-counters-types.h
+    details/mono-counters-functions.h
+    )
 addprefix(utils_public_headers ./mono/utils "${utils_public_headers_base}")
 
 target_sources(monoapi_utils INTERFACE ${utils_public_headers})
