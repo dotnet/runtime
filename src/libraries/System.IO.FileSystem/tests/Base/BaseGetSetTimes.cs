@@ -38,10 +38,7 @@ namespace System.IO.Tests
         protected abstract string GetItemPath(T item);
 
         // requiresRoundtripping defines whether to convert DateTimeFormat 'a' to 'b' and then back to 'a' to verify the DateTimeFormat-conversion
-        //
-        // testHandles defines whether to test using SafeFileHandle. Disabling this is useful, if you are not able to open a handle to the file for ex.
-        // because of system-conditions
-        public abstract IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false, bool testHandles = true);
+        public abstract IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false);
 
         public class TimeFunction : Tuple<SetTime, GetTime, DateTimeKind>
         {
@@ -60,7 +57,7 @@ namespace System.IO.Tests
 
         private void SettingUpdatesPropertiesCore(T item)
         {
-            Assert.All(TimeFunctions(requiresRoundtripping: true, testHandles: false), (function) =>
+            Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
                 // Checking that milliseconds are not dropped after setter.
                 // Emscripten drops milliseconds in Browser
@@ -174,8 +171,8 @@ namespace System.IO.Tests
             // Or, when creation time setting is not available:
             // [0] = (access, write, False),    [1] = (access, write, True),
             // [2] = (write, access, False),    [3] = (write, access, True)
-            
-            IEnumerable<TimeFunction> timeFunctionsUtc = TimeFunctions(true, false).Where((f) => f.Kind == DateTimeKind.Utc);
+
+            IEnumerable<TimeFunction> timeFunctionsUtc = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
             bool[] booleanArray = new bool[] { false, true };
             Assert.All(timeFunctionsUtc.SelectMany((x) => timeFunctionsUtc.SelectMany((y) => booleanArray.Select((reverse) => (x, y, reverse)))).Where((fs) => fs.x.Getter != fs.y.Getter), (functions) =>
             {

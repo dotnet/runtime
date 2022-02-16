@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Tests
@@ -16,9 +15,7 @@ namespace System.IO.Tests
 
         // OSX has the limitation of setting upto 2262-04-11T23:47:16 (long.Max) date.
         // 32bit Unix has time_t up to ~ 2038.
-        private static bool SupportsLongMaxDateTime => PlatformDetection.IsWindows ||
-                                                       (!PlatformDetection.Is32BitProcess &&
-                                                        !PlatformDetection.IsOSXLike);
+        private static bool SupportsLongMaxDateTime => PlatformDetection.IsWindows || (!PlatformDetection.Is32BitProcess && !PlatformDetection.IsOSXLike);
 
         protected override string GetExistingItem(bool readOnly = false)
         {
@@ -73,200 +70,47 @@ namespace System.IO.Tests
             Assert.Equal(newCreationTimeUTC, File.GetCreationTimeUtc(path));
         }
 
-        private static void SetCreationTimeUsingHandle(string path, DateTime creationTime)
+        public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
         {
-            using var fileHandle = OpenFileHandle(path);
-            File.SetCreationTime(fileHandle, creationTime);
-        }
-
-        private static DateTime GetCreationTimeUsingHandle(string path)
-        {
-            using var fileHandle = OpenFileHandle(path);
-            return File.GetCreationTime(fileHandle);
-        }
-
-        private static void SetCreationTimeUsingHandleUtc(string path, DateTime creationTime)
-        {
-            using var fileHandle = OpenFileHandle(path);
-            File.SetCreationTimeUtc(fileHandle, creationTime);
-        }
-
-        private static DateTime GetCreationTimeUsingHandleUtc(string path)
-        {
-            using var fileHandle = OpenFileHandle(path);
-            return File.GetCreationTimeUtc(fileHandle);
-        }
-
-        private static void SetLastAccessTimeUsingHandle(string path, DateTime creationTime)
-        {
-            using var fileHandle = OpenFileHandle(path);
-            File.SetLastAccessTime(fileHandle, creationTime);
-        }
-
-        private static DateTime GetLastAccessTimeUsingHandle(string path)
-        {
-            using var fileHandle = OpenFileHandle(path);
-            return File.GetLastAccessTime(fileHandle);
-        }
-
-        private static void SetLastAccessTimeUsingHandleUtc(string path, DateTime creationTime)
-        {
-            using var fileHandle = OpenFileHandle(path);
-            File.SetLastAccessTimeUtc(fileHandle, creationTime);
-        }
-
-        private static DateTime GetLastAccessTimeUsingHandleUtc(string path)
-        {
-            using var fileHandle = OpenFileHandle(path);
-            return File.GetLastAccessTimeUtc(fileHandle);
-        }
-
-        private static void SetLastWriteTimeUsingHandle(string path, DateTime creationTime)
-        {
-            using var fileHandle = OpenFileHandle(path);
-            File.SetLastWriteTime(fileHandle, creationTime);
-        }
-
-        private static DateTime GetLastWriteTimeUsingHandle(string path)
-        {
-            using var fileHandle = OpenFileHandle(path);
-            return File.GetLastWriteTime(fileHandle);
-        }
-
-        private static void SetLastWriteTimeUsingHandleUtc(string path, DateTime creationTime)
-        {
-            using var fileHandle = OpenFileHandle(path);
-            File.SetLastWriteTimeUtc(fileHandle, creationTime);
-        }
-
-        private static DateTime GetLastWriteTimeUsingHandleUtc(string path)
-        {
-            using var fileHandle = OpenFileHandle(path);
-            return File.GetLastWriteTimeUtc(fileHandle);
-        }
-
-        public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false, bool testHandles = true)
-        {
-            if (IOInputs.SupportsGettingCreationTime &&
-                (!requiresRoundtripping || IOInputs.SupportsSettingCreationTime))
+            if (IOInputs.SupportsGettingCreationTime && (!requiresRoundtripping || IOInputs.SupportsSettingCreationTime))
             {
                 yield return TimeFunction.Create(
-                    File.SetCreationTime,
-                    File.GetCreationTime,
+                    ((path, time) => File.SetCreationTime(path, time)),
+                    ((path) => File.GetCreationTime(path)),
                     DateTimeKind.Local);
-                if (testHandles)
-                {
-                    yield return TimeFunction.Create(
-                        SetCreationTimeUsingHandle,
-                        GetCreationTimeUsingHandle,
-                        DateTimeKind.Local);
-                }
-
                 yield return TimeFunction.Create(
-                    File.SetCreationTimeUtc,
-                    File.GetCreationTimeUtc,
+                    ((path, time) => File.SetCreationTimeUtc(path, time)),
+                    ((path) => File.GetCreationTimeUtc(path)),
                     DateTimeKind.Unspecified);
-                if (testHandles)
-                {
-                    yield return TimeFunction.Create(
-                        SetCreationTimeUsingHandleUtc,
-                        GetCreationTimeUsingHandleUtc,
-                        DateTimeKind.Unspecified);
-                }
-
                 yield return TimeFunction.Create(
-                    File.SetCreationTimeUtc,
-                    File.GetCreationTimeUtc,
+                    ((path, time) => File.SetCreationTimeUtc(path, time)),
+                    ((path) => File.GetCreationTimeUtc(path)),
                     DateTimeKind.Utc);
-                if (testHandles)
-                {
-                    yield return TimeFunction.Create(
-                        SetCreationTimeUsingHandleUtc,
-                        GetCreationTimeUsingHandleUtc,
-                        DateTimeKind.Utc);
-                }
             }
-
             yield return TimeFunction.Create(
-                File.SetLastAccessTime,
-                File.GetLastAccessTime,
+                ((path, time) => File.SetLastAccessTime(path, time)),
+                ((path) => File.GetLastAccessTime(path)),
                 DateTimeKind.Local);
-            if (testHandles)
-            {
-                yield return TimeFunction.Create(
-                    SetLastAccessTimeUsingHandle,
-                    GetLastAccessTimeUsingHandle,
-                    DateTimeKind.Local);
-            }
-
             yield return TimeFunction.Create(
-                File.SetLastAccessTimeUtc,
-                File.GetLastAccessTimeUtc,
+                ((path, time) => File.SetLastAccessTimeUtc(path, time)),
+                ((path) => File.GetLastAccessTimeUtc(path)),
                 DateTimeKind.Unspecified);
-            if (testHandles)
-            {
-                yield return TimeFunction.Create(
-                    SetLastAccessTimeUsingHandleUtc,
-                    GetLastAccessTimeUsingHandleUtc,
-                    DateTimeKind.Unspecified);
-            }
-
             yield return TimeFunction.Create(
-                File.SetLastAccessTimeUtc,
-                File.GetLastAccessTimeUtc,
+                ((path, time) => File.SetLastAccessTimeUtc(path, time)),
+                ((path) => File.GetLastAccessTimeUtc(path)),
                 DateTimeKind.Utc);
-            if (testHandles)
-            {
-                yield return TimeFunction.Create(
-                    SetLastAccessTimeUsingHandleUtc,
-                    GetLastAccessTimeUsingHandleUtc,
-                    DateTimeKind.Utc);
-            }
-
             yield return TimeFunction.Create(
-                File.SetLastWriteTime,
-                File.GetLastWriteTime,
+                ((path, time) => File.SetLastWriteTime(path, time)),
+                ((path) => File.GetLastWriteTime(path)),
                 DateTimeKind.Local);
-            if (testHandles)
-            {
-                yield return TimeFunction.Create(
-                    SetLastWriteTimeUsingHandle,
-                    GetLastWriteTimeUsingHandle,
-                    DateTimeKind.Local);
-            }
-
             yield return TimeFunction.Create(
-                File.SetLastWriteTimeUtc,
-                File.GetLastWriteTimeUtc,
+                ((path, time) => File.SetLastWriteTimeUtc(path, time)),
+                ((path) => File.GetLastWriteTimeUtc(path)),
                 DateTimeKind.Unspecified);
-            if (testHandles)
-            {
-                yield return TimeFunction.Create(
-                    SetLastWriteTimeUsingHandleUtc,
-                    GetLastWriteTimeUsingHandleUtc,
-                    DateTimeKind.Unspecified);
-            }
-
             yield return TimeFunction.Create(
-                File.SetLastWriteTimeUtc,
-                File.GetLastWriteTimeUtc,
+                ((path, time) => File.SetLastWriteTimeUtc(path, time)),
+                ((path) => File.GetLastWriteTimeUtc(path)),
                 DateTimeKind.Utc);
-            if (testHandles)
-            {
-                yield return TimeFunction.Create(
-                    SetLastWriteTimeUsingHandleUtc,
-                    GetLastWriteTimeUsingHandleUtc,
-                    DateTimeKind.Utc);
-            }
-        }
-
-        private static SafeFileHandle OpenFileHandle(string path)
-        {
-            return File.OpenHandle(
-                path,
-                FileMode.OpenOrCreate,
-                FileAccess.ReadWrite,
-                FileShare.ReadWrite);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
@@ -277,9 +121,7 @@ namespace System.IO.Tests
             string pageFilePath = Directory.EnumerateFiles(@"C:\", "pagefile.sys").FirstOrDefault();
             if (pageFilePath != null)
             {
-                // Due to the fact that the pagefile.sys is already opened by the operating system (ntoskrnl.exe - PID: 4),
-                // we exclude the `SafeFileHandle`-`TimeFunctions`, because the handle cannot be opened twice.
-                Assert.All(TimeFunctions(false, false), item =>
+                Assert.All(TimeFunctions(), (item) =>
                 {
                     var time = item.Getter(pageFilePath);
                     Assert.NotEqual(DateTime.FromFileTime(0), time);
@@ -299,25 +141,6 @@ namespace System.IO.Tests
             File.SetLastAccessTimeUtc(secondFile, DateTime.UtcNow);
             long firstFileTicks = File.GetLastWriteTimeUtc(firstFile).Ticks;
             long secondFileTicks = File.GetLastWriteTimeUtc(secondFile).Ticks;
-            Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void SetLastWriteTimeTicks_SafeFileHandle()
-        {
-            string firstFilePath = GetTestFilePath();
-            string secondFilePath = GetTestFilePath();
-
-            File.WriteAllText(firstFilePath, "");
-            File.WriteAllText(secondFilePath, "");
-
-            using var secondFileHandle = File.OpenHandle(secondFilePath, access: FileAccess.ReadWrite);
-            using var firstFileHandle = File.OpenHandle(firstFilePath, access: FileAccess.ReadWrite);
-
-            File.SetLastAccessTimeUtc(secondFileHandle, DateTime.UtcNow);
-            long firstFileTicks = File.GetLastWriteTimeUtc(firstFileHandle).Ticks;
-            long secondFileTicks = File.GetLastWriteTimeUtc(secondFileHandle).Ticks;
             Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
         }
 
@@ -351,23 +174,6 @@ namespace System.IO.Tests
             Assert.Equal(ticks, dateTime.Ticks);
         }
 
-        // Linux kernels no longer have long max date time support. Discussed in https://github.com/dotnet/runtime/issues/43166.
-        [PlatformSpecific(~TestPlatforms.Linux)]
-        [ConditionalFact(nameof(SupportsLongMaxDateTime))]
-        public void SetDateTimeMax_SafeFileHandle()
-        {
-            string file = GetTestFilePath();
-            File.WriteAllText(file, "");
-
-            using var fileHandle = File.OpenHandle(file, access: FileAccess.ReadWrite);
-            DateTime dateTime = new(9999, 4, 11, 23, 47, 17, 21, DateTimeKind.Utc);
-            File.SetLastWriteTimeUtc(fileHandle, dateTime);
-            long ticks = File.GetLastWriteTimeUtc(fileHandle).Ticks;
-
-            Assert.Equal(dateTime, File.GetLastWriteTimeUtc(fileHandle));
-            Assert.Equal(ticks, dateTime.Ticks);
-        }
-
         [Fact]
         public void SetLastAccessTimeTicks()
         {
@@ -380,25 +186,6 @@ namespace System.IO.Tests
             File.SetLastWriteTimeUtc(secondFile, DateTime.UtcNow);
             long firstFileTicks = File.GetLastAccessTimeUtc(firstFile).Ticks;
             long secondFileTicks = File.GetLastAccessTimeUtc(secondFile).Ticks;
-            Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void SetLastAccessTimeTicks_SafeFileHandle()
-        {
-            string firstFilePath = GetTestFilePath();
-            string secondFilePath = GetTestFilePath();
-
-            File.WriteAllText(firstFilePath, "");
-            File.WriteAllText(secondFilePath, "");
-
-            using var firstFileHandle = File.OpenHandle(firstFilePath, access: FileAccess.ReadWrite);
-            using var secondFileHandle = File.OpenHandle(secondFilePath, access: FileAccess.ReadWrite);
-
-            File.SetLastWriteTimeUtc(secondFileHandle, DateTime.UtcNow);
-            long firstFileTicks = File.GetLastAccessTimeUtc(firstFileHandle).Ticks;
-            long secondFileTicks = File.GetLastAccessTimeUtc(secondFileHandle).Ticks;
             Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
         }
     }
