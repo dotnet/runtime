@@ -4444,6 +4444,10 @@ struct GenTreeCall final : public GenTree
     bool HasMultiRegRetVal() const
     {
 #ifdef FEATURE_MULTIREG_RET
+#if defined(TARGET_LOONGARCH64)
+        return (gtType == TYP_STRUCT) && (gtReturnTypeDesc.GetReturnRegCount() > 1);
+#else
+
 #if defined(TARGET_X86) || defined(TARGET_ARM)
         if (varTypeIsLong(gtType))
         {
@@ -4451,9 +4455,6 @@ struct GenTreeCall final : public GenTree
         }
 #endif
 
-#if defined(TARGET_LOONGARCH64)
-        return (gtType == TYP_STRUCT) && (gtReturnTypeDesc.GetReturnRegCount() > 1);
-#else
         if (!varTypeIsStruct(gtType) || HasRetBufArg())
         {
             return false;

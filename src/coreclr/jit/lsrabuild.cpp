@@ -2010,6 +2010,43 @@ void LinearScan::unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc)
 
 #endif // defined(UNIX_AMD64_ABI)
 
+#ifdef TARGET_LOONGARCH64
+void LinearScan::LoongArch64UpdateRegStateForArg(LclVarDsc* argDsc)
+{
+    assert(varTypeIsStruct(argDsc));
+    RegState* intRegState   = &compiler->codeGen->intRegState;
+    RegState* floatRegState = &compiler->codeGen->floatRegState;
+
+    if ((argDsc->GetArgReg() != REG_STK) && (argDsc->GetArgReg() != REG_NA))
+    {
+        if (genRegMask(argDsc->GetArgReg()) & (RBM_ALLFLOAT))
+        {
+            assert(genRegMask(argDsc->GetArgReg()) & (RBM_FLTARG_REGS));
+            floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetArgReg());
+        }
+        else
+        {
+            assert(genRegMask(argDsc->GetArgReg()) & (RBM_ARG_REGS));
+            intRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetArgReg());
+        }
+    }
+
+    if ((argDsc->GetOtherArgReg() != REG_STK) && (argDsc->GetOtherArgReg() != REG_NA))
+    {
+        if (genRegMask(argDsc->GetOtherArgReg()) & (RBM_ALLFLOAT))
+        {
+            assert(genRegMask(argDsc->GetOtherArgReg()) & (RBM_FLTARG_REGS));
+            floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetOtherArgReg());
+        }
+        else
+        {
+            assert(genRegMask(argDsc->GetOtherArgReg()) & (RBM_ARG_REGS));
+            intRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetOtherArgReg());
+        }
+    }
+}
+#endif
+
 //------------------------------------------------------------------------
 // updateRegStateForArg: Updates rsCalleeRegArgMaskLiveIn for the appropriate
 //    regState (either compiler->intRegState or compiler->floatRegState),
@@ -2040,6 +2077,13 @@ void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
     }
     else
 #endif // defined(UNIX_AMD64_ABI)
+#if defined(TARGET_LOONGARCH64)
+    if (varTypeIsStruct(argDsc))
+    {
+        LoongArch64UpdateRegStateForArg(argDsc);
+    }
+    else
+#endif
     {
         RegState* intRegState   = &compiler->codeGen->intRegState;
         RegState* floatRegState = &compiler->codeGen->floatRegState;

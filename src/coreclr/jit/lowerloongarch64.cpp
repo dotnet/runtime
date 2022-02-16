@@ -38,9 +38,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
-    ////TODO for LOONGARCH64: should amend for optimize!
-    // assert(!"unimplemented on LOONGARCH yet");
-    // return comp->codeGen->validImmForBAL((ssize_t)addr);
+    //TODO-LOONGARCH64-CQ: using B/BL for optimization.
     return false;
 }
 

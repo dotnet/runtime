@@ -1011,6 +1011,12 @@ private:
     void unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc);
 #endif // defined(UNIX_AMD64_ABI)
 
+#if defined(TARGET_LOONGARCH64)
+    // For LoongArch64's ABI, a struct can be passed
+    // partially using registers from the 2 register files.
+    void LoongArch64UpdateRegStateForArg(LclVarDsc* argDsc);
+#endif
+
     // Update reg state for an incoming register argument
     void updateRegStateForArg(LclVarDsc* argDsc);
 

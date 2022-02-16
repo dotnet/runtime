@@ -8,11 +8,9 @@
 
 // clang-format off
   #define CPU_LOAD_STORE_ARCH      1
-  //#define CPU_LONG_USES_REGPAIR    0
   #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
-  //#define CPU_USES_BLOCK_MOVE      0
 
   #define CPBLK_UNROLL_LIMIT       64      // Upper bound to let the code generator to loop unroll CpBlk.
   #define INITBLK_UNROLL_LIMIT     64      // Upper bound to let the code generator to loop unroll InitBlk.
@@ -71,7 +69,6 @@
   #define RBM_INT_CALLEE_SAVED    (RBM_S0|RBM_S1|RBM_S2|RBM_S3|RBM_S4|RBM_S5|RBM_S6|RBM_S7|RBM_S8)
   #define RBM_INT_CALLEE_TRASH    (RBM_A0|RBM_A1|RBM_A2|RBM_A3|RBM_A4|RBM_A5|RBM_A6|RBM_A7|RBM_T0|RBM_T1|RBM_T2|RBM_T3|RBM_T4|RBM_T5|RBM_T6|RBM_T7|RBM_T8)
   #define RBM_FLT_CALLEE_SAVED    (RBM_F24|RBM_F25|RBM_F26|RBM_F27|RBM_F28|RBM_F29|RBM_F30|RBM_F31)
-  //#define RBM_FLT_CALLEE_TRASH    (RBM_F0|RBM_F1|RBM_F2|RBM_F3|RBM_F4|RBM_F5|RBM_F6|RBM_F7|RBM_F8|RBM_F9|RBM_F10|RBM_F12|RBM_F13|RBM_F14|RBM_F15|RBM_F16|RBM_F17|RBM_F18|RBM_F19|RBM_F20|RBM_F21|RBM_F22|RBM_F23)
   #define RBM_FLT_CALLEE_TRASH    (RBM_F0|RBM_F1|RBM_F2|RBM_F3|RBM_F4|RBM_F5|RBM_F6|RBM_F7)
 
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
@@ -120,7 +117,6 @@
   // register to hold shift amount; no special register is required on LOONGARCH64.
   #define REG_SHIFT                REG_NA
   #define RBM_SHIFT                RBM_ALLINT
-  //#define PREDICT_REG_SHIFT        PREDICT_REG
 
   // This is a general scratch register that does not conflict with the argument registers
   #define REG_SCRATCH              REG_T0
@@ -142,27 +138,23 @@
   // LOONGARCH64 write barrier ABI (see vm/loongarch64/asmhelpers.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
   //     On entry:
-  //       v0: the destination address (LHS of the assignment)
-  //       v1: the object reference (RHS of the assignment)
+  //       t6: the destination address (LHS of the assignment)
+  //       t7: the object reference (RHS of the assignment)
   //     On exit:
   //       t0: trashed
   //       t1: trashed
-  //       t2: trashed
   //       t3: trashed
-  //       v0: incremented by 8
-  //       v1: trashed
-  //       ??: trashed if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP (currently non-Windows)
+  //       t4: trashed
+  //       t6: incremented by 8
+  //       t7: trashed
   // CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
   //     On entry:
   //       t8: the source address (points to object reference to write)
-  //       v0: the destination address (object reference written here)
+  //       t6: the destination address (object reference written here)
   //     On exit:
   //       t8: incremented by 8
-  //       v0: incremented by 8
+  //       t6: incremented by 8
   //
-  // Note that while ?reg? is currently only trashed under FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP,
-  // currently only set for non-Windows//, it is expected to be set in the future for Windows, and for R2R.
-  // So simply always consider it trashed, to avoid later breaking changes.
 
   #define REG_WRITE_BARRIER_DST          REG_T6
   #define RBM_WRITE_BARRIER_DST          RBM_T6
@@ -176,7 +168,7 @@
   #define REG_WRITE_BARRIER_SRC_BYREF    REG_T8
   #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_T8
 
-  #define RBM_CALLEE_TRASH_NOGC          (RBM_T0|RBM_T1|RBM_T2|RBM_T3|RBM_T4|RBM_T6|RBM_T7|RBM_DEFAULT_HELPER_CALL_TARGET)
+  #define RBM_CALLEE_TRASH_NOGC          (RBM_T0|RBM_T1|RBM_T3|RBM_T4|RBM_T6|RBM_T7|RBM_DEFAULT_HELPER_CALL_TARGET)
 
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_WRITE_BARRIER_DST|RBM_CALLEE_TRASH_NOGC)
@@ -209,7 +201,7 @@
 
   #define REG_INDIRECT_CALL_TARGET_REG    REG_T6
 
-  // Registers used by PInvoke frame setup  //should confirm.
+  // Registers used by PInvoke frame setup
   #define REG_PINVOKE_FRAME        REG_T0
   #define RBM_PINVOKE_FRAME        RBM_T0
   #define REG_PINVOKE_TCB          REG_T1
@@ -270,7 +262,7 @@
   #define RBM_FPBASE               RBM_FP
   #define STR_FPBASE               "fp"
   #define REG_SPBASE               REG_SP
-  #define RBM_SPBASE               RBM_SP     // reuse the RBM for REG_SP
+  #define RBM_SPBASE               RBM_SP
   #define STR_SPBASE               "sp"
 
   #define FIRST_ARG_STACK_OFFS    (2*REGSIZE_BYTES)   // Caller's saved FP and return address

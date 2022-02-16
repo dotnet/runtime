@@ -242,8 +242,6 @@ set( JIT_LOONGARCH64_SOURCES
   lsraloongarch64.cpp
   targetloongarch64.cpp
   unwindloongarch64.cpp
-  ##hwintrinsiclistloongarch64.cpp         ###TODO:Not implemented on loongarch64 yet.
-  ##simdashwintrinsiclistloongarch64.cpp   ###TODO:Not implemented on loongarch64 yet.
 )
 
 # We include the headers here for better experience in IDEs.
@@ -397,8 +395,6 @@ set( JIT_LOONGARCH64_HEADERS
     emitfmtsloongarch64.h
     instrsloongarch64.h
     registerloongarch64.h
-#hwintrinsiclistloongarch64.h     ###TODO:Not implemented on loongarch64 yet.
-#simdashwintrinsiclistloongarch64.h
 )
 
 convert_to_absolute_path(JIT_SOURCES ${JIT_SOURCES})

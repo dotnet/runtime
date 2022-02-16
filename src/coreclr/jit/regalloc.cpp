@@ -162,18 +162,6 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
 #if FEATURE_MULTIREG_ARGS
     if (varTypeIsStruct(argDsc->lvType))
     {
-#ifdef TARGET_LOONGARCH64
-        {
-            if (argDsc->GetOtherArgReg() != REG_NA)
-            {
-                inArgMask = genRegMask(argDsc->GetOtherArgReg());
-                if (emitter::isFloatReg(argDsc->GetOtherArgReg()))
-                    codeGen->floatRegState.rsCalleeRegArgMaskLiveIn |= inArgMask;
-                else
-                    codeGen->intRegState.rsCalleeRegArgMaskLiveIn |= inArgMask;
-            }
-        }
-#else
         if (argDsc->lvIsHfaRegArg())
         {
             assert(regState->rsIsFloat);
@@ -198,7 +186,6 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
                 regState->rsCalleeRegArgMaskLiveIn |= genRegMask(nextArgReg);
             }
         }
-#endif
     }
 #endif // FEATURE_MULTIREG_ARGS
 

@@ -1483,13 +1483,6 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
 }
 #endif // TARGET_ARM64
 
-#if defined(TARGET_LOONGARCH64)
-bool CodeGenInterface::validImmForBAL(ssize_t addr)
-{ // TODO: can amend/optimize for LoongArch64.
-    return false;
-}
-#endif // TARGET_LOONGARCH64
-
 /*****************************************************************************
  *
  *  Get the machine dependent instruction for performing sign/zero extension.

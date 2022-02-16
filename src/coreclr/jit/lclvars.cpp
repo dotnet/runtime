@@ -1050,7 +1050,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     else if (cSlots > 1)
                     {
                         varDsc->lvIsSplit = 1;
-                        // varDsc->lvFldOffset = 0;
                         varDsc->SetOtherArgReg(REG_STK);
                         varDscInfo->hasMultiSlotStruct = true;
                         varDscInfo->setAllRegArgUsed(arg1_Type);

@@ -9460,21 +9460,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             switch (addrInfo.accessType)
             {
                 case IAT_VALUE:
-                // if (validImmForBAL((ssize_t)addrInfo.addr))
-                //{
-                //    // Simple direct call
-
-                //    //TODO for LA.
-                //    callType   = emitter::EC_FUNC_TOKEN;
-                //    addr       = addrInfo.addr;
-                //    indCallReg = REG_NA;
-                //    break;
-                //}
-
-                //// otherwise the target address doesn't fit in an immediate
-                //// so we have to burn a register...
-                //__fallthrough;
-
+                    //TODO-LOONGARCH64-CQ: using B/BL for optimization.
                 case IAT_PVALUE:
                     // Load the address into a register, load indirect and call  through a register
                     // We have to use REG_INDIRECT_CALL_TARGET_REG since we assume the argument registers are in use

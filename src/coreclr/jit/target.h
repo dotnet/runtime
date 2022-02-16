@@ -181,7 +181,7 @@ enum _regMask_enum : unsigned
 
 enum _regNumber_enum : unsigned
 {
-#define REGDEF(name, rnum, mask, xname, wname) REG_##name = rnum,
+#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
@@ -193,7 +193,7 @@ enum _regNumber_enum : unsigned
 enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
-#define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
+#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
 };
@@ -702,7 +702,7 @@ inline bool isFloatRegType(var_types type)
 C_ASSERT((RBM_ALLINT & RBM_SPBASE) == RBM_NONE);
 C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_SPBASE) == RBM_NONE);
 
-#if ETW_EBP_FRAMED && !defined(TARGET_LOONGARCH64)
+#if ETW_EBP_FRAMED
 // Frame pointer isn't either if we're supporting ETW frame chaining
 C_ASSERT((RBM_ALLINT & RBM_FPBASE) == RBM_NONE);
 C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);

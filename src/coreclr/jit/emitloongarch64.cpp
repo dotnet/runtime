@@ -623,7 +623,7 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 // clang-format off
 static const char * const  RegNames[] =
 {
-    #define REGDEF(name, rnum, mask, xname, wname) xname,
+    #define REGDEF(name, rnum, mask, sname) sname,
     #include "register.h"
 };
 // clang-format on

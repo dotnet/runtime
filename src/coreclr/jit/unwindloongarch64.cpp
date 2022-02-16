@@ -232,7 +232,7 @@ void Compiler::unwindPush(regNumber reg)
 
 void Compiler::unwindAllocStack(unsigned size)
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -242,7 +242,7 @@ void Compiler::unwindAllocStack(unsigned size)
 
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -275,7 +275,7 @@ void Compiler::unwindAllocStack(unsigned size)
 
 void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -285,7 +285,7 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -343,7 +343,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
     assert(0 <= offset && offset <= 2047);
     assert((offset % 8) == 0);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -356,7 +356,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
 
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
     int z = offset / 8;
     // assert(0 <= z && z <= 0xFF);
 
@@ -390,63 +390,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
 
 void Compiler::unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
 {
-    // TODO:temp not used on loongarch64.
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-    UnwindInfo* pu = &funCurrentFunc()->uwi;
-
-    // stp reg1, reg2, [sp, #offset]
-
-    // offset for store pair in prolog must be positive and a multiple of 16.
-    assert(0 <= offset && offset <= 0xff0);
-    assert((offset % 16) == 0);
-
-    int z = offset / 8;
-    //assert(0 <= z && z <= 0x1FE);
-
-#if defined(TARGET_UNIX)
-    if (generateCFIUnwindCodes())
-    {
-        if (compGeneratingProlog)
-        {
-            FuncInfoDsc*   func     = funCurrentFunc();
-            UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
-
-            createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg1), offset);
-            createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg2), offset + 8);
-        }
-
-        return;
-    }
-#endif // TARGET_UNIX
-    if (reg1 == REG_FP)
-    {
-        // save_fpra: 0100zzzz | zzzzzzzz: save <fp,ra> pair at [sp+#Z*8], offset <= 0xff0
-        assert(reg2 == REG_RA);
-
-        pu->AddCode(0x40 | (BYTE)(z >> 8), (BYTE)z);
-    }
-    else if (reg2 == REG_RA)
-    {
-        assert(!"unimplemented on LOONGARCH yet");
-    }
-    else if (emitter::isGeneralRegister(reg1))
-    {
-        // save_regp: 11001000 | 0xxxzzzz | zzzzzzzz: save s(0 + #X) pair at [sp + #Z * 8], offset <= 4080
-        assert(REG_NEXT(reg1) == reg2);
-        assert(REG_S0 <= reg1 && // first legal pair: S0, S1
-               reg1 <= REG_S6);  // last legal pair: S6, S7 (FP is never saved without RA)
-
-        BYTE x = (BYTE)(reg1 - REG_S0);
-        //assert(0 <= x && x <= 0x6);
-
-        pu->AddCode(0xC8, (BYTE)(x << 4) | (BYTE)(z >> 8), (BYTE)z);
-    }
-    else
-    {
-        assert(!"unimplemented on LOONGARCH yet");
-    }
-#endif
+    assert(!"unused on LOONGARCH64 yet");
 }
 
 void Compiler::unwindReturn(regNumber reg)
@@ -948,13 +892,13 @@ void Compiler::unwindBegProlog()
 {
     assert(compGeneratingProlog);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         unwindBegPrologCFI();
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     FuncInfoDsc* func = funCurrentFunc();
 
@@ -980,12 +924,12 @@ void Compiler::unwindBegEpilog()
 {
     assert(compGeneratingEpilog);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     funCurrentFunc()->uwi.AddEpilog();
 }
@@ -1000,12 +944,12 @@ void Compiler::unwindEndEpilog()
 // for them.
 void Compiler::unwindPadding()
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
     GetEmitter()->emitUnwindNopPadding(pu->GetCurrentEmitterLocation(), this);
@@ -1030,7 +974,7 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     BOOL isFunclet          = (func->funKind == FUNC_ROOT) ? FALSE : TRUE;
     bool funcHasColdSection = false;
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         DWORD unwindCodeBytes = 0;
@@ -1043,7 +987,7 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     // If there is cold code, split the unwind data between the hot section and the
     // cold section. This needs to be done before we split into fragments, as each
@@ -1103,13 +1047,13 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
     static_assert_no_msg(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         unwindEmitFuncCFI(func, pHotCode, pColdCode);
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     func->uwi.Allocate((CorJitFuncKind)func->funKind, pHotCode, pColdCode, true);
 

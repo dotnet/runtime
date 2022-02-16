@@ -2321,10 +2321,6 @@ void Compiler::compSetProcessor()
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
 #endif // TARGET_ARM64
 
-#if defined(TARGET_LOONGARCH64)
-// TODO: should add LOONGARCH64's features for LOONGARCH64.
-#endif
-
     instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
     opts.setSupportedISAs(instructionSetFlags);
 
@@ -2509,8 +2505,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // For non-adaptive, padding limit is same as specified by the alignment.
         opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary;
     }
-#elif defined(TARGET_LOONGARCH64)
-// TODO: should be adaptive on LoongArch64.
 #endif
 
     assert(isPow2(opts.compJitAlignLoopBoundary));

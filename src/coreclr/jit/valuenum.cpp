@@ -49,16 +49,14 @@ struct FloatTraits
     // Notes:
     //    "Default" NaN value returned by expression 0.0f / 0.0f on x86/x64 has
     //    different binary representation (0xffc00000) than NaN on
-    //    ARM32/ARM64 (0x7fc00000).
+    //    ARM32/ARM64/LoongArch64 (0x7fc00000).
 
     static float NaN()
     {
 #if defined(TARGET_XARCH)
         unsigned bits = 0xFFC00000u;
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         unsigned           bits = 0x7FC00000u;
-#elif defined(TARGET_LOONGARCH64)
-        unsigned           bits = 0xFFC00000u;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -77,16 +75,14 @@ struct DoubleTraits
     // Notes:
     //    "Default" NaN value returned by expression 0.0 / 0.0 on x86/x64 has
     //    different binary representation (0xfff8000000000000) than NaN on
-    //    ARM32/ARM64 (0x7ff8000000000000).
+    //    ARM32/ARM64/LoongArch64 (0x7ff8000000000000).
 
     static double NaN()
     {
 #if defined(TARGET_XARCH)
         unsigned long long bits = 0xFFF8000000000000ull;
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         unsigned long long bits = 0x7FF8000000000000ull;
-#elif defined(TARGET_LOONGARCH64)
-        unsigned long long bits = 0xFFF8000000000000ull;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -2850,6 +2846,9 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             else
             {
 #ifdef TARGET_LOONGARCH64
+                // For LoongArch64, the int32 will signed-extend default,
+                // e.g. `ld_w $r4, $r5, 4` loading a int32 from the addr `$r5+4`.
+                // So there is no need to signed-extend.
                 assert(typ == TYP_INT || typ == TYP_LONG);
 #else
                 assert(typ == TYP_INT);

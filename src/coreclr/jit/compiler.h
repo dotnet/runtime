@@ -469,14 +469,15 @@ public:
 
     unsigned char lvIsTemp : 1; // Short-lifetime compiler temp
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) ||  defined(TARGET_LOONGARCH64)
     unsigned char lvIsImplicitByRef : 1; // Set if the argument is an implicit byref.
-#elif defined(TARGET_LOONGARCH64)
-    unsigned char lvIsImplicitByRef : 1; // Set if the argument is an implicit byref.
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+
+#if defined(TARGET_LOONGARCH64)
     unsigned char lvIs4Field1 : 1;       // Set if the 1st field is int or float within struct for LA-ABI64.
     unsigned char lvIs4Field2 : 1;       // Set if the 2nd field is int or float within struct for LA-ABI64.
-    unsigned char lvIsSplit : 1;         // Set if the argument is splited. also used the lvFldOffset.
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+    unsigned char lvIsSplit : 1;         // Set if the argument is splited.
+#endif // defined(TARGET_LOONGARCH64)
 
     unsigned char lvIsBoolean : 1; // set if variable is boolean
     unsigned char lvSingleDef : 1; // variable has a single def
@@ -671,9 +672,6 @@ public:
     {
         assert(lvIsHfa());
         assert(varTypeIsStruct(lvType));
-#if defined(TARGET_LOONGARCH64)
-        assert(!"lvHfaSlots called not support on LOONGARCH64!");
-#endif
         unsigned slots = 0;
 #ifdef TARGET_ARM
         slots = lvExactSize / sizeof(float);
@@ -8056,14 +8054,9 @@ public:
         // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
         return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
     }
-#elif defined(TARGET_LOONGARCH64)
-    static bool varTypeNeedsPartialCalleeSave(var_types type)
-    { // TODO: supporting SIMD feature for LoongArch64.
-        return false;
-    }
-#else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #error("Unknown target architecture for FEATURE_SIMD")
-#endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 protected:

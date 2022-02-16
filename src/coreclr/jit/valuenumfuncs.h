@@ -182,7 +182,7 @@ ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of t
 // No Hardware Intrinsics on ARM32
 
 #elif defined (TARGET_LOONGARCH64)
-    //TODO: add LoongArch64's Hardware Instructions.
+    //TODO-LOONGARCH64-CQ: add LoongArch64's Hardware Intrinsics Instructions if supported.
 
 #else
 #error Unsupported platform
