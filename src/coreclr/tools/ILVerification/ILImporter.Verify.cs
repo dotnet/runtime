@@ -1200,9 +1200,9 @@ namespace Internal.IL
                 firstTargetArg = targetMethod.OwningType;
 
                 // If the delegate is open and the target method is on a value type or primitive then the first argument of the invoke
-                // method must be a reference to that type. So make promote the type we got from the reference to a ref. (We don't need to
+                // method must be a reference to that type. So make the type we got from the reference to a ref. (We don't need to
                 // do this for the closed instance case because there we got the invocation side type from the first arg passed in, i.e.
-                // it's had the ref stripped from it implicitly).
+                // ref was stripped from it implicitly).
                 if (isOpenDelegate && firstTargetArg.IsValueType)
                     firstTargetArg = firstTargetArg.MakeByRefType();
             }
