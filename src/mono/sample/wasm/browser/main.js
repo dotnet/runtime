@@ -38,7 +38,7 @@ async function main() {
         let exit_code = ret == 42 ? 0 : 1;
         wasm_exit(exit_code);
     } catch (err) {
-        console.log(`WASM ERROR ${err}`);
+        console.error(`WASM ERROR ${err}`);
         wasm_exit(2)
     }
 }

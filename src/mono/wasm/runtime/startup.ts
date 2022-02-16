@@ -111,8 +111,8 @@ async function mono_wasm_pre_init(): Promise<void> {
             }
             catch (err: any) {
                 Module.printErr("MONO_WASM: onConfigLoaded () failed: " + err);
-                Module.printErr("MONO_WASM: Stacktrace: \n");
-                Module.printErr(err.stack);
+                //Module.printErr("MONO_WASM: Stacktrace: \n");
+                //Module.printErr(err.stack);
                 runtime_is_initialized_reject(err);
                 throw err;
             }
@@ -267,9 +267,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
             mono_wasm_globalization_init(config.globalization_mode!, config.diagnostic_tracing!);
             cwraps.mono_wasm_load_runtime("unused", config.debug_level || 0);
         } catch (err: any) {
-            Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + err);
-            Module.printErr("MONO_WASM: Stacktrace: \n");
-            Module.printErr(err.stack);
+            Module.printErr(`MONO_WASM: mono_wasm_load_runtime () failed: ${JSON.stringify(err)}`);
 
             runtime_is_initialized_reject(err);
             if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
@@ -296,9 +294,9 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
                 argsAny.loaded_cb();
             }
             catch (err: any) {
-                Module.printErr("MONO_WASM: loaded_cb () failed: " + err);
-                Module.printErr("MONO_WASM: Stacktrace: \n");
-                Module.printErr(err.stack);
+                Module.printErr(`MONO_WASM: loaded_cb () failed: ${JSON.stringify(err)}`);
+                //Module.printErr("MONO_WASM: Stacktrace: \n");
+                //Module.printErr(err.stack);
                 runtime_is_initialized_reject(err);
                 throw err;
             }
@@ -309,9 +307,9 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
                 moduleExt.onDotnetReady();
             }
             catch (err: any) {
-                Module.printErr("MONO_WASM: onDotnetReady () failed: " + err);
-                Module.printErr("MONO_WASM: Stacktrace: \n");
-                Module.printErr(err.stack);
+                Module.printErr(`MONO_WASM: onDotnetReady () failed: ${JSON.stringify(err)}`);
+                //Module.printErr("MONO_WASM: Stacktrace: \n");
+                //Module.printErr(err.stack);
                 runtime_is_initialized_reject(err);
                 throw err;
             }
@@ -319,7 +317,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
         runtime_is_initialized_resolve();
     } catch (err: any) {
-        Module.printErr("MONO_WASM: Error in finalize_startup: " + err);
+        Module.printErr(`MONO_WASM: Error in finalize_startup: ${JSON.stringify(err)}`);
         runtime_is_initialized_reject(err);
         throw err;
     }
@@ -489,7 +487,7 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
                     error = undefined;
                 }
                 catch (err) {
-                    error = new Error(`MONO_WASM: Fetch '${attemptUrl}' for ${asset.name} failed ${err}`);
+                    error = new Error(`MONO_WASM: Fetch '${attemptUrl}' for ${asset.name} failed ${JSON.stringify(err)}`);
                     continue; //next source
                 }
 
@@ -525,7 +523,7 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
         ctx.fetch_all_promises = Promise.all(fetch_promises);
         ctx.resolved_promises = await ctx.fetch_all_promises;
     } catch (err: any) {
-        Module.printErr("MONO_WASM: Error in mono_download_assets: " + err);
+        Module.printErr(`MONO_WASM: Error in mono_download_assets: ${JSON.stringify(err)}`);
         runtime_is_initialized_reject(err);
         throw err;
     }
@@ -549,7 +547,7 @@ function finalize_assets(config: MonoConfig | MonoConfigError | undefined): void
             console.log("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
         }
     } catch (err: any) {
-        Module.printErr("MONO_WASM: Error in finalize_assets: " + err);
+        Module.printErr(`MONO_WASM: Error in finalize_assets: ${JSON.stringify(err)}`);
         runtime_is_initialized_reject(err);
         throw err;
     }

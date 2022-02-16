@@ -7,6 +7,7 @@ import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 
 const commands_received : any = new Map<number, CommandResponse>();
+const wasm_func_map : any = new Map<number, string>();
 commands_received.remove = function (key: number) : CommandResponse { const value = this.get(key); this.delete(key); return value;};
 let _call_function_res_cache: any = {};
 let _next_call_function_res_id = 0;
@@ -27,6 +28,8 @@ export function mono_wasm_runtime_ready(): void {
         debugger;
     else
         console.debug("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
+
+    _readSymbolMapFile("dotnet.js.symbols");
 }
 
 export function mono_wasm_fire_debugger_agent_message(): void {
@@ -314,6 +317,44 @@ export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): voi
     console.debug(`Debugger.Debug: ${message}`);
 }
 
+function _readSymbolMapFile(filename: string): void {
+    wasm_func_map.set(9002, "xyz0");
+    wasm_func_map.set(2581, "xyz1");
+    wasm_func_map.set(8493, filename);
+}
+
+//function _symbolicate_string(message: string): string {
+    //const re0 = "(at (?<replaceSection>[^:\\()]+:wasm-function\\[(?<funcNum>\\d+)\\]:0x[a-fA-F\\d]+))";
+
+    //const newRaw = message.replace(new RegExp(re0, "g"), (substring, ...args) => {
+        //console.log(`sub: ${substring}`);
+        //console.log(`args: ${JSON.stringify(args)}`);
+
+        //const groups = args.find(arg => {
+            //console.log(`\t${JSON.stringify(arg)}`);
+            ////        console.log(`\tt: ${typeof(arg)}, ${arg.replaceSection}`);
+            //return typeof(arg) == "object" && arg.replaceSection !== undefined;
+        //});
+
+        //if (groups === undefined)
+            //return substring;
+
+        //const funcNum = groups.funcNum;
+        //const replaceSection = groups.replaceSection;
+        //const name = wasm_func_map.get(Number(funcNum));
+
+        //if (name === undefined)
+            //return substring;
+
+        //const changed = substring.replace(replaceSection, `${name} (${replaceSection})`);
+        //console.log(`repl: ${JSON.stringify(replaceSection)}`);
+        //console.log(`\t${changed}`);
+        //return changed;
+    //});
+
+    //return newRaw;
+//}
+
 export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
     const message = Module.UTF8ToString(message_ptr);
     const isFatal = !!fatal;
@@ -321,18 +362,26 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
     const dataPtr = user_data;
     const log_level = Module.UTF8ToString(log_level_ptr);
 
+    //console.error(`mono_wasm_trace_logger.. ll: ${log_level}, msg: ${message}`);
+    //if (isFatal || log_level == "critical" || log_level == "error")
+        //message = _symbolicate_string(message);
+
     if (INTERNAL["logging"] && typeof INTERNAL.logging["trace"] === "function") {
         INTERNAL.logging.trace(domain, log_level, message, isFatal, dataPtr);
         return;
     }
 
+    console.log(`orig in mono_wasm_trace_logger: msg: ${message}, isFatal: ${isFatal}`);
     if (isFatal)
-        console.trace(message);
+    {
+        console.error(new Error(message).stack);
+        return;
+    }
 
     switch (log_level) {
         case "critical":
         case "error":
-            console.error(message);
+            console.error(new Error(message).stack);
             break;
         case "warning":
             console.warn(message);

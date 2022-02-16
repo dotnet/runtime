@@ -1,0 +1,10 @@
++ set -e
++ RMDIR=
++ '[' -r == -r ']'
++ RMDIR=1
++ shift
++ PROJECT=System.Buffers.Tests
++ shift
+++ find src/libraries -name System.Buffers.Tests.csproj
+find: src/libraries: No such file or directory
++ PROJECT_FILE=

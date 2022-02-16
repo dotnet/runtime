@@ -26,10 +26,12 @@ function proxyConsoleMethod(prefix, func, asJson) {
     return function () {
         try {
             const args = [...arguments];
+            console.log(`proxy: ${JSON.stringify(args)}`);
             let payload = args[0];
             if (payload === undefined) payload = 'undefined';
             else if (payload === null) payload = 'null';
             else if (typeof payload === 'function') payload = payload.toString();
+            else if (payload instanceof Error) payload = `${payload.message}\n${payload.stack}`;
             else if (typeof payload !== 'string') {
                 try {
                     payload = JSON.stringify(payload);
@@ -52,7 +54,7 @@ function proxyConsoleMethod(prefix, func, asJson) {
                 func([prefix + payload, ...args.slice(1)]);
             }
         } catch (err) {
-            originalConsole.error(`proxyConsole failed: ${err}`)
+            originalConsole.error('proxyConsole failed', err)
         }
     };
 };
@@ -162,7 +164,7 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
     }))
 }).catch(function (err) {
     console.error(err);
-    set_exit_code(1, "failed to load the dotnet.js file.\n" + err);
+    set_exit_code(1, new Error(`failed to load the dotnet.js file`, { cause: err }));
 });
 
 const App = {
@@ -214,6 +216,7 @@ const App = {
                 const result = await MONO.mono_run_main(main_assembly_name, app_args);
                 set_exit_code(result);
             } catch (error) {
+                console.log(`error from main: ${JSON.stringify(error)}, isError: ${error instanceof Error}, type: ${typeof(error)}`);
                 if (error.name != "ExitStatus") {
                     set_exit_code(1, error);
                 }
@@ -244,10 +247,15 @@ globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.
 
 function set_exit_code(exit_code, reason) {
     if (reason) {
-        console.error(`${JSON.stringify(reason)}`);
-        if (reason.stack) {
-            console.error(reason.stack);
-        }
+        console.log(`set_exit_code: ${reason}`);
+        let errObj;
+        if (reason instanceof Error)
+            errObj = reason;
+        else
+            errObj = new Error(reason);
+
+        // doing it here handles it for non-proxy console case too
+        console.error(`${errObj.message}\n${errObj.stack}`);
     }
 
     if (is_browser) {

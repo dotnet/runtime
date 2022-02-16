@@ -621,6 +621,9 @@ mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[
 	MonoObject *exc = NULL;
 	MonoObject *res;
 
+    /*printf("-- mono_wasm_invoke_method, method is %p\n", method);*/
+    /*assert(method == null);*/
+
 	if (out_exc)
 		*out_exc = NULL;
 	res = mono_runtime_invoke (method, this_arg, params, &exc);
@@ -652,6 +655,10 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	MonoImage *image;
 	MonoMethod *method;
 
+    /*printf("-- mono_wasm_assembly_get_entry_point, assembly: %p\n", assembly);*/
+    /*assert(assembly == NULL);*/
+    /*free((char*)0x1);*/
+    /*printf("-- mono_wasm_assembly_get_entry_point, after assert, and free\n");*/
 	image = mono_assembly_get_image (assembly);
 	uint32_t entry = mono_image_get_entry_point (image);
 	if (!entry)
