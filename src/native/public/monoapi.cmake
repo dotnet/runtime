@@ -58,7 +58,45 @@ set(metadata_public_headers_base
 	sgen-bridge.h
 	threads.h
 	tokentype.h
-	verify.h)
+	verify.h
+	details/environment-functions.h
+	details/opcodes-types.h
+	details/opcodes-functions.h
+	details/sgen-bridge-types.h
+	details/sgen-bridge-functions.h
+	details/image-types.h
+	details/image-functions.h
+	details/metadata-types.h
+	details/metadata-functions.h
+	details/assembly-types.h
+	details/assembly-functions.h
+	details/loader-types.h
+	details/loader-functions.h
+	details/class-types.h
+	details/class-functions.h
+	details/object-types.h
+	details/object-functions.h
+	details/exception-types.h
+	details/exception-functions.h
+	details/reflection-types.h
+	details/reflection-functions.h
+	details/appdomain-types.h
+	details/appdomain-functions.h
+	details/threads-types.h
+	details/threads-functions.h
+	details/debug-helpers-types.h
+	details/debug-helpers-functions.h
+	details/mono-debug-types.h
+	details/mono-debug-functions.h
+	details/mono-gc-types.h
+	details/mono-gc-functions.h
+	details/mono-config-types.h
+	details/mono-config-functions.h
+	details/profiler-types.h
+	details/profiler-functions.h
+	details/mono-private-unstable-types.h
+	details/mono-private-unstable-functions.h
+	)
 addprefix(metadata_public_headers ./mono/metadata/ "${metadata_public_headers_base}")
 
 set_target_properties(monoapi_metadata PROPERTIES PUBLIC_HEADER "${metadata_public_headers}")
