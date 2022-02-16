@@ -4049,7 +4049,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             fgArgTabEntry* indirCellArg;
             if (call->HasIndirectionCellArg(&indirCellArg))
             {
-                addrNode = CreateMultiUseForIndirectionCellAddress(call, indirCellArg);
+                addrNode = CreateMultiUseForIndirectionCellAddress(indirCellArg);
             }
             else
             {
@@ -5097,13 +5097,13 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         fgArgTabEntry* entry;
         if (call->HasIndirectionCellArg(&entry))
         {
-            addr = CreateMultiUseForIndirectionCellAddress(call, entry);
+            addr = CreateMultiUseForIndirectionCellAddress(entry);
         }
         else
         {
             // If we don't pass stub address as an arg then just create the constant tree here.
             assert(call->gtStubCallStubAddr != nullptr);
-            GenTree* addr = AddrGen(call->gtStubCallStubAddr);
+            addr = AddrGen(call->gtStubCallStubAddr);
 #ifdef DEBUG
             addr->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
@@ -5131,7 +5131,6 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 // indirection cell address passed as the specified argument.
 //
 // Arguments:
-//    call - the call that has the argument
 //    indirCellArg - the arg table entry for the indirection cell
 //
 // Returns: A new tree that represents another use.
@@ -5144,9 +5143,8 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 //   done. This function creates such a temp when necessary and returns another
 //   use of it.
 //
-GenTree* Lowering::CreateMultiUseForIndirectionCellAddress(GenTreeCall* call, fgArgTabEntry* indirCellArg)
+GenTree* Lowering::CreateMultiUseForIndirectionCellAddress(fgArgTabEntry* indirCellArg)
 {
-    assert(call->gtCallType == CT_USER_FUNC);
     assert(indirCellArg->isIndirectionCellArg());
 
     // Indirection cell is always in a register so is always a late arg.

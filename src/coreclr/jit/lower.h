@@ -157,7 +157,7 @@ private:
     void InsertProfTailCallHook(GenTreeCall* callNode, GenTree* insertionPoint);
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
-    GenTree* CreateMultiUseForIndirectionCellAddress(GenTreeCall* call, fgArgTabEntry* indirCellArg);
+    GenTree* CreateMultiUseForIndirectionCellAddress(fgArgTabEntry* indirCellArg);
     void LowerArgsForCall(GenTreeCall* call);
     void ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
     GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* info, var_types type);
