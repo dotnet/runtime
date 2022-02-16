@@ -900,12 +900,8 @@ void UpdateRuntimeStateForAssemblyCustomAttribute(Module* pModule, mdToken tkCus
         actualFlags = ((DWORD)pAssembly->GetDebuggerInfoBits() & mask) | flags;
         pAssembly->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)actualFlags);
 
-        ModuleIterator i = pAssembly->IterateModules();
-        while (i.Next())
-        {
-            actualFlags = ((DWORD)(i.GetModule()->GetDebuggerInfoBits()) & mask) | flags;
-            i.GetModule()->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)actualFlags);
-        }
+        actualFlags = ((DWORD)(pAssembly->GetModule()->GetDebuggerInfoBits()) & mask) | flags;
+        pAssembly->GetModule()->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)actualFlags);
     }
 
     // InternalsVisibleTo and IgnoresAccessChecksTo attribute processing

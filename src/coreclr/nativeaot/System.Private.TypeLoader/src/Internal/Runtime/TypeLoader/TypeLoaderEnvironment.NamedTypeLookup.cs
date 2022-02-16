@@ -292,8 +292,7 @@ namespace Internal.Runtime.TypeLoader
                 metadataLookupResult.VersionNumber = -1;
             }
 
-            NamedTypeLookupResult runtimeTypeHandleResult;
-            if (_runtimeTypeHandleToMetadataHashtable.TryGetValue(runtimeTypeHandle, out runtimeTypeHandleResult))
+            if (_runtimeTypeHandleToMetadataHashtable.TryGetValue(runtimeTypeHandle, out _))
             {
                 metadataLookupResult.GcStaticFields = IntPtr.Zero;
                 metadataLookupResult.NonGcStaticFields = IntPtr.Zero;

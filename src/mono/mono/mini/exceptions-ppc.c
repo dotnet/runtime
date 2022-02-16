@@ -36,62 +36,62 @@
 /*
 
 struct sigcontext {
-    int      sc_onstack;     // sigstack state to restore 
-    int      sc_mask;        // signal mask to restore 
-    int      sc_ir;          // pc 
-    int      sc_psw;         // processor status word 
-    int      sc_sp;          // stack pointer if sc_regs == NULL 
-    void    *sc_regs;        // (kernel private) saved state 
+    int      sc_onstack;     // sigstack state to restore
+    int      sc_mask;        // signal mask to restore
+    int      sc_ir;          // pc
+    int      sc_psw;         // processor status word
+    int      sc_sp;          // stack pointer if sc_regs == NULL
+    void    *sc_regs;        // (kernel private) saved state
 };
 
 struct ucontext {
         int             uc_onstack;
-        sigset_t        uc_sigmask;     // signal mask used by this context 
-        stack_t         uc_stack;       // stack used by this context 
-        struct ucontext *uc_link;       // pointer to resuming context 
-        size_t          uc_mcsize;      // size of the machine context passed in 
-        mcontext_t      uc_mcontext;    // machine specific context 
+        sigset_t        uc_sigmask;     // signal mask used by this context
+        stack_t         uc_stack;       // stack used by this context
+        struct ucontext *uc_link;       // pointer to resuming context
+        size_t          uc_mcsize;      // size of the machine context passed in
+        mcontext_t      uc_mcontext;    // machine specific context
 };
 
 typedef struct ppc_exception_state {
-        unsigned long dar;      // Fault registers for coredump 
+        unsigned long dar;      // Fault registers for coredump
         unsigned long dsisr;
-        unsigned long exception;// number of powerpc exception taken 
-        unsigned long pad0;     // align to 16 bytes 
+        unsigned long exception;// number of powerpc exception taken
+        unsigned long pad0;     // align to 16 bytes
 
-        unsigned long pad1[4];  // space in PCB "just in case" 
+        unsigned long pad1[4];  // space in PCB "just in case"
 } ppc_exception_state_t;
 
 typedef struct ppc_vector_state {
         unsigned long   save_vr[32][4];
         unsigned long   save_vscr[4];
         unsigned int    save_pad5[4];
-        unsigned int    save_vrvalid;                   // VRs that have been saved 
+        unsigned int    save_vrvalid;                   // VRs that have been saved
         unsigned int    save_pad6[7];
 } ppc_vector_state_t;
 
 typedef struct ppc_float_state {
         double  fpregs[32];
 
-        unsigned int fpscr_pad; // fpscr is 64 bits, 32 bits of rubbish 
-        unsigned int fpscr;     // floating point status register 
+        unsigned int fpscr_pad; // fpscr is 64 bits, 32 bits of rubbish
+        unsigned int fpscr;     // floating point status register
 } ppc_float_state_t;
 
 typedef struct ppc_thread_state {
-        unsigned int srr0;      // Instruction address register (PC) 
-        unsigned int srr1;      // Machine state register (supervisor) 
+        unsigned int srr0;      // Instruction address register (PC)
+        unsigned int srr1;      // Machine state register (supervisor)
         unsigned int r0;
         unsigned int r1;
         unsigned int r2;
-	... 
+	...
         unsigned int r31;
-        unsigned int cr;        // Condition register 
-        unsigned int xer;       // User's integer exception register 
-        unsigned int lr;        // Link register 
-        unsigned int ctr;       // Count register 
-        unsigned int mq;        // MQ register (601 only) 
+        unsigned int cr;        // Condition register
+        unsigned int xer;       // User's integer exception register
+        unsigned int lr;        // Link register
+        unsigned int ctr;       // Count register
+        unsigned int mq;        // MQ register (601 only)
 
-        unsigned int vrsave;    // Vector Save Register 
+        unsigned int vrsave;    // Vector Save Register
 } ppc_thread_state_t;
 
 struct mcontext {
@@ -115,19 +115,19 @@ struct pt_regs {
         unsigned long gpr[32];
         unsigned long nip;
         unsigned long msr;
-        unsigned long orig_gpr3;        // Used for restarting system calls 
+        unsigned long orig_gpr3;        // Used for restarting system calls
         unsigned long ctr;
         unsigned long link;
         unsigned long xer;
         unsigned long ccr;
-        unsigned long mq;               // 601 only (not used at present) 
-                                        // Used on APUS to hold IPL value. 
-        unsigned long trap;             // Reason for being here 
+        unsigned long mq;               // 601 only (not used at present)
+                                        // Used on APUS to hold IPL value.
+        unsigned long trap;             // Reason for being here
         // N.B. for critical exceptions on 4xx, the dar and dsisr
-        // fields are overloaded to hold srr0 and srr1. 
-        unsigned long dar;              // Fault registers 
-        unsigned long dsisr;            // on 4xx/Book-E used for ESR 
-        unsigned long result;           // Result of a system call 
+        // fields are overloaded to hold srr0 and srr1.
+        unsigned long dar;              // Fault registers
+        unsigned long dsisr;            // on 4xx/Book-E used for ESR
+        unsigned long result;           // Result of a system call
 };
 struct mcontext {
         elf_gregset_t   mc_gregs;
@@ -141,22 +141,22 @@ struct ucontext {
         struct ucontext *uc_link;
         stack_t          uc_stack;
         int              uc_pad[7];
-        struct mcontext *uc_regs;       // points to uc_mcontext field 
+        struct mcontext *uc_regs;       // points to uc_mcontext field
         sigset_t         uc_sigmask;
-        // glibc has 1024-bit signal masks, ours are 64-bit 
+        // glibc has 1024-bit signal masks, ours are 64-bit
         int              uc_maskext[30];
         int              uc_pad2[3];
         struct mcontext  uc_mcontext;
 };
 
-#define ELF_NGREG       48      // includes nip, msr, lr, etc. 
-#define ELF_NFPREG      33      // includes fpscr 
+#define ELF_NGREG       48      // includes nip, msr, lr, etc.
+#define ELF_NFPREG      33      // includes fpscr
 
-// General registers 
+// General registers
 typedef unsigned long elf_greg_t;
 typedef elf_greg_t elf_gregset_t[ELF_NGREG];
 
-// Floating point registers 
+// Floating point registers
 typedef double elf_fpreg_t;
 typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
 
@@ -256,7 +256,7 @@ emit_save_saved_regs (guint8 *code, int pos)
  * mono_arch_get_call_filter:
  *
  * Returns a pointer to a method which calls an exception filter. We
- * also use this function to call finally handlers (we pass NULL as 
+ * also use this function to call finally handlers (we pass NULL as
  * @exc object in this case).
  */
 gpointer
@@ -357,8 +357,8 @@ mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 /**
  * arch_get_throw_exception_generic:
  *
- * Returns a function pointer which can be used to raise 
- * exceptions. The returned function has the following 
+ * Returns a function pointer which can be used to raise
+ * exceptions. The returned function has the following
  * signature: void (*func) (MonoException *exc); or
  * void (*func) (guint32 ex_token, gpointer ip)
  *
@@ -461,8 +461,8 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
  * mono_arch_get_rethrow_preserve_exception:
  * \returns a function pointer which can be used to rethrow
  * exceptions and completely preserve trace_ips.
- * The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
+ * The returned function has the following
+ * signature: void (*func) (MonoException *exc);
  */
 gpointer
 mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
@@ -476,9 +476,9 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 
 /**
  * mono_arch_get_rethrow_exception:
- * \returns a function pointer which can be used to rethrow 
- * exceptions. The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
+ * \returns a function pointer which can be used to rethrow
+ * exceptions. The returned function has the following
+ * signature: void (*func) (MonoException *exc);
  */
 gpointer
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
@@ -493,13 +493,13 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 /**
  * arch_get_throw_exception:
  *
- * Returns a function pointer which can be used to raise 
- * exceptions. The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
+ * Returns a function pointer which can be used to raise
+ * exceptions. The returned function has the following
+ * signature: void (*func) (MonoException *exc);
  * For example to raise an arithmetic exception you can use:
  *
- * x86_push_imm (code, mono_get_exception_arithmetic ()); 
- * x86_call_code (code, arch_get_throw_exception ()); 
+ * x86_push_imm (code, mono_get_exception_arithmetic ());
+ * x86_call_code (code, arch_get_throw_exception ());
  *
  */
 gpointer
@@ -514,9 +514,9 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 
 /**
  * mono_arch_get_throw_corlib_exception:
- * \returns a function pointer which can be used to raise 
- * corlib exceptions. The returned function has the following 
- * signature: void (*func) (guint32 ex_token, guint32 offset); 
+ * \returns a function pointer which can be used to raise
+ * corlib exceptions. The returned function has the following
+ * signature: void (*func) (guint32 ex_token, guint32 offset);
  * On PPC, we pass the ip instead of the offset
  */
 gpointer
@@ -535,8 +535,8 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
  * See exceptions-amd64.c for docs.
  */
 gboolean
-mono_arch_unwind_frame (MonoJitTlsData *jit_tls, 
-						MonoJitInfo *ji, MonoContext *ctx, 
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
+						MonoJitInfo *ji, MonoContext *ctx,
 						MonoContext *new_ctx, MonoLMF **lmf,
 						host_mgreg_t **save_locations,
 						StackFrameInfo *frame)
@@ -581,7 +581,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 			for (i = MONO_PPC_FIRST_SAVED_GREG; i < MONO_MAX_IREGS; ++i)
 				regs [i] = ctx->regs [i];
 
-			gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8*)ji->code_start, 
+			gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8*)ji->code_start,
 							   (guint8*)ji->code_start + ji->code_size,
 							   (guint8*)ip, NULL, regs, ppc_lr + 1,
 							   save_locations, MONO_MAX_IREGS, &cfa);
@@ -599,7 +599,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 
 		return TRUE;
 	} else if (*lmf) {
-		
+
 		if ((ji = mini_jit_info_table_find ((gpointer)(*lmf)->eip))) {
 		} else {
 			if (!(*lmf)->method)
@@ -796,7 +796,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj)
 
 	result = mono_handle_exception (&mctx, obj);
 	/* restore the context so that returning from the signal handler will invoke
-	 * the catch clause 
+	 * the catch clause
 	 */
 	mono_monoctx_to_sigctx (&mctx, ctx);
 	return result;

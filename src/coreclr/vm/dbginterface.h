@@ -68,7 +68,7 @@ public:
                             DWORD        dwModuleName,    // number of characters in file name excludign null
                             Assembly *   pAssembly,       // the assembly the module belongs to
                             AppDomain *  pAppDomain,      // the AppDomain the module is being loaded into
-                            DomainFile * pDomainFile,
+                            DomainAssembly * pDomainAssembly,
                             BOOL         fAttaching) = 0; // true if this notification is due to a debugger
                                                           // being attached to the process
 
@@ -242,7 +242,7 @@ public:
 
     // send a custom notification from the target to the RS. This will become an ICorDebugThread and
     // ICorDebugAppDomain on the RS.
-    virtual void SendCustomDebuggerNotification(Thread * pThread, DomainFile * pDomainFile, mdTypeDef classToken) = 0;
+    virtual void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomainAssembly, mdTypeDef classToken) = 0;
 
     // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
     virtual void SendMDANotification(

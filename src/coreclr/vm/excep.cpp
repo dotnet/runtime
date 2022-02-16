@@ -500,7 +500,7 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
     // Check if we are required to compute the RuntimeWrapExceptions status.
     BOOL fIsRuntimeWrappedException = ((throwable != NULL) && (throwable->GetMethodTable() == pMT_RuntimeWrappedException));
     BOOL fRequiresComputingRuntimeWrapExceptionsStatus = (fIsRuntimeWrappedException &&
-                                                          (!(pAssembly->GetManifestModule()->IsRuntimeWrapExceptionsStatusComputed())));
+                                                          (!(pAssembly->GetModule()->IsRuntimeWrapExceptionsStatusComputed())));
 
     CONTRACTL
     {
@@ -513,7 +513,7 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
     }
     CONTRACTL_END;
 
-    if (fIsRuntimeWrappedException && (!pAssembly->GetManifestModule()->IsRuntimeWrapExceptions()))
+    if (fIsRuntimeWrappedException && (!pAssembly->GetModule()->IsRuntimeWrapExceptions()))
     {
         // We already created the instance, fetched the field.  We know it is
         // not marshal by ref, or any of the other cases that might trigger GC.
@@ -11906,8 +11906,8 @@ VOID DECLSPEC_NORETURN ThrowFieldLayoutError(mdTypeDef cl,                // cl 
     }
 
     CHAR offsetBuf[16];
-    sprintf_s(offsetBuf, COUNTOF(offsetBuf), "%d", dwOffset);
-    offsetBuf[COUNTOF(offsetBuf) - 1] = '\0';
+    sprintf_s(offsetBuf, ARRAY_SIZE(offsetBuf), "%d", dwOffset);
+    offsetBuf[ARRAY_SIZE(offsetBuf) - 1] = '\0';
 
     pModule->GetAssembly()->ThrowTypeLoadException(pszNamespace,
                                                    pszName,
@@ -12136,8 +12136,8 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
          _ASSERTE(pAssemblyTypeFrom != NULL);
          _ASSERTE(pAssemblyTypeTo != NULL);
 
-         PEAssembly *pPEAssemblyTypeFrom = pAssemblyTypeFrom->GetManifestFile();
-         PEAssembly *pPEAssemblyTypeTo = pAssemblyTypeTo->GetManifestFile();
+         PEAssembly *pPEAssemblyTypeFrom = pAssemblyTypeFrom->GetPEAssembly();
+         PEAssembly *pPEAssemblyTypeTo = pAssemblyTypeTo->GetPEAssembly();
 
          _ASSERTE(pPEAssemblyTypeFrom != NULL);
          _ASSERTE(pPEAssemblyTypeTo != NULL);

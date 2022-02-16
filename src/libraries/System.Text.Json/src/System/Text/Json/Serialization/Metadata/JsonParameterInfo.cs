@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Metadata
                 if (_runtimeTypeInfo == null)
                 {
                     Debug.Assert(Options != null);
-                    _runtimeTypeInfo = Options!.GetOrAddClass(RuntimePropertyType);
+                    _runtimeTypeInfo = Options!.GetOrAddJsonTypeInfo(RuntimePropertyType);
                 }
 
                 return _runtimeTypeInfo;
@@ -101,14 +101,14 @@ namespace System.Text.Json.Serialization.Metadata
                 // doesn't match the parameter type, use reflection to get the default value.
                 Type parameterType = parameterInfo.ParameterType;
 
-                GenericMethodHolder holder;
-                if (matchingProperty.Options.TryGetClass(parameterType, out JsonTypeInfo? typeInfo))
+                DefaultValueHolder holder;
+                if (matchingProperty.Options.TryGetJsonTypeInfo(parameterType, out JsonTypeInfo? typeInfo))
                 {
-                    holder = typeInfo.GenericMethods;
+                    holder = typeInfo.DefaultValueHolder;
                 }
                 else
                 {
-                    holder = GenericMethodHolder.CreateHolder(parameterInfo.ParameterType);
+                    holder = DefaultValueHolder.CreateHolder(parameterInfo.ParameterType);
                 }
 
                 jsonParameterInfo.DefaultValue = holder.DefaultValue;

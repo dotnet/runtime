@@ -141,7 +141,7 @@ namespace System.Runtime.CompilerServices
         internal static bool ObjectHasReferences(object obj)
         {
             // TODO: Missing intrinsic in interpreter
-            return RuntimeTypeHandle.HasReferences(obj.GetType() as RuntimeType);
+            return RuntimeTypeHandle.HasReferences((obj.GetType() as RuntimeType)!);
         }
 
         public static object GetUninitializedObject(

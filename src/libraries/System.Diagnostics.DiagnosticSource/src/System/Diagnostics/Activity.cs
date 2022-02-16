@@ -684,9 +684,9 @@ namespace System.Diagnostics
                 return;
             }
 
-            if (!IsFinished)
+            if (!IsStopped)
             {
-                IsFinished = true;
+                IsStopped = true;
 
                 if (Duration == TimeSpan.Zero)
                 {
@@ -920,7 +920,7 @@ namespace System.Diagnostics
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif
-        internal static bool TryConvertIdToContext(string traceParent, string? traceState, out ActivityContext context)
+        internal static bool TryConvertIdToContext(string traceParent, string? traceState, bool isRemote, out ActivityContext context)
         {
             context = default;
             if (!IsW3CId(traceParent))
@@ -941,7 +941,8 @@ namespace System.Diagnostics
                             new ActivityTraceId(traceIdSpan.ToString()),
                             new ActivitySpanId(spanIdSpan.ToString()),
                             (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(traceParent[53], traceParent[54]),
-                            traceState);
+                            traceState,
+                            isRemote);
 
             return true;
         }
@@ -951,7 +952,7 @@ namespace System.Diagnostics
         /// </summary>
         public void Dispose()
         {
-            if (!IsFinished)
+            if (!IsStopped)
             {
                 Stop();
             }
@@ -1232,7 +1233,7 @@ namespace System.Diagnostics
 
         private static bool ValidateSetCurrent(Activity? activity)
         {
-            bool canSet = activity == null || (activity.Id != null && !activity.IsFinished);
+            bool canSet = activity == null || (activity.Id != null && !activity.IsStopped);
             if (!canSet)
             {
                 NotifyError(new InvalidOperationException(SR.ActivityNotRunning));
@@ -1298,18 +1299,24 @@ namespace System.Diagnostics
             get => (_w3CIdFlags & ActivityTraceFlagsIsSet) != 0;
         }
 
-        private bool IsFinished
+        /// <summary>
+        /// Indicates whether this <see cref="Activity"/> object is stopped
+        /// </summary>
+        /// <remarks>
+        /// When subscribing to <see cref="Activity"/> stop event using <see cref="ActivityListener.ActivityStopped"/>, the received <see cref="Activity"/> object in the event callback will have <see cref="IsStopped"/> as true.
+        /// </remarks>
+        public bool IsStopped
         {
-            get => (_state & State.IsFinished) != 0;
-            set
+            get => (_state & State.IsStopped) != 0;
+            private set
             {
                 if (value)
                 {
-                    _state |= State.IsFinished;
+                    _state |= State.IsStopped;
                 }
                 else
                 {
-                    _state &= ~State.IsFinished;
+                    _state &= ~State.IsStopped;
                 }
             }
         }
@@ -1623,7 +1630,7 @@ namespace System.Diagnostics
             FormatW3C = 0b_0_00000_10,
             FormatFlags = 0b_0_00000_11,
 
-            IsFinished = 0b_1_00000_00,
+            IsStopped = 0b_1_00000_00,
         }
     }
 

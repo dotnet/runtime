@@ -81,11 +81,8 @@ namespace System.IO.IsolatedStorage
         }
 
         // If IsolatedStorageFile is null, then we default to using a file that is scoped by user, appdomain, and assembly.
-        private static InitialiationData InitializeFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile? isf)
+        private static InitialiationData InitializeFileStream(string path!!, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile? isf)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             if ((path.Length == 0) || path.Equals(BackSlash))
                 throw new ArgumentException(
                    SR.IsolatedStorage_Path);

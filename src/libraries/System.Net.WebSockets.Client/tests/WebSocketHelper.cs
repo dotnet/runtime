@@ -125,7 +125,7 @@ namespace System.Net.WebSockets.Client.Tests
         private static bool InitWebSocketSupported()
         {
             ClientWebSocket cws = null;
-            if (PlatformDetection.IsBrowser && !PlatformDetection.IsBrowserDomSupported)
+            if (PlatformDetection.IsBrowser && !PlatformDetection.IsWebSocketSupported)
             {
                 return false;
             }

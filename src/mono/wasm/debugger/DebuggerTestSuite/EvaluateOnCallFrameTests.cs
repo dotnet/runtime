@@ -1016,6 +1016,28 @@ namespace DebuggerTests
                Assert.Equal(internalAndProtected[1]["value"]["value"], "protected");
                Assert.Equal(priv[0]["value"]["value"], "private");
            });
+        
+        [Fact]
+        public async Task StructureGetters() =>  await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.StructureGetters", "Evaluate", 2, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.StructureGetters:Evaluate'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var (obj, _) = await EvaluateOnCallFrame(id, "s"); 
+                var props = await GetProperties(obj["objectId"]?.Value<string>());
+               
+                await CheckProps(props, new
+                {
+                    Id = TGetter("Id", TNumber(123))
+                }, "s#1");
+                
+                var getter = props.FirstOrDefault(p => p["name"]?.Value<string>() == "Id");
+                Assert.NotNull(getter);
+                var getterId = getter["get"]["objectId"]?.Value<string>();
+                var getterProps = await GetProperties(getterId);
+                Assert.Equal(getterProps[0]?["value"]?["value"]?.Value<int>(), 123);
+            });
     }
 
 }

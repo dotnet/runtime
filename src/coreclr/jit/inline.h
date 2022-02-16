@@ -581,7 +581,6 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
     CORINFO_CLASS_HANDLE   clsHandle;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
     GenTree*               retExpr;
-    DWORD                  dwRestrictions;
     unsigned               preexistingSpillTemp;
     unsigned               clsAttr;
     unsigned               methAttr;
@@ -589,6 +588,15 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
     var_types              fncRetType;
     bool                   exactContextNeedsRuntimeLookup;
     InlineContext*         inlinersContext;
+};
+
+// LateDevirtualizationInfo
+//
+// Used to fill in missing contexts during late devirtualization.
+//
+struct LateDevirtualizationInfo
+{
+    CORINFO_CONTEXT_HANDLE exactContextHnd;
 };
 
 // InlArgInfo describes inline candidate argument properties.

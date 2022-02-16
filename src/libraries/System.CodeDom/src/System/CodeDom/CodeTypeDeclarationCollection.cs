@@ -27,26 +27,16 @@ namespace System.CodeDom
 
         public int Add(CodeTypeDeclaration value) => List.Add(value);
 
-        public void AddRange(CodeTypeDeclaration[] value)
+        public void AddRange(CodeTypeDeclaration[] value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             for (int i = 0; i < value.Length; i++)
             {
                 Add(value[i]);
             }
         }
 
-        public void AddRange(CodeTypeDeclarationCollection value)
+        public void AddRange(CodeTypeDeclarationCollection value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)
             {

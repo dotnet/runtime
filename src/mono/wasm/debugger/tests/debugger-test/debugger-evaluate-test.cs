@@ -838,6 +838,19 @@ namespace DebuggerTests
             var testClass = new TestClass();
         }
     }
+
+    public static class StructureGetters
+    {
+        public struct Point
+        {
+            public int Id { get { return 123; } }
+        }
+
+        public static void Evaluate()
+        {
+            var s = new Point();
+        }
+    }
 }
 
 namespace DebuggerTestsV2

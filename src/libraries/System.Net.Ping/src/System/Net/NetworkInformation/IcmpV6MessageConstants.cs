@@ -54,52 +54,30 @@ namespace System.Net.NetworkInformation
     {
         public static IPStatus MapV6TypeToIPStatus(byte type, byte code)
         {
-            switch ((IcmpV6MessageType)type)
+            return (IcmpV6MessageType)type switch
             {
-                case IcmpV6MessageType.EchoReply:
-                    return IPStatus.Success;
-
-                case IcmpV6MessageType.DestinationUnreachable:
-                    switch ((IcmpV6DestinationUnreachableCode)code)
-                    {
-                        case IcmpV6DestinationUnreachableCode.NoRouteToDestination:
-                            return IPStatus.BadRoute;
-                        case IcmpV6DestinationUnreachableCode.SourceRoutingHeaderError:
-                            return IPStatus.BadHeader;
-                        default:
-                            return IPStatus.DestinationUnreachable;
-                    }
-
-                case IcmpV6MessageType.PacketTooBig:
-                    return IPStatus.PacketTooBig;
-
-                case IcmpV6MessageType.TimeExceeded:
-                    switch ((IcmpV6TimeExceededCode)code)
-                    {
-                        case IcmpV6TimeExceededCode.HopLimitExceeded:
-                            return IPStatus.TimeExceeded;
-                        case IcmpV6TimeExceededCode.FragmentReassemblyTimeExceeded:
-                            return IPStatus.TtlReassemblyTimeExceeded;
-                        default:
-                            return IPStatus.TimeExceeded;
-                    }
-
-                case IcmpV6MessageType.ParameterProblem:
-                    switch ((IcmpV6ParameterProblemCode)code)
-                    {
-                        case IcmpV6ParameterProblemCode.ErroneousHeaderField:
-                            return IPStatus.BadHeader;
-                        case IcmpV6ParameterProblemCode.UnrecognizedNextHeader:
-                            return IPStatus.UnrecognizedNextHeader;
-                        case IcmpV6ParameterProblemCode.UnrecognizedIpv6Option:
-                            return IPStatus.BadOption;
-                        default:
-                            return IPStatus.ParameterProblem;
-                    }
-
-                default:
-                    return IPStatus.Unknown;
-            }
+                IcmpV6MessageType.EchoReply => IPStatus.Success,
+                IcmpV6MessageType.DestinationUnreachable => (IcmpV6DestinationUnreachableCode)code switch
+                {
+                    IcmpV6DestinationUnreachableCode.NoRouteToDestination => IPStatus.BadRoute,
+                    IcmpV6DestinationUnreachableCode.SourceRoutingHeaderError => IPStatus.BadHeader,
+                    _ => IPStatus.DestinationUnreachable,
+                },
+                IcmpV6MessageType.PacketTooBig => IPStatus.PacketTooBig,
+                IcmpV6MessageType.TimeExceeded => (IcmpV6TimeExceededCode)code switch
+                {
+                    IcmpV6TimeExceededCode.FragmentReassemblyTimeExceeded => IPStatus.TtlReassemblyTimeExceeded,
+                    _ => IPStatus.TtlExpired,
+                },
+                IcmpV6MessageType.ParameterProblem => (IcmpV6ParameterProblemCode)code switch
+                {
+                    IcmpV6ParameterProblemCode.ErroneousHeaderField => IPStatus.BadHeader,
+                    IcmpV6ParameterProblemCode.UnrecognizedNextHeader => IPStatus.UnrecognizedNextHeader,
+                    IcmpV6ParameterProblemCode.UnrecognizedIpv6Option => IPStatus.BadOption,
+                    _ => IPStatus.ParameterProblem,
+                },
+                _ => IPStatus.Unknown,
+            };
         }
     }
 }

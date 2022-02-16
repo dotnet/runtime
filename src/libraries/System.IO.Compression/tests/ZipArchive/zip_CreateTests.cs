@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
-using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Compression.Tests
 {
-    public class zip_CreateTests : ZipFileTestBase
+    public partial class zip_CreateTests : ZipFileTestBase
     {
         [Fact]
         public static void CreateModeInvalidOperations()

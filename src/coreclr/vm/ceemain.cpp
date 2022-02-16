@@ -185,7 +185,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
-#include "notifyexternals.h"
 #include "mngstdinterfaces.h"
 #include "interoplibinterface.h"
 #endif // FEATURE_COMINTEROP

@@ -15,6 +15,7 @@ enum
     PAL_TlsHandshakeState_WouldBlock = 2,
     PAL_TlsHandshakeState_ServerAuthCompleted = 3,
     PAL_TlsHandshakeState_ClientAuthCompleted = 4,
+    PAL_TlsHandshakeState_ClientCertRequested = 5,
 };
 typedef int32_t PAL_TlsHandshakeState;
 
@@ -99,6 +100,17 @@ pOSStatus: Receives the value returned by SSLSetSessionOption
 */
 PALEXPORT int32_t
 AppleCryptoNative_SslSetBreakOnServerAuth(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus);
+
+/*
+Sets the policy of whether or not to break when certificate request was received on client.
+
+Returns 1 on success, 0 on failure, other values on invalid state.
+
+Output:
+pOSStatus: Receives the value returned by SSLSetSessionOption
+*/
+PALEXPORT int32_t
+AppleCryptoNative_SslSetBreakOnCertRequested(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus);
 
 /*
 Sets the policy of whether or not to break when a client identity has been presented.

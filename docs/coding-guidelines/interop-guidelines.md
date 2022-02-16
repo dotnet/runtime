@@ -180,6 +180,8 @@ This leaves us with a situation where we can't write portable P/Invoke declarati
 
 To address this, we're moving to a model where all UNIX interop from dotnet/runtime starts with a P/Invoke to a C++ lib written specifically for dotnet/runtime. These libs -- System.*.Native.so (aka "shims") -- are intended to be very thin layers over underlying platform libraries. Generally, they are not there to add any significant abstraction, but to create a stable ABI such that the same IL assembly can work across UNIX flavors.
 
+The System.Native shims are a private implementation detail of the Microsoft.NETCore.App shared framework and are intended only for use by code inside of the shared framework. Calling into the shims from external to Microsoft.NETCore.App has similar risks to using private reflection, with no guarantees from version to version or even patch to patch of stable exports. Assemblies that ship outside of the shared framework (e.g. Microsoft.Extensions.*) must not directly access the shims.
+
 Guidelines for shim C++ API:
 
 - Keep them as "thin"/1:1 as possible.

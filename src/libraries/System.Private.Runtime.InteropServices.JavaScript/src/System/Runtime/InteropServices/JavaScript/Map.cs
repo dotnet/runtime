@@ -206,10 +206,9 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (_mapItemIterator == null)
                         _mapItemIterator = (JSObject)_mapItemCollection._map.Invoke(_mapItemCollection._iterator);
 
-                    var done = false;
                     using (var result = (JSObject)_mapItemIterator.Invoke("next"))
                     {
-                        done = (bool)result.GetObjectProperty("done");
+                        bool done = (bool)result.GetObjectProperty("done");
                         if (!done)
                             Current = result.GetObjectProperty("value");
                         return !done;

@@ -13,8 +13,7 @@ internal static partial class Interop
 
         internal static bool IsGetConsoleModeCallSuccessful(IntPtr handle)
         {
-            int mode;
-            return GetConsoleMode(handle, out mode);
+            return GetConsoleMode(handle, out _);
         }
 
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]

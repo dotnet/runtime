@@ -152,7 +152,7 @@ namespace System.Xml.Schema
                     schemaIndex--;
                 }
 
-                for (int i = schemaIndex; schemaIndex >= 0; schemaIndex--)
+                for (; schemaIndex >= 0; schemaIndex--)
                 {
                     listSchema = (XmlSchema)_lockList.GetByIndex(schemaIndex)!;
                     listSchema.IsProcessing = false; //Reset processing flag from Preprocess
@@ -344,7 +344,7 @@ namespace System.Xml.Schema
 
                 if (_schemaLocations![ruri] == null)
                 { // Only if location already not processed
-                    object? obj = null;
+                    object? obj;
                     try
                     {
                         obj = GetSchemaEntity(ruri);
@@ -534,7 +534,7 @@ namespace System.Xml.Schema
 
         private void Preprocess(XmlSchema schema, string? targetNamespace, ArrayList imports)
         {
-            XmlSchema? prevRootSchemaForRedefine = null;
+            XmlSchema? prevRootSchemaForRedefine;
             if (schema.IsProcessing)
             {
                 return;

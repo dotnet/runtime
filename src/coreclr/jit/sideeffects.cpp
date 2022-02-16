@@ -136,7 +136,7 @@ AliasSet::AliasSet()
 //    node - The node in question.
 //
 AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
-    : m_compiler(compiler), m_node(node), m_flags(0), m_lclNum(0)
+    : m_compiler(compiler), m_node(node), m_flags(0), m_lclNum(0), m_lclOffs(0)
 {
     if (node->IsCall())
     {
@@ -164,16 +164,25 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         isWrite = true;
         node    = node->gtGetOp1();
     }
-    else if (node->OperIsStore())
+    else if (node->OperIsStore() || node->OperIs(GT_MEMORYBARRIER))
     {
         isWrite = true;
     }
+#ifdef FEATURE_HW_INTRINSICS
+    else if (node->OperIsHWIntrinsic() && node->AsHWIntrinsic()->OperIsMemoryStore())
+    {
+        isWrite = true;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    assert(isWrite || !node->OperRequiresAsgFlag());
 
     // `node` is the location being accessed. Determine whether or not it is a memory or local variable access, and if
     // it is the latter, get the number of the lclVar.
     bool     isMemoryAccess = false;
     bool     isLclVarAccess = false;
     unsigned lclNum         = 0;
+    unsigned lclOffs        = 0;
     if (node->OperIsIndir())
     {
         // If the indirection targets a lclVar, we can be more precise with regards to aliasing by treating the
@@ -183,6 +192,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         {
             isLclVarAccess = true;
             lclNum         = address->AsLclVarCommon()->GetLclNum();
+            lclOffs        = address->AsLclVarCommon()->GetLclOffs();
         }
         else
         {
@@ -197,6 +207,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
     {
         isLclVarAccess = true;
         lclNum         = node->AsLclVarCommon()->GetLclNum();
+        lclOffs        = node->AsLclVarCommon()->GetLclOffs();
     }
     else
     {
@@ -221,7 +232,8 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         if (isLclVarAccess)
         {
             m_flags |= ALIAS_READS_LCL_VAR;
-            m_lclNum = lclNum;
+            m_lclNum  = lclNum;
+            m_lclOffs = lclOffs;
         }
     }
     else
@@ -234,7 +246,8 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         if (isLclVarAccess)
         {
             m_flags |= ALIAS_WRITES_LCL_VAR;
-            m_lclNum = lclNum;
+            m_lclNum  = lclNum;
+            m_lclOffs = lclOffs;
         }
     }
 }

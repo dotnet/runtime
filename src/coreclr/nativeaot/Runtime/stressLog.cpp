@@ -323,7 +323,7 @@ void ThreadStressLog::LogMsg ( uint32_t facility, int cArgs, const char* format,
     // Asserts in this function cause infinite loops in the asserting mechanism.
     // Just use debug breaks instead.
 
-    ASSERT( cArgs >= 0 && cArgs <= StressMsg::maxArgCnt );
+    ASSERT( cArgs >= 0 && (size_t)cArgs <= StressMsg::maxArgCnt );
 
     size_t offs = ((size_t)format - StressLog::theLog.moduleOffset);
 
@@ -373,7 +373,7 @@ void ThreadStressLog::Activate (Thread * pThread)
 /* static */
 void StressLog::LogMsg (unsigned facility, int cArgs, const char* format, ... )
 {
-    _ASSERTE ( cArgs >= 0 && cArgs <= StressMsg::maxArgCnt );
+    _ASSERTE ( cArgs >= 0 && (size_t)cArgs <= StressMsg::maxArgCnt );
 
     va_list Args;
     va_start(Args, format);

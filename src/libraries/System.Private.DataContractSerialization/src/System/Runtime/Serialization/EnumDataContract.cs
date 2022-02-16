@@ -290,7 +290,7 @@ namespace System.Runtime.Serialization
 
                 // Read space-delimited values
                 int startIndex = i;
-                int count = 0;
+                int count;
                 for (; i < stringValue.Length; i++)
                 {
                     if (stringValue[i] == ' ')

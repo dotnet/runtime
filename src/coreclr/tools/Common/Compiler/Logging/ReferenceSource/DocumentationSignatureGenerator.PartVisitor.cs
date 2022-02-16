@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -147,7 +146,10 @@ namespace Mono.Linker
 				}
 
 				if (typeReference.IsNested) {
-					VisitTypeReference (typeReference.GetInflatedDeclaringType (resolver), builder, resolver);
+					Debug.Assert (typeReference is not SentinelType && typeReference is not PinnedType);
+					// GetInflatedDeclaringType may return null for generic parameters, byrefs, and pointers, but these
+					// are separately handled above.
+					VisitTypeReference (typeReference.GetInflatedDeclaringType (resolver)!, builder, resolver);
 					builder.Append ('.');
 				}
 

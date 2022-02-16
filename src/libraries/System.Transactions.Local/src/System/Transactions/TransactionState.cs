@@ -3296,7 +3296,7 @@ namespace System.Transactions
             if (tx._outcomeSource._isoLevel == IsolationLevel.Snapshot)
             {
                 throw TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceLtm,
-                    SR.CannotPromoteSnapshot, null, tx == null ? Guid.Empty : tx.DistributedTxId);
+                    SR.CannotPromoteSnapshot, null, tx.DistributedTxId);
             }
 
             // Assign the state
@@ -4304,7 +4304,7 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // We are never going to have an DistributedTransaction for this one.
-            DistributedTransaction? distributedTx = null;
+            DistributedTransaction? distributedTx;
             try
             {
                 // Ask the delegation interface to promote the transaction.

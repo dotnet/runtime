@@ -959,8 +959,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal ArrayList CompileAvt(string avtText)
         {
-            bool constant;
-            return CompileAvt(avtText, out constant);
+            return CompileAvt(avtText, out _);
         }
 
         // Compiler is a class factory for some actions:

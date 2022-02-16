@@ -1280,7 +1280,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private ArrayList GetTrustsHelper(string? targetDomainName)
         {
-            string? serverName = null;
+            string? serverName;
             IntPtr domains = (IntPtr)0;
             int count = 0;
             ArrayList unmanagedTrustList = new ArrayList();
@@ -1288,7 +1288,7 @@ namespace System.DirectoryServices.ActiveDirectory
             int localDomainIndex = 0;
             string? localDomainParent = null;
             int error = 0;
-            bool impersonated = false;
+            bool impersonated;
 
             // first decide which server to go to
             if (context.isServer())

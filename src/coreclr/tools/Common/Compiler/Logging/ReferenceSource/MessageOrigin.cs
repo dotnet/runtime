@@ -12,49 +12,55 @@ namespace Mono.Linker
 {
 	public readonly struct MessageOrigin : IComparable<MessageOrigin>, IEquatable<MessageOrigin>
 	{
-#nullable enable
 		public string? FileName { get; }
 		public ICustomAttributeProvider? Provider { get; }
-		readonly ICustomAttributeProvider _suppressionContextMember;
+		readonly ICustomAttributeProvider? _suppressionContextMember;
 		public ICustomAttributeProvider? SuppressionContextMember {
 			get {
 				Debug.Assert (_suppressionContextMember == null || _suppressionContextMember is IMemberDefinition || _suppressionContextMember is AssemblyDefinition);
 				return _suppressionContextMember ?? Provider;
 			}
 		}
-#nullable disable
+
 		public int SourceLine { get; }
 		public int SourceColumn { get; }
 		public int? ILOffset { get; }
 
 		const int HiddenLineNumber = 0xfeefee;
 
-		public MessageOrigin (IMemberDefinition memberDefinition, int? ilOffset = null)
+		public MessageOrigin (IMemberDefinition? memberDefinition, int? ilOffset = null)
 			: this (memberDefinition as ICustomAttributeProvider, ilOffset)
 		{
 		}
 
-		public MessageOrigin (ICustomAttributeProvider provider)
+		public MessageOrigin (ICustomAttributeProvider? provider)
 			: this (provider, null)
 		{
 		}
 
 		public MessageOrigin (string fileName, int sourceLine = 0, int sourceColumn = 0)
+			: this (fileName, sourceLine, sourceColumn, null)
+		{
+		}
+
+		// The assembly attribute should be specified if available as it allows assigning the diagnostic
+		// to a an assembly (we group based on assembly).
+		public MessageOrigin (string fileName, int sourceLine, int sourceColumn, AssemblyDefinition? assembly)
 		{
 			FileName = fileName;
 			SourceLine = sourceLine;
 			SourceColumn = sourceColumn;
-			Provider = null;
+			Provider = assembly;
 			_suppressionContextMember = null;
 			ILOffset = null;
 		}
 
-		public MessageOrigin (ICustomAttributeProvider provider, int? ilOffset)
+		public MessageOrigin (ICustomAttributeProvider? provider, int? ilOffset)
 			: this (provider, ilOffset, null)
 		{
 		}
 
-		public MessageOrigin (ICustomAttributeProvider provider, int? ilOffset, ICustomAttributeProvider suppressionContextMember)
+		public MessageOrigin (ICustomAttributeProvider? provider, int? ilOffset, ICustomAttributeProvider? suppressionContextMember)
 		{
 			Debug.Assert (provider == null || provider is IMemberDefinition || provider is AssemblyDefinition);
 			Debug.Assert (suppressionContextMember == null || suppressionContextMember is IMemberDefinition || provider is AssemblyDefinition);
@@ -66,7 +72,7 @@ namespace Mono.Linker
 			ILOffset = ilOffset;
 		}
 
-		public MessageOrigin (MessageOrigin other, IMemberDefinition suppressionContextMember)
+		public MessageOrigin (MessageOrigin other, IMemberDefinition? suppressionContextMember)
 		{
 			FileName = other.FileName;
 			Provider = other.Provider;
@@ -76,21 +82,21 @@ namespace Mono.Linker
 			ILOffset = other.ILOffset;
 		}
 
-		public override string ToString ()
+		public override string? ToString ()
 		{
 			int sourceLine = SourceLine, sourceColumn = SourceColumn;
-			string fileName = FileName;
+			string? fileName = FileName;
 			if (Provider is MethodDefinition method &&
 				method.DebugInformation.HasSequencePoints) {
 				var offset = ILOffset ?? 0;
-				SequencePoint correspondingSequencePoint = method.DebugInformation.SequencePoints
+				SequencePoint? correspondingSequencePoint = method.DebugInformation.SequencePoints
 					.Where (s => s.Offset <= offset)?.Last ();
 
 				// If the warning comes from hidden line (compiler generated code typically)
 				// search for any sequence point with non-hidden line number and report that as a best effort.
-				if (correspondingSequencePoint.StartLine == HiddenLineNumber) {
+				if (correspondingSequencePoint?.StartLine == HiddenLineNumber) {
 					correspondingSequencePoint = method.DebugInformation.SequencePoints
-						.Where (s => s.StartLine != HiddenLineNumber)?.FirstOrDefault ();
+						.Where (s => s.StartLine != HiddenLineNumber).FirstOrDefault ();
 				}
 
 				if (correspondingSequencePoint != null) {
@@ -118,7 +124,7 @@ namespace Mono.Linker
 		public bool Equals (MessageOrigin other) =>
 			(FileName, Provider, SourceLine, SourceColumn, ILOffset) == (other.FileName, other.Provider, other.SourceLine, other.SourceColumn, other.ILOffset);
 
-		public override bool Equals (object obj) => obj is MessageOrigin messageOrigin && Equals (messageOrigin);
+		public override bool Equals (object? obj) => obj is MessageOrigin messageOrigin && Equals (messageOrigin);
 		public override int GetHashCode () => (FileName, Provider, SourceLine, SourceColumn).GetHashCode ();
 		public static bool operator == (MessageOrigin lhs, MessageOrigin rhs) => lhs.Equals (rhs);
 		public static bool operator != (MessageOrigin lhs, MessageOrigin rhs) => !lhs.Equals (rhs);
@@ -128,12 +134,12 @@ namespace Mono.Linker
 			if (Provider != null && other.Provider != null) {
 				var thisMember = Provider as IMemberDefinition;
 				var otherMember = other.Provider as IMemberDefinition;
-				TypeDefinition thisTypeDef = (Provider as TypeDefinition) ?? (Provider as IMemberDefinition)?.DeclaringType;
-				TypeDefinition otherTypeDef = (other.Provider as TypeDefinition) ?? (other.Provider as IMemberDefinition)?.DeclaringType;
+				TypeDefinition? thisTypeDef = (Provider as TypeDefinition) ?? (Provider as IMemberDefinition)?.DeclaringType;
+				TypeDefinition? otherTypeDef = (other.Provider as TypeDefinition) ?? (other.Provider as IMemberDefinition)?.DeclaringType;
 				var thisAssembly = thisTypeDef?.Module.Assembly ?? Provider as AssemblyDefinition;
 				var otherAssembly = otherTypeDef?.Module.Assembly ?? other.Provider as AssemblyDefinition;
-				int result = (thisAssembly.Name.Name, thisTypeDef?.Name, thisMember?.Name).CompareTo
-					((otherAssembly.Name.Name, otherTypeDef?.Name, otherMember?.Name));
+				int result = (thisAssembly?.Name.Name, thisTypeDef?.Name, thisMember?.Name).CompareTo
+					((otherAssembly?.Name.Name, otherTypeDef?.Name, otherMember?.Name));
 				if (result != 0)
 					return result;
 

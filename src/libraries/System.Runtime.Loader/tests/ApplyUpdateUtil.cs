@@ -47,7 +47,7 @@ namespace System.Reflection.Metadata
         {
             // check that interpreter is enabled, and the build has hot reload capabilities enabled.
             var isInterp = RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled;
-            return isInterp && HasApplyUpdateCapabilities();
+            return isInterp && !PlatformDetection.IsMonoAOT && HasApplyUpdateCapabilities();
         }
 
         internal static bool HasApplyUpdateCapabilities()

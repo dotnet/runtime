@@ -407,7 +407,7 @@ mono_thread_info_set_tid (THREAD_INFO_TYPE *info, MonoNativeThreadId tid)
 
 /*
  * @thread_info_size is sizeof (GcThreadInfo), a struct the GC defines to make it possible to have
- * a single block with info from both camps. 
+ * a single block with info from both camps.
  */
 void
 mono_thread_info_init (size_t thread_info_size);
@@ -647,8 +647,8 @@ mono_native_thread_id_main_thread_known (MonoNativeThreadId *main_thread_tid);
 /*
  * This does _not_ return the same value as mono_native_thread_id_get, except on Windows.
  * On POSIX, mono_native_thread_id_get returns the value from pthread_self, which is then
- * passed around as an identifier to other pthread functions. However this function, where 
- * possible, returns the OS-unique thread id value, fetched in a platform-specific manner. 
+ * passed around as an identifier to other pthread functions. However this function, where
+ * possible, returns the OS-unique thread id value, fetched in a platform-specific manner.
  * It will not work with the various pthread functions, should never be used as a
  * MonoNativeThreadId, and is intended solely to match the output of various diagonistic tools.
  */

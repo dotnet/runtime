@@ -374,6 +374,14 @@ mono_class_is_magic_assembly (MonoClass *klass)
 		return TRUE;
 	if (!strcmp ("Xamarin.MacCatalyst", aname))
 		return TRUE;
+	if (!strcmp ("Microsoft.iOS", aname))
+		return TRUE;
+	if (!strcmp ("Microsoft.macOS", aname))
+		return TRUE;
+	if (!strcmp ("Microsoft.watchOS", aname))
+		return TRUE;
+	if (!strcmp ("Microsoft.MacCatalyst", aname))
+		return TRUE;
 	/* regression test suite */
 	if (!strcmp ("builtin-types", aname))
 		return TRUE;

@@ -352,7 +352,7 @@ namespace System.Reflection
             return getter((T)obj!);
         }
 
-        private static object? StaticGetterAdapterFrame<R>(StaticGetter<R> getter, object? obj)
+        private static object? StaticGetterAdapterFrame<R>(StaticGetter<R> getter, object? _)
         {
             return getter();
         }

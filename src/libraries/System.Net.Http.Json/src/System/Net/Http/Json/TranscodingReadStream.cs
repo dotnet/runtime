@@ -67,13 +67,8 @@ namespace System.Net.Http.Json
         public override int Read(byte[] buffer, int offset, int count)
             => throw new NotSupportedException();
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer!!, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -139,7 +134,7 @@ namespace System.Net.Http.Json
             }
 
             _encoder.Convert(_charBuffer.Array!, _charBuffer.Offset, _charBuffer.Count, _overflowBuffer.Array!, byteIndex: 0, _overflowBuffer.Array!.Length,
-                flush: shouldFlushEncoder, out int overFlowChars, out int overflowBytes, out completed);
+                flush: shouldFlushEncoder, out int overFlowChars, out int overflowBytes, out _);
 
             Debug.Assert(overflowBytes > 0 && overFlowChars > 0, "We expect writes to the overflow buffer to always succeed since it is large enough to accommodate at least one char.");
 

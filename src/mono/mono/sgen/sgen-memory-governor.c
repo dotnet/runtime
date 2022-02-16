@@ -165,7 +165,7 @@ sgen_need_major_collection (mword space_needed, gboolean *forced)
 		heap_size = get_heap_size ();
 
 		if (heap_size <= major_collection_trigger_size)
-			return FALSE; 
+			return FALSE;
 
 		/*
 		 * The more the heap grows, the more we need to decrease the allowance above,

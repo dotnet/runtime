@@ -64,7 +64,7 @@ split_cmdline (const gchar *cmdline, GPtrArray *array, GError **gerror)
 				}
 			} else if (c == '\\' && quote_char == '\"'){
 				escaped = TRUE;
-			} else 
+			} else
 				g_string_append_c (str, c);
 		} else if (g_ascii_isspace (c)) {
 			if (str->len > 0) {
@@ -150,7 +150,7 @@ g_shell_quote (const gchar *unquoted_string)
 {
 	GString *result = g_string_new ("'");
 	const gchar *p;
-	
+
 	for (p = unquoted_string; *p; p++){
 		if (*p == '\'')
 			g_string_append (result, "'\\'");
@@ -169,7 +169,7 @@ g_shell_unquote (const gchar *quoted_string, GError **gerror)
 
 	if (quoted_string == NULL)
 		return NULL;
-	
+
 	/* Quickly try to determine if we need to unquote or not */
 	for (p = quoted_string; *p; p++){
 		if (*p == '\'' || *p == '"' || *p == '\\'){
@@ -177,7 +177,7 @@ g_shell_unquote (const gchar *quoted_string, GError **gerror)
 			break;
 		}
 	}
-	
+
 	if (!do_unquote)
 		return g_strdup (quoted_string);
 
@@ -217,7 +217,7 @@ g_shell_unquote (const gchar *quoted_string, GError **gerror)
 						g_string_append_c (result, '\\');
 						break;
 					}
-				} 
+				}
 				g_string_append_c (result, *p);
 			}
 			if (!*p){
@@ -257,8 +257,8 @@ char *args [] = {
 	"\\\\",
 	"'\\\\'",
 	"\"f\\$\"\\\"\\\\", //  /\\\"\\\\"
-	"'f\\$'\\\"\\\\", 
-	"'f\\$\\\\'", 
+	"'f\\$'\\\"\\\\",
+	"'f\\$\\\\'",
 	NULL
 };
 
@@ -268,12 +268,12 @@ main ()
 {
 	char **s = args;
 	int i;
-	
+
 	while (*s){
 		char *r1 = g_shell_unquote (*s, NULL);
 		char *r2 = g2_shell_unquote (*s, NULL);
 		char *ok = r1 == r2 ? "ok" : (r1 != NULL && r2 != NULL && strcmp (r1, r2) == 0) ? "ok" : "fail";
-		
+
 		printf ("%s [%s] -> [%s] - [%s]\n", ok, *s, r1, r2);
 		s++;
 	}
@@ -283,7 +283,7 @@ main ()
 	buffer [1] = '\\';
 	buffer [3] = '\"';
 	buffer [4] = 0;
-	
+
 	for (i = 32; i < 255; i++){
 		buffer [2] = i;
 		printf ("%d [%s] -> [%s]\n", i, buffer, g_shell_unquote (buffer, NULL));

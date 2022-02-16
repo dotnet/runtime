@@ -144,6 +144,28 @@ namespace PInvokeTests
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_String(Delegate_String del);
 
+        [DllImport("PInvokeNative", EntryPoint="ReversePInvoke_String", CallingConvention = CallingConvention.StdCall)]
+        static extern bool ReversePInvoke_String_Delegate(Delegate del);
+
+        [DllImport("PInvokeNative", EntryPoint="ReversePInvoke_String", CallingConvention = CallingConvention.StdCall)]
+        static extern bool ReversePInvoke_String_MulticastDelegate(MulticastDelegate del);
+
+        struct FieldDelegate
+        {
+            public Delegate d;
+        }
+
+        struct FieldMulticastDelegate
+        {
+            public MulticastDelegate d;
+        }
+
+        [DllImport("PInvokeNative", EntryPoint="ReversePInvoke_DelegateField", CallingConvention = CallingConvention.StdCall)]
+        static extern bool ReversePInvoke_Field_Delegate(FieldDelegate del);
+
+        [DllImport("PInvokeNative", EntryPoint="ReversePInvoke_DelegateField", CallingConvention = CallingConvention.StdCall)]
+        static extern bool ReversePInvoke_Field_MulticastDelegate(FieldMulticastDelegate del);
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         delegate bool Delegate_OutString([MarshalAs(0x30)] out string s);
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
@@ -615,6 +637,16 @@ namespace PInvokeTests
 
             Delegate_String ds = new Delegate_String((new ClosedDelegateCLass()).GetString);
             ThrowIfNotEquals(true, ReversePInvoke_String(ds), "Delegate marshalling failed.");
+
+            ThrowIfNotEquals(true, ReversePInvoke_String_Delegate(ds), "Delegate marshalling failed.");
+            ThrowIfNotEquals(true, ReversePInvoke_String_MulticastDelegate(ds), "Delegate marshalling failed.");
+
+            FieldDelegate fd;
+            fd.d = ds;
+            ThrowIfNotEquals(true, ReversePInvoke_Field_Delegate(fd), "Delegate marshalling failed.");
+            FieldMulticastDelegate fmd;
+            fmd.d = ds;
+            ThrowIfNotEquals(true, ReversePInvoke_Field_MulticastDelegate(fmd), "Delegate marshalling failed.");
 
             Delegate_OutString dos = new Delegate_OutString((out string x) =>
             {

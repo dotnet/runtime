@@ -11,6 +11,6 @@
     <Compile Include="repro.il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\jit64\localloc\common\common.ilproj" />
+    <ProjectReference Include="..\..\..\..\common\localloc_common.ilproj" />
   </ItemGroup>
 </Project>

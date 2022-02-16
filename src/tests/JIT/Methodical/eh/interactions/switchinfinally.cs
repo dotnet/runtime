@@ -85,12 +85,12 @@ namespace test3
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        static int Main(string[] args)
+        static int Main()
         {
             //Start recording
             testLog.StartRecording();
             MyClass x = new MyClass(1234);
-            x.testit(args.Length);
+            x.testit(0);
             Console.WriteLine(x.val);
 
             // stop recoding

@@ -123,7 +123,7 @@ namespace System
 
                 ReadOnlySpan<char> name = builder.AsSpan();
                 int index = name.IndexOf('\\');
-                if (index != -1)
+                if (index >= 0)
                 {
                     // In the form of DOMAIN\User, cut off DOMAIN\
                     name = name.Slice(index + 1);
@@ -164,7 +164,7 @@ namespace System
 
                 ReadOnlySpan<char> name = builder.AsSpan();
                 int index = name.IndexOf('\\');
-                if (index != -1)
+                if (index >= 0)
                 {
                     // In the form of DOMAIN\User, cut off \User and return
                     builder.Length = index;

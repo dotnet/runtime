@@ -253,7 +253,7 @@ namespace System.Net
         private void OnReadInternal(IAsyncResult ares)
         {
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
-            int nread = -1;
+            int nread;
             try
             {
                 nread = _stream.EndRead(ares);
@@ -376,7 +376,6 @@ namespace System.Net
                     if (_inputState == InputState.RequestLine)
                         continue;
                     _currentLine = null;
-                    ms = null!;
                     return true;
                 }
 

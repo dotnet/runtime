@@ -157,7 +157,7 @@ namespace InlineBool
         static bool Id99(bool x) { return Id04(x != false) ? true : false; }
 
         [MethodImpl(MethodImplOptions.NoOptimization)]
-        public static int Main(string[] args)
+        public static int Main()
         {
             bool result = true;
 

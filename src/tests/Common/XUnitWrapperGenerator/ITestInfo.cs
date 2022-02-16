@@ -314,13 +314,15 @@ sealed class NoTestReporting : ITestReporterWrapper
 
 sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 {
-    private string _summaryLocalIdentifier;
+    private readonly string _summaryLocalIdentifier;
     private readonly string _filterLocalIdentifier;
+    private readonly string _outputRecorderIdentifier;
 
-    public WrapperLibraryTestSummaryReporting(string summaryLocalIdentifier, string filterLocalIdentifier)
+    public WrapperLibraryTestSummaryReporting(string summaryLocalIdentifier, string filterLocalIdentifier, string outputRecorderIdentifier)
     {
         _summaryLocalIdentifier = summaryLocalIdentifier;
         _filterLocalIdentifier = filterLocalIdentifier;
+        _outputRecorderIdentifier = outputRecorderIdentifier;
     }
 
     public string WrapTestExecutionWithReporting(string testExecutionExpression, ITestInfo test)
@@ -331,11 +333,15 @@ sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
         builder.AppendLine($"System.TimeSpan testStart = stopwatch.Elapsed;");
         builder.AppendLine("try {");
+        builder.AppendLine($"System.Console.WriteLine(\"Running test: {{0}}\", {test.TestNameExpression});");
+        builder.AppendLine($"{_outputRecorderIdentifier}.ResetTestOutput();");
         builder.AppendLine(testExecutionExpression);
-        builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart);");
+        builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, {_outputRecorderIdentifier}.GetTestOutput());");
+        builder.AppendLine($"System.Console.WriteLine(\"Passed test: {{0}}\", {test.TestNameExpression});");
         builder.AppendLine("}");
         builder.AppendLine("catch (System.Exception ex) {");
-        builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, ex);");
+        builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, ex, {_outputRecorderIdentifier}.GetTestOutput());");
+        builder.AppendLine($"System.Console.WriteLine(\"Failed test: {{0}}\", {test.TestNameExpression});");
         builder.AppendLine("}");
 
         builder.AppendLine("}");

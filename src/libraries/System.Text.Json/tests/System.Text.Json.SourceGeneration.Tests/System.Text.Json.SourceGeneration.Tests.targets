@@ -74,6 +74,7 @@
     <Compile Include="MetadataAndSerializationContextTests.cs" />
     <Compile Include="MetadataContextTests.cs" />
     <Compile Include="MixedModeContextTests.cs" />
+    <Compile Include="NETStandardContextTests.cs" />
     <Compile Include="RealWorldContextTests.cs" />
     <Compile Include="SerializationContextTests.cs" />
     <Compile Include="SerializationLogicTests.cs" />

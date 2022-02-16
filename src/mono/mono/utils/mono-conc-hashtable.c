@@ -356,7 +356,7 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 				if (kvs [i].key == TOMBSTONE)
 					--hash_table->tombstone_count;
 				else
-					++hash_table->element_count;	
+					++hash_table->element_count;
 				kvs [i].key = key;
 				return NULL;
 			}

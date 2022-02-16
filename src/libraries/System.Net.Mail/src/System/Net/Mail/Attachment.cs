@@ -12,7 +12,6 @@ namespace System.Net.Mail
     {
         internal bool disposed;
         private readonly MimePart _part = new MimePart();
-        private static readonly char[] s_contentCIDInvalidChars = new char[] { '<', '>' };
 
         internal AttachmentBase()
         {
@@ -69,15 +68,7 @@ namespace System.Net.Mail
 
         internal void SetContentFromFile(string fileName, ContentType? contentType)
         {
-            if (fileName == null)
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
-
-            if (fileName.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(fileName)), nameof(fileName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(fileName);
 
             Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             _part.SetContent(stream, contentType);
@@ -85,31 +76,15 @@ namespace System.Net.Mail
 
         internal void SetContentFromFile(string fileName, string? mediaType)
         {
-            if (fileName == null)
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
-
-            if (fileName.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(fileName)), nameof(fileName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(fileName);
 
             Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             _part.SetContent(stream, null, mediaType);
         }
 
-        internal void SetContentFromString(string content, ContentType? contentType)
+        internal void SetContentFromString(string content!!, ContentType? contentType)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
-
-            if (_part.Stream != null)
-            {
-                _part.Stream.Close();
-            }
+            _part.Stream?.Close();
 
             Encoding encoding;
 
@@ -141,17 +116,9 @@ namespace System.Net.Mail
             }
         }
 
-        internal void SetContentFromString(string content, Encoding? encoding, string? mediaType)
+        internal void SetContentFromString(string content!!, Encoding? encoding, string? mediaType)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
-
-            if (_part.Stream != null)
-            {
-                _part.Stream.Close();
-            }
+            _part.Stream?.Close();
 
             if (string.IsNullOrEmpty(mediaType))
             {
@@ -248,7 +215,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    if (value.IndexOfAny(s_contentCIDInvalidChars) != -1)
+                    if (value.AsSpan().IndexOfAny('<', '>') >= 0) // invalid chars
                     {
                         throw new ArgumentException(SR.MailHeaderInvalidCID, nameof(value));
                     }

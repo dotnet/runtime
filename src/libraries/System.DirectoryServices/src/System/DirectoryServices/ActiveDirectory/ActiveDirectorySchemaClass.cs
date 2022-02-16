@@ -46,13 +46,8 @@ namespace System.DirectoryServices.ActiveDirectory
         private bool _defaultSDSddlFormInitialized;
 
         #region constructors
-        public ActiveDirectorySchemaClass(DirectoryContext context, string ldapDisplayName)
+        public ActiveDirectorySchemaClass(DirectoryContext context!!, string ldapDisplayName)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             if ((context.Name == null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
@@ -224,15 +219,9 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion IDisposable
 
         #region public methods
-        public static ActiveDirectorySchemaClass FindByName(DirectoryContext context, string ldapDisplayName)
+        public static ActiveDirectorySchemaClass FindByName(DirectoryContext context!!, string ldapDisplayName)
         {
             ActiveDirectorySchemaClass? schemaClass = null;
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             if ((context.Name == null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));

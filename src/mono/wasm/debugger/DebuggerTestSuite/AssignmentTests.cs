@@ -49,7 +49,7 @@ namespace DebuggerTests
                 locals_fn: async (locals) =>
                 {
                     Assert.Equal(2, locals.Count());
-                    Check(locals, "r", checkDefault);
+                    await Check(locals, "r", checkDefault);
                     await Task.CompletedTask;
                 }
             );
@@ -59,7 +59,7 @@ namespace DebuggerTests
                 locals_fn: async (locals) =>
                 {
                     Assert.Equal(2, locals.Count());
-                    Check(locals, "r", checkValue);
+                    await Check(locals, "r", checkValue);
                     await Task.CompletedTask;
                 }
             );

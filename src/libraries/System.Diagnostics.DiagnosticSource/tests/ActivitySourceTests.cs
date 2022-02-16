@@ -470,15 +470,32 @@ namespace System.Diagnostics.Tests
             Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
             Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
             Assert.Equal("k=v", context.TraceState);
+            Assert.False(context.IsRemote);
+
+            Assert.True(ActivityContext.TryParse(w3cId, "k=v", isRemote: true, out context));
+            Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", context.TraceId.ToHexString());
+            Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
+            Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
+            Assert.Equal("k=v", context.TraceState);
+            Assert.True(context.IsRemote);
+
+            Assert.True(ActivityContext.TryParse(w3cId, "k=v", isRemote: false, out context));
+            Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", context.TraceId.ToHexString());
+            Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
+            Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
+            Assert.Equal("k=v", context.TraceState);
+            Assert.False(context.IsRemote);
 
             context = ActivityContext.Parse(w3cId, "k=v");
             Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", context.TraceId.ToHexString());
             Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
             Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
             Assert.Equal("k=v", context.TraceState);
+            Assert.False(context.IsRemote);
 
             context = ActivityContext.Parse(w3cId, null);
             Assert.Null(context.TraceState);
+            Assert.False(context.IsRemote);
 
             Assert.False(ActivityContext.TryParse(null, "k=v", out context));
             Assert.Throws<ArgumentNullException>(() => ActivityContext.Parse(null, null));
@@ -486,6 +503,8 @@ namespace System.Diagnostics.Tests
 
             const string invalidW3CContext = "00-Z9d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
             Assert.False(ActivityContext.TryParse(invalidW3CContext, null, out context));
+            Assert.False(ActivityContext.TryParse(invalidW3CContext, null, isRemote: true, out context));
+            Assert.False(ActivityContext.TryParse(invalidW3CContext, null, isRemote: false, out context));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

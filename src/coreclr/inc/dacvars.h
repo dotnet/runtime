@@ -5,7 +5,7 @@
 // 1. in daccess.h to build the table of DAC globals
 // 2. in enummem.cpp to dump out the related memory of static and globals
 //    in a mini dump or heap dump
-// 3. in DacUpdateDll and toolbox\DacTablenGen\main.cs
+// 3. in DacUpdateDll and tools\DacTablenGen\main.cs
 //
 // To use this functionality for other tools or purposes, define the
 // DEFINE_DACVAR macro & include dacvars.h like so (see enummem.cpp and/or

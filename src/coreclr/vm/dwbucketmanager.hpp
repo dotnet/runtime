@@ -650,7 +650,7 @@ void BaseBucketParamsManager::GetModuleVersion(_Out_writes_(maxLength) WCHAR* ta
         // if we failed to get a version and this isn't the manifest module then try that
         if (!gotFileVersion && !pModule->IsManifest())
         {
-            pModule = pModule->GetAssembly()->GetManifestModule();
+            pModule = pModule->GetAssembly()->GetModule();
             if (pModule)
                 gotFileVersion = GetFileVersionInfoForModule(pModule, major, minor, build, revision);
         }
@@ -701,7 +701,7 @@ void BaseBucketParamsManager::GetModuleTimeStamp(_Out_writes_(maxLength) WCHAR* 
         {
             // We only store the IL timestamp in the native image for the
             // manifest module.  We should consider fixing this for Orcas.
-            PTR_PEAssembly pFile = pModule->GetAssembly()->GetManifestModule()->GetPEAssembly();
+            PTR_PEAssembly pFile = pModule->GetAssembly()->GetModule()->GetPEAssembly();
 
             // for dynamic modules use 0 as the time stamp
             ULONG ulTimeStamp = 0;

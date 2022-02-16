@@ -9,23 +9,17 @@ internal static partial class Interop
 {
     internal static partial class Ldap
     {
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
-        [DllImport(Libraries.Wldap32, EntryPoint = "ldap_bind_sW", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_bind_sW", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        public static extern int ldap_bind_s(ConnectionHandle ldapHandle, string dn, SEC_WINNT_AUTH_IDENTITY_EX credentials, BindMethod method);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        public static partial int ldap_bind_s(ConnectionHandle ldapHandle, string dn, in SEC_WINNT_AUTH_IDENTITY_EX credentials, BindMethod method);
 
         [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_initW", CharSet = CharSet.Unicode, SetLastError = true)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial IntPtr ldap_init(string hostName, int portNumber);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
-        [DllImport(Libraries.Wldap32, EntryPoint = "ldap_connect", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_connect", CharSet = CharSet.Unicode, ExactSpelling = true)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        public static extern int ldap_connect(ConnectionHandle ldapHandle, LDAP_TIMEVAL timeout);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        public static partial int ldap_connect(ConnectionHandle ldapHandle, in LDAP_TIMEVAL timeout);
 
         [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_unbind", CharSet = CharSet.Unicode, ExactSpelling = true)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
@@ -51,16 +45,13 @@ internal static partial class Interop
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial int ldap_get_option_sechandle(ConnectionHandle ldapHandle, LdapOption option, ref SecurityHandle outValue);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
-        [DllImport(Libraries.Wldap32, EntryPoint = "ldap_get_optionW", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_get_optionW", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        public static extern int ldap_get_option_secInfo(ConnectionHandle ldapHandle, LdapOption option, [In, Out] SecurityPackageContextConnectionInformation outValue);
+        public static unsafe partial int ldap_get_option_secInfo(ConnectionHandle ldapHandle, LdapOption option, void* outValue);
 
-        [DllImport(Libraries.Wldap32, EntryPoint = "ldap_set_optionW", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_set_optionW", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        public static extern int ldap_set_option_referral(ConnectionHandle ldapHandle, LdapOption option, ref LdapReferralCallback outValue);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        public static partial int ldap_set_option_referral(ConnectionHandle ldapHandle, LdapOption option, ref LdapReferralCallback outValue);
 
         [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_set_optionW", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
@@ -86,12 +77,9 @@ internal static partial class Interop
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial int ldap_delete_ext(ConnectionHandle ldapHandle, string dn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
-        [DllImport(Libraries.Wldap32, EntryPoint = "ldap_result", CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_result", CharSet = CharSet.Unicode, SetLastError = true)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        public static extern int ldap_result(ConnectionHandle ldapHandle, int messageId, int all, LDAP_TIMEVAL timeout, ref IntPtr Mesage);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        public static partial int ldap_result(ConnectionHandle ldapHandle, int messageId, int all, in LDAP_TIMEVAL timeout, ref IntPtr Mesage);
 
         [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_parse_resultW", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
@@ -129,12 +117,9 @@ internal static partial class Interop
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial int ldap_rename(ConnectionHandle ldapHandle, string dn, string newRdn, string newParentDn, int deleteOldRdn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
-        [DllImport(Libraries.Wldap32, EntryPoint = "ldap_compare_extW", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_compare_extW", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        public static extern int ldap_compare(ConnectionHandle ldapHandle, string dn, string attributeName, string strValue, BerVal binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        public static partial int ldap_compare(ConnectionHandle ldapHandle, string dn, string attributeName, string strValue, BerVal binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
         [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_add_extW", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
@@ -144,12 +129,9 @@ internal static partial class Interop
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial int ldap_modify(ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
-        [DllImport(Libraries.Wldap32, EntryPoint = "ldap_extended_operationW", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_extended_operationW", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        public static extern int ldap_extended_operation(ConnectionHandle ldapHandle, string oid, BerVal data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        public static partial int ldap_extended_operation(ConnectionHandle ldapHandle, string oid, BerVal data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
         [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_parse_extended_resultW", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
