@@ -92,6 +92,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Span_get_Item,
     NI_System_ReadOnlySpan_get_Item,
 
+    NI_System_MemoryExtensions_AsSpan,
     NI_System_MemoryExtensions_Equals,
     NI_System_MemoryExtensions_SequenceEqual,
     NI_System_MemoryExtensions_StartsWith,
