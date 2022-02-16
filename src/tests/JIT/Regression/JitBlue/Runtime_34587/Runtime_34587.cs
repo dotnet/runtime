@@ -81,7 +81,9 @@ class Runtime_34587
         bool succeeded = true;
 
         succeeded &= ValidateArm();
+        Console.WriteLine($"ValidateArm:{succeeded}");
         succeeded &= ValidateX86();
+        Console.WriteLine($"ValidateX86:{succeeded}");
 
         return succeeded ? 100 : 0;
     }
@@ -90,18 +92,31 @@ class Runtime_34587
     {
         bool succeeded = true;
 
+        Console.WriteLine($"ValidateArmStart:{succeeded}");
         succeeded &= ValidateArmBase();
+        Console.WriteLine($"ValidateArmBase:{succeeded}");
         succeeded &= ValidateAdvSimd();
+        Console.WriteLine($"ValidateAdvSimd:{succeeded}");
         succeeded &= ValidateAes();
+        Console.WriteLine($"ValidateAes:{succeeded}");
         succeeded &= ValidateCrc32();
+        Console.WriteLine($"ValidateCrc32:{succeeded}");
         succeeded &= ValidateDp();
+        Console.WriteLine($"ValidateDp:{succeeded}");
         succeeded &= ValidateRdm();
+        Console.WriteLine($"ValidateRdm:{succeeded}");
         succeeded &= ValidateSha1();
+        Console.WriteLine($"ValidateSha1:{succeeded}");
         succeeded &= ValidateSha256();
+        Console.WriteLine($"ValidateSha256:{succeeded}");
         succeeded &= ValidateVectorT();
+        Console.WriteLine($"ValidateVectorT:{succeeded}");
         succeeded &= ValidateVector64();
+        Console.WriteLine($"ValidateVector64:{succeeded}");
         succeeded &= ValidateVector128();
+        Console.WriteLine($"ValidateVector128:{succeeded}");
         succeeded &= ValidateVector256();
+        Console.WriteLine($"ValidateVector256:{succeeded}");
 
         return succeeded;
 
@@ -321,27 +336,48 @@ class Runtime_34587
     {
         bool succeeded = true;
 
+        Console.WriteLine($"ValidateX86Start:{succeeded}");
         succeeded &= ValidateX86Base();
+        Console.WriteLine($"ValidateX86Base:{succeeded}");
         succeeded &= ValidateSse();
+        Console.WriteLine($"ValidateSse:{succeeded}");
         succeeded &= ValidateSse2();
+        Console.WriteLine($"ValidateSse2:{succeeded}");
         succeeded &= ValidateSse3();
+        Console.WriteLine($"ValidateSse3:{succeeded}");
         succeeded &= ValidateSsse3();
+        Console.WriteLine($"ValidateSsse3:{succeeded}");
         succeeded &= ValidateSse41();
+        Console.WriteLine($"ValidateSse41:{succeeded}");
         succeeded &= ValidateSse42();
+        Console.WriteLine($"ValidateSse42:{succeeded}");
         succeeded &= ValidateAvx();
+        Console.WriteLine($"ValidateAvx:{succeeded}");
         succeeded &= ValidateAvx2();
+        Console.WriteLine($"ValidateAvx2:{succeeded}");
         succeeded &= ValidateAes();
+        Console.WriteLine($"ValidateAes:{succeeded}");
         succeeded &= ValidateBmi1();
+        Console.WriteLine($"ValidateBmi1:{succeeded}");
         succeeded &= ValidateBmi2();
+        Console.WriteLine($"ValidateBmi2:{succeeded}");
         succeeded &= ValidateFma();
+        Console.WriteLine($"ValidateFma:{succeeded}");
         succeeded &= ValidateLzcnt();
+        Console.WriteLine($"ValidateLzcnt:{succeeded}");
         succeeded &= ValidatePclmulqdq();
+        Console.WriteLine($"ValidatePclmulqdq:{succeeded}");
         succeeded &= ValidatePopcnt();
+        Console.WriteLine($"ValidatePopcnt:{succeeded}");
         succeeded &= ValidateVectorT();
+        Console.WriteLine($"ValidateVectorT:{succeeded}");
         succeeded &= ValidateVector64();
+        Console.WriteLine($"ValidateVector64:{succeeded}");
         succeeded &= ValidateVector128();
+        Console.WriteLine($"ValidateVector128:{succeeded}");
         succeeded &= ValidateVector256();
-
+        Console.WriteLine($"ValidateVector256:{succeeded}");
+        
         return succeeded;
 
         static bool ValidateX86Base()
@@ -677,7 +713,7 @@ class Runtime_34587
                 succeeded &= Vector128IsHardwareAccelerated;
                 succeeded &= Vector128ByteCount == 16;
             }
-            else
+            else if ((RuntimeInformation.ProcessArchitecture == Architecture.X86) || (RuntimeInformation.ProcessArchitecture == Architecture.X64))
             {
                 succeeded &= !Vector128IsHardwareAccelerated;
                 succeeded &= Vector128ByteCount == 16;
