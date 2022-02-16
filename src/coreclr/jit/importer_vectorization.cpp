@@ -276,7 +276,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int l
         GenTree* firstIndir  = impCreateCompareInd(this, data, TYP_INT, dataOffset, value1);
         GenTree* secondIndir = impCreateCompareInd(this, gtClone(data), TYP_INT, dataOffset + 2, value2);
 
-        // TODO: Consider marging two indirs via XOR instead of QMARK
+        // TODO: Consider merging two indirs via XOR instead of QMARK
         // e.g. gtNewOperNode(GT_XOR, TYP_INT, firstIndir, secondIndir);
         // but it currently has CQ issues (redundant movs)
         GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtNewFalse());
@@ -307,7 +307,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int l
     ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT64);
     GenTree* secondIndir = impCreateCompareInd(this, gtClone(data), TYP_LONG, offset, value2);
 
-    // TODO: Consider marging two indirs via XOR instead of QMARK
+    // TODO: Consider merging two indirs via XOR instead of QMARK
     GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtNewFalse());
     return gtNewQmarkNode(TYP_INT, firstIndir, doubleIndirColon);
 #else // TARGET_64BIT

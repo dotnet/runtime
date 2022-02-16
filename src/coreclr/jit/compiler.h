@@ -4396,13 +4396,13 @@ protected:
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
 
-    GenTree* impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int len, int dataOffset);
-    GenTree* impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int len, int dataOffset);
-    GenTree* impExpandHalfConstEquals(
-        GenTree* data, GenTree* lengthFld, bool checkForNull, bool startsWith, WCHAR* cnsData, int len, int dataOffset);
-    GenTreeStrCon* impGetStrConFromSpan(GenTree* span);
     GenTree* impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
     GenTree* impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
+    GenTree* impExpandHalfConstEquals(
+        GenTree* data, GenTree* lengthFld, bool checkForNull, bool startsWith, WCHAR* cnsData, int len, int dataOffset);
+    GenTree* impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int len, int dataOffset);
+    GenTree* impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int len, int dataOffset);
+    GenTreeStrCon* impGetStrConFromSpan(GenTree* span);
 
     GenTree* impIntrinsic(GenTree*                newobjThis,
                           CORINFO_CLASS_HANDLE    clsHnd,
