@@ -432,7 +432,7 @@ Arguments:
 
     SpOffset - Specifies a stack offset. Positive values are simply used
         as a base offset. Negative values assume a predecrement behavior:
-        a 0 offset is used for restoration, but the absoute value of the
+        a 0 offset is used for restoration, but the absolute value of the
         offset is added to the final Sp.
 
     FirstRegister - Specifies the index of the first register to restore.
@@ -507,7 +507,7 @@ Arguments:
 
     SpOffset - Specifies a stack offset. Positive values are simply used
         as a base offset. Negative values assume a predecrement behavior:
-        a 0 offset is used for restoration, but the absoute value of the
+        a 0 offset is used for restoration, but the absolute value of the
         offset is added to the final Sp.
 
     FirstRegister - Specifies the index of the first register to restore.
@@ -592,7 +592,7 @@ Arguments:
         function being unwound.
 
     FunctionEntry - Supplies the address of the function table entry for the
-        specified function. If appropriate, this should have araeady been
+        specified function. If appropriate, this should have already been
         probed.
 
     ContextRecord - Supplies the address of a context record.
@@ -847,58 +847,6 @@ ExecuteCodes:
             ContextRecord->Sp += 16 * (CurCode & 0x1f);
         }
 
-#if 0
-        // Not used for LOONGARCH!!!
-        // save_s0s1_x (001zzzzz): save <s0,s1> pair at [sp-#Z*8]!, pre-indexed offset >= -248
-        //
-
-        else if (CurCode <= 0x3f) {
-            Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord,
-                        -8 * (CurCode & 0x1f),
-                        16, /* TODO for LOONGARCH64: reg is not 16 */
-                        2 + 2 * AccumulatedSaveNexts,
-                        UnwindParams);
-            AccumulatedSaveNexts = 0;
-        }
-
-        //
-        // save_fpra (0100zzzz|zzzzzzzz): save <fp,ra> pair at [sp+#Z*8], offset <= 32767
-        //
-
-        else if (CurCode <= 0x4f) {
-            if (AccumulatedSaveNexts != 0) {
-                return STATUS_UNWIND_INVALID_SEQUENCE;
-            }
-            NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord,
-                        8 * (((CurCode & 0xf) << 8) + NextCode),
-                        30, /* TODO for LOONGARCH64: reg is not 30*/
-                        2,
-                        UnwindParams);
-        }
-
-        //
-        // save_fpra_x (1000zzzz|zzzzzzzz): save <fp,ra> pair at [sp-(#Z+1)*8]!, pre-indexed offset >= -32768
-        //
-
-        else if (CurCode <= 0x8f) {
-            if (AccumulatedSaveNexts != 0) {
-                return STATUS_UNWIND_INVALID_SEQUENCE;
-            }
-            NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord,
-                        -8 * (((CurCode & 0xf) << 8) + NextCode + 1),
-                        30, /* TODO for LOONGARCH64: reg is not 30*/
-                        2,
-                        UnwindParams);
-        }
-#endif
-
         //
         // alloc_m (11000xxx|xxxxxxxx): allocate large stack with size < 32k (2^11 * 16).
         //
@@ -911,43 +859,6 @@ ExecuteCodes:
             ContextRecord->Sp += 16 * MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
             UnwindCodePtr++;
         }
-#if 0
-        // Not used for LOONGARCH!!!
-        // save_regp (11001000|0xxxzzzz|zzzzzzzz): save r(16+#X) pair at [sp+#Z*8], offset <= 32767
-        //
-
-        else if (CurCode == 0xc8) {
-            NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            NextCode1 = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord,
-                        8 * (((NextCode & 0xf) << 8) + NextCode1),
-                        16 + (NextCode >> 4),
-                        2 + 2 * AccumulatedSaveNexts,
-                        UnwindParams);
-            AccumulatedSaveNexts = 0;
-        }
-
-        //
-        // save_regp_x (11001100|0xxxzzzz|zzzzzzzz): save pair r(16+#X) at [sp-(#Z+1)*8]!, pre-indexed offset >= -32768
-        //
-
-        else if (CurCode == 0xcc) {
-            NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            NextCode1 = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord,
-                        -8 * (((NextCode & 0xf) << 8) + NextCode1 + 1),
-                        16 + (NextCode >> 4),
-                        2 + 2 * AccumulatedSaveNexts,
-                        UnwindParams);
-            AccumulatedSaveNexts = 0;
-        }
-#endif
 
         //
         // save_reg (11010000|000xxxxx|zzzzzzzz): save reg r(1+#X) at [sp+#Z*8], offset <= 2047
@@ -969,90 +880,6 @@ ExecuteCodes:
                         UnwindParams);
         }
 
-#if 0
-        // Not used for LOONGARCH!!!
-        // save_reg_x (1101010x|xxxzzzzz): save reg r(16+#X) at [sp-(#Z+1)*8]!, pre-indexed offset >= -256
-        //
-
-        else if (CurCode <= 0xd5) {
-            if (AccumulatedSaveNexts != 0) {
-                return STATUS_UNWIND_INVALID_SEQUENCE;
-            }
-            NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord,
-                        -8 * ((NextCode & 0x1f) + 1),
-                        16 + ((CurCode & 1) << 3) + (NextCode >> 5),
-                        1,
-                        UnwindParams);
-        }
-
-        //
-        // save_rapair (11010110|0xxxzzzz|zzzzzzzz): save pair <r16+#X,ra> at [sp+#Z*8], offset <= 32767
-        //
-
-        else if (CurCode == 0xd6) {
-            if (AccumulatedSaveNexts != 0) {
-                return STATUS_UNWIND_INVALID_SEQUENCE;
-            }
-            NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            NextCode1 = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            Status = RtlpUnwindRestoreRegisterRange(
-                        ContextRecord,
-                        8 * (((NextCode & 0xf) << 8) + NextCode1),
-                        16 + (NextCode >> 4),
-                        1,
-                        UnwindParams);
-            if (Status == STATUS_SUCCESS) {
-                RtlpUnwindRestoreRegisterRange(
-                        ContextRecord,
-                        8 + 8 * (((NextCode & 0xf) << 8) + NextCode1),
-                        31,
-                        1,
-                        UnwindParams);
-            }
-        }
-
-        //
-        // save_fregp (11011000|0xxxzzzz|zzzzzzzz): save pair f(24+#X) at [sp+#Z*8], offset <= 32767
-        //
-
-        else if (CurCode == 0xd8) {
-            NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            NextCode1 = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            Status = RtlpUnwindRestoreFpRegisterRange(
-                        ContextRecord,
-                        8 * (((NextCode & 0xf) << 8) + NextCode1),
-                        24 + (NextCode >> 4),
-                        2 + AccumulatedSaveNexts,
-                        UnwindParams);
-            AccumulatedSaveNexts = 0;
-        }
-
-        //
-        // save_fregp_x (11011010|0xxxzzzz|zzzzzzzz): save pair f(24+#X), at [sp-(#Z+1)*8]!, pre-indexed offset >= -32768
-        //
-
-        else if (CurCode == 0xda) {
-            NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            NextCode1 = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            Status = RtlpUnwindRestoreFpRegisterRange(
-                        ContextRecord,
-                        -8 * (((NextCode & 0xf) << 8) + NextCode1 + 1),
-                        24 + (NextCode >> 4),
-                        2 + AccumulatedSaveNexts,
-                        UnwindParams);
-            AccumulatedSaveNexts = 0;
-        }
-#endif
-
         //
         // save_freg (11011100|0xxxzzzz|zzzzzzzz): save reg f(24+#X) at [sp+#Z*8], offset <= 32767
         //
@@ -1072,26 +899,6 @@ ExecuteCodes:
                         1,
                         UnwindParams);
         }
-
-#if 0
-        // Not used for LOONGARCH!!!
-        // save_freg_x (11011110|xxxzzzzz): save reg f(24+#X) at [sp-(#Z+1)*8]!, pre-indexed offset >= -256
-        //
-
-        else if (CurCode == 0xde) {
-            if (AccumulatedSaveNexts != 0) {
-                return STATUS_UNWIND_INVALID_SEQUENCE;
-            }
-            NextCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-            UnwindCodePtr++;
-            Status = RtlpUnwindRestoreFpRegisterRange(
-                        ContextRecord,
-                        -8 * ((NextCode & 0x1f) + 1),
-                        24 + (NextCode >> 5),
-                        1,
-                        UnwindParams);
-        }
-#endif
 
         //
         // alloc_l (11100000|xxxxxxxx|xxxxxxxx|xxxxxxxx): allocate large stack with size < 256M
@@ -1166,16 +973,6 @@ ExecuteCodes:
             }
             goto finished;
         }
-
-#if 0
-        // Not used for LOONGARCH!!!
-        // save_next (11100110): save next non-volatile Int or FP register pair.
-        //
-
-        else if (CurCode == 0xe6) {
-            AccumulatedSaveNexts++;
-        }
-#endif
 
         //
         // custom_0 (111010xx): restore custom structure
@@ -1255,7 +1052,7 @@ Arguments:
         function, as an offset relative to the IamgeBase.
 
     FunctionEntry - Supplies the address of the function table entry for the
-        specified function. If appropriate, this should have araeady been
+        specified function. If appropriate, this should have already been
         probed.
 
     ContextRecord - Supplies the address of a context record.
@@ -1372,7 +1169,7 @@ Return Value:
         FRegOpcodes = (FloatSize + 8) / 16;
         HOpcodes = 4 * HBit;
         StackAdjustOpcodes = (Cr == 3) ? 1 : 0;
-        if (Cr != 3 || LocalSize > 512) {///TODO for LOONGARCH64: 512 is smaller than real!
+        if (Cr != 3 || LocalSize > 512) {
             StackAdjustOpcodes += (LocalSize > 4088) ? 2 : (LocalSize > 0) ? 1 : 0;
         }
 
@@ -1409,7 +1206,7 @@ Return Value:
         FRegOpcodes = (FloatSize + 8) / 16;
         HOpcodes = HBit;
         StackAdjustOpcodes = (Cr == 3) ? 1 : 0;
-        if (Cr != 3 || LocalSize > 512) {///TODO for LOONGARCH64: 512 is smaller than real!
+        if (Cr != 3 || LocalSize > 512) {
             StackAdjustOpcodes += (LocalSize > 4088) ? 2 : (LocalSize > 0) ? 1 : 0;
         }
 
@@ -1467,7 +1264,7 @@ Return Value:
 
         CurrentOffset = 0;
         if (Cr == 3) {
-            if (LocalSize <= 512) {///TODO for LOONGARCH64: 512 is smaller!
+            if (LocalSize <= 512) {
                 if (CurrentOffset++ >= OffsetInScope) {
                     Status = RtlpUnwindRestoreRegisterRange(ContextRecord, -(LONG)LocalSize, 22, 1, UnwindParams);
                     Status = RtlpUnwindRestoreRegisterRange(ContextRecord, -(LONG)LocalSize, 1, 1, UnwindParams);
@@ -1476,7 +1273,7 @@ Return Value:
             }
         }
         while (LocalSize != 0) {
-            Count = (LocalSize + 4087) % 4088 + 1;///TODO: should amend the LOONGARCH64 !
+            Count = (LocalSize + 4087) % 4088 + 1;
             if (CurrentOffset++ >= OffsetInScope) {
                 ContextRecord->Sp += Count;
             }
