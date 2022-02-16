@@ -165,7 +165,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// Validate error message when untracable value is passed to an annotated parameter.
 		[ExpectedWarning ("IL2062",
 			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicParameterlessConstructor) + "(Type)",
-			"'type'")]
+			"'type'", ProducedBy = ProducedBy.Trimmer)]
 		private void UnknownValue ()
 		{
 			var array = new object[1];

@@ -94,7 +94,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				_ = _default.Value;
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static IEnumerable<int> TestDynamicallyAccessedMethod ()
 			{
 				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
@@ -264,7 +264,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				_ = _default.Value;
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static async void TestDynamicallyAccessedMethod ()
 			{
 				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
@@ -436,7 +436,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				_ = _default.Value;
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static async IAsyncEnumerable<int> TestDynamicallyAccessedMethod ()
 			{
 				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
