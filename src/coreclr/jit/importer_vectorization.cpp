@@ -447,7 +447,7 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
         if ((ni == NI_System_MemoryExtensions_AsSpan) || (ni == NI_System_String_op_Implicit))
         {
             // To make sure only single-arg methods are marked as [Intrinsic]
-            assert(argCall->fgArgInfo->ArgCount() == 1);
+            assert(argCall->gtCallArgs->GetNext() == nullptr);
 
             if (argCall->gtCallArgs->GetNode()->OperIs(GT_CNS_STR))
             {
