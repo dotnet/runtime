@@ -575,17 +575,8 @@ namespace System.Collections.Immutable
             self.ThrowNullRefIfNotInitialized();
             Requires.NotNull(items, nameof(items));
 
-            var indicesToRemove = new SortedSet<int>();
-            foreach (T item in items)
-            {
-                int index = -1;
-                do
-                {
-                    index = self.IndexOf(item, index + 1, equalityComparer);
-                } while (index >= 0 && !indicesToRemove.Add(index) && index < self.Length - 1);
-            }
-
-            return self.RemoveAtRange(indicesToRemove);
+            ICollection<int>? indicesToRemove = items.TryGetCount(out _) ? self.FindOrderedIndicesToRemoveByMultiSet(items, equalityComparer) : self.FindOrderedIndicesToRemove(items, equalityComparer);
+            return indicesToRemove == null ? self : self.RemoveAtRange(indicesToRemove);
         }
 
         /// <summary>
@@ -881,17 +872,9 @@ namespace System.Collections.Immutable
                 return self.Remove(items[0], equalityComparer);
             }
 
-            var indicesToRemove = new SortedSet<int>();
-            foreach (T item in items)
-            {
-                int index = -1;
-                do
-                {
-                    index = self.IndexOf(item, index + 1, equalityComparer);
-                } while (index >= 0 && !indicesToRemove.Add(index) && index < self.Length - 1);
-            }
+            ICollection<int>? indicesToRemove = self.FindOrderedIndicesToRemoveByMultiSet(items, equalityComparer);
 
-            return self.RemoveAtRange(indicesToRemove);
+            return indicesToRemove == null ? self : self.RemoveAtRange(indicesToRemove);
         }
 
         /// <summary>
@@ -1397,6 +1380,57 @@ namespace System.Collections.Immutable
             }
 
             return new ImmutableArray<T>(tmp);
+        }
+
+        private ICollection<int>? FindOrderedIndicesToRemoveByMultiSet(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer)
+        {
+            var multiSet = new MultiSet(equalityComparer);
+            foreach (T item in items)
+            {
+                multiSet.Add(item);
+            }
+
+            return GetOrderedIndicesToRemoveFor(multiSet);
+        }
+
+        private ICollection<int>? FindOrderedIndicesToRemoveByMultiSet(ReadOnlySpan<T> items, IEqualityComparer<T>? equalityComparer)
+        {
+            var multiSet = new MultiSet(equalityComparer);
+            foreach (ref readonly T item in items)
+            {
+                multiSet.Add(item);
+            }
+
+            return GetOrderedIndicesToRemoveFor(multiSet);
+        }
+
+        private ICollection<int>? GetOrderedIndicesToRemoveFor(MultiSet multiSet)
+        {
+            List<int>? indicesToRemove = null;
+            for (int i = 0; i < array!.Length; i++)
+            {
+                if (multiSet.TryRemove(array[i]))
+                {
+                    (indicesToRemove ??= new()).Add(i);
+                }
+            }
+
+            return indicesToRemove;
+        }
+
+        private SortedSet<int> FindOrderedIndicesToRemove(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer)
+        {
+            var indicesToRemove = new SortedSet<int>();
+            foreach (T item in items)
+            {
+                int index = -1;
+                do
+                {
+                    index = IndexOf(item, index + 1, equalityComparer);
+                } while (index >= 0 && !indicesToRemove.Add(index) && index < Length - 1);
+            }
+
+            return indicesToRemove;
         }
 
         private class MultiSet

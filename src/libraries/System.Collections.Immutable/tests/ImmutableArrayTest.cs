@@ -1509,8 +1509,10 @@ namespace System.Collections.Immutable.Tests
                 new[]
                 {
                     new object[] { Array.Empty<int?>(), Array.Empty<int?>(), comparer },
+                    new object[] { Array.Empty<int?>(), Enumerable.Empty<int?>(), comparer },
                     new object[] { Array.Empty<int?>(), new int?[] { 1 }, comparer },
                     new object[] { new int?[] { 1 }, Array.Empty<int?>(), comparer },
+                    new object[] { new int?[] { 1 }, Enumerable.Empty<int?>(), comparer },
                     new object[] { new int?[] { 1, 2, 3 }, new int?[] { 2, 3, 4 }, comparer },
                     new object[] { Enumerable.Range(1, 5).Cast<int?>(), Enumerable.Range(6, 5).Cast<int?>(), comparer },
                     new object[] { new int?[] { 1, 2, 3 }, new int?[] { 2 }, comparer },
@@ -1521,14 +1523,19 @@ namespace System.Collections.Immutable.Tests
                     new object[] { new int?[] { 1, 2, 2, 3 }, new int?[] { 2 }, comparer },
                     new object[] { new int?[] { 1, 2, 2, 3 }, new int?[] { 2, 2 }, comparer },
                     new object[] { new int?[] { 1, 2, 2, 3 }, new int?[] { 2, 2, 2 }, comparer },
+                    new object[] { new int?[] { 1, 2, 2, 3 }, Enumerable.Repeat<int?>(2, 3), comparer },
                     new object[] { new int?[] { 1, 2, 3 }, new int?[] { 42 }, comparer },
                     new object[] { new int?[] { 1, 2, 3 }, new int?[] { 42, 42 }, comparer },
                     new object[] { new int?[] { 1, 2, 3 }, new int?[] { 42, 42, 42 }, comparer },
                     new object[] { new int?[] { null }, new int?[] { 1 }, comparer },
+                    new object[] { new int?[] { null }, Enumerable.Repeat<int?>(1, 1), comparer },
                     new object[] { new int?[] { 1 }, new int?[] { null}, comparer },
+                    new object[] { new int?[] { 1 }, Enumerable.Repeat<int?>(null, 1), comparer },
                     new object[] { new int?[] { 1, null, 2, null }, new int?[] { 1, null}, comparer },
                     new object[] { new int?[] { 1, null, 2 }, new int?[] { 1, null, null}, comparer },
+                    new object[] { new int?[] { 1, null, 2 }, Enumerable.Repeat<int?>(1, 1).Concat(Enumerable.Repeat<int?>(null, 2)), comparer },
                     new object[] { new int?[] { 1, null, 2, null }, new int?[] { 1, null, null}, comparer },
+                    new object[] { new int?[] { 1, null, 2, null }, Enumerable.Repeat<int?>(1, 1).Concat(Enumerable.Repeat<int?>(null, 2)), comparer }
                 });
         }
 
@@ -2623,8 +2630,8 @@ namespace System.Collections.Immutable.Tests
             // Null comparers should be accepted and translated to the default comparer.
             yield return null;
             yield return EqualityComparer<T>.Default;
-            yield return new DelegateEqualityComparer<T>(equals: (x, y) => true, objectGetHashCode: obj => 0);
-            yield return new DelegateEqualityComparer<T>(equals: (x, y) => false, objectGetHashCode: obj => 0);
+            yield return new DelegateEqualityComparer<T>(equals: (x, y) => true, objectGetHashCode: obj => 0, getHashCode: obj => 0);
+            yield return new DelegateEqualityComparer<T>(equals: (x, y) => false, objectGetHashCode: obj => 0, getHashCode: obj => 0);
         }
 
         /// <summary>
