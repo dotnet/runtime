@@ -379,7 +379,7 @@ if (is_node) {
                 message += ' and attaching to global';
                 globalThis.AbortController = moduleExport.AbortController;
             }
-            
+
             console.log(message);
         });
     }
