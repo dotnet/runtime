@@ -9460,7 +9460,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             switch (addrInfo.accessType)
             {
                 case IAT_VALUE:
-                    //TODO-LOONGARCH64-CQ: using B/BL for optimization.
+                // TODO-LOONGARCH64-CQ: using B/BL for optimization.
                 case IAT_PVALUE:
                     // Load the address into a register, load indirect and call  through a register
                     // We have to use REG_INDIRECT_CALL_TARGET_REG since we assume the argument registers are in use

@@ -2078,7 +2078,7 @@ void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
     else
 #endif // defined(UNIX_AMD64_ABI)
 #if defined(TARGET_LOONGARCH64)
-    if (varTypeIsStruct(argDsc))
+        if (varTypeIsStruct(argDsc))
     {
         LoongArch64UpdateRegStateForArg(argDsc);
     }

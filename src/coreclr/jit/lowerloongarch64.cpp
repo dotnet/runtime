@@ -38,7 +38,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
-    //TODO-LOONGARCH64-CQ: using B/BL for optimization.
+    // TODO-LOONGARCH64-CQ: using B/BL for optimization.
     return false;
 }
 
