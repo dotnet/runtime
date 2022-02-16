@@ -30,7 +30,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
                 // password is a 15 character length string from a 87 character set.
                 // log2(87)*15 is about 96, the odds of which we will generate a duplicate
                 // here are next to nothing.
-                Assert.True(passwords.Add(password), "password is a duplicate");
+                Assert.True(passwords.Add(password), "password is not a duplicate");
             }
         }
     }

@@ -122,7 +122,7 @@ namespace System.Net.Http.Tests
                 // cnonce is a 16 character length string from a 62 character set.
                 // log2(62)*16 is about 95, the odds of which we will generate a duplicate
                 // here are next to nothing.
-                Assert.True(cnonces.Add(token), "cnonce is a duplicate");
+                Assert.True(cnonces.Add(token), "cnonce is not a duplicate");
             }
         }
     }
