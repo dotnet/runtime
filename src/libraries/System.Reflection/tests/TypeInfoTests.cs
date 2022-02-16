@@ -1195,6 +1195,20 @@ namespace System.Reflection.Tests
             Assert.Equal(!expected, type.IsNestedAssembly);
         }
 
+        public delegate void PublicDelegate(string str);
+        internal delegate void InternalDelegate(string str);
+
+        [Fact]
+        public void DelegateTypesIsPublic()
+        {
+            Assert.True(typeof(Delegate).IsPublic);
+            Assert.True(typeof(PublicDelegate).IsNestedPublic);
+            Assert.True(typeof(InternalDelegate).IsNestedAssembly);
+            Assert.True(typeof(InternalDelegate).MakePointerType().IsNestedAssembly);
+            Assert.True(typeof(delegate*<string, int>).IsPublic);
+            Assert.True(typeof(Delegate).MakePointerType().IsPublic);
+        }
+
         [Fact]
         public void NestedPointerIsPublic()
         {
