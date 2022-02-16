@@ -540,7 +540,7 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     {
         // check for fake "" first
         cnsLength = 0;
-        JITDUMP("Trying to unroll String.Equals(op1, \"\")...\n", str)
+        JITDUMP("Trying to unroll String.Equals|StartsWith(op1, \"\")...\n", str)
     }
     else
     {
@@ -550,7 +550,7 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
         }
-        JITDUMP("Trying to unroll String.Equals(op1, \"%ws\")...\n", str)
+        JITDUMP("Trying to unroll String.Equals|StartsWith(op1, \"%ws\")...\n", str)
     }
 
     // Create a temp which is safe to gtClone for varStr
@@ -672,7 +672,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     {
         // check for fake "" first
         cnsLength = 0;
-        JITDUMP("Trying to unroll String.Equals(op1, \"\")...\n", str)
+        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"\")...\n", str)
     }
     else
     {
@@ -682,7 +682,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
         }
-        JITDUMP("Trying to unroll String.Equals(op1, \"%ws\")...\n", str)
+        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%ws\")...\n", str)
     }
 
     CORINFO_CLASS_HANDLE spanCls      = gtGetStructHandle(spanObj);
