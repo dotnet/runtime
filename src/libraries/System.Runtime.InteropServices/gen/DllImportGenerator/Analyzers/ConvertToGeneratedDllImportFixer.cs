@@ -46,28 +46,11 @@ namespace Microsoft.Interop.Analyzers
             // Get the syntax root and semantic model
             Document doc = context.Document;
             SyntaxNode? root = await doc.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-            SemanticModel? model = await doc.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-            if (root == null || model == null)
-                return;
-
-            // Nothing to do if the GeneratedDllImportAttribute is not in the compilation
-            INamedTypeSymbol? generatedDllImportAttrType = model.Compilation.GetTypeByMetadataName(TypeNames.GeneratedDllImportAttribute);
-            if (generatedDllImportAttrType == null)
-                return;
-
-            INamedTypeSymbol? dllImportAttrType = model.Compilation.GetTypeByMetadataName(typeof(DllImportAttribute).FullName);
-            if (dllImportAttrType == null)
+            if (root == null)
                 return;
 
             // Get the syntax node tied to the diagnostic and check that it is a method declaration
             if (root.FindNode(context.Span) is not MethodDeclarationSyntax methodSyntax)
-                return;
-
-            if (model.GetDeclaredSymbol(methodSyntax, context.CancellationToken) is not IMethodSymbol methodSymbol)
-                return;
-
-            // Make sure the method has the DllImportAttribute
-            if (!TryGetAttribute(methodSymbol, dllImportAttrType, out AttributeData? dllImportAttr))
                 return;
 
             // Register code fix
@@ -77,9 +60,6 @@ namespace Microsoft.Interop.Analyzers
                     cancelToken => ConvertToGeneratedDllImport(
                         context.Document,
                         methodSyntax,
-                        methodSymbol,
-                        dllImportAttr!,
-                        generatedDllImportAttrType,
                         cancelToken),
                     equivalenceKey: ConvertToGeneratedDllImportKey),
                 context.Diagnostics);
@@ -88,13 +68,45 @@ namespace Microsoft.Interop.Analyzers
         private static async Task<Document> ConvertToGeneratedDllImport(
             Document doc,
             MethodDeclarationSyntax methodSyntax,
-            IMethodSymbol methodSymbol,
-            AttributeData dllImportAttr,
-            INamedTypeSymbol generatedDllImportAttrType,
             CancellationToken cancellationToken)
         {
             DocumentEditor editor = await DocumentEditor.CreateAsync(doc, cancellationToken).ConfigureAwait(false);
             SyntaxGenerator generator = editor.Generator;
+
+            if (editor.SemanticModel.GetDeclaredSymbol(methodSyntax, cancellationToken) is not IMethodSymbol methodSymbol)
+                return editor.GetChangedDocument();
+
+            SyntaxNode generatedDeclaration = ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, cancellationToken);
+
+            if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
+            {
+                bool shouldWarn = await TransformCallersOfNoPreserveSigMethod(editor, methodSymbol, cancellationToken).ConfigureAwait(false);
+                if (shouldWarn)
+                {
+                    generatedDeclaration = generatedDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(Resources.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
+                }
+            }
+
+            // Replace the original method with the updated one
+            editor.ReplaceNode(methodSyntax, generatedDeclaration);
+
+            MakeEnclosingTypesPartial(editor, methodSyntax);
+
+            return editor.GetChangedDocument();
+        }
+
+        private static SyntaxNode ConvertMethodDeclarationToGeneratedDllImport(MethodDeclarationSyntax methodSyntax, DocumentEditor editor, SyntaxGenerator generator, IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+        {
+            INamedTypeSymbol? dllImportAttrType = editor.SemanticModel.Compilation.GetTypeByMetadataName(typeof(DllImportAttribute).FullName);
+            if (dllImportAttrType == null)
+                return methodSyntax;
+
+            // We wouldn't have offered this code fix if the GeneratedDllImport type isn't available, so we can be sure it isn't null here.
+            INamedTypeSymbol generatedDllImportAttrType = editor.SemanticModel.Compilation.GetTypeByMetadataName(TypeNames.GeneratedDllImportAttribute)!;
+
+            // Make sure the method has the DllImportAttribute
+            if (!TryGetAttribute(methodSymbol, dllImportAttrType, out AttributeData? dllImportAttr))
+                return methodSyntax;
 
             var dllImportSyntax = (AttributeSyntax)dllImportAttr!.ApplicationSyntaxReference!.GetSyntax(cancellationToken);
 
@@ -113,7 +125,6 @@ namespace Microsoft.Interop.Analyzers
 
             // Replace DllImport with GeneratedDllImport
             SyntaxNode generatedDeclaration = generator.ReplaceNode(methodSyntax, dllImportSyntax, generatedDllImportSyntax);
-
             if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
             {
                 generatedDeclaration = editor.Generator.WithType(
@@ -137,25 +148,19 @@ namespace Microsoft.Interop.Analyzers
             }
 
             // Replace extern keyword with partial keyword
-            generatedDeclaration = generator.WithModifiers(
+            return generator.WithModifiers(
                 generatedDeclaration,
                 generator.GetModifiers(methodSyntax)
                     .WithIsExtern(false)
                     .WithPartial(true));
+        }
 
-            if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
+        private static void MakeEnclosingTypesPartial(DocumentEditor editor, MethodDeclarationSyntax method)
+        {
+            for (TypeDeclarationSyntax typeDecl = method.FirstAncestorOrSelf<TypeDeclarationSyntax>(); typeDecl is not null; typeDecl = typeDecl.Parent.FirstAncestorOrSelf<TypeDeclarationSyntax>())
             {
-                bool shouldWarn = await TransformCallersOfNoPreserveSigMethod(editor, methodSymbol, cancellationToken).ConfigureAwait(false);
-                if (shouldWarn)
-                {
-                    generatedDeclaration = generatedDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(Resources.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
-                }
+                editor.ReplaceNode(typeDecl, editor.Generator.WithModifiers(typeDecl, editor.Generator.GetModifiers(typeDecl).WithPartial(true)));
             }
-
-            // Replace the original method with the updated one
-            editor.ReplaceNode(methodSyntax, generatedDeclaration);
-
-            return editor.GetChangedDocument();
         }
 
         private static async Task<bool> TransformCallersOfNoPreserveSigMethod(DocumentEditor editor, IMethodSymbol methodSymbol, CancellationToken cancellationToken)
