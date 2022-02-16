@@ -70,9 +70,6 @@
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
-  <data name="ArgumentNull_ArrayWithNullElements" xml:space="preserve">
-    <value>The array cannot contain null elements.</value>
-  </data>
   <data name="ShorthandClassInCharacterRange" xml:space="preserve">
     <value>Cannot include class \\{0} in character range.</value>
   </data>

@@ -258,11 +258,7 @@ void debugError(const char* msg, const char* file, unsigned line)
     // If ComPlus_JitRequired is 0 or is not set, we will not assert.
     if (JitConfig.JitRequired() == 1 || getBreakOnBadCode())
     {
-        // Don't assert if verification is done.
-        if (!env->compiler->tiVerificationNeeded || getBreakOnBadCode())
-        {
-            assertAbort(msg, file, line);
-        }
+        assertAbort(msg, file, line);
     }
 
     BreakIfDebuggerPresent();

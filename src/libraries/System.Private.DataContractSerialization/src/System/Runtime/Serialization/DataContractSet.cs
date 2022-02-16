@@ -32,11 +32,8 @@ namespace System.Runtime.Serialization
 #endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal DataContractSet(DataContractSet dataContractSet)
+        internal DataContractSet(DataContractSet dataContractSet!!)
         {
-            if (dataContractSet == null)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(dataContractSet)));
-
             //this.dataContractSurrogate = dataContractSet.dataContractSurrogate;
             _referencedTypes = dataContractSet._referencedTypes;
             _referencedCollectionTypes = dataContractSet._referencedCollectionTypes;

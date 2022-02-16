@@ -23,7 +23,9 @@
 #define USE_CHECKED_OBJECTREFS
 #endif
 
+#ifndef TARGET_64BIT
 #define FAT_DISPATCH_TOKENS
+#endif
 
 #define FEATURE_SHARE_GENERIC_CODE
 
@@ -165,9 +167,7 @@
 #define FEATURE_DOUBLE_ALIGNMENT_HINT
 #endif
 
-#if defined(FEATURE_CORESYSTEM)
 #define FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
-#endif // defined(FEATURE_CORESYSTEM)
 
 // If defined, support interpretation.
 

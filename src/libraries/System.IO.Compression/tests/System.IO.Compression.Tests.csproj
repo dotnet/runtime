@@ -20,11 +20,13 @@
     <Compile Include="Utilities\WrappedStream.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ZipArchive\zip_CreateTests.cs" />
+    <Compile Include="ZipArchive\zip_CreateTests.Comments.cs" />
     <Compile Include="ZipArchive\zip_InvalidParametersAndStrangeFiles.cs" />
     <Compile Include="ZipArchive\zip_ManualAndCompatibilityTests.cs" />
     <Compile Include="ZipArchive\zip_netcoreappTests.cs" />
     <Compile Include="ZipArchive\zip_ReadTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
+    <Compile Include="ZipArchive\zip_UpdateTests.Comments.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs" Link="Common\System\IO\Compression\CRC.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamTestBase.cs" Link="Common\System\IO\Compression\CompressionStreamTestBase.cs" />

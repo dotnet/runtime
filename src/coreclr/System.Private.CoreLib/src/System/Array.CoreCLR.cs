@@ -521,7 +521,7 @@ namespace System
             _this[index] = value;
         }
 
-        private void Add<T>(T value)
+        private void Add<T>(T _)
         {
             // Not meaningful for arrays.
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
@@ -556,20 +556,20 @@ namespace System
             return Array.IndexOf(_this, value, 0, _this.Length);
         }
 
-        private void Insert<T>(int index, T value)
+        private void Insert<T>(int _, T _1)
         {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
 
-        private bool Remove<T>(T value)
+        private bool Remove<T>(T _)
         {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
             return default;
         }
 
-        private void RemoveAt<T>(int index)
+        private void RemoveAt<T>(int _)
         {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);

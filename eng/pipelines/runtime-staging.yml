@@ -107,6 +107,8 @@ jobs:
           eq(variables['isRollingBuild'], true))
 
 #
+# Remove it after MacCatalyst_arm64 is stabilized on OSX 11.00 queue.
+#
 # MacCatalyst interp - requires AOT Compilation and Interp flags
 # Build the whole product using Mono and run libraries tests
 #
@@ -117,7 +119,6 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - MacCatalyst_x64
     # don't run tests on arm64 PRs until we can get significantly more devices
     - ${{ if eq(variables['isRollingBuild'], true) }}:
       - MacCatalyst_arm64
@@ -151,6 +152,8 @@ jobs:
             eq(variables['isRollingBuild'], true))
 
 #
+# Remove it after MacCatalyst_arm64 is stabilized on OSX 11.00 queue.
+#
 # MacCatalyst interp - requires AOT Compilation and Interp flags
 # Build the whole product using Mono and run libraries tests
 # The test app is built with the App Sandbox entitlement
@@ -162,7 +165,6 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - MacCatalyst_x64
     # don't run tests on arm64 PRs until we can get significantly more devices
     - ${{ if eq(variables['isRollingBuild'], true) }}:
       - MacCatalyst_arm64
@@ -261,18 +263,13 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isManualOrIsNotPR'], true),
-          eq(variables['isFullMatrix'], true))
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        condition: >-
-          or(
-          eq(variables['librariesContainsChange'], true),
-          eq(variables['monoContainsChange'], true),
           eq(variables['isRollingBuild'], true))
+      ${{ if eq(variables['isRollingBuild'], true) }}:
+        # extra steps, run tests
+        extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+        extraStepsParameters:
+          creator: dotnet-bot
+          testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
 # Build the whole product using Mono and run runtime tests with the JIT.
@@ -449,7 +446,9 @@ jobs:
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=windows
       timeoutInMinutes: 180
       condition: >-
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true)
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -459,7 +458,7 @@ jobs:
         scenarios:
         - wasmdebuggertests
 
-# Wasm debugger tests
+# Wasm debugger tests - linux
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -478,7 +477,9 @@ jobs:
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false
       timeoutInMinutes: 180
       condition: >-
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true)
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:

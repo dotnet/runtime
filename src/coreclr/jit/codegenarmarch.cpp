@@ -622,7 +622,7 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
     assert(varTypeIsFloating(srcNode));
     assert(srcNode->TypeGet() == treeNode->TypeGet());
 
-    // Right now only Abs/Ceiling/Floor/Round/Sqrt are treated as math intrinsics.
+    // Right now only Abs/Ceiling/Floor/Truncate/Round/Sqrt are treated as math intrinsics.
     //
     switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
@@ -640,6 +640,11 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
         case NI_System_Math_Floor:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintm, emitActualTypeSize(treeNode), treeNode, srcNode);
+            break;
+
+        case NI_System_Math_Truncate:
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitInsBinary(INS_frintz, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
         case NI_System_Math_Round:
@@ -1508,7 +1513,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     genConsumeRegs(op1);
     regNumber targetReg = REG_ZR;
 
-    GetEmitter()->emitInsLoadStoreOp(INS_ldr, EA_4BYTE, targetReg, tree);
+    GetEmitter()->emitInsLoadStoreOp(ins_Load(tree->TypeGet()), emitActualTypeSize(tree), targetReg, tree);
 #endif
 }
 
@@ -2416,7 +2421,7 @@ private:
 
         const int dstOffsetAligned = AlignUp((UINT)dstOffset, storePairRegsAlignment);
 
-        if (endDstOffset - dstOffsetAligned >= storePairRegsWritesBytes)
+        if (byteCount >= (unsigned)storePairRegsWritesBytes)
         {
             const int dstBytesToAlign = dstOffsetAligned - dstOffset;
 
@@ -3134,9 +3139,6 @@ void CodeGen::genCall(GenTreeCall* call)
     // into a volatile register that won't be restored by epilog sequence.
     if (call->IsFastTailCall())
     {
-        // Don't support fast tail calling JIT helpers
-        assert(call->gtCallType != CT_HELPER);
-
         GenTree* target = getCallTarget(call, nullptr);
 
         if (target != nullptr)
@@ -3177,22 +3179,28 @@ void CodeGen::genCall(GenTreeCall* call)
 
     genCallInstruction(call);
 
-    // if it was a pinvoke we may have needed to get the address of a label
-    if (genPendingCallLabel)
+    // for pinvoke/intrinsic/tailcalls we may have needed to get the address of
+    // a label. In case it is indirect with CFG enabled make sure we do not get
+    // the address after the validation but only after the actual call that
+    // comes after.
+    if (genPendingCallLabel && !call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
     {
         genDefineInlineTempLabel(genPendingCallLabel);
         genPendingCallLabel = nullptr;
     }
 
-    // Update GC info:
-    // All Callee arg registers are trashed and no longer contain any GC pointers.
-    // TODO-Bug?: As a matter of fact shouldn't we be killing all of callee trashed regs here?
-    // For now we will assert that other than arg regs gc ref/byref set doesn't contain any other
-    // registers from RBM_CALLEE_TRASH
-    assert((gcInfo.gcRegGCrefSetCur & (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)) == 0);
-    assert((gcInfo.gcRegByrefSetCur & (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)) == 0);
-    gcInfo.gcRegGCrefSetCur &= ~RBM_ARG_REGS;
-    gcInfo.gcRegByrefSetCur &= ~RBM_ARG_REGS;
+#ifdef DEBUG
+    // Killed registers should no longer contain any GC pointers.
+    regMaskTP killMask = RBM_CALLEE_TRASH;
+    if (call->IsHelperCall())
+    {
+        CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
+        killMask                 = compiler->compHelperCallKillSet(helpFunc);
+    }
+
+    assert((gcInfo.gcRegGCrefSetCur & killMask) == 0);
+    assert((gcInfo.gcRegByrefSetCur & killMask) == 0);
+#endif
 
     var_types returnType = call->TypeGet();
     if (returnType != TYP_VOID)
@@ -3323,6 +3331,35 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         sigInfo = call->callSig;
     }
+
+    if (call->IsFastTailCall())
+    {
+        regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
+
+        // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
+        // non-standard args that may be trash if this is a tailcall.
+        if (compiler->getNeedsGSSecurityCookie())
+        {
+            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_0);
+            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
+        }
+
+        for (unsigned i = 0; i < call->fgArgInfo->ArgCount(); i++)
+        {
+            fgArgTabEntry* entry = call->fgArgInfo->GetArgEntry(i);
+            for (unsigned j = 0; j < entry->numRegs; j++)
+            {
+                regNumber reg = entry->GetRegNum(j);
+                if ((trashedByEpilog & genRegMask(reg)) != 0)
+                {
+                    JITDUMP("Tail call node:\n");
+                    DISPTREE(call);
+                    JITDUMP("Register used: %s\n", getRegName(reg));
+                    assert(!"Argument to tailcall may be trashed by epilog");
+                }
+            }
+        }
+    }
 #endif // DEBUG
     CORINFO_METHOD_HANDLE methHnd;
     GenTree*              target = getCallTarget(call, &methHnd);
@@ -3359,12 +3396,20 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else
     {
-        // If we have no target and this is a call with indirection cell
-        // then we do an optimization where we load the call address directly
-        // from the indirection cell instead of duplicating the tree.
-        // In BuildCall we ensure that get an extra register for the purpose.
-        regNumber indirCellReg = getCallIndirectionCellReg(call);
-        if (indirCellReg != REG_NA)
+        // If we have no target and this is a call with indirection cell then
+        // we do an optimization where we load the call address directly from
+        // the indirection cell instead of duplicating the tree. In BuildCall
+        // we ensure that get an extra register for the purpose. Note that for
+        // CFG the call might have changed to
+        // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
+        // indirection cell but we should not try to optimize.
+        regNumber callThroughIndirReg = REG_NA;
+        if (!call->IsHelperCall(compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        {
+            callThroughIndirReg = getCallIndirectionCellReg(call);
+        }
+
+        if (callThroughIndirReg != REG_NA)
         {
             assert(call->IsR2ROrVirtualStubRelativeIndir());
             regNumber targetAddrReg = call->GetSingleTempReg();
@@ -3372,7 +3417,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             if (!call->IsFastTailCall())
             {
                 GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
-                                          indirCellReg);
+                                          callThroughIndirReg);
             }
             else
             {

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Net;
+using System.Collections.Generic;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
@@ -55,18 +56,22 @@ namespace System.Text.RegularExpressions.Symbolic
         internal bool StartsWithLineAnchor => Node._info.StartsWithLineAnchor;
 
         /// <summary>
-        /// Compute the target state for the given input minterm.
-        /// If <paramref name="minterm"/> is False this means that this is \n and it is the last character of the input.
+        /// Translates a minterm predicate to a character kind, which is a general categorization of characters used
+        /// for cheaply deciding the nullability of anchors.
         /// </summary>
-        /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
-        internal DfaMatchingState<T> Next(T minterm)
+        /// <remarks>
+        /// A False predicate is handled as a special case to indicate the very last \n.
+        /// </remarks>
+        /// <param name="minterm">the minterm to translate</param>
+        /// <returns>the character kind of the minterm</returns>
+        private uint GetNextCharKind(ref T minterm)
         {
             ICharAlgebra<T> alg = Node._builder._solver;
             T wordLetterPredicate = Node._builder._wordLetterPredicateForAnchors;
             T newLinePredicate = Node._builder._newLinePredicate;
 
             // minterm == solver.False is used to represent the very last \n
-            uint nextCharKind = 0;
+            uint nextCharKind = CharKind.General;
             if (alg.False.Equals(minterm))
             {
                 nextCharKind = CharKind.NewLineS;
@@ -85,17 +90,53 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 nextCharKind = CharKind.WordLetter;
             }
+            return nextCharKind;
+        }
+
+        /// <summary>
+        /// Compute the target state for the given input minterm.
+        /// If <paramref name="minterm"/> is False this means that this is \n and it is the last character of the input.
+        /// </summary>
+        /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
+        internal DfaMatchingState<T> Next(T minterm)
+        {
+            uint nextCharKind = GetNextCharKind(ref minterm);
 
             // Combined character context
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            SymbolicRegexNode<T> derivative = Node.MkDerivative(minterm, context);
+            SymbolicRegexNode<T> derivative = Node.MkDerivativeWithEffects(eager: true).TransitionOrdered(minterm, context);
 
             // nextCharKind will be the PrevCharKind of the target state
             // use an existing state instead if one exists already
             // otherwise create a new new id for it
             return Node._builder.MkState(derivative, nextCharKind);
+        }
+
+        /// <summary>
+        /// Compute a set of transitions for the given minterm.
+        /// </summary>
+        /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
+        /// <returns>an enumeration of the transitions as pairs of the target state and a list of effects to be applied</returns>
+        internal IEnumerable<(DfaMatchingState<T>, List<DerivativeEffect>)> AntimirovEagerNextWithEffects(T minterm)
+        {
+            uint nextCharKind = GetNextCharKind(ref minterm);
+
+            // Combined character context
+            uint context = CharKind.Context(PrevCharKind, nextCharKind);
+
+            // Compute the transitions for the given context
+            IEnumerable<(SymbolicRegexNode<T>, List<DerivativeEffect>)> derivativesAndEffects =
+                Node.MkDerivativeWithEffects(eager: true).TransitionsWithEffects(minterm, context);
+
+            foreach (var (derivative, effects) in derivativesAndEffects)
+            {
+                // nextCharKind will be the PrevCharKind of the target state
+                // use an existing state instead if one exists already
+                // otherwise create a new new id for it
+                yield return (Node._builder.MkState(derivative, nextCharKind), effects);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

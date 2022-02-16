@@ -23,6 +23,10 @@
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOn)' == ''">local</BuildAOTTestsOn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <_AOT_InternalForceInterpretAssemblies Include="@(HighAotMemoryUsageAssembly)" />
+  </ItemGroup>
+
   <!-- 
     This is running during compile time and therefore $(Scenario) is empty, unless the specific project sets it.
     Any settings in the project file could be replaced on Helix.
@@ -46,6 +50,7 @@
 
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps' and '$(WasmMainAssemblyFileName)' == ''">--run WasmTestRunner.dll $(AssemblyName).dll</_AppArgs>
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmMainAssemblyFileName)' != ''">--run $(WasmMainAssemblyFileName)</_AppArgs>
@@ -53,6 +58,7 @@
 
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
+    <!-- There two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
     <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %24XHARNESS_ARGS %24WasmXHarnessArgs -- $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
     <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">%HARNESS_RUNNER% $(_XHarnessArgs) %XHARNESS_ARGS% %WasmXHarnessArgs%  -- $(WasmXHarnessMonoArgs) %WasmXHarnessMonoArgs% $(_AppArgs) %WasmTestAppArgs%</RunScriptCommand>
   </PropertyGroup>
@@ -118,7 +124,7 @@
     <PropertyGroup>
       <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
       <RuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</RuntimeConfigFilePath>
-      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-Oz -Wl%252C-O0 -Wl%252C-lto-O0</EmccLinkOptimizationFlag>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-Oz -Wl,-O0 -Wl,-lto-O0</EmccLinkOptimizationFlag>
     </PropertyGroup>
 
     <Error Text="Item WasmAssembliesToBundle is empty. This is likely an authoring error." Condition="@(WasmAssembliesToBundle->Count()) == 0" />
@@ -169,6 +175,9 @@
           <_WasmItemsToPass Include="@(BundleFiles)" OriginalItemName__="BundleFiles" ConditionToUse__="'$(Foo)' != 'true'" />
 
       -->
+
+      <_WasmItemsToPass Include="@(_AOT_InternalForceInterpretAssemblies)" OriginalItemName__="_AOT_InternalForceInterpretAssemblies" />
+
     </ItemGroup>
 
     <!-- This file gets imported by the project file on helix -->

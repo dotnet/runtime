@@ -16,33 +16,12 @@ namespace Microsoft.Extensions.DependencyModel
             Justification = "The annotation should be on the static constructor but is Compiler Generated, annotating the caller Default method instead")]
         private static readonly Lazy<DependencyContext?> _defaultContext = new(LoadDefault);
 
-        public DependencyContext(TargetInfo target,
-            CompilationOptions compilationOptions,
-            IEnumerable<CompilationLibrary> compileLibraries,
-            IEnumerable<RuntimeLibrary> runtimeLibraries,
-            IEnumerable<RuntimeFallbacks> runtimeGraph)
+        public DependencyContext(TargetInfo target!!,
+            CompilationOptions compilationOptions!!,
+            IEnumerable<CompilationLibrary> compileLibraries!!,
+            IEnumerable<RuntimeLibrary> runtimeLibraries!!,
+            IEnumerable<RuntimeFallbacks> runtimeGraph!!)
         {
-            if (target == null)
-            {
-                throw new ArgumentNullException(nameof(target));
-            }
-            if (compilationOptions == null)
-            {
-                throw new ArgumentNullException(nameof(compilationOptions));
-            }
-            if (compileLibraries == null)
-            {
-                throw new ArgumentNullException(nameof(compileLibraries));
-            }
-            if (runtimeLibraries == null)
-            {
-                throw new ArgumentNullException(nameof(runtimeLibraries));
-            }
-            if (runtimeGraph == null)
-            {
-                throw new ArgumentNullException(nameof(runtimeGraph));
-            }
-
             Target = target;
             CompilationOptions = compilationOptions;
             CompileLibraries = compileLibraries.ToArray();
@@ -63,13 +42,8 @@ namespace Microsoft.Extensions.DependencyModel
 
         public IReadOnlyList<RuntimeFallbacks> RuntimeGraph { get; }
 
-        public DependencyContext Merge(DependencyContext other)
+        public DependencyContext Merge(DependencyContext other!!)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
-
             return new DependencyContext(
                 Target,
                 CompilationOptions,

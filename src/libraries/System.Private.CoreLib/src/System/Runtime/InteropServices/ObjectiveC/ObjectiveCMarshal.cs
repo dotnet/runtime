@@ -58,20 +58,11 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// referenced. Any other value has undefined behavior.
         /// </remarks>
         public static unsafe void Initialize(
-            delegate* unmanaged<void> beginEndCallback,
-            delegate* unmanaged<IntPtr, int> isReferencedCallback,
-            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization,
-            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler)
+            delegate* unmanaged<void> beginEndCallback!!,
+            delegate* unmanaged<IntPtr, int> isReferencedCallback!!,
+            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization!!,
+            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler!!)
         {
-            if (beginEndCallback is null)
-                throw new ArgumentNullException(nameof(beginEndCallback));
-            if (isReferencedCallback is null)
-                throw new ArgumentNullException(nameof(isReferencedCallback));
-            if (trackedObjectEnteredFinalization is null)
-                throw new ArgumentNullException(nameof(trackedObjectEnteredFinalization));
-            if (unhandledExceptionPropagationHandler is null)
-                throw new ArgumentNullException(nameof(unhandledExceptionPropagationHandler));
-
             if (s_unhandledExceptionPropagationHandler != null
                 || !TryInitializeReferenceTracker(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization))
             {
@@ -107,12 +98,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// The caller is responsible for freeing the returned <see cref="GCHandle"/>.
         /// </remarks>
         public static GCHandle CreateReferenceTrackingHandle(
-            object obj,
+            object obj!!,
             out Span<IntPtr> taggedMemory)
         {
-            if (obj is null)
-                throw new ArgumentNullException(nameof(obj));
-
             IntPtr refCountHandle = CreateReferenceTrackingHandleInternal(
                 ObjectHandleOnStack.Create(ref obj),
                 out int memInSizeT,
@@ -164,8 +152,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// </remarks>
         public static void SetMessageSendCallback(MessageSendFunction msgSendFunction, IntPtr func)
         {
-            if (func == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(func));
+            ArgumentNullException.ThrowIfNull(func);
 
             if (msgSendFunction < MessageSendFunction.MsgSend || msgSendFunction > MessageSendFunction.MsgSendSuperStret)
                 throw new ArgumentOutOfRangeException(nameof(msgSendFunction));

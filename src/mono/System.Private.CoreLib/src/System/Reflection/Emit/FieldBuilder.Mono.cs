@@ -149,7 +149,16 @@ namespace System.Reflection.Emit
 
         internal void SetRVAData(byte[] data)
         {
+            attrs = attrs | FieldAttributes.HasFieldRVA;
             rva_data = (byte[])data.Clone();
+        }
+
+        internal static PackingSize RVADataPackingSize(int size)
+        {
+            if ((size % 8) == 0) return PackingSize.Size8;
+            if ((size % 4) == 0) return PackingSize.Size4;
+            if ((size % 2) == 0) return PackingSize.Size2;
+            return PackingSize.Size1;
         }
 
         public void SetConstant(object? defaultValue)

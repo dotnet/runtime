@@ -44,7 +44,10 @@
     -->
 
   <ItemGroup>
-    <PmiPathDirectories Include="$([System.IO.Directory]::GetDirectories($(SuperPMIDirectory)))" />
+    <PmiPathDirectories Include="R2RDump" />
+    <PmiPathDirectories Include="R2RTest" />
+    <PmiPathDirectories Include="crossgen2" />
+    <PmiPathDirectories Include="xunit" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
@@ -59,7 +62,7 @@
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -log_level DEBUG --$(CollectionType) -pmi_location $(SuperPMIDirectory)\pmi.dll -pmi_path @(PmiPathDirectories->'%(FullPath)', ' ')</WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -log_level DEBUG --$(CollectionType) -pmi_location $(SuperPMIDirectory)\pmi.dll -pmi_path @(PmiPathDirectories->'$(SuperPMIDirectory)\%(Identity)', ' ')</WorkItemCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>$HELIX_PYTHONPATH</Python>
@@ -73,7 +76,7 @@
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect -log_level DEBUG --$(CollectionType) -pmi_location $(SuperPMIDirectory)/pmi.dll -pmi_path @(PmiPathDirectories->'%(FullPath)', ' ')</WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect -log_level DEBUG --$(CollectionType) -pmi_location $(SuperPMIDirectory)/pmi.dll -pmi_path @(PmiPathDirectories->'$(SuperPMIDirectory)/%(Identity)', ' ')</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">

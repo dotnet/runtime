@@ -7,7 +7,7 @@ using System;
 
 namespace Precise
 {
-    internal class Driver
+    internal class Driver_assemname
     {
         public static int Main()
         {

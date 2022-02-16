@@ -23,5 +23,8 @@ namespace System.Text.RegularExpressions.Symbolic
         EndAnchorZ = 0x4000,
         /// <summary>Anchor for very first line or start-line after very first \n arises as the reverse of EndAnchorZ</summary>
         EndAnchorZRev = 0x8000,
+        CaptureStart = 0x10000,
+        CaptureEnd = 0x20000,
+        OrderedOr = 0x40000,
     }
 }

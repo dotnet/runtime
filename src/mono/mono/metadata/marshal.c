@@ -27,8 +27,8 @@ MONO_PRAGMA_WARNING_DISABLE (4115) // warning C4115: 'IRpcStubBuffer': named typ
 MONO_PRAGMA_WARNING_POP()
 #endif
 
-#include "object.h"
-#include "loader.h"
+#include <mono/metadata/object.h>
+#include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
@@ -36,8 +36,8 @@ MONO_PRAGMA_WARNING_POP()
 #include "metadata/method-builder.h"
 #include "metadata/method-builder-internals.h"
 #include "metadata/tabledefs.h"
-#include "metadata/exception.h"
-#include "metadata/appdomain.h"
+#include <mono/metadata/exception.h>
+#include <mono/metadata/appdomain.h>
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/class-abi-details.h"
 #include "mono/metadata/debug-helpers.h"
@@ -3803,7 +3803,9 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	mb->method->save_lmf = 1;
 
 	WrapperInfo *info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT);
-	info->d.managed_to_native.method = NULL;
+	//info->d.managed_to_native.method = NULL;
+	info->d.native_func.klass = caller_class;
+	info->d.native_func.sig = sig;
 
 	MonoMethodPInvoke *piinfo = NULL;
 	MonoMarshalSpec **mspecs = g_new0 (MonoMarshalSpec *, 1 + sig->param_count);

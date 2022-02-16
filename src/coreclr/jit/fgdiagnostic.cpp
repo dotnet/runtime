@@ -3534,12 +3534,22 @@ void Compiler::fgDebugCheckNodesUniqueness()
 //    - If the method has natural loops, the loop table is not null
 //    - Loop `top` must come before `bottom`.
 //    - Loop `entry` must be between `top` and `bottom`.
+//    - Children loops of a loop are disjoint.
 //    - All basic blocks with loop numbers set have a corresponding loop in the table
 //    - All basic blocks without a loop number are not in a loop
 //    - All parents of the loop with the block contain that block
+//    - If the loop has a pre-header, it is valid
+//    - The loop flags are valid
 //
 void Compiler::fgDebugCheckLoopTable()
 {
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgDebugCheckLoopTable\n");
+    }
+#endif // DEBUG
+
     if (optLoopCount > 0)
     {
         assert(optLoopTable != nullptr);
@@ -3655,8 +3665,38 @@ void Compiler::fgDebugCheckLoopTable()
             assert(loop.lpExit == nullptr);
         }
 
-        if (loop.lpParent != BasicBlock::NOT_IN_LOOP)
+        if (loop.lpParent == BasicBlock::NOT_IN_LOOP)
         {
+            // This is a top-level loop.
+
+            // Verify all top-level loops are disjoint. We don't have a list of just these (such as a
+            // top-level pseudo-loop entry with a list of all top-level lists), so we have to iterate
+            // over the entire loop table.
+            for (unsigned j = 0; j < optLoopCount; j++)
+            {
+                if (i == j)
+                {
+                    // Don't compare against ourselves.
+                    continue;
+                }
+                const LoopDsc& otherLoop = optLoopTable[j];
+                if (otherLoop.lpFlags & LPFLG_REMOVED)
+                {
+                    continue;
+                }
+                if (otherLoop.lpParent != BasicBlock::NOT_IN_LOOP)
+                {
+                    // Only consider top-level loops
+                    continue;
+                }
+                assert(MappedChecks::lpDisjoint(blockNumMap, &loop, otherLoop));
+            }
+        }
+        else
+        {
+            // This is not a top-level loop
+
+            assert(loop.lpParent != BasicBlock::NOT_IN_LOOP);
             assert(loop.lpParent < optLoopCount);
             assert(loop.lpParent < i); // outer loops come before inner loops in the table
             const LoopDsc& parentLoop = optLoopTable[loop.lpParent];
@@ -3674,10 +3714,12 @@ void Compiler::fgDebugCheckLoopTable()
                 assert(child < optLoopCount);
                 assert(i < child); // outer loops come before inner loops in the table
                 const LoopDsc& childLoop = optLoopTable[child];
-                if ((childLoop.lpFlags & LPFLG_REMOVED) == 0) // removed child loop might still be in table
+                if (childLoop.lpFlags & LPFLG_REMOVED) // removed child loop might still be in table
                 {
-                    assert(MappedChecks::lpContains(blockNumMap, &loop, childLoop));
+                    continue;
                 }
+                assert(MappedChecks::lpContains(blockNumMap, &loop, childLoop));
+                assert(childLoop.lpParent == i);
             }
 
             // Verify all child loops are disjoint.
@@ -3734,6 +3776,43 @@ void Compiler::fgDebugCheckLoopTable()
                     assert(MappedChecks::lpContains(blockNumMap, &loop, predBlock));
                 }
             }
+
+            loop.lpValidatePreHeader();
+        }
+
+        // Check the flags.
+        // Note that the various init/limit flags are only used when LPFLG_ITER is set, but they are set first,
+        // separately, and only if everything works out is LPFLG_ITER set. If LPFLG_ITER is NOT set, the
+        // individual flags are not un-set (arguably, they should be).
+
+        // Only one of the `init` flags can be set.
+        assert(genCountBits((unsigned)(loop.lpFlags & (LPFLG_VAR_INIT | LPFLG_CONST_INIT))) <= 1);
+
+        // Only one of the `limit` flags can be set. (Note that LPFLG_SIMD_LIMIT is a "sub-flag" that can be
+        // set when LPFLG_CONST_LIMIT is set.)
+        assert(genCountBits((unsigned)(loop.lpFlags & (LPFLG_VAR_LIMIT | LPFLG_CONST_LIMIT | LPFLG_ARRLEN_LIMIT))) <=
+               1);
+
+        // LPFLG_SIMD_LIMIT can only be set if LPFLG_CONST_LIMIT is set.
+        if (loop.lpFlags & LPFLG_SIMD_LIMIT)
+        {
+            assert(loop.lpFlags & LPFLG_CONST_LIMIT);
+        }
+
+        if (loop.lpFlags & (LPFLG_CONST_INIT | LPFLG_VAR_INIT))
+        {
+            assert(loop.lpInitBlock != nullptr);
+
+            if (loop.lpFlags & LPFLG_VAR_INIT)
+            {
+                assert(loop.lpVarInit < lvaCount);
+            }
+        }
+
+        if (loop.lpFlags & LPFLG_ITER)
+        {
+            loop.VERIFY_lpIterTree();
+            loop.VERIFY_lpTestTree();
         }
     }
 

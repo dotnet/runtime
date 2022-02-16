@@ -13,10 +13,12 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Indicates a match was found but without meaningful details about where.</summary>
         internal static SymbolicMatch QuickMatch => new SymbolicMatch(0, 0);
 
-        public SymbolicMatch(int index, int length)
+        public SymbolicMatch(int index, int length, int[]? captureStarts = null, int[]? captureEnds = null)
         {
             Index = index;
             Length = length;
+            CaptureStarts = captureStarts;
+            CaptureEnds = captureEnds;
         }
 
         public int Index { get; }
@@ -24,6 +26,18 @@ namespace System.Text.RegularExpressions.Symbolic
         public int Length { get; }
 
         public bool Success => Index >= 0;
+
+        /// <summary>
+        /// Array of capture start indices for each capture group. Each is a valid index into the input if the group
+        /// was captured, or -1 otherwise.
+        /// </summary>
+        public readonly int[]? CaptureStarts;
+
+        /// <summary>
+        /// Array of capture end indices for each capture group. Each is a valid index into the input and greater than
+        /// the corresponding start position if the group was captured, or -1 otherwise.
+        /// </summary>
+        public readonly int[]? CaptureEnds;
 
         public static bool operator ==(SymbolicMatch left, SymbolicMatch right) =>
             left.Equals(right);

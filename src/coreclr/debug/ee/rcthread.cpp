@@ -513,19 +513,6 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
     pDebuggerRuntimeOffsets->m_excepNotForRuntimeBPAddr = (void*) ExceptionNotForRuntimeFlare;
     pDebuggerRuntimeOffsets->m_notifyRSOfSyncCompleteBPAddr = (void*) NotifyRightSideOfSyncCompleteFlare;
     pDebuggerRuntimeOffsets->m_debuggerWordTLSIndex = g_debuggerWordTLSIndex;
-
-#if !defined(FEATURE_CORESYSTEM)
-    // Grab the address of RaiseException in kernel32 because we have to play some games with exceptions
-    // that are generated there (just another reason why mixed mode debugging is shady). See bug 476768.
-    HMODULE hModule = WszGetModuleHandle(W("kernel32.dll"));
-    _ASSERTE(hModule != NULL);
-    PREFAST_ASSUME(hModule != NULL);
-    pDebuggerRuntimeOffsets->m_raiseExceptionAddr = GetProcAddress(hModule, "RaiseException");
-    _ASSERTE(pDebuggerRuntimeOffsets->m_raiseExceptionAddr != NULL);
-    hModule = NULL;
-#else
-    pDebuggerRuntimeOffsets->m_raiseExceptionAddr = NULL;
-#endif
 #endif // FEATURE_INTEROP_DEBUGGING
 
     pDebuggerRuntimeOffsets->m_pPatches = DebuggerController::GetPatchTable();
@@ -575,14 +562,14 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
 
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
 
-#if defined(_DEBUG) || !defined(FEATURE_CORESYSTEM)
+#if defined(_DEBUG)
     DebuggerIPCEvent *event = ((DebugFilterParam *)pv)->event;
 
     DWORD pid = GetCurrentProcessId();
     DWORD tid = GetCurrentThreadId();
 
     DebuggerIPCEventType type = (DebuggerIPCEventType) (event->type & DB_IPCE_TYPE_MASK);
-#endif // _DEBUG || !FEATURE_CORESYSTEM
+#endif // _DEBUG
 
     // We should never AV here. In a debug build, throw up an assert w/ lots of useful (private) info.
 #ifdef _DEBUG
@@ -611,18 +598,6 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
             pid, pid, tid, tid,
             string));
     }
-#endif
-
-// this message box doesn't work well on coresystem... we actually get in a recursive exception handling loop
-#ifndef FEATURE_CORESYSTEM
-    // We took an AV on the helper thread. This is a catastrophic situation so we can
-    // simply call the EE's catastrophic message box to display the error.
-    EEMessageBoxCatastrophic(
-        IDS_DEBUG_UNHANDLEDEXCEPTION_IPC, IDS_DEBUG_SERVICE_CAPTION,
-        type,
-        ep->ExceptionRecord->ExceptionCode,
-        GetIP(ep->ContextRecord),
-        pid, pid, tid, tid);
 #endif
 
     // For debugging, we can change the behavior by manually setting eax.

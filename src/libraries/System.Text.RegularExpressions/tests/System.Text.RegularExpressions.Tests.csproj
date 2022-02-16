@@ -41,6 +41,7 @@
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="Regex.Count.Tests.cs" />
     <Compile Include="RegexAssert.netcoreapp.cs" />
     <Compile Include="RegexParserTests.netcoreapp.cs" />
     <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />

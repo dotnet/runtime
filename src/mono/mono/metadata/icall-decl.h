@@ -7,17 +7,17 @@
 #define __MONO_METADATA_ICALL_DECL_H__
 
 #include "appdomain-icalls.h"
-#include "class.h"
-#include "environment.h"
+#include <mono/metadata/class.h>
+#include <mono/metadata/environment.h>
 #include "gc-internals.h"
 #include "handle-decl.h"
 #include "handle.h"
 #include "marshal.h"
 #include "monitor.h"
 #include "mono-perfcounters.h"
-#include "object-forward.h"
+#include <mono/metadata/object-forward.h>
 #include "object-internals.h"
-#include "reflection.h"
+#include <mono/metadata/reflection.h>
 #include "string-icalls.h"
 #include "mono/utils/mono-digest.h"
 #include "mono/utils/mono-forward-internal.h"
@@ -60,7 +60,6 @@ typedef enum {
 // This is sorted.
 // grep ICALL_EXPORT | sort | uniq
 ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly*);
-ICALL_EXPORT MonoBoolean ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char*, MonoAssemblyName*, MonoBoolean*, MonoBoolean* is_token_defined_arg);
 ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_YieldInternal (void);
 ICALL_EXPORT MonoThread *ves_icall_System_Threading_Thread_GetCurrentThread (void);

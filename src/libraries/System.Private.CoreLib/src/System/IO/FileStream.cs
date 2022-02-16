@@ -173,19 +173,9 @@ namespace System.IO
         /// <exception cref="T:System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length. </exception>
         public FileStream(string path, FileStreamOptions options)
         {
-            if (path is null)
-            {
-                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            }
-            else if (path.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            }
-            else if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            else if ((options.Access & FileAccess.Read) != 0 && options.Mode == FileMode.Append)
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(options);
+            if ((options.Access & FileAccess.Read) != 0 && options.Mode == FileMode.Append)
             {
                 throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(options));
             }
@@ -530,13 +520,8 @@ namespace System.IO
             return _strategy.BeginRead(buffer, offset, count, callback, state);
         }
 
-        public override int EndRead(IAsyncResult asyncResult)
+        public override int EndRead(IAsyncResult asyncResult!!)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
             return _strategy.EndRead(asyncResult);
         }
 
@@ -556,13 +541,8 @@ namespace System.IO
             return _strategy.BeginWrite(buffer, offset, count, callback, state);
         }
 
-        public override void EndWrite(IAsyncResult asyncResult)
+        public override void EndWrite(IAsyncResult asyncResult!!)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
             _strategy.EndWrite(asyncResult);
         }
 

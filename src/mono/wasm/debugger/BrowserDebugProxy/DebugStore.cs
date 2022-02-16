@@ -22,6 +22,7 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Text;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -334,6 +335,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int IsAsync { get; set; }
         public DebuggerAttributesInfo DebuggerAttrInfo { get; set; }
         public TypeInfo TypeInfo { get; }
+        public bool HasSequencePoints { get => !DebugInformation.SequencePointsBlob.IsNil; }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
         {
@@ -348,7 +350,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.pdbMetadataReader = pdbMetadataReader;
             this.IsEnCMethod = false;
             this.TypeInfo = type;
-            if (!DebugInformation.SequencePointsBlob.IsNil)
+            if (HasSequencePoints)
             {
                 var sps = DebugInformation.GetSequencePoints();
                 SequencePoint start = sps.First();
@@ -356,11 +358,15 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 foreach (SequencePoint sp in sps)
                 {
+                    if (sp.IsHidden)
+                        continue;
                     if (sp.StartLine < start.StartLine)
                         start = sp;
                     else if (sp.StartLine == start.StartLine && sp.StartColumn < start.StartColumn)
                         start = sp;
 
+                    if (end.EndLine == SequencePoint.HiddenLine)
+                        end = sp;
                     if (sp.EndLine > end.EndLine)
                         end = sp;
                     else if (sp.EndLine == end.EndLine && sp.EndColumn > end.EndColumn)
@@ -396,6 +402,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     }
                 }
+                DebuggerAttrInfo.ClearInsignificantAttrFlags();
             }
             localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
         }
@@ -405,7 +412,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.DebugInformation = pdbMetadataReaderParm.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(method_idx));
             this.pdbMetadataReader = pdbMetadataReaderParm;
             this.IsEnCMethod = true;
-            if (!DebugInformation.SequencePointsBlob.IsNil)
+            if (HasSequencePoints)
             {
                 var sps = DebugInformation.GetSequencePoints();
                 SequencePoint start = sps.First();
@@ -433,7 +440,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public SourceLocation GetLocationByIl(int pos)
         {
             SequencePoint? prev = null;
-            if (!DebugInformation.SequencePointsBlob.IsNil) {
+            if (HasSequencePoints) {
                 foreach (SequencePoint sp in DebugInformation.GetSequencePoints())
                 {
                     if (sp.Offset > pos)
@@ -486,11 +493,41 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public class DebuggerAttributesInfo
         {
-            public bool HasDebuggerHidden { get; internal set; }
-            public bool HasStepThrough { get; internal set; }
-            public bool HasNonUserCode { get; internal set; }
+            internal bool HasDebuggerHidden { get; set; }
+            internal bool HasStepThrough { get; set; }
+            internal bool HasNonUserCode { get; set; }
             public bool HasStepperBoundary { get; internal set; }
+
+            internal void ClearInsignificantAttrFlags()
+            {
+                // hierarchy: hidden > stepThrough > nonUserCode > boundary
+                if (HasDebuggerHidden)
+                    HasStepThrough = HasNonUserCode = HasStepperBoundary = false;
+                else if (HasStepThrough)
+                    HasNonUserCode = HasStepperBoundary = false;
+                else if (HasNonUserCode)
+                    HasStepperBoundary = false;
+            }
+
+            public bool DoAttributesAffectCallStack(bool justMyCodeEnabled)
+            {
+                return HasStepThrough ||
+                    HasDebuggerHidden ||
+                    HasStepperBoundary ||
+                    (HasNonUserCode && justMyCodeEnabled);
+            }
+
+            public bool ShouldStepOut(EventKind eventKind)
+            {
+                return HasDebuggerHidden || (HasStepperBoundary && eventKind == EventKind.Step);
+            }
         }
+
+        public bool IsLexicallyContainedInMethod(MethodInfo containerMethod)
+            => (StartLocation.Line > containerMethod.StartLocation.Line ||
+                    (StartLocation.Line == containerMethod.StartLocation.Line && StartLocation.Column > containerMethod.StartLocation.Column)) &&
+                (EndLocation.Line < containerMethod.EndLocation.Line ||
+                    (EndLocation.Line == containerMethod.EndLocation.Line && EndLocation.Column < containerMethod.EndLocation.Column));
     }
 
     internal class TypeInfo
@@ -865,7 +902,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.url = url;
             this.DebuggerFileName = url.Replace("\\", "/").Replace(":", "");
 
-            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + url, UriKind.RelativeOrAbsolute);
+            var urlWithSpecialCharCodedHex = EscapeAscii(url);
+            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + urlWithSpecialCharCodedHex, UriKind.RelativeOrAbsolute);
             if (SourceUri.IsFile && File.Exists(SourceUri.LocalPath))
             {
                 this.Url = this.SourceUri.ToString();
@@ -874,6 +912,33 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 this.Url = DotNetUrl;
             }
+        }
+
+        private static string EscapeAscii(string path)
+        {
+            var builder = new StringBuilder();
+            foreach (char c in path)
+            {
+                switch (c)
+                {
+                    case var _ when c >= 'a' && c <= 'z':
+                    case var _ when c >= 'A' && c <= 'Z':
+                    case var _ when char.IsDigit(c):
+                    case var _ when c > 255:
+                    case var _ when c == '+' || c == ':' || c == '.' || c == '-' || c == '_' || c == '~':
+                        builder.Append(c);
+                        break;
+                    case var _ when c == Path.DirectorySeparatorChar:
+                    case var _ when c == Path.AltDirectorySeparatorChar:
+                    case var _ when c == '\\':
+                        builder.Append(c);
+                        break;
+                    default:
+                        builder.Append(string.Format($"%{((int)c):X2}"));
+                        break;
+                }
+            }
+            return builder.ToString();
         }
 
         internal void AddMethod(MethodInfo mi)
@@ -1161,7 +1226,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (end.Line < spStart.Line)
                 return false;
 
-            if (end.Column < spStart.Column && end.Line == spStart.Line)
+            if (end.Column < spStart.Column && end.Line == spStart.Line && end.Column != -1)
                 return false;
 
             return true;
@@ -1188,17 +1253,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             foreach (MethodInfo method in doc.Methods)
-            {
-                if (!method.DebugInformation.SequencePointsBlob.IsNil)
-                {
-                    foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
-                    {
-                        if (!sequencePoint.IsHidden && Match(sequencePoint, start, end))
-                            res.Add(new SourceLocation(method, sequencePoint));
-                    }
-                }
-            }
+                res.AddRange(FindBreakpointLocations(start, end, method));
             return res;
+        }
+
+        public IEnumerable<SourceLocation> FindBreakpointLocations(SourceLocation start, SourceLocation end, MethodInfo method)
+        {
+            if (!method.HasSequencePoints)
+                yield break;
+            foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
+            {
+                if (!sequencePoint.IsHidden && Match(sequencePoint, start, end))
+                    yield return new SourceLocation(method, sequencePoint);
+            }
         }
 
         /*

@@ -23,7 +23,7 @@
 #include "metadata/method-builder.h"
 #include "metadata/abi-details.h"
 #include "metadata/class-abi-details.h"
-#include "metadata/mono-gc.h"
+#include <mono/metadata/mono-gc.h>
 #include "metadata/runtime.h"
 #include "metadata/sgen-bridge-internals.h"
 #include "metadata/sgen-mono.h"

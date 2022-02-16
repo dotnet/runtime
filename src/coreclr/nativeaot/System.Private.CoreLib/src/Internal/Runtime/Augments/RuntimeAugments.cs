@@ -1091,5 +1091,10 @@ namespace Internal.Runtime.Augments
         {
             return typeHandle.ToEETypePtr().IsPrimitive && !typeHandle.ToEETypePtr().IsEnum;
         }
+
+        public static byte[] ComputePublicKeyToken(byte[] publicKey)
+        {
+            return System.Reflection.AssemblyNameHelpers.ComputePublicKeyToken(publicKey);
+        }
     }
 }
