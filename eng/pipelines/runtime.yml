@@ -336,11 +336,8 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     runtimeFlavor: mono
     platforms:
-    - MacCatalyst_x64
-    - MacCatalyst_arm64
     - tvOSSimulator_x64
     - iOSSimulator_x86
-    - iOS_arm64
     - Linux_arm
     jobParameters:
       testGroup: innerloop
@@ -359,7 +356,6 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - tvOS_arm64
     - iOS_arm
     - Linux_musl_x64
     jobParameters:
@@ -414,6 +410,90 @@ jobs:
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
           eq(variables['isRollingBuild'], true))
+
+#
+# iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
+# Build the whole product using Mono and run libraries tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+      - iOS_arm64
+      - tvOS_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
+          eq(variables['isRollingBuild'], true))
+
+#
+# MacCatalyst interp - requires AOT Compilation and Interp flags
+# Build the whole product using Mono and run libraries tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - MacCatalyst_x64
+    - ${{ if eq(variables['isRollingBuild'], true) }}:
+      - MacCatalyst_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        condition: >-
+          or(
+            eq(variables['librariesContainsChange'], true),
+            eq(variables['monoContainsChange'], true),
+            eq(variables['isRollingBuild'], true))
 
 #
 # Build the whole product using Mono and run libraries tests, for Wasm.Build.Tests

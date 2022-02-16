@@ -161,23 +161,23 @@ namespace System.Net.Security
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        private Task ProcessAuthenticationAsync(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
+        private Task ProcessAuthenticationAsync(bool isAsync = false, CancellationToken cancellationToken = default)
         {
             ThrowIfExceptional();
 
             if (NetSecurityTelemetry.Log.IsEnabled())
             {
-                return ProcessAuthenticationWithTelemetryAsync(isAsync, isApm, cancellationToken);
+                return ProcessAuthenticationWithTelemetryAsync(isAsync, cancellationToken);
             }
             else
             {
                 return isAsync ?
-                    ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context!.IsServer, null, isApm) :
-                    ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context!.IsServer, null);
+                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(_context!.IsServer, null, cancellationToken) :
+                    ForceAuthenticationAsync<SyncReadWriteAdapter>(_context!.IsServer, null, cancellationToken);
             }
         }
 
-        private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, bool isApm, CancellationToken cancellationToken)
+        private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, CancellationToken cancellationToken)
         {
             NetSecurityTelemetry.Log.HandshakeStart(_context!.IsServer, _sslAuthenticationOptions!.TargetHost);
             ValueStopwatch stopwatch = ValueStopwatch.StartNew();
@@ -185,8 +185,8 @@ namespace System.Net.Security
             try
             {
                 Task task = isAsync?
-                    ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context!.IsServer, null, isApm) :
-                    ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context!.IsServer, null);
+                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(_context!.IsServer, null, cancellationToken) :
+                    ForceAuthenticationAsync<SyncReadWriteAdapter>(_context!.IsServer, null, cancellationToken);
 
                 await task.ConfigureAwait(false);
 
@@ -206,12 +206,12 @@ namespace System.Net.Security
         //
         // This is used to reply on re-handshake when received SEC_I_RENEGOTIATE on Read().
         //
-        private async Task ReplyOnReAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, byte[]? buffer)
+        private async Task ReplyOnReAuthenticationAsync<TIOAdapter>(byte[]? buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
             try
             {
-                await ForceAuthenticationAsync(adapter, receiveFirst: false, buffer).ConfigureAwait(false);
+                await ForceAuthenticationAsync<TIOAdapter>(receiveFirst: false, buffer, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -221,23 +221,23 @@ namespace System.Net.Security
         }
 
         // This will initiate renegotiation or PHA for Tls1.3
-        private async Task RenegotiateAsync<TIOAdapter>(TIOAdapter adapter)
+        private async Task RenegotiateAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
             if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
             {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "NegotiateClientCertificateAsync", "renegotiate"));
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
             }
 
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
             if (Interlocked.Exchange(ref _nestedWrite, 1) == 1)
             {
                 _nestedRead = 0;
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(WriteAsync), "write"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
 
             try
@@ -253,10 +253,10 @@ namespace System.Net.Security
 
                 SecurityStatusPal status = _context!.Renegotiate(out byte[]? nextmsg);
 
-                if (nextmsg is {} && nextmsg.Length > 0)
+                if (nextmsg is { Length: > 0 })
                 {
-                    await adapter.WriteAsync(nextmsg, 0, nextmsg.Length).ConfigureAwait(false);
-                    await adapter.FlushAsync().ConfigureAwait(false);
+                    await TIOAdapter.WriteAsync(InnerStream, nextmsg, 0, nextmsg.Length, cancellationToken).ConfigureAwait(false);
+                    await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                 }
 
                 if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
@@ -272,15 +272,17 @@ namespace System.Net.Security
 
                 _buffer.EnsureAvailableSpace(InitialHandshakeBufferSize);
 
-                ProtocolToken message = null!;
-                do {
-                    message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
+                ProtocolToken message;
+                do
+                {
+                    message = await ReceiveBlobAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
                     if (message.Size > 0)
                     {
-                        await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
-                        await adapter.FlushAsync().ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, message.Payload!, 0, message.Size, cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                     }
-                } while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
+                }
+                while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
                 CompleteHandshake(_sslAuthenticationOptions!);
             }
@@ -299,8 +301,8 @@ namespace System.Net.Security
         }
 
         // reAuthenticationData is only used on Windows in case of renegotiation.
-        private async Task ForceAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, bool receiveFirst, byte[]? reAuthenticationData, bool isApm = false)
-             where TIOAdapter : IReadWriteAdapter
+        private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, CancellationToken cancellationToken)
+            where TIOAdapter : IReadWriteAdapter
         {
             ProtocolToken message;
             bool handshakeCompleted = false;
@@ -310,20 +312,19 @@ namespace System.Net.Security
                 // prevent nesting only when authentication functions are called explicitly. e.g. handle renegotiation transparently.
                 if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, isApm ? "BeginAuthenticate" : "Authenticate", "authenticate"));
+                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
                 }
             }
 
             try
             {
-
                 if (!receiveFirst)
                 {
                     message = _context!.NextMessage(reAuthenticationData);
                     if (message.Size > 0)
                     {
-                        await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
-                        await adapter.FlushAsync().ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, message.Payload!, 0, message.Size, cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                         if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Log.SentFrame(this, message.Payload);
                     }
@@ -347,7 +348,7 @@ namespace System.Net.Security
 
                 while (!handshakeCompleted)
                 {
-                    message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
+                    message = await ReceiveBlobAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
 
                     byte[]? payload = null;
                     int size = 0;
@@ -366,8 +367,8 @@ namespace System.Net.Security
                     if (payload != null && size > 0)
                     {
                         // If there is message send it out even if call failed. It may contain TLS Alert.
-                        await adapter.WriteAsync(payload!, 0, size).ConfigureAwait(false);
-                        await adapter.FlushAsync().ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, payload!, 0, size, cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
 
                         if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Log.SentFrame(this, payload);
@@ -416,10 +417,10 @@ namespace System.Net.Security
 
         }
 
-        private async ValueTask<ProtocolToken> ReceiveBlobAsync<TIOAdapter>(TIOAdapter adapter)
-                 where TIOAdapter : IReadWriteAdapter
+        private async ValueTask<ProtocolToken> ReceiveBlobAsync<TIOAdapter>(CancellationToken cancellationToken)
+            where TIOAdapter : IReadWriteAdapter
         {
-            int frameSize = await EnsureFullTlsFrameAsync(adapter).ConfigureAwait(false);
+            int frameSize = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
 
             if (frameSize == 0)
             {
@@ -462,7 +463,7 @@ namespace System.Net.Security
                             {
                                 SslServerAuthenticationOptions userOptions =
                                     await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_sslAuthenticationOptions.TargetHost, _lastFrame.SupportedVersions),
-                                                                                        _sslAuthenticationOptions.UserState, adapter.CancellationToken).ConfigureAwait(false);
+                                        _sslAuthenticationOptions.UserState, cancellationToken).ConfigureAwait(false);
                                 _sslAuthenticationOptions.UpdateOptions(userOptions);
                             }
                         }
@@ -598,19 +599,19 @@ namespace System.Net.Security
             }
         }
 
-        private async ValueTask WriteAsyncChunked<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TIOAdapter : struct, IReadWriteAdapter
+        private async ValueTask WriteAsyncChunked<TIOAdapter>(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            where TIOAdapter : IReadWriteAdapter
         {
             do
             {
                 int chunkBytes = Math.Min(buffer.Length, MaxDataSize);
-                await WriteSingleChunk(writeAdapter, buffer.Slice(0, chunkBytes)).ConfigureAwait(false);
+                await WriteSingleChunk<TIOAdapter>(buffer.Slice(0, chunkBytes), cancellationToken).ConfigureAwait(false);
                 buffer = buffer.Slice(chunkBytes);
             } while (buffer.Length != 0);
         }
 
-        private ValueTask WriteSingleChunk<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TIOAdapter : struct, IReadWriteAdapter
+        private ValueTask WriteSingleChunk<TIOAdapter>(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            where TIOAdapter : IReadWriteAdapter
         {
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length + FrameOverhead);
             byte[] outBuffer = rentedBuffer;
@@ -630,7 +631,7 @@ namespace System.Net.Security
                 TaskCompletionSource<bool>? waiter = _handshakeWaiter;
                 if (waiter != null)
                 {
-                    Task waiterTask = writeAdapter.WaitAsync(waiter);
+                    Task waiterTask = TIOAdapter.WaitAsync(waiter);
                     // We finished synchronously waiting for renegotiation. We can try again immediately.
                     if (waiterTask.IsCompletedSuccessfully)
                     {
@@ -638,7 +639,7 @@ namespace System.Net.Security
                     }
 
                     // We need to wait asynchronously as well as for the write when EncryptData is finished.
-                    return WaitAndWriteAsync(writeAdapter, buffer, waiterTask, rentedBuffer);
+                    return WaitAndWriteAsync(buffer, waiterTask, rentedBuffer, cancellationToken);
                 }
             }
 
@@ -648,7 +649,7 @@ namespace System.Net.Security
                 return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status))));
             }
 
-            ValueTask t = writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes);
+            ValueTask t = TIOAdapter.WriteAsync(InnerStream, outBuffer, 0, encryptedBytes, cancellationToken);
             if (t.IsCompletedSuccessfully)
             {
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
@@ -659,7 +660,7 @@ namespace System.Net.Security
                 return CompleteWriteAsync(t, rentedBuffer);
             }
 
-            async ValueTask WaitAndWriteAsync(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer, Task waitTask, byte[] rentedBuffer)
+            async ValueTask WaitAndWriteAsync(ReadOnlyMemory<byte> buffer, Task waitTask, byte[] rentedBuffer, CancellationToken cancellationToken)
             {
                 byte[]? bufferToReturn = rentedBuffer;
                 byte[] outBuffer = rentedBuffer;
@@ -678,11 +679,11 @@ namespace System.Net.Security
 
                         // Call WriteSingleChunk() recursively to avoid code duplication.
                         // This should be extremely rare in cases when second renegotiation happens concurrently with Write.
-                        await WriteSingleChunk(writeAdapter, buffer).ConfigureAwait(false);
+                        await WriteSingleChunk<TIOAdapter>(buffer, cancellationToken).ConfigureAwait(false);
                     }
                     else if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
                     {
-                        await writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, outBuffer, 0, encryptedBytes, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -698,7 +699,7 @@ namespace System.Net.Security
                 }
             }
 
-            async ValueTask CompleteWriteAsync(ValueTask writeTask, byte[] bufferToReturn)
+            static async ValueTask CompleteWriteAsync(ValueTask writeTask, byte[] bufferToReturn)
             {
                 try
                 {
@@ -737,7 +738,7 @@ namespace System.Net.Security
         }
 
 
-        private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(TIOAdapter adapter)
+        private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
             int frameSize;
@@ -752,7 +753,7 @@ namespace System.Net.Security
                 Debug.Assert(_buffer.AvailableLength > 0, "_buffer.AvailableBytes > 0");
 
                 // We either don't have full frame or we don't have enough data to even determine the size.
-                int bytesRead = await adapter.ReadAsync(_buffer.AvailableMemory).ConfigureAwait(false);
+                int bytesRead = await TIOAdapter.ReadAsync(InnerStream, _buffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     if (_buffer.EncryptedLength != 0)
@@ -816,25 +817,24 @@ namespace System.Net.Security
             return status;
         }
 
-        private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer)
+        private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
             ThrowIfExceptionalOrNotAuthenticated();
 
-            int processedLength = 0;
-            int payloadBytes = 0;
-
             try
             {
+                int processedLength = 0;
+
                 if (_buffer.DecryptedLength != 0)
                 {
                     processedLength = CopyDecryptedData(buffer);
-                    if (processedLength == buffer.Length || !HaveFullTlsFrame(out payloadBytes))
+                    if (processedLength == buffer.Length || !HaveFullTlsFrame(out _))
                     {
                         // We either filled whole buffer or used all buffered frames.
                         return processedLength;
@@ -859,7 +859,7 @@ namespace System.Net.Security
                     // until data is actually available from the underlying stream.
                     // Note that if the underlying stream does not supporting blocking on zero byte reads, then this will
                     // complete immediately and won't save any memory, but will still function correctly.
-                    await adapter.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
+                    await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
                 }
 
                 Debug.Assert(_buffer.DecryptedLength == 0);
@@ -868,7 +868,7 @@ namespace System.Net.Security
 
                 while (true)
                 {
-                    payloadBytes = await EnsureFullTlsFrameAsync(adapter).ConfigureAwait(false);
+                    int payloadBytes = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
                     if (payloadBytes == 0)
                     {
                         _receivedEOF = true;
@@ -897,7 +897,7 @@ namespace System.Net.Security
                             {
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
-                            await ReplyOnReAuthenticationAsync(adapter, extraBuffer).ConfigureAwait(false);
+                            await ReplyOnReAuthenticationAsync<TIOAdapter>(extraBuffer, cancellationToken).ConfigureAwait(false);
                             // Loop on read.
                             continue;
                         }
@@ -951,7 +951,7 @@ namespace System.Net.Security
             }
             catch (Exception e)
             {
-                if (e is IOException || (e is OperationCanceledException && adapter.CancellationToken.IsCancellationRequested))
+                if (e is IOException || (e is OperationCanceledException && cancellationToken.IsCancellationRequested))
                 {
                     throw;
                 }
@@ -965,8 +965,8 @@ namespace System.Net.Security
             }
         }
 
-        private async ValueTask WriteAsyncInternal<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TIOAdapter : struct, IReadWriteAdapter
+        private async ValueTask WriteAsyncInternal<TIOAdapter>(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            where TIOAdapter : IReadWriteAdapter
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 
@@ -978,19 +978,19 @@ namespace System.Net.Security
 
             if (Interlocked.Exchange(ref _nestedWrite, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(WriteAsync), "write"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
 
             try
             {
                 ValueTask t = buffer.Length < MaxDataSize ?
-                    WriteSingleChunk(writeAdapter, buffer) :
-                    WriteAsyncChunked(writeAdapter, buffer);
+                    WriteSingleChunk<TIOAdapter>(buffer, cancellationToken) :
+                    WriteAsyncChunked<TIOAdapter>(buffer, cancellationToken);
                 await t.ConfigureAwait(false);
             }
             catch (Exception e)
             {
-                if (e is IOException || (e is OperationCanceledException && writeAdapter.CancellationToken.IsCancellationRequested))
+                if (e is IOException || (e is OperationCanceledException && cancellationToken.IsCancellationRequested))
                 {
                     throw;
                 }

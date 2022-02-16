@@ -11,10 +11,16 @@
 EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, unsigned char* iv, int32_t enc)
 {
+    ERR_clear_error();
+
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+
     if (ctx == NULL)
     {
         // Allocation failed
+        // This is one of the few places that don't report the error to the queue, so
+        // we'll do it here.
+        ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
     }
 
@@ -75,10 +81,16 @@ CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyL
 EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreatePartial(const EVP_CIPHER* type)
 {
+    ERR_clear_error();
+
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+
     if (ctx == NULL)
     {
         // Allocation failed
+        // This is one of the few places that don't report the error to the queue, so
+        // we'll do it here.
+        ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
     }
 
@@ -101,17 +113,21 @@ CryptoNative_EvpCipherCreatePartial(const EVP_CIPHER* type)
 
 int32_t CryptoNative_EvpCipherSetKeyAndIV(EVP_CIPHER_CTX* ctx, uint8_t* key, unsigned char* iv, int32_t enc)
 {
+    ERR_clear_error();
+
     // Perform final initialization specifying the remaining arguments
     return EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, enc);
 }
 
 int32_t CryptoNative_EvpCipherSetGcmNonceLength(EVP_CIPHER_CTX* ctx, int32_t ivLength)
 {
+    ERR_clear_error();
     return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, ivLength, NULL);
 }
 
 int32_t CryptoNative_EvpCipherSetCcmNonceLength(EVP_CIPHER_CTX* ctx, int32_t ivLength)
 {
+    ERR_clear_error();
     return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_IVLEN, ivLength, NULL);
 }
 
@@ -127,18 +143,22 @@ int32_t CryptoNative_EvpCipherReset(EVP_CIPHER_CTX* ctx, uint8_t* pIv, int32_t c
 {
     assert(cIv >= 0 && (pIv != NULL || cIv == 0));
     (void)cIv;
+    ERR_clear_error();
 
     return EVP_CipherInit_ex(ctx, NULL, NULL, NULL, pIv, KEEP_CURRENT_DIRECTION);
 }
 
 int32_t CryptoNative_EvpCipherCtxSetPadding(EVP_CIPHER_CTX* x, int32_t padding)
 {
+    // No error queue impact.
     return EVP_CIPHER_CTX_set_padding(x, padding);
 }
 
 int32_t
 CryptoNative_EvpCipherUpdate(EVP_CIPHER_CTX* ctx, uint8_t* out, int32_t* outl, unsigned char* in, int32_t inl)
 {
+    ERR_clear_error();
+
     int outLength;
     int32_t ret = EVP_CipherUpdate(ctx, out, &outLength, in, inl);
     if (ret == SUCCESS)
@@ -151,6 +171,8 @@ CryptoNative_EvpCipherUpdate(EVP_CIPHER_CTX* ctx, uint8_t* out, int32_t* outl, u
 
 int32_t CryptoNative_EvpCipherFinalEx(EVP_CIPHER_CTX* ctx, uint8_t* outm, int32_t* outl)
 {
+    ERR_clear_error();
+
     int outLength;
     int32_t ret = EVP_CipherFinal_ex(ctx, outm, &outLength);
     if (ret == SUCCESS)
@@ -163,26 +185,31 @@ int32_t CryptoNative_EvpCipherFinalEx(EVP_CIPHER_CTX* ctx, uint8_t* outm, int32_
 
 int32_t CryptoNative_EvpCipherGetGcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
 {
+    ERR_clear_error();
     return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, tagLength, tag);
 }
 
 int32_t CryptoNative_EvpCipherSetGcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
 {
+    ERR_clear_error();
     return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, tagLength, tag);
 }
 
 int32_t CryptoNative_EvpCipherGetCcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
 {
+    ERR_clear_error();
     return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_GET_TAG, tagLength, tag);
 }
 
 int32_t CryptoNative_EvpCipherSetCcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
 {
+    ERR_clear_error();
     return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_TAG, tagLength, tag);
 }
 
 int32_t CryptoNative_EvpCipherGetAeadTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
 {
+    ERR_clear_error();
 #if HAVE_OPENSSL_CHACHA20POLY1305
     return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_GET_TAG, tagLength, tag);
 #else
@@ -195,6 +222,7 @@ int32_t CryptoNative_EvpCipherGetAeadTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int3
 
 int32_t CryptoNative_EvpCipherSetAeadTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
 {
+    ERR_clear_error();
 #if HAVE_OPENSSL_CHACHA20POLY1305
     return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tagLength, tag);
 #else
@@ -207,141 +235,169 @@ int32_t CryptoNative_EvpCipherSetAeadTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int3
 
 const EVP_CIPHER* CryptoNative_EvpAes128Ecb()
 {
+    // No error queue impact.
     return EVP_aes_128_ecb();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes128Cbc()
 {
+    // No error queue impact.
     return EVP_aes_128_cbc();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes128Gcm()
 {
+    // No error queue impact.
     return EVP_aes_128_gcm();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes128Cfb128()
 {
+    // No error queue impact.
     return EVP_aes_128_cfb128();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes128Cfb8()
 {
+    // No error queue impact.
     return EVP_aes_128_cfb8();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes128Ccm()
 {
+    // No error queue impact.
     return EVP_aes_128_ccm();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes192Ecb()
 {
+    // No error queue impact.
     return EVP_aes_192_ecb();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes192Cfb128()
 {
+    // No error queue impact.
     return EVP_aes_192_cfb128();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes192Cfb8()
 {
+    // No error queue impact.
     return EVP_aes_192_cfb8();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes192Cbc()
 {
+    // No error queue impact.
     return EVP_aes_192_cbc();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes192Gcm()
 {
+    // No error queue impact.
     return EVP_aes_192_gcm();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes192Ccm()
 {
+    // No error queue impact.
     return EVP_aes_192_ccm();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes256Ecb()
 {
+    // No error queue impact.
     return EVP_aes_256_ecb();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes256Cfb128()
 {
+    // No error queue impact.
     return EVP_aes_256_cfb128();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes256Cfb8()
 {
+    // No error queue impact.
     return EVP_aes_256_cfb8();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes256Cbc()
 {
+    // No error queue impact.
     return EVP_aes_256_cbc();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes256Gcm()
 {
+    // No error queue impact.
     return EVP_aes_256_gcm();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes256Ccm()
 {
+    // No error queue impact.
     return EVP_aes_256_ccm();
 }
 
 const EVP_CIPHER* CryptoNative_EvpDesEcb()
 {
+    // No error queue impact.
     return EVP_des_ecb();
 }
 
 const EVP_CIPHER* CryptoNative_EvpDesCfb8()
 {
+    // No error queue impact.
     return EVP_des_cfb8();
 }
 
 const EVP_CIPHER* CryptoNative_EvpDesCbc()
 {
+    // No error queue impact.
     return EVP_des_cbc();
 }
 
 const EVP_CIPHER* CryptoNative_EvpDes3Ecb()
 {
+    // No error queue impact.
     return EVP_des_ede3();
 }
 
 const EVP_CIPHER* CryptoNative_EvpDes3Cfb8()
 {
+    // No error queue impact.
     return EVP_des_ede3_cfb8();
 }
 
 const EVP_CIPHER* CryptoNative_EvpDes3Cfb64()
 {
+    // No error queue impact.
     return EVP_des_ede3_cfb64();
 }
 
 const EVP_CIPHER* CryptoNative_EvpDes3Cbc()
 {
+    // No error queue impact.
     return EVP_des_ede3_cbc();
 }
 
 const EVP_CIPHER* CryptoNative_EvpRC2Ecb()
 {
+    // No error queue impact.
     return EVP_rc2_ecb();
 }
 
 const EVP_CIPHER* CryptoNative_EvpRC2Cbc()
 {
+    // No error queue impact.
     return EVP_rc2_cbc();
 }
 
 const EVP_CIPHER* CryptoNative_EvpChaCha20Poly1305()
 {
+    // No error queue impact.
 #if HAVE_OPENSSL_CHACHA20POLY1305
     if (API_EXISTS(EVP_chacha20_poly1305))
     {

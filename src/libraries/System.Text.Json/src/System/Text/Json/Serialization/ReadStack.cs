@@ -83,7 +83,7 @@ namespace System.Text.Json
 
         public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
+            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
             Initialize(jsonTypeInfo, supportContinuation);
         }
 
@@ -126,17 +126,17 @@ namespace System.Text.Json
                     {
                         if (Current.JsonPropertyInfo != null)
                         {
-                            jsonTypeInfo = Current.JsonPropertyInfo.RuntimeTypeInfo;
+                            jsonTypeInfo = Current.JsonPropertyInfo.JsonTypeInfo;
                         }
                         else
                         {
-                            jsonTypeInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeTypeInfo;
+                            jsonTypeInfo = Current.CtorArgumentState!.JsonParameterInfo!.JsonTypeInfo;
                         }
                     }
                     else if (converterStrategy == ConverterStrategy.Value)
                     {
                         // Although ConverterStrategy.Value doesn't push, a custom custom converter may re-enter serialization.
-                        jsonTypeInfo = Current.JsonPropertyInfo!.RuntimeTypeInfo;
+                        jsonTypeInfo = Current.JsonPropertyInfo!.JsonTypeInfo;
                     }
                     else
                     {

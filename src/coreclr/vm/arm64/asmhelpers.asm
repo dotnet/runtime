@@ -1440,7 +1440,7 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     LEAF_END
 
     LEAF_ENTRY  JIT_DispatchIndirectCall
-        br x15
+        br x9
     LEAF_END
 
 ; Must be at very end of file

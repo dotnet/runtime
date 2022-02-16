@@ -171,6 +171,9 @@
   <data name="ConstantAndElementCountInfoDisallowed" xml:space="preserve">
     <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionLevel'</value>
   </data>
+  <data name="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode" xml:space="preserve">
+    <value>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</value>
+  </data>
   <data name="ConvertToGeneratedDllImport" xml:space="preserve">
     <value>Convert to 'GeneratedDllImport'</value>
   </data>
