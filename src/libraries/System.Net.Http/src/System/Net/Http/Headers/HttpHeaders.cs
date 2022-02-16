@@ -85,24 +85,11 @@ namespace System.Net.Http.Headers
 
             // If we get here, then the value could be parsed correctly. If we created a new HeaderStoreItemInfo, add
             // it to the store if we added at least one value.
-            if (addToStore && ExistsParsedValue(info))
+            if (addToStore && info.ExistsParsedValue())
             {
                 Debug.Assert(!ContainsKey(descriptor));
                 AddEntryToStore(new HeaderEntry(descriptor, info));
             }
-        }
-
-        private static bool ExistsParsedValue(HeaderStoreItemInfo info)
-        {
-            foreach (var item in info.ParsedAndInvalidValues)
-            {
-                if (item.Type == HeaderStoreItemInfoValueType.Parsed)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static bool ExistsInvalidValue(HeaderStoreItemInfo info)
@@ -120,7 +107,7 @@ namespace System.Net.Http.Headers
 
         public void Add(string name, IEnumerable<string?> values) => Add(GetHeaderDescriptor(name), values);
 
-        internal void Add(HeaderDescriptor descriptor, IEnumerable<string?> values)
+        internal void Add(HeaderDescriptor descriptor, IEnumerable<string?> values!!)
         {
             PrepareHeaderInfoForAdd(descriptor, out HeaderStoreItemInfo info, out bool addToStore);
 
@@ -140,7 +127,7 @@ namespace System.Net.Http.Headers
                 // get added. Same here: If multiple values get added to a _new_ header, make sure the header gets added
                 // with the valid values.
                 // However, if all values for a _new_ header were invalid, then don't add the header.
-                if (addToStore && ExistsParsedValue(info))
+                if (addToStore && info.ExistsParsedValue())
                 {
                     Debug.Assert(!ContainsKey(descriptor));
                     AddEntryToStore(new HeaderEntry(descriptor, info));
@@ -444,7 +431,7 @@ namespace System.Net.Http.Headers
                     "This method should not be used for single-value headers. Use Remove(string) instead.");
 
                 // If there is no entry, just return.
-                if (!ExistsParsedValue(info))
+                if (!info.ExistsParsedValue())
                 {
                     return false;
                 }
@@ -483,42 +470,6 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        private void RemoveParsedValue(HeaderStoreItemInfo info)
-        {
-            var result = new List<HeaderStoreItemInfoValue>();
-            foreach (var item in info.ParsedAndInvalidValues)
-            {
-                if (item.Type != HeaderStoreItemInfoValueType.Parsed)
-                {
-                    result.Add(item);
-                }
-            }
-
-            info.ParsedAndInvalidValues = result;
-        }
-
-        private static object? GetParsedValues(HeaderStoreItemInfo info)
-        {
-            var results = new List<object>();
-            foreach (var item in info.ParsedAndInvalidValues)
-            {
-                if (item.Type == HeaderStoreItemInfoValueType.Parsed && item.Value != null)
-                    results.Add(item.Value);
-            }
-
-            if (results.Count > 0)
-            {
-                if (results.Count == 1)
-                {
-                    return results[0];
-                }
-
-                return results;
-            }
-
-            return null;
-        }
-
         internal bool ContainsParsedValue(HeaderDescriptor descriptor, object value)
         {
             Debug.Assert(value != null);
@@ -532,12 +483,12 @@ namespace System.Net.Http.Headers
                     "This method should not be used for single-value headers. Use equality comparer instead.");
 
                 // If there is no entry, just return.
-                if (!ExistsParsedValue(info))
+                if (!info.ExistsParsedValue())
                 {
                     return false;
                 }
 
-                var origParsedValues = GetParsedValues(info);
+                var origParsedValues = info.GetParsedValues();
                 List<object>? parsedValues = origParsedValues as List<object>;
 
                 IEqualityComparer? comparer = descriptor.Parser.Comparer;
@@ -865,7 +816,7 @@ namespace System.Net.Http.Headers
 
             bool result = TryParseAndAddRawHeaderValue(descriptor, info, value, false);
 
-            if (result && addToStore &&  ExistsParsedValue(info))
+            if (result && addToStore && info.ExistsParsedValue())
             {
                 // If we get here, then the value could be parsed correctly. If we created a new HeaderStoreItemInfo, add
                 // it to the store if we added at least one value.
@@ -897,7 +848,7 @@ namespace System.Net.Http.Headers
 
             int index = 0;
 
-            if (descriptor.Parser.TryParseValue(value, GetParsedValues(info), ref index, out object? parsedValue))
+            if (descriptor.Parser.TryParseValue(value, info.GetParsedValues(), ref index, out object? parsedValue))
             {
                 // The raw string only represented one value (which was successfully parsed). Add the value and return.
                 if ((value == null) || (index == value.Length))
@@ -1012,7 +963,7 @@ namespace System.Net.Http.Headers
                 return null;
             }
 
-            return GetParsedValues(info);
+            return info.GetParsedValues();
         }
 
         internal virtual bool IsAllowedHeaderName(HeaderDescriptor descriptor) => true;
@@ -1053,7 +1004,7 @@ namespace System.Net.Http.Headers
             }
 
             int index = 0;
-            object parsedValue = descriptor.Parser.ParseValue(value, GetParsedValues(info), ref index);
+            object parsedValue = descriptor.Parser.ParseValue(value, info.GetParsedValues(), ref index);
 
             // The raw string only represented one value (which was successfully parsed). Add the value and return.
             // If value is null we still have to first call ParseValue() to allow the parser to decide whether null is
@@ -1080,7 +1031,7 @@ namespace System.Net.Http.Headers
 
             while (index < value.Length)
             {
-                parsedValue = descriptor.Parser.ParseValue(value, GetParsedValues(info), ref index);
+                parsedValue = descriptor.Parser.ParseValue(value, info.GetParsedValues(), ref index);
                 if (parsedValue != null)
                 {
                     parsedValues.Add(parsedValue);
@@ -1374,6 +1325,41 @@ namespace System.Net.Http.Headers
             }
 
             internal bool IsEmpty => (RawValue == null) && ParsedAndInvalidValues.Count == 0;
+
+            internal bool ExistsParsedValue()
+            {
+                foreach (var item in ParsedAndInvalidValues)
+                {
+                    if (item.Type == HeaderStoreItemInfoValueType.Parsed)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            internal object? GetParsedValues()
+            {
+                var results = new List<object>();
+                foreach (var item in ParsedAndInvalidValues)
+                {
+                    if (item.Type == HeaderStoreItemInfoValueType.Parsed && item.Value != null)
+                        results.Add(item.Value);
+                }
+
+                if (results.Count > 0)
+                {
+                    if (results.Count == 1)
+                    {
+                        return results[0];
+                    }
+
+                    return results;
+                }
+
+                return null;
+            }
         }
 
 
