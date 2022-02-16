@@ -4876,11 +4876,11 @@ mono_test_marshal_bool_in (int arg, unsigned int expected, unsigned int bDefault
 {
 	switch (arg) {
 	case 1:
-		if (bDefaultMarsh != (char)expected)
+		if (bDefaultMarsh != expected)
 			return 1;
 		break;
 	case 2:
-		if (bBoolCustMarsh != (char)expected)
+		if (bBoolCustMarsh != expected)
 			return 2;
 		break;
 	case 3:
@@ -4888,11 +4888,11 @@ mono_test_marshal_bool_in (int arg, unsigned int expected, unsigned int bDefault
 			return 3;
 		break;
 	case 4:
-		if (bU1CustMarsh != (char)expected)
+		if (bU1CustMarsh != (unsigned char)expected)
 			return 4;
 		break;
 	case 5:
-		if (bVBCustMarsh != (char)expected)
+		if (bVBCustMarsh != (short)expected)
 			return 5;
 		break;
 	default:
@@ -4960,14 +4960,14 @@ mono_test_marshal_bool_ref (int arg, unsigned int expected, unsigned int testVal
 	case 3:
 		if (!bI1CustMarsh)
 			return 5;
-		if (*bI1CustMarsh != expected)
+		if (*bI1CustMarsh != (char)expected)
 			return 6;
 		*bI1CustMarsh = (char)testVal;
 		break;
 	case 4:
 		if (!bU1CustMarsh)
 			return 7;
-		if (*bU1CustMarsh != expected)
+		if (*bU1CustMarsh != (unsigned char)expected)
 			return 8;
 		*bU1CustMarsh = (unsigned char)testVal;
 		break;
@@ -5052,7 +5052,7 @@ mono_test_managed_marshal_bool_out (int arg, unsigned int expected, unsigned int
 		ret = pfcn (arg, testVal, &lDefaultMarsh, &lBoolCustMarsh, &ltVal, &lU1CustMarsh, &lVBCustMarsh);
 		if (ret)
 			return 0x0500 + ret;
-		if (expected != ltVal)
+		if ((char)expected != ltVal)
 			return 0x0600;
 		break;
 	}
@@ -5061,7 +5061,7 @@ mono_test_managed_marshal_bool_out (int arg, unsigned int expected, unsigned int
 		ret = pfcn (arg, testVal, &lDefaultMarsh, &lBoolCustMarsh, &lI1CustMarsh, &ltVal, &lVBCustMarsh);
 		if (ret)
 			return 0x0700 + ret;
-		if (expected != ltVal)
+		if ((unsigned char)expected != ltVal)
 			return 0x0800;
 		break;
 	}
@@ -5125,7 +5125,7 @@ mono_test_managed_marshal_bool_ref (int arg, unsigned int expected, unsigned int
 		ret = pfcn (arg, expected, outTestVal, &lDefaultMarsh, &lBoolCustMarsh, &ltestVal, &lU1CustMarsh, &lVBCustMarsh);
 		if (ret)
 			return 0x0500 + ret;
-		if (outExpected != ltestVal)
+		if ((char)outExpected != ltestVal)
 			return 0x0600;
 		break;
 	}
@@ -5135,7 +5135,7 @@ mono_test_managed_marshal_bool_ref (int arg, unsigned int expected, unsigned int
 		ret = pfcn (arg, expected, outTestVal, &lDefaultMarsh, &lBoolCustMarsh, &lI1CustMarsh, &ltestVal, &lVBCustMarsh);
 		if (ret)
 			return 0x0700 + ret;
-		if (outExpected != ltestVal)
+		if ((unsigned char)outExpected != ltestVal)
 			return 0x0800;
 		break;
 	}
