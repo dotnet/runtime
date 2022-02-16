@@ -1422,5 +1422,33 @@ partial struct Basic
     public static partial ref readonly {typeName} RefReadonlyReturn();
 }}";
 
+        public static string PartialPropertyName => @"
+using System.Runtime.InteropServices;
+
+partial struct Basic
+{
+    [GeneratedDllImport(""DoesNotExist"", SetLa)]
+    public static partial void Method();
+}
+";
+        public static string InvalidConstantForModuleName => @"
+using System.Runtime.InteropServices;
+
+partial struct Basic
+{
+    [GeneratedDllImport(DoesNotExist)]
+    public static partial void Method();
+}
+";
+        public static string IncorrectAttributeFieldType => @"
+using System.Runtime.InteropServices;
+
+partial struct Basic
+{
+    [GeneratedDllImport(""DoesNotExist"", SetLastError = ""Foo"")]
+    public static partial void Method();
+}
+";
+
     }
 }
