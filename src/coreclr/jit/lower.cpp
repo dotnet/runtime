@@ -4053,7 +4053,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             }
             else
             {
-                addrNode                             = AddrGen(addr);
+                addrNode = AddrGen(addr);
 #ifdef DEBUG
                 addrNode->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
@@ -5103,7 +5103,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         {
             // If we don't pass stub address as an arg then just create the constant tree here.
             assert(call->gtStubCallStubAddr != nullptr);
-            GenTree* addr                    = AddrGen(call->gtStubCallStubAddr);
+            GenTree* addr = AddrGen(call->gtStubCallStubAddr);
 #ifdef DEBUG
             addr->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
