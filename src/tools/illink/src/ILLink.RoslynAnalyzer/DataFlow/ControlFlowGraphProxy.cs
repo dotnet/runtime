@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 
@@ -30,6 +31,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public RegionKind Kind => Region.Kind switch {
 			ControlFlowRegionKind.Try => RegionKind.Try,
 			ControlFlowRegionKind.Catch => RegionKind.Catch,
+			ControlFlowRegionKind.Filter => RegionKind.Filter,
 			ControlFlowRegionKind.Finally => RegionKind.Finally,
 			_ => throw new InvalidOperationException ()
 		};
@@ -65,22 +67,22 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 		}
 
-		public bool TryGetEnclosingTryOrCatch (BlockProxy block, out RegionProxy tryOrCatchRegion)
+		public bool TryGetEnclosingTryOrCatchOrFilter (BlockProxy block, out RegionProxy tryOrCatchOrFilterRegion)
 		{
-			return TryGetTryOrCatch (block.Block.EnclosingRegion, out tryOrCatchRegion);
+			return TryGetTryOrCatchOrFilter (block.Block.EnclosingRegion, out tryOrCatchOrFilterRegion);
 		}
 
-		public bool TryGetEnclosingTryOrCatch (RegionProxy regionProxy, out RegionProxy tryOrCatchRegion)
+		public bool TryGetEnclosingTryOrCatchOrFilter (RegionProxy regionProxy, out RegionProxy tryOrCatchOrFilterRegion)
 		{
-			return TryGetTryOrCatch (regionProxy.Region.EnclosingRegion, out tryOrCatchRegion);
+			return TryGetTryOrCatchOrFilter (regionProxy.Region.EnclosingRegion, out tryOrCatchOrFilterRegion);
 		}
 
-		static bool TryGetTryOrCatch (ControlFlowRegion? region, out RegionProxy tryOrCatchRegion)
+		static bool TryGetTryOrCatchOrFilter (ControlFlowRegion? region, out RegionProxy tryOrCatchOrFilterRegion)
 		{
-			tryOrCatchRegion = default;
+			tryOrCatchOrFilterRegion = default;
 			while (region != null) {
-				if (region.Kind is ControlFlowRegionKind.Try or ControlFlowRegionKind.Catch) {
-					tryOrCatchRegion = new RegionProxy (region);
+				if (region.Kind is ControlFlowRegionKind.Try or ControlFlowRegionKind.Catch or ControlFlowRegionKind.Filter) {
+					tryOrCatchOrFilterRegion = new RegionProxy (region);
 					return true;
 				}
 				region = region.EnclosingRegion;
@@ -102,12 +104,23 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return false;
 		}
 
-		public RegionProxy GetCorrespondingTry (RegionProxy catchOrFinallyRegion)
+		public RegionProxy GetCorrespondingTry (RegionProxy catchOrFilterOrFinallyRegion)
 		{
-			if (catchOrFinallyRegion.Region.Kind is not (ControlFlowRegionKind.Finally or ControlFlowRegionKind.Catch))
-				throw new ArgumentOutOfRangeException (nameof (catchOrFinallyRegion));
+			if (catchOrFilterOrFinallyRegion.Region.Kind is not (ControlFlowRegionKind.Catch or ControlFlowRegionKind.Filter or ControlFlowRegionKind.Finally))
+				throw new ArgumentException ("Must be a catch, filter, or finally region: {}", nameof (catchOrFilterOrFinallyRegion));
 
-			foreach (var nested in catchOrFinallyRegion.Region.EnclosingRegion!.NestedRegions) {
+			// Finally -> TryAndFinally
+			// Catch -> TryAndCatch or FilterAndHandler
+			// Filter -> FilterAndHandler
+			var enclosingRegion = catchOrFilterOrFinallyRegion.Region.EnclosingRegion!;
+			// FilterAndHandler -> TryAndCatch
+			if (enclosingRegion.Kind == ControlFlowRegionKind.FilterAndHandler) {
+				enclosingRegion = enclosingRegion.EnclosingRegion!;
+				Debug.Assert (enclosingRegion.Kind == ControlFlowRegionKind.TryAndCatch);
+			}
+
+			// For TryAndFinally or TryAndCatch, get the Try region.
+			foreach (var nested in enclosingRegion.NestedRegions) {
 				// Note that for try+catch+finally, the try corresponding to the finally will not be the same as
 				// the try corresponding to the catch, because Roslyn represents this region hierarchy the same as
 				// a try+catch nested inside the try block of a try+finally.
@@ -115,6 +128,60 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					return new (nested);
 			}
 			throw new InvalidOperationException ();
+		}
+
+		public IEnumerable<RegionProxy> GetPreviousFilters (RegionProxy catchOrFilterRegion)
+		{
+			var region = catchOrFilterRegion.Region;
+			if (region.Kind is not (ControlFlowRegionKind.Catch or ControlFlowRegionKind.Filter))
+				throw new ArgumentException ("Must be a catch or filter region: {}", nameof (catchOrFilterRegion));
+
+			// Should not be called for a catch block that already has a filter.
+			if (region.Kind is ControlFlowRegionKind.Catch && region.EnclosingRegion!.Kind is ControlFlowRegionKind.FilterAndHandler)
+				throw new ArgumentException ("Must not be a catch block with filter: {}", nameof (catchOrFilterRegion));
+
+			var tryRegion = GetCorrespondingTry (catchOrFilterRegion);
+			// The enclosing region is part of a TryAndCatch region, which has
+			// a Try and multiple Catch or FilterAndHandler regions.
+			foreach (var nested in tryRegion.Region.EnclosingRegion!.NestedRegions) {
+				ControlFlowRegion? catchOrFilter = null;
+				switch (nested.Kind) {
+				case ControlFlowRegionKind.Catch:
+					catchOrFilter = nested;
+					break;
+				case ControlFlowRegionKind.FilterAndHandler:
+					// Get Filter region from the FilterAndHandler
+					foreach (var filter in nested.NestedRegions) {
+						if (filter.Kind == ControlFlowRegionKind.Filter) {
+							catchOrFilter = filter;
+							break;
+						}
+					}
+					// In case there is no filter region, just skip this one.
+					if (catchOrFilter == null)
+						continue;
+					break;
+				default:
+					continue;
+				}
+
+				// When we reach this one, we are done searching.
+				if (catchOrFilter.Equals (region))
+					yield break;
+
+				// If the previous region is a filter region, yield it.
+				if (catchOrFilter.Kind == ControlFlowRegionKind.Filter)
+					yield return new (catchOrFilter);
+			}
+			throw new InvalidOperationException ();
+		}
+
+		public bool HasFilter (RegionProxy catchRegion)
+		{
+			if (catchRegion.Region.Kind is not ControlFlowRegionKind.Catch)
+				throw new ArgumentException ("Must be a catch region: {}", nameof (catchRegion));
+
+			return catchRegion.Region.EnclosingRegion!.Kind == ControlFlowRegionKind.FilterAndHandler;
 		}
 
 		public BlockProxy FirstBlock (RegionProxy region) =>

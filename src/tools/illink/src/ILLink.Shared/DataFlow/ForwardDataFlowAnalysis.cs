@@ -63,14 +63,14 @@ namespace ILLink.Shared.DataFlow
 				this.lattice = lattice;
 			}
 
-			public Box<TValue> GetExceptionState (TRegion tryOrCatchRegion)
+			public Box<TValue> GetExceptionState (TRegion tryOrCatchOrFilterRegion)
 			{
-				if (tryOrCatchRegion.Kind is not (RegionKind.Try or RegionKind.Catch))
-					throw new ArgumentException (null, nameof (tryOrCatchRegion));
+				if (tryOrCatchOrFilterRegion.Kind is not (RegionKind.Try or RegionKind.Catch or RegionKind.Filter))
+					throw new ArgumentException (null, nameof (tryOrCatchOrFilterRegion));
 
-				if (!exceptionState.TryGetValue (tryOrCatchRegion, out Box<TValue>? state)) {
+				if (!exceptionState.TryGetValue (tryOrCatchOrFilterRegion, out Box<TValue>? state)) {
 					state = new Box<TValue> (lattice.Top);
-					exceptionState.Add (tryOrCatchRegion, state);
+					exceptionState.Add (tryOrCatchOrFilterRegion, state);
 				}
 				return state;
 			}
@@ -78,10 +78,10 @@ namespace ILLink.Shared.DataFlow
 			public bool TryGetExceptionState (TBlock block, out Box<TValue>? state)
 			{
 				state = null;
-				if (!cfg.TryGetEnclosingTryOrCatch (block, out TRegion? tryOrCatchRegion))
+				if (!cfg.TryGetEnclosingTryOrCatchOrFilter (block, out TRegion? tryOrCatchOrFilterRegion))
 					return false;
 
-				state = GetExceptionState (tryOrCatchRegion);
+				state = GetExceptionState (tryOrCatchOrFilterRegion);
 				return true;
 			}
 
@@ -192,11 +192,16 @@ namespace ILLink.Shared.DataFlow
 					if (block.Equals (cfg.Entry))
 						continue;
 
-					bool isTryOrCatchBlock = cfg.TryGetEnclosingTryOrCatch (block, out TRegion? tryOrCatchRegion);
-					bool isTryBlock = isTryOrCatchBlock && tryOrCatchRegion!.Kind == RegionKind.Try;
-					bool isCatchBlock = isTryOrCatchBlock && !isTryBlock;
-					bool isTryStart = isTryBlock && block.Equals (cfg.FirstBlock (tryOrCatchRegion!));
-					bool isCatchStart = isCatchBlock && block.Equals (cfg.FirstBlock (tryOrCatchRegion!));
+					bool isTryOrCatchOrFilterBlock = cfg.TryGetEnclosingTryOrCatchOrFilter (block, out TRegion? tryOrCatchOrFilterRegion);
+
+					bool isTryBlock = isTryOrCatchOrFilterBlock && tryOrCatchOrFilterRegion!.Kind == RegionKind.Try;
+					bool isTryStart = isTryBlock && block.Equals (cfg.FirstBlock (tryOrCatchOrFilterRegion!));
+					bool isCatchBlock = isTryOrCatchOrFilterBlock && tryOrCatchOrFilterRegion!.Kind == RegionKind.Catch;
+					bool isCatchStartWithoutFilter = isCatchBlock && block.Equals (cfg.FirstBlock (tryOrCatchOrFilterRegion!)) && !cfg.HasFilter (tryOrCatchOrFilterRegion!);
+					bool isFilterBlock = isTryOrCatchOrFilterBlock && tryOrCatchOrFilterRegion!.Kind == RegionKind.Filter;
+					bool isFilterStart = isFilterBlock && block.Equals (cfg.FirstBlock (tryOrCatchOrFilterRegion!));
+
+					bool isCatchOrFilterStart = isCatchStartWithoutFilter || isFilterStart;
 
 					bool isFinallyBlock = cfg.TryGetEnclosingFinally (block, out TRegion? finallyRegion);
 					bool isFinallyStart = isFinallyBlock && block.Equals (cfg.FirstBlock (finallyRegion!));
@@ -232,10 +237,19 @@ namespace ILLink.Shared.DataFlow
 					}
 					// State at start of a catch also includes the exceptional state from
 					// try -> catch exceptional control flow.
-					if (isCatchStart) {
-						TRegion correspondingTry = cfg.GetCorrespondingTry (tryOrCatchRegion!);
+					if (isCatchOrFilterStart) {
+						TRegion correspondingTry = cfg.GetCorrespondingTry (tryOrCatchOrFilterRegion!);
 						Box<TValue> tryExceptionState = cfgState.GetExceptionState (correspondingTry);
 						currentState = lattice.Meet (currentState, tryExceptionState.Value);
+
+						// A catch or filter can also be reached from a previous filter.
+						foreach (TRegion previousFilter in cfg.GetPreviousFilters (tryOrCatchOrFilterRegion!)) {
+							// Control may flow from the last block of a previous filter region to this catch or filter region.
+							// Exceptions may also propagate from anywhere in a filter region to this catch or filter region.
+							// This covers both cases since the exceptional state is a superset of the normal state.
+							Box<TValue> previousFilterExceptionState = cfgState.GetExceptionState (previousFilter);
+							currentState = lattice.Meet (currentState, previousFilterExceptionState.Value);
+						}
 					}
 					if (isFinallyStart) {
 						TValue finallyInputState = cfgState.GetFinallyInputState (finallyRegion!);
@@ -272,8 +286,8 @@ namespace ILLink.Shared.DataFlow
 					TState currentBlockState = cfgState.Get (block);
 					Box<TValue>? exceptionState = currentBlockState.Exception;
 					TValue? oldExceptionState = exceptionState?.Value;
-					if (isTryStart || isCatchStart) {
-						// Catch regions get the initial state from the exception state of the corresponding try region.
+					if (isTryStart || isCatchOrFilterStart) {
+						// Catch/filter regions get the initial state from the exception state of the corresponding try region.
 						// This is already accounted for in the non-exceptional control flow state of the catch block above,
 						// so we can just use the state we already computed, for both try and catch regions.
 						exceptionState!.Value = lattice.Meet (exceptionState!.Value, currentState);
@@ -322,10 +336,12 @@ namespace ILLink.Shared.DataFlow
 						changed = true;
 
 						// Bubble up the changed exception state to the next enclosing try or catch exception state.
-						while (cfg.TryGetEnclosingTryOrCatch (tryOrCatchRegion!, out TRegion? enclosingTryOrCatch)) {
+						while (cfg.TryGetEnclosingTryOrCatchOrFilter (tryOrCatchOrFilterRegion!, out TRegion? enclosingTryOrCatch)) {
+							// Filters can't contain try/catch/filters.
+							Debug.Assert (enclosingTryOrCatch.Kind != RegionKind.Filter);
 							Box<TValue> tryOrCatchExceptionState = cfgState.GetExceptionState (enclosingTryOrCatch);
 							tryOrCatchExceptionState.Value = lattice.Meet (tryOrCatchExceptionState!.Value, exceptionState!.Value);
-							tryOrCatchRegion = enclosingTryOrCatch;
+							tryOrCatchOrFilterRegion = enclosingTryOrCatch;
 						}
 					}
 

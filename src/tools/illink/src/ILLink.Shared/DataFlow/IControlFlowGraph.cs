@@ -12,6 +12,7 @@ namespace ILLink.Shared.DataFlow
 	{
 		Try,
 		Catch,
+		Filter,
 		Finally
 	}
 
@@ -44,13 +45,17 @@ namespace ILLink.Shared.DataFlow
 		// control flow from try -> finally or from catch -> finally.
 		IEnumerable<Predecessor> GetPredecessors (TBlock block);
 
-		bool TryGetEnclosingTryOrCatch (TBlock block, [NotNullWhen (true)] out TRegion? tryOrCatchRegion);
+		bool TryGetEnclosingTryOrCatchOrFilter (TBlock block, [NotNullWhen (true)] out TRegion? tryOrCatchOrFilterRegion);
 
-		bool TryGetEnclosingTryOrCatch (TRegion region, [NotNullWhen (true)] out TRegion? tryOrCatchRegion);
+		bool TryGetEnclosingTryOrCatchOrFilter (TRegion region, [NotNullWhen (true)] out TRegion? tryOrCatchOrFilterRegion);
 
 		bool TryGetEnclosingFinally (TBlock block, [NotNullWhen (true)] out TRegion? region);
 
-		TRegion GetCorrespondingTry (TRegion cathOrFinallyRegion);
+		TRegion GetCorrespondingTry (TRegion cathOrFilterOrFinallyRegion);
+
+		IEnumerable<TRegion> GetPreviousFilters (TRegion catchOrFilterRegion);
+
+		bool HasFilter (TRegion catchRegion);
 
 		TBlock FirstBlock (TRegion region);
 

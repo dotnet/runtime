@@ -7,7 +7,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		protected override string TestSuiteName => "UnreachableBlock";
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2415")]
+		[Fact]
 		public Task TryFilterBlocks ()
 		{
 			return RunTest (allowMissingWarnings: true);
