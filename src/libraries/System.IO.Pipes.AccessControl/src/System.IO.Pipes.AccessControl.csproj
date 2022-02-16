@@ -6,14 +6,15 @@
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
-    <IsPartialFacadeAssembly Condition="'$(TargetsWindows)' == 'true'">true</IsPartialFacadeAssembly>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <IsPartialFacadeAssembly Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System.IO.Pipes.csproj">
-      <SkipUseReferenceAssembly Condition="'$(TargetsWindows)' == 'true'">true</SkipUseReferenceAssembly>
+      <SkipUseReferenceAssembly Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</SkipUseReferenceAssembly>
     </ProjectReference>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Security.AccessControl" />

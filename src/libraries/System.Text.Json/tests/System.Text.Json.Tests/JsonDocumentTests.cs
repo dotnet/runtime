@@ -472,7 +472,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(BadBOMCases))]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
         public static Task ParseJson_UnseekableStream_Async_BadBOM(string json)
         {
             byte[] data = Encoding.UTF8.GetBytes(json);

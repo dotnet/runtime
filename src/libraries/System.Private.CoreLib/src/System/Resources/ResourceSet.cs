@@ -32,7 +32,7 @@ namespace System.Resources
 
         // For RuntimeResourceSet, ignore the Table parameter - it's a wasted
         // allocation.
-        internal ResourceSet(bool junk)
+        internal ResourceSet(bool _)
         {
         }
 
@@ -58,10 +58,10 @@ namespace System.Resources
             ReadResources();
         }
 
-        public ResourceSet(IResourceReader reader)
+        public ResourceSet(IResourceReader reader!!)
             : this()
         {
-            Reader = reader ?? throw new ArgumentNullException(nameof(reader));
+            Reader = reader;
             ReadResources();
         }
 
@@ -198,11 +198,8 @@ namespace System.Resources
             // to help with some WinRes lifetime issues.
         }
 
-        private object? GetObjectInternal(string name)
+        private object? GetObjectInternal(string name!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             Dictionary<object, object?>? copyOfTable = _table;  // Avoid a race with Dispose
 
             if (copyOfTable == null)

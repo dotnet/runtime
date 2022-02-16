@@ -86,7 +86,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public bool IsLazy => (_info & IsLazyMask) != 0;
 
-        public static SymbolicRegexInfo Or(SymbolicRegexInfo[] infos)
+        public static SymbolicRegexInfo Or(params SymbolicRegexInfo[] infos)
         {
             uint isLazy = IsLazyMask;
             uint i = 0;

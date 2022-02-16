@@ -59,37 +59,12 @@ namespace Microsoft.Extensions.Http
         private readonly TimerCallback _expiryCallback;
 
         public DefaultHttpClientFactory(
-            IServiceProvider services,
-            IServiceScopeFactory scopeFactory,
-            ILoggerFactory loggerFactory,
-            IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor,
-            IEnumerable<IHttpMessageHandlerBuilderFilter> filters)
+            IServiceProvider services!!,
+            IServiceScopeFactory scopeFactory!!,
+            ILoggerFactory loggerFactory!!,
+            IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor!!,
+            IEnumerable<IHttpMessageHandlerBuilderFilter> filters!!)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (scopeFactory == null)
-            {
-                throw new ArgumentNullException(nameof(scopeFactory));
-            }
-
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
-
-            if (optionsMonitor == null)
-            {
-                throw new ArgumentNullException(nameof(optionsMonitor));
-            }
-
-            if (filters == null)
-            {
-                throw new ArgumentNullException(nameof(filters));
-            }
-
             _services = services;
             _scopeFactory = scopeFactory;
             _optionsMonitor = optionsMonitor;
@@ -114,13 +89,8 @@ namespace Microsoft.Extensions.Http
             _cleanupActiveLock = new object();
         }
 
-        public HttpClient CreateClient(string name)
+        public HttpClient CreateClient(string name!!)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             HttpMessageHandler handler = CreateHandler(name);
             var client = new HttpClient(handler, disposeHandler: false);
 
@@ -133,13 +103,8 @@ namespace Microsoft.Extensions.Http
             return client;
         }
 
-        public HttpMessageHandler CreateHandler(string name)
+        public HttpMessageHandler CreateHandler(string name!!)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             ActiveHandlerTrackingEntry entry = _activeHandlers.GetOrAdd(name, _entryFactory).Value;
 
             StartHandlerEntryTimer(entry);

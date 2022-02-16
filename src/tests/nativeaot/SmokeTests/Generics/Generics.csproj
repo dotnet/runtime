@@ -4,6 +4,11 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- There's just too many of these warnings -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <NoWarn>$(NoWarn);IL3050;IL3054</NoWarn>
+
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Generics.cs" />

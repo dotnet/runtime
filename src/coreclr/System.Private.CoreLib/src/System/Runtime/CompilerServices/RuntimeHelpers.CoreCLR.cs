@@ -160,11 +160,7 @@ namespace System.Runtime.CompilerServices
         {
             if (type is not RuntimeType rt)
             {
-                if (type is null)
-                {
-                    throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
-                }
-
+                ArgumentNullException.ThrowIfNull(type);
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 

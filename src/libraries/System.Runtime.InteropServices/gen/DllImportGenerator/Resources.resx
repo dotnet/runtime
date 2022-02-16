@@ -171,6 +171,9 @@
   <data name="ConstantAndElementCountInfoDisallowed" xml:space="preserve">
     <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionLevel'</value>
   </data>
+  <data name="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode" xml:space="preserve">
+    <value>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</value>
+  </data>
   <data name="ConvertToGeneratedDllImport" xml:space="preserve">
     <value>Convert to 'GeneratedDllImport'</value>
   </data>
@@ -267,6 +270,9 @@
   </data>
   <data name="RefValuePropertyUnsupportedMessage" xml:space="preserve">
     <value>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</value>
+  </data>
+  <data name="RuntimeMarshallingMustBeDisabled" xml:space="preserve">
+    <value />
   </data>
   <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
     <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>

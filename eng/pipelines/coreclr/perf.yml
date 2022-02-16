@@ -523,6 +523,8 @@ jobs:
           - Build_Android_x64_release_Maui_Packs_Mono
           - Build_MacCatalyst_x64_release_Maui_Packs_Mono
           - Build_iOSSimulator_x64_release_Maui_Packs_Mono
+          - Build_iOS_arm_release_Maui_Packs_Mono
+          - Build_iOS_arm64_release_Maui_Packs_Mono
         buildArgs: -s mono -c $(_BuildConfig)
         nameSuffix: MACiOSAndroidMaui
         isOfficialBuild: false

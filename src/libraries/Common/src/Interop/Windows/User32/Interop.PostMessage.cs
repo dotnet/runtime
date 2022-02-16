@@ -10,8 +10,5 @@ internal static partial class Interop
     {
         [GeneratedDllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
         public static partial int PostMessageW(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam);
-
-        [DllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        public static extern int PostMessageW(HandleRef hwnd, int msg, IntPtr wparam, IntPtr lparam);
     }
 }

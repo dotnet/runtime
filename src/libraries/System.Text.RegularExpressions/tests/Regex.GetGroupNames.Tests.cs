@@ -12,9 +12,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", RegexOptions.None, new string[] { "0", "first_name", "last_name" } };
             if (PlatformDetection.IsNetCore)
-            {
-                yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", RegexHelpers.RegexOptionNonBacktracking, new string[] { "0" } };
-            }
+                yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", RegexHelpers.RegexOptionNonBacktracking, new string[] { "0", "first_name", "last_name" } };
         }
 
         [Theory]
@@ -27,120 +25,116 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> GroupNamesAndNumbers_TestData()
         {
-            yield return new object[]
+            foreach (RegexOptions options in new RegexOptions[] { RegexOptions.None, RegexHelpers.RegexOptionNonBacktracking })
             {
-                "(?<first_name>\\S+)\\s(?<last_name>\\S+)", "Ryan Byington",
-                new string[] { "0", "first_name", "last_name"},
-                new int[] { 0, 1, 2 },
-                new string[] { "Ryan Byington", "Ryan", "Byington" }
-            };
-
-            yield return new object[]
-            {
-                @"((?<One>abc)\d+)?(?<Two>xyz)(.*)", "abc208923xyzanqnakl",
-                new string[] { "0", "1", "2", "One", "Two" },
-                new int[] { 0, 1, 2, 3, 4 },
-                new string[] { "abc208923xyzanqnakl", "abc208923", "anqnakl", "abc", "xyz" }
-            };
-
-            yield return new object[]
-            {
-                @"((?<256>abc)\d+)?(?<16>xyz)(.*)", "0272saasdabc8978xyz][]12_+-",
-                new string[] { "0", "1", "2", "16", "256" },
-                new int[] { 0, 1, 2, 16, 256 },
-                new string[] { "abc8978xyz][]12_+-", "abc8978", "][]12_+-", "xyz", "abc" }
-            };
-
-            yield return new object[]
-            {
-                @"((?<4>abc)(?<digits>\d+))?(?<2>xyz)(?<everything_else>.*)", "0272saasdabc8978xyz][]12_+-",
-                new string[] { "0", "1", "2", "digits", "4", "everything_else" },
-                new int[] { 0, 1, 2, 3, 4, 5 },
-                new string[] { "abc8978xyz][]12_+-", "abc8978", "xyz", "8978", "abc", "][]12_+-" }
-            };
-
-            yield return new object[]
-            {
-                "(?<first_name>\\S+)\\s(?<first_name>\\S+)", "Ryan Byington",
-                new string[] { "0", "first_name" },
-                new int[] { 0, 1 },
-                new string[] { "Ryan Byington", "Byington" }
-            };
-
-            yield return new object[]
-            {
-                "(?<15>\\S+)\\s(?<15>\\S+)", "Ryan Byington",
-                new string[] { "0", "15" },
-                new int[] { 0, 15 },
-                new string[] { "Ryan Byington", "Byington" }
-            };
-
-            yield return new object[]
-            {
-                "(?'first_name'\\S+)\\s(?'last_name'\\S+)", "Ryan Byington",
-                new string[] { "0", "first_name", "last_name" },
-                new int[] { 0, 1, 2 },
-                new string[] { "Ryan Byington", "Ryan", "Byington" }
-            };
-
-            yield return new object[]
-            {
-                @"((?'One'abc)\d+)?(?'Two'xyz)(.*)", "abc208923xyzanqnakl",
-                new string[] { "0", "1", "2", "One", "Two" },
-                new int[] { 0, 1, 2, 3, 4 },
-                new string[] { "abc208923xyzanqnakl", "abc208923", "anqnakl", "abc", "xyz" }
-            };
-
-            yield return new object[]
-            {
-                @"((?'256'abc)\d+)?(?'16'xyz)(.*)", "0272saasdabc8978xyz][]12_+-",
-                new string[] { "0", "1", "2", "16", "256" },
-                new int[] { 0, 1, 2, 16, 256 },
-                new string[] { "abc8978xyz][]12_+-", "abc8978", "][]12_+-", "xyz", "abc" }
-            };
-
-            yield return new object[]
-            {
-                @"((?'4'abc)(?'digits'\d+))?(?'2'xyz)(?'everything_else'.*)", "0272saasdabc8978xyz][]12_+-",
-                new string[] { "0", "1", "2", "digits", "4", "everything_else" },
-                new int[] { 0, 1, 2, 3, 4, 5 },
-                new string[] { "abc8978xyz][]12_+-", "abc8978", "xyz", "8978", "abc", "][]12_+-" }
-            };
-
-            yield return new object[]
-            {
-                "(?'first_name'\\S+)\\s(?'first_name'\\S+)", "Ryan Byington",
-                new string[] { "0", "first_name" },
-                new int[] { 0, 1 },
-                new string[] { "Ryan Byington", "Byington" }
-            };
-
-            yield return new object[]
-            {
-                "(?'15'\\S+)\\s(?'15'\\S+)", "Ryan Byington",
-                new string[] { "0", "15" },
-                new int[] { 0, 15 },
-                new string[] { "Ryan Byington", "Byington" }
-            };
-
-            if (PlatformDetection.IsNetCore)
-            {
+                if (!PlatformDetection.IsNetCore && (options & RegexHelpers.RegexOptionNonBacktracking) != 0)
+                    continue;
                 yield return new object[]
                 {
-                    "(?'15'\\S+)\\s(?'15'\\S+)", "Ryan Byington",
-                    new string[] { "0" },
-                    new int[] { 0 },
-                    new string[] { "Ryan Byington" },
-                    RegexHelpers.RegexOptionNonBacktracking
+                    "(?<first_name>\\S+)\\s(?<last_name>\\S+)", "Ryan Byington",
+                    new string[] { "0", "first_name", "last_name"},
+                    new int[] { 0, 1, 2 },
+                    new string[] { "Ryan Byington", "Ryan", "Byington" },
+                    options
                 };
 
                 yield return new object[]
                 {
-                    "(?<first_name>\\S+)\\s(?<last_name>\\S+)", "Ryan Byington",
-                    new string[] { "0" },
-                    new int[] { 0 },
-                    new string[] { "Ryan Byington" },
-                    RegexHelpers.RegexOptionNonBacktracking
+                    @"((?<One>abc)\d+)?(?<Two>xyz)(.*)", "abc208923xyzanqnakl",
+                    new string[] { "0", "1", "2", "One", "Two" },
+                    new int[] { 0, 1, 2, 3, 4 },
+                    new string[] { "abc208923xyzanqnakl", "abc208923", "anqnakl", "abc", "xyz" },
+                    options
+                };
+
+                yield return new object[]
+                {
+                    @"((?<256>abc)\d+)?(?<16>xyz)(.*)", "0272saasdabc8978xyz][]12_+-",
+                    new string[] { "0", "1", "2", "16", "256" },
+                    new int[] { 0, 1, 2, 16, 256 },
+                    new string[] { "abc8978xyz][]12_+-", "abc8978", "][]12_+-", "xyz", "abc" },
+                    options
+                };
+
+                yield return new object[]
+                {
+                    @"((?<4>abc)(?<digits>\d+))?(?<2>xyz)(?<everything_else>.*)", "0272saasdabc8978xyz][]12_+-",
+                    new string[] { "0", "1", "2", "digits", "4", "everything_else" },
+                    new int[] { 0, 1, 2, 3, 4, 5 },
+                    new string[] { "abc8978xyz][]12_+-", "abc8978", "xyz", "8978", "abc", "][]12_+-" },
+                    options
+                };
+
+                yield return new object[]
+                {
+                    "(?<first_name>\\S+)\\s(?<first_name>\\S+)", "Ryan Byington",
+                    new string[] { "0", "first_name" },
+                    new int[] { 0, 1 },
+                    new string[] { "Ryan Byington", "Byington" },
+                    options
+                };
+
+                yield return new object[]
+                {
+                    "(?<15>\\S+)\\s(?<15>\\S+)", "Ryan Byington",
+                    new string[] { "0", "15" },
+                    new int[] { 0, 15 },
+                    new string[] { "Ryan Byington", "Byington" },
+                    options
+                };
+
+                yield return new object[]
+                {
+                    "(?'first_name'\\S+)\\s(?'last_name'\\S+)", "Ryan Byington",
+                    new string[] { "0", "first_name", "last_name" },
+                    new int[] { 0, 1, 2 },
+                    new string[] { "Ryan Byington", "Ryan", "Byington" },
+                    options
+                };
+
+                yield return new object[]
+                {
+                    @"((?'One'abc)\d+)?(?'Two'xyz)(.*)", "abc208923xyzanqnakl",
+                    new string[] { "0", "1", "2", "One", "Two" },
+                    new int[] { 0, 1, 2, 3, 4 },
+                    new string[] { "abc208923xyzanqnakl", "abc208923", "anqnakl", "abc", "xyz" },
+                    options
+                };
+
+                yield return new object[]
+                {
+                    @"((?'256'abc)\d+)?(?'16'xyz)(.*)", "0272saasdabc8978xyz][]12_+-",
+                    new string[] { "0", "1", "2", "16", "256" },
+                    new int[] { 0, 1, 2, 16, 256 },
+                    new string[] { "abc8978xyz][]12_+-", "abc8978", "][]12_+-", "xyz", "abc" },
+                    options
+                };
+
+                yield return new object[]
+                {
+                    @"((?'4'abc)(?'digits'\d+))?(?'2'xyz)(?'everything_else'.*)", "0272saasdabc8978xyz][]12_+-",
+                    new string[] { "0", "1", "2", "digits", "4", "everything_else" },
+                    new int[] { 0, 1, 2, 3, 4, 5 },
+                    new string[] { "abc8978xyz][]12_+-", "abc8978", "xyz", "8978", "abc", "][]12_+-" },
+                    options
+                };
+
+                yield return new object[]
+                {
+                    "(?'first_name'\\S+)\\s(?'first_name'\\S+)", "Ryan Byington",
+                    new string[] { "0", "first_name" },
+                    new int[] { 0, 1 },
+                    new string[] { "Ryan Byington", "Byington" },
+                    options
+                };
+
+                yield return new object[]
+                {
+                    "(?'15'\\S+)\\s(?'15'\\S+)", "Ryan Byington",
+                    new string[] { "0", "15" },
+                    new int[] { 0, 15 },
+                    new string[] { "Ryan Byington", "Byington" },
+                    options
                 };
             }
         }
@@ -175,17 +169,15 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> GroupNameFromNumber_InvalidIndex_ReturnsEmptyString_MemberData()
         {
-            yield return new object[] { "foo", 1 };
-            yield return new object[] { "foo", -1 };
-            yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", -1 };
-            yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", 3 };
-            yield return new object[] { @"((?<256>abc)\d+)?(?<16>xyz)(.*)", -1 };
-
-            if (PlatformDetection.IsNetCore)
+            foreach (RegexOptions options in new RegexOptions[] { RegexOptions.None, RegexHelpers.RegexOptionNonBacktracking })
             {
-                yield return new object[] { "(f)(oo)", 1, RegexHelpers.RegexOptionNonBacktracking };
-                yield return new object[] { "(f)(oo)", -1, RegexHelpers.RegexOptionNonBacktracking };
-                yield return new object[] { "(f)(oo)", 2, RegexHelpers.RegexOptionNonBacktracking };
+                if (!PlatformDetection.IsNetCore && (options & RegexHelpers.RegexOptionNonBacktracking) != 0)
+                    continue;
+                yield return new object[] { "foo", 1, options };
+                yield return new object[] { "foo", -1, options };
+                yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", -1, options };
+                yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", 3, options };
+                yield return new object[] { @"((?<256>abc)\d+)?(?<16>xyz)(.*)", -1, options };
             }
         }
 
@@ -198,16 +190,14 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> GroupNumberFromName_InvalidName_ReturnsMinusOne_MemberData()
         {
-            yield return new object[] { "foo", "no-such-name" };
-            yield return new object[] { "foo", "1" };
-            yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", "no-such-name" };
-            yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", "FIRST_NAME" };
-
-            if (PlatformDetection.IsNetCore)
+            foreach (RegexOptions options in new RegexOptions[] { RegexOptions.None, RegexHelpers.RegexOptionNonBacktracking })
             {
-                yield return new object[] { "(f)(oo)", "no-such-name", RegexHelpers.RegexOptionNonBacktracking };
-                yield return new object[] { "(f)(oo)", "1", RegexHelpers.RegexOptionNonBacktracking };
-                yield return new object[] { "(f)(oo)", "2", RegexHelpers.RegexOptionNonBacktracking };
+                if (!PlatformDetection.IsNetCore && (options & RegexHelpers.RegexOptionNonBacktracking) != 0)
+                    continue;
+                yield return new object[] { "foo", "no-such-name", options };
+                yield return new object[] { "foo", "1", options };
+                yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", "no-such-name", options };
+                yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", "FIRST_NAME", options };
             }
         }
 
