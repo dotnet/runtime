@@ -27,16 +27,14 @@ namespace System.Security.Cryptography
         {
             ThrowIfNotSupported();
 
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             AesAEAD.CheckKeySize(key.Length);
             ImportKey(key);
         }
 
-        public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null)
+        public void Encrypt(byte[] nonce!!, byte[] plaintext!!, byte[] ciphertext!!, byte[] tag!!, byte[]? associatedData = null)
         {
-            AeadCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
             Encrypt((ReadOnlySpan<byte>)nonce, plaintext, ciphertext, tag, associatedData);
         }
 
@@ -51,9 +49,8 @@ namespace System.Security.Cryptography
             EncryptCore(nonce, plaintext, ciphertext, tag, associatedData);
         }
 
-        public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null)
+        public void Decrypt(byte[] nonce!!, byte[] ciphertext!!, byte[] tag!!, byte[] plaintext!!, byte[]? associatedData = null)
         {
-            AeadCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
             Decrypt((ReadOnlySpan<byte>)nonce, ciphertext, tag, plaintext, associatedData);
         }
 

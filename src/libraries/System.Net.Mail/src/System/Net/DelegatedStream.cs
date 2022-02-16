@@ -11,11 +11,8 @@ namespace System.Net
     {
         private readonly Stream _stream;
 
-        protected DelegatedStream(Stream stream)
+        protected DelegatedStream(Stream stream!!)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             _stream = stream;
         }
 

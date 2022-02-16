@@ -57,11 +57,8 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] SignHash(byte[] hash)
+            public override byte[] SignHash(byte[] hash!!)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
-
                 SecKeyPair keys = GetKeys();
 
                 if (keys.PrivateKey == null)
@@ -111,13 +108,8 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override bool VerifyHash(byte[] hash, byte[] signature)
+            public override bool VerifyHash(byte[] hash!!, byte[] signature!!)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
-                if (signature == null)
-                    throw new ArgumentNullException(nameof(signature));
-
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
 
@@ -144,13 +136,13 @@ namespace System.Security.Cryptography
             }
 
             protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
+                HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
 
             protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
+                HashOneShotHelpers.HashData(hashAlgorithm, data);
 
             protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                AsymmetricAlgorithmHelpers.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
+                HashOneShotHelpers.TryHashData(hashAlgorithm, source, destination, out bytesWritten);
 
             private void ThrowIfDisposed()
             {

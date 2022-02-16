@@ -153,6 +153,33 @@ SET(libunwind_elfxx_la_SOURCES
     elfxx.c
 )
 
+# The list of files that go into libunwind and libunwind-loongarch64:
+SET(libunwind_la_SOURCES_loongarch_common
+    ${libunwind_la_SOURCES_common}
+    loongarch64/is_fpreg.c
+    loongarch64/regname.c
+)
+
+# The list of files that go into libunwind:
+SET(libunwind_la_SOURCES_loongarch
+    ${libunwind_la_SOURCES_loongarch_common}
+    ${libunwind_la_SOURCES_local}
+    loongarch64/Lget_proc_info.c  loongarch64/Linit.c  loongarch64/Lis_signal_frame.c
+    loongarch64/Lstep.c
+    loongarch64/getcontext.S
+    loongarch64/Lget_save_loc.c
+    loongarch64/Linit_local.c   loongarch64/Lregs.c
+    loongarch64/Lcreate_addr_space.c  loongarch64/Lglobal.c  loongarch64/Linit_remote.c  loongarch64/Lresume.c
+)
+
+SET(libunwind_loongarch_la_SOURCES_loongarch
+    ${libunwind_la_SOURCES_loongarch_common}
+    ${libunwind_la_SOURCES_generic}
+	loongarch64/Gcreate_addr_space.c loongarch64/Gget_proc_info.c loongarch64/Gget_save_loc.c
+	loongarch64/Gglobal.c loongarch64/Ginit.c loongarch64/Ginit_local.c loongarch64/Ginit_remote.c
+	loongarch64/Gis_signal_frame.c loongarch64/Gregs.c loongarch64/Gresume.c loongarch64/Gstep.c
+)
+
 # The list of files that go into libunwind and libunwind-aarch64:
 SET(libunwind_la_SOURCES_aarch64_common
     ${libunwind_la_SOURCES_common}
@@ -335,6 +362,11 @@ if(CLR_CMAKE_HOST_UNIX)
         SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_s390x})
         SET(libunwind_remote_la_SOURCES             ${libunwind_s390x_la_SOURCES_s390x})
         SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+    elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_loongarch})
+        SET(libunwind_remote_la_SOURCES             ${libunwind_loongarch_la_SOURCES_loongarch})
+        SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+        list(APPEND libunwind_setjmp_la_SOURCES     loongarch64/siglongjmp.S)
     endif()
 
     if(CLR_CMAKE_HOST_OSX)

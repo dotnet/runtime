@@ -161,7 +161,7 @@ void Compiler::optCopyProp(Statement*               stmt,
         }
 
         if ((gsShadowVarInfo != nullptr) && newLclVarDsc->lvIsParam &&
-            (gsShadowVarInfo[newLclNum].shadowCopy == lclNum))
+            (gsShadowVarInfo[newLclNum].shadowCopy != BAD_VAR_NUM))
         {
             continue;
         }
@@ -172,12 +172,8 @@ void Compiler::optCopyProp(Statement*               stmt,
             continue;
         }
 
-        if (newLclDefNode->TypeGet() != tree->TypeGet())
-        {
-            continue;
-        }
-
-        if (newLclDefVN != tree->gtVNPair.GetConservative())
+        ValueNum lclDefVN = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
+        if (newLclDefVN != lclDefVN)
         {
             continue;
         }
@@ -225,14 +221,25 @@ void Compiler::optCopyProp(Statement*               stmt,
             continue;
         }
 
+        var_types newLclType = newLclVarDsc->TypeGet();
+        if (!newLclVarDsc->lvNormalizeOnLoad())
+        {
+            newLclType = genActualType(newLclType);
+        }
+
+        if (newLclType != tree->TypeGet())
+        {
+            continue;
+        }
+
 #ifdef DEBUG
         if (verbose)
         {
             JITDUMP("VN based copy assertion for ");
             printTreeID(tree);
-            printf(" V%02d " FMT_VN " by ", lclNum, tree->GetVN(VNK_Conservative));
+            printf(" V%02d " FMT_VN " by ", lclNum, lclDefVN);
             printTreeID(newLclDefNode);
-            printf(" V%02d " FMT_VN ".\n", newLclNum, newLclDefNode->GetVN(VNK_Conservative));
+            printf(" V%02d " FMT_VN ".\n", newLclNum, newLclDefVN);
             DISPNODE(tree);
         }
 #endif

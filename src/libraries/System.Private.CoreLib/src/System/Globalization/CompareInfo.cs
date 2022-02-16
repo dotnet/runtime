@@ -62,13 +62,9 @@ namespace System.Globalization
         /// assembly for the specified culture.
         /// Warning: The assembly versioning mechanism is dead!
         /// </summary>
-        public static CompareInfo GetCompareInfo(int culture, Assembly assembly)
+        public static CompareInfo GetCompareInfo(int culture, Assembly assembly!!)
         {
             // Parameter checking.
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
             if (assembly != typeof(object).Module.Assembly)
             {
                 throw new ArgumentException(SR.Argument_OnlyMscorlib, nameof(assembly));
@@ -82,16 +78,8 @@ namespace System.Globalization
         /// assembly for the specified culture.
         /// The purpose of this method is to provide version for CompareInfo tables.
         /// </summary>
-        public static CompareInfo GetCompareInfo(string name, Assembly assembly)
+        public static CompareInfo GetCompareInfo(string name!!, Assembly assembly!!)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
             if (assembly != typeof(object).Module.Assembly)
             {
                 throw new ArgumentException(SR.Argument_OnlyMscorlib, nameof(assembly));
@@ -117,13 +105,8 @@ namespace System.Globalization
         /// <summary>
         /// Get the CompareInfo for the specified culture.
         /// </summary>
-        public static CompareInfo GetCompareInfo(string name)
+        public static CompareInfo GetCompareInfo(string name!!)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             return CultureInfo.GetCultureInfo(name).CompareInfo;
         }
 
@@ -132,13 +115,8 @@ namespace System.Globalization
             return IsSortable(MemoryMarshal.CreateReadOnlySpan(ref ch, 1));
         }
 
-        public static bool IsSortable(string text)
+        public static bool IsSortable(string text!!)
         {
-            if (text == null)
-            {
-                throw new ArgumentNullException(nameof(text));
-            }
-
             return IsSortable(text.AsSpan());
         }
 

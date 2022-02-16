@@ -137,5 +137,7 @@ namespace System.Drawing.Imaging
             get { return wmf.version; }
             set { wmf.version = value; }
         }
+
+        internal WmfMetaHeader GetNativeValue() => wmf;
     }
 }

@@ -309,7 +309,7 @@
   causing impactful slowdowns while typing in the Corelib project.
   -->
   <ItemGroup Condition="'$(DesignTimeBuild)'!='true' or '$(SlnGenMainProject)' != ''">
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

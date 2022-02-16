@@ -36,11 +36,8 @@ namespace System.Formats.Asn1
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method.
         /// </exception>
-        public void WriteCharacterString(UniversalTagNumber encodingType, string value, Asn1Tag? tag = null)
+        public void WriteCharacterString(UniversalTagNumber encodingType, string value!!, Asn1Tag? tag = null)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             WriteCharacterString(encodingType, value.AsSpan(), tag);
         }
 
