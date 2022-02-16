@@ -107,6 +107,8 @@ jobs:
           eq(variables['isRollingBuild'], true))
 
 #
+# Remove it after MacCatalyst_arm64 is stabilized on OSX 11.00 queue.
+#
 # MacCatalyst interp - requires AOT Compilation and Interp flags
 # Build the whole product using Mono and run libraries tests
 #
@@ -117,7 +119,6 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - MacCatalyst_x64
     # don't run tests on arm64 PRs until we can get significantly more devices
     - ${{ if eq(variables['isRollingBuild'], true) }}:
       - MacCatalyst_arm64
@@ -151,6 +152,8 @@ jobs:
             eq(variables['isRollingBuild'], true))
 
 #
+# Remove it after MacCatalyst_arm64 is stabilized on OSX 11.00 queue.
+#
 # MacCatalyst interp - requires AOT Compilation and Interp flags
 # Build the whole product using Mono and run libraries tests
 # The test app is built with the App Sandbox entitlement
@@ -162,7 +165,6 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - MacCatalyst_x64
     # don't run tests on arm64 PRs until we can get significantly more devices
     - ${{ if eq(variables['isRollingBuild'], true) }}:
       - MacCatalyst_arm64

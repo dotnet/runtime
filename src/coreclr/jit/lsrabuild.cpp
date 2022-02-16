@@ -3291,7 +3291,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     assert(varDsc->lvTracked);
     unsigned  varIndex       = varDsc->lvVarIndex;
     Interval* varDefInterval = getIntervalForLocalVar(varIndex);
-    if ((storeLoc->gtFlags & GTF_VAR_DEATH) == 0)
+    if (!storeLoc->IsLastUse(index))
     {
         VarSetOps::AddElemD(compiler, currentLiveVars, varIndex);
     }
@@ -3396,7 +3396,8 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
     //
     for (unsigned int i = 0; i < dstCount; ++i)
     {
-        LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+        LclVarDsc*   fieldVarDsc  = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+        RefPosition* singleUseRef = nullptr;
 
         if (isMultiRegSrc)
         {
@@ -3408,10 +3409,10 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
                 srcCandidates = allByteRegs();
             }
 #endif // TARGET_X86
-            BuildUse(op1, srcCandidates, i);
+            singleUseRef = BuildUse(op1, srcCandidates, i);
         }
         assert(isCandidateVar(fieldVarDsc));
-        BuildStoreLocDef(storeLoc, fieldVarDsc, nullptr, i);
+        BuildStoreLocDef(storeLoc, fieldVarDsc, singleUseRef, i);
         if (isMultiRegSrc && (i < (dstCount - 1)))
         {
             currentLoc += 2;
