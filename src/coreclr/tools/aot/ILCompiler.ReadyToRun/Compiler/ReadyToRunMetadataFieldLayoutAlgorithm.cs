@@ -116,11 +116,6 @@ namespace ILCompiler
             /// </summary>
             private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobArm = 8;
 
-            /// <summary>
-            /// CoreCLR DomainLocalModule::NormalDynamicEntry::OffsetOfDataBlob for LoongArch64
-            /// </summary>
-            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobLoongArch64 = 8;
-
             protected override bool CompareKeyToValue(EcmaModule key, ModuleFieldLayout value)
             {
                 return key == value.Module;
@@ -417,10 +412,6 @@ namespace ILCompiler
 
                         case TargetArchitecture.ARM:
                             nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobArm;
-                            break;
-
-                        case TargetArchitecture.LoongArch64:
-                            nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobLoongArch64;
                             break;
 
                         default:
