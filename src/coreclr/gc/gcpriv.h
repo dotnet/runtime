@@ -5317,6 +5317,12 @@ heap_segment*& generation_tail_ro_region (generation* inst)
 {
   return inst->tail_ro_region;
 }
+
+inline
+heap_segment* generation_start_segment_rw (generation* inst)
+{
+    return inst->tail_ro_region != nullptr ? inst->tail_ro_region : inst->start_segment;
+}
 #endif //USE_REGIONS
 
 inline

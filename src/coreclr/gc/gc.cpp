@@ -11901,58 +11901,61 @@ void region_free_list::add_region_front (heap_segment* region)
     update_added_region_info (region);
 }
 
-// This goes forward in the list till we find a region whose committed size is <= this region's committed
-// or we reach the tail.
+// This inserts fully committed regions at the head, otherwise it goes backward in the list till
+// we find a region whose committed size is >= this region's committed or we reach the head.
 void region_free_list::add_region_in_descending_order (heap_segment* region_to_add)
 {
     assert (heap_segment_containing_free_list (region_to_add) == nullptr);
-    heap_segment_containing_free_list(region_to_add) = this;
+    heap_segment_containing_free_list (region_to_add) = this;
     heap_segment_age_in_free (region_to_add) = 0;
-    size_t region_to_add_committed = get_region_committed_size (region_to_add);
-    if (head_free_region == nullptr)
+    heap_segment* prev_region = nullptr;
+    heap_segment* region = nullptr;
+
+    // if the region is fully committed, it's inserted at the front
+    if (heap_segment_committed (region_to_add) == heap_segment_reserved (region_to_add))
     {
-        assert (tail_free_region == nullptr);
-        head_free_region = region_to_add;
-        tail_free_region = region_to_add;
-        heap_segment_next (region_to_add) = nullptr;
-        heap_segment_prev_free_region (region_to_add) = nullptr;
+        region = head_free_region;
     }
     else
     {
-        heap_segment* region = nullptr;
-        for (region = head_free_region; region != nullptr; region = heap_segment_next (region))
+        // otherwise we search backwards for a good insertion spot
+        // most regions at the front are fully committed and thus boring to search
+
+        size_t region_to_add_committed = get_region_committed_size (region_to_add);
+
+        for (prev_region = tail_free_region; prev_region != nullptr; prev_region = heap_segment_prev_free_region (prev_region))
         {
-            size_t region_committed = get_region_committed_size (region);
+            size_t prev_region_committed = get_region_committed_size (prev_region);
 
-            if (region_committed <= region_to_add_committed)
+            if (prev_region_committed >= region_to_add_committed)
             {
-                heap_segment* prev_region = heap_segment_prev_free_region (region);
-
-                if (prev_region)
-                {
-                    heap_segment_next (prev_region) = region_to_add;
-                    heap_segment_prev_free_region (region_to_add) = prev_region;
-                }
-                else
-                {
-                    assert (region == head_free_region);
-                    head_free_region = region_to_add;
-                }
-
-                heap_segment_next (region_to_add) = region;
-                heap_segment_prev_free_region (region) = region_to_add;
                 break;
             }
+            region = prev_region;
         }
+    }
 
-        if (region == nullptr)
-        {
-            // We searched through the list and all existing free regions' committed is larger than ours,
-            // it means we should add it as the new tail.
-            heap_segment_next (tail_free_region) = region_to_add;
-            heap_segment_prev_free_region (region_to_add) = tail_free_region;
-            tail_free_region = region_to_add;
-        }
+    if (prev_region != nullptr)
+    {
+        heap_segment_next (prev_region) = region_to_add;
+    }
+    else
+    {
+        assert (region == head_free_region);
+        head_free_region = region_to_add;
+    }
+
+    heap_segment_prev_free_region (region_to_add) = prev_region;
+    heap_segment_next (region_to_add) = region;
+
+    if (region != nullptr)
+    {
+        heap_segment_prev_free_region (region) = region_to_add;
+    }
+    else
+    {
+        assert (prev_region == tail_free_region);
+        tail_free_region = region_to_add;
     }
 
     update_added_region_info (region_to_add);
@@ -12161,7 +12164,7 @@ void region_free_list::age_free_regions (region_free_list free_lists[count_free_
 
 void region_free_list::print (int hn, const char* msg, int* ages)
 {
-    dprintf (1, ("h%2d PRINTING-------------------------------", hn));
+    dprintf (3, ("h%2d PRINTING-------------------------------", hn));
     for (heap_segment* region = head_free_region; region != nullptr; region = heap_segment_next (region))
     {
         if (ages)
@@ -12169,12 +12172,12 @@ void region_free_list::print (int hn, const char* msg, int* ages)
             ages[heap_segment_age_in_free (region)]++;
         }
 
-        dprintf (1, ("[%s] h%2d age %d region %Ix (%Id)%s",
+        dprintf (3, ("[%s] h%2d age %d region %Ix (%Id)%s",
             msg, hn, (int)heap_segment_age_in_free (region), 
             heap_segment_mem (region), get_region_committed_size (region),
             ((heap_segment_committed (region) == heap_segment_reserved (region)) ? "(FC)" : "")));
     }
-    dprintf (1, ("h%2d PRINTING END-------------------------------", hn));
+    dprintf (3, ("h%2d PRINTING END-------------------------------", hn));
 }
 
 void region_free_list::print (region_free_list free_lists[count_free_region_kinds], int hn, const char* msg, int* ages)
@@ -12195,7 +12198,7 @@ static int compare_by_committed_and_age (heap_segment* l, heap_segment* r)
         return 1;
     int l_age = heap_segment_age_in_free (l);
     int r_age = heap_segment_age_in_free (r);
-    return l_age - r_age;
+    return (l_age - r_age);
 }
 
 static heap_segment* merge_sort_by_committed_and_age (heap_segment *head, size_t count)
@@ -12218,8 +12221,18 @@ static heap_segment* merge_sort_by_committed_and_age (heap_segment *head, size_t
     head = merge_sort_by_committed_and_age (head, half);
     mid = merge_sort_by_committed_and_age (mid, count - half);
 
-    heap_segment* new_head = nullptr;
-    heap_segment* new_tail = nullptr;
+    heap_segment* new_head;
+    if (compare_by_committed_and_age (head, mid) <= 0)
+    {
+        new_head = head;
+        head = heap_segment_next (head);
+    }
+    else
+    {
+        new_head = mid;
+        mid = heap_segment_next (mid);
+    }
+    heap_segment* new_tail = new_head;
     while ((head != nullptr) && (mid != nullptr))
     {
         heap_segment* region = nullptr;
@@ -12234,53 +12247,18 @@ static heap_segment* merge_sort_by_committed_and_age (heap_segment *head, size_t
             mid = heap_segment_next (mid);
         }
 
-        heap_segment_next (region) = nullptr;
-
-        if (new_head == nullptr)
-        {
-            new_head = region;
-        }
-        else
-        {
-            heap_segment_next (new_tail) = region;
-        }
-        new_tail = region;
-    }
-    while (head != nullptr)
-    {
-        heap_segment* region = nullptr;
-        region = head;
-        head = heap_segment_next (head);
-
-        heap_segment_next (region) = nullptr;
-
-        if (new_head == nullptr)
-        {
-            new_head = region;
-        }
-        else
-        {
-            heap_segment_next (new_tail) = region;
-        }
+        heap_segment_next (new_tail) = region;
         new_tail = region;
     }
 
-    while (mid != nullptr)
+    if (head != nullptr)
     {
-        heap_segment* region = mid;
-        mid = heap_segment_next (mid);
-
-        heap_segment_next (region) = nullptr;
-
-        if (new_head == nullptr)
-        {
-            new_head = region;
-        }
-        else
-        {
-            heap_segment_next (new_tail) = region;
-        }
-        new_tail = region;
+        assert (mid == nullptr);
+        heap_segment_next (new_tail) = head;
+    }
+    else
+    {
+        heap_segment_next (new_tail) = mid;
     }
     return new_head;
 }
@@ -12338,7 +12316,7 @@ void gc_heap::distribute_free_regions()
 
         for (int kind = basic_free_region; kind < kind_count; kind++)
         {
-            // If there are regions in free that haven't been used in 20 GCs we always decommit them.
+            // If there are regions in free that haven't been used in AGE_IN_FREE_TO_DECOMMIT GCs we always decommit them.
             region_free_list& region_list = hp->free_regions[kind];
             heap_segment* next_region = nullptr;
             for (heap_segment* region = region_list.get_first_free_region(); region != nullptr; region = next_region)
@@ -39240,12 +39218,7 @@ ptrdiff_t gc_heap::estimate_gen_growth (int gen_number)
     ptrdiff_t reserved_not_in_use = 0;
     ptrdiff_t allocated_gen = 0;
 
-    heap_segment* region = generation_tail_ro_region (gen);
-    if (region == nullptr)
-    {
-        region = generation_start_segment (gen);
-    }
-    for (; region != nullptr; region = heap_segment_next (region))
+    for (heap_segment* region = generation_start_segment_rw (gen); region != nullptr; region = heap_segment_next (region))
     {
         allocated_gen += heap_segment_allocated (region) - heap_segment_mem (region);
         reserved_not_in_use += heap_segment_reserved (region) - heap_segment_allocated (region);
