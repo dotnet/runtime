@@ -60,6 +60,18 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
+        private static Lazy<bool> s_isCheckedRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Checked"));
+        private static Lazy<bool> s_isReleaseRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Release"));
+        private static Lazy<bool> s_isDebugRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Debug"));
+
+        public static bool IsCheckedRuntime => s_isCheckedRuntime.Value;
+        public static bool IsReleaseRuntime => s_isReleaseRuntime.Value;
+        public static bool IsDebugRuntime => s_isDebugRuntime.Value;
+
+        // For use as needed on tests that time out when run on a Debug runtime.
+        // Not relevant for timeouts on external activities, such as network timeouts.
+        public static int SlowRuntimeTimeoutModifier = (PlatformDetection.IsDebugRuntime ? 5 : 1);
+
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
 
 #if NETCOREAPP
@@ -68,7 +80,7 @@ namespace System
 #else
         public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 #endif
-        
+
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
         public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
@@ -80,15 +92,17 @@ namespace System
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
         public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
+        public static bool IsNodeJS => IsEnvironmentVariableTrue("IsNodeJS");
+        public static bool IsNotNodeJS => !IsNodeJS;
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
 
         public static bool IsUsingLimitedCultures => !IsNotMobile;
         public static bool IsNotUsingLimitedCultures => IsNotMobile;
 
-        public static bool IsLinqExpressionsBuiltWithIsInterpretingOnly => s_LinqExpressionsBuiltWithIsInterpretingOnly.Value;
+        public static bool IsLinqExpressionsBuiltWithIsInterpretingOnly => s_linqExpressionsBuiltWithIsInterpretingOnly.Value;
         public static bool IsNotLinqExpressionsBuiltWithIsInterpretingOnly => !IsLinqExpressionsBuiltWithIsInterpretingOnly;
-        private static readonly Lazy<bool> s_LinqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
+        private static readonly Lazy<bool> s_linqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
         private static bool GetLinqExpressionsBuiltWithIsInterpretingOnly()
         {
             return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
@@ -203,7 +217,7 @@ namespace System
                 {
                     return true;
                 }
-                
+
                 return OpenSslVersion.Major == 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
             }
 
@@ -342,34 +356,59 @@ namespace System
             return (IsLinux && File.Exists("/.dockerenv"));
         }
 
-        private static bool GetSsl3Support()
+        private static bool GetProtocolSupportFromWindowsRegistry(SslProtocols protocol, bool defaultProtocolSupport)
         {
-            if (IsWindows)
+            string registryProtocolName = protocol switch 
             {
-                string clientKey = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 3.0\Client";
-                string serverKey = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 3.0\Server";
+#pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
+                SslProtocols.Ssl3 => "SSL 3.0",
+#pragma warning restore CS0618
+                SslProtocols.Tls => "TLS 1.0",
+                SslProtocols.Tls11 => "TLS 1.1",
+                SslProtocols.Tls12 => "TLS 1.2",
+#if !NETFRAMEWORK
+                SslProtocols.Tls13 => "TLS 1.3",
+#endif
+                _ => throw new Exception($"Registry key not defined for {protocol}.")
+            };
 
-                object client, server;
-                try
-                {
-                    client = Registry.GetValue(clientKey, "Enabled", null);
-                    server = Registry.GetValue(serverKey, "Enabled", null);
-                }
-                catch (SecurityException)
-                {
-                    // Insufficient permission, assume that we don't have SSL3 (since we aren't exactly sure)
-                    return false;
-                }
+            string clientKey = @$"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\{registryProtocolName}\Client";
+            string serverKey = @$"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\{registryProtocolName}\Server";
 
+            object client, server;
+            try
+            {
+                client = Registry.GetValue(clientKey, "Enabled", defaultProtocolSupport ? 1 : 0);
+                server = Registry.GetValue(serverKey, "Enabled", defaultProtocolSupport ? 1 : 0);
                 if (client is int c && server is int s)
                 {
                     return c == 1 && s == 1;
                 }
+            }
+            catch (SecurityException)
+            {
+                // Insufficient permission, assume that we don't have protocol support (since we aren't exactly sure)
+                return false;
+            }
+            catch { }
+
+            return defaultProtocolSupport;
+        }
+
+        private static bool GetSsl3Support()
+        {
+            if (IsWindows)
+            {
 
                 // Missing key. If we're pre-20H1 then assume SSL3 is enabled.
                 // Otherwise, disabled. (See comments on https://github.com/dotnet/runtime/issues/1166)
                 // Alternatively the returned values must have been some other types.
-                return !IsWindows10Version2004OrGreater;
+                bool ssl3DefaultSupport = !IsWindows10Version2004OrGreater;
+
+#pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Ssl3, ssl3DefaultSupport);
+#pragma warning restore CS0618
+                
             }
 
             return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
@@ -393,9 +432,13 @@ namespace System
         private static bool GetTls10Support()
         {
             // on Windows, macOS, and Android TLS1.0/1.1 are supported.
-            if (IsWindows || IsOSXLike || IsAndroid)
+            if (IsOSXLike || IsAndroid)
             {
                 return true;
+            } 
+            if (IsWindows)
+            {
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, true);
             }
 
             return OpenSslGetTlsSupport(SslProtocols.Tls);
@@ -403,11 +446,12 @@ namespace System
 
         private static bool GetTls11Support()
         {
-            // on Windows, macOS, and Android TLS1.0/1.1 are supported.
-            // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
+            // on Windows, macOS, and Android TLS1.0/1.1 are supported.            
             if (IsWindows)
             {
-                return !IsWindows7;
+                // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
+                bool defaultProtocolSupport = !IsWindows7;
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport);
             }
             else if (IsOSXLike || IsAndroid)
             {
@@ -420,7 +464,8 @@ namespace System
         private static bool GetTls12Support()
         {
             // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
-            return !IsWindows7;
+            bool defaultProtocolSupport =  !IsWindows7;
+            return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport);
         }
 
         private static bool GetTls13Support()
@@ -431,25 +476,17 @@ namespace System
                 {
                     return false;
                 }
-
-                string clientKey = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client";
-                string serverKey = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server";
-
-                object client, server;
-                try
-                {
-                    client = Registry.GetValue(clientKey, "Enabled", null);
-                    server = Registry.GetValue(serverKey, "Enabled", null);
-                    if (client is int c && server is int s)
-                    {
-                        return c == 1 && s == 1;
-                    }
-                }
-                catch { }
                 // assume no if positive entry is missing on older Windows
                 // Latest insider builds have TLS 1.3 enabled by default.
                 // The build number is approximation.
-                return IsWindows10Version2004Build19573OrGreater;
+                bool defaultProtocolSupport = IsWindows10Version20348OrGreater;
+
+#if NETFRAMEWORK
+                return false;
+#else
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls13, defaultProtocolSupport);
+#endif
+
             }
             else if (IsOSX || IsMacCatalyst || IsiOS || IstvOS)
             {
@@ -489,6 +526,14 @@ namespace System
 
             var val = Environment.GetEnvironmentVariable(variableName);
             return (val != null && val == "true");
+        }
+
+        private static bool AssemblyConfigurationEquals(string configuration)
+        {
+            AssemblyConfigurationAttribute assemblyConfigurationAttribute = typeof(string).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>();
+
+            return assemblyConfigurationAttribute != null &&
+                string.Equals(assemblyConfigurationAttribute.Configuration, configuration, StringComparison.InvariantCulture);
         }
     }
 }

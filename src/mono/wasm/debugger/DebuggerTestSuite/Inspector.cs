@@ -265,10 +265,9 @@ namespace DebuggerTests
                         _logger.LogError($"Command {cmd_name} failed with {completedTask.Exception}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}.");
                         throw completedTask.Exception!;
                     }
-
-                    Result res = completedTask.Result;
                     await Client.ProcessCommand(completedTask.Result, _cancellationTokenSource.Token);
-                    if (res.IsErr)
+                    Result res = completedTask.Result;
+                    if (!res.IsOk)
                         throw new ArgumentException($"Command {cmd_name} failed with: {res.Error}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}");
 
                     init_cmds.RemoveAt(cmdIdx);

@@ -5223,10 +5223,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return "\\u" + ((int)c).ToString("x4", CultureInfo.InvariantCulture);
         }
 
+#pragma warning disable IDE0060
         private static void Trace(string s)
         {
-            // Internal.Console.WriteLine(s);
+            //Internal.Console.WriteLine(s);
         }
+#pragma warning restore IDE0060
 
         // for testing; do not make this readonly
         private static bool s_tracingEnabled;

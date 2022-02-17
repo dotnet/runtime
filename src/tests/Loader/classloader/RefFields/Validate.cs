@@ -17,6 +17,8 @@ class Validate
         Assert.Throws<TypeLoadException>(() => { var t = typeof(InvalidStructWithRefField); });
         Assert.Throws<TypeLoadException>(() => { var t = typeof(InvalidRefFieldAlignment); });
         Assert.Throws<TypeLoadException>(() => { var t = typeof(InvalidObjectRefRefFieldOverlap); });
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(IntPtrRefFieldOverlap); });
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(IntPtrOverlapWithInnerFieldType); });
     }
 
     [Fact]

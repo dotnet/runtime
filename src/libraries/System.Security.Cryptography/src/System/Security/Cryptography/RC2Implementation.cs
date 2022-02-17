@@ -54,12 +54,9 @@ namespace System.Security.Cryptography
             Key = RandomNumberGenerator.GetBytes(KeySize / BitsPerByte);
         }
 
-        private ICryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
+        private ICryptoTransform CreateTransform(byte[] rgbKey!!, byte[]? rgbIV, bool encrypting)
         {
             // note: rgbIV is guaranteed to be cloned before this method, so no need to clone it again
-
-            if (rgbKey == null)
-                throw new ArgumentNullException(nameof(rgbKey));
 
             if (!ValidKeySize(rgbKey.Length))
                 throw new ArgumentException(SR.Cryptography_InvalidKeySize, nameof(rgbKey));

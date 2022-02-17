@@ -17,11 +17,8 @@ namespace System
     //
     public abstract partial class Type
     {
-        public virtual bool IsEnumDefined(object value)
+        public virtual bool IsEnumDefined(object value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(value));
 
@@ -64,11 +61,8 @@ namespace System
             }
         }
 
-        public virtual string? GetEnumName(object value)
+        public virtual string? GetEnumName(object value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(value));
 

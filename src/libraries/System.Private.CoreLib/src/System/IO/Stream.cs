@@ -719,10 +719,8 @@ namespace System.IO
 
         public virtual void WriteByte(byte value) => Write(new byte[1] { value }, 0, 1);
 
-        public static Stream Synchronized(Stream stream) =>
-            stream is null ? throw new ArgumentNullException(nameof(stream)) :
-            stream is SyncStream ? stream :
-            new SyncStream(stream);
+        public static Stream Synchronized(Stream stream!!) =>
+            stream as SyncStream ?? new SyncStream(stream);
 
         [Obsolete("Do not call or override this method.")]
         protected virtual void ObjectInvariant() { }
@@ -763,13 +761,8 @@ namespace System.IO
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="bufferSize"/> was not a positive value.</exception>
         /// <exception cref="NotSupportedException"><paramref name="destination"/> does not support writing.</exception>
         /// <exception cref="ObjectDisposedException"><paramref name="destination"/> does not support writing or reading.</exception>
-        protected static void ValidateCopyToArguments(Stream destination, int bufferSize)
+        protected static void ValidateCopyToArguments(Stream destination!!, int bufferSize)
         {
-            if (destination is null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
-
             if (bufferSize <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);
@@ -870,7 +863,7 @@ namespace System.IO
         {
             private readonly Stream _stream;
 
-            internal SyncStream(Stream stream) => _stream = stream ?? throw new ArgumentNullException(nameof(stream));
+            internal SyncStream(Stream stream!!) => _stream = stream;
 
             public override bool CanRead => _stream.CanRead;
             public override bool CanWrite => _stream.CanWrite;

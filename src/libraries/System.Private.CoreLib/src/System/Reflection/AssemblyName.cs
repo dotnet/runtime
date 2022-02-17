@@ -28,10 +28,8 @@ namespace System.Reflection
         public AssemblyName(string assemblyName)
             : this()
         {
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
-            if ((assemblyName.Length == 0) ||
-                (assemblyName[0] == '\0'))
+            ArgumentException.ThrowIfNullOrEmpty(assemblyName);
+            if (assemblyName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
             AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(assemblyName);
@@ -297,12 +295,8 @@ namespace System.Reflection
         {
             if (object.ReferenceEquals(reference, definition))
                 return true;
-
-            if (reference == null)
-                throw new ArgumentNullException(nameof(reference));
-
-            if (definition == null)
-                throw new ArgumentNullException(nameof(definition));
+            ArgumentNullException.ThrowIfNull(reference);
+            ArgumentNullException.ThrowIfNull(definition);
 
             string refName = reference.Name ?? string.Empty;
             string defName = definition.Name ?? string.Empty;

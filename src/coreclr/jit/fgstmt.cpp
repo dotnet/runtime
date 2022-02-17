@@ -511,9 +511,9 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
 }
 
 /******************************************************************************/
-// Returns true if the operator is involved in control-flow
-// TODO-Cleanup: Move this into genTreeKinds in genTree.h
-
+// Returns true if the operator is involved in control-flow.
+// TODO-Cleanup: Make this a GenTreeOperKind.
+//
 inline bool OperIsControlFlow(genTreeOps oper)
 {
     switch (oper)

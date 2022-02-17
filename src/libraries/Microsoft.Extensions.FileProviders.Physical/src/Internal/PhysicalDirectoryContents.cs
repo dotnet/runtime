@@ -33,9 +33,9 @@ namespace Microsoft.Extensions.FileProviders.Internal
         /// </summary>
         /// <param name="directory">The directory</param>
         /// <param name="filters">Specifies which files or directories are excluded from enumeration.</param>
-        public PhysicalDirectoryContents(string directory, ExclusionFilters filters)
+        public PhysicalDirectoryContents(string directory!!, ExclusionFilters filters)
         {
-            _directory = directory ?? throw new ArgumentNullException(nameof(directory));
+            _directory = directory;
             _filters = filters;
         }
 

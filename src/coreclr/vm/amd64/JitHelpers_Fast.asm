@@ -436,4 +436,17 @@ ProbeLoop:
 
 LEAF_END_MARKED JIT_StackProbe, _TEXT
 
+LEAF_ENTRY JIT_ValidateIndirectCall, _TEXT
+        ret
+LEAF_END JIT_ValidateIndirectCall, _TEXT
+
+LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
+ifdef _DEBUG
+        mov r10, 0CDCDCDCDCDCDCDCDh ; The real helper clobbers these registers, so clobber them too in the fake helper
+        mov r11, 0CDCDCDCDCDCDCDCDh
+endif
+        rexw jmp rax
+LEAF_END JIT_DispatchIndirectCall, _TEXT
+
+
         end

@@ -39,7 +39,7 @@ void Compiler::optInit()
     optNativeCallCount   = 0;
     optAssertionCount    = 0;
     optAssertionDep      = nullptr;
-    optCSEstart          = UINT_MAX;
+    optCSEstart          = BAD_VAR_NUM;
     optCSEcount          = 0;
 }
 

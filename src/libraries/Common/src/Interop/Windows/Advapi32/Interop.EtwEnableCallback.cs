@@ -21,7 +21,7 @@ internal static partial class Interop
         }
 
         internal unsafe delegate void EtwEnableCallback(
-            in Guid sourceId,
+            Guid* sourceId,
             int isEnabled,
             byte level,
             long matchAnyKeywords,
