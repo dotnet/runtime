@@ -21,7 +21,7 @@ if(NOT DISABLE_LIBS)
 
     add_library(mono-profiler-log-static STATIC helper.c log.c log-args.c)
     target_link_libraries(mono-profiler-log-static monoapi)
-    set_target_properties(mono-profiler-log-static PROPERTIES OUTPUT_NAME mono-profiler-log)
+    set_target_properties(mono-profiler-log-static PROPERTIES OUTPUT_NAME mono-profiler-log monoapi)
     install(TARGETS mono-profiler-log-static LIBRARY)
 
     if(NOT DISABLE_LOG_PROFILER_GZ)
@@ -32,7 +32,7 @@ if(NOT DISABLE_LIBS)
   if(HOST_ANDROID)
     add_library(mono-profiler-aot SHARED aot.c helper.c)
     target_compile_definitions(mono-profiler-aot PRIVATE -DMONO_DLL_EXPORT)
-    target_link_libraries(mono-profiler-aot monosgen-shared eglib_objects log)
+    target_link_libraries(mono-profiler-aot monosgen-shared eglib_objects log monoapi)
     install(TARGETS mono-profiler-aot LIBRARY)
   endif()
 
