@@ -15,16 +15,6 @@ jobs:
 # - rest are covered by runtime, and runtime-staging
 #
 - ${{ if eq(parameters.isRollingBuild, true) }}:
-  # Library tests - only for nodejs, since that is not covered in others
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-        - Browser_wasm_win
-      alwaysRun: true
-      scenarios:
-        - WasmTestOnNodeJs
-
   # EAT Library tests - only run on linux
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:

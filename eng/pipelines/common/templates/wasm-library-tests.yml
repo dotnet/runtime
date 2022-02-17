@@ -11,7 +11,7 @@ parameters:
 jobs:
 
 #
-# Build for Browser/wasm and test it on v8, browser, and nodejs
+# Build for Browser/wasm and test it
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

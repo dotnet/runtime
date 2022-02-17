@@ -226,7 +226,7 @@ Bumping Emscripten version involves these steps:
 
 | .                 | runtime                   | runtime-staging       | runtime-extra-platforms (always run) | runtime-wasm (manual only) |
 | ----------------- | -------------             | ---------------       | ------------------------------------ | ------                     |
-| libtests          | linux: all(v8/chr/node)   | windows: all          | linux+windows: all with node         | N/A                        |
+| libtests          | linux: all(v8/chr)        | windows: all          | none                                 | N/A                        |
 | libtests eat      | linux: smoke              | -                     | linux: all                           |                            |
 | libtests aot      | linux: smoke              | windows: smoke        | linux+windows: all                   |                            |
 |                   |                           |                       |                                      |                            |
