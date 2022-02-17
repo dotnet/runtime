@@ -201,6 +201,10 @@ public:
     // Gets a pointer to the module that contains the GC.
     static PTR_VOID GetGCModuleBase();
 
+#ifdef FEATURE_UNITY_GCNAME_API
+    static void SetGCName(const char* name);
+#endif
+
     // Loads (if using a standalone GC) and initializes the GC.
     static HRESULT LoadAndInitialize();
 

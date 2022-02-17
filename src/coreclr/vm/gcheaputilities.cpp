@@ -174,7 +174,7 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName)
 //
 // See Documentation/design-docs/standalone-gc-loading.md for details
 // on the loading protocol in use here.
-HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
+HRESULT LoadAndInitializeGC(LPCWSTR standaloneGcLocation)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -300,6 +300,15 @@ HRESULT InitializeDefaultGC()
 
 } // anonymous namespace
 
+#ifdef FEATURE_UNITY_GCNAME_API
+
+static SString g_gc_unity_location;
+void GCHeapUtilities::SetGCName(const char* name)
+{
+    g_gc_unity_location.SetUTF8(name);
+}
+#endif
+
 // Loads (if necessary) and initializes the GC. If using a standalone GC,
 // it loads the library containing it and dynamically loads the GC entry point.
 // If using a non-standalone GC, it invokes the GC entry point directly.
@@ -318,6 +327,13 @@ HRESULT GCHeapUtilities::LoadAndInitialize()
 
     LPWSTR standaloneGcLocation = nullptr;
     CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCName, &standaloneGcLocation);
+#ifdef FEATURE_UNITY_GCNAME_API
+    if (!g_gc_unity_location.IsEmpty())
+    {
+        return LoadAndInitializeGC(g_gc_unity_location.GetUnicode());
+    }
+    else
+#endif
     if (!standaloneGcLocation)
     {
         return InitializeDefaultGC();
