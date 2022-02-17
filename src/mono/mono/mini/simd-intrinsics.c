@@ -598,7 +598,7 @@ static guint16 sri_vector_methods [] = {
 	SN_Min,
 	SN_Multiply,
 	SN_Negate,
-	SN_Not,
+	SN_OnesComplement,
 	SN_Sqrt,
 	SN_Subtract,
 	SN_ToScalar,
@@ -810,7 +810,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	case SN_Negate:
-	case SN_Not: {
+	case SN_OnesComplement: {
 #ifdef TARGET_ARM64
 		int op = id == SN_Negate ? OP_ARM64_XNEG : OP_ARM64_MVN;
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
