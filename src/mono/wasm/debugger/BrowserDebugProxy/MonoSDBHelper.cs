@@ -528,58 +528,43 @@ namespace Microsoft.WebAssembly.Diagnostics
             Write(bytes);
         }
 
-        public async Task<bool> WriteConst(ConstantTypeCode? type, byte[] bytes, MonoSDBHelper SdbHelper, CancellationToken token)
+        public async Task<bool> WriteConst(ElementType? type, object value, MonoSDBHelper SdbHelper, CancellationToken token)
         {
             switch (type)
             {
-                case ConstantTypeCode.Invalid:
-                    return false;
-                case ConstantTypeCode.Boolean:
-                    var boolVal = BitConverter.ToBoolean(bytes);
-                    Write(ElementType.Boolean, boolVal ? 1 : 0);
+                case ElementType.Boolean:
+                case ElementType.Char:
+                case ElementType.U1:
+                case ElementType.I2:
+                case ElementType.I4:
+                    Write((ElementType)type, (int)value);
                     return true;
-                case ConstantTypeCode.Char:
-                    Write(ElementType.Char, (int)BitConverter.ToChar(bytes));
+                case ElementType.I1:
+                case ElementType.U2:
+                case ElementType.U4:
+                    Write((ElementType)type, (uint)value);
                     return true;
-                case ConstantTypeCode.SByte:
-                    Write(ElementType.I1, (int)bytes[0]);
+                case ElementType.I8:
+                    Write((ElementType)type, (long)value);
                     return true;
-                case ConstantTypeCode.Byte:
-                    Write(ElementType.U1, (uint)bytes[0]);
+                case ElementType.U8:
+                    Write((ElementType)type, (ulong)value);
                     return true;
-                case ConstantTypeCode.Int16:
-                    Write(ElementType.I2, (uint)BitConverter.ToInt16(bytes, 0));
+                case ElementType.R4:
+                    Write((ElementType)type, (float)value);
                     return true;
-                case ConstantTypeCode.UInt16:
-                    Write(ElementType.U2, (uint)BitConverter.ToUInt16(bytes, 0));
+                case ElementType.R8:
+                    Write((ElementType)type, (double)value);
                     return true;
-                case ConstantTypeCode.Int32:
-                    Write(ElementType.I4, BitConverter.ToInt32(bytes, 0));
-                    return true;
-                case ConstantTypeCode.UInt32:
-                    Write(ElementType.U4, BitConverter.ToUInt32(bytes, 0));
-                    return true;
-                case ConstantTypeCode.Int64:
-                    Write(ElementType.I8, BitConverter.ToInt64(bytes, 0));
-                    return true;
-                case ConstantTypeCode.UInt64:
-                    Write(ElementType.U8, BitConverter.ToUInt64(bytes, 0));
-                    return true;
-                case ConstantTypeCode.Single:
-                    Write(ElementType.R4, BitConverter.ToSingle(bytes, 0));
-                    return true;
-                case ConstantTypeCode.Double:
-                    Write(ElementType.R8, BitConverter.ToDouble(bytes, 0));
-                    return true;
-                case ConstantTypeCode.String:
-                    // encoded chars are separated by trailing nulls: '\0' that indicate the end of string,
-                    // leaving them results in cutting the string after 1st char
-                    var stringVal = Encoding.UTF8.GetString(bytes).Replace("\0", "");
-                    int stringId = await SdbHelper.CreateString(stringVal, token);
+                case ElementType.String:
+                    int stringId = await SdbHelper.CreateString((string)value, token);
                     Write(ElementType.String, stringId);
                     return true;
-                case ConstantTypeCode.NullReference:
-                    Write((byte)ValueTypeId.Null);
+                case null:
+                    if (value == null)
+                        return false;
+                    //ConstantTypeCode.NullReference
+                    Write((byte)value);
                     Write((byte)0); //not used
                     Write((int)0);  //not used
                     return true;

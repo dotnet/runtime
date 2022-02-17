@@ -411,7 +411,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             OptionalParametersCnt = ParametersInfo.Count(p => p.HasDefaultValue);
         }
 
-        private ParameterInfo[] GetMethodParamsInfo()
+        public ParameterInfo[] GetMethodParamsInfo()
         {
             var paramsHandles = methodDef.GetParameters().ToArray();
             var paramsCnt = paramsHandles.Length;
@@ -562,9 +562,82 @@ namespace Microsoft.WebAssembly.Diagnostics
                     (EndLocation.Line == containerMethod.EndLocation.Line && EndLocation.Column < containerMethod.EndLocation.Column));
     }
 
-    internal record ParameterInfo(string Name, ConstantTypeCode? TypeCode = null, byte[] Value = null)
+    internal class ParameterInfo
     {
-        public bool HasDefaultValue = Value != null;
+        public string Name { get; private set; }
+
+        public bool HasDefaultValue { get; private set; }
+
+        public ElementType? TypeCode { get; private set; }
+
+        public object Value { get; set; }
+
+        public ParameterInfo(string name, ConstantTypeCode? typeCode = null, byte[] value = null)
+        {
+            Name = name;
+            HasDefaultValue = value != null;
+            if (!HasDefaultValue)
+                return;
+            switch (typeCode)
+            {
+                case ConstantTypeCode.Boolean:
+                    Value = BitConverter.ToBoolean(value) ? 1 : 0;
+                    TypeCode = ElementType.Boolean;
+                    break;
+                case ConstantTypeCode.Char:
+                    Value = (int)BitConverter.ToChar(value);
+                    TypeCode = ElementType.Char;
+                    break;
+                case ConstantTypeCode.Byte:
+                    Value = (int)value[0];
+                    TypeCode = ElementType.U1;
+                    break;
+                case ConstantTypeCode.SByte:
+                    Value = (uint)value[0];
+                    TypeCode = ElementType.I1;
+                    break;
+                case ConstantTypeCode.Int16:
+                    Value = (int)BitConverter.ToUInt16(value, 0);
+                    TypeCode = ElementType.I2;
+                    break;
+                case ConstantTypeCode.UInt16:
+                    Value = (uint)BitConverter.ToUInt16(value, 0);
+                    TypeCode = ElementType.U2;
+                    break;
+                case ConstantTypeCode.Int32:
+                    Value = BitConverter.ToInt32(value, 0);
+                    TypeCode = ElementType.I4;
+                    break;
+                case ConstantTypeCode.UInt32:
+                    Value = BitConverter.ToUInt32(value, 0);
+                    TypeCode = ElementType.U4;
+                    break;
+                case ConstantTypeCode.Int64:
+                    Value = BitConverter.ToInt64(value, 0);
+                    TypeCode = ElementType.I8;
+                    break;
+                case ConstantTypeCode.UInt64:
+                    Value = BitConverter.ToUInt64(value, 0);
+                    TypeCode = ElementType.U8;
+                    break;
+                case ConstantTypeCode.Single:
+                    Value = BitConverter.ToSingle(value, 0);
+                    TypeCode = ElementType.R4;
+                    break;
+                case ConstantTypeCode.Double:
+                    Value = BitConverter.ToDouble(value, 0);
+                    TypeCode = ElementType.R8;
+                    break;
+                case ConstantTypeCode.String:
+                    Value = Encoding.Unicode.GetString(value);
+                    TypeCode = ElementType.String;
+                    break;
+                case ConstantTypeCode.NullReference:
+                    Value = (byte)ValueTypeId.Null;
+                    TypeCode = null;
+                    break;
+            }
+        }
     }
 
     internal class TypeInfo

@@ -858,6 +858,7 @@ namespace DebuggerTests
         {
             public bool GetBool(bool param = true) => param;
             public char GetChar(char param = 'T') => param;
+            public char GetUnicodeChar(char param = 'ą') => param;
             public byte GetByte(byte param = 1) => param;
             public sbyte GetSByte(sbyte param = 1) => param;
             public short GetInt16(short param = 1) => param;
@@ -868,7 +869,8 @@ namespace DebuggerTests
             public ulong GetUInt64(ulong param = 1) => param;
             public float GetSingle(float param = 1.23f) => param;
             public double GetDouble(double param = 1.23) => param;
-            public string GetString(string param = "1.23") => param;            
+            public string GetString(string param = "1.23") => param;   
+            public string GetUnicodeString(string param = "żółć") => param;           
             
             #nullable enable
             public bool? GetBoolNullable(bool? param = true) => param;

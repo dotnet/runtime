@@ -1069,8 +1069,9 @@ namespace DebuggerTests
 
                 //    ("test.GetChar()", TString("T")), //fails, Evaluate of this datatype symbol not implemented yet (for non optional parameters either)
                 //    ("test.GetCharNullable()", TString("T")),
+                //    ("test.GetUnicodeChar()", TString("ą")),
                    ("test.GetString()", TString("1.23")),
-                   ("test.GetString(\"TEST\")", TString("TEST")),
+                   ("test.GetUnicodeString()", TString("żółć")),
                    ("test.GetString(null)", TObject("string", is_null: true)),
                    ("test.GetStringNullable()", TString("1.23")),
 

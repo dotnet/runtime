@@ -422,17 +422,20 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     if (method.ArgumentList != null)
                     {
+                        int passedArgsCnt = method.ArgumentList.Arguments.Count;
+                        int sentToDebuggerParamsCnt = passedArgsCnt;
+                        var methodParamsInfo = new List<ParameterInfo>();
                         var methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
-                        int passedParamCnt = method.ArgumentList.Arguments.Count;
-                        ParameterInfo[] methodParamsInfo = methodInfo.Info.ParametersInfo;
-
-                        // if less params then the function has was passed then some of them may be optional
-                        // if more, it will ensure to produce an error
-                        int methodParamsCnt = methodParamsInfo.Length;
-                        int optionalParamsCnt = methodInfo.Info.OptionalParametersCnt;
-                        int sentToDebuggerParamsCnt = methodParamsCnt;
-                        if (passedParamCnt > methodParamsCnt || passedParamCnt + optionalParamsCnt < methodParamsCnt)
-                            sentToDebuggerParamsCnt = passedParamCnt;
+                        if (methodInfo != null) //null for e.g. ToList()
+                        {
+                            methodParamsInfo = methodInfo.Info.ParametersInfo.ToList();
+                            int methodParamsCnt = methodParamsInfo.Count;
+                            if (passedArgsCnt > methodParamsCnt)
+                                throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}. Too many arguments passed.", "ArgumentError");
+                            int optionalParamsCnt = methodInfo.Info.OptionalParametersCnt;
+                            if (passedArgsCnt + optionalParamsCnt >= methodParamsCnt)
+                                sentToDebuggerParamsCnt = methodParamsCnt;
+                        }
 
                         commandParamsObjWriter.Write(sentToDebuggerParamsCnt + isTryingLinq);
                         if (isTryingLinq == 1)
@@ -444,16 +447,26 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (i < method.ArgumentList.Arguments.Count)
                             {
                                 var arg = method.ArgumentList.Arguments[i];
-                                if (arg.Expression is LiteralExpressionSyntax)
+                                if (arg.Expression is LiteralExpressionSyntax literal)
                                 {
-                                    if (!await commandParamsObjWriter.WriteConst(arg.Expression as LiteralExpressionSyntax, context.SdbAgent, token))
+                                    if (!await commandParamsObjWriter.WriteConst(literal, context.SdbAgent, token))
+                                    {
+                                        logger.LogDebug($"Unable to write LiteralExpressionSyntax into binary writer.");
                                         return null;
+                                    }
                                 }
-                                if (arg.Expression is IdentifierNameSyntax)
+                                else if (arg.Expression is IdentifierNameSyntax identifierName)
                                 {
-                                    var argParm = arg.Expression as IdentifierNameSyntax;
-                                    if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[argParm.Identifier.Text], context.SdbAgent, token))
+                                    if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[identifierName.Identifier.Text], context.SdbAgent, token))
+                                    {
+                                        logger.LogDebug($"Unable to write IdentifierNameSyntax into binary writer.");
                                         return null;
+                                    }
+                                }
+                                else
+                                {
+                                    logger.LogDebug($"Unable to write, not recognized expression type");
+                                    return null;
                                 }
                             }
                             // optional arguments that were not overwritten
@@ -469,9 +482,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 return null;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new Exception($"Unable to evaluate method '{methodName}'");
+                throw new Exception($"Unable to evaluate method '{methodName}'", ex);
             }
         }
     }
