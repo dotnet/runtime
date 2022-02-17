@@ -20,21 +20,21 @@ internal static partial class Interop
         /// </summary>
         private enum CFStringBuiltInEncodings : uint
         {
-            kCFStringEncodingMacRoman       = 0,
-            kCFStringEncodingWindowsLatin1  = 0x0500,
-            kCFStringEncodingISOLatin1      = 0x0201,
-            kCFStringEncodingNextStepLatin  = 0x0B01,
-            kCFStringEncodingASCII          = 0x0600,
-            kCFStringEncodingUnicode        = 0x0100,
-            kCFStringEncodingUTF8           = 0x08000100,
-            kCFStringEncodingNonLossyASCII  = 0x0BFF,
+            kCFStringEncodingMacRoman = 0,
+            kCFStringEncodingWindowsLatin1 = 0x0500,
+            kCFStringEncodingISOLatin1 = 0x0201,
+            kCFStringEncodingNextStepLatin = 0x0B01,
+            kCFStringEncodingASCII = 0x0600,
+            kCFStringEncodingUnicode = 0x0100,
+            kCFStringEncodingUTF8 = 0x08000100,
+            kCFStringEncodingNonLossyASCII = 0x0BFF,
 
-            kCFStringEncodingUTF16          = 0x0100,
-            kCFStringEncodingUTF16BE        = 0x10000100,
-            kCFStringEncodingUTF16LE        = 0x14000100,
-            kCFStringEncodingUTF32          = 0x0c000100,
-            kCFStringEncodingUTF32BE        = 0x18000100,
-            kCFStringEncodingUTF32LE        = 0x1c000100
+            kCFStringEncodingUTF16 = 0x0100,
+            kCFStringEncodingUTF16BE = 0x10000100,
+            kCFStringEncodingUTF16LE = 0x14000100,
+            kCFStringEncodingUTF32 = 0x0c000100,
+            kCFStringEncodingUTF32BE = 0x18000100,
+            kCFStringEncodingUTF32LE = 0x1c000100
         }
 
         /// <summary>
@@ -143,7 +143,7 @@ internal static partial class Interop
         /// <param name="values">The values to put in the array</param>
         /// <param name="numValues">The number of values in the array</param>
         /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
-        internal static SafeCreateHandle CFArrayCreate(IntPtr[] values, UIntPtr numValues)
+        internal static unsafe SafeCreateHandle CFArrayCreate(IntPtr[] values, UIntPtr numValues)
         {
             fixed (IntPtr* pValues = values)
             {
@@ -158,7 +158,7 @@ internal static partial class Interop
         /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
         internal static unsafe SafeCreateHandle CFArrayCreate(Span<IntPtr> values)
         {
-            fixed (IntPtr* pValues = MemoryMarshal)
+            fixed (IntPtr* pValues = &MemoryMarshal.GetReference(values))
             {
                 return CFArrayCreate(IntPtr.Zero, pValues, (UIntPtr)values.Length, IntPtr.Zero);
             }
