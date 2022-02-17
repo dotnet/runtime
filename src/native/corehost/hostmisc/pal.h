@@ -64,7 +64,7 @@
 // degree of compat across their respective releases is usually high.
 //
 // We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Plaform.
-#if defined(_WIN32)
+#if defined(TARGET_WINDOWS)
 #define LIB_PREFIX
 #define MAKE_LIBNAME(NAME) (_X(NAME) _X(".dll"))
 #define FALLBACK_HOST_RID _X("win10")
@@ -79,8 +79,10 @@
 #define FALLBACK_HOST_RID _X("freebsd")
 #elif defined(TARGET_ILLUMOS)
 #define FALLBACK_HOST_RID _X("illumos")
-#elif defined(__sun)
+#elif defined(TARGET_SUNOS)
 #define FALLBACK_HOST_RID _X("solaris")
+#elif defined(TARGET_LINUX_MUSL)
+#define FALLBACK_HOST_RID _X("linux-musl")
 #else
 #define FALLBACK_HOST_RID _X("linux")
 #endif

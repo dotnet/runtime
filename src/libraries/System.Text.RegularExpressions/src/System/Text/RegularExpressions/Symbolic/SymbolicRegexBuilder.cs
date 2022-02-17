@@ -43,6 +43,9 @@ namespace System.Text.RegularExpressions.Symbolic
         // states that have been created
         internal HashSet<DfaMatchingState<TElement>> _stateCache = new();
 
+        // capturing states that have been created
+        internal HashSet<DfaMatchingState<TElement>> _capturingStateCache = new();
+
         internal readonly Dictionary<(SymbolicRegexKind,
             SymbolicRegexNode<TElement>?, // _left
             SymbolicRegexNode<TElement>?, // _right
@@ -64,6 +67,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         internal DfaMatchingState<TElement>[]? _statearray;
         internal DfaMatchingState<TElement>[]? _delta;
+        internal DfaMatchingState<TElement>[]? _capturingStatearray;
         internal List<(DfaMatchingState<TElement>, List<DerivativeEffect>)>[]? _capturingDelta;
         private const int InitialStateLimit = 1024;
 
@@ -105,6 +109,7 @@ namespace System.Text.RegularExpressions.Symbolic
             else
             {
                 _statearray = new DfaMatchingState<TElement>[InitialStateLimit];
+                _capturingStatearray = new DfaMatchingState<TElement>[InitialStateLimit];
 
                 // the extra slot with id minterms.Length is reserved for \Z (last occurrence of \n)
                 int mintermsCount = 1;
@@ -407,9 +412,14 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Make a state with given node and previous character context
+        /// Make a state with given node and previous character context.
         /// </summary>
-        public DfaMatchingState<TElement> MkState(SymbolicRegexNode<TElement> node, uint prevCharKind, bool antimirov = false)
+        /// <param name="node">the pattern that this state will represent</param>
+        /// <param name="prevCharKind">the kind of the character that led to this state</param>
+        /// <param name="antimirov">if true, then state won't be cached</param>
+        /// <param name="capturing">whether to use the separate space of states with capturing transitions or not</param>
+        /// <returns></returns>
+        public DfaMatchingState<TElement> MkState(SymbolicRegexNode<TElement> node, uint prevCharKind, bool antimirov = false, bool capturing = false)
         {
             //first prune the anchors in the node
             TElement WLpred = _wordLetterPredicateForAnchors;
@@ -422,7 +432,7 @@ namespace System.Text.RegularExpressions.Symbolic
             bool contWithNWL = node.CanBeNullable || _solver.IsSatisfiable(_solver.And(_solver.Not(WLpred), startSet));
             SymbolicRegexNode<TElement> pruned_node = node.PruneAnchors(prevCharKind, contWithWL, contWithNWL);
             var s = new DfaMatchingState<TElement>(pruned_node, prevCharKind);
-            if (!_stateCache.TryGetValue(s, out DfaMatchingState<TElement>? state))
+            if (!(capturing ? _stateCache : _capturingStateCache).TryGetValue(s, out DfaMatchingState<TElement>? state))
             {
                 // do not cache set of states as states in antimirov mode
                 if (antimirov && pruned_node.Kind == SymbolicRegexKind.Or)
@@ -432,30 +442,43 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
                 else
                 {
-                    state = MakeNewState(s);
+                    state = MakeNewState(s, capturing);
                 }
             }
 
             return state;
         }
 
-        private DfaMatchingState<TElement> MakeNewState(DfaMatchingState<TElement> state)
+        private DfaMatchingState<TElement> MakeNewState(DfaMatchingState<TElement> state, bool capturing)
         {
             lock (this)
             {
-                state.Id = _stateCache.Count;
-                _stateCache.Add(state);
+                HashSet<DfaMatchingState<TElement>> cache = capturing ? _stateCache : _capturingStateCache;
+                state.Id = cache.Count;
+                cache.Add(state);
 
-                Debug.Assert(_statearray is not null);
+                Debug.Assert(_statearray is not null && _capturingStatearray is not null);
 
-                if (state.Id == _statearray.Length)
+                if (capturing)
                 {
-                    int newsize = _statearray.Length + 1024;
-                    Array.Resize(ref _statearray, newsize);
-                    Array.Resize(ref _delta, newsize << _mintermsCount);
-                    Array.Resize(ref _capturingDelta, newsize << _mintermsCount);
+                    if (state.Id == _capturingStatearray.Length)
+                    {
+                        int newsize = _capturingStatearray.Length + 1024;
+                        Array.Resize(ref _capturingStatearray, newsize);
+                        Array.Resize(ref _capturingDelta, newsize << _mintermsCount);
+                    }
+                    _capturingStatearray[state.Id] = state;
                 }
-                _statearray[state.Id] = state;
+                else
+                {
+                    if (state.Id == _statearray.Length)
+                    {
+                        int newsize = _statearray.Length + 1024;
+                        Array.Resize(ref _statearray, newsize);
+                        Array.Resize(ref _delta, newsize << _mintermsCount);
+                    }
+                    _statearray[state.Id] = state;
+                }
                 return state;
             }
         }
