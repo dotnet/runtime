@@ -1437,7 +1437,7 @@ public:
             GenTreeCall* const call = node->AsCall();
             if (call->IsVirtual() && (call->gtCallType != CT_INDIRECT))
             {
-                // virutal call
+                // virtual call
                 m_functor(m_compiler, call);
             }
             else if (m_compiler->impIsProfileableCastHelper(call))
