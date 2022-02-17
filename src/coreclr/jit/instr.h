@@ -52,12 +52,9 @@ enum instruction : unsigned
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 
 #elif defined(TARGET_LOONGARCH64)
-    #define INSTS(id, nm, fp, ldst, fmt, e1) INS_##id,
+    #define INST(id, nm, fp, ldst, fmt, e1) INS_##id,
     #include "instrs.h"
 
-    //INS_dneg,  // Not a real instruction. It will be translated to dsubu.
-    //INS_neg,   // Not a real instruction. It will be translated to subu.
-    //INS_not,   // Not a real instruction. It will be translated to nor.
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 #else
 #error Unsupported target architecture
@@ -152,15 +149,8 @@ enum insFlags : uint32_t
     INS_FLAGS_DONT_CARE = 0x00,
 };
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
-enum insFlags: unsigned
-{
-    INS_FLAGS_NOT_SET = 0x00,
-    INS_FLAGS_SET = 0x01,
-    INS_FLAGS_DONT_CARE = 0x02,
-};
-#elif defined(TARGET_LOONGARCH64)
 enum insFlags: unsigned
 {
     INS_FLAGS_NOT_SET = 0x00,
@@ -298,6 +288,7 @@ enum insBarrier : unsigned
     INS_BARRIER_OSHLD =  1,
     INS_BARRIER_OSHST =  2,
     INS_BARRIER_OSH   =  3,
+
     INS_BARRIER_NSHLD =  5,
     INS_BARRIER_NSHST =  6,
     INS_BARRIER_NSH   =  7,
@@ -321,11 +312,8 @@ enum insOpts : unsigned
     INS_OPTS_J,      // see ::emitIns_J().
     INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
     INS_OPTS_I,      // see ::emitIns_I_la().
-    //INS_OPTS_J2,   // see ::emitIns_J().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().
-    //INS_OPTS_,     // see ::().
-    //INS_OPTS_,     // see ::().
 };
 
 enum insBarrier : unsigned

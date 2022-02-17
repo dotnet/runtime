@@ -3160,7 +3160,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
             *pCostEx += idx->GetCostEx();
             *pCostSz += idx->GetCostSz();
         }
-        // TODO: workround, should amend for LoongArch64.
+        // TODO-LOONGARCH64: workround, should amend for LoongArch64.
         if (cns != 0)
         {
             if (cns >= (4096 * genTypeSize(type)))
@@ -3587,7 +3587,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_STR:
             case GT_CNS_LNG:
             case GT_CNS_INT:
-                // TODO: workround, should amend for LoongArch64.
+                // TODO-LOONGARCH64: workround, should amend for LoongArch64.
                 costEx = 4;
                 costSz = 4;
                 goto COMMON_CNS;
@@ -3653,7 +3653,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 4;
                 }
 #elif defined(TARGET_LOONGARCH64)
-                // TODO: workround, should amend for LoongArch64.
+                // TODO-LOONGARCH64: workround, should amend for LoongArch64.
                 costEx = 2;
                 costSz = 8;
 #else
@@ -3830,7 +3830,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz = 6;
                     }
 #elif defined(TARGET_LOONGARCH64)
-                    // TODO: workround, should amend for LoongArch64.
+                    // TODO-LOONGARCH64: workround, should amend for LoongArch64.
                     costEx = 1;
                     costSz = 2;
                     if (isflt || varTypeIsFloating(op1->TypeGet()))
@@ -6025,6 +6025,10 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
         case TYP_INT:
 #ifdef TARGET_LOONGARCH64
         case TYP_UINT:
+            // For LoongArch64, the register $r0 is always const-zero with 64bits-width.
+            // Besides the instructions's operation of the 64bits and 32bits using the whole
+            // 64bits-width register which is unlike the AMD64 and ARM64.
+            // So for UINT type, LoongArch64 can't share with INT liking AMD64 and ARM64.
 #endif
             zero = gtNewIconNode(0);
             break;
@@ -13657,7 +13661,12 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
         case TYP_INT:
 
 #ifdef TARGET_LOONGARCH64
-            assert(tree->TypeIs(TYP_INT) || tree->TypeIs(TYP_LONG) || varTypeIsGC(tree) || tree->OperIs(GT_MKREFANY));
+            // For LoongArch64's instructions operation of the 64bits and 32bits using the whole
+            // 64bits-width register which is unlike the AMD64 and ARM64.
+            // And the INT type instruction will be signed-extend by default.
+            // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
+            // will be signed-extend by default.
+            assert(tree->TypeIs(TYP_INT, TYP_LONG) || varTypeIsGC(tree) || tree->OperIs(GT_MKREFANY));
 #else
             assert(tree->TypeIs(TYP_INT) || varTypeIsGC(tree) || tree->OperIs(GT_MKREFANY));
 #endif
@@ -21873,30 +21882,30 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 #elif defined(TARGET_LOONGARCH64)
             assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
 
-            uint32_t numFloatFields = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
-            BYTE     gcPtrs[2]      = {TYPE_GC_NONE, TYPE_GC_NONE};
+            uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
+            BYTE     gcPtrs[2]       = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
 
-            if (numFloatFields & STRUCT_FLOAT_FIELD_ONLY_TWO)
+            if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
             {
-                assert((structSize > 8) == ((numFloatFields & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0]                = numFloatFields & STRUCT_FIRST_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1]                = numFloatFields & STRUCT_SECOND_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
                 comp->compFloatingPointUsed = true;
+                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
+                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
             }
-            else if (numFloatFields & STRUCT_FLOAT_FIELD_FIRST)
+            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST)
             {
-                assert((structSize > 8) == ((numFloatFields & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = numFloatFields & STRUCT_FIRST_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = numFloatFields & STRUCT_SECOND_FIELD_SIZE_IS8 ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
                 comp->compFloatingPointUsed = true;
+                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
+                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
             }
-            else if (numFloatFields & STRUCT_FLOAT_FIELD_SECOND)
+            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
             {
-                assert((structSize > 8) == ((numFloatFields & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = numFloatFields & STRUCT_FIRST_FIELD_SIZE_IS8 ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
-                m_regType[1] = numFloatFields & STRUCT_SECOND_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
                 comp->compFloatingPointUsed = true;
+                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
+                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
+                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
             }
             else
             {
@@ -22100,13 +22109,13 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
     var_types regType = GetReturnRegType(idx);
     if (idx == 0)
     {
-        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // V0 or F0
+        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or F0
     }
     else
     {
         noway_assert(idx < 2); // Up to 2 return registers for two-float-field structs
         if (varTypeIsIntegralOrI(regType))
-            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_INTRET_1 : REG_INTRET; // V0 or V1
+            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_INTRET_1 : REG_INTRET; // A0 or A1
         else // if (!varTypeIsIntegralOrI(regType))
             resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // F0 or F1
     }

@@ -8444,7 +8444,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
     {
         return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) && (callerRetTypeSize == calleeRetTypeSize);
     }
-#endif // TARGET_AMD64 || TARGET_ARM64
+#endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64
 
     return false;
 }
@@ -10296,7 +10296,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
         return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 
-#endif //  FEATURE_MULTIREG_RET && TARGET_ARM64
+#endif //  FEATURE_MULTIREG_RET && (TARGET_ARM64 || TARGET_LOONGARCH64)
 
     if (!op->IsCall() || !op->AsCall()->TreatAsHasRetBufArg(this))
     {
@@ -11313,6 +11313,11 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
 #ifdef TARGET_LOONGARCH64
             if (op1->TypeGet() == TYP_INT && op1->gtOper == GT_CNS_INT)
             {
+                // For LoongArch64's instructions operation of the 64bits and 32bits using the whole
+                // 64bits-width register which is unlike the AMD64 and ARM64.
+                // And the INT type instruction will be signed-extend by default.
+                // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
+                // will be signed-extend by default.
                 op1->AsIntCon()->gtIconVal =
                     fUnsigned ? (uint32_t)op1->AsIntCon()->gtIconVal : op1->AsIntCon()->gtIconVal;
                 op1->gtType = TYP_LONG;
@@ -11329,6 +11334,11 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
 #ifdef TARGET_LOONGARCH64
             if (op2->TypeGet() == TYP_INT && op2->gtOper == GT_CNS_INT)
             {
+                // For LoongArch64's instructions operation of the 64bits and 32bits using the whole
+                // 64bits-width register which is unlike the AMD64 and ARM64.
+                // And the INT type instruction will be signed-extend by default.
+                // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
+                // will be signed-extend by default.
                 op2->AsIntCon()->gtIconVal =
                     fUnsigned ? (uint32_t)op2->AsIntCon()->gtIconVal : op2->AsIntCon()->gtIconVal;
                 op2->gtType = TYP_LONG;

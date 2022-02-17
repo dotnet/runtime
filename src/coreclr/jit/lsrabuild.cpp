@@ -1962,9 +1962,11 @@ void LinearScan::insertZeroInitRefPositions()
     }
 }
 
-#if defined(UNIX_AMD64_ABI)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
 //------------------------------------------------------------------------
-// unixAmd64UpdateRegStateForArg: Sets the register state for an argument of type STRUCT for System V systems.
+// UpdateRegStateForStructArg:
+//    Sets the register state for an argument of type STRUCT.
+//    This is shared between with AMD64's SystemV systems and LoongArch64-ABI.
 //
 // Arguments:
 //    argDsc - the LclVarDsc for the argument of interest
@@ -1973,7 +1975,7 @@ void LinearScan::insertZeroInitRefPositions()
 //     See Compiler::raUpdateRegStateForArg(RegState *regState, LclVarDsc *argDsc) in regalloc.cpp
 //         for how state for argument is updated for unix non-structs and Windows AMD64 structs.
 //
-void LinearScan::unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc)
+void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
 {
     assert(varTypeIsStruct(argDsc));
     RegState* intRegState   = &compiler->codeGen->intRegState;
@@ -2008,44 +2010,7 @@ void LinearScan::unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc)
     }
 }
 
-#endif // defined(UNIX_AMD64_ABI)
-
-#ifdef TARGET_LOONGARCH64
-void LinearScan::LoongArch64UpdateRegStateForArg(LclVarDsc* argDsc)
-{
-    assert(varTypeIsStruct(argDsc));
-    RegState* intRegState   = &compiler->codeGen->intRegState;
-    RegState* floatRegState = &compiler->codeGen->floatRegState;
-
-    if ((argDsc->GetArgReg() != REG_STK) && (argDsc->GetArgReg() != REG_NA))
-    {
-        if (genRegMask(argDsc->GetArgReg()) & (RBM_ALLFLOAT))
-        {
-            assert(genRegMask(argDsc->GetArgReg()) & (RBM_FLTARG_REGS));
-            floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetArgReg());
-        }
-        else
-        {
-            assert(genRegMask(argDsc->GetArgReg()) & (RBM_ARG_REGS));
-            intRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetArgReg());
-        }
-    }
-
-    if ((argDsc->GetOtherArgReg() != REG_STK) && (argDsc->GetOtherArgReg() != REG_NA))
-    {
-        if (genRegMask(argDsc->GetOtherArgReg()) & (RBM_ALLFLOAT))
-        {
-            assert(genRegMask(argDsc->GetOtherArgReg()) & (RBM_FLTARG_REGS));
-            floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetOtherArgReg());
-        }
-        else
-        {
-            assert(genRegMask(argDsc->GetOtherArgReg()) & (RBM_ARG_REGS));
-            intRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetOtherArgReg());
-        }
-    }
-}
-#endif
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
 
 //------------------------------------------------------------------------
 // updateRegStateForArg: Updates rsCalleeRegArgMaskLiveIn for the appropriate
@@ -2068,22 +2033,15 @@ void LinearScan::LoongArch64UpdateRegStateForArg(LclVarDsc* argDsc)
 //
 void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 {
-#if defined(UNIX_AMD64_ABI)
-    // For System V AMD64 calls the argDsc can have 2 registers (for structs.)
-    // Handle them here.
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+    // For SystemV-AMD64 and LoongArch64 calls the argDsc
+    // can have 2 registers (for structs.). Handle them here.
     if (varTypeIsStruct(argDsc))
     {
-        unixAmd64UpdateRegStateForArg(argDsc);
+        UpdateRegStateForStructArg(argDsc);
     }
     else
-#endif // defined(UNIX_AMD64_ABI)
-#if defined(TARGET_LOONGARCH64)
-        if (varTypeIsStruct(argDsc))
-    {
-        LoongArch64UpdateRegStateForArg(argDsc);
-    }
-    else
-#endif
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
     {
         RegState* intRegState   = &compiler->codeGen->intRegState;
         RegState* floatRegState = &compiler->codeGen->floatRegState;

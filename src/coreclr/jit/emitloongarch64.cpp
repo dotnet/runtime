@@ -636,7 +636,7 @@ static const char * const  RegNames[] =
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
-    #define INSTS(id, nm, fp, info, fmt, e1) info,
+    #define INST(id, nm, fp, info, fmt, e1) info,
     #include "instrs.h"
 };
 // clang-format on
@@ -692,7 +692,7 @@ inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/)
     // clang-format off
     const static code_t insCode[] =
     {
-        #define INSTS(id, nm, fp, info, fmt, e1) e1,
+        #define INST(id, nm, fp, info, fmt, e1) e1,
         #include "instrs.h"
     };
     // clang-format on
@@ -726,31 +726,57 @@ void emitter::emitIns(instruction ins)
  *
  *  Add an Load/Store instruction(s): base+offset and base-addr-computing if needed.
  *  For referencing a stack-based local variable and a register
+ *
+ *  Special notes for LoongArch64:
+ *    The parameter `offs` has special info.
+ *    The real value of `offs` is positive.
+ *    If the `offs` is negtive which its real value abs(offs),
+ *    the negtive `offs` is special for optimizing the large offset which >2047.
+ *    when offs >2047 we can't encode one instruction to load/store the data,
+ *    if there are several load/store at this case, you have to repeat the similar
+ *    large offs with reduntant instructions and maybe eat up the `SC_IG_BUFFER_SIZE`.
+ *
+ *    Optimize the following:
+ *      lu12i.w  x0, 0x0
+ *      ori  x0, x0, 0x9ac
+ *      add.d  x0, x0, fp
+ *      fst.s  fa0, x0, 0
+ *
+ *    For the offs within range [0,0x7ff], using one instruction:
+ *      ori  x0, x0, offs
+ *    For the offs within range [0x1000,0xffffffff], using two instruction
+ *      lu12i.w  x0, offs-hi-20bits
+ *      ori  x0, x0, offs-low-12bits
+ *
+ *    Store/Load the data:
+ *      fstx.s  fa0, x0, fp
+ *
+ *    If the store/load are repeated,
+ *      addi_d  x0,x0,sizeof(type)
+ *      fstx.s  fa0, x0, fp
+ *
  */
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
-    // assert(offs >= 0);
     ssize_t imm;
 
-    emitAttr size = EA_SIZE(attr); // it's better confirm attr with ins.
+    emitAttr size = EA_SIZE(attr);
 
 #ifdef DEBUG
     switch (ins)
     {
         case INS_st_b:
         case INS_st_h:
+
         case INS_st_w:
         case INS_fst_s:
-        // case INS_swl:
-        // case INS_swr:
-        // case INS_sdl:
-        // case INS_sdr:
+
         case INS_st_d:
         case INS_fst_d:
             break;
 
         default:
-            NYI("emitIns_S_R"); // FP locals?
+            NYI("emitIns_S_R");
             return;
 
     } // end switch (ins)
@@ -806,12 +832,14 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     appendToCurIG(id);
 }
 
+/*
+ *  Special notes for `offs`, please see the comment for `emitter::emitIns_S_R`.
+ */
 void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
-    // assert(offs >= 0);
     ssize_t imm;
 
-    emitAttr size = EA_SIZE(attr); // it's better confirm attr with ins.
+    emitAttr size = EA_SIZE(attr);
 
 #ifdef DEBUG
     switch (ins)
@@ -829,12 +857,6 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         case INS_ld_d:
         case INS_fld_d:
 
-            // case INS_lwl:
-            // case INS_lwr:
-
-            // case INS_ldl:
-            // case INS_ldr:
-            // assert(isValidGeneralDatasize(size) || isValidVectorDatasize(size));
             break;
 
         case INS_lea:
@@ -842,7 +864,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             break;
 
         default:
-            NYI("emitIns_R_S"); // FP locals?
+            NYI("emitIns_R_S");
             return;
 
     } // end switch (ins)
@@ -896,13 +918,11 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             code = emitInsCode(ins);
             D_INST_2RI12(code, reg1 /* & 0x1f*/, REG_RA, imm3 ? imm2 - imm3 : imm2);
         }
-        // reg2 = REG_RA;
     }
 
     instrDesc* id = emitNewInstr(attr);
 
     id->idReg1(reg1);
-    // id->idReg2(reg2);//not used.
 
     id->idIns(ins);
 

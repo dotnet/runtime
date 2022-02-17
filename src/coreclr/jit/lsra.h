@@ -1003,19 +1003,16 @@ private:
     void buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
-#if defined(UNIX_AMD64_ABI)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
     // For AMD64 on SystemV machines. This method
     // is called as replacement for raUpdateRegStateForArg
     // that is used on Windows. On System V systems a struct can be passed
     // partially using registers from the 2 register files.
-    void unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc);
-#endif // defined(UNIX_AMD64_ABI)
-
-#if defined(TARGET_LOONGARCH64)
+    //
     // For LoongArch64's ABI, a struct can be passed
     // partially using registers from the 2 register files.
-    void LoongArch64UpdateRegStateForArg(LclVarDsc* argDsc);
-#endif
+    void UpdateRegStateForStructArg(LclVarDsc* argDsc);
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
 
     // Update reg state for an incoming register argument
     void updateRegStateForArg(LclVarDsc* argDsc);

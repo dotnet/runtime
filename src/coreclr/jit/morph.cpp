@@ -5515,6 +5515,11 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
 #ifdef TARGET_LOONGARCH64
         else if ((op1->TypeGet() == TYP_LONG) && (ad2->TypeGet() == TYP_INT))
         {
+            // For LoongArch64's instructions operation of the 64bits and 32bits using the whole
+            // 64bits-width register which is unlike the AMD64 and ARM64.
+            // And the INT type instruction will be signed-extend by default.
+            // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
+            // will be signed-extend by default.
             new_op1->gtType = TYP_LONG;
         }
 #endif
@@ -5812,7 +5817,14 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             noway_assert(index2 != nullptr);
         }
 
-#ifndef TARGET_LOONGARCH64
+#ifdef TARGET_LOONGARCH64
+        // For LoongArch64's instructions operation of the 64bits and 32bits using the whole
+        // 64bits-width register which is unlike the AMD64 and ARM64.
+        // And the INT type instruction will be signed-extend by default.
+        // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
+        // will be signed-extend by default.
+        GenTree* arrLen       = gtNewArrLen(TYP_INT, arrRef, (int)lenOffs, compCurBB);
+#else
         // Next introduce a GT_BOUNDS_CHECK node
         var_types bndsChkType = TYP_INT; // By default, try to use 32-bit comparison for array bounds check.
 
@@ -5832,8 +5844,6 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         {
             arrLen = gtNewCastNode(bndsChkType, arrLen, true, bndsChkType);
         }
-#else
-        GenTree* arrLen                  = gtNewArrLen(TYP_INT, arrRef, (int)lenOffs, compCurBB);
 #endif
 
         GenTreeBoundsChk* arrBndsChk = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, arrLen, SCK_RNGCHK_FAIL);
@@ -5854,6 +5864,11 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 #ifdef TARGET_64BIT
 #ifndef TARGET_LOONGARCH64
     // Widen 'index' on 64-bit targets
+    // But For LoongArch64's instructions operation of the 64bits and 32bits using the whole
+    // 64bits-width register which is unlike the AMD64 and ARM64.
+    // And the INT type instruction will be signed-extend by default.
+    // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
+    // will be signed-extend by default.
     if (index->TypeGet() != TYP_I_IMPL)
     {
         if (index->OperGet() == GT_CNS_INT)
@@ -14532,7 +14547,12 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
             if (!varTypeIsGC(ad1->TypeGet()) && !varTypeIsGC(op2->TypeGet()))
             {
 #ifdef TARGET_LOONGARCH64
-                if ((op2->TypeGet() == TYP_LONG) /*&& (op1->TypeGet() == TYP_INT)*/)
+                // For LoongArch64's instructions operation of the 64bits and 32bits using the whole
+                // 64bits-width register which is unlike the AMD64 and ARM64.
+                // And the INT type instruction will be signed-extend by default.
+                // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
+                // will be signed-extend by default.
+                if (op2->TypeGet() == TYP_LONG)
                 {
                     op1->gtType = TYP_LONG;
                 }
@@ -18255,6 +18275,11 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
 {
 // We expect 'addr' to be an address at this point.
 #ifdef TARGET_LOONGARCH64
+    // For LoongArch64's instructions operation of the 64bits and 32bits using the whole
+    // 64bits-width register which is unlike the AMD64 and ARM64.
+    // And the INT type instruction will be signed-extend by default.
+    // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
+    // will be signed-extend by default.
     assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_INT ||
            addr->TypeGet() == TYP_REF);
 #else

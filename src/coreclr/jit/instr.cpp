@@ -67,7 +67,7 @@ const char* CodeGen::genInsName(instruction ins)
         #include "instrs.h"
 
 #elif defined(TARGET_LOONGARCH64)
-        #define INSTS(id, nm, fp, ldst, fmt, e1) nm,
+        #define INST(id, nm, fp, ldst, fmt, e1) nm,
         #include "instrs.h"
 
 #else
@@ -542,9 +542,7 @@ void CodeGen::inst_RV_RV_RV(instruction ins,
 {
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3, flags);
-#elif defined(TARGET_LOONGARCH64)
-    GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3);
-#elif defined(TARGET_XARCH)
+#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
     GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3);
 #else
     NYI("inst_RV_RV_RV");
@@ -902,11 +900,12 @@ AGAIN:
             }
 #else // !TARGET_ARM
 #ifdef TARGET_LOONGARCH64
+            // For LoongArch64-ABI, the float arg might be passed by integer register,
+            // when there is no float register left but there is integer register(s) left.
             if (emitter::isFloatReg(reg))
                 assert((ins == INS_fld_d) || (ins == INS_fld_s));
             else if (emitter::isGeneralRegister(reg) && (ins != INS_lea))
-            { // TODO should amend for LOONGARCH64 !!!
-                // assert((ins==INS_ld_d) || (ins==INS_ld_w));
+            {
                 ins = size == EA_4BYTE ? INS_ld_w : INS_ld_d;
             }
 #endif
@@ -1493,9 +1492,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
  */
 instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 {
-#ifdef TARGET_LOONGARCH64
-    assert(!"unimplemented yet on LoongArch64 for unused.");
-#endif
+    NYI_LOONGARCH64("ins_Move_Extend");
 
     instruction ins = INS_invalid;
 
@@ -1678,8 +1675,6 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         }
 #elif defined(TARGET_ARM64)
         return INS_ldr;
-//#elif defined(TARGET_LOONGARCH64)
-//        //TODO: add SIMD for LoongArch64.
 #else
         assert(!"ins_Load with SIMD type");
 #endif
@@ -1780,7 +1775,6 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
     }
     else
     {
-        // assert((TYP_LONG == srcType) || (TYP_ULONG == srcType));
         ins = INS_ld_d; // default ld_d.
     }
 #else
@@ -2008,7 +2002,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         ins = aligned ? INS_stx_h : INS_st_h;
     else if ((TYP_INT == dstType) || (TYP_UINT == dstType))
         ins = aligned ? INS_stx_w : INS_st_w;
-    else // if ((TYP_LONG == dstType) || (TYP_ULONG == dstType) || (TYP_REF == dstType))
+    else
         ins = aligned ? INS_stx_d : INS_st_d;
 #else
     NYI("ins_Store");

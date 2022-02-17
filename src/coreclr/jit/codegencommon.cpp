@@ -140,7 +140,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 #endif // TARGET_ARM64
 
 #ifdef TARGET_LOONGARCH64
-    SetHasTailCalls(false);
     genSaveFpRaWithAllCalleeSavedRegisters = false;
 #endif // TARGET_LOONGARCH64
 }
@@ -1757,72 +1756,6 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 }
 #endif // TARGET_ARMARCH
 
-#ifdef TARGET_LOONGARCH64
-//------------------------------------------------------------------------
-// genEmitGSCookieCheck: Generate code to check that the GS cookie
-// wasn't thrashed by a buffer overrun.
-//
-void CodeGen::genEmitGSCookieCheck(bool pushReg)
-{
-    noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
-
-    // Make sure that the return register is reported as live GC-ref so that any GC that kicks in while
-    // executing GS cookie check will not collect the object pointed to by REG_INTRET (R0).
-    if (!pushReg && (compiler->info.compRetType == TYP_REF))
-        gcInfo.gcRegGCrefSetCur |= RBM_INTRET;
-
-    // We need two temporary registers, to load the GS cookie values and compare them. We can't use
-    // any argument registers if 'pushReg' is true (meaning we have a JMP call). They should be
-    // callee-trash registers, which should not contain anything interesting at this point.
-    // We don't have any IR node representing this check, so LSRA can't communicate registers
-    // for us to use.
-
-    regNumber regGSConst = REG_GSCOOKIE_TMP_0;
-    regNumber regGSValue = REG_GSCOOKIE_TMP_1;
-
-    if (compiler->gsGlobalSecurityCookieAddr == nullptr)
-    {
-        // load the GS cookie constant into a reg
-        //
-        genSetRegToIcon(regGSConst, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
-    }
-    else
-    {
-        //// Ngen case - GS cookie constant needs to be accessed through an indirection.
-        // instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        // GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, regGSConst, regGSConst, 0);
-        if (compiler->opts.compReloc)
-        {
-            GetEmitter()->emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, regGSConst,
-                                       (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        }
-        else
-        { ////TODO:LoongArch64 should amend for optimize!
-            // GetEmitter()->emitIns_R_I(INS_pcaddu12i, EA_PTRSIZE, regGSConst,
-            // (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-            // GetEmitter()->emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, regGSConst, regGSConst, );
-            GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, regGSConst,
-                                      ((ssize_t)compiler->gsGlobalSecurityCookieAddr & 0xfffff000) >> 12);
-            GetEmitter()->emitIns_R_I(INS_lu32i_d, EA_PTRSIZE, regGSConst,
-                                      (ssize_t)compiler->gsGlobalSecurityCookieAddr >> 32);
-            GetEmitter()->emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, regGSConst, regGSConst,
-                                        ((ssize_t)compiler->gsGlobalSecurityCookieAddr & 0xfff) >> 2);
-        }
-        regSet.verifyRegUsed(regGSConst);
-    }
-    // Load this method's GS value from the stack frame
-    GetEmitter()->emitIns_R_S(INS_ld_d, EA_PTRSIZE, regGSValue, compiler->lvaGSSecurityCookie, 0);
-
-    // Compare with the GC cookie constant
-    BasicBlock* gsCheckBlk = genCreateTempLabel();
-    GetEmitter()->emitIns_J_cond_la(INS_beq, gsCheckBlk, regGSConst, regGSValue);
-
-    // regGSConst and regGSValue aren't needed anymore, we can use them for helper call
-    genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN, regGSConst);
-    genDefineTempLabel(gsCheckBlk);
-}
-#endif // TARGET_LOONGARCH64
-
 /*****************************************************************************
  *
  *  Generate an exit sequence for a return from a method (note: when compiling
@@ -3317,7 +3250,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
 #endif
 
-#if defined(TARGET_LOONGARCH64)
+#ifdef TARGET_LOONGARCH64
 void CodeGen::genFnPrologCalleeRegArgs()
 {
     assert(!(intRegState.rsCalleeRegArgMaskLiveIn & floatRegState.rsCalleeRegArgMaskLiveIn));
@@ -3538,7 +3471,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     baseOffset = 8;
                     base += 8;
 
-                    GetEmitter()->emitIns_R_R_Imm(INS_ld_d, size /*EA_PTRSIZE*/, REG_SCRATCH, REG_SPBASE,
+                    GetEmitter()->emitIns_R_R_Imm(INS_ld_d, size, REG_SCRATCH, REG_SPBASE,
                                                   genTotalFrameSize());
                     if ((-2048 <= base) && (base < 2048))
                     {
@@ -3608,7 +3541,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
     assert(!regArgMaskLive);
 }
-#else //! defined(TARGET_LOONGARCH64)
+#else
 void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState)
 {
 #ifdef DEBUG
@@ -4979,7 +4912,6 @@ void CodeGen::genEnregisterIncomingStackArgs()
 #ifdef TARGET_LOONGARCH64
         {
             bool FPbased;
-            // int baseOffset = (regArgTab[argNum].slot - 1) * slotSize;
             int base = compiler->lvaFrameAddress(varNum, &FPbased);
 
             if ((-2048 <= base) && (base < 2048))
@@ -5951,214 +5883,6 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         inst_RV(INS_pop, REG_EDI, TYP_I_IMPL);
     }
     noway_assert(compiler->compCalleeRegsPushed == popCount);
-}
-
-#elif defined(TARGET_LOONGARCH64)
-void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
-{
-    assert(compiler->compGeneratingEpilog);
-
-    regMaskTP rsRestoreRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
-
-    if (isFramePointerUsed())
-    {
-        rsRestoreRegs |= RBM_FPBASE;
-    }
-
-    rsRestoreRegs |= RBM_RA; // We must save/restore the return address.
-
-    regMaskTP regsToRestoreMask = rsRestoreRegs;
-
-    int totalFrameSize = genTotalFrameSize();
-
-    int calleeSaveSPOffset = 0; // This will be the starting place for restoring
-                                // the callee-saved registers, in decreasing order.
-    int frameType         = 0;  // An indicator of what type of frame we are popping.
-    int calleeSaveSPDelta = 0;  // Amount to add to SP after callee-saved registers have been restored.
-
-    if (isFramePointerUsed())
-    {
-        if (totalFrameSize <= 2047)
-        {
-            if (compiler->compLocallocUsed)
-            {
-                int SPtoFPdelta = genSPtoFPdelta();
-                // Restore sp from fp
-                GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -SPtoFPdelta);
-                compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
-            }
-
-            if (!IsSaveFpRaWithAllCalleeSavedRegisters())
-            {
-                JITDUMP("Frame type 1(save FP/RA at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
-                        dspBool(compiler->compLocallocUsed));
-
-                frameType = 1;
-
-                regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
-
-                calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
-            }
-            else
-            {
-                frameType = 2;
-
-                calleeSaveSPOffset = compiler->compLclFrameSize;
-
-                JITDUMP("Frame type 2(Top). #outsz=%d; #framesz=%d; localloc? %s\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
-                        dspBool(compiler->compLocallocUsed));
-            }
-            // calleeSaveSPDelta = 0;
-        }
-        else
-        {
-            if (!IsSaveFpRaWithAllCalleeSavedRegisters())
-            {
-                JITDUMP("Frame type 3(save FP/RA at bottom). #outsz=%d; #framesz=%d; #calleeSaveRegsPushed:%d; "
-                        "localloc? %s\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
-                        dspBool(compiler->compLocallocUsed));
-
-                frameType = 3;
-
-                int outSzAligned;
-                if (compiler->lvaOutgoingArgSpaceSize >= 2040)
-                {
-                    int offset         = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
-                    calleeSaveSPDelta  = AlignUp((UINT)offset, STACK_ALIGN);
-                    calleeSaveSPOffset = calleeSaveSPDelta - offset;
-
-                    int offset2       = totalFrameSize - calleeSaveSPDelta - compiler->lvaOutgoingArgSpaceSize;
-                    calleeSaveSPDelta = AlignUp((UINT)offset2, STACK_ALIGN);
-                    offset2           = calleeSaveSPDelta - offset2;
-
-                    if (compiler->compLocallocUsed)
-                    {
-                        // Restore sp from fp
-                        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -offset2);
-                        compiler->unwindSetFrameReg(REG_FPBASE, offset2);
-                    }
-                    else
-                    {
-                        outSzAligned = compiler->lvaOutgoingArgSpaceSize & ~0xf;
-                        // if (outSzAligned > 0)
-                        {
-                            genStackPointerAdjustment(outSzAligned, REG_R21, nullptr, /* reportUnwindData */ true);
-                        }
-                    }
-
-                    regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
-
-                    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset2 + 8);
-                    compiler->unwindSaveReg(REG_RA, offset2 + 8);
-
-                    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
-                    compiler->unwindSaveReg(REG_FP, offset2);
-
-                    genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
-
-                    calleeSaveSPDelta = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
-                    calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDelta, STACK_ALIGN);
-                }
-                else
-                {
-                    int offset2 = compiler->lvaOutgoingArgSpaceSize;
-                    if (compiler->compLocallocUsed)
-                    {
-                        // Restore sp from fp
-                        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -offset2);
-                        compiler->unwindSetFrameReg(REG_FPBASE, offset2);
-                    }
-
-                    regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
-
-                    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset2 + 8);
-                    compiler->unwindSaveReg(REG_RA, offset2 + 8);
-
-                    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
-                    compiler->unwindSaveReg(REG_FP, offset2);
-
-                    calleeSaveSPOffset = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
-                    calleeSaveSPDelta  = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
-                    calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPOffset;
-
-                    genStackPointerAdjustment(totalFrameSize - calleeSaveSPDelta, REG_R21, nullptr,
-                                              /* reportUnwindData */ true);
-                }
-            }
-            else
-            {
-                frameType = 4;
-
-                JITDUMP("Frame type 4(Top). #outsz=%d; #framesz=%d; #calleeSaveRegsPushed:%d; localloc? %s\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
-                        dspBool(compiler->compLocallocUsed));
-
-                calleeSaveSPOffset = totalFrameSize - compiler->compLclFrameSize;
-                calleeSaveSPDelta  = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
-                calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPOffset;
-
-                if (compiler->compLocallocUsed)
-                {
-                    calleeSaveSPDelta = calleeSaveSPOffset + REGSIZE_BYTES;
-
-                    // Restore sp from fp
-                    GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -calleeSaveSPDelta);
-                    compiler->unwindSetFrameReg(REG_FPBASE, calleeSaveSPDelta);
-                }
-                else
-                {
-                    calleeSaveSPDelta = totalFrameSize - calleeSaveSPDelta;
-                    genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
-                }
-
-                calleeSaveSPDelta = totalFrameSize - compiler->compLclFrameSize;
-                calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDelta, STACK_ALIGN);
-            }
-        }
-    }
-    else
-    {
-        // No frame pointer (no chaining).
-        NYI("Frame without frame pointer");
-        calleeSaveSPOffset = 0;
-    }
-
-    JITDUMP("    calleeSaveSPOffset=%d, calleeSaveSPDelta=%d\n", calleeSaveSPOffset, calleeSaveSPDelta);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSPOffset, calleeSaveSPDelta);
-
-    if (frameType == 1)
-    {
-        calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize;
-
-        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, calleeSaveSPOffset + 8);
-        compiler->unwindSaveReg(REG_RA, calleeSaveSPOffset + 8);
-
-        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, calleeSaveSPOffset);
-        compiler->unwindSaveReg(REG_FP, calleeSaveSPOffset);
-
-        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
-        compiler->unwindAllocStack(totalFrameSize);
-    }
-    else if (frameType == 2)
-    {
-        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
-        compiler->unwindAllocStack(totalFrameSize);
-    }
-    else if (frameType == 3)
-    {
-        // genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
-    }
-    else if (frameType == 4)
-    {
-        // genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
-    }
-    else
-    {
-        unreached();
-    }
 }
 
 #endif // TARGET*
@@ -9374,176 +9098,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 }
 
 #elif defined(TARGET_LOONGARCH64)
-
-void CodeGen::genFnEpilog(BasicBlock* block)
-{
-#ifdef DEBUG
-    if (verbose)
-        printf("*************** In genFnEpilog()\n");
-#endif // DEBUG
-
-    ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
-
-    VarSetOps::Assign(compiler, gcInfo.gcVarPtrSetCur, GetEmitter()->emitInitGCrefVars);
-    gcInfo.gcRegGCrefSetCur = GetEmitter()->emitInitGCrefRegs;
-    gcInfo.gcRegByrefSetCur = GetEmitter()->emitInitByrefRegs;
-
-#ifdef DEBUG
-    if (compiler->opts.dspCode)
-        printf("\n__epilog:\n");
-
-    if (verbose)
-    {
-        printf("gcVarPtrSetCur=%s ", VarSetOps::ToString(compiler, gcInfo.gcVarPtrSetCur));
-        dumpConvertedVarSet(compiler, gcInfo.gcVarPtrSetCur);
-        printf(", gcRegGCrefSetCur=");
-        printRegMaskInt(gcInfo.gcRegGCrefSetCur);
-        GetEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur);
-        printf(", gcRegByrefSetCur=");
-        printRegMaskInt(gcInfo.gcRegByrefSetCur);
-        GetEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur);
-        printf("\n");
-    }
-#endif // DEBUG
-
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
-
-    GenTree* lastNode = block->lastNode();
-
-    // Method handle and address info used in case of jump epilog
-    CORINFO_METHOD_HANDLE methHnd = nullptr;
-    CORINFO_CONST_LOOKUP  addrInfo;
-    addrInfo.addr       = nullptr;
-    addrInfo.accessType = IAT_VALUE;
-
-    if (jmpEpilog && lastNode->gtOper == GT_JMP)
-    {
-        methHnd = (CORINFO_METHOD_HANDLE)lastNode->AsVal()->gtVal1;
-        compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
-    }
-
-    compiler->unwindBegEpilog();
-
-    if (jmpEpilog)
-    {
-        SetHasTailCalls(true);
-
-        noway_assert(block->bbJumpKind == BBJ_RETURN);
-        noway_assert(block->GetFirstLIRNode() != nullptr);
-
-        /* figure out what jump we have */
-        GenTree* jmpNode = lastNode;
-#if !FEATURE_FASTTAILCALL
-        noway_assert(jmpNode->gtOper == GT_JMP);
-#else  // FEATURE_FASTTAILCALL
-        // armarch
-        // If jmpNode is GT_JMP then gtNext must be null.
-        // If jmpNode is a fast tail call, gtNext need not be null since it could have embedded stmts.
-        noway_assert((jmpNode->gtOper != GT_JMP) || (jmpNode->gtNext == nullptr));
-
-        // Could either be a "jmp method" or "fast tail call" implemented as epilog+jmp
-        noway_assert((jmpNode->gtOper == GT_JMP) ||
-                     ((jmpNode->gtOper == GT_CALL) && jmpNode->AsCall()->IsFastTailCall()));
-
-        // The next block is associated with this "if" stmt
-        if (jmpNode->gtOper == GT_JMP)
-#endif // FEATURE_FASTTAILCALL
-        {
-            // Simply emit a jump to the methodHnd. This is similar to a call so we can use
-            // the same descriptor with some minor adjustments.
-            assert(methHnd != nullptr);
-            assert(addrInfo.addr != nullptr);
-
-            emitter::EmitCallType callType;
-            void*                 addr;
-            regNumber             indCallReg;
-            switch (addrInfo.accessType)
-            {
-                case IAT_VALUE:
-                // TODO-LOONGARCH64-CQ: using B/BL for optimization.
-                case IAT_PVALUE:
-                    // Load the address into a register, load indirect and call  through a register
-                    // We have to use REG_INDIRECT_CALL_TARGET_REG since we assume the argument registers are in use
-                    callType   = emitter::EC_INDIR_R;
-                    indCallReg = REG_INDIRECT_CALL_TARGET_REG;
-                    addr       = NULL;
-                    instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)addrInfo.addr);
-                    if (addrInfo.accessType == IAT_PVALUE)
-                    {
-                        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, indCallReg, indCallReg, 0);
-                        regSet.verifyRegUsed(indCallReg);
-                    }
-                    break;
-
-                case IAT_RELPVALUE:
-                {
-                    // Load the address into a register, load relative indirect and call through a register
-                    // We have to use R12 since we assume the argument registers are in use
-                    // LR is used as helper register right before it is restored from stack, thus,
-                    // all relative address calculations are performed before LR is restored.
-                    callType   = emitter::EC_INDIR_R;
-                    indCallReg = REG_T2;
-                    addr       = NULL;
-
-                    regSet.verifyRegUsed(indCallReg);
-                    break;
-                }
-
-                case IAT_PPVALUE:
-                default:
-                    NO_WAY("Unsupported JMP indirection");
-            }
-
-            /* Simply emit a jump to the methodHnd. This is similar to a call so we can use
-             * the same descriptor with some minor adjustments.
-             */
-
-            genPopCalleeSavedRegisters(true);
-
-            // clang-format off
-            GetEmitter()->emitIns_Call(callType,
-                                       methHnd,
-                                       INDEBUG_LDISASM_COMMA(nullptr)
-                                       addr,
-                                       0,          // argSize
-                                       EA_UNKNOWN // retSize
-                                       MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN), // secondRetSize
-                                       gcInfo.gcVarPtrSetCur,
-                                       gcInfo.gcRegGCrefSetCur,
-                                       gcInfo.gcRegByrefSetCur,
-                                       DebugInfo(),
-                                       indCallReg,    // ireg
-                                       REG_NA,        // xreg
-                                       0,             // xmul
-                                       0,             // disp
-                                       true);         // isJump
-            // clang-format on
-            CLANG_FORMAT_COMMENT_ANCHOR;
-        }
-#if FEATURE_FASTTAILCALL
-        else
-        {
-            genPopCalleeSavedRegisters(true);
-            // Fast tail call.
-            // Call target = REG_FASTTAILCALL_TARGET
-            // https://github.com/dotnet/coreclr/issues/4827
-            // Do we need a special encoding for stack walker like rex.w prefix for x64?
-
-            // TODO for LA: whether the relative address is enough for optimize?
-            GetEmitter()->emitIns_R_R_I(INS_jirl, emitTypeSize(TYP_I_IMPL), REG_R0, REG_FASTTAILCALL_TARGET, 0);
-        }
-#endif // FEATURE_FASTTAILCALL
-    }
-    else
-    {
-        genPopCalleeSavedRegisters(false);
-
-        GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_RA, 0);
-        compiler->unwindReturn(REG_RA);
-    }
-
-    compiler->unwindEndEpilog();
-}
+// see the codegenloongarch64.cpp
 
 #else // TARGET*
 #error Unsupported or unset target architecture
