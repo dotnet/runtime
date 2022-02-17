@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (!state.IsContinuation && reader.TokenType == JsonTokenType.Null)
             {
-                value = default;
+                value = null;
                 return true;
             }
 
@@ -38,7 +38,7 @@ namespace System.Text.Json.Serialization.Converters
                 return true;
             }
 
-            value = default;
+            value = null;
             return false;
         }
 
