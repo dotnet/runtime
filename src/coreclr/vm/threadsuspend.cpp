@@ -2577,7 +2577,13 @@ int RedirectedHandledJITCaseExceptionFilter(
     pFrame->Pop();
 
     // Copy the saved context record into the EH context;
-    ReplaceExceptionContextRecord(pExcepPtrs->ContextRecord, pCtx);
+    // NB: cannot use ReplaceExceptionContextRecord here.
+    //     these contexts may contain extended registers and may have different format
+    //     for reasons such as alignment or context compaction
+    //
+    // REVIEW: CopyContext may fail. in theory. How should we handle that? FailFast?
+    CONTEXT* pTarget = pExcepPtrs->ContextRecord;
+    CopyContext(pTarget, pTarget->ContextFlags, pCtx);
 
     DWORD espValue = pCtx->Esp;
 
