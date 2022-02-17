@@ -13,8 +13,7 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
-    <!-- We only use the COM interfaces from DiaSymReader so this effectively removes warnings until DiaSymReader
-         can be made fully trimmable. -->
+    <!-- Trim all dependent assemblies as though they were all marked IsTrimmable. -->
     <TrimmerDefaultAction>link</TrimmerDefaultAction>
   </PropertyGroup>
 
