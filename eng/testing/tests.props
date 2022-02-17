@@ -40,9 +40,9 @@
 
   <ItemGroup Condition="'$(MonoTestGCMode)' == 'coop'">
     <RunScriptCommands Condition="'$(TargetsWindows)' == 'true' or '$(TargetPlatformIdentifier)' == 'windows'" 
-      Include="set MONO_GC_SUSPEND=coop;set MONO_SLEEP_ABORT_LIMIT=250" />
+      Include="set MONO_THREADS_SUSPEND=coop;set MONO_SLEEP_ABORT_LIMIT=250" />
     <RunScriptCommands Condition="'$(TargetsWindows)' != 'true' and '$(TargetPlatformIdentifier)' != 'windows'" 
-      Include="export MONO_GC_SUSPEND=coop;export MONO_SLEEP_ABORT_LIMIT=250" />
+      Include="export MONO_THREADS_SUSPEND=coop;export MONO_SLEEP_ABORT_LIMIT=250" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestRunRequiresLiveRefPack)' == 'true'">
