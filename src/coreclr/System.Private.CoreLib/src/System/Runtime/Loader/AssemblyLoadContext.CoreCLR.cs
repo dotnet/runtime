@@ -81,10 +81,8 @@ namespace System.Runtime.Loader
         /// </summary>
         internal Assembly LoadFromInMemoryModule(IntPtr moduleHandle)
         {
-            if (moduleHandle == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(moduleHandle));
-            }
+            ArgumentNullException.ThrowIfNull(moduleHandle);
+
             lock (_unloadLock)
             {
                 VerifyIsAlive();
@@ -138,18 +136,12 @@ namespace System.Runtime.Loader
         private static partial IntPtr GetLoadContextForAssembly(QCallAssembly assembly);
 
         // Returns the load context in which the specified assembly has been loaded
-        public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
+        public static AssemblyLoadContext? GetLoadContext(Assembly assembly!!)
         {
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
-
-            AssemblyLoadContext? loadContextForAssembly = null;
-
             RuntimeAssembly? rtAsm = GetRuntimeAssembly(assembly);
 
             // We only support looking up load context for runtime assemblies.
+            AssemblyLoadContext? loadContextForAssembly = null;
             if (rtAsm != null)
             {
                 RuntimeAssembly runtimeAssembly = rtAsm;

@@ -13,10 +13,8 @@ namespace System.Drawing.Drawing2D
     {
         public PathGradientBrush(PointF[] points) : this(points, WrapMode.Clamp) { }
 
-        public unsafe PathGradientBrush(PointF[] points, WrapMode wrapMode)
+        public unsafe PathGradientBrush(PointF[] points!!, WrapMode wrapMode)
         {
-            if (points == null)
-                throw new ArgumentNullException(nameof(points));
             if (wrapMode < WrapMode.Tile || wrapMode > WrapMode.Clamp)
                 throw new InvalidEnumArgumentException(nameof(wrapMode), unchecked((int)wrapMode), typeof(WrapMode));
 
@@ -37,10 +35,8 @@ namespace System.Drawing.Drawing2D
 
         public PathGradientBrush(Point[] points) : this(points, WrapMode.Clamp) { }
 
-        public unsafe PathGradientBrush(Point[] points, WrapMode wrapMode)
+        public unsafe PathGradientBrush(Point[] points!!, WrapMode wrapMode)
         {
-            if (points == null)
-                throw new ArgumentNullException(nameof(points));
             if (wrapMode < WrapMode.Tile || wrapMode > WrapMode.Clamp)
                 throw new InvalidEnumArgumentException(nameof(wrapMode), unchecked((int)wrapMode), typeof(WrapMode));
 
@@ -59,11 +55,8 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        public PathGradientBrush(GraphicsPath path)
+        public PathGradientBrush(GraphicsPath path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             Gdip.CheckStatus(Gdip.GdipCreatePathGradientFromPath(new HandleRef(path, path._nativePath), out IntPtr nativeBrush));
             SetNativeBrushInternal(nativeBrush);
         }
@@ -338,10 +331,8 @@ namespace System.Drawing.Drawing2D
 
         public void MultiplyTransform(Matrix matrix) => MultiplyTransform(matrix, MatrixOrder.Prepend);
 
-        public void MultiplyTransform(Matrix matrix, MatrixOrder order)
+        public void MultiplyTransform(Matrix matrix!!, MatrixOrder order)
         {
-            if (matrix == null)
-                throw new ArgumentNullException(nameof(matrix));
 
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
             // with the libgdiplus backend. Simulate a nop for compatability with GDI+.

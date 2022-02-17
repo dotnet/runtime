@@ -264,9 +264,9 @@ namespace System.Net.Http
                 {
                     HeaderEntry header = entries[i];
 
-                    if (header.Key.KnownHeader != null)
+                    if (header.Key.KnownHeader is KnownHeader knownHeader)
                     {
-                        await WriteBytesAsync(header.Key.KnownHeader.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
+                        await WriteBytesAsync(knownHeader.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
                     }
                     else
                     {
@@ -282,7 +282,7 @@ namespace System.Net.Http
 
                         await WriteStringAsync(_headerValues[0], async, valueEncoding).ConfigureAwait(false);
 
-                        if (cookiesFromContainer != null && header.Key.KnownHeader == KnownHeaders.Cookie)
+                        if (cookiesFromContainer != null && header.Key.Equals(KnownHeaders.Cookie))
                         {
                             await WriteTwoBytesAsync((byte)';', (byte)' ', async).ConfigureAwait(false);
                             await WriteStringAsync(cookiesFromContainer, async, valueEncoding).ConfigureAwait(false);
@@ -1056,7 +1056,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(line.Slice(0, pos))));
             }
 
-            if (isFromTrailer && descriptor.KnownHeader != null && (descriptor.KnownHeader.HeaderType & HttpHeaderType.NonTrailing) == HttpHeaderType.NonTrailing)
+            if (isFromTrailer && (descriptor.HeaderType & HttpHeaderType.NonTrailing) == HttpHeaderType.NonTrailing)
             {
                 // Disallowed trailer fields.
                 // A recipient MUST ignore fields that are forbidden to be sent in a trailer.

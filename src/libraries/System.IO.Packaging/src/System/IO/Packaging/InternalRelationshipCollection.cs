@@ -383,14 +383,8 @@ namespace System.IO.Packaging
         /// Null OK (ID will be generated).</param>
         /// <param name="parsing">Indicates whether the add call is made while parsing existing relationships
         /// from a relationship part, or we are adding a new relationship</param>
-        private PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string? id, bool parsing)
+        private PackageRelationship Add(Uri targetUri!!, TargetMode targetMode, string relationshipType!!, string? id, bool parsing)
         {
-            if (targetUri == null)
-                throw new ArgumentNullException(nameof(targetUri));
-
-            if (relationshipType == null)
-                throw new ArgumentNullException(nameof(relationshipType));
-
             ThrowIfInvalidRelationshipType(relationshipType);
 
             //Verify if the Enum value is valid

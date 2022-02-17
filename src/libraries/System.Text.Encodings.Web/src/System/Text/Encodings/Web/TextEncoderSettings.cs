@@ -24,13 +24,8 @@ namespace System.Text.Encodings.Web
         /// <summary>
         /// Instantiates the filter by cloning the allow list of another <see cref="TextEncoderSettings"/>.
         /// </summary>
-        public TextEncoderSettings(TextEncoderSettings other)
+        public TextEncoderSettings(TextEncoderSettings other!!)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
-
             _allowedCodePointsBitmap = other.GetAllowedCodePointsBitmap(); // copy byval
         }
 
@@ -38,12 +33,8 @@ namespace System.Text.Encodings.Web
         /// Instantiates the filter where only the character ranges specified by <paramref name="allowedRanges"/>
         /// are allowed by the filter.
         /// </summary>
-        public TextEncoderSettings(params UnicodeRange[] allowedRanges)
+        public TextEncoderSettings(params UnicodeRange[] allowedRanges!!)
         {
-            if (allowedRanges == null)
-            {
-                throw new ArgumentNullException(nameof(allowedRanges));
-            }
             AllowRanges(allowedRanges);
         }
 
@@ -58,13 +49,8 @@ namespace System.Text.Encodings.Web
         /// <summary>
         /// Allows all characters specified by <paramref name="characters"/> through the filter.
         /// </summary>
-        public virtual void AllowCharacters(params char[] characters)
+        public virtual void AllowCharacters(params char[] characters!!)
         {
-            if (characters == null)
-            {
-                throw new ArgumentNullException(nameof(characters));
-            }
-
             for (int i = 0; i < characters.Length; i++)
             {
                 _allowedCodePointsBitmap.AllowChar(characters[i]);
@@ -74,13 +60,8 @@ namespace System.Text.Encodings.Web
         /// <summary>
         /// Allows all code points specified by <paramref name="codePoints"/>.
         /// </summary>
-        public virtual void AllowCodePoints(IEnumerable<int> codePoints)
+        public virtual void AllowCodePoints(IEnumerable<int> codePoints!!)
         {
-            if (codePoints == null)
-            {
-                throw new ArgumentNullException(nameof(codePoints));
-            }
-
             foreach (var allowedCodePoint in codePoints)
             {
                 // If the code point can't be represented as a BMP character, skip it.
@@ -94,13 +75,8 @@ namespace System.Text.Encodings.Web
         /// <summary>
         /// Allows all characters specified by <paramref name="range"/> through the filter.
         /// </summary>
-        public virtual void AllowRange(UnicodeRange range)
+        public virtual void AllowRange(UnicodeRange range!!)
         {
-            if (range == null)
-            {
-                throw new ArgumentNullException(nameof(range));
-            }
-
             int firstCodePoint = range.FirstCodePoint;
             int rangeSize = range.Length;
             for (int i = 0; i < rangeSize; i++)
@@ -114,13 +90,8 @@ namespace System.Text.Encodings.Web
         /// <summary>
         /// Allows all characters specified by <paramref name="ranges"/> through the filter.
         /// </summary>
-        public virtual void AllowRanges(params UnicodeRange[] ranges)
+        public virtual void AllowRanges(params UnicodeRange[] ranges!!)
         {
-            if (ranges == null)
-            {
-                throw new ArgumentNullException(nameof(ranges));
-            }
-
             for (int i = 0; i < ranges.Length; i++)
             {
                 AllowRange(ranges[i]);
@@ -146,13 +117,8 @@ namespace System.Text.Encodings.Web
         /// <summary>
         /// Disallows all characters specified by <paramref name="characters"/> through the filter.
         /// </summary>
-        public virtual void ForbidCharacters(params char[] characters)
+        public virtual void ForbidCharacters(params char[] characters!!)
         {
-            if (characters == null)
-            {
-                throw new ArgumentNullException(nameof(characters));
-            }
-
             for (int i = 0; i < characters.Length; i++)
             {
                 _allowedCodePointsBitmap.ForbidChar(characters[i]);
@@ -162,13 +128,8 @@ namespace System.Text.Encodings.Web
         /// <summary>
         /// Disallows all characters specified by <paramref name="range"/> through the filter.
         /// </summary>
-        public virtual void ForbidRange(UnicodeRange range)
+        public virtual void ForbidRange(UnicodeRange range!!)
         {
-            if (range == null)
-            {
-                throw new ArgumentNullException(nameof(range));
-            }
-
             int firstCodePoint = range.FirstCodePoint;
             int rangeSize = range.Length;
             for (int i = 0; i < rangeSize; i++)
@@ -182,13 +143,8 @@ namespace System.Text.Encodings.Web
         /// <summary>
         /// Disallows all characters specified by <paramref name="ranges"/> through the filter.
         /// </summary>
-        public virtual void ForbidRanges(params UnicodeRange[] ranges)
+        public virtual void ForbidRanges(params UnicodeRange[] ranges!!)
         {
-            if (ranges == null)
-            {
-                throw new ArgumentNullException(nameof(ranges));
-            }
-
             for (int i = 0; i < ranges.Length; i++)
             {
                 ForbidRange(ranges[i]);

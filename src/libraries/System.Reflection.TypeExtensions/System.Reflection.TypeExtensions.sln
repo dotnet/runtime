@@ -3,7 +3,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib", ".
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{41438432-4DC0-4724-8C8F-0D100083490F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib.Generators", "..\System.Private.CoreLib\generators\System.Private.CoreLib.Generators.csproj", "{EAE41D82-CFFA-4934-89B2-399D12530E84}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib.Generators", "..\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj", "{EAE41D82-CFFA-4934-89B2-399D12530E84}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.TypeExtensions", "ref\System.Reflection.TypeExtensions.csproj", "{03C0F6B8-A04B-4822-8089-3918F02AD281}"
 EndProject

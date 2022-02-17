@@ -24,8 +24,9 @@ import {
     mono_wasm_debugger_log,
     mono_wasm_trace_logger,
     mono_wasm_add_dbg_command_received,
+    mono_wasm_change_debugger_log_level,
 } from "./debug";
-import { runtimeHelpers, setImportsAndExports } from "./imports";
+import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
 import { DotnetModuleConfigImports, DotnetModule } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
@@ -131,9 +132,9 @@ let exportedAPI: DotnetPublicAPI;
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
-    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, requirePromise: Promise<Function> },
+    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any },
-    replacements: { fetch: any, readAsync: any, require: any, requireOut: any },
+    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -190,6 +191,8 @@ function initializeImportsAndExports(
     replacements.fetch = runtimeHelpers.fetch;
     replacements.readAsync = readAsync_like;
     replacements.requireOut = module.imports.require;
+
+    replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
         module.disableDotnet6Compatibility = imports.isESM;
@@ -332,6 +335,7 @@ const INTERNAL: any = {
     mono_wasm_debugger_resume,
     mono_wasm_detach_debugger,
     mono_wasm_raise_debug_event,
+    mono_wasm_change_debugger_log_level,
     mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
 };
 

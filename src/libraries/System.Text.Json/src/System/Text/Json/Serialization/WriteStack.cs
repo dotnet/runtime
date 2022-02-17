@@ -98,7 +98,7 @@ namespace System.Text.Json
         /// </summary>
         public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
+            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
             Debug.Assert(options == jsonTypeInfo.Options);
             return Initialize(jsonTypeInfo, supportContinuation);
         }
@@ -132,7 +132,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    JsonTypeInfo jsonTypeInfo = Current.GetPolymorphicJsonPropertyInfo().RuntimeTypeInfo;
+                    JsonTypeInfo jsonTypeInfo = Current.GetPolymorphicJsonPropertyInfo().JsonTypeInfo;
                     JsonNumberHandling? numberHandling = Current.NumberHandling;
 
                     EnsurePushCapacity();

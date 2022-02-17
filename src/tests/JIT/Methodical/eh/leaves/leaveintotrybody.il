@@ -55,7 +55,7 @@
     } 
 
     .method public hidebysig static int32
-            Main(string[] args) cil managed
+            Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

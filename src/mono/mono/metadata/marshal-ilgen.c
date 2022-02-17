@@ -10,15 +10,15 @@
 
 #include "metadata/method-builder-ilgen.h"
 #include "metadata/method-builder-ilgen-internals.h"
-#include "object.h"
-#include "loader.h"
+#include <mono/metadata/object.h>
+#include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
 #include "metadata/marshal-ilgen.h"
 #include "metadata/tabledefs.h"
-#include "metadata/exception.h"
-#include "metadata/appdomain.h"
+#include <mono/metadata/exception.h>
+#include <mono/metadata/appdomain.h>
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/class-abi-details.h"
 #include "mono/metadata/class-init.h"
@@ -3221,6 +3221,10 @@ emit_marshal_scalar_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_CONV_RESULT:
 		/* no conversions necessary */
+		mono_mb_emit_stloc (mb, 3);
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
 		mono_mb_emit_stloc (mb, 3);
 		break;
 

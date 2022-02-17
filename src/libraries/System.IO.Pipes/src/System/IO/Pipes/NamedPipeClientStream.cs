@@ -87,13 +87,9 @@ namespace System.IO.Pipes
         }
 
         // Create a NamedPipeClientStream from an existing server pipe handle.
-        public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
+        public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle!!)
             : base(direction, 0)
         {
-            if (safePipeHandle == null)
-            {
-                throw new ArgumentNullException(nameof(safePipeHandle));
-            }
             if (safePipeHandle.IsInvalid)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));

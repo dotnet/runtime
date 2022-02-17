@@ -1811,6 +1811,8 @@ namespace System.Text.RegularExpressions.Generator
                 doneLabel = originalDoneLabel;
             }
 
+            // TODO https://github.com/dotnet/runtime/issues/62451:
+            // Replace this with a more robust mechanism.
             static bool PossiblyBacktracks(RegexNode node) => !(
                 // Certain nodes will never backtrack out of them
                 node.Kind is RegexNodeKind.Atomic or // atomic nodes by definition don't give up anything
@@ -2228,114 +2230,45 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emits the code to handle a multiple-character match.
-            void EmitMultiChar(RegexNode node, bool emitLengthCheck = true)
+            void EmitMultiChar(RegexNode node, bool emitLengthCheck)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Multi, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.Str is not null);
+                EmitMultiCharString(node.Str, IsCaseInsensitive(node), emitLengthCheck);
+            }
 
-                bool caseInsensitive = IsCaseInsensitive(node);
+            void EmitMultiCharString(string str, bool caseInsensitive, bool emitLengthCheck)
+            {
+                Debug.Assert(str.Length >= 2);
 
-                string str = node.Str!;
-                Debug.Assert(str.Length != 0);
-
-                const int MaxUnrollLength = 64;
-                if (str.Length <= MaxUnrollLength)
+                if (caseInsensitive) // StartsWith(..., XxIgnoreCase) won't necessarily be the same as char-by-char comparison
                 {
-                    // Unroll shorter strings.
+                    // This case should be relatively rare.  It will only occur with IgnoreCase and a series of non-ASCII characters.
 
-                    // For strings more than two characters and when performing case-sensitive searches, we try to do fewer comparisons
-                    // by comparing 2 or 4 characters at a time.  Because we might be compiling on one endianness and running on another,
-                    // both little and big endian values are emitted and which is used is selected at run-time.
-                    ReadOnlySpan<byte> byteStr = MemoryMarshal.AsBytes(str.AsSpan());
-                    bool useMultiCharReads = !caseInsensitive && byteStr.Length >= sizeof(uint);
-                    if (useMultiCharReads)
-                    {
-                        additionalDeclarations.Add("global::System.ReadOnlySpan<byte> byteSpan;");
-                        writer.WriteLine($"byteSpan = global::System.Runtime.InteropServices.MemoryMarshal.AsBytes({sliceSpan});");
-                    }
-
-                    writer.Write("if (");
-
-                    bool emittedFirstCheck = false;
                     if (emitLengthCheck)
                     {
-                        writer.Write($"(uint){sliceSpan}.Length < {sliceStaticPos + str.Length}");
-                        emittedFirstCheck = true;
+                        EmitSpanLengthCheck(str.Length);
                     }
 
-                    void EmitOr()
+                    using (EmitBlock(writer, $"for (int i = 0; i < {Literal(str)}.Length; i++)"))
                     {
-                        if (emittedFirstCheck)
+                        string textSpanIndex = sliceStaticPos > 0 ? $"i + {sliceStaticPos}" : "i";
+                        using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"{sliceSpan}[{textSpanIndex}]")} != {Literal(str)}[i])"))
                         {
-                            writer.WriteLine(" ||");
-                            writer.Write("    ");
+                            writer.WriteLine($"goto {doneLabel};");
                         }
-                        emittedFirstCheck = true;
-                    }
-
-                    if (useMultiCharReads)
-                    {
-                        while (byteStr.Length >= sizeof(ulong))
-                        {
-                            EmitOr();
-                            string byteSpan = sliceStaticPos > 0 ? $"byteSpan.Slice({sliceStaticPos * sizeof(char)})" : "byteSpan";
-                            writer.Write($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian({byteSpan}) != 0x{BinaryPrimitives.ReadUInt64LittleEndian(byteStr):X}ul");
-                            sliceStaticPos += sizeof(ulong) / sizeof(char);
-                            byteStr = byteStr.Slice(sizeof(ulong));
-                        }
-
-                        while (byteStr.Length >= sizeof(uint))
-                        {
-                            EmitOr();
-                            string byteSpan = sliceStaticPos > 0 ? $"byteSpan.Slice({sliceStaticPos * sizeof(char)})" : "byteSpan";
-                            writer.Write($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian({byteSpan}) != 0x{BinaryPrimitives.ReadUInt32LittleEndian(byteStr):X}u");
-                            sliceStaticPos += sizeof(uint) / sizeof(char);
-                            byteStr = byteStr.Slice(sizeof(uint));
-                        }
-                    }
-
-                    // Emit remaining comparisons character by character.
-                    for (int i = (str.Length * sizeof(char) - byteStr.Length) / sizeof(char); i < str.Length; i++)
-                    {
-                        EmitOr();
-                        writer.Write($"{ToLowerIfNeeded(hasTextInfo, options, $"{sliceSpan}[{sliceStaticPos}]", caseInsensitive)} != {Literal(str[i])}");
-                        sliceStaticPos++;
-                    }
-
-                    writer.WriteLine(")");
-                    using (EmitBlock(writer, null))
-                    {
-                        writer.WriteLine($"goto {doneLabel};");
                     }
                 }
                 else
                 {
-                    // Longer strings are compared character by character.  If this is a case-sensitive comparison, we can simply
-                    // delegate to StartsWith.  If this is case-insensitive, we open-code the comparison loop, as we need to lowercase
-                    // each character involved, and none of the StringComparison options provide the right semantics of comparing
-                    // character-by-character while respecting the culture.
-                    if (!caseInsensitive)
+                    string sourceSpan = sliceStaticPos > 0 ? $"{sliceSpan}.Slice({sliceStaticPos})" : sliceSpan;
+                    using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({sourceSpan}, {Literal(str)}))"))
                     {
-                        string sourceSpan = sliceStaticPos > 0 ? $"{sliceSpan}.Slice({sliceStaticPos})" : sliceSpan;
-                        using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({sourceSpan}, {Literal(node.Str)}))"))
-                        {
-                            writer.WriteLine($"goto {doneLabel};");
-                        }
-                        sliceStaticPos += node.Str.Length;
-                    }
-                    else
-                    {
-                        EmitSpanLengthCheck(str.Length);
-                        using (EmitBlock(writer, $"for (int i = 0; i < {Literal(node.Str)}.Length; i++)"))
-                        {
-                            string textSpanIndex = sliceStaticPos > 0 ? $"i + {sliceStaticPos}" : "i";
-                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"{sliceSpan}[{textSpanIndex}]")} != {Literal(str)}[i])"))
-                            {
-                                writer.WriteLine($"goto {doneLabel};");
-                            }
-                        }
-                        sliceStaticPos += node.Str.Length;
+                        writer.WriteLine($"goto {doneLabel};");
                     }
                 }
+
+                sliceStaticPos += str.Length;
             }
 
             void EmitSingleCharLoop(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
@@ -2345,7 +2278,7 @@ namespace System.Text.RegularExpressions.Generator
                 // If this is actually a repeater, emit that instead; no backtracking necessary.
                 if (node.M == node.N)
                 {
-                    EmitSingleCharFixedRepeater(node, emitLengthChecksIfRequired);
+                    EmitSingleCharRepeater(node, emitLengthChecksIfRequired);
                     return;
                 }
 
@@ -2438,7 +2371,7 @@ namespace System.Text.RegularExpressions.Generator
                 // characters/iterations themselves.
                 if (node.M > 0)
                 {
-                    EmitSingleCharFixedRepeater(node, emitLengthChecksIfRequired);
+                    EmitSingleCharRepeater(node, emitLengthChecksIfRequired);
                 }
 
                 // If the whole thing was actually that repeater, we're done. Similarly, if this is actually an atomic
@@ -2446,6 +2379,12 @@ namespace System.Text.RegularExpressions.Generator
                 if (node.M == node.N || node.IsAtomicByParent())
                 {
                     return;
+                }
+
+                if (node.M > 0)
+                {
+                    // We emitted a repeater to handle the required iterations; add a newline after it.
+                    writer.WriteLine();
                 }
 
                 Debug.Assert(node.M < node.N);
@@ -2652,6 +2591,14 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
                 }
 
+                // If this is actually a repeater and the child doesn't have any backtracking in it that might
+                // cause us to need to unwind already taken iterations, just output it as a repeater loop.
+                if (minIterations == maxIterations && !PossiblyBacktracks(node.Child(0)))
+                {
+                    EmitNonBacktrackingRepeater(node);
+                    return;
+                }
+
                 // We might loop any number of times.  In order to ensure this loop and subsequent code sees sliceStaticPos
                 // the same regardless, we always need it to contain the same value, and the easiest such value is 0.
                 // So, we transfer sliceStaticPos to pos, and ensure that any path out of here has sliceStaticPos as 0.
@@ -2805,16 +2752,29 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emits the code to handle a loop (repeater) with a fixed number of iterations.
-            // RegexNode.M is used for the number of iterations; RegexNode.N is ignored.
-            void EmitSingleCharFixedRepeater(RegexNode node, bool emitLengthCheck = true)
+            // RegexNode.M is used for the number of iterations (RegexNode.N is ignored), as this
+            // might be used to implement the required iterations of other kinds of loops.
+            void EmitSingleCharRepeater(RegexNode node, bool emitLengthCheck = true)
             {
                 Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
                 int iterations = node.M;
-                if (iterations == 0)
+                switch (iterations)
                 {
-                    // No iterations, nothing to do.
-                    return;
+                    case 0:
+                        // No iterations, nothing to do.
+                        return;
+
+                    case 1:
+                        // Just match the individual item
+                        EmitSingleChar(node, emitLengthCheck);
+                        return;
+
+                    case <= RegexNode.MultiVsRepeaterLimit when node.IsOneFamily && !IsCaseInsensitive(node):
+                        // This is a repeated case-sensitive character; emit it as a multi in order to get all the optimizations
+                        // afforded to a multi, e.g. unrolling the loop with multi-char reads/comparisons at a time.
+                        EmitMultiCharString(new string(node.Ch, iterations), caseInsensitive: false, emitLengthCheck);
+                        return;
                 }
 
                 if (iterations <= MaxUnrollSize)
@@ -2879,7 +2839,7 @@ namespace System.Text.RegularExpressions.Generator
                 // If this is actually a repeater, emit that instead.
                 if (node.M == node.N)
                 {
-                    EmitSingleCharFixedRepeater(node, emitLengthChecksIfRequired);
+                    EmitSingleCharRepeater(node, emitLengthChecksIfRequired);
                     return;
                 }
 
@@ -3039,6 +2999,26 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
+            void EmitNonBacktrackingRepeater(RegexNode node)
+            {
+                Debug.Assert(node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.M < int.MaxValue, $"Unexpected M={node.M}");
+                Debug.Assert(node.M == node.N, $"Unexpected M={node.M} == N={node.N}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
+                Debug.Assert(!PossiblyBacktracks(node.Child(0)), $"Expected non-backtracking node {node.Kind}");
+
+                // Ensure every iteration of the loop sees a consistent value.
+                TransferSliceStaticPosToPos();
+
+                // Loop M==N times to match the child exactly that numbers of times.
+                string i = ReserveName("loop_iteration");
+                using (EmitBlock(writer, $"for (int {i} = 0; {i} < {node.M}; {i}++)"))
+                {
+                    EmitNode(node.Child(0));
+                    TransferSliceStaticPosToPos(); // make sure static the static position remains at 0 for subsequent constructs
+                }
+            }
+
             void EmitLoop(RegexNode node)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop, $"Unexpected type: {node.Kind}");
@@ -3049,6 +3029,14 @@ namespace System.Text.RegularExpressions.Generator
                 int minIterations = node.M;
                 int maxIterations = node.N;
                 bool isAtomic = node.IsAtomicByParent();
+
+                // If this is actually a repeater and the child doesn't have any backtracking in it that might
+                // cause us to need to unwind already taken iterations, just output it as a repeater loop.
+                if (minIterations == maxIterations && !PossiblyBacktracks(node.Child(0)))
+                {
+                    EmitNonBacktrackingRepeater(node);
+                    return;
+                }
 
                 // We might loop any number of times.  In order to ensure this loop and subsequent code sees sliceStaticPos
                 // the same regardless, we always need it to contain the same value, and the easiest such value is 0.
