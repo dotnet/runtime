@@ -549,7 +549,7 @@ jobs:
     jobParameters:
       testScope: innerloop
       nameSuffix: AllSubsets_Mono_CoOp_GC
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:MonoEnvOptions="MONO_GC_SUSPEND=coop MONO_SLEEP_ABORT_LIMIT=250"
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:MonoTestGCMode=coop
       timeoutInMinutes: 120
       #condition: >-
       #    eq(variables['isRollingBuild'], true)
