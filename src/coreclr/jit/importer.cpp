@@ -2143,7 +2143,7 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 //
 bool Compiler::impIsCastHelperMayHaveProfileData(GenTree* tree)
 {
-    if (opts.OptimizationDisabled() || (JitConfig.JitCastProfiling() != 1))
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) || (JitConfig.JitCastProfiling() != 1))
     {
         return false;
     }
