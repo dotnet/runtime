@@ -1202,11 +1202,21 @@ namespace System.Reflection.Tests
         public void DelegateTypesIsPublic()
         {
             Assert.True(typeof(Delegate).IsPublic);
+            Assert.False(typeof(Delegate).IsNotPublic);
             Assert.True(typeof(PublicDelegate).IsNestedPublic);
             Assert.True(typeof(InternalDelegate).IsNestedAssembly);
+            Assert.False(typeof(InternalDelegate).IsPublic);
             Assert.True(typeof(InternalDelegate).MakePointerType().IsNestedAssembly);
-            Assert.True(typeof(delegate*<string, int>).IsPublic);
+            Assert.False(typeof(InternalDelegate).MakePointerType().IsPublic);
             Assert.True(typeof(Delegate).MakePointerType().IsPublic);
+            Assert.False(typeof(Delegate).MakePointerType().IsNotPublic);
+        }
+
+        [Fact]
+        public void FunctionPointerTypeIsPublic()
+        {
+            Assert.True(typeof(delegate*<string, int>).IsPublic);
+            Assert.True(typeof(delegate*<string, int>).MakePointerType().IsPublic);
         }
 
         [Fact]
