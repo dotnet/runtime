@@ -269,5 +269,10 @@ namespace System.IO.Tests
             long secondFileTicks = File.GetLastAccessTimeUtc(secondFileHandle).Ticks;
             Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
         }
+
+        protected override void SettingUpdatesPropertiesCore(string item)
+        {
+            // Override `SettingUpdatesPropertiesCore`, because SafeFileHandles are not able to do this
+        }
     }
 }

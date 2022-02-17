@@ -55,7 +55,7 @@ namespace System.IO.Tests
             public DateTimeKind Kind => Item3;
         }
 
-        private void SettingUpdatesPropertiesCore(T item)
+        protected virtual void SettingUpdatesPropertiesCore(T item)
         {
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
