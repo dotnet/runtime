@@ -49,7 +49,7 @@ jobs:
         scenarios:
         - normal
         - WasmTestOnBrowser
-        - WasmTestOnNodeJs
+        #- WasmTestOnNodeJs
 
 #
 # Build for Browser/wasm, with EnableAggressiveTrimming=true
