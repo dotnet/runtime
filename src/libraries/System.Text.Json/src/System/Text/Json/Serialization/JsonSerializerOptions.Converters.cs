@@ -91,7 +91,7 @@ namespace System.Text.Json
         /// <remarks>
         /// Once serialization or deserialization occurs, the list cannot be modified.
         /// </remarks>
-        public IList<JsonConverter> Converters { get; }
+        public IList<JsonConverter> Converters => _converters;
 
         internal JsonConverter GetConverterFromMember(Type? parentClassType, Type propertyType, MemberInfo? memberInfo)
         {
@@ -183,7 +183,7 @@ namespace System.Text.Json
 
             // Priority 2: Attempt to get custom converter added at runtime.
             // Currently there is not a way at runtime to override the [JsonConverter] when applied to a property.
-            foreach (JsonConverter item in Converters)
+            foreach (JsonConverter item in _converters)
             {
                 if (item.CanConvert(typeToConvert))
                 {

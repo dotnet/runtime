@@ -7,16 +7,15 @@
 
     <!-- There's just too many of these warnings -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <NoWarn>$(NoWarn);IL3050</NoWarn>
+    <NoWarn>$(NoWarn);IL3050;IL3054</NoWarn>
 
-    <!-- Look for MULTIMODULE_BUILD #define for the more specific incompatible parts -->
-    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Reflection.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <IlcArg Include="--reflectedonly" />
+    <Compile Include="BasicThreading.cs" />
+    <Compile Include="Delegates.cs" />
+    <Compile Include="Generics.cs" />
+    <Compile Include="Interfaces.cs" />
+    <Compile Include="Threading.cs" />
+    <Compile Include="Main.cs" />
   </ItemGroup>
 </Project>

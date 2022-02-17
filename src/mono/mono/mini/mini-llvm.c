@@ -996,6 +996,7 @@ op_to_llvm_type (int opcode)
 	case OP_RCONV_TO_U8:
 		return LLVMInt64Type ();
 	case OP_FCONV_TO_I:
+	case OP_RCONV_TO_I:
 		return TARGET_SIZEOF_VOID_P == 8 ? LLVMInt64Type () : LLVMInt32Type ();
 	case OP_IADD_OVF:
 	case OP_IADD_OVF_UN:
@@ -6505,6 +6506,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildFPToSI (builder, lhs, LLVMInt64Type (), dname);
 			break;
 		case OP_FCONV_TO_I:
+		case OP_RCONV_TO_I:
 			values [ins->dreg] = LLVMBuildFPToSI (builder, lhs, IntPtrType (), dname);
 			break;
 		case OP_ICONV_TO_R8:

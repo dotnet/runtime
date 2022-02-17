@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 
 namespace System.Text.Json
 {
@@ -20,8 +21,7 @@ namespace System.Text.Json
         private CachingContext? _cachingContext;
 
         // Simple LRU cache for the public (de)serialize entry points that avoid some lookups in _cachingContext.
-        // Although this may be written by multiple threads, 'volatile' was not added since any local affinity is fine.
-        private JsonTypeInfo? _lastTypeInfo;
+        private volatile JsonTypeInfo? _lastTypeInfo;
 
         internal JsonTypeInfo GetOrAddJsonTypeInfo(Type type)
         {
@@ -90,10 +90,11 @@ namespace System.Text.Json
             public CachingContext(JsonSerializerOptions options)
             {
                 Options = options;
-                _ = Count;
             }
 
             public JsonSerializerOptions Options { get; }
+            // Property only accessed by reflection in testing -- do not remove.
+            // If changing please ensure that src/ILLink.Descriptors.LibraryBuild.xml is up-to-date.
             public int Count => _converterCache.Count + _jsonTypeInfoCache.Count;
             public JsonConverter GetOrAddConverter(Type type) => _converterCache.GetOrAdd(type, Options.GetConverterFromType);
             public JsonTypeInfo GetOrAddJsonTypeInfo(Type type) => _jsonTypeInfoCache.GetOrAdd(type, Options.GetJsonTypeInfoFromContextOrCreate);
@@ -109,7 +110,7 @@ namespace System.Text.Json
 
         /// <summary>
         /// Defines a cache of CachingContexts; instead of using a ConditionalWeakTable which can be slow to traverse
-        /// this approach uses a regular dictionary pointing to weak references of <see cref="CachingContext"/>.
+        /// this approach uses a concurrent dictionary pointing to weak references of <see cref="CachingContext"/>.
         /// Relevant caching contexts are looked up using the equality comparison defined by <see cref="EqualityComparer"/>.
         /// </summary>
         internal static class TrackedCachingContexts
@@ -188,6 +189,8 @@ namespace System.Text.Json
                 // across multiple initializations. The backoff count is determined by the eviction
                 // rates of the most recent runs.
 
+                Debug.Assert(Monitor.IsEntered(s_cache));
+
                 if (s_evictionRunsToSkip > 0)
                 {
                     --s_evictionRunsToSkip;
@@ -252,7 +255,7 @@ namespace System.Text.Json
         /// If two instances are equivalent, they should generate identical metadata caches;
         /// the converse however does not necessarily hold.
         /// </summary>
-        private class EqualityComparer : IEqualityComparer<JsonSerializerOptions>
+        private sealed class EqualityComparer : IEqualityComparer<JsonSerializerOptions>
         {
             public bool Equals(JsonSerializerOptions? left, JsonSerializerOptions? right)
             {
@@ -276,9 +279,9 @@ namespace System.Text.Json
                     left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
                     left._writeIndented == right._writeIndented &&
                     left._serializerContext == right._serializerContext &&
-                    CompareConverters(left.Converters, right.Converters);
+                    CompareConverters(left._converters, right._converters);
 
-                static bool CompareConverters(IList<JsonConverter> left, IList<JsonConverter> right)
+                static bool CompareConverters(ConverterList left, ConverterList right)
                 {
                     int n;
                     if ((n = left.Count) != right.Count)
@@ -321,9 +324,9 @@ namespace System.Text.Json
                 hc.Add(options._writeIndented);
                 hc.Add(options._serializerContext);
 
-                foreach (JsonConverter converter in options.Converters)
+                for (int i = 0; i < options._converters.Count; i++)
                 {
-                    hc.Add(converter);
+                    hc.Add(options._converters[i]);
                 }
 
                 return hc.ToHashCode();

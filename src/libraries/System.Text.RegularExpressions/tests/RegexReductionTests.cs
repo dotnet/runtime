@@ -124,6 +124,16 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("aa+", "a{2,}")]
         [InlineData("aa?", "a{1,2}")]
         [InlineData("aa{1,3}", "a{2,4}")]
+        [InlineData("aaa+b", "aa(?>a+)b")]
+        [InlineData("a+aab", "(?>a{3,})b")]
+        [InlineData("a{3}b", "aaab")]
+        [InlineData("a{2}ab", "aaab")]
+        [InlineData("aa{2}b", "aaab")]
+        [InlineData("ca{3}b", "caaab")]
+        [InlineData("caa{2}b", "caaab")]
+        [InlineData("ca{2}ab", "caaab")]
+        [InlineData("ca{2}", "caa")]
+        [InlineData(@"ca{2}\w", @"caa\w")]
         // Two atomic one loops
         [InlineData("(?>a*)(?>a*)", "(?>a*)")]
         [InlineData("(?>a*)(?>(?:a*))", "(?>a*)")]
@@ -476,7 +486,6 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         // Not coalescing loops
-        [InlineData("aa", "a{2}")]
         [InlineData("a[^a]", "a{2}")]
         [InlineData("[^a]a", "[^a]{2}")]
         [InlineData("a*b*", "a*")]
