@@ -164,7 +164,7 @@ namespace Microsoft.Interop
             return managedValuesProperty is not null;
         }
 
-        public static bool TryGetElementTypeFromContiguousCollectionMarshaller(ITypeSymbol type, out ITypeSymbol elementType)
+        public static bool TryGetElementTypeFromSpanCollectionMarshaller(ITypeSymbol type, out ITypeSymbol elementType)
         {
             if (!TryGetManagedValuesProperty(type, out IPropertySymbol managedValuesProperty))
             {

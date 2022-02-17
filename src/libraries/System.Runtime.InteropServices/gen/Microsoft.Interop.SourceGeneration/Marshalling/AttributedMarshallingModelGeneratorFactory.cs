@@ -129,7 +129,7 @@ namespace Microsoft.Interop
 
                 while (currentContext is not null)
                 {
-                    if (currentContext is ContiguousCollectionElementMarshallingCodeContext collectionContext)
+                    if (currentContext is SpanCollectionElementMarshallingCodeContext collectionContext)
                     {
                         indexerStack.Push(collectionContext.IndexerIdentifier);
                     }
@@ -257,18 +257,18 @@ namespace Microsoft.Interop
             var elementInfo = new TypePositionInfo(collectionInfo.ElementType, collectionInfo.ElementMarshallingInfo) { ManagedIndex = info.ManagedIndex };
             IMarshallingGenerator elementMarshaller = _elementMarshallingGenerator.Create(
                 elementInfo,
-                new ContiguousCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, context));
+                new SpanCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, context));
             TypeSyntax elementType = elementMarshaller.AsNativeType(elementInfo);
 
             bool isBlittable = elementMarshaller is BlittableMarshaller;
 
             if (isBlittable)
             {
-                marshallingStrategy = new ContiguousBlittableElementCollectionMarshalling(marshallingStrategy, collectionInfo.ElementType.Syntax);
+                marshallingStrategy = new SpanCollectionWithBlittableElementsMarshalling(marshallingStrategy, collectionInfo.ElementType.Syntax);
             }
             else
             {
-                marshallingStrategy = new ContiguousNonBlittableElementCollectionMarshalling(marshallingStrategy, elementMarshaller, elementInfo);
+                marshallingStrategy = new SpanCollectionWithNonBlittableElementsMarshalling(marshallingStrategy, elementMarshaller, elementInfo);
             }
 
             // Explicitly insert the Value property handling here (before numElements handling) so that the numElements handling will be emitted before the Value property handling in unmarshalling.

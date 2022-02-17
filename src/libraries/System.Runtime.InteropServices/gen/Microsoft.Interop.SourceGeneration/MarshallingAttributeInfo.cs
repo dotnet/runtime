@@ -672,7 +672,7 @@ namespace Microsoft.Interop
                     return NoMarshallingInfo.Instance;
                 }
 
-                if (!ManualTypeMarshallingHelper.TryGetElementTypeFromContiguousCollectionMarshaller(nativeType, out ITypeSymbol elementType))
+                if (!ManualTypeMarshallingHelper.TryGetElementTypeFromSpanCollectionMarshaller(nativeType, out ITypeSymbol elementType))
                 {
                     _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.CollectionNativeTypeMustHaveRequiredShapeMessage), nativeType.ToDisplayString());
                     return NoMarshallingInfo.Instance;

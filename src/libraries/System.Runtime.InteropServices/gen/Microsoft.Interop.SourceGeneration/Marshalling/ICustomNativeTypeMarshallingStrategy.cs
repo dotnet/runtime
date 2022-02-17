@@ -708,14 +708,14 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// Marshaller that enables support for marshalling blittable elements of a contiguous collection via a native type that implements the contiguous collection marshalling spec.
+    /// Marshaller that enables support for marshalling blittable elements of a collection via a native type that implements the SpanCollection marshalling spec.
     /// </summary>
-    internal sealed class ContiguousBlittableElementCollectionMarshalling : ICustomNativeTypeMarshallingStrategy
+    internal sealed class SpanCollectionWithBlittableElementsMarshalling : ICustomNativeTypeMarshallingStrategy
     {
         private readonly ICustomNativeTypeMarshallingStrategy _innerMarshaller;
         private readonly TypeSyntax _elementType;
 
-        public ContiguousBlittableElementCollectionMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, TypeSyntax elementType)
+        public SpanCollectionWithBlittableElementsMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, TypeSyntax elementType)
         {
             _innerMarshaller = innerMarshaller;
             _elementType = elementType;
@@ -848,15 +848,15 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// Marshaller that enables support for marshalling non-blittable elements of a contiguous collection via a native type that implements the contiguous collection marshalling spec.
+    /// Marshaller that enables support for marshalling non-blittable elements of a collection via a native type that implements the SpanCollection marshalling spec.
     /// </summary>
-    internal sealed class ContiguousNonBlittableElementCollectionMarshalling : ICustomNativeTypeMarshallingStrategy
+    internal sealed class SpanCollectionWithNonBlittableElementsMarshalling : ICustomNativeTypeMarshallingStrategy
     {
         private readonly ICustomNativeTypeMarshallingStrategy _innerMarshaller;
         private readonly IMarshallingGenerator _elementMarshaller;
         private readonly TypePositionInfo _elementInfo;
 
-        public ContiguousNonBlittableElementCollectionMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller,
+        public SpanCollectionWithNonBlittableElementsMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller,
             IMarshallingGenerator elementMarshaller,
             TypePositionInfo elementInfo)
         {
@@ -902,11 +902,11 @@ namespace Microsoft.Interop
         {
             string nativeIdentifier = context.GetIdentifiers(info).native;
             string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
-            var elementSetupSubContext = new ContiguousCollectionElementMarshallingCodeContext(
+            var elementSetupSubContext = new SpanCollectionElementMarshallingCodeContext(
                 StubCodeContext.Stage.Setup,
                 nativeSpanIdentifier,
                 context);
-            var elementSubContext = new ContiguousCollectionElementMarshallingCodeContext(
+            var elementSubContext = new SpanCollectionElementMarshallingCodeContext(
                 context.CurrentStage,
                 nativeSpanIdentifier,
                 context);
