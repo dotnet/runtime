@@ -327,7 +327,7 @@ namespace System.Text.RegularExpressions
         protected internal override void Scan(ReadOnlySpan<char> text)
         {
             // Configure the additional value to "bump" the position along each time we loop around
-            // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
+            // to call TryFindNextStartingPosition again, as well as the stopping position for the loop.  We generally
             // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
             // by -1 and stop at textbeg.
             int bump = 1, stoppos = text.Length;
@@ -339,7 +339,7 @@ namespace System.Text.RegularExpressions
 
             while (true)
             {
-                if (FindFirstChar(text))
+                if (_code.FindOptimizations.TryFindNextStartingPosition(text, ref runtextpos, runtextbeg, runtextstart, runtextend))
                 {
                     CheckTimeout();
 
@@ -362,9 +362,6 @@ namespace System.Text.RegularExpressions
                 runtextpos += bump;
             }
         }
-
-        private bool FindFirstChar(ReadOnlySpan<char> inputSpan) =>
-            _code.FindOptimizations.TryFindNextStartingPosition(inputSpan, ref runtextpos, runtextbeg, runtextstart, runtextend);
 
         private bool Go(ReadOnlySpan<char> inputSpan)
         {
@@ -392,7 +389,7 @@ namespace System.Text.RegularExpressions
                 switch (_operator)
                 {
                     case RegexOpcode.Stop:
-                        return runmatch!._matchcount[0] > 0;
+                        return runmatch!.FoundAMatch;
 
                     case RegexOpcode.Nothing:
                         break;

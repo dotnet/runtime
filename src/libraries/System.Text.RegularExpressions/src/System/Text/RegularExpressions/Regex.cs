@@ -394,7 +394,7 @@ namespace System.Text.RegularExpressions
 
                 Match? match = runner.runmatch;
                 // if we got a match, set runmatch to null if quick is true
-                if (match!._matchcount[0] > 0)
+                if (match!.FoundAMatch)
                 {
                     runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
 
@@ -445,40 +445,24 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal Match? Run(ReadOnlySpan<char> input, int beginning, int length, int startat)
+        internal Match? Run(ReadOnlySpan<char> input, int startat)
         {
             if ((uint)startat > (uint)input.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startat, ExceptionResource.BeginIndexNotNegative);
-            }
-            if ((uint)length > (uint)input.Length)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length, ExceptionResource.LengthNotNegative);
             }
 
             RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
             try
             {
                 runner.InitializeTimeout(internalMatchTimeout);
-                ReadOnlySpan<char> span = input.Slice(beginning, length);
-                runner.InitializeForScan(this, span, startat - beginning, quick: true);
+                runner.InitializeForScan(this, input, startat, quick: true);
 
-                runner.Scan(span);
+                runner.Scan(input);
 
-                Match? match = runner.runmatch;
-                // if we got a match, set runmatch to null if quick is true
-                if (match!._matchcount[0] > 0)
-                {
-                    runner.runmatch!.Text = null; // Drop reference to text
-                    return null;
-                }
+                runner.runmatch!.Text = null; // Drop reference to text
 
-                if (runner.runmatch != null)
-                {
-                    runner.runmatch.Text = null;
-                }
-
-                return RegularExpressions.Match.Empty;
+                return runner.runmatch!.FoundAMatch ? null : RegularExpressions.Match.Empty;
             }
             finally
             {
@@ -506,7 +490,7 @@ namespace System.Text.RegularExpressions
                     Match? match = runner.runmatch;
 
                     // if we got a match, set runmatch to null if quick is true
-                    if (match!._matchcount[0] > 0)
+                    if (match!.FoundAMatch)
                     {
                         if (match.Text != input)
                         {

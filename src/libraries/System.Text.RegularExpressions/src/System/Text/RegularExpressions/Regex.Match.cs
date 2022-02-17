@@ -74,7 +74,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <returns><see langword="true"/> if the input matches the pattern, <see langword="false"/> otherwise.</returns>
         public bool IsMatch(ReadOnlySpan<char> input) =>
-            Run(input, 0, input.Length, UseOptionR() ? input.Length : 0) is null;
+            Run(input, UseOptionR() ? input.Length : 0) is null;
 
         /// <summary>
         /// Searches the input string for one or more matches using the previous pattern and options,

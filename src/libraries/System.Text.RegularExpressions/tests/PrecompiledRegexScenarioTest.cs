@@ -20,8 +20,18 @@ namespace System.Text.RegularExpressions.Tests
             string text = "asdf134success1245something";
             RegexTestClass testClass = new RegexTestClass();
 
+            // Test Matches overloads
             Assert.Equal(1, testClass.Matches(text).Count);
+            Assert.Equal(0, testClass.Matches(text, startat: 7).Count);
+
+            // Test Match overloads
             Assert.Equal(1, testClass.Match(text).Groups[0].Captures.Count);
+            Assert.Equal(Match.Empty, testClass.Match(text, beginning: 7, length: text.Length - 7));
+            Assert.Equal(5, testClass.Match(text, beginning: 5, length: text.Length - 5).Index);
+            Assert.Equal(Match.Empty, testClass.Match(text, startat: 7));
+            Assert.Equal(6, testClass.Match(text, startat: 6).Index);
+
+            // Test Groups
             Assert.Equal(text, testClass.Match(text).Groups[0].Value);
             Assert.Equal(new int[] { 0, 1, 2}, testClass.GetGroupNumbers());
             Assert.Equal(new string[] { "0", "1", "output" }, testClass.GetGroupNames());

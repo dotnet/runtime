@@ -321,11 +321,10 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         writer.WriteLine("return;");
                     }
-                    writer.WriteLine();
                 }
                 writer.WriteLine();
 
-                writer.WriteLine("// We failed to find a match. If we're at the end of the input, then we are done.");
+                writer.WriteLine("// We failed to find a match. If we're at the end of the input, then we're done.");
                 using (EmitBlock(writer, "if (base.runtextpos == text.Length)"))
                 {
                     writer.WriteLine("return;");

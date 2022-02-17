@@ -3965,18 +3965,7 @@ namespace System.Text.RegularExpressions
 
         protected void EmitScan(DynamicMethod findFirstCharMethod, DynamicMethod goMethod)
         {
-            LocalBuilder bump = DeclareInt32();
-            LocalBuilder stoppos = DeclareInt32();
             Label returnLabel = DefineLabel();
-
-            // int bump = 1
-            Ldc(1);
-            Stloc(bump);
-
-            // int stoppos = text.Length
-            _ilg!.Emit(OpCodes.Ldarga_S, 1);
-            Call(s_spanGetLengthMethod);
-            Stloc(stoppos);
 
             // while (true)
             Label whileLoopEnd = DefineLabel();
@@ -3984,11 +3973,11 @@ namespace System.Text.RegularExpressions
             MarkLabel(whileLoopBody);
 
             // if (FindFirstChar(text))
-            Label afterFindFirstCharLabel = DefineLabel();
+            Label postWhileLabel = DefineLabel();
             Ldthis();
             Ldarg_1();
             Call(findFirstCharMethod);
-            BrfalseFar(afterFindFirstCharLabel);
+            BrfalseFar(postWhileLabel);
 
             if (_hasTimeout)
             {
@@ -3999,30 +3988,24 @@ namespace System.Text.RegularExpressions
 
             // if (Go(text))
             //   return;
-            Label afterSuccessMatchLabel = DefineLabel();
             Ldthis();
             Ldarg_1();
             Call(goMethod);
-            BrfalseFar(afterSuccessMatchLabel);
-            BrFar(returnLabel);
-            MarkLabel(afterSuccessMatchLabel);
+            BrtrueFar(returnLabel);
 
-            // if (runtextpos == stoppos)
-            Label incrementRuntextPosLabel = DefineLabel();
-            MarkLabel(afterFindFirstCharLabel);
+            // if (runtextpos == text.length)
+            //   return;
+            MarkLabel(postWhileLabel);
             Ldthisfld(s_runtextposField);
-            Ldloc(stoppos);
+            _ilg!.Emit(OpCodes.Ldarga_S, 1);
+            Call(s_spanGetLengthMethod);
             Ceq();
-            BrfalseFar(incrementRuntextPosLabel);
+            BrtrueFar(returnLabel);
 
-            // return;
-            BrFar(returnLabel);
-
-            // runtextpos += bump
-            MarkLabel(incrementRuntextPosLabel);
+            // runtextpos += 1
             Ldthis();
             Ldthisfld(s_runtextposField);
-            Ldloc(bump);
+            Ldc(1);
             Add();
             Stfld(s_runtextposField);
 
@@ -4032,7 +4015,6 @@ namespace System.Text.RegularExpressions
 
             // return;
             MarkLabel(returnLabel);
-            _ilg!.Emit(OpCodes.Nop);
             Ret();
         }
 

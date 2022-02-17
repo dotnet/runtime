@@ -90,14 +90,26 @@ namespace System.Text.RegularExpressions
 
         protected internal virtual void Scan(ReadOnlySpan<char> text)
         {
-            string? s = runtext;
-            if (text != s)
+            string s = runtext!;
+            // If beginning was passed in, then runtext and span won't match lengths so calculate the beginning to be used for the comparison.
+            int beginning = s.Length != text.Length ? s.Length - text.Length : 0;
+            if (text != s.AsSpan(beginning, text.Length))
             {
-                throw new NotSupportedException(); // <-- If we l anded here then we are dealing with a CompiledToAssembly case where the new Span overloads are being used.
+                // If we landed here then we are dealing with a CompiledToAssembly case where the new Span overloads are being called.
+                throw new NotSupportedException(SR.UsingSpanAPIsWithCompiledToAssembly);
             }
 
-            Debug.Assert(runregex != null);
-            Scan(runregex, s, 0, s.Length, runtextstart, -1, quick, runregex.internalMatchTimeout);
+            // If beginning wasn't zero, then we have to adjust some of the
+            // internal fields of RegexRunner to ensure the Precompiled Go and FFC
+            // will work as expected.
+            if (beginning != 0)
+            {
+                runtextbeg = beginning;
+                runtextstart += beginning;
+                runtextend += beginning;
+            }
+
+            Scan(runregex!, s, beginning, beginning + text.Length, runtextstart + beginning, -1, quick, runregex!.internalMatchTimeout);
         }
 
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
@@ -129,7 +141,7 @@ namespace System.Text.RegularExpressions
 #endif
                     Go();
 
-                    if (runmatch!._matchcount[0] > 0)
+                    if (runmatch!.FoundAMatch)
                     {
                         return runmatch;
                     }
@@ -296,7 +308,7 @@ namespace System.Text.RegularExpressions
 
                     // See if we have a match.
                     Match match = runmatch!;
-                    if (match._matchcount[0] > 0)
+                    if (match.FoundAMatch)
                     {
                         // Hand it out to the callback in canonical form.
                         if (!reuseMatchObject)
