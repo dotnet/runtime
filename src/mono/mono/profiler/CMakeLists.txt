@@ -21,7 +21,7 @@ if(NOT DISABLE_LIBS)
 
     add_library(mono-profiler-log-static STATIC helper.c log.c log-args.c)
     target_link_libraries(mono-profiler-log-static monoapi)
-    set_target_properties(mono-profiler-log-static PROPERTIES OUTPUT_NAME mono-profiler-log monoapi)
+    set_target_properties(mono-profiler-log-static PROPERTIES OUTPUT_NAME mono-profiler-log)
     install(TARGETS mono-profiler-log-static LIBRARY)
 
     if(NOT DISABLE_LOG_PROFILER_GZ)
