@@ -16,7 +16,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[Fact]
 		public Task ApplyTypeAnnotations ()
 		{
-			return RunTest (allowMissingWarnings: true);
+			return RunTest ();
 		}
 
 		[Fact]
@@ -52,7 +52,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[Fact]
 		public Task ComplexTypeHandling ()
 		{
-			return RunTest (allowMissingWarnings: true);
+			return RunTest ();
 		}
 
 		[Fact]
