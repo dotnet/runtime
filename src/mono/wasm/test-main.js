@@ -244,7 +244,7 @@ globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.
 
 function set_exit_code(exit_code, reason) {
     if (reason) {
-        console.error(`${JSON.stringify(reason)}`);
+        console.error(reason.toString());
         if (reason.stack) {
             console.error(reason.stack);
         }

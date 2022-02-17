@@ -1,16 +1,16 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="7.0.0-preview.3.22115.2">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="7.0.0-preview.2.22081.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>bc6d6740a2b8ba5c2943e1a7a0eaa9781a862050</Sha>
+      <Sha>4f251e7593b1150af58bba4f461698d6d4a1eb95</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="7.0.0-alpha.1.21529.3">
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>a7213b4676c1803bb251771291a525482d42e511</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-7.0.100" Version="7.0.0-alpha.2.22111.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-7.0.100" Version="7.0.0-alpha.2.22077.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>e6541169ee0347b4c3af1b83a0ab9fc19121283c</Sha>
+      <Sha>b2054b98cb7b9e555cbbe19955df823ec81a93ad</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
