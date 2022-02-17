@@ -39,6 +39,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestNoWarningsInRUCMethod ();
 			TestNoWarningsInRUCType ();
+
+			// These are probably just bugs
+			TestBackwardEdgeWithLdElem ();
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicFields), new Type[] { typeof (string) },
@@ -387,6 +390,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				RequireAll (GetWithPublicMethods ());
 			}
+		}
+
+		// https://github.com/dotnet/linker/issues/2624
+		// [ExpectedWarning ("IL2063")] // The types loaded from the array don't have annotations, so the "return" should warn
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		public static Type TestBackwardEdgeWithLdElem (Type[] types = null)
+		{
+			Type resultType = null;
+			foreach (var type in types) {
+				resultType = type;
+			}
+
+			return resultType;
 		}
 
 		public static void RequireAll (
