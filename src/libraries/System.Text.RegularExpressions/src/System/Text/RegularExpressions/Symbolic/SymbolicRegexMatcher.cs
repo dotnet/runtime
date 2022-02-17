@@ -141,6 +141,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Number of capture groups.</summary>
         private readonly int _capsize;
 
+        /// <summary>This determines whether the matcher uses the special capturing NFA simulation mode.</summary>
+        internal bool HasSubcaptures => _capsize > 1;
+
         /// <summary>Get the minterm of <paramref name="c"/>.</summary>
         /// <param name="c">character code</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -181,7 +184,7 @@ namespace System.Text.RegularExpressions.Symbolic
             var initialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < initialStates.Length; i++)
             {
-                initialStates[i] = _builder.MkState(_pattern, i);
+                initialStates[i] = _builder.MkState(_pattern, i, capturing: HasSubcaptures);
             }
             _initialStates = initialStates;
 
@@ -196,7 +199,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // but observe that the behavior from the state may ultimately depend on the previous
                 // input char e.g. possibly causing nullability of \b or \B or of a start-of-line anchor,
                 // in that sense there can be several "versions" (not more than StateCount) of the initial state.
-                DfaMatchingState<TSetType> state = _builder.MkState(_dotStarredPattern, i);
+                DfaMatchingState<TSetType> state = _builder.MkState(_dotStarredPattern, i, capturing: false);
                 state.IsInitialState = true;
                 dotstarredInitialStates[i] = state;
             }
@@ -208,7 +211,7 @@ namespace System.Text.RegularExpressions.Symbolic
             var reverseInitialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < reverseInitialStates.Length; i++)
             {
-                reverseInitialStates[i] = _builder.MkState(_reversePattern, i);
+                reverseInitialStates[i] = _builder.MkState(_reversePattern, i, capturing: false);
             }
             _reverseInitialStates = reverseInitialStates;
 
@@ -414,7 +417,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 Debug.Assert(currentStates.Node._alts is not null);
                 foreach (SymbolicRegexNode<TSetType> oneState in currentStates.Node._alts)
                 {
-                    DfaMatchingState<TSetType> nextStates = builder.MkState(oneState, currentStates.PrevCharKind);
+                    DfaMatchingState<TSetType> nextStates = builder.MkState(oneState, currentStates.PrevCharKind, capturing: false);
 
                     int offset = (nextStates.Id << builder._mintermsCount) | mintermId;
                     DfaMatchingState<TSetType> p = Volatile.Read(ref builder._delta[offset]) ?? matcher.CreateNewTransition(nextStates, minterm, offset);
@@ -426,7 +429,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     kind = p.PrevCharKind;
                 }
 
-                return builder.MkState(union, kind, true);
+                return builder.MkState(union, kind, capturing: false, antimirov: true);
             }
         }
 
@@ -540,7 +543,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     FindStartPosition(input, i, i_q0_A1); // Walk in reverse to locate the start position of the match
             }
 
-            if (_capsize <= 1)
+            if (!HasSubcaptures)
             {
                 int i_end = FindEndPosition(input, i_start);
                 return new SymbolicMatch(i_start, i_end + 1 - i_start);
@@ -664,8 +667,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 foreach (var (sourceId, sourceRegisters) in current.Values)
                 {
-                    Debug.Assert(_builder._statearray is not null);
-                    DfaMatchingState<TSetType> sourceState = _builder._statearray[sourceId];
+                    Debug.Assert(_builder._capturingStatearray is not null);
+                    DfaMatchingState<TSetType> sourceState = _builder._capturingStatearray[sourceId];
 
                     // Find the minterm, handling the special case for the last \n
                     int mintermId = c == '\n' && i == input.Length - 1 && sourceState.StartsWithLineAnchor ?

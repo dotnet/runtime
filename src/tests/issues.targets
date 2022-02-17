@@ -892,6 +892,15 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/poisoning/poison/*">
             <Issue>https://github.com/dotnet/runtime/issues/56148</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/*">
+            <Issue>https://github.com/dotnet/runtime/issues/62881</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd.Arm64/AdvSimd.Arm64_Part2_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/63856</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd.Arm64/AdvSimd.Arm64_Part2_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/63856</Issue>
+        </ExcludeList>
     </ItemGroup>
 
       <!-- NativeAOT specific -->
@@ -1239,6 +1248,9 @@
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/CollectibleAssemblies/Statics/CollectibleStatics/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64883/Runtime_64883/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/ContextualReflection/ContextualReflection/*">
@@ -3397,7 +3409,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/Runtime_64125/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64883/Runtime_64883/*">
+            <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
         </ExcludeList>
@@ -3416,7 +3430,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/gh53564/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
         </ExcludeList>
-
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverse/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
         </ExcludeList>
@@ -3694,9 +3707,6 @@
 
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/complus_config/name_config_with_pid/**">
             <Issue>System.ArgumentNullException: Value cannot be null. (Parameter 'path1')</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventactivityidcontrol/eventactivityidcontrol/**">
-            <Issue>System.Exception: Values for 'retCode' are not equal! Left='1' Right='0'</Issue>
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/readytorun/multifolder/multifolder/**">

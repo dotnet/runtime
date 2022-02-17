@@ -17,12 +17,12 @@
 #include "mono-config-internals.h"
 #include "object-internals.h"
 #include "class-init.h"
-#include "assembly.h"
+#include <mono/metadata/assembly.h>
 #include "marshal.h"
-#include "object.h"
+#include <mono/metadata/object.h>
 #include "assembly-internals.h"
 #include "external-only.h"
-#include "threads.h"
+#include <mono/metadata/threads.h>
 #include "threads-types.h"
 #include "jit-info.h"
 

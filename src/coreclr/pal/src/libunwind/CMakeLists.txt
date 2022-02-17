@@ -33,6 +33,8 @@ if(CLR_CMAKE_HOST_UNIX)
         set(arch x86)
     elseif(CLR_CMAKE_HOST_ARCH_S390X)
       set(arch s390x)
+    elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+      set(arch loongarch64)
     endif ()
 
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
@@ -75,6 +77,8 @@ if(CLR_CMAKE_HOST_UNIX)
     elseif(CLR_CMAKE_HOST_ARCH_I386)
         # Disable warning for a bug in the libunwind source src/x86/Gos-linux.c, but not in code that we exercise
         add_compile_options(-Wno-incompatible-pointer-types)
+    elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+        ###TODO: maybe add options for LOONGARCH64
     endif()
 
     if (CLR_CMAKE_HOST_OSX)

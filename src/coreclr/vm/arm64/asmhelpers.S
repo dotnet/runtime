@@ -1026,5 +1026,5 @@ LEAF_ENTRY JIT_ValidateIndirectCall, _TEXT
 LEAF_END JIT_ValidateIndirectCall, _TEXT
 
 LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
-    br x15
+    br x9
 LEAF_END JIT_DispatchIndirectCall, _TEXT

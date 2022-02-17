@@ -18,6 +18,8 @@ BIGNUM* CryptoNative_BigNumFromBinary(const uint8_t* s, int32_t len)
         return NULL;
     }
 
+    ERR_clear_error();
+
     return BN_bin2bn(s, len, NULL);
 }
 
@@ -27,6 +29,8 @@ int32_t CryptoNative_BigNumToBinary(const BIGNUM* a, uint8_t* to)
     {
         return 0;
     }
+
+    ERR_clear_error();
 
     return BN_bn2bin(a, to);
 }
@@ -38,5 +42,6 @@ int32_t CryptoNative_GetBigNumBytes(const BIGNUM* a)
         return 0;
     }
 
+    // No impact on the error queue.
     return BN_num_bytes(a);
 }

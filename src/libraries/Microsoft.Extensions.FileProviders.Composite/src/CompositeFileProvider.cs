@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.FileProviders
         /// Initializes a new instance of the <see cref="CompositeFileProvider" /> class using a collection of file provider.
         /// </summary>
         /// <param name="fileProviders">The collection of <see cref="IFileProvider" /></param>
-        public CompositeFileProvider(params IFileProvider[] fileProviders)
+        public CompositeFileProvider(params IFileProvider[]? fileProviders)
         {
             _fileProviders = fileProviders ?? Array.Empty<IFileProvider>();
         }
