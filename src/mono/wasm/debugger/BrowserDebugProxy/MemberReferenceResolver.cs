@@ -219,7 +219,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (scopeCache.Locals.Count == 0 && !localsFetched)
                 {
                     Result scope_res = await proxy.GetScopeProperties(sessionId, scopeId, token);
-                    if (scope_res.IsErr)
+                    if (!scope_res.IsOk)
                         throw new Exception($"BUG: Unable to get properties for scope: {scopeId}. {scope_res}");
                     localsFetched = true;
                 }
