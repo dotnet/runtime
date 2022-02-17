@@ -120,6 +120,7 @@ steps:
 
   # -- dotnet new Maui Podcast APP --- #
   - script: |
+      set -x
       git clone https://github.com/microsoft/dotnet-podcasts
       cd dotnet-podcasts
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
@@ -128,8 +129,9 @@ steps:
     workingDirectory: $(Build.SourcesDirectory)
 
   - script: |
+      set -x
       chmod -R a+r .
-      cd src/Mobile
+      cd ./src/Mobile
       ../../../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
       mv ./bin/Release/net6.0-android/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
     displayName: Build MAUI Android
