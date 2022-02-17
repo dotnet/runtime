@@ -133,11 +133,11 @@ steps:
       set -x
       pwd
       chmod -R a+r .
-      cd dotnet-podcast/src/Mobile
       ../../../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
-      mv ./bin/Release/net6.0-android/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
+      mv ../../bin/Release/net6.0-android/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
     displayName: Build MAUI Android
-    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+    workingDirectory: $(Build.SourcesDirectory)/dotnet-podcast/src/Mobile
+
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiAndroid binlog'
