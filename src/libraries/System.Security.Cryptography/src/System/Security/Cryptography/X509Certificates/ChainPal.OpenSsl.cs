@@ -39,6 +39,44 @@ namespace System.Security.Cryptography.X509Certificates
             TimeSpan timeout,
             bool disableAia)
         {
+            OpenSslX509ChainEventSource.Log.ChainStart();
+
+            try
+            {
+                return BuildChainCore(
+                    useMachineContext,
+                    cert,
+                    extraStore,
+                    applicationPolicy,
+                    certificatePolicy,
+                    revocationMode,
+                    revocationFlag,
+                    customTrustStore,
+                    trustMode,
+                    verificationTime,
+                    timeout,
+                    disableAia);
+            }
+            finally
+            {
+                OpenSslX509ChainEventSource.Log.ChainStop();
+            }
+        }
+
+        private static IChainPal? BuildChainCore(
+            bool useMachineContext,
+            ICertificatePal cert,
+            X509Certificate2Collection? extraStore,
+            OidCollection? applicationPolicy,
+            OidCollection? certificatePolicy,
+            X509RevocationMode revocationMode,
+            X509RevocationFlag revocationFlag,
+            X509Certificate2Collection? customTrustStore,
+            X509ChainTrustMode trustMode,
+            DateTime verificationTime,
+            TimeSpan timeout,
+            bool disableAia)
+        {
             if (timeout == TimeSpan.Zero)
             {
                 // An input value of 0 on the timeout is treated as 15 seconds, to match Windows.
@@ -76,33 +114,45 @@ namespace System.Security.Cryptography.X509Certificates
                 downloadTimeout);
 
             Interop.Crypto.X509VerifyStatusCode status = chainPal.FindFirstChain(extraStore);
+            OpenSslX509ChainEventSource.Log.FindFirstChainFinished(status);
 
-            if (!OpenSslX509ChainProcessor.IsCompleteChain(status) && !disableAia)
+            if (!OpenSslX509ChainProcessor.IsCompleteChain(status))
             {
-                List<X509Certificate2>? tmp = null;
-                status = chainPal.FindChainViaAia(ref tmp);
-
-                if (tmp != null)
+                if (disableAia)
                 {
-                    if (status == Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
-                    {
-                        SaveIntermediateCertificates(tmp);
-                    }
+                    OpenSslX509ChainEventSource.Log.AiaDisabled();
+                }
+                else
+                {
+                    List<X509Certificate2>? tmp = null;
+                    status = chainPal.FindChainViaAia(ref tmp);
+                    OpenSslX509ChainEventSource.Log.FindChainViaAiaFinished(status, tmp?.Count ?? 0);
 
-                    foreach (X509Certificate2 downloaded in tmp)
+                    if (tmp != null)
                     {
-                        downloaded.Dispose();
+                        if (status == Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
+                        {
+                            SaveIntermediateCertificates(tmp);
+                        }
+
+                        foreach (X509Certificate2 downloaded in tmp)
+                        {
+                            downloaded.Dispose();
+                        }
                     }
                 }
             }
 
-            // In NoCheck+OK then we don't need to build the chain any more, we already
-            // know it's error-free.  So skip straight to finish.
-            if (status != Interop.Crypto.X509VerifyStatusCode.X509_V_OK ||
-                revocationMode != X509RevocationMode.NoCheck)
+            if (revocationMode != X509RevocationMode.NoCheck)
             {
                 if (OpenSslX509ChainProcessor.IsCompleteChain(status))
                 {
+                    if (status != Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
+                    {
+                        OpenSslX509ChainEventSource.Log.UntrustedChainWithRevocation();
+                        revocationMode = X509RevocationMode.NoCheck;
+                    }
+
                     chainPal.CommitToChain();
                     chainPal.ProcessRevocation(revocationMode, revocationFlag);
                 }
@@ -132,6 +182,7 @@ namespace System.Security.Cryptography.X509Certificates
                 catch (CryptographicException)
                 {
                     // Saving is opportunistic, just ignore failures
+                    OpenSslX509ChainEventSource.Log.CouldNotOpenCAStore();
                     return;
                 }
 
@@ -139,11 +190,13 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     try
                     {
+                        OpenSslX509ChainEventSource.Log.CachingIntermediate(cert);
                         userIntermediate.Add(cert);
                     }
                     catch
                     {
                         // Saving is opportunistic, just ignore failures
+                        OpenSslX509ChainEventSource.Log.CachingIntermediateFailed(cert);
                     }
                 }
             }
