@@ -51,9 +51,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		// Analyzer doesn't track known types: https://github.com/dotnet/linker/issues/2273
-		[ExpectedWarning ("IL2072", "'type'", nameof (ApplyTypeAnnotations) + "." + nameof (RequireCombination) + "(Type)", "System.Type.GetType(String)",
-			ProducedBy = ProducedBy.Analyzer)]
 		static void TestFromTypeGetTypeOverConstant ()
 		{
 			RequireCombination (Type.GetType ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromTypeGetTypeOverConstantTestType"));
