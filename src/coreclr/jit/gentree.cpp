@@ -6025,10 +6025,10 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
         case TYP_INT:
 #ifdef TARGET_LOONGARCH64
         case TYP_UINT:
-            // For LoongArch64, the register $r0 is always const-zero with 64bits-width.
-            // Besides the instructions's operation of the 64bits and 32bits using the whole
-            // 64bits-width register which is unlike the AMD64 and ARM64.
-            // So for UINT type, LoongArch64 can't share with INT liking AMD64 and ARM64.
+// For LoongArch64, the register $r0 is always const-zero with 64bits-width.
+// Besides the instructions's operation of the 64bits and 32bits using the whole
+// 64bits-width register which is unlike the AMD64 and ARM64.
+// So for UINT type, LoongArch64 can't share with INT liking AMD64 and ARM64.
 #endif
             zero = gtNewIconNode(0);
             break;
@@ -21898,13 +21898,15 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 comp->compFloatingPointUsed = true;
                 assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
                 m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
+                m_regType[1] =
+                    (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
             }
             else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
             {
                 comp->compFloatingPointUsed = true;
                 assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
+                m_regType[0] =
+                    (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
                 m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
             }
             else

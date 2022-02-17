@@ -49,6 +49,9 @@ REGDEF(S6,     29, 0x20000000, "s6"  )
 REGDEF(S7,     30, 0x40000000, "s7"  )
 REGDEF(S8,     31, 0x80000000, "s8"  )
 
+//NOTE for LoongArch64:
+//  The `REG_R21` which alias `REG_X0` is specially reserved !!!
+//  It can be used only by manully and should be very careful!!!
 REGALIAS(R21, X0)
 
 #define FBASE 32

@@ -1863,10 +1863,9 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
     }
     else
     {
-// The code to throw the exception will be generated inline, and
-//  we will jump around it in the normal non-exception case.
+        // The code to throw the exception will be generated inline, and
+        // we will jump around it in the normal non-exception case.
 
-#ifndef TARGET_LOONGARCH64
         BasicBlock*  tgtBlk          = nullptr;
         emitJumpKind reverseJumpKind = emitter::emitReverseJumpKind(jumpKind);
         if (reverseJumpKind != jumpKind)
@@ -1874,18 +1873,15 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
             tgtBlk = genCreateTempLabel();
             inst_JMP(reverseJumpKind, tgtBlk);
         }
-#endif
 
         genEmitHelperCall(compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
 
-#ifndef TARGET_LOONGARCH64
         // Define the spot for the normal non-exception case to jump to.
         if (tgtBlk != nullptr)
         {
             assert(reverseJumpKind != jumpKind);
             genDefineTempLabel(tgtBlk);
         }
-#endif
     }
 }
 
@@ -3393,15 +3389,9 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
                 tmp_offset = base;
                 tmp_reg    = REG_R21;
-                if ((0 < base) && (base <= 0xfff))
-                {
-                    GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R0, tmp_offset);
-                }
-                else
-                {
-                    GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
-                    GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
-                }
+                GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, base);
+                // NOTE: `REG_R21` will be used within `emitIns_S_R`.
+                // Details see the comment for `emitIns_S_R`.
                 GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, -8);
             }
 
@@ -3445,15 +3435,9 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         {
                             tmp_offset = base;
                             tmp_reg    = REG_R21;
-                            if ((0 < base) && (base <= 0xfff))
-                            {
-                                GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R0, tmp_offset);
-                            }
-                            else
-                            {
-                                GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
-                                GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
-                            }
+                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, base);
+                            // NOTE: `REG_R21` will be used within `emitIns_S_R`.
+                            // Details see the comment for `emitIns_S_R`.
                             GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, -8);
                         }
                         else
@@ -3471,8 +3455,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     baseOffset = 8;
                     base += 8;
 
-                    GetEmitter()->emitIns_R_R_Imm(INS_ld_d, size, REG_SCRATCH, REG_SPBASE,
-                                                  genTotalFrameSize());
+                    GetEmitter()->emitIns_R_R_Imm(INS_ld_d, size, REG_SCRATCH, REG_SPBASE, genTotalFrameSize());
                     if ((-2048 <= base) && (base < 2048))
                     {
                         GetEmitter()->emitIns_S_R(INS_st_d, size, REG_SCRATCH, varNum, baseOffset);
@@ -3483,15 +3466,9 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         {
                             tmp_offset = base;
                             tmp_reg    = REG_R21;
-                            if ((0 < base) && (base <= 0xfff))
-                            {
-                                GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R0, tmp_offset);
-                            }
-                            else
-                            {
-                                GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
-                                GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
-                            }
+                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, base);
+                            // NOTE: `REG_R21` will be used within `emitIns_S_R`.
+                            // Details see the comment for `emitIns_S_R`.
                             GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_ARG_LAST, varNum, -8);
                         }
                         else
@@ -4912,7 +4889,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
 #ifdef TARGET_LOONGARCH64
         {
             bool FPbased;
-            int base = compiler->lvaFrameAddress(varNum, &FPbased);
+            int  base = compiler->lvaFrameAddress(varNum, &FPbased);
 
             if ((-2048 <= base) && (base < 2048))
             {
@@ -4925,8 +4902,8 @@ void CodeGen::genEnregisterIncomingStackArgs()
                     regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
                     tmp_offset     = base;
                     tmp_reg        = REG_R21;
-                    GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
-                    GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
+
+                    GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, base);
                     GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_R21, REG_R21, reg2);
                     GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, -8);
                 }

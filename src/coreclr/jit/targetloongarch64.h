@@ -6,6 +6,10 @@
 #error The file should not be included for this platform.
 #endif
 
+//NOTE for LoongArch64:
+//  The `REG_R21` which alias `REG_X0` is specially reserved !!!
+//  It can be used only by manully and should be very careful!!!
+
 // clang-format off
   #define CPU_LOAD_STORE_ARCH      1
   #define CPU_HAS_FP_SUPPORT       1
@@ -38,7 +42,6 @@
   #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
   #define MAX_MULTIREG_COUNT            2  // Maxiumum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
-
 
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
   #define USER_ARGS_COME_LAST      1

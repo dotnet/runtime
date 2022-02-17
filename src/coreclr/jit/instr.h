@@ -308,7 +308,7 @@ enum insOpts : unsigned
 
     INS_OPTS_RC,     // see ::emitIns_R_C().
     INS_OPTS_RL,     // see ::emitIns_R_L().
-    INS_OPTS_JIRL,     // see ::emitIns_J_R().
+    INS_OPTS_JIRL,   // see ::emitIns_J_R().
     INS_OPTS_J,      // see ::emitIns_J().
     INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
     INS_OPTS_I,      // see ::emitIns_I_la().
@@ -318,6 +318,9 @@ enum insOpts : unsigned
 
 enum insBarrier : unsigned
 {
+    // TODO-LOONGARCH64-CQ: ALL there are the same value right now.
+    // These are reserved for future extention.
+    // Because the LoongArch64 doesn't support these right now.
     INS_BARRIER_FULL  =  0,
     INS_BARRIER_WMB   =  INS_BARRIER_FULL,//4,
     INS_BARRIER_MB    =  INS_BARRIER_FULL,//16,

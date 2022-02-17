@@ -1511,7 +1511,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             switch (addrInfo.accessType)
             {
                 case IAT_VALUE:
-                    //TODO-LOONGARCH64-CQ: using B/BL for optimization.
+                // TODO-LOONGARCH64-CQ: using B/BL for optimization.
                 case IAT_PVALUE:
                     // Load the address into a register, load indirect and call  through a register
                     // We have to use REG_INDIRECT_CALL_TARGET_REG since we assume the argument registers are in use
@@ -2033,20 +2033,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         {
             // This is only possible for a zero-init or bitcast.
             const bool zeroInit = data->IsIntegralConst(0);
-#if 0
-            //TODO: supporting the SIMD on LoongArch64.
-            if (zeroInit && varTypeIsSIMD(targetType))
-            {
-                assert(!varTypeIsSIMD(targetType));
-                //assert(targetType == TYP_SIMD8);//TODO:TYP_SIMD16
-                assert(targetReg == REG_NA);
-                GetEmitter()->emitIns_S_R(INS_st_d, EA_8BYTE, REG_R0, varNum, 0);
-                genUpdateLife(lclNode);
-                return;
-            }
-#else
+            // TODO-LOONGAARCH64-CQ: not supporting SIMD.
             assert(!varTypeIsSIMD(targetType));
-#endif
 
             if (zeroInit)
             {
@@ -2581,13 +2569,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             {
                 ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
                 divisorReg       = REG_R21;
-                if ((-2048 <= intConst) && (intConst <= 0x7ff))
-                    emit->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R0, (short)intConst);
-                else
-                {
-                    emit->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, intConst >> 12);
-                    emit->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, intConst & 0xfff);
-                }
+                emit->emitIns_I_la(EA_PTRSIZE, REG_R21, intConst);
             }
             // Only for commutative operations do we check src1 and allow it to be a contained immediate
             else if (tree->OperIsCommutative())
@@ -2601,13 +2583,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     assert(!divisorOp->isContainedIntOrIImmed());
                     ssize_t intConst = (int)(src1->AsIntCon()->gtIconVal);
                     Reg1             = REG_R21;
-                    if ((-2048 <= intConst) && (intConst <= 0x7ff))
-                        emit->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R0, (short)intConst);
-                    else
-                    {
-                        emit->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, intConst >> 12);
-                        emit->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, intConst & 0xfff);
-                    }
+                    emit->emitIns_I_la(EA_PTRSIZE, REG_R21, intConst);
                 }
             }
             else
@@ -5842,7 +5818,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
                                        (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         }
         else
-        { ////TODO:LoongArch64 should amend for optimize!
+        {
+            //TODO-LOONGARCH64: should amend for optimize!
             // GetEmitter()->emitIns_R_I(INS_pcaddu12i, EA_PTRSIZE, regGSConst,
             // (ssize_t)compiler->gsGlobalSecurityCookieAddr);
             // GetEmitter()->emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, regGSConst, regGSConst, );

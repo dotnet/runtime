@@ -5333,7 +5333,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, GenTreeCall::Use* 
     GenTree* arg     = fgMakeTmpArgNode(argEntry);
 
     // Change the expression to "(tmp=val),tmp"
-    arg                                  = gtNewOperNode(GT_COMMA, arg->TypeGet(), copyBlk, arg);
+    arg = gtNewOperNode(GT_COMMA, arg->TypeGet(), copyBlk, arg);
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
@@ -5823,7 +5823,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         // And the INT type instruction will be signed-extend by default.
         // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
         // will be signed-extend by default.
-        GenTree* arrLen       = gtNewArrLen(TYP_INT, arrRef, (int)lenOffs, compCurBB);
+        GenTree* arrLen = gtNewArrLen(TYP_INT, arrRef, (int)lenOffs, compCurBB);
 #else
         // Next introduce a GT_BOUNDS_CHECK node
         var_types bndsChkType = TYP_INT; // By default, try to use 32-bit comparison for array bounds check.
