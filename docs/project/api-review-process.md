@@ -12,7 +12,7 @@ The rule of thumb is that we (**dotnet/runtime**) review every API that is being
 sequenceDiagram
     participant R as Requester
     participant O as Runtime Owners
-    participant F as API review board (FXDC)
+    participant F as API review board <br> (FXDC)
     R ->> O: Files issue under dotnet/runtime
     note over O: Assigns owner
     
