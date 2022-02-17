@@ -232,6 +232,7 @@ namespace System.IO.Pipelines.Tests
         public async Task CompleteWithLargeWriteThrows()
         {
             var completeDelay = TimeSpan.FromMilliseconds(10);
+            var testTimeout = TimeSpan.FromMilliseconds(100);
             var pipe = new Pipe();
             pipe.Reader.Complete();
 
@@ -251,8 +252,8 @@ namespace System.IO.Pipelines.Tests
                 {
                     await pipe.Writer.WriteAsync(buffer);
 
-                    // abort test if we're executing for more than 10 times the completeDelay (check every 1000th iteration)
-                    if (i++ % 1000 == 0 && DateTime.UtcNow - testStartTime > completeDelay * 10)
+                    // abort test if we're executing for more than the testTimeout (check every 1000th iteration)
+                    if (i++ % 1000 == 0 && DateTime.UtcNow - testStartTime > testTimeout)
                         break;
                 }
             });
