@@ -600,13 +600,13 @@ static guint16 sri_vector_methods [] = {
 	SN_AsUInt16,
 	SN_AsUInt32,
 	SN_AsUInt64,
-	SN_BitwiseAnd,
-	SN_BitwiseOr,
 	SN_AsVector128,
 	SN_AsVector2,
 	SN_AsVector256,
 	SN_AsVector3,
 	SN_AsVector4,
+	SN_BitwiseAnd,
+	SN_BitwiseOr,
 	SN_Ceiling,
 	SN_ConditionalSelect,
 	SN_Create,
@@ -3299,9 +3299,6 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128") || !strcmp (class_name, "Vector64"))
 			return emit_sri_vector (cfg, cmethod, fsig, args);
-	} else if (!strcmp (class_ns, "System.Numerics")){
-		if (!strcmp (class_name, "Vector"))
-			return emit_sri_vector (cfg, cmethod, fsig, args);
 	}
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
@@ -3309,6 +3306,12 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
 	}
 #endif // defined(TARGET_ARM64) || defined(TARGET_AMD64)
+
+#if defined(TARGET_ARM64)
+	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "Vector")){
+		return emit_sri_vector (cfg, cmethod, fsig, args);
+	}
+#endif // defined(TARGET_ARM64)
 
 	return emit_simd_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
 }
