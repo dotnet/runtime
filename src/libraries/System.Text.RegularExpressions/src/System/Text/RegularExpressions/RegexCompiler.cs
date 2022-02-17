@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -20,7 +21,6 @@ namespace System.Text.RegularExpressions
         private static readonly FieldInfo s_runtextendField = RegexRunnerField("runtextend");
         private static readonly FieldInfo s_runtextstartField = RegexRunnerField("runtextstart");
         private static readonly FieldInfo s_runtextposField = RegexRunnerField("runtextpos");
-        private static readonly FieldInfo s_runtextField = RegexRunnerField("runtext");
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
 
         private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
@@ -29,9 +29,9 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_isMatchedMethod = RegexRunnerMethod("IsMatched");
         private static readonly MethodInfo s_matchLengthMethod = RegexRunnerMethod("MatchLength");
         private static readonly MethodInfo s_matchIndexMethod = RegexRunnerMethod("MatchIndex");
-        private static readonly MethodInfo s_isBoundaryMethod = RegexRunnerMethod("IsBoundary");
+        private static readonly MethodInfo s_isBoundaryMethod = typeof(RegexRunner).GetMethod("IsBoundary", BindingFlags.NonPublic | BindingFlags.Instance, new[] { typeof(ReadOnlySpan<char>), typeof(int) })!;
         private static readonly MethodInfo s_isWordCharMethod = RegexRunnerMethod("IsWordChar");
-        private static readonly MethodInfo s_isECMABoundaryMethod = RegexRunnerMethod("IsECMABoundary");
+        private static readonly MethodInfo s_isECMABoundaryMethod = typeof(RegexRunner).GetMethod("IsECMABoundary", BindingFlags.NonPublic | BindingFlags.Instance, new[] { typeof(ReadOnlySpan<char>), typeof(int) })!;
         private static readonly MethodInfo s_crawlposMethod = RegexRunnerMethod("Crawlpos");
         private static readonly MethodInfo s_charInClassMethod = RegexRunnerMethod("CharInClass");
         private static readonly MethodInfo s_checkTimeoutMethod = RegexRunnerMethod("CheckTimeout");
@@ -180,6 +180,9 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.Ldarg_0).</summary>
         protected void Ldthis() => _ilg!.Emit(OpCodes.Ldarg_0);
 
+        /// <summary>A macro for _ilgEmit(OpCodes.Ldarg_1) </summary>
+        private void Ldarg_1() => _ilg!.Emit(OpCodes.Ldarg_1);
+
         /// <summary>A macro for Ldthis(); Ldfld();</summary>
         protected void Ldthisfld(FieldInfo ft)
         {
@@ -270,6 +273,9 @@ namespace System.Text.RegularExpressions
         private void StelemI4() => _ilg!.Emit(OpCodes.Stelem_I4);
 
         private void Switch(Label[] table) => _ilg!.Emit(OpCodes.Switch, table);
+
+        /// <summary>Declares a local bool.</summary>
+        private LocalBuilder DeclareBool() => _ilg!.DeclareLocal(typeof(bool));
 
         /// <summary>Declares a local int.</summary>
         private LocalBuilder DeclareInt32() => _ilg!.DeclareLocal(typeof(int));
@@ -388,11 +394,10 @@ namespace System.Text.RegularExpressions
             // Load necessary locals
             // int pos = base.runtextpos;
             // int end = base.runtextend;
-            // ReadOnlySpan<char> inputSpan = base.runtext.AsSpan();
+            // ReadOnlySpan<char> inputSpan = input;
             Mvfldloc(s_runtextposField, pos);
             Mvfldloc(s_runtextendField, end);
-            Ldthisfld(s_runtextField);
-            Call(s_stringAsSpanMethod);
+            Ldarg_1();
             Stloc(inputSpan);
 
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
@@ -1061,7 +1066,7 @@ namespace System.Text.RegularExpressions
                     // to have been validated in FindFirstChar when doing case-sensitive comparison.
                     // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
                     // base.runtextpos = base.runtextpos + node.Str.Length;
-                    // return;
+                    // return true;
                     Ldthis();
                     Dup();
                     Ldc(0);
@@ -1074,6 +1079,7 @@ namespace System.Text.RegularExpressions
                     Ldc(node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1);
                     Add();
                     Stfld(s_runtextposField);
+                    Ldc(1);
                     Ret();
                     return;
 
@@ -1098,10 +1104,9 @@ namespace System.Text.RegularExpressions
             // CultureInfo culture = CultureInfo.CurrentCulture; // only if the whole expression or any subportion is ignoring case, and we're not using invariant
             InitializeCultureForGoIfNecessary();
 
-            // ReadOnlySpan<char> inputSpan = base.runtext.AsSpan();
+            // ReadOnlySpan<char> inputSpan = input;
             // int end = base.runtextend;
-            Ldthisfld(s_runtextField);
-            Call(s_stringAsSpanMethod);
+            Ldarg_1();
             Stloc(inputSpan);
             Mvfldloc(s_runtextendField, end);
 
@@ -1150,6 +1155,9 @@ namespace System.Text.RegularExpressions
             Ldloc(originalPos);
             Ldloc(pos);
             Call(s_captureMethod);
+            // return true;
+            Ldc(1);
+            Ret();
 
             // If the graph contained captures, undo any remaining to handle failed matches.
             if (expressionHasCaptures)
@@ -1180,7 +1188,8 @@ namespace System.Text.RegularExpressions
                 MarkLabel(originalDoneLabel);
             }
 
-            // return;
+            // return false;
+            Ldc(0);
             Ret();
 
             // Generated code successfully.
@@ -2313,16 +2322,15 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary, $"Unexpected type: {node.Kind}");
 
-                // if (!IsBoundary(pos + sliceStaticPos, base.runtextbeg, end)) goto doneLabel;
+                // if (!IsBoundary(inputSpan, pos + sliceStaticPos)) goto doneLabel;
                 Ldthis();
+                Ldloc(inputSpan);
                 Ldloc(pos);
                 if (sliceStaticPos > 0)
                 {
                     Ldc(sliceStaticPos);
                     Add();
                 }
-                Ldthisfld(s_runtextbegField);
-                Ldloc(end);
                 switch (node.Kind)
                 {
                     case RegexNodeKind.Boundary:
@@ -3953,6 +3961,79 @@ namespace System.Text.RegularExpressions
                 Ldloc(stackpos);
                 LdelemI4();
             }
+        }
+
+        protected void EmitScan(DynamicMethod findFirstCharMethod, DynamicMethod goMethod)
+        {
+            LocalBuilder bump = DeclareInt32();
+            LocalBuilder stoppos = DeclareInt32();
+            Label returnLabel = DefineLabel();
+
+            // int bump = 1
+            Ldc(1);
+            Stloc(bump);
+
+            // int stoppos = text.Length
+            _ilg!.Emit(OpCodes.Ldarga_S, 1);
+            Call(s_spanGetLengthMethod);
+            Stloc(stoppos);
+
+            // while (true)
+            Label whileLoopEnd = DefineLabel();
+            Label whileLoopBody = DefineLabel();
+            MarkLabel(whileLoopBody);
+
+            // if (FindFirstChar(text))
+            Label afterFindFirstCharLabel = DefineLabel();
+            Ldthis();
+            Ldarg_1();
+            Call(findFirstCharMethod);
+            BrfalseFar(afterFindFirstCharLabel);
+
+            if (_hasTimeout)
+            {
+                // CheckTimeout();
+                Ldthis();
+                Call(s_checkTimeoutMethod);
+            }
+
+            // if (Go(text))
+            //   return;
+            Label afterSuccessMatchLabel = DefineLabel();
+            Ldthis();
+            Ldarg_1();
+            Call(goMethod);
+            BrfalseFar(afterSuccessMatchLabel);
+            BrFar(returnLabel);
+            MarkLabel(afterSuccessMatchLabel);
+
+            // if (runtextpos == stoppos)
+            Label incrementRuntextPosLabel = DefineLabel();
+            MarkLabel(afterFindFirstCharLabel);
+            Ldthisfld(s_runtextposField);
+            Ldloc(stoppos);
+            Ceq();
+            BrfalseFar(incrementRuntextPosLabel);
+
+            // return;
+            BrFar(returnLabel);
+
+            // runtextpos += bump
+            MarkLabel(incrementRuntextPosLabel);
+            Ldthis();
+            Ldthisfld(s_runtextposField);
+            Ldloc(bump);
+            Add();
+            Stfld(s_runtextposField);
+
+            // End loop body.
+            BrFar(whileLoopBody);
+            MarkLabel(whileLoopEnd);
+
+            // return;
+            MarkLabel(returnLabel);
+            _ilg!.Emit(OpCodes.Nop);
+            Ret();
         }
 
         private void InitializeCultureForGoIfNecessary()

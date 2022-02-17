@@ -324,15 +324,53 @@ namespace System.Text.RegularExpressions
 
         private void Backwardnext() => runtextpos += _rightToLeft ? 1 : -1;
 
-        protected override bool FindFirstChar() =>
-            _code.FindOptimizations.TryFindNextStartingPosition(runtext!, ref runtextpos, runtextbeg, runtextstart, runtextend);
+        protected internal override void Scan(ReadOnlySpan<char> text)
+        {
+            // Configure the additional value to "bump" the position along each time we loop around
+            // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
+            // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
+            // by -1 and stop at textbeg.
+            int bump = 1, stoppos = text.Length;
+            if (runregex!.RightToLeft)
+            {
+                bump = -1;
+                stoppos = 0;
+            }
 
-        protected override void Go()
+            while (true)
+            {
+                if (FindFirstChar(text))
+                {
+                    CheckTimeout();
+
+                    if (Go(text))
+                    {
+                        return;
+                    }
+
+                    // Reset state for another iteration.
+                    runtrackpos = runtrack!.Length;
+                    runstackpos = runstack!.Length;
+                    runcrawlpos = runcrawl!.Length;
+                }
+
+                if (runtextpos == stoppos)
+                {
+                    return;
+                }
+
+                runtextpos += bump;
+            }
+        }
+
+        private bool FindFirstChar(ReadOnlySpan<char> inputSpan) =>
+            _code.FindOptimizations.TryFindNextStartingPosition(inputSpan, ref runtextpos, runtextbeg, runtextstart, runtextend);
+
+        private bool Go(ReadOnlySpan<char> inputSpan)
         {
             SetOperator((RegexOpcode)_code.Codes[0]);
             _codepos = 0;
             int advance = -1;
-            ReadOnlySpan<char> inputSpan = runtext;
 
             while (true)
             {
@@ -354,7 +392,7 @@ namespace System.Text.RegularExpressions
                 switch (_operator)
                 {
                     case RegexOpcode.Stop:
-                        return;
+                        return runmatch!._matchcount[0] > 0;
 
                     case RegexOpcode.Nothing:
                         break;
@@ -711,7 +749,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.Boundary:
-                        if (!IsBoundary(runtextpos, runtextbeg, runtextend))
+                        if (!IsBoundary(inputSpan, runtextpos))
                         {
                             break;
                         }
@@ -719,7 +757,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.NonBoundary:
-                        if (IsBoundary(runtextpos, runtextbeg, runtextend))
+                        if (IsBoundary(inputSpan, runtextpos))
                         {
                             break;
                         }
@@ -727,7 +765,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.ECMABoundary:
-                        if (!IsECMABoundary(runtextpos, runtextbeg, runtextend))
+                        if (!IsECMABoundary(inputSpan, runtextpos))
                         {
                             break;
                         }
@@ -735,7 +773,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.NonECMABoundary:
-                        if (IsECMABoundary(runtextpos, runtextbeg, runtextend))
+                        if (IsECMABoundary(inputSpan, runtextpos))
                         {
                             break;
                         }

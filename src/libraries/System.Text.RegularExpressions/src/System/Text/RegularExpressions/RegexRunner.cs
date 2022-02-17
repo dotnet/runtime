@@ -88,10 +88,133 @@ namespace System.Text.RegularExpressions
         protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
             Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
 
+        protected internal virtual void Scan(ReadOnlySpan<char> text)
+        {
+            string? s = runtext;
+            if (text != s)
+            {
+                throw new NotSupportedException(); // <-- If we l anded here then we are dealing with a CompiledToAssembly case where the new Span overloads are being used.
+            }
+
+            Debug.Assert(runregex != null);
+            Scan(runregex, s, 0, s.Length, runtextstart, -1, quick, runregex.internalMatchTimeout);
+        }
+
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
-            this.quick = quick;
+            // Configure the additional value to "bump" the position along each time we loop around
+            // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
+            // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
+            // by -1 and stop at textbeg.
+            int bump = 1, stoppos = textend;
+            if (regex.RightToLeft)
+            {
+                bump = -1;
+                stoppos = textbeg;
+            }
 
+            while (true)
+            {
+                // Find the next potential location for a match in the input.
+#if DEBUG
+                Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling FindFirstChar at {nameof(runtextbeg)}={runtextbeg}, {nameof(runtextpos)}={runtextpos}, {nameof(runtextend)}={runtextend}");
+#endif
+                if (FindFirstChar())
+                {
+                    CheckTimeout();
+
+                    // See if there's a match at this position.
+#if DEBUG
+                    Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling Go at {nameof(runtextpos)}={runtextpos}");
+#endif
+                    Go();
+
+                    if (runmatch!._matchcount[0] > 0)
+                    {
+                        return runmatch;
+                    }
+
+                    // Reset state for another iteration.
+                    runtrackpos = runtrack!.Length;
+                    runstackpos = runstack!.Length;
+                    runcrawlpos = runcrawl!.Length;
+                }
+
+                // We failed to match at this position.  If we're at the stopping point, we're done.
+                if (runtextpos == stoppos)
+                {
+                    return Match.Empty;
+                }
+
+                // Bump by one (in whichever direction is appropriate) and loop to go again.
+                runtextpos += bump;
+            }
+        }
+
+        internal void InitializeForScan(Regex regex, ReadOnlySpan<char> text, int textstart, bool quick)
+        {
+            this.quick = quick;
+            // Store remaining arguments into fields now that we're going to start the scan.
+            // These are referenced by the derived runner.
+            runregex = regex;
+            runtextstart = textstart;
+            runtextbeg = 0;
+            runtextend = text.Length;
+            runtextpos = textstart;
+
+            if (runmatch is null)
+            {
+                // Use a hashtabled Match object if the capture numbers are sparse
+                runmatch = runregex!.caps is null ?
+                    new Match(runregex, runregex.capsize, runtext, runtextbeg, runtextend - runtextbeg, runtextstart) :
+                    new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext, runtextbeg, runtextend - runtextbeg, runtextstart);
+            }
+            else
+            {
+                runmatch.Reset(runregex!, runtext, runtextbeg, runtextend, runtextstart);
+            }
+
+            // Note we test runcrawl, because it is the last one to be allocated
+            // If there is an alloc failure in the middle of the three allocations,
+            // we may still return to reuse this instance, and we want to behave
+            // as if the allocations didn't occur.
+            if (runcrawl != null)
+            {
+                runtrackpos = runtrack!.Length;
+                runstackpos = runstack!.Length;
+                runcrawlpos = runcrawl.Length;
+                return;
+            }
+
+            // Everything above runs once per match.
+            // Everything below runs once per runner.
+
+            InitTrackCount();
+
+            int stacksize;
+            int tracksize = stacksize = runtrackcount * 8;
+
+            if (tracksize < 32)
+            {
+                tracksize = 32;
+            }
+            if (stacksize < 16)
+            {
+                stacksize = 16;
+            }
+
+            runtrack = new int[tracksize];
+            runtrackpos = tracksize;
+
+            runstack = new int[stacksize];
+            runstackpos = stacksize;
+
+            runcrawl = new int[32];
+            runcrawlpos = 32;
+        }
+
+        internal void InitializeTimeout(TimeSpan timeout)
+        {
             // Handle timeout argument
             _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
             bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
@@ -105,105 +228,6 @@ namespace System.Text.RegularExpressions
                 _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
                 _timeoutOccursAt = Environment.TickCount + _timeout;
                 _timeoutChecksToSkip = TimeoutCheckFrequency;
-            }
-
-            // Configure the additional value to "bump" the position along each time we loop around
-            // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
-            // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
-            // by -1 and stop at textbeg.
-            int bump = 1, stoppos = textend;
-            if (regex.RightToLeft)
-            {
-                bump = -1;
-                stoppos = textbeg;
-            }
-
-            // Store runtextpos into field, as we may bump it in next check.  The remaining arguments
-            // are stored below once we're past the potential return in the next check.
-            runtextpos = textstart;
-
-            // If previous match was empty or failed, advance by one before matching.
-            if (prevlen == 0)
-            {
-                if (textstart == stoppos)
-                {
-                    return Match.Empty;
-                }
-
-                runtextpos += bump;
-            }
-
-            // Store remaining arguments into fields now that we're going to start the scan.
-            // These are referenced by the derived runner.
-            runregex = regex;
-            runtext = text;
-            runtextstart = textstart;
-            runtextbeg = textbeg;
-            runtextend = textend;
-
-            // Main loop: FindFirstChar/Go + bump until the ending position.
-            bool initialized = false;
-            while (true)
-            {
-                // Find the next potential location for a match in the input.
-#if DEBUG
-                Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling FindFirstChar at {nameof(runtextbeg)}={runtextbeg}, {nameof(runtextpos)}={runtextpos}, {nameof(runtextend)}={runtextend}");
-#endif
-                if (FindFirstChar())
-                {
-                    if (!ignoreTimeout)
-                    {
-                        DoCheckTimeout();
-                    }
-
-                    // Ensure that the runner is initialized.  This includes initializing all of the state in the runner
-                    // that Go might use, such as the backtracking stack, as well as a Match object for it to populate.
-                    if (!initialized)
-                    {
-                        InitializeForGo();
-                        initialized = true;
-                    }
-
-                    // See if there's a match at this position.
-#if DEBUG
-                    Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling Go at {nameof(runtextpos)}={runtextpos}");
-#endif
-                    Go();
-
-                    // If we got a match, we're done.
-                    Match match = runmatch!;
-                    if (match._matchcount[0] > 0)
-                    {
-                        runtext = null; // drop reference to text to avoid keeping it alive in a cache
-
-                        if (quick)
-                        {
-                            runmatch!.Text = null!; // drop reference
-                            return null;
-                        }
-
-                        // Return the match in its canonical form.
-                        runmatch = null;
-                        match.Tidy(runtextpos);
-                        return match;
-                    }
-
-                    // Reset state for another iteration.
-                    runtrackpos = runtrack!.Length;
-                    runstackpos = runstack!.Length;
-                    runcrawlpos = runcrawl!.Length;
-                }
-
-                // We failed to match at this position.  If we're at the stopping point, we're done.
-                if (runtextpos == stoppos)
-                {
-                    runtext = null; // drop reference to text to avoid keeping it alive in a cache
-                    if (runmatch != null) runmatch.Text = null!;
-                    return Match.Empty;
-                }
-
-                // Bump by one (in whichever direction is appropriate) and loop to go again.
-                runtextpos += bump;
             }
         }
 
@@ -250,7 +274,6 @@ namespace System.Text.RegularExpressions
             runtextbeg = 0;
 
             // Main loop: FindFirstChar/Go + bump until the ending position.
-            bool initialized = false;
             while (true)
             {
                 // Find the next potential location for a match in the input.
@@ -262,14 +285,6 @@ namespace System.Text.RegularExpressions
                     if (!ignoreTimeout)
                     {
                         DoCheckTimeout();
-                    }
-
-                    // Ensure that the runner is initialized.  This includes initializing all of the state in the runner
-                    // that Go might use, such as the backtracking stack, as well as a Match object for it to populate.
-                    if (!initialized)
-                    {
-                        InitializeForGo();
-                        initialized = true;
                     }
 
 #if DEBUG
@@ -291,7 +306,6 @@ namespace System.Text.RegularExpressions
                             runmatch = null;
                         }
                         match.Tidy(runtextpos);
-                        initialized = false;
                         if (!callback(ref state, match))
                         {
                             // If the callback returns false, we're done.
@@ -359,7 +373,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        protected void CheckTimeout()
+        protected internal void CheckTimeout()
         {
             if (_ignoreTimeout)
                 return;
@@ -385,7 +399,9 @@ namespace System.Text.RegularExpressions
             if (0 > _timeoutOccursAt && 0 < currentMillis)
                 return;
 
-            throw new RegexMatchTimeoutException(runtext!, runregex!.pattern!, TimeSpan.FromMilliseconds(_timeout));
+            string input = runtext ?? string.Empty;
+
+            throw new RegexMatchTimeoutException(input, runregex!.pattern!, TimeSpan.FromMilliseconds(_timeout));
         }
 
         /// <summary>
@@ -394,77 +410,21 @@ namespace System.Text.RegularExpressions
         /// then to leave runtextpos at the ending position. It should leave
         /// runtextpos where it started if there was no match.
         /// </summary>
-        protected abstract void Go();
+        protected virtual void Go() => throw new NotImplementedException();
 
         /// <summary>
         /// The responsibility of FindFirstChar() is to advance runtextpos
         /// until it is at the next position which is a candidate for the
         /// beginning of a successful match.
         /// </summary>
-        protected abstract bool FindFirstChar();
+        protected virtual bool FindFirstChar() => throw new NotImplementedException();
 
         /// <summary>
         /// InitTrackCount must initialize the runtrackcount field; this is
         /// used to know how large the initial runtrack and runstack arrays
         /// must be.
         /// </summary>
-        protected abstract void InitTrackCount();
-
-        /// <summary>
-        /// Initializes all the data members that are used by Go()
-        /// </summary>
-        private void InitializeForGo()
-        {
-            if (runmatch is null)
-            {
-                // Use a hashtabled Match object if the capture numbers are sparse
-                runmatch = runregex!.caps is null ?
-                    new Match(runregex, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart) :
-                    new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart);
-            }
-            else
-            {
-                runmatch.Reset(runregex!, runtext!, runtextbeg, runtextend, runtextstart);
-            }
-
-            // Note we test runcrawl, because it is the last one to be allocated
-            // If there is an alloc failure in the middle of the three allocations,
-            // we may still return to reuse this instance, and we want to behave
-            // as if the allocations didn't occur.
-            if (runcrawl != null)
-            {
-                runtrackpos = runtrack!.Length;
-                runstackpos = runstack!.Length;
-                runcrawlpos = runcrawl.Length;
-                return;
-            }
-
-            // Everything above runs once per match.
-            // Everything below runs once per runner.
-
-            InitTrackCount();
-
-            int stacksize;
-            int tracksize = stacksize = runtrackcount * 8;
-
-            if (tracksize < 32)
-            {
-                tracksize = 32;
-            }
-            if (stacksize < 16)
-            {
-                stacksize = 16;
-            }
-
-            runtrack = new int[tracksize];
-            runtrackpos = tracksize;
-
-            runstack = new int[stacksize];
-            runstackpos = stacksize;
-
-            runcrawl = new int[32];
-            runcrawlpos = 32;
-        }
+        protected virtual void InitTrackCount() { }
 
         /// <summary>
         /// Called by the implementation of Go() to increase the size of storage
@@ -491,6 +451,12 @@ namespace System.Text.RegularExpressions
                    (index < endpos && RegexCharClass.IsBoundaryWordChar(runtext![index]));
         }
 
+        protected bool IsBoundary(ReadOnlySpan<char> inputSpan, int index)
+        {
+            return (index > runtextbeg && RegexCharClass.IsBoundaryWordChar(inputSpan[index - 1])) !=
+                   (index < inputSpan.Length && RegexCharClass.IsBoundaryWordChar(inputSpan[index]));
+        }
+
         /// <summary>Called to determine a char's inclusion in the \w set.</summary>
         internal static bool IsWordChar(char ch) => RegexCharClass.IsWordChar(ch);
 
@@ -498,6 +464,12 @@ namespace System.Text.RegularExpressions
         {
             return (index > startpos && RegexCharClass.IsECMAWordChar(runtext![index - 1])) !=
                    (index < endpos && RegexCharClass.IsECMAWordChar(runtext![index]));
+        }
+
+        protected bool IsECMABoundary(ReadOnlySpan<char> inputSpan, int index)
+        {
+            return (index > runtextbeg && RegexCharClass.IsECMAWordChar(inputSpan[index - 1])) !=
+                   (index < inputSpan.Length && RegexCharClass.IsECMAWordChar(inputSpan[index]));
         }
 
         protected static bool CharInSet(char ch, string set, string category)
@@ -699,7 +671,10 @@ namespace System.Text.RegularExpressions
 
                 if (runtextpos > runtextbeg)
                 {
-                    sb.Append(RegexCharClass.DescribeChar(runtext![runtextpos - 1]));
+                    if (runtext != null)
+                    {
+                        sb.Append(RegexCharClass.DescribeChar(runtext[runtextpos - 1]));
+                    }
                 }
                 else
                 {
@@ -710,7 +685,10 @@ namespace System.Text.RegularExpressions
 
                 for (int i = runtextpos; i < runtextend; i++)
                 {
-                    sb.Append(RegexCharClass.DescribeChar(runtext![i]));
+                    if (runtext != null)
+                    {
+                        sb.Append(RegexCharClass.DescribeChar(runtext[i]));
+                    }
                 }
                 if (sb.Length >= 64)
                 {
