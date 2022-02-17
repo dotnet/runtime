@@ -6,9 +6,9 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-class Program
+class Generics
 {
-    static int Main()
+    internal static int Run()
     {
         TestDictionaryDependencyTracking.Run();
         TestStaticBaseLookups.Run();
@@ -2748,9 +2748,9 @@ class Program
         public static void Run()
         {
             var derived = new Derived<Atom1, Atom2>();
-            if (ConstrainedCall<Derived<Atom1, Atom2>, Atom2, Atom3>(ref derived) != "Derived<Program+TestConstrainedGvmCalls+Atom1,Program+TestConstrainedGvmCalls+Atom2>.Method<Program+TestConstrainedGvmCalls+Atom3>()")
+            if (ConstrainedCall<Derived<Atom1, Atom2>, Atom2, Atom3>(ref derived) != "Derived<Generics+TestConstrainedGvmCalls+Atom1,Generics+TestConstrainedGvmCalls+Atom2>.Method<Generics+TestConstrainedGvmCalls+Atom3>()")
                 throw new Exception();
-            if (ConstrainedCall<Derived<Atom1, Atom2>, Atom1, Atom3>(ref derived) != "Base<Program+TestConstrainedGvmCalls+Atom1>.Method<Program+TestConstrainedGvmCalls+Atom3>()")
+            if (ConstrainedCall<Derived<Atom1, Atom2>, Atom1, Atom3>(ref derived) != "Base<Generics+TestConstrainedGvmCalls+Atom1>.Method<Generics+TestConstrainedGvmCalls+Atom3>()")
                 throw new Exception();
         }
     }
