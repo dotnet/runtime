@@ -6,7 +6,7 @@
 #error The file should not be included for this platform.
 #endif
 
-//NOTE for LoongArch64:
+// NOTE for LoongArch64:
 //  The `REG_R21` which alias `REG_X0` is specially reserved !!!
 //  It can be used only by manully and should be very careful!!!
 

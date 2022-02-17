@@ -5819,7 +5819,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         }
         else
         {
-            //TODO-LOONGARCH64: should amend for optimize!
+            // TODO-LOONGARCH64: should amend for optimize!
             // GetEmitter()->emitIns_R_I(INS_pcaddu12i, EA_PTRSIZE, regGSConst,
             // (ssize_t)compiler->gsGlobalSecurityCookieAddr);
             // GetEmitter()->emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, regGSConst, regGSConst, );
