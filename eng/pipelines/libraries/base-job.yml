@@ -40,6 +40,11 @@ jobs:
       condition: and(succeeded(), ${{ parameters.condition }})
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
+
+      # Component governance does not work on musl machines
+      ${{ if eq(parameters.osSubGroup, '_musl') }}:
+        disableComponentGovernance: true
+
       variables:
         - _buildScriptFileName: build
 
