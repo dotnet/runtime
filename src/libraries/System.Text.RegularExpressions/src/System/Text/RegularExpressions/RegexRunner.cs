@@ -90,10 +90,10 @@ namespace System.Text.RegularExpressions
 
         protected internal virtual void Scan(ReadOnlySpan<char> text)
         {
-            string s = runtext!;
+            string? s = runtext;
             // If beginning was passed in, then runtext and span won't match lengths so calculate the beginning to be used for the comparison.
-            int beginning = s.Length != text.Length ? s.Length - text.Length : 0;
-            if (text != s.AsSpan(beginning, text.Length))
+            int beginning = (s != null && s.Length != text.Length) ? s.Length - text.Length : 0;
+            if (s == null || text != s.AsSpan(beginning, text.Length))
             {
                 // If we landed here then we are dealing with a CompiledToAssembly case where the new Span overloads are being called.
                 throw new NotSupportedException(SR.UsingSpanAPIsWithCompiledToAssembly);

@@ -31,6 +31,9 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(Match.Empty, testClass.Match(text, startat: 7));
             Assert.Equal(6, testClass.Match(text, startat: 6).Index);
 
+            // Test Span-based IsMatch throws for Precompiled scenario.
+            Assert.Throws<NotSupportedException>(() => testClass.IsMatch(text.AsSpan()));
+
             // Test Groups
             Assert.Equal(text, testClass.Match(text).Groups[0].Value);
             Assert.Equal(new int[] { 0, 1, 2}, testClass.GetGroupNumbers());
