@@ -188,7 +188,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         result = JObject.FromObject(new
                         {
-                            value = obj["result"]["preview"]["ownProperties"]["value"]
+                            value = obj["result"]?["preview"]?["ownProperties"]?["value"]
                         })
                     });
                 }
@@ -211,8 +211,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     })
                 });
             }
-
-            return new Result(o, obj["hasException"] as JObject);
+            bool resultHasError = obj["hasException"] != null && obj["hasException"].Value<bool>();
+            if (resultHasError)
+            {
+                return new Result(obj["hasException"]["result"] as JObject, resultHasError);
+            }
+            return new Result(o, false);
         }
 
         public static Result Ok(JObject ok) => new Result(ok, false);
