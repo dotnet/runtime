@@ -18,7 +18,7 @@
     <MonoArtifactsPath Condition="'$(MonoArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'mono', '$(TargetOS).$(TargetArchitecture).$(MonoConfiguration)'))</MonoArtifactsPath>
     <LibrariesArtifactsPath Condition="'$(LibrariesArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesArtifactsPath>
     <LibrariesAllConfigurationsArtifactsPath Condition="'$(LibrariesAllConfigurationsArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesAllConfigurationsArtifactsPath>
-    <HostArtifactsPath Condition="'$(HostArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture).$(CoreCLRConfiguration)', 'corehost'))</HostArtifactsPath>
+    <HostArtifactsPath Condition="'$(HostArtifactsPath)' == ''">$(DotNetHostBinDir)</HostArtifactsPath>
   </PropertyGroup>
 
   <!-- Set up artifact subpaths. -->

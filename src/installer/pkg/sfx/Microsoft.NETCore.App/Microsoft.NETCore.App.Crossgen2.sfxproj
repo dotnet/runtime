@@ -32,28 +32,6 @@
              Targets="Restore;Publish" />
   </Target>
 
-  <Target Name="CollectCrossgenOutputs"
-          DependsOnTargets="PublishCrossgen">
-    <PropertyGroup>
-      <Crossgen2PublishDir>$(OutputPath)publish/</Crossgen2PublishDir>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <FilesToPackage Include="$(Crossgen2PublishDir)crossgen2$(ExeSuffix)" TargetPath="tools/" />
-      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit*$(LibSuffix)" TargetPath="tools" />
-      <Reference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
-      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)jitinterface_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
-      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_x86_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_arm_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_arm_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_x64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
-      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_x64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
-      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_osx_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
-    </ItemGroup>
-  </Target>
-
   <PropertyGroup>
     <TargetOSComponent>unix</TargetOSComponent>
     <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
@@ -108,5 +86,24 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
   <Import Project="$(Crossgen2SdkOverrideTargetsPath)" />
   <Import Project="ReadyToRun.targets" />
+
+  <Target Name="GetFilesToPackage"
+          DependsOnTargets="PublishCrossgen">
+    <PropertyGroup>
+      <Crossgen2PublishDir>$(OutputPath)publish/</Crossgen2PublishDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <FilesToPackage Include="$(Crossgen2PublishDir)crossgen2$(ExeSuffix)" TargetPath="tools/" />
+      <Reference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
+      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)jitinterface_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
+      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_x86_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
+      <FilesToPackage Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_universal_arm_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
+      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_win_x64_$(TargetArchitecture)$(LibSuffix)"  TargetPath="tools/" />
+      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_unix_x64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
+      <FilesToPackage Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(Crossgen2PublishDir)$(LibPrefix)clrjit_universal_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
+    </ItemGroup>
+  </Target>
+
 
 </Project>

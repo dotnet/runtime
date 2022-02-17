@@ -1,4 +1,4 @@
-@if not defined _echo @echo off
+@if not defined _echo @echo on
 rem
 rem This file invokes cmake and generates the build system for windows.
 
