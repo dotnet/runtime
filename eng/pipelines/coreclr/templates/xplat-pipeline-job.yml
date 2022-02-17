@@ -13,6 +13,7 @@ parameters:
   stagedBuild: false
   strategy: ''
   pool: ''
+  runtimeVariant: ''
 
   # arcade-specific parameters
   condition: true
@@ -107,8 +108,12 @@ jobs:
     - name: corelibProductArtifactName
       value: 'CoreLib_${{ parameters.pgoType }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
-    - name: managedGenericTestArtifactName
-      value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
+    - ${{ if eq(parameters.runtimeVariant, '') }}:
+      - name: managedGenericTestArtifactName
+        value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
+    - ${{ if eq(parameters.runtimeVariant, 'nativeaot') }}:
+      - name: managedGenericTestArtifactName
+        value: 'CoreCLRManagedTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: managedTestArtifactRootFolderPath
       value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'

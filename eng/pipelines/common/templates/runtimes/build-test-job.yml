@@ -50,10 +50,16 @@ jobs:
       continueOnError: true
 
     # Compute job name from template parameters
-    ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
+    ${{ if and(eq(parameters.runtimeVariant, 'nativeaot'), in(parameters.testGroup, 'innerloop', 'clrinterpreter')) }}:
+      name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_{{ parameters.osGroup }}{{ parameters.osSubgroup }}_{{ parameters.archType }}_${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build {{ parameters.osGroup }}{{ parameters.osSubgroup }} {{ parameters.archType }} ${{ parameters.buildConfig }}'
+    ${{ if and(eq(parameters.runtimeVariant, 'nativeaot'), notIn(parameters.testGroup, 'innerloop', 'clrinterpreter')) }}:
+      name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_{{ parameters.osGroup }}{{ parameters.osSubgroup }}_{{ parameters.archType }}_${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build {{ parameters.osGroup }}{{ parameters.osSubgroup }} {{ parameters.archType }} ${{ parameters.buildConfig }}'
+    ${{ if and(ne(parameters.runtimeVariant, 'nativeaot'), in(parameters.testGroup, 'innerloop', 'clrinterpreter')) }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
       displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
-    ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
+    ${{ if and(ne(parameters.runtimeVariant, 'nativeaot'), notIn(parameters.testGroup, 'innerloop', 'clrinterpreter')) }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
       displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
 
@@ -96,6 +102,24 @@ jobs:
         - name: runtimeFlavorArgs
           value: '-mono'
 
+      # NativeAOT builds are actually target-specific
+      - ${{ if eq(parameters.runtimeVariant, 'nativeaot') }}:
+        - name: targetOSArg
+          value: ${{ parameters.osGroup }}
+        - name: targetCpuArg
+          value: ${{ parameters.archType }}
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
+          - name: runtimeFlavorArgs
+            value: nativeaot tree nativeaot
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
+          - name: runtimeFlavorArgs
+            value: -nativeaot 'tree nativeaot'
+      - ${{ if ne(parameters.runtimeVariant, 'nativeaot') }}:
+        - name: targetOSArg
+          value: AnyOS
+        - name: targetCpuArg
+          value: AnyCPU
+
     steps:
 
     # Install test build dependencies
@@ -118,7 +142,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build managed test components
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) ci /p:TargetOS=AnyOS
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) ci /p:TargetOS=$(targetOSArg)
       displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
@@ -130,7 +154,7 @@ jobs:
     # Zip and publish managed test components
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-        rootFolder: '$(binTestsPath)/AnyOS.$(archType).$(buildConfigUpper)'
+        rootFolder: '$(binTestsPath)/$(targetOSArg).$(archType).$(buildConfigUpper)'
         includeRootFolder: false
         archiveExtension: '.tar.gz'
         archiveType: tar
@@ -157,6 +181,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
+        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_$(targetOSArg)_$(targetCpuArg)_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()
