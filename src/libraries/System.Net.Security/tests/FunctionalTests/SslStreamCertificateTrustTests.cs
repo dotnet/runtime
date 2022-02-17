@@ -30,6 +30,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65515", TestPlatforms.Windows)]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
         public async Task SslStream_SendCertificateTrust_CertificateStore()
         {
