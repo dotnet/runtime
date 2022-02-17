@@ -2103,18 +2103,47 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
 }
 
 //------------------------------------------------------------------------
-// impIsProfileableCastHelper: Checks whether a tree is a cast helper suitable to
+// impIsCastHelperEligibleForClassProbe: Checks whether a tree is a cast helper eligible to
 //    to be profiled and then optimized with PGO data
 //
 // Arguments:
 //    tree - the tree object to check
 //
 // Returns:
-//    true if the tree is a cast helper of one of the suitable to profile types
+//    true if the tree is a cast helper eligible to be profiled
 //
-bool Compiler::impIsProfileableCastHelper(GenTree* tree)
+bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 {
-    if (opts.OptimizationEnabled() || (JitConfig.JitCastProfiling() != 1))
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || (JitConfig.JitCastProfiling() != 1))
+    {
+        return false;
+    }
+
+    if (tree->IsCall() && tree->AsCall()->gtCallType == CT_HELPER)
+    {
+        const CorInfoHelpFunc helper = eeGetHelperNum(tree->AsCall()->gtCallMethHnd);
+        if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
+            (helper == CORINFO_HELP_CHKCASTCLASS))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// impIsCastHelperMayHaveProfileData: Checks whether a tree is a cast helper that might
+//    have profile data
+//
+// Arguments:
+//    tree - the tree object to check
+//
+// Returns:
+//    true if the tree is a cast helper with potential profile data
+//
+bool Compiler::impIsCastHelperMayHaveProfileData(GenTree* tree)
+{
+    if (opts.OptimizationDisabled() || (JitConfig.JitCastProfiling() != 1))
     {
         return false;
     }
@@ -11481,11 +11510,8 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
 // Notes:
 //   May expand into a series of runtime checks or a helper call.
 
-GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
-                                              GenTree*                op2,
-                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                              bool                    isCastClass,
-                                              IL_OFFSET               ilOffset)
+GenTree* Compiler::impCastClassOrIsInstToTree(
+    GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSET ilOffset)
 {
     assert(op1->TypeGet() == TYP_REF);
 
@@ -11546,11 +11572,11 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         op2->gtFlags |= GTF_DONT_CSE;
 
         GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, gtNewCallArgs(op2, op1));
-        if (impIsProfileableCastHelper(call))
+        if (impIsCastHelperEligibleForClassProbe(call))
         {
-            ClassProfileCandidateInfo* pInfo = new (this, CMK_Inlining) ClassProfileCandidateInfo;
-            pInfo->ilOffset = ilOffset;
-            pInfo->probeIndex = info.compClassProbeCount++;
+            ClassProfileCandidateInfo* pInfo  = new (this, CMK_Inlining) ClassProfileCandidateInfo;
+            pInfo->ilOffset                   = ilOffset;
+            pInfo->probeIndex                 = info.compClassProbeCount++;
             call->gtClassProfileCandidateInfo = pInfo;
             compCurBB->bbFlags |= BBF_HAS_CLASS_PROFILE;
         }

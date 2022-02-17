@@ -1440,7 +1440,7 @@ public:
                 // virtual call
                 m_functor(m_compiler, call);
             }
-            else if (m_compiler->impIsProfileableCastHelper(call))
+            else if (m_compiler->impIsCastHelperEligibleForClassProbe(call))
             {
                 // isinst/cast helper
                 m_functor(m_compiler, call);
@@ -1476,7 +1476,7 @@ public:
         }
         else
         {
-            assert(call->IsVirtualVtable() || compiler->impIsProfileableCastHelper(call));
+            assert(call->IsVirtualVtable() || compiler->impIsCastHelperEligibleForClassProbe(call));
         }
 
         schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
@@ -1531,7 +1531,6 @@ public:
         //         ... args ...)
         //
 
-
         // Sanity check that we're looking at the right schema entry
         //
         assert(m_schema[*m_currentSchemaIndex].ILOffset == (int32_t)call->gtClassProfileCandidateInfo->ilOffset);
@@ -1547,7 +1546,7 @@ public:
         *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
 
         GenTreeCall::Use* objUse = nullptr;
-        if (compiler->impIsProfileableCastHelper(call))
+        if (compiler->impIsCastHelperEligibleForClassProbe(call))
         {
             // Grab the second arg of cast/isinst helper call
             objUse = call->gtCallArgs->GetNext();
@@ -1576,8 +1575,8 @@ public:
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
-        GenTree* const asgCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
+        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
+        GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
         // Update the call
         //
