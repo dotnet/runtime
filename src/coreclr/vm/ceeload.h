@@ -943,6 +943,10 @@ public:
         return LookupMap<PTR_MethodTable>::Iterator(&m_TypeDefToMethodTableMap);
     }
 
+#ifdef FEATURE_UNITY_MODULE_NUM_TYPEDEFS
+    DWORD GetNumTypeDefs() { LIMITED_METHOD_CONTRACT;  return m_TypeDefToMethodTableMap.GetSize(); }
+#endif
+
     // Hash of available types by name
     PTR_EEClassHashTable    m_pAvailableClasses;
 
