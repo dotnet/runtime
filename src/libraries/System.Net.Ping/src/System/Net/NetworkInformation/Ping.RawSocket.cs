@@ -32,10 +32,10 @@ namespace System.Net.NetworkInformation
             bool sendIpHeader = ipv4 && options != null && SendIpHeader;
             int totalLength = 0;
 
-             if (sendIpHeader)
-             {
+            if (sendIpHeader)
+            {
                 iph.VersionAndLength = 0x45;
-                totalLength = sizeof(IpHeader) + checked(sizeof(IcmpHeader) +  buffer.Length);
+                totalLength = sizeof(IpHeader) + checked(sizeof(IcmpHeader) + buffer.Length);
                 // On OSX this strangely must be host byte order.
                 iph.TotalLength = OperatingSystem.IsFreeBSD() ? (ushort)IPAddress.HostToNetworkOrder((short)totalLength) : (ushort)totalLength;
                 iph.Protocol = 1; // ICMP
@@ -46,7 +46,7 @@ namespace System.Net.NetworkInformation
 #pragma warning restore 618
                 // No need to fill in SourceAddress or checksum.
                 // If left blank, kernel will fill it in - at least on OSX.
-             }
+            }
 
             return new SocketConfig(
                 new IPEndPoint(address, 0), timeout, options,
@@ -340,11 +340,11 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static PingReply CreatePingReply(IPStatus status)
+        private static PingReply CreatePingReply(IPStatus status, IPAddress? address = null, long rtt = 0)
         {
             // Documentation indicates that you should only pay attention to the IPStatus value when
             // its value is not "Success", but the rest of these values match that of the Windows implementation.
-            return new PingReply(new IPAddress(0), null, status, 0, Array.Empty<byte>());
+            return new PingReply(address ?? new IPAddress(0), null, status, rtt, Array.Empty<byte>());
         }
 
 #if DEBUG

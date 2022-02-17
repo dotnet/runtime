@@ -92,6 +92,8 @@ namespace System
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
         public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
+        public static bool IsNodeJS => IsEnvironmentVariableTrue("IsNodeJS");
+        public static bool IsNotNodeJS => !IsNodeJS;
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
 

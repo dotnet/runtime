@@ -183,7 +183,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
       - MacCatalyst_x64
-      # - MacCatalyst_arm64 # re-enable it here and remove from runtime-staging after it's stabilized on OSX 11.00 queue
+      - MacCatalyst_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -224,10 +224,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - MacCatalyst_x64
-    # re-enable MacCatalyst_arm64 here and remove from runtime-staging after it's stabilized on OSX 11.00 queue
-    # don't run tests on arm64 PRs until we can get significantly more device
-    # - ${{ if eq(variables['isRollingBuild'], true) }}:
-      # - MacCatalyst_arm64 
+    - MacCatalyst_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

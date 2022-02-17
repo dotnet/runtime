@@ -674,7 +674,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return false;
             }
             Result res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(RuntimeId, args), token);
-            if (res.IsErr)
+            if (!res.IsOk)
             {
                 SendResponse(id, res, token);
                 return true;
@@ -1004,7 +1004,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
         {
             Result res = await SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(RuntimeId), token);
-            if (res.IsErr)
+            if (!res.IsOk)
                 return false;
 
             ExecutionContext context = GetContext(sessionId);
