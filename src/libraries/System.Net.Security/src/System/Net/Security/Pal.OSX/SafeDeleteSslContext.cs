@@ -144,7 +144,7 @@ namespace System.Net
                 }
             }
 
-            Interop.AppleCrypto.SslSetCertificateAuthorities(_sslContext, handles.Slice(0, certList.Count), true);
+            Interop.AppleCrypto.SslSetCertificateAuthorities(_sslContext, handles.Slice(0, certCount), true);
         }
 
 
