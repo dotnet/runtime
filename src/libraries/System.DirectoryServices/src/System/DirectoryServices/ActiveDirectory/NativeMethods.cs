@@ -364,87 +364,10 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static partial int NetApiBufferFree(
             IntPtr buffer);
 
-        /*DWORD DsMakePasswordCredentials(
-            LPTSTR User,
-            LPTSTR Domain,
-            LPTSTR Password,
-            RPC_AUTH_IDENTITY_HANDLE* pAuthIdentity
-            );*/
-
-        internal delegate int DsMakePasswordCredentials(
-      [MarshalAs(UnmanagedType.LPWStr)] string? user,
-      [MarshalAs(UnmanagedType.LPWStr)] string? domain,
-      [MarshalAs(UnmanagedType.LPWStr)] string? password,
-      [Out] out IntPtr authIdentity);
-
-        /*VOID DsFreePasswordCredentials(
-            RPC_AUTH_IDENTITY_HANDLE AuthIdentity
-            );*/
-        internal delegate void DsFreePasswordCredentials(
-            [In] IntPtr authIdentity);
-
-        /*DWORD DsBindWithCred(
-            TCHAR* DomainController,
-            TCHAR* DnsDomainName,
-            RPC_AUTH_IDENTITY_HANDLE AuthIdentity,
-            HANDLE* phDS
-            );*/
-        internal delegate int DsBindWithCred(
-            [MarshalAs(UnmanagedType.LPWStr)] string? domainController,
-            [MarshalAs(UnmanagedType.LPWStr)] string? dnsDomainName,
-            [In] IntPtr authIdentity,
-            [Out] out IntPtr handle);
-
-        /*DWORD DsUnBind(
-            HANDLE* phDS
-            );*/
-        internal delegate int DsUnBind(
-            [In] ref IntPtr handle);
-
-        /*DWORD DsGetDomainControllerInfo(
-            HANDLE hDs,
-            LPTSTR DomainName,
-            DWORD InfoLevel,
-            DWORD* pcOut,
-            VOID** ppInfo
-            );*/
-        internal delegate int DsGetDomainControllerInfo(
-            [In] IntPtr handle,
-            [MarshalAs(UnmanagedType.LPWStr)] string domainName,
-            [In] int infoLevel,
-            [Out] out int dcCount,
-            [Out] out IntPtr dcInfo);
-
         internal const int DsDomainControllerInfoLevel2 = 2;
         internal const int DsDomainControllerInfoLevel3 = 3;
 
-        /*VOID DsFreeDomainControllerInfo(
-            DWORD InfoLevel,
-            DWORD cInfo,
-            VOID* pInfo
-            );*/
-        internal delegate void DsFreeDomainControllerInfo(
-            [In] int infoLevel,
-            [In] int dcInfoListCount,
-            [In] IntPtr dcInfoList);
-
         internal const int DsNameNoError = 0;
-
-        /*DWORD DsListSites(
-            HANDLE hDs,
-            PDS_NAME_RESULT* ppSites
-            );*/
-        internal delegate int DsListSites(
-            [In] IntPtr dsHandle,
-            [Out] out IntPtr sites);
-
-        /*DWORD DsListRoles(
-            HANDLE hDs,
-            PDS_NAME_RESULTW* ppRoles
-            );*/
-        internal delegate int DsListRoles(
-            [In] IntPtr dsHandle,
-            [Out] out IntPtr roles);
 
         internal const int DnsSrvData = 33;
         internal const int DnsQueryBypassCache = 8;
@@ -474,24 +397,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static partial void DnsRecordListFree(
             IntPtr dnsResultList,
             bool dnsFreeType);
-
-        /*DWORD DsCrackNames(
-            HANDLE hDS,
-            DS_NAME_FLAGS flags,
-            DS_NAME_FORMAT formatOffered,
-            DS_NAME_FORMAT formatDesired,
-            DWORD cNames,
-            LPTSTR* rpNames,
-            PDS_NAME_RESULT* ppResult
-            );*/
-        internal delegate int DsCrackNames(
-            [In] IntPtr hDS,
-            [In] int flags,
-            [In] int formatOffered,
-            [In] int formatDesired,
-            [In] int nameCount,
-            [In] IntPtr names,
-            [Out] out IntPtr results);
 
         /*NTSTATUS LsaConnectUntrusted(
               PHANDLE LsaHandle

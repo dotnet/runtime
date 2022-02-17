@@ -290,7 +290,7 @@ namespace System.Text.Json
             if (string.IsNullOrEmpty(message))
             {
                 // Use a default message.
-                Type? propertyType = state.Current.JsonPropertyInfo?.RuntimePropertyType;
+                Type? propertyType = state.Current.JsonPropertyInfo?.PropertyType;
                 if (propertyType == null)
                 {
                     propertyType = state.Current.JsonTypeInfo?.Type;
@@ -376,7 +376,7 @@ namespace System.Text.Json
             Debug.Assert(!message.Contains(" Path: "));
 
             // Obtain the type to show in the message.
-            Type? propertyType = state.Current.JsonPropertyInfo?.RuntimePropertyType;
+            Type? propertyType = state.Current.JsonPropertyInfo?.PropertyType;
             if (propertyType == null)
             {
                 propertyType = state.Current.JsonTypeInfo.Type;
@@ -408,7 +408,7 @@ namespace System.Text.Json
             Debug.Assert(!message.Contains(" Path: "));
 
             // Obtain the type to show in the message.
-            Type? propertyType = state.Current.DeclaredJsonPropertyInfo?.RuntimePropertyType;
+            Type? propertyType = state.Current.DeclaredJsonPropertyInfo?.PropertyType;
             if (propertyType == null)
             {
                 propertyType = state.Current.JsonTypeInfo.Type;
