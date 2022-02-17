@@ -600,7 +600,7 @@ namespace CoreXml.Test.XLinq
         {
             var ms = new MemoryStream();
             
-            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
+            using var tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>");
             tw.WriteLine("<!-- comment1 -->");
@@ -792,13 +792,12 @@ namespace CoreXml.Test.XLinq
             tw.WriteLine("<VALIDXMLLANG3 xml:lang=\"a b-cd\" />");
 
             tw.Write("</PLAY>");
-            tw.Flush();
 
             FilePathUtil.addStream(strFileName, ms);
 
             //Create external DTD file
             var msDTD = new MemoryStream();
-            TextWriter twDTD = new StreamWriter(msDTD, leaveOpen: true);
+            using var twDTD = new StreamWriter(msDTD, leaveOpen: true);
             twDTD.WriteLine("<!ELEMENT elem2 (#PCDATA| a | b )* >");
             twDTD.WriteLine("<!ELEMENT a ANY>");
             twDTD.WriteLine("<!ELEMENT b ANY>");
@@ -808,16 +807,16 @@ namespace CoreXml.Test.XLinq
             twDTD.WriteLine("att2 CDATA #IMPLIED");
             twDTD.WriteLine("att3 CDATA #IMPLIED>");
             twDTD.WriteLine("<!ATTLIST a refs IDREFS #IMPLIED>");
-            twDTD.Flush();
+            
             FilePathUtil.addStream("AllNodeTypes.dtd", msDTD);
 
             // Create Ent file
             var msENT = new MemoryStream();
-            TextWriter twENT = new StreamWriter(msENT, leaveOpen: true);
+            using var twENT = new StreamWriter(msENT, leaveOpen: true);
             twENT.WriteLine("<!ELEMENT foo ANY>");
             twENT.WriteLine("<!ENTITY % ext4 \"blah\">");
             twENT.WriteLine("<!ENTITY ext3 \"%ext4;\">");
-            twENT.Flush();
+
             FilePathUtil.addStream("AllNodeTypes.ent", msENT);
         }
 
@@ -1024,7 +1023,7 @@ namespace CoreXml.Test.XLinq
             }
 
             var ms = new MemoryStream();
-            XmlWriter w = XmlWriter.Create(ms);
+            using var w = XmlWriter.Create(ms);
             w.WriteStartDocument();
             w.WriteDocType("Root", null, null, "<!ENTITY e 'abc'>");
             w.WriteStartElement("Root");
@@ -1060,7 +1059,6 @@ namespace CoreXml.Test.XLinq
             w.WriteRaw("D2BAa<MIX>abc</MIX>AQID");
             w.WriteEndElement();
             w.WriteEndElement();
-            w.Flush();
 
             FilePathUtil.addStream(strFileName, ms);
         }
