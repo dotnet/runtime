@@ -53,6 +53,30 @@ class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<int> AdvSimd_CompareEqual_Vector64_Int32_CreateZero(Vector64<int> left)
+    {
+        return AdvSimd.CompareEqual(left, Vector64.Create(0));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<int> AdvSimd_CompareEqual_Vector64_Int32_CreateZeroZero(Vector64<int> left)
+    {
+        return AdvSimd.CompareEqual(left, Vector64.Create(0, 0));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<float> AdvSimd_CompareEqual_Vector64_Single_CreateZero(Vector64<float> left)
+    {
+        return AdvSimd.CompareEqual(left, Vector64.Create(0f));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<float> AdvSimd_CompareEqual_Vector64_Single_CreateZeroZero(Vector64<float> left)
+    {
+        return AdvSimd.CompareEqual(left, Vector64.Create(0f, 0f));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector128<byte> AdvSimd_CompareEqual_Vector128_Byte_Zero(Vector128<byte> left)
     {
         return AdvSimd.CompareEqual(left, Vector128<byte>.Zero);
@@ -92,6 +116,37 @@ class Program
     static Vector128<float> AdvSimd_CompareEqual_Vector128_Single_Zero(Vector128<float> left)
     {
         return AdvSimd.CompareEqual(left, Vector128<float>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<int> AdvSimd_CompareEqual_Vector128_Int32_CreateZero(Vector128<int> left)
+    {
+        return AdvSimd.CompareEqual(left, Vector128.Create(0));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<int> AdvSimd_CompareEqual_Vector128_Int32_CreateZeroZeroZeroZero(Vector128<int> left)
+    {
+        return AdvSimd.CompareEqual(left, Vector128.Create(0, 0, 0, 0));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<float> AdvSimd_CompareEqual_Vector128_Single_CreateZero(Vector128<float> left)
+    {
+        return AdvSimd.CompareEqual(left, Vector128.Create(0f));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<float> AdvSimd_CompareEqual_Vector128_Single_CreateZeroZeroZeroZero(Vector128<float> left)
+    {
+        return AdvSimd.CompareEqual(left, Vector128.Create(0f, 0f, 0f, 0f));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<float> AdvSimd_CompareEqual_Vector128_Single_CreateZeroZeroZeroZero_AsVariable(Vector128<float> left)
+    {
+        var asVar = Vector128.Create(0f, 0f, 0f, 0f);
+        return AdvSimd.CompareEqual(left, asVar);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -432,6 +487,8 @@ class Program
 
         // Begin CompareEqual Tests
 
+        // Vector64
+
         if (!ValidateResult_Vector64<byte>(AdvSimd_CompareEqual_Vector64_Byte_Zero(Vector64<byte>.Zero), Byte.MaxValue))
             result = -1;
 
@@ -453,6 +510,22 @@ class Program
         if (!ValidateResult_Vector64<float>(AdvSimd_CompareEqual_Vector64_Single_Zero(Vector64<float>.Zero), Single.NaN))
             result = -1;
 
+        // Vector64.Create
+
+        if (!ValidateResult_Vector64<int>(AdvSimd_CompareEqual_Vector64_Int32_CreateZero(Vector64<int>.Zero), -1))
+            result = -1;
+
+        if (!ValidateResult_Vector64<float>(AdvSimd_CompareEqual_Vector64_Single_CreateZero(Vector64<float>.Zero), Single.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector64<int>(AdvSimd_CompareEqual_Vector64_Int32_CreateZeroZero(Vector64<int>.Zero), -1))
+            result = -1;
+
+        if (!ValidateResult_Vector64<float>(AdvSimd_CompareEqual_Vector64_Single_CreateZeroZero(Vector64<float>.Zero), Single.NaN))
+            result = -1;
+
+        // Vector128
+
         if (!ValidateResult_Vector128<byte>(AdvSimd_CompareEqual_Vector128_Byte_Zero(Vector128<byte>.Zero), Byte.MaxValue))
             result = -1;
 
@@ -472,6 +545,23 @@ class Program
             result = -1;
 
         if (!ValidateResult_Vector128<float>(AdvSimd_CompareEqual_Vector128_Single_Zero(Vector128<float>.Zero), Single.NaN))
+            result = -1;
+
+        // Vector128.Create
+
+        if (!ValidateResult_Vector128<int>(AdvSimd_CompareEqual_Vector128_Int32_CreateZero(Vector128<int>.Zero), -1))
+            result = -1;
+
+        if (!ValidateResult_Vector128<float>(AdvSimd_CompareEqual_Vector128_Single_CreateZero(Vector128<float>.Zero), Single.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector128<int>(AdvSimd_CompareEqual_Vector128_Int32_CreateZeroZeroZeroZero(Vector128<int>.Zero), -1))
+            result = -1;
+
+        if (!ValidateResult_Vector128<float>(AdvSimd_CompareEqual_Vector128_Single_CreateZeroZeroZeroZero(Vector128<float>.Zero), Single.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector128<float>(AdvSimd_CompareEqual_Vector128_Single_CreateZeroZeroZeroZero_AsVariable(Vector128<float>.Zero), Single.NaN))
             result = -1;
 
         // End CompareEqual Tests
@@ -589,6 +679,8 @@ class Program
 
         // Begin CompareEqual Tests
 
+        // Vector64
+
         if (!ValidateResult_Vector64<byte>(AdvSimd_CompareEqual_Vector64_Byte_Zero_Swapped(Vector64<byte>.Zero), Byte.MaxValue))
             result = -1;
 
@@ -609,6 +701,8 @@ class Program
 
         if (!ValidateResult_Vector64<float>(AdvSimd_CompareEqual_Vector64_Single_Zero_Swapped(Vector64<float>.Zero), Single.NaN))
             result = -1;
+
+        // Vector128
 
         if (!ValidateResult_Vector128<byte>(AdvSimd_CompareEqual_Vector128_Byte_Zero_Swapped(Vector128<byte>.Zero), Byte.MaxValue))
             result = -1;
@@ -642,6 +736,8 @@ class Program
 
         // Begin CompareEqual Tests
 
+        // Vector128
+
         if (!ValidateResult_Vector128<double>(AdvSimd_Arm64_CompareEqual_Vector128_Double_Zero(Vector128<double>.Zero), Double.NaN))
             result = -1;
 
@@ -650,6 +746,8 @@ class Program
 
         if (!ValidateResult_Vector128<long>(AdvSimd_Arm64_CompareEqual_Vector128_Int64_Zero(Vector128<long>.Zero), -1))
             result = -1;
+
+        // Vector64
 
         if (!ValidateResult_Vector64<float>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Single_Zero(Vector64<float>.Zero), Vector64.CreateScalar(Single.NaN)))
             result = -1;
@@ -674,6 +772,8 @@ class Program
 
         // Begin CompareEqual Tests
 
+        // Vector128
+
         if (!ValidateResult_Vector128<double>(AdvSimd_Arm64_CompareEqual_Vector128_Double_Zero_Swapped(Vector128<double>.Zero), Double.NaN))
             result = -1;
 
@@ -682,6 +782,8 @@ class Program
 
         if (!ValidateResult_Vector128<long>(AdvSimd_Arm64_CompareEqual_Vector128_Int64_Zero_Swapped(Vector128<long>.Zero), -1))
             result = -1;
+
+        // Vector64
 
         if (!ValidateResult_Vector64<float>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Single_Zero_Swapped(Vector64<float>.Zero), Vector64.CreateScalar(Single.NaN)))
             result = -1;
