@@ -482,12 +482,14 @@ namespace CoreXml.Test.XLinq
                     string base64str = Convert.ToBase64String(bits);
 
                     string fileName = "bug105376_" + Variation.Params[0].ToString() + ".xml";
-                    FilePathUtil.addStream(fileName, new MemoryStream());
-                    StreamWriter sw = new StreamWriter(FilePathUtil.getStream(fileName));
+                    var ms = new MemoryStream();
+                    StreamWriter sw = new StreamWriter(ms, leaveOpen: true);
                     sw.Write("<root><base64>");
                     sw.Write(base64str);
                     sw.Write("</base64></root>");
                     sw.Flush();
+
+                    FilePathUtil.addStream(fileName, ms);
 
                     XmlReader DataReader = GetReader(fileName);
 
@@ -943,12 +945,14 @@ namespace CoreXml.Test.XLinq
                     string base64str = Convert.ToBase64String(bits);
 
                     string fileName = "bug105376_" + Variation.Params[0].ToString() + ".xml";
-                    FilePathUtil.addStream(fileName, new MemoryStream());
-                    StreamWriter sw = new StreamWriter(FilePathUtil.getStream(fileName));
+                    var ms = new MemoryStream();
+                    StreamWriter sw = new StreamWriter(ms, leaveOpen: true);
                     sw.Write("<root><base64>");
                     sw.Write(base64str);
                     sw.Write("</base64></root>");
                     sw.Flush();
+
+                    FilePathUtil.addStream(fileName, ms);
 
                     XmlReader DataReader = GetReader(fileName);
 

@@ -539,17 +539,20 @@ namespace CoreXml.Test.XLinq
 
         public static void CreateByteTestFile(string strFileName)
         {
-            FilePathUtil.addStream(strFileName, new MemoryStream());
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
             tw.WriteLine("x");
+
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateUTF8EncodedTestFile(string strFileName, Encoding encode)
         {
-            FilePathUtil.addStream(strFileName, new MemoryStream());
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName), encode);
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, encoding: encode, leaveOpen: true);
 
             tw.WriteLine("<root>");
             tw.Write("\uFFFD");
@@ -557,24 +560,30 @@ namespace CoreXml.Test.XLinq
 
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateEncodedTestFile(string strFileName, Encoding encode)
         {
-            FilePathUtil.addStream(strFileName, new MemoryStream());
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName), encode);
+            var ms = new MemoryStream();
+            
+            TextWriter tw = new StreamWriter(ms, encoding: encode, leaveOpen: true);
 
             tw.WriteLine("<root>");
             tw.WriteLine("</root>");
 
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateWhitespaceHandlingTestFile(string strFileName)
         {
-            FilePathUtil.addStream(strFileName, new MemoryStream());
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<!DOCTYPE dt [");
             tw.WriteLine("<!ELEMENT WHITESPACE1 (#PCDATA)*>");
@@ -588,6 +597,8 @@ namespace CoreXml.Test.XLinq
             tw.WriteLine("</doc>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateGenericXsltTestFile(string strFileName)
@@ -598,8 +609,9 @@ namespace CoreXml.Test.XLinq
 
         public static void CreateGenericTestFile(string strFileName)
         {
-            FilePathUtil.addStream(strFileName, new MemoryStream());
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>");
             tw.WriteLine("<!-- comment1 -->");
@@ -793,9 +805,11 @@ namespace CoreXml.Test.XLinq
             tw.Write("</PLAY>");
             tw.Flush();
 
+            FilePathUtil.addStream(strFileName, ms);
+
             //Create external DTD file
-            FilePathUtil.addStream("AllNodeTypes.dtd", new MemoryStream());
-            TextWriter twDTD = new StreamWriter(FilePathUtil.getStream("AllNodeTypes.dtd"));
+            var msDTD = new MemoryStream();
+            TextWriter twDTD = new StreamWriter(msDTD, leaveOpen: true);
             twDTD.WriteLine("<!ELEMENT elem2 (#PCDATA| a | b )* >");
             twDTD.WriteLine("<!ELEMENT a ANY>");
             twDTD.WriteLine("<!ELEMENT b ANY>");
@@ -806,67 +820,84 @@ namespace CoreXml.Test.XLinq
             twDTD.WriteLine("att3 CDATA #IMPLIED>");
             twDTD.WriteLine("<!ATTLIST a refs IDREFS #IMPLIED>");
             twDTD.Flush();
+            FilePathUtil.addStream("AllNodeTypes.dtd", msDTD);
 
             // Create Ent file
-            FilePathUtil.addStream("AllNodeTypes.ent", new MemoryStream());
-            TextWriter twENT = new StreamWriter(FilePathUtil.getStream("AllNodeTypes.ent"));
+            var msENT = new MemoryStream();
+            TextWriter twENT = new StreamWriter(msENT, leaveOpen: true);
             twENT.WriteLine("<!ELEMENT foo ANY>");
             twENT.WriteLine("<!ENTITY % ext4 \"blah\">");
             twENT.WriteLine("<!ENTITY ext3 \"%ext4;\">");
             twENT.Flush();
+            FilePathUtil.addStream("AllNodeTypes.ent", msENT);
         }
 
         public static void CreateInvalidDTDTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<?xml version=\"1.0\"?><!DOCTYPE Root [<!ELEMENT Root ANY><!ELEMENT E ANY><!ATTLIST E	A1 NOTATION (N) #IMPLIED>]>");
             tw.WriteLine("<Root><E A1=\"N\" /></Root>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateValidDTDTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<?xml version=\"1.0\"?><!DOCTYPE Root [<!ELEMENT Root ANY><!ELEMENT E ANY><!ATTLIST E	IMAGE_FORMAT (bmp|jpg|gif) #IMPLIED>]>");
             tw.Write("<Root><E A1=\"gif\" /></Root>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateWellFormedDTDTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.Write("<!DOCTYPE foo [<!ELEMENT foo (e1, e2, e3)><!ENTITY bar \"<e1> <e4 /> </e1> <e2> that </e2>\">");
             tw.Write("<!ELEMENT e1 (e4)><!ELEMENT e2 ANY><!ELEMENT e3 ANY><!ELEMENT e4 ANY>]>");
             tw.Write("<foo>&bar;<e3 /></foo>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateNonWellFormedDTDTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.Write("<!DOCTYPE foo [<!ELEMENT foo (e1, e2, e3)><!ENTITY bar \"<e1> <e4 /> </e1> <e2> that </e2></e2>\">");
             tw.Write("<!ELEMENT e1 (e4)><!ELEMENT e2 ANY><!ELEMENT e3 ANY><!ELEMENT e4 ANY>]>");
             tw.Write("<foo>&bar;<e3 /></foo>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateInvWellFormedDTDTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.Write("<!DOCTYPE foo [<!ELEMENT foo (e1, e2, e3)><!ENTITY bar \"<e1> this </e1> <e2> that </e2>\">");
             tw.Write("<!ELEMENT e1 (e4)><!ELEMENT e2 ANY><!ELEMENT e3 ANY><!ELEMENT e4 ANY>]>");
             tw.Write("<foo>&bar;<e3 /></foo>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateInvalidXMLXDRTestFile(string strFileName)
@@ -874,12 +905,15 @@ namespace CoreXml.Test.XLinq
             // Create XDR before
             CreateXDRTestFile(pValidXDR);
 
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<?xml version=\"1.0\" ?><e:Root xmlns:e=\"x-schema:xdrfile.xml\">");
             tw.WriteLine("<e:e1>Element 1</e:e1></e:Root>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateXDRXMLTestFile(string strFileName)
@@ -887,36 +921,46 @@ namespace CoreXml.Test.XLinq
             // Create XDR before
             CreateXDRTestFile(pValidXDR);
 
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<bar xmlns=\"x-schema:XdrFile.xml\"> <tt /> <tt /></bar>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateXDRTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<Schema xmlns=\"uuid:BDC6E3F0-6DA3-11d1-A2A3-00AA00C14882\"><ElementType content=\"empty\" name=\"tt\"></ElementType>");
             tw.WriteLine("<ElementType content=\"eltOnly\" order=\"seq\" name=\"bar\" model=\"closed\"><element type=\"tt\" /><element type=\"tt\" /></ElementType>");
             tw.WriteLine("</Schema>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateInvalidNamespaceTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<NAMESPACE0 xmlns:bar=\"1\"><bar1:check>Namespace=1</bar1:check></NAMESPACE0>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateNamespaceTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<DOCNAMESPACE>");
             tw.WriteLine("<NAMESPACE0 xmlns:bar=\"1\"><bar:check>Namespace=1</bar:check></NAMESPACE0>");
@@ -932,11 +976,14 @@ namespace CoreXml.Test.XLinq
             tw.WriteLine("</DOCNAMESPACE>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateXmlLangTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<PGROUP>");
             tw.WriteLine("<PERSONA>DROMIO OF EPHESUS</PERSONA>");
@@ -950,11 +997,14 @@ namespace CoreXml.Test.XLinq
             tw.WriteLine("</PGROUP>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateXmlSpaceTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<PGROUP>");
             tw.WriteLine("<PERSONA>DROMIO OF EPHESUS</PERSONA>");
@@ -968,16 +1018,21 @@ namespace CoreXml.Test.XLinq
             tw.WriteLine("</PGROUP>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateJunkTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             string str = new string('Z', (1 << 20) - 1);
             tw.Write(str);
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateBase64TestFile(string strFileName)
@@ -1005,9 +1060,8 @@ namespace CoreXml.Test.XLinq
                 WriteToBuffer(ref WTextOnly, ref WTextOnlylen, System.BitConverter.GetBytes(strBase64[i]));
             }
 
-            FilePathUtil.addStream(strFileName, new MemoryStream());
-
-            XmlWriter w = XmlWriter.Create(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            XmlWriter w = XmlWriter.Create(ms);
             w.WriteStartDocument();
             w.WriteDocType("Root", null, null, "<!ENTITY e 'abc'>");
             w.WriteStartElement("Root");
@@ -1044,6 +1098,8 @@ namespace CoreXml.Test.XLinq
             w.WriteEndElement();
             w.WriteEndElement();
             w.Flush();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateBinHexTestFile(string strFileName)
@@ -1070,9 +1126,10 @@ namespace CoreXml.Test.XLinq
             {
                 WriteToBuffer(ref WTextOnly, ref WTextOnlylen, System.BitConverter.GetBytes(strBinHex[i]));
             }
-            FilePathUtil.addStream(strFileName, new MemoryStream());
 
-            XmlWriter w = XmlWriter.Create(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+
+            XmlWriter w = XmlWriter.Create(ms);
             w.WriteStartElement("Root");
             w.WriteStartElement("ElemAll");
             w.WriteBinHex(Wbinhex, 0, (int)Wbinhexlen);
@@ -1106,11 +1163,14 @@ namespace CoreXml.Test.XLinq
             w.WriteEndElement();
             w.Flush();
             w.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateBigElementTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             string str = new string('Z', (1 << 20) - 1);
             tw.WriteLine("<Root>");
@@ -1126,10 +1186,13 @@ namespace CoreXml.Test.XLinq
 
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
         public static void CreateXSLTStyleSheetWCopyTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
             tw.WriteLine("<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">");
             tw.WriteLine("<xsl:template match=\"/\">");
             tw.WriteLine("<xsl:copy-of select=\"/\" />");
@@ -1137,11 +1200,14 @@ namespace CoreXml.Test.XLinq
             tw.WriteLine("</xsl:stylesheet>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateConstructorTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<?xml version=\"1.0\"?>");
             tw.WriteLine("<ROOT>");
@@ -1149,11 +1215,14 @@ namespace CoreXml.Test.XLinq
             tw.Write("</ROOT>");
             tw.Flush();
             tw.Dispose();
+
+            FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateLineNumberTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<?xml version=\"1.0\" ?>");
             tw.WriteLine(" <!DOCTYPE DT [");
@@ -1184,19 +1253,24 @@ namespace CoreXml.Test.XLinq
             tw.Flush();
             tw.Dispose();
 
+            FilePathUtil.addStream(strFileName, ms);
+
             // Create Ent file
-            FilePathUtil.addStream("LineNumber.ent", new MemoryStream());
-            TextWriter twENT = new StreamWriter(FilePathUtil.getStream("LineNumber.ent"));
+            var msENT = new MemoryStream();
+            TextWriter twENT = new StreamWriter(msENT, leaveOpen: true);
             twENT.WriteLine("<!ENTITY % ext4 \"blah\">");
             twENT.WriteLine("<!ENTITY ext31 \"%ext4;\">");
             twENT.WriteLine("<!ENTITY ext3 'zzz'>");
             twENT.Flush();
             twENT.Dispose();
+
+            FilePathUtil.addStream("LineNumber.ent", msENT);
         }
 
         public static void CreateLbNormalizationTestFile(string strFileName)
         {
-            TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
+            var ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms, leaveOpen: true);
 
             tw.WriteLine("<?xml version=\"1.0\" standalone=\"no\"?>");
             tw.WriteLine("<!DOCTYPE ROOT");
@@ -1209,9 +1283,11 @@ namespace CoreXml.Test.XLinq
             tw.Flush();
             tw.Dispose();
 
+            FilePathUtil.addStream(strFileName, ms);
+
             // Create Ent file
-            FilePathUtil.addStream(pLbNormEnt1, new MemoryStream());
-            TextWriter twENT = new StreamWriter(FilePathUtil.getStream(pLbNormEnt1));
+            var msPLbNormEnt1 = new MemoryStream();
+            TextWriter twENT = new StreamWriter(msPLbNormEnt1, leaveOpen: true);
             twENT.WriteLine("<?xml version=\"1.0\"?>");
             twENT.WriteLine("<E1 xml:space=\"preserve\">");
             twENT.WriteLine("</E1>");
@@ -1219,15 +1295,20 @@ namespace CoreXml.Test.XLinq
             twENT.Flush();
             twENT.Dispose();
 
+            FilePathUtil.addStream(pLbNormEnt1, msPLbNormEnt1);
+
             // Create Ent file
-            FilePathUtil.addStream(pLbNormEnt2, new MemoryStream());
-            twENT = new StreamWriter(FilePathUtil.getStream(pLbNormEnt2));
+
+            var msPLbNormEnt2 = new MemoryStream();
+            twENT = new StreamWriter(msPLbNormEnt2, leaveOpen: true);
             twENT.WriteLine("<!ENTITY ext1 \"<E3>");
             twENT.WriteLine("</E3>\">");
             twENT.WriteLine("");
             twENT.WriteLine();
             twENT.Flush();
             twENT.Dispose();
+
+            FilePathUtil.addStream(pLbNormEnt2, msPLbNormEnt2);
         }
 
         public bool FindNodeType(XmlReader r, XmlNodeType _nodetype)
