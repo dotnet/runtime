@@ -50,8 +50,9 @@ namespace System.DirectoryServices.Protocols
         public static ConnectionHandle GetHandle() => s_handle;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public class SortKey
+    // This class is marked partial to allow customization of the
+    // marshalling attribute on different platforms
+    public partial class SortKey
     {
         private string _name;
         private string _rule;
