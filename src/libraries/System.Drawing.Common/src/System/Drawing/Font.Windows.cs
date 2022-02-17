@@ -185,13 +185,8 @@ namespace System.Drawing
         /// <summary>
         /// Initializes this object's fields.
         /// </summary>
-        private void Initialize(FontFamily family, float emSize, FontStyle style, GraphicsUnit unit, byte gdiCharSet, bool gdiVerticalFont)
+        private void Initialize(FontFamily family!!, float emSize, FontStyle style, GraphicsUnit unit, byte gdiCharSet, bool gdiVerticalFont)
         {
-            if (family == null)
-            {
-                throw new ArgumentNullException(nameof(family));
-            }
-
             if (float.IsNaN(emSize) || float.IsInfinity(emSize) || emSize <= 0)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidBoundArgument, nameof(emSize), emSize, 0, "System.Single.MaxValue"), nameof(emSize));
@@ -286,13 +281,8 @@ namespace System.Drawing
         /// <param name="lf">A boxed LOGFONT.</param>
         /// <param name="hdc">Handle to a device context (HDC).</param>
         /// <returns>The newly created <see cref="Font"/>.</returns>
-        public static unsafe Font FromLogFont(object lf, IntPtr hdc)
+        public static unsafe Font FromLogFont(object lf!!, IntPtr hdc)
         {
-            if (lf == null)
-            {
-                throw new ArgumentNullException(nameof(lf));
-            }
-
             if (lf is Interop.User32.LOGFONT logFont)
             {
                 // A boxed LOGFONT, just use it to create the font

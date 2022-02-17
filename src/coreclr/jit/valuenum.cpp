@@ -5294,6 +5294,10 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     res = tanh(arg0Val);
                     break;
 
+                case NI_System_Math_Truncate:
+                    res = trunc(arg0Val);
+                    break;
+
                 default:
                     // the above are the only math intrinsics at the time of this writing.
                     unreached();
@@ -5396,6 +5400,10 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
 
                 case NI_System_Math_Tanh:
                     res = tanhf(arg0Val);
+                    break;
+
+                case NI_System_Math_Truncate:
+                    res = truncf(arg0Val);
                     break;
 
                 default:
@@ -5551,6 +5559,9 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                 break;
             case NI_System_Math_Tanh:
                 vnf = VNF_Tanh;
+                break;
+            case NI_System_Math_Truncate:
+                vnf = VNF_Truncate;
                 break;
             default:
                 unreached(); // the above are the only math intrinsics at the time of this writing.
@@ -7480,58 +7491,28 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_ASG) && varTypeIsEnregisterable(tree));
 
-    GenTree* lhs = tree->AsOp()->gtOp1;
-    GenTree* rhs = tree->AsOp()->gtOp2;
+    GenTree* lhs = tree->gtGetOp1();
+    GenTree* rhs = tree->gtGetOp2();
 
-    ValueNumPair rhsVNPair = rhs->gtVNPair;
+    // Only normal values are to be stored in SSA defs, VN maps, etc.
+    ValueNumPair rhsExcSet;
+    ValueNumPair rhsVNPair;
+    vnStore->VNPUnpackExc(rhs->gtVNPair, &rhsVNPair, &rhsExcSet);
 
     // Is the type being stored different from the type computed by the rhs?
-    if ((rhs->TypeGet() != lhs->TypeGet()) && (lhs->OperGet() != GT_BLK))
-    {
-        // This means that there is an implicit cast on the rhs value
-        //
-        // We will add a cast function to reflect the possible narrowing of the rhs value
-        //
-        var_types castToType   = lhs->TypeGet();
-        var_types castFromType = rhs->TypeGet();
-        bool      isUnsigned   = varTypeIsUnsigned(castFromType);
-
-        rhsVNPair = vnStore->VNPairForCast(rhsVNPair, castToType, castFromType, isUnsigned);
-    }
-
-    if (tree->TypeGet() != TYP_VOID)
-    {
-        // Assignment operators, as expressions, return the value of the RHS.
-        tree->gtVNPair = rhsVNPair;
-    }
-
-    // Now that we've labeled the assignment as a whole, we don't care about exceptions.
-    rhsVNPair = vnStore->VNPNormalPair(rhsVNPair);
-
-    // Record the exception set for this 'tree' in vnExcSet.
-    // First we'll record the exception set for the rhs and
-    // later we will union in the exception set for the lhs.
-    //
-    ValueNum vnExcSet;
-
-    // Unpack, Norm,Exc for 'rhsVNPair'
-    ValueNum vnRhsLibNorm;
-    vnStore->VNUnpackExc(rhsVNPair.GetLiberal(), &vnRhsLibNorm, &vnExcSet);
-
-    // Now that we've saved the rhs exeception set, we we will use the normal values.
-    rhsVNPair = ValueNumPair(vnRhsLibNorm, vnStore->VNNormalValue(rhsVNPair.GetConservative()));
-
-    // If the types of the rhs and lhs are different then we
-    //  may want to change the ValueNumber assigned to the lhs.
-    //
     if (rhs->TypeGet() != lhs->TypeGet())
     {
         if (rhs->TypeGet() == TYP_REF)
         {
             // If we have an unsafe IL assignment of a TYP_REF to a non-ref (typically a TYP_BYREF)
-            // then don't propagate this ValueNumber to the lhs, instead create a new unique VN
-            //
+            // then don't propagate this ValueNumber to the lhs, instead create a new unique VN.
             rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lhs->TypeGet()));
+        }
+        else if (lhs->OperGet() != GT_BLK)
+        {
+            // This means that there is an implicit cast on the rhs value
+            // We will add a cast function to reflect the possible narrowing of the rhs value
+            rhsVNPair = vnStore->VNPairForCast(rhsVNPair, lhs->TypeGet(), rhs->TypeGet());
         }
     }
 
@@ -8002,6 +7983,12 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
         default:
             unreached();
     }
+
+    // For exception sets, we need the contribution from COMMAs on the
+    // LHS. ASGs produce no values, and as such are given the "Void" VN.
+    ValueNumPair lhsExcSet = vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair);
+    ValueNumPair asgExcSet = vnStore->VNPExcSetUnion(lhsExcSet, rhsExcSet);
+    tree->gtVNPair         = vnStore->VNPWithExc(vnStore->VNPForVoid(), asgExcSet);
 }
 
 //------------------------------------------------------------------------
@@ -8133,8 +8120,11 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
         fgMutateGcHeap(tree DEBUGARG("INITBLK/COPYBLK - non local"));
     }
 
-    // Assignments produce no values so we give them the "Void" VN.
-    tree->gtVNPair = vnStore->VNPForVoid();
+    // Propagate the exception sets. Assignments produce no values so we give them the "Void" VN.
+    ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
+    vnpExcSet              = vnStore->VNPUnionExcSet(lhs->gtVNPair, vnpExcSet);
+    vnpExcSet              = vnStore->VNPUnionExcSet(rhs->gtVNPair, vnpExcSet);
+    tree->gtVNPair         = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
 }
 
 //------------------------------------------------------------------------
@@ -8449,6 +8439,17 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     {
                         ValueNumPair lclVNPair = varDsc->GetPerSsaData(ssaNum)->m_vnPair;
                         tree->gtVNPair = vnStore->VNPairApplySelectors(lclVNPair, lclFld->GetFieldSeq(), indType);
+
+                        // If we have byref field, we may have a zero-offset sequence to add.
+                        FieldSeqNode* zeroOffsetFldSeq = nullptr;
+                        if ((typ == TYP_BYREF) && GetZeroOffsetFieldMap()->Lookup(lclFld, &zeroOffsetFldSeq))
+                        {
+                            ValueNum addrExtended = vnStore->ExtendPtrVN(lclFld, zeroOffsetFldSeq);
+                            if (addrExtended != ValueNumStore::NoVN)
+                            {
+                                lclFld->gtVNPair.SetBoth(addrExtended);
+                            }
+                        }
                     }
                 }
                 else
@@ -9061,10 +9062,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         }
                     }
                     break;
-
-                    case GT_LOCKADD: // Binop
-                        noway_assert("LOCKADD should not appear before lowering");
-                        break;
 
                     case GT_XORR: // Binop
                     case GT_XAND: // Binop
@@ -10025,7 +10022,7 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             unreached();
     }
 
-    ValueNumPair argVNP  = call->gtCallArgs->GetNode()->gtVNPair;
+    ValueNumPair argVNP  = call->fgArgInfo->GetArgNode(0)->gtVNPair;
     ValueNumPair castVNP = vnStore->VNPairForCast(argVNP, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 
     call->SetVNs(castVNP);
@@ -10941,9 +10938,8 @@ void Compiler::fgDebugCheckExceptionSets()
                 return GenTree::VisitResult::Continue;
             });
 
-            // Currently, we fail to properly maintain the exception sets for trees with user
-            // calls or assignments.
-            if ((tree->gtFlags & (GTF_ASG | GTF_CALL)) != 0)
+            // Currently, we fail to properly maintain the exception sets for trees with user calls.
+            if ((tree->gtFlags & GTF_CALL) != 0)
             {
                 return;
             }

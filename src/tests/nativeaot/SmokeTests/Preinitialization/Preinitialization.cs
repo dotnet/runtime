@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.InteropServices;
 
@@ -871,6 +872,8 @@ class TestGCInteraction
 
 static class Assert
 {
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+        Justification = "Yep, we don't want to keep the cctor if it wasn't kept")]
     private static bool HasCctor(Type type)
     {
         return type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Static, null, Type.EmptyTypes, null) != null;

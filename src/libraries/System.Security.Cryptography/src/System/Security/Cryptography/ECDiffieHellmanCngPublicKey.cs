@@ -59,13 +59,8 @@ namespace System.Security.Cryptography
         /// Hydrate a public key from a blob
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static ECDiffieHellmanPublicKey FromByteArray(byte[] publicKeyBlob, CngKeyBlobFormat format)
+        public static ECDiffieHellmanPublicKey FromByteArray(byte[] publicKeyBlob!!, CngKeyBlobFormat format!!)
         {
-            if (publicKeyBlob == null)
-                throw new ArgumentNullException(nameof(publicKeyBlob));
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
-
             // Verify that the key can import successfully, because we did in the past.
             using (CngKey imported = CngKey.Import(publicKeyBlob, format))
             {

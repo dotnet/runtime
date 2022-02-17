@@ -396,6 +396,8 @@ get_context (void)
 	if (context == NULL) {
 		context = g_new0 (ThreadContext, 1);
 		context->stack_start = (guchar*)mono_valloc (0, INTERP_STACK_SIZE, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
+		context->stack_end = context->stack_start + INTERP_STACK_SIZE - INTERP_REDZONE_SIZE;
+		context->stack_real_end = context->stack_start + INTERP_STACK_SIZE;
 		context->stack_pointer = context->stack_start;
 
 		frame_data_allocator_init (&context->data_stack, 8192);
@@ -2108,6 +2110,7 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	// The real top of stack for this method will be set in interp_exec_method once the
 	// method is transformed.
 	context->stack_pointer = (guchar*)(sp + 4);
+	g_assert (context->stack_pointer < context->stack_end);
 
 	MONO_ENTER_GC_UNSAFE;
 	interp_exec_method (&frame, context, NULL);
@@ -2206,6 +2209,7 @@ interp_entry (InterpEntryData *data)
 	frame.retval = sp;
 
 	context->stack_pointer = (guchar*)sp_args;
+	g_assert (context->stack_pointer < context->stack_end);
 
 	MONO_ENTER_GC_UNSAFE;
 	interp_exec_method (&frame, context, NULL);
@@ -2942,6 +2946,7 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 		newsp = STACK_ADD_BYTES (newsp, size);
 	}
 	context->stack_pointer = (guchar*)newsp;
+	g_assert (context->stack_pointer < context->stack_end);
 
 	MONO_ENTER_GC_UNSAFE;
 	interp_exec_method (&frame, context, NULL);
@@ -3361,7 +3366,13 @@ mono_interp_get_native_func_wrapper (InterpMethod* imethod, MonoMethodSignature*
 	MonoMethodPInvoke iinfo;
 	memset (&iinfo, 0, sizeof (iinfo));
 
-	MonoMethod* m = mono_marshal_get_native_func_wrapper (m_class_get_image (imethod->method->klass), csignature, &iinfo, mspecs, code);
+	MonoMethod *method = imethod->method;
+	MonoImage *image = NULL;
+	if (imethod->method->dynamic)
+		image = ((MonoDynamicMethod*)method)->assembly->image;
+	else
+		image = m_class_get_image (method->klass);
+	MonoMethod* m = mono_marshal_get_native_func_wrapper (image, csignature, &iinfo, mspecs, code);
 
 	for (int i = csignature->param_count; i >= 0; i--)
 		if (mspecs [i])
@@ -3535,6 +3546,7 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 
 	if (!clause_args) {
 		context->stack_pointer = (guchar*)frame->stack + frame->imethod->alloca_size;
+		g_assert (context->stack_pointer < context->stack_end);
 		/* Make sure the stack pointer is bumped before we store any references on the stack */
 		mono_compiler_barrier ();
 	}
@@ -3703,6 +3715,11 @@ main_loop:
 			 * than the callee stack frame (at the interp level)
 			 */
 			context->stack_pointer = (guchar*)frame->stack + new_method->alloca_size;
+			if (G_UNLIKELY (context->stack_pointer >= context->stack_end)) {
+				context->stack_end = context->stack_real_end;
+				THROW_EX (mono_domain_get ()->stack_overflow_ex, ip);
+			}
+
 			frame->imethod = new_method;
 			ip = frame->imethod->code;
 			MINT_IN_BREAK;
@@ -3974,6 +3991,11 @@ call:
 			}
 
 			context->stack_pointer = (guchar*)frame->stack + cmethod->alloca_size;
+			if (G_UNLIKELY (context->stack_pointer >= context->stack_end)) {
+				context->stack_end = context->stack_real_end;
+				THROW_EX (mono_domain_get ()->stack_overflow_ex, ip);
+			}
+
 			/* Make sure the stack pointer is bumped before we store any references on the stack */
 			mono_compiler_barrier ();
 
@@ -5169,7 +5191,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U4_R8)
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_U4
-			LOCAL_VAR (ip [1], gint32) = mono_fconv_u4_2 (LOCAL_VAR (ip [2], double));
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_u4 (LOCAL_VAR (ip [2], double));
 #else
 			LOCAL_VAR (ip [1], gint32) = (guint32) LOCAL_VAR (ip [2], double);
 #endif
@@ -5225,7 +5247,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U8_R8)
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_U8
-			LOCAL_VAR (ip [1], gint64) = mono_fconv_u8_2 (LOCAL_VAR (ip [2], double));
+			LOCAL_VAR (ip [1], gint64) = mono_fconv_u8 (LOCAL_VAR (ip [2], double));
 #else
 			LOCAL_VAR (ip [1], gint64) = (guint64) LOCAL_VAR (ip [2], double);
 #endif
@@ -7354,6 +7376,7 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 	// Write the exception object in its reserved stack slot
 	*((MonoException**)((char*)child_frame.stack + iframe->imethod->clause_data_offsets [clause_index])) = ex;
 	context->stack_pointer += iframe->imethod->alloca_size;
+	g_assert (context->stack_pointer < context->stack_end);
 
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
 	clause_args.start_with_ip = (const guint16*)handler_ip;
@@ -7419,6 +7442,7 @@ interp_run_finally_with_il_state (gpointer il_state_ptr, int clause_index, gpoin
 
 	context->stack_pointer = (guchar*)sp_args;
 	context->stack_pointer += imethod->alloca_size;
+	g_assert (context->stack_pointer < context->stack_end);
 
 	MonoMethodHeader *header = mono_method_get_header_internal (il_state->method, error);
 	mono_error_assert_ok (error);

@@ -36,12 +36,12 @@
              Link="Common\Interop\Interop.zlib.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser' ">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>

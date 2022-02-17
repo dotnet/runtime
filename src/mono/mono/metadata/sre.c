@@ -2406,7 +2406,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 		MonoObject *prop;
 
 		for (i = 0; i < mono_array_length_internal (properties); ++i) {
-			MonoType *ptype;
+			MonoType *ptype = NULL;
 			char *pname;
 
 			prop = (MonoObject *)mono_array_get_internal (properties, gpointer, i);
@@ -2430,7 +2430,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 		MonoObject *field;
 
 		for (i = 0; i < mono_array_length_internal (fields); ++i) {
-			MonoType *ftype;
+			MonoType *ftype = NULL;
 			char *fname;
 
 			field = (MonoObject *)mono_array_get_internal (fields, gpointer, i);
@@ -3866,7 +3866,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	 * The IsByRefLike attribute only applies to value types and enums. This matches CoreCLR behavior.
 	 */
 	if (klass->enumtype || klass->valuetype)
-		klass->is_byreflike = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_tb), is_byreflike_set);
+		klass->is_byreflike = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_tb), is_byreflike_set) != 0;
 
 	/* enums are done right away */
 	if (!klass->enumtype)

@@ -56,17 +56,13 @@ namespace System.Globalization
         public string GetAscii(string unicode) =>
             GetAscii(unicode, 0);
 
-        public string GetAscii(string unicode, int index)
+        public string GetAscii(string unicode!!, int index)
         {
-            if (unicode == null)
-                throw new ArgumentNullException(nameof(unicode));
             return GetAscii(unicode, index, unicode.Length - index);
         }
 
-        public string GetAscii(string unicode, int index, int count)
+        public string GetAscii(string unicode!!, int index, int count)
         {
-            if (unicode == null)
-                throw new ArgumentNullException(nameof(unicode));
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > unicode.Length)
@@ -103,17 +99,13 @@ namespace System.Globalization
         public string GetUnicode(string ascii) =>
             GetUnicode(ascii, 0);
 
-        public string GetUnicode(string ascii, int index)
+        public string GetUnicode(string ascii!!, int index)
         {
-            if (ascii == null)
-                throw new ArgumentNullException(nameof(ascii));
             return GetUnicode(ascii, index, ascii.Length - index);
         }
 
-        public string GetUnicode(string ascii, int index, int count)
+        public string GetUnicode(string ascii!!, int index, int count)
         {
-            if (ascii == null)
-                throw new ArgumentNullException(nameof(ascii));
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > ascii.Length)
@@ -438,7 +430,7 @@ namespace System.Globalization
                         /* handled already.  Find the next larger one: */
                         int j;
                         int m;
-                        int test = 0;
+                        int test;
                         for (m = c_maxint, j = iAfterLastDot;
                              j < iNextDot;
                              j += IsSupplementary(test) ? 2 : 1)

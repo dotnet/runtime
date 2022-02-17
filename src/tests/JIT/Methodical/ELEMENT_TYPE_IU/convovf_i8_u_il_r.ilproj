@@ -7,6 +7,6 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="convovf_i8_u-ia64.il" />
+    <Compile Include="convovf_i8_u.il" />
   </ItemGroup>
 </Project>

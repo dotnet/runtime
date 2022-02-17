@@ -17,9 +17,6 @@ namespace System.Net.Security
     // Provides an additional abstraction layer over SSPI for SslStream.
     internal sealed class SecureChannel
     {
-        // When reading a frame from the wire first read this many bytes for the header.
-        internal const int ReadHeaderSize = 5;
-
         private SafeFreeCredentials? _credentialsHandle;
         private SafeDeleteSslContext? _securityContext;
 

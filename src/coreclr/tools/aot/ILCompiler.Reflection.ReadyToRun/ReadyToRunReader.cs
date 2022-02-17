@@ -16,7 +16,6 @@ using System.Text;
 using Internal.CorConstants;
 using Internal.Runtime;
 using Internal.ReadyToRunConstants;
-using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -180,33 +179,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
-        /// Conversion of the PE machine ID to TargetArchitecture used by TargetDetails.
-        /// </summary>
-        public TargetArchitecture TargetArchitecture
-        {
-            get
-            {
-                switch (Machine)
-                {
-                    case Machine.I386:
-                        return TargetArchitecture.X86;
-
-                    case Machine.Amd64:
-                        return TargetArchitecture.X64;
-
-                    case Machine.ArmThumb2:
-                        return TargetArchitecture.ARM;
-
-                    case Machine.Arm64:
-                        return TargetArchitecture.ARM64;
-
-                    default:
-                        throw new NotImplementedException(_machine.ToString());
-                }
-            }
-        }
-
-        /// <summary>
         /// Targeting operating system for the R2R executable
         /// </summary>
         public OperatingSystem OperatingSystem
@@ -215,36 +187,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 EnsureHeader();
                 return _operatingSystem;
-            }
-        }
-
-        /// <summary>
-        /// Targeting operating system converted to the enumeration used by TargetDetails.
-        /// </summary>
-        public TargetOS TargetOperatingSystem
-        {
-            get
-            {
-                switch (OperatingSystem)
-                {
-                    case OperatingSystem.Windows:
-                        return TargetOS.Windows;
-
-                    case OperatingSystem.Linux:
-                        return TargetOS.Linux;
-
-                    case OperatingSystem.Apple:
-                        return TargetOS.OSX;
-
-                    case OperatingSystem.FreeBSD:
-                        return TargetOS.FreeBSD;
-
-                    case OperatingSystem.NetBSD:
-                        return TargetOS.FreeBSD;
-
-                    default:
-                        throw new NotImplementedException(OperatingSystem.ToString());
-                }
             }
         }
 

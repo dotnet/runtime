@@ -503,6 +503,14 @@ CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtua
 CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
                                                                  // phase)
 
+// Force the generation of CFG checks
+CONFIG_INTEGER(JitForceControlFlowGuard, W("JitForceControlFlowGuard"), 0);
+// JitCFGUseDispatcher values:
+// 0: Never use dispatcher
+// 1: Use dispatcher on all platforms that support it
+// 2: Default behavior, depends on platform (yes on x64, no on arm64)
+CONFIG_INTEGER(JitCFGUseDispatcher, W("JitCFGUseDispatcher"), 2)
+
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,

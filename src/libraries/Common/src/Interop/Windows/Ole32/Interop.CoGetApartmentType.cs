@@ -29,7 +29,7 @@ internal static partial class Interop
 
     internal static partial class Ole32
     {
-        [DllImport(Interop.Libraries.Ole32, ExactSpelling = true)]
-        internal static extern int CoGetApartmentType(out APTTYPE pAptType, out APTTYPEQUALIFIER pAptQualifier);
+        [GeneratedDllImport(Interop.Libraries.Ole32, ExactSpelling = true)]
+        internal static partial int CoGetApartmentType(out APTTYPE pAptType, out APTTYPEQUALIFIER pAptQualifier);
     }
 }

@@ -48,6 +48,7 @@ namespace System.Text.Json.Serialization.Metadata
             SerializeHandler = objectInfo.SerializeHandler;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, Options);
             NumberHandling = objectInfo.NumberHandling;
+            converter.ConfigureJsonTypeInfo(this, Options);
         }
 
         /// <summary>
@@ -55,17 +56,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         public JsonTypeInfoInternal(
             JsonSerializerOptions options,
-            JsonCollectionInfoValues<T> collectionInfo,
+            JsonCollectionInfoValues<T> collectionInfo!!,
             Func<JsonConverter<T>> converterCreator,
             object? createObjectWithArgs = null,
             object? addFunc = null)
             : base(typeof(T), options)
         {
-            if (collectionInfo == null)
-            {
-                throw new ArgumentNullException(nameof(collectionInfo));
-            }
-
             ConverterStrategy strategy = collectionInfo.KeyInfo == null ? ConverterStrategy.Enumerable : ConverterStrategy.Dictionary;
             JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator, strategy);
 
@@ -79,6 +75,7 @@ namespace System.Text.Json.Serialization.Metadata
             CreateObjectWithArgs = createObjectWithArgs;
             AddMethodDelegate = addFunc;
             SetCreateObjectFunc(collectionInfo.ObjectCreator);
+            converter.ConfigureJsonTypeInfo(this, Options);
         }
 
         private void SetCreateObjectFunc(Func<T>? createObjectFunc)

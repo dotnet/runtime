@@ -3,9 +3,12 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Interop;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -20,7 +23,9 @@ namespace DllImportGenerator.UnitTests
         public async Task KnownParameterlessAttribute(string attributeSourceName, string attributeMetadataName)
         {
             string source = @$"
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
 partial class C
 {{
     [{attributeSourceName}]
@@ -59,7 +64,9 @@ struct Native
         {
             string source = @"
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
 partial class C
 {
     [UnmanagedCallConv(CallConvs = new Type[0])]
@@ -102,6 +109,7 @@ struct Native
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
 partial class C
 {
     [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall)})]
@@ -148,6 +156,7 @@ struct Native
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
 partial class C
 {
     [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall), typeof(CallConvSuppressGCTransition)})]
@@ -197,7 +206,9 @@ struct Native
         {
             string source = @"
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
 
 class OtherAttribute : Attribute {}
 
@@ -233,6 +244,108 @@ struct Native
             Assert.DoesNotContain(
                 targetMethod.GetAttributes(),
                 attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
+        }
+
+        [ConditionalFact]
+        public async Task InOutAttributes_Forwarded_To_ForwardedParameter()
+        {
+            string source = @"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+partial class C
+{
+    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    public static partial bool Method1([In, Out] int[] a);
+}
+" + CodeSnippets.GeneratedDllImportAttributeDeclaration;
+            Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+
+            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
+
+            INamedTypeSymbol marshalAsAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)!;
+            INamedTypeSymbol inAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_InAttribute)!;
+            INamedTypeSymbol outAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_OutAttribute)!;
+            Assert.Collection(targetMethod.Parameters,
+                param => Assert.Collection(param.GetAttributes(),
+                    attr =>
+                    {
+                        Assert.Equal(marshalAsAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
+                        Assert.Equal(UnmanagedType.LPArray, (UnmanagedType)attr.ConstructorArguments[0].Value!);
+                        Assert.Empty(attr.NamedArguments);
+                    },
+                    attr =>
+                    {
+                        Assert.Equal(inAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
+                        Assert.Empty(attr.ConstructorArguments);
+                        Assert.Empty(attr.NamedArguments);
+                    },
+                    attr =>
+                    {
+                        Assert.Equal(outAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
+                        Assert.Empty(attr.ConstructorArguments);
+                        Assert.Empty(attr.NamedArguments);
+                    }));
+        }
+
+        [ConditionalFact]
+        public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter()
+        {
+            string source = @"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+partial class C
+{
+    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    public static partial bool Method1([MarshalAs(UnmanagedType.I2)] int a);
+}
+" + CodeSnippets.GeneratedDllImportAttributeDeclaration;
+            Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+
+            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
+
+            INamedTypeSymbol marshalAsAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)!;
+            Assert.Collection(targetMethod.Parameters,
+                param => Assert.Collection(param.GetAttributes(),
+                    attr =>
+                    {
+                        Assert.Equal(marshalAsAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
+                        Assert.Equal(UnmanagedType.I2, (UnmanagedType)attr.ConstructorArguments[0].Value!);
+                        Assert.Empty(attr.NamedArguments);
+                    }));
+        }
+
+        [ConditionalFact]
+        public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter_Array()
+        {
+            string source = @"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+partial class C
+{
+    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    public static partial bool Method1([MarshalAs(UnmanagedType.LPArray, SizeConst = 10, SizeParamIndex = 1, ArraySubType = UnmanagedType.I4)] int[] a, int b);
+}
+" + CodeSnippets.GeneratedDllImportAttributeDeclaration;
+            Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
+            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.DllImportGenerator());
+
+            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
+
+            INamedTypeSymbol marshalAsAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)!;
+            Assert.Collection(targetMethod.Parameters,
+                param => Assert.Collection(param.GetAttributes(),
+                    attr =>
+                    {
+                        Assert.Equal(marshalAsAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
+                        Assert.Equal(UnmanagedType.LPArray, (UnmanagedType)attr.ConstructorArguments[0].Value!);
+                        var namedArgs = attr.NamedArguments.ToImmutableDictionary();
+                        Assert.Equal(10, namedArgs["SizeConst"].Value);
+                        Assert.Equal((short)1, namedArgs["SizeParamIndex"].Value);
+                        Assert.Equal(UnmanagedType.I4, (UnmanagedType)namedArgs["ArraySubType"].Value!);
+                    }),
+                param => Assert.Equal(SpecialType.System_Int32, param.Type.SpecialType));
         }
 
         private static IMethodSymbol GetGeneratedPInvokeTargetFromCompilation(Compilation newComp)

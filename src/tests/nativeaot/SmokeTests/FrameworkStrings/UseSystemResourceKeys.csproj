@@ -6,18 +6,12 @@
     <DefineConstants>$(DefineConstants);RESOURCE_KEYS</DefineConstants>
     
     <!-- Requires the framework to also be compiled with UseSystemResourceKeys -->
-    <NativeAotMultimoduleIncompatible>true</NativeAotMultimoduleIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <NativeAotProjectLines>
-      <![CDATA[
   <ItemGroup>
     <IlcArg Include="--feature:System.Resources.UseSystemResourceKeys=true" />
   </ItemGroup>
-      ]]>
-    </NativeAotProjectLines>
-  </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Program.cs" />
