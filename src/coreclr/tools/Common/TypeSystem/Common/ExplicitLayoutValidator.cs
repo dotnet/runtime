@@ -93,12 +93,6 @@ namespace Internal.TypeSystem
             }
             else if (fieldType.IsValueType)
             {
-                if (fieldType.IsByRefLike && offset % _pointerSize != 0)
-                {
-                    // Misaligned ByRefLike
-                    ThrowFieldLayoutError(offset);
-                }
-
                 MetadataType mdType = (MetadataType)fieldType;
                 int fieldSize = mdType.InstanceByteCountUnaligned.AsInt;
                 if (!mdType.ContainsGCPointers && !mdType.IsByRefLike)
@@ -115,7 +109,7 @@ namespace Internal.TypeSystem
                     }
 
                     List<FieldLayoutInterval> fieldRefMap = new();
-                    MarkNonORefLocations(mdType, fieldRefMap, offset: 0);
+                    MarkByRefAndORefLocations(mdType, fieldRefMap, offset: 0);
 
                     // Merge in fieldRefMap from structure specifying not attributed intervals as NonORef
                     int lastGCRegionReportedEnd = 0;
@@ -151,7 +145,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private void MarkNonORefLocations(MetadataType type, List<FieldLayoutInterval> refMap, int offset)
+        private void MarkByRefAndORefLocations(MetadataType type, List<FieldLayoutInterval> refMap, int offset)
         {
             // Recurse into struct fields
             foreach (FieldDesc field in type.GetFields())
@@ -172,7 +166,7 @@ namespace Internal.TypeSystem
                         MetadataType mdFieldType = (MetadataType)field.FieldType;
                         if (mdFieldType.ContainsGCPointers || mdFieldType.IsByRefLike)
                         {
-                            MarkNonORefLocations(mdFieldType, refMap, fieldOffset);
+                            MarkByRefAndORefLocations(mdFieldType, refMap, fieldOffset);
                         }
                     }
                 }
