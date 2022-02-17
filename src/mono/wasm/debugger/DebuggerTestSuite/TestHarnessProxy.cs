@@ -21,7 +21,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static readonly Uri Endpoint = new Uri("http://localhost:9400");
 
-        public static Task Start(string chromePath, string appPath, string pagePath)
+        public static Task Start(string browserPath, string appPath, string pagePath, string browserParms, string url, Func<string, ILogger<TestHarnessProxy>, Task<string>> extractConnUrl)
         {
             lock (proxyLock)
             {
@@ -48,10 +48,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         services.Configure<TestHarnessOptions>(ctx.Configuration);
                         services.Configure<TestHarnessOptions>(options =>
                         {
-                            options.ChromePath = options.ChromePath ?? chromePath;
+                            options.BrowserPath = options.BrowserPath ?? browserPath;
+                            options.BrowserParms = browserParms;
                             options.AppPath = appPath;
                             options.PagePath = pagePath;
-                            options.DevToolsUrl = new Uri("http://localhost:0");
+                            options.DevToolsUrl = new Uri(url);
+                            options.ExtractConnUrl = extractConnUrl;
                         });
                     })
                     .UseStartup<TestHarnessStartup>()

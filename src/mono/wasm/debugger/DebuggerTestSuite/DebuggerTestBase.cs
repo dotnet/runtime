@@ -5,9 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -66,30 +68,35 @@ namespace DebuggerTests
             throw new Exception($"Cannot find 'debugger-driver.html' in {test_app_path}");
         }
 
-        static string[] PROBE_LIST = {
-            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-            "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
-            "/usr/bin/chromium",
-            "C:/Program Files/Google/Chrome/Application/chrome.exe",
-            "/usr/bin/chromium-browser",
-        };
-        static string chrome_path;
+        internal virtual string[] ProbeList()
+        {
+            string [] ret = {
+                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+                "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
+                "/usr/bin/chromium",
+                "C:/Program Files/Google/Chrome/Application/chrome.exe",
+                "/usr/bin/chromium-browser",
+            };
+            return ret;
+        }
 
-        static string GetChromePath()
+        string chrome_path;
+
+        string GetBrowserPath()
         {
             if (string.IsNullOrEmpty(chrome_path))
             {
-                chrome_path = FindChromePath();
+                chrome_path = FindBrowserPath();
                 if (!string.IsNullOrEmpty(chrome_path))
-                    Console.WriteLine ($"** Using chrome from {chrome_path}");
+                    Console.WriteLine ($"** Using browser from {chrome_path}");
                 else
                     throw new Exception("Could not find an installed Chrome to use");
             }
 
             return chrome_path;
 
-            string FindChromePath()
+            string FindBrowserPath()
             {
                 string chrome_path_env_var = Environment.GetEnvironmentVariable("CHROME_PATH_FOR_DEBUGGER_TESTS");
                 if (!string.IsNullOrEmpty(chrome_path_env_var))
@@ -100,10 +107,59 @@ namespace DebuggerTests
                     Console.WriteLine ($"warning: Could not find CHROME_PATH_FOR_DEBUGGER_TESTS={chrome_path_env_var}");
                 }
 
-                return PROBE_LIST.FirstOrDefault(p => File.Exists(p));
+                return ProbeList().FirstOrDefault(p => File.Exists(p));
             }
         }
 
+        internal virtual string InitParms()
+        {
+            return "--headless --disable-gpu --lang=en-US --incognito --remote-debugging-port=";
+        }
+
+        internal virtual string UrlToRemoteDebugging()
+        {
+            return "http://localhost:0";
+        }
+
+        internal virtual async Task<string> ExtractConnUrl (string str, ILogger<TestHarnessProxy> logger)
+        {
+            var client = new HttpClient();
+            var start = DateTime.Now;
+            JArray obj = null;
+
+            while (true)
+            {
+                // Unfortunately it does look like we have to wait
+                // for a bit after getting the response but before
+                // making the list request.  We get an empty result
+                // if we make the request too soon.
+                await Task.Delay(100);
+
+                var res = await client.GetStringAsync(new Uri(new Uri(str), "/json/list"));
+                logger.LogTrace("res is {0}", res);
+
+                if (!String.IsNullOrEmpty(res))
+                {
+                    // Sometimes we seem to get an empty array `[ ]`
+                    obj = JArray.Parse(res);
+                    if (obj != null && obj.Count >= 1)
+                        break;
+                }
+
+                var elapsed = DateTime.Now - start;
+                if (elapsed.Milliseconds > 5000)
+                {
+                    logger.LogError($"Unable to get DevTools /json/list response in {elapsed.Seconds} seconds, stopping");
+                    return null;
+                }
+            }
+
+            var wsURl = obj[0]?["webSocketDebuggerUrl"]?.Value<string>();
+            logger.LogTrace(">>> {0}", wsURl);
+
+            return wsURl;
+        }
+        
         public DebuggerTestBase(string driver = "debugger-driver.html")
         {
             // the debugger is working in locale of the debugged application. For example Datetime.ToString()
@@ -113,8 +169,8 @@ namespace DebuggerTests
             insp = new Inspector();
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
-
-            startTask = TestHarnessProxy.Start(GetChromePath(), DebuggerTestAppPath, driver);
+            Func<string, ILogger<TestHarnessProxy>, Task<string>> extractConnUrl = ExtractConnUrl;
+            startTask = TestHarnessProxy.Start(GetBrowserPath(), DebuggerTestAppPath, driver, InitParms(), UrlToRemoteDebugging(), extractConnUrl);
         }
 
         public virtual async Task InitializeAsync()
@@ -143,7 +199,7 @@ namespace DebuggerTests
 
         internal Dictionary<string, string> dicScriptsIdToUrl;
         internal Dictionary<string, string> dicFileToUrl;
-        internal Dictionary<string, string> SubscribeToScripts(Inspector insp)
+        internal virtual Dictionary<string, string> SubscribeToScripts(Inspector insp)
         {
             dicScriptsIdToUrl = new Dictionary<string, string>();
             dicFileToUrl = new Dictionary<string, string>();
@@ -240,7 +296,7 @@ namespace DebuggerTests
             }
         }
 
-        internal void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
+        internal virtual void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
         {
             var loc_str = $"{ scripts[location["scriptId"].Value<string>()] }" +
                 $"#{ location["lineNumber"].Value<int>() }" +
@@ -498,7 +554,7 @@ namespace DebuggerTests
             return JObject.FromObject(res);
         }
 
-        internal async Task<JObject> EvaluateAndCheck(
+        internal virtual async Task<JObject> EvaluateAndCheck(
                                         string expression, string script_loc, int line, int column, string function_name,
                                         Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null)
             => await SendCommandAndCheck(
@@ -507,7 +563,7 @@ namespace DebuggerTests
                         wait_for_event_fn: wait_for_event_fn,
                         locals_fn: locals_fn);
 
-        internal async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
+        internal virtual async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE)
         {
             var res = await cli.SendCommand(method, args, token);
@@ -1013,7 +1069,7 @@ namespace DebuggerTests
             return res;
         }
 
-        internal async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false, string condition = "")
+        internal virtual async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false, string condition = "")
         {
             var bp1_req = !use_regex ?
                 JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], condition }) :

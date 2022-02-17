@@ -15,8 +15,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class DevToolsClient : IDisposable
     {
         DevToolsQueue _queue;
-        ClientWebSocket socket;
-        TaskCompletionSource _clientInitiatedClose = new TaskCompletionSource();
+        protected ClientWebSocket socket;
+        protected TaskCompletionSource _clientInitiatedClose = new TaskCompletionSource();
         TaskCompletionSource _shutdownRequested = new TaskCompletionSource();
         TaskCompletionSource _newSendTaskAvailable = new ();
         protected readonly ILogger logger;
@@ -65,7 +65,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        async Task<string> ReadOne(CancellationToken token)
+        protected virtual async Task<string> ReadOne(CancellationToken token)
         {
             byte[] buff = new byte[4000];
             var mem = new MemoryStream();

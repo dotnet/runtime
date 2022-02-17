@@ -45,7 +45,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return Task.FromResult(false);
         }
 
-        private async Task<string> ReadOne(WebSocket socket, CancellationToken token)
+        protected async Task<string> ReadOne(WebSocket socket, CancellationToken token)
         {
             byte[] buff = new byte[4000];
             var mem = new MemoryStream();
@@ -379,8 +379,20 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 TcpClient newClient = await _server.AcceptTcpClientAsync();
                 var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
-                monoProxy.Run(newClient);
+                await monoProxy.Run(newClient);
             }
+        }
+
+        public async Task RunForTests(int port, WebSocket socketForDebuggerTests)
+        {
+            var _server = new TcpListener(IPAddress.Parse("127.0.0.1"), port);
+            _server.Start();
+            port = ((IPEndPoint)_server.LocalEndpoint).Port;
+            System.Console.WriteLine($"Now listening on: 127.0.0.1:{port} for Firefox debugging");
+            TcpClient newClient = await _server.AcceptTcpClientAsync();
+            var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
+            await monoProxy.Run(newClient, socketForDebuggerTests);
+            _server.Stop();
         }
     }
 }

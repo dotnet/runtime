@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RunAnalyzers>false</RunAnalyzers>
     <IsTestProject>true</IsTestProject>
+    <DefineConstants Condition="'$(RunInFirefox)'!='1'">$(DefineConstants);RUN_IN_CHROME</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

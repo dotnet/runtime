@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Net.WebSockets;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -60,7 +61,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     while (bytesRead == 0 || Convert.ToChar(buffer[bytesRead - 1]) != ':')
                     {
                         var readLen = await stream.ReadAsync(buffer, bytesRead, 1, token);
-                        bytesRead++;
+                        bytesRead+=readLen;
                     }
                     var str = Encoding.ASCII.GetString(buffer, 0, bytesRead - 1);
                     int len = int.Parse(str);
@@ -78,7 +79,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async void Run(TcpClient ideClient)
+        public async Task Run(TcpClient ideClient, WebSocket socketForDebuggerTests = null)
         {
             ide = ideClient;
             browser = new TcpClient();
@@ -90,13 +91,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             pending_ops.Add(ReadOne(ide, x.Token));
             pending_ops.Add(side_exception.Task);
             pending_ops.Add(client_initiated_close.Task);
+            if (socketForDebuggerTests != null)
+                pending_ops.Add(base.ReadOne(socketForDebuggerTests, x.Token));
 
             try
             {
                 while (!x.IsCancellationRequested)
                 {
                     Task task = await Task.WhenAny(pending_ops.ToArray());
-
                     if (client_initiated_close.Task.IsCompleted)
                     {
                         await client_initiated_close.Task.ConfigureAwait(false);
@@ -186,7 +188,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (!await AcceptCommand(id, parms, token))
                 {
-                    await SendCommandInternal(id, "", parms, token);
+                    await SendCommandInternal(id, parms["type"]?.Value<string>(), parms, token);
                 }
             }
             catch (Exception e)
@@ -313,8 +315,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal override void SendEventInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             if (method != "")
-                return;
-            Send(this.ide, args, token);
+                Send(this.ide, new JObject(JObject.FromObject(new {type = method})), token);
+            else
+                Send(this.ide, args, token);
         }
 
         protected override async Task<bool> AcceptEvent(SessionId sessionId, JObject args, CancellationToken token)
@@ -384,6 +387,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 }
                             }
                         }
+                        break;
+                    }
+                case "target-available-form":
+                    {
+                        actorName = args["target"]["consoleActor"].Value<string>();
                         break;
                     }
             }
@@ -712,7 +720,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 url = source.Url,
                 isBlackBoxed = false,
                 introductionType = "scriptElement",
-                resourceType = "source"
+                resourceType = "source",
+                dotNetUrl = source.DotNetUrl
             });
             JObject sourcesJObj;
             if (globalName != "")
@@ -800,7 +809,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (JObject frame in orig_callframes.Value["result"]?["value"]?["frames"])
             {
                 string function_name = frame["displayName"]?.Value<string>();
-                if (!(  function_name.StartsWith("Module._mono_wasm", StringComparison.Ordinal) ||
+                if (function_name != null && !(function_name.StartsWith("Module._mono_wasm", StringComparison.Ordinal) ||
                         function_name.StartsWith("Module.mono_wasm", StringComparison.Ordinal) ||
                         function_name == "mono_wasm_fire_debugger_agent_message" ||
                         function_name == "_mono_wasm_fire_debugger_agent_message" ||

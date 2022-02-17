@@ -77,7 +77,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (Exception e) { Logger.LogError(e, "webserver: SendNodeList failed"); }
         }
 
-        public async Task LaunchAndServe(ProcessStartInfo psi, HttpContext context, Func<string, Task<string>> extract_conn_url)
+        public async Task LaunchAndServe(ProcessStartInfo psi, HttpContext context, Func<string, ILogger<TestHarnessProxy>, Task<string>> extract_conn_url, Uri devToolsUrl)
         {
 
             if (!context.WebSockets.IsWebSocketRequest)
@@ -98,11 +98,13 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     if (tcs.Task.IsCompleted)
                         return;
-
-                    var match = parseConnection.Match(str);
-                    if (match.Success)
+                    if (str != null)
                     {
-                        tcs.TrySetResult(match.Groups[1].Captures[0].Value);
+                        var match = parseConnection.Match(str);
+                        if (match.Success)
+                        {
+                            tcs.TrySetResult(match.Groups[1].Captures[0].Value);
+                        }
                     }
                 };
 
@@ -113,22 +115,33 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 proc.BeginErrorReadLine();
                 proc.BeginOutputReadLine();
-
-                if (await Task.WhenAny(tcs.Task, Task.Delay(20000)) != tcs.Task)
+                string line;
+                if (await Task.WhenAny(tcs.Task, Task.Delay(5000)) != tcs.Task)
                 {
-                    Logger.LogError("Didnt get the con string after 20s.");
-                    throw new Exception("node.js timedout");
+                    if (devToolsUrl.Port != 0)
+                    {
+                        tcs.TrySetResult(devToolsUrl.ToString());
+                    }
+                    else
+                    {
+                        Logger.LogError("Didnt get the con string after 20s.");
+                        throw new Exception("node.js timedout");
+                    }
                 }
-                var line = await tcs.Task;
-                var con_str = extract_conn_url != null ? await extract_conn_url(line) : line;
+                line = await tcs.Task;
+                var con_str = extract_conn_url != null ? await extract_conn_url(line, Logger) : line;
 
                 Logger.LogInformation($"launching proxy for {con_str}");
-
+#if RUN_IN_CHROME
                 var proxy = new DebuggerProxy(_loggerFactory, null);
                 var browserUri = new Uri(con_str);
                 var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
-
                 await proxy.Run(browserUri, ideSocket);
+#else
+                var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
+                var proxyFirefox = new FirefoxProxyServer(_loggerFactory, 6000);
+                await proxyFirefox.RunForTests(9500, ideSocket);
+#endif
                 Logger.LogInformation("Proxy done");
             }
             catch (Exception e)
@@ -170,61 +183,23 @@ namespace Microsoft.WebAssembly.Diagnostics
             var devToolsUrl = options.DevToolsUrl;
             app.UseRouter(router =>
             {
-                router.MapGet("launch-chrome-and-connect", async context =>
+                router.MapGet("launch-browser-and-connect", async context =>
                 {
                     Logger.LogInformation("New test request");
                     try
                     {
-                        var client = new HttpClient();
                         var psi = new ProcessStartInfo();
 
-                        psi.Arguments = $"--headless --disable-gpu --lang=en-US --incognito --remote-debugging-port={devToolsUrl.Port} http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}";
+                        psi.Arguments = $"{options.BrowserParms}{devToolsUrl.Port} http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}";
                         psi.UseShellExecute = false;
-                        psi.FileName = options.ChromePath;
+                        psi.FileName = options.BrowserPath;
                         psi.RedirectStandardError = true;
                         psi.RedirectStandardOutput = true;
-
-                        await LaunchAndServe(psi, context, async (str) =>
-                        {
-                            var start = DateTime.Now;
-                            JArray obj = null;
-
-                            while (true)
-                            {
-                                // Unfortunately it does look like we have to wait
-                                // for a bit after getting the response but before
-                                // making the list request.  We get an empty result
-                                // if we make the request too soon.
-                                await Task.Delay(100);
-
-                                var res = await client.GetStringAsync(new Uri(new Uri(str), "/json/list"));
-                                Logger.LogTrace("res is {0}", res);
-
-                                if (!String.IsNullOrEmpty(res))
-                                {
-                                    // Sometimes we seem to get an empty array `[ ]`
-                                    obj = JArray.Parse(res);
-                                    if (obj != null && obj.Count >= 1)
-                                        break;
-                                }
-
-                                var elapsed = DateTime.Now - start;
-                                if (elapsed.Milliseconds > 5000)
-                                {
-                                    Logger.LogError($"Unable to get DevTools /json/list response in {elapsed.Seconds} seconds, stopping");
-                                    return null;
-                                }
-                            }
-
-                            var wsURl = obj[0]?["webSocketDebuggerUrl"]?.Value<string>();
-                            Logger.LogTrace(">>> {0}", wsURl);
-
-                            return wsURl;
-                        });
+                        await LaunchAndServe(psi, context, options.ExtractConnUrl, devToolsUrl);
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError($"launch-chrome-and-connect failed with {ex.ToString()}");
+                        Logger.LogError($"launch-browser-and-connect failed with {ex.ToString()}");
                     }
                 });
             });
@@ -251,7 +226,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     router.MapGet("json/version", SendNodeVersion);
                     router.MapGet("launch-done-and-connect", async context =>
                     {
-                        await LaunchAndServe(psi, context, null);
+                        await LaunchAndServe(psi, context, null, null);
                     });
                 });
             }

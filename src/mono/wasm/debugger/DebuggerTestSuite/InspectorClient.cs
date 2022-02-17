@@ -13,13 +13,13 @@ namespace Microsoft.WebAssembly.Diagnostics
 {
     internal class InspectorClient : DevToolsClient
     {
-        Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
-        Func<string, JObject, CancellationToken, Task> onEvent;
-        int next_cmd_id;
+        protected Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
+        protected Func<string, JObject, CancellationToken, Task> onEvent;
+        protected int next_cmd_id;
 
         public InspectorClient(ILogger logger) : base(logger) { }
 
-        Task HandleMessage(string msg, CancellationToken token)
+        protected virtual Task HandleMessage(string msg, CancellationToken token)
         {
             var res = JObject.Parse(msg);
 
@@ -34,7 +34,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task Connect(
+        public virtual async Task ProcessCommand(Result command, CancellationToken token)
+        {
+            await Task.FromResult(true);
+        }
+
+        public virtual async Task Connect(
             Uri uri,
             Func<string, JObject, CancellationToken, Task> onEvent,
             CancellationToken token)
@@ -62,7 +67,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public Task<Result> SendCommand(string method, JObject args, CancellationToken token)
             => SendCommand(new SessionId(null), method, args, token);
 
-        public Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
+        public virtual Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             int id = ++next_cmd_id;
             if (args == null)

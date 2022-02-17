@@ -48,8 +48,11 @@ namespace DebuggerTests
                                 options.TimestampFormat = "[HH:mm:ss] ";
                             })
                            .AddFilter(null, LogLevel.Trace));
-
+#if RUN_IN_CHROME
             Client = new InspectorClient(_loggerFactory.CreateLogger<InspectorClient>());
+#else
+            Client = new FirefoxInspectorClient(_loggerFactory.CreateLogger<InspectorClient>());
+#endif
             _logger = _loggerFactory.CreateLogger<Inspector>();
         }
 
@@ -202,33 +205,38 @@ namespace DebuggerTests
             }
         }
 
+        public async Task LaunchBrowser(DateTime start, TimeSpan? span = null)
+        {
+            _cancellationTokenSource.CancelAfter(span?.Milliseconds ?? DefaultTestTimeoutMs);
+
+            var uri = new Uri($"ws://{TestHarnessProxy.Endpoint.Authority}/launch-browser-and-connect");
+
+            await Client.Connect(uri, OnMessage, _cancellationTokenSource.Token);
+            Client.RunLoopStopped += (_, args) =>
+            {
+                switch (args.reason)
+                {
+                    case RunLoopStopReason.Exception:
+                        FailAllWaiters(args.ex);
+                        break;
+
+                    case RunLoopStopReason.Cancelled when Token.IsCancellationRequested:
+                        FailAllWaiters(new TaskCanceledException($"Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds})"));
+                        break;
+
+                    default:
+                        FailAllWaiters();
+                        break;
+                };
+            }; 
+        }
+
         public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, TimeSpan? span = null)
         {
             var start = DateTime.Now;
             try
             {
-                _cancellationTokenSource.CancelAfter(span?.Milliseconds ?? DefaultTestTimeoutMs);
-
-                var uri = new Uri($"ws://{TestHarnessProxy.Endpoint.Authority}/launch-chrome-and-connect");
-
-                await Client.Connect(uri, OnMessage, _cancellationTokenSource.Token);
-                Client.RunLoopStopped += (_, args) =>
-                {
-                    switch (args.reason)
-                    {
-                        case RunLoopStopReason.Exception:
-                            FailAllWaiters(args.ex);
-                            break;
-
-                        case RunLoopStopReason.Cancelled when Token.IsCancellationRequested:
-                            FailAllWaiters(new TaskCanceledException($"Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds})"));
-                            break;
-
-                        default:
-                            FailAllWaiters();
-                            break;
-                    };
-                };
+                await LaunchBrowser(start, span);
 
                 var init_cmds = getInitCmds(Client, _cancellationTokenSource.Token);
 
@@ -259,6 +267,7 @@ namespace DebuggerTests
                     }
 
                     Result res = completedTask.Result;
+                    await Client.ProcessCommand(completedTask.Result, _cancellationTokenSource.Token);
                     if (res.IsErr)
                         throw new ArgumentException($"Command {cmd_name} failed with: {res.Error}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}");
 
