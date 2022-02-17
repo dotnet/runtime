@@ -20,19 +20,13 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.OSX)]
         public async Task SslStream_SendCertificateTrust_CertificateCollection()
         {
-            using X509Store store = new X509Store("Root", StoreLocation.LocalMachine);
-            store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
-            X509Certificate2[] certList = store.Certificates.DistinctBy(c => c.Subject).Take(2).ToArray();
+            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = TestHelper.GenerateCertificates("foo");
 
-            SslCertificateTrust trust = SslCertificateTrust.CreateForX509Collection(
-                new X509Certificate2Collection(certList),
-                sendTrustInHandshake: true);
-
+            SslCertificateTrust trust = SslCertificateTrust.CreateForX509Collection(caCerts, sendTrustInHandshake: true);
             string[] acceptableIssuers = await ConnectAndGatherAcceptableIssuers(trust);
 
-            Assert.Equal(2, acceptableIssuers.Length);
-            Assert.Contains(certList[0].Subject, acceptableIssuers);
-            Assert.Contains(certList[1].Subject, acceptableIssuers);
+            Assert.Equal(caCerts.Count, acceptableIssuers.Length);
+            Assert.Equal(caCerts.Select(c => c.Subject), acceptableIssuers);
         }
 
         [Fact]
