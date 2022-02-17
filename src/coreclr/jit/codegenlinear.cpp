@@ -292,7 +292,7 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+#if defined(TARGET_ARM)
         genInsertNopForUnwinder(block);
 #endif
 

@@ -8424,18 +8424,6 @@ public:
         codeGen->SetInterruptible(value);
     }
 
-#ifdef TARGET_ARMARCH
-
-    bool GetHasTailCalls()
-    {
-        return codeGen->GetHasTailCalls();
-    }
-    void SetHasTailCalls(bool value)
-    {
-        codeGen->SetHasTailCalls(value);
-    }
-#endif // TARGET_ARMARCH
-
 #if DOUBLE_ALIGN
     const bool genDoubleAlign()
     {
