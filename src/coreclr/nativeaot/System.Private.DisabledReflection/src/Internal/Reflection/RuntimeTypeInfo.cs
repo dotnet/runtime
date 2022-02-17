@@ -153,7 +153,7 @@ namespace Internal.Reflection
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => throw new NotSupportedException(SR.Reflection_Disabled);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
+        public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
             => throw new NotSupportedException(SR.Reflection_Disabled);
 
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException(SR.Reflection_Disabled);

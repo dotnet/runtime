@@ -12,11 +12,8 @@ namespace System.Security.Cryptography
 
         public RSAPKCS1KeyExchangeFormatter() { }
 
-        public RSAPKCS1KeyExchangeFormatter(AsymmetricAlgorithm key)
+        public RSAPKCS1KeyExchangeFormatter(AsymmetricAlgorithm key!!)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             _rsaKey = (RSA)key;
         }
 
@@ -34,11 +31,8 @@ namespace System.Security.Cryptography
             set { RngValue = value; }
         }
 
-        public override void SetKey(AsymmetricAlgorithm key)
+        public override void SetKey(AsymmetricAlgorithm key!!)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             _rsaKey = (RSA)key;
         }
 

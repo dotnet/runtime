@@ -249,8 +249,8 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value"></param>
         [CLSCompliant(false)]
-        public BigInteger(byte[] value) :
-            this(new ReadOnlySpan<byte>(value ?? throw new ArgumentNullException(nameof(value))))
+        public BigInteger(byte[] value!!) :
+            this(new ReadOnlySpan<byte>(value))
         {
         }
 

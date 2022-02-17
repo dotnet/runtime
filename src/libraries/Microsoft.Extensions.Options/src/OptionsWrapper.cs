@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         /// <summary>
-        /// Intializes the wrapper with the options instance to return.
+        /// Initializes the wrapper with the options instance to return.
         /// </summary>
         /// <param name="options">The options instance to return.</param>
         public OptionsWrapper(TOptions options)

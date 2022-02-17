@@ -21,20 +21,15 @@ namespace System.Security.Cryptography
             _list.Add(asnEncodedData);
         }
 
-        public int Add(AsnEncodedData asnEncodedData)
+        public int Add(AsnEncodedData asnEncodedData!!)
         {
-            if (asnEncodedData == null)
-                throw new ArgumentNullException(nameof(asnEncodedData));
-
             int indexOfNewItem = _list.Count;
             _list.Add(asnEncodedData);
             return indexOfNewItem;
         }
 
-        public void Remove(AsnEncodedData asnEncodedData)
+        public void Remove(AsnEncodedData asnEncodedData!!)
         {
-            if (asnEncodedData == null)
-                throw new ArgumentNullException(nameof(asnEncodedData));
             _list.Remove(asnEncodedData);
         }
 
@@ -64,10 +59,8 @@ namespace System.Security.Cryptography
             return GetEnumerator();
         }
 
-        void ICollection.CopyTo(Array array, int index)
+        void ICollection.CopyTo(Array array!!, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)
@@ -82,13 +75,11 @@ namespace System.Security.Cryptography
             }
         }
 
-        public void CopyTo(AsnEncodedData[] array, int index)
+        public void CopyTo(AsnEncodedData[] array!!, int index)
         {
             // Need to do part of the argument validation ourselves as AsnEncodedDataCollection throws
             // ArgumentOutOfRangeException where List<>.CopyTo() throws ArgumentException.
 
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
 

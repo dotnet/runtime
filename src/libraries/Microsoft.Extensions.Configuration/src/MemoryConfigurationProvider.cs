@@ -18,13 +18,8 @@ namespace Microsoft.Extensions.Configuration.Memory
         /// Initialize a new instance from the source.
         /// </summary>
         /// <param name="source">The source settings.</param>
-        public MemoryConfigurationProvider(MemoryConfigurationSource source)
+        public MemoryConfigurationProvider(MemoryConfigurationSource source!!)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
             _source = source;
 
             if (_source.InitialData != null)

@@ -18,10 +18,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
             }
 
-            if (serializationStream == null)
-            {
-                throw new ArgumentNullException(nameof(serializationStream));
-            }
+            ArgumentNullException.ThrowIfNull(serializationStream);
+
             if (serializationStream.CanSeek && (serializationStream.Length == 0))
             {
                 throw new SerializationException(SR.Serialization_Stream);
@@ -69,10 +67,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
             }
 
-            if (serializationStream == null)
-            {
-                throw new ArgumentNullException(nameof(serializationStream));
-            }
+            ArgumentNullException.ThrowIfNull(serializationStream);
 
             var formatterEnums = new InternalFE()
             {

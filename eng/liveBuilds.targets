@@ -25,6 +25,7 @@
     <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</CoreCLRSharedFrameworkDir>
     <CoreCLRCrossgen2Dir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'crossgen2'))</CoreCLRCrossgen2Dir>
     <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'ilc'))</CoreCLRILCompilerDir>
+    <CoreCLRCrossILCompilerDir Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', '$(BuildArchitecture)', 'ilc'))</CoreCLRCrossILCompilerDir>
     <CoreCLRAotSdkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'aotsdk'))</CoreCLRAotSdkDir>
     <CoreCLRBuildIntegrationDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'build'))</CoreCLRBuildIntegrationDir>
 

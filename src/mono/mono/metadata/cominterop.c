@@ -13,16 +13,16 @@
 #include <alloca.h>
 #endif
 
-#include "object.h"
-#include "loader.h"
+#include <mono/metadata/object.h>
+#include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/abi-details.h"
 #include "metadata/cominterop.h"
 #include "metadata/marshal.h"
 #include "metadata/method-builder.h"
 #include "metadata/tabledefs.h"
-#include "metadata/exception.h"
-#include "metadata/appdomain.h"
+#include <mono/metadata/exception.h>
+#include <mono/metadata/appdomain.h>
 #include "metadata/reflection-internals.h"
 #include "mono/metadata/class-init.h"
 #include "mono/metadata/class-internals.h"

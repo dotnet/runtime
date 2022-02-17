@@ -27,13 +27,8 @@ namespace System.Composition.Convention
                 return mi == _methodInfo;
             }
 
-            private static MethodInfo SelectMethods(Expression<Action<T>> methodSelector)
+            private static MethodInfo SelectMethods(Expression<Action<T>> methodSelector!!)
             {
-                if (methodSelector == null)
-                {
-                    throw new ArgumentNullException(nameof(methodSelector));
-                }
-
                 Expression expr = Reduce(methodSelector).Body;
                 if (expr.NodeType == ExpressionType.Call)
                 {
@@ -98,13 +93,8 @@ namespace System.Composition.Convention
                 _configureExport?.Invoke(exportBuilder);
             }
 
-            private static PropertyInfo SelectProperties(Expression<Func<T, object>> propertySelector)
+            private static PropertyInfo SelectProperties(Expression<Func<T, object>> propertySelector!!)
             {
-                if (propertySelector == null)
-                {
-                    throw new ArgumentNullException(nameof(propertySelector));
-                }
-
                 Expression expr = Reduce(propertySelector).Body;
                 if (expr.NodeType == ExpressionType.MemberAccess)
                 {
@@ -157,13 +147,8 @@ namespace System.Composition.Convention
                 return;
             }
 
-            private void ParseSelectConstructor(Expression<Func<ParameterImportConventionBuilder, T>> constructorSelector)
+            private void ParseSelectConstructor(Expression<Func<ParameterImportConventionBuilder, T>> constructorSelector!!)
             {
-                if (constructorSelector == null)
-                {
-                    throw new ArgumentNullException(nameof(constructorSelector));
-                }
-
                 Expression expr = Reduce(constructorSelector).Body;
                 if (expr.NodeType != ExpressionType.New)
                 {
@@ -218,13 +203,8 @@ namespace System.Composition.Convention
         /// </summary>
         /// <param name="constructorSelector">Expression that selects a single constructor.</param>
         /// <returns>A part builder allowing further configuration of the part.</returns>
-        public PartConventionBuilder<T> SelectConstructor(Expression<Func<ParameterImportConventionBuilder, T>> constructorSelector)
+        public PartConventionBuilder<T> SelectConstructor(Expression<Func<ParameterImportConventionBuilder, T>> constructorSelector!!)
         {
-            if (constructorSelector == null)
-            {
-                throw new ArgumentNullException(nameof(constructorSelector));
-            }
-
             var adapter = new ConstructorExpressionAdapter(constructorSelector);
             base.SelectConstructor(adapter.SelectConstructor, adapter.ConfigureConstructorImports);
             return this;
@@ -247,14 +227,9 @@ namespace System.Composition.Convention
         /// <param name="exportConfiguration">Action to configure selected properties.</param>
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder<T> ExportProperty(
-            Expression<Func<T, object>> propertySelector,
+            Expression<Func<T, object>> propertySelector!!,
             Action<ExportConventionBuilder> exportConfiguration)
         {
-            if (propertySelector == null)
-            {
-                throw new ArgumentNullException(nameof(propertySelector));
-            }
-
             var adapter = new PropertyExpressionAdapter(propertySelector, null, exportConfiguration);
             base.ExportProperties(adapter.VerifyPropertyInfo, adapter.ConfigureExport);
             return this;
@@ -280,14 +255,9 @@ namespace System.Composition.Convention
         /// <param name="exportConfiguration">Action to configure selected properties.</param>
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder<T> ExportProperty<TContract>(
-            Expression<Func<T, object>> propertySelector,
+            Expression<Func<T, object>> propertySelector!!,
             Action<ExportConventionBuilder> exportConfiguration)
         {
-            if (propertySelector == null)
-            {
-                throw new ArgumentNullException(nameof(propertySelector));
-            }
-
             var adapter = new PropertyExpressionAdapter(propertySelector, null, exportConfiguration);
             base.ExportProperties<TContract>(adapter.VerifyPropertyInfo, adapter.ConfigureExport);
             return this;
@@ -310,14 +280,9 @@ namespace System.Composition.Convention
         /// <param name="importConfiguration">Action configuring the imported property.</param>
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder<T> ImportProperty(
-            Expression<Func<T, object>> propertySelector,
+            Expression<Func<T, object>> propertySelector!!,
             Action<ImportConventionBuilder> importConfiguration)
         {
-            if (propertySelector == null)
-            {
-                throw new ArgumentNullException(nameof(propertySelector));
-            }
-
             var adapter = new PropertyExpressionAdapter(propertySelector, importConfiguration, null);
             base.ImportProperties(adapter.VerifyPropertyInfo, adapter.ConfigureImport);
             return this;
@@ -342,14 +307,9 @@ namespace System.Composition.Convention
         /// <param name="importConfiguration">Action configuring the imported property.</param>
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder<T> ImportProperty<TContract>(
-            Expression<Func<T, object>> propertySelector,
+            Expression<Func<T, object>> propertySelector!!,
             Action<ImportConventionBuilder> importConfiguration)
         {
-            if (propertySelector == null)
-            {
-                throw new ArgumentNullException(nameof(propertySelector));
-            }
-
             var adapter = new PropertyExpressionAdapter(propertySelector, importConfiguration, null);
             base.ImportProperties<TContract>(adapter.VerifyPropertyInfo, adapter.ConfigureImport);
             return this;
@@ -359,13 +319,8 @@ namespace System.Composition.Convention
         /// Mark the part as being shared within the entire composition.
         /// </summary>
         /// <returns>A part builder allowing further configuration of the part.</returns>
-        public PartConventionBuilder<T> NotifyImportsSatisfied(Expression<Action<T>> methodSelector)
+        public PartConventionBuilder<T> NotifyImportsSatisfied(Expression<Action<T>> methodSelector!!)
         {
-            if (methodSelector == null)
-            {
-                throw new ArgumentNullException(nameof(methodSelector));
-            }
-
             var adapter = new MethodExpressionAdapter(methodSelector);
             base.NotifyImportsSatisfied(adapter.VerifyMethodInfo);
             return this;

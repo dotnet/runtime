@@ -278,12 +278,12 @@ namespace System
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        protected virtual object DynamicInvokeImpl(object[]? args)
+        protected virtual object DynamicInvokeImpl(object?[]? args)
         {
             if (IsDynamicDelegate())
             {
                 // DynamicDelegate case
-                object result = ((Func<object[]?, object>)m_helperObject)(args);
+                object result = ((Func<object?[]?, object>)m_helperObject)(args);
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }
@@ -378,7 +378,7 @@ namespace System
 
         // Returns a new delegate of the specified type whose implementation is provied by the
         // provided delegate.
-        internal static Delegate CreateObjectArrayDelegate(Type t, Func<object[], object> handler)
+        internal static Delegate CreateObjectArrayDelegate(Type t, Func<object?[], object?> handler)
         {
             EETypePtr delegateEEType;
             if (!t.TryGetEEType(out delegateEEType))

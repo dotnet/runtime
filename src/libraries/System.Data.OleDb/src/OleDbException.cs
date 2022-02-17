@@ -35,12 +35,8 @@ namespace System.Data.OleDb
             this.oledbErrors = errors;
         }
 
-        public override void GetObjectData(SerializationInfo si, StreamingContext context)
+        public override void GetObjectData(SerializationInfo si!!, StreamingContext context)
         {
-            if (null == si)
-            {
-                throw new ArgumentNullException(nameof(si));
-            }
             si.AddValue("oledbErrors", oledbErrors, typeof(OleDbErrorCollection));
             base.GetObjectData(si, context);
         }

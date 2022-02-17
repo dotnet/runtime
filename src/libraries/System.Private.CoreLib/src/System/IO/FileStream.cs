@@ -520,13 +520,8 @@ namespace System.IO
             return _strategy.BeginRead(buffer, offset, count, callback, state);
         }
 
-        public override int EndRead(IAsyncResult asyncResult)
+        public override int EndRead(IAsyncResult asyncResult!!)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
             return _strategy.EndRead(asyncResult);
         }
 
@@ -546,13 +541,8 @@ namespace System.IO
             return _strategy.BeginWrite(buffer, offset, count, callback, state);
         }
 
-        public override void EndWrite(IAsyncResult asyncResult)
+        public override void EndWrite(IAsyncResult asyncResult!!)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
             _strategy.EndWrite(asyncResult);
         }
 

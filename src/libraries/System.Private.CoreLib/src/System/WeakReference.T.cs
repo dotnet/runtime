@@ -30,13 +30,8 @@ namespace System
             Create(target, trackResurrection);
         }
 
-        private WeakReference(SerializationInfo info, StreamingContext context)
+        private WeakReference(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             T target = (T)info.GetValue("TrackedObject", typeof(T))!; // Do not rename (binary serialization)
             bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
 
@@ -59,13 +54,8 @@ namespace System
             return o != null;
         }
 
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        public void GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             info.AddValue("TrackedObject", this.Target, typeof(T)); // Do not rename (binary serialization)
             info.AddValue("TrackResurrection", IsTrackResurrection()); // Do not rename (binary serialization)
         }
