@@ -12,7 +12,12 @@ using Xunit.Sdk;
 namespace DebuggerTests
 {
 
-    public class BreakpointTests : DebuggerTestBase
+    public class BreakpointTests :
+#if RUN_IN_CHROME
+    DebuggerTestBase
+#else
+    DebuggerTestFirefox
+#endif    
     {
         [Fact]
         public async Task CreateGoodBreakpoint()
@@ -127,7 +132,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task CreateGoodBreakpointAndHit()
+        public async Task CreateGoodBreakpointAndHit2()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
 

@@ -76,6 +76,29 @@ public class DebuggerTestFirefox : DebuggerTestBase
     {
         dicScriptsIdToUrl = new Dictionary<string, string>();
         dicFileToUrl = new Dictionary<string, string>();
+        insp.On("newSource", async (args, c) =>
+        {
+            var script_id = args?["source"]?["actor"].Value<string>();
+            var url = args?["source"]?["sourceMapBaseURL"]?.Value<string>();
+            /*Console.WriteLine(script_id);
+            Console.WriteLine(args);*/
+            if (script_id.StartsWith("dotnet://"))
+            {
+                var dbgUrl = args?["source"]?["dotNetUrl"]?.Value<string>();
+                var arrStr = dbgUrl.Split("/");
+                dbgUrl = arrStr[0] + "/" + arrStr[1] + "/" + arrStr[2] + "/" + arrStr[arrStr.Length - 1];
+                dicScriptsIdToUrl[script_id] = dbgUrl;
+                dicFileToUrl[dbgUrl] = args?["source"]?["url"]?.Value<string>();
+            }
+            else if (!String.IsNullOrEmpty(url))
+            {
+                var dbgUrl = args?["source"]?["sourceMapBaseURL"]?.Value<string>();
+                var arrStr = dbgUrl.Split("/");
+                dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
+                dicFileToUrl[new Uri(url).AbsolutePath] = url;
+            }
+            await Task.FromResult(0);
+        });
         insp.On("resource-available-form", async (args, c) =>
         {
             var script_id = args?["resources"]?[0]?["actor"].Value<string>();
@@ -113,7 +136,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
             });
 
         var bp1_res = await cli.SendCommand("setBreakpoint", bp1_req, token);
-        Assert.True(expect_ok ? bp1_res.IsOk : bp1_res.IsErr);
+        Assert.True(expect_ok == bp1_res.IsOk);
 
         return bp1_res;
     }
@@ -139,6 +162,8 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
     internal override void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
     {
+        if (location == null) //probably trying to check startLocation endLocation or functionLocation which are not available on Firefox
+            return;
         var loc_str = $"{ scripts[location["actor"].Value<string>()] }" +
             $"#{ location["line"].Value<int>() }" +
             $"#{ location["column"].Value<int>() }";
@@ -146,7 +171,48 @@ public class DebuggerTestFirefox : DebuggerTestBase
         var expected_loc_str = $"{script_loc}#{line}#{column}";
         Assert.Equal(expected_loc_str, loc_str);
     }
-    
+
+    internal async Task<JObject> ConvertFirefoxToDefaultFormat(JArray frames, JObject wait_res)
+    {
+        //Console.WriteLine(wait_res);
+        var callFrames = new JArray();
+        foreach (var frame in frames)
+        {
+            var callFrame = JObject.FromObject(new
+            {
+                functionName = frame["displayName"].Value<string>(),
+                callFrameId = frame["actor"].Value<string>(),
+                //functionLocation = 0,
+                location =  JObject.FromObject(new
+                {
+                    scriptId = frame["where"]["actor"].Value<string>(),
+                    lineNumber = frame["where"]["line"].Value<int>(),
+                    columnNumber = frame["where"]["column"].Value<int>()
+                }),
+                url = scripts[frame["where"]["actor"].Value<string>()],
+                scopeChain = new JArray(JObject.FromObject(new
+                        {
+                            type = "local",
+                            name = frame["displayName"].Value<string>(),
+                            @object = JObject.FromObject(new
+                            {
+                                type = "object",
+                                className = "Object",
+                                description = "Object",
+                                objectId = frame["actor"].Value<string>()
+                            })
+                        }))
+            });
+            callFrames.Add(callFrame);
+        }
+        await Task.Delay(1);
+        return JObject.FromObject(new 
+                { 
+                    callFrames,
+                    reason = "other"
+                });
+    }
+
     internal override async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE)
     {
@@ -177,7 +243,10 @@ public class DebuggerTestFirefox : DebuggerTestBase
             CheckLocation(script_loc, line, column, scripts, top_frame["where"]);
 
         if (wait_for_event_fn != null)
+        {
+            wait_res = await ConvertFirefoxToDefaultFormat(frames.Value["result"]?["value"]?["frames"] as JArray, wait_res);
             await wait_for_event_fn(wait_res);
+        }
 
         if (locals_fn != null)
         {
