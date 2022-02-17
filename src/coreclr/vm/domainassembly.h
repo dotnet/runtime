@@ -286,6 +286,25 @@ public:
     DynamicMethodTable* GetDynamicMethodTable();
 #endif
 
+ #ifdef FEATURE_UNITY_ASSEMBLY_MEMORY_PATH
+    // Unity loads assemblies from memory, so we can modify them on disk while they are loaded when users
+    // change scripts. But we still want them to point to their location on disk when queried by Assembly.Location.
+    // 
+    // But CoreCLR does not support assemblies loaded from memory with a custom path atm, so we need to add our own
+    // support. SA: https://github.com/dotnet/runtime/issues/12822
+    const SString &GetPath()
+    {
+        if (!m_CustomPath.IsEmpty())
+            return m_CustomPath;
+        return GetPEAssembly()->GetPath();
+    }
+    
+    void SetCustomPath(LPCSTR path)
+    {
+        m_CustomPath.SetUTF8(path);
+    }
+#endif
+
     DomainAssembly* GetNextDomainAssemblyInSameALC()
     {
         return m_NextDomainAssemblyInSameALC;
@@ -463,6 +482,9 @@ private:
     DebuggerAssemblyControlFlags    m_debuggerFlags;
     DWORD                       m_notifyflags;
     BOOL                        m_fDebuggerUnloadStarted;
+#ifdef FEATURE_UNITY_ASSEMBLY_MEMORY_PATH
+    SString m_CustomPath;
+#endif
 };
 
 #endif  // _DOMAINASSEMBLY_H_

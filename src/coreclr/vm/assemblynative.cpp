@@ -331,7 +331,11 @@ extern "C" void QCALLTYPE AssemblyNative_GetLocation(QCall::AssemblyHandle pAsse
     BEGIN_QCALL;
 
     {
+#ifdef FEATURE_UNITY_ASSEMBLY_MEMORY_PATH
+        retString.Set(pAssembly->GetPath());
+#else
         retString.Set(pAssembly->GetPEAssembly()->GetPath());
+#endif
     }
 
     END_QCALL;
