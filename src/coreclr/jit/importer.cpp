@@ -2114,7 +2114,7 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
 //
 bool Compiler::impIsProfileableCastHelper(GenTree* tree)
 {
-    if (!opts.OptimizationDisabled() || (JitConfig.JitCastProfiling() != 1))
+    if (opts.OptimizationEnabled() || (JitConfig.JitCastProfiling() != 1))
     {
         return false;
     }
