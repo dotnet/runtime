@@ -483,11 +483,12 @@ namespace CoreXml.Test.XLinq
 
                     string fileName = "bug105376_" + Variation.Params[0].ToString() + ".xml";
                     var ms = new MemoryStream();
-                    StreamWriter sw = new StreamWriter(ms, leaveOpen: true);
-                    sw.Write("<root><base64>");
-                    sw.Write(base64str);
-                    sw.Write("</base64></root>");
-                    sw.Flush();
+                    {
+                        using var sw = new StreamWriter(ms, leaveOpen: true);
+                        sw.Write("<root><base64>");
+                        sw.Write(base64str);
+                        sw.Write("</base64></root>");
+                    }
 
                     FilePathUtil.addStream(fileName, ms);
 
@@ -946,15 +947,16 @@ namespace CoreXml.Test.XLinq
 
                     string fileName = "bug105376_" + Variation.Params[0].ToString() + ".xml";
                     var ms = new MemoryStream();
-                    StreamWriter sw = new StreamWriter(ms, leaveOpen: true);
-                    sw.Write("<root><base64>");
-                    sw.Write(base64str);
-                    sw.Write("</base64></root>");
-                    sw.Flush();
+                    {
+                        using var sw = new StreamWriter(ms, leaveOpen: true);
+                        sw.Write("<root><base64>");
+                        sw.Write(base64str);
+                        sw.Write("</base64></root>");
+                    }
 
                     FilePathUtil.addStream(fileName, ms);
 
-                    XmlReader DataReader = GetReader(fileName);
+                    using XmlReader DataReader = GetReader(fileName);
 
                     int SIZE = (totalfilesize - 30);
                     int SIZE64 = SIZE * 3 / 4;
@@ -978,8 +980,6 @@ namespace CoreXml.Test.XLinq
                     readSize = 0;
                     currentSize = DataReader.ReadElementContentAsBase64(base64, startPos, readSize);
                     TestLog.Compare(currentSize, 0, "Read other than Zero Bytes");
-
-                    DataReader.Dispose();
                 }
 
                 //[Variation("SubtreeReader inserted attributes don't work with ReadContentAsBase64")]
