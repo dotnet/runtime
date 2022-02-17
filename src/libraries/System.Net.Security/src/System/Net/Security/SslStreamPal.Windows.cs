@@ -122,16 +122,23 @@ namespace System.Net.Security
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
-            // New crypto API supports TLS1.3 but it does not allow to force NULL encryption.
-            SafeFreeCredentials cred = !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
-                        AcquireCredentialsHandleSchannelCred(certificateContext, protocols, policy, isServer) :
-                        AcquireCredentialsHandleSchCredentials(certificateContext, protocols, policy, isServer);
-            if (certificateContext != null && certificateContext.Trust != null && certificateContext.Trust._sendTrustInHandshake)
+            try
             {
-                AttachCertificateStore(cred, certificateContext.Trust._store!);
-            }
+                // New crypto API supports TLS1.3 but it does not allow to force NULL encryption.
+                SafeFreeCredentials cred = !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
+                            AcquireCredentialsHandleSchannelCred(certificateContext, protocols, policy, isServer) :
+                            AcquireCredentialsHandleSchCredentials(certificateContext, protocols, policy, isServer);
+                if (certificateContext != null && certificateContext.Trust != null && certificateContext.Trust._sendTrustInHandshake)
+                {
+                    AttachCertificateStore(cred, certificateContext.Trust._store!);
+                }
 
-            return cred;
+                return cred;
+            }
+            catch (Win32Exception e)
+            {
+                throw new AuthenticationException(SR.net_auth_SSPI, e);
+            }
         }
 
         private static unsafe void AttachCertificateStore(SafeFreeCredentials cred, X509Store store)

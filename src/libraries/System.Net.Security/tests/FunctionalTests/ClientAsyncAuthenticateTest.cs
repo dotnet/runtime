@@ -69,11 +69,11 @@ namespace System.Net.Security.Tests
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
         public async Task ClientAsyncAuthenticate_MismatchProtocols_Fails(
-            SslProtocols serverProtocol,
             SslProtocols clientProtocol,
+            SslProtocols serverProtocol,
             Type expectedException)
         {
-            Exception e = await Record.ExceptionAsync(() => ClientAsyncSslHelper(serverProtocol, clientProtocol));
+            Exception e = await Record.ExceptionAsync(() => ClientAsyncSslHelper(clientProtocol, serverProtocol));
             Assert.NotNull(e);
             Assert.IsAssignableFrom(expectedException, e);
         }
@@ -106,17 +106,19 @@ namespace System.Net.Security.Tests
 
         public static IEnumerable<object[]> ProtocolMismatchData()
         {
-#pragma warning disable 0618
-            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(Exception) };
-            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(Exception) };
-            yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(Exception) };
-#pragma warning restore 0618
-            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(AuthenticationException) };
+            var supportedProtocols = new SslProtocolSupport.SupportedSslProtocolsTestData();
+
+            foreach (var serverProtocols in supportedProtocols)
+            foreach (var clientProtocols in supportedProtocols)
+            {
+                SslProtocols serverProtocol = (SslProtocols)serverProtocols[0];
+                SslProtocols clientProtocol = (SslProtocols)clientProtocols[0];
+
+                if (clientProtocol != serverProtocol)
+                {
+                    yield return new object[] { clientProtocol, serverProtocol, typeof(AuthenticationException) };
+                }
+            }
         }
 
         #region Helpers

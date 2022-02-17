@@ -61,10 +61,12 @@ namespace System.Net.Test.Common
             {
                 foreach (SslProtocols protocol in Enum.GetValues(typeof(SslProtocols)))
                 {
-                    if (protocol != SslProtocols.None && (protocol & SupportedSslProtocols) == protocol)
+#pragma warning disable 0618 // SSL2/3 are deprecated
+                    if (protocol != SslProtocols.None && protocol != SslProtocols.Default && (protocol & SupportedSslProtocols) == protocol)
                     {
                         yield return new object[] { protocol };
                     }
+#pragma warning restore 0618
                 }
             }
 
