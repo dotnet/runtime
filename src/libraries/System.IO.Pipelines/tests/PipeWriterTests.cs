@@ -232,7 +232,7 @@ namespace System.IO.Pipelines.Tests
         public async Task CompleteWithLargeWriteThrows()
         {
             var completeDelay = TimeSpan.FromMilliseconds(10);
-            var testTimeout = TimeSpan.FromMilliseconds(100);
+            var testTimeout = TimeSpan.FromMilliseconds(10000);
             var pipe = new Pipe();
             pipe.Reader.Complete();
 
@@ -247,13 +247,13 @@ namespace System.IO.Pipelines.Tests
             {
                 var testStartTime = DateTime.UtcNow;
                 var buffer = new byte[10000000];
-                int i = 0;
+                ulong i = 0;
                 while (true)
                 {
                     await pipe.Writer.WriteAsync(buffer);
 
-                    // abort test if we're executing for more than the testTimeout (check every 1000th iteration)
-                    if (i++ % 1000 == 0 && DateTime.UtcNow - testStartTime > testTimeout)
+                    // abort test if we're executing for more than the testTimeout (check every 10000th iteration)
+                    if (i++ % 10000 == 0 && DateTime.UtcNow - testStartTime > testTimeout)
                         break;
                 }
             });
