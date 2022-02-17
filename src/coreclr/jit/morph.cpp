@@ -11418,10 +11418,18 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             // in Morph we can't guarantee that `a` won't be transformed into a constant,
             // so can't guarantee that lower will be able to do this optimization.
             {
-                // Do "a % b = a - (a / b) * b" morph always, see TODO before this block.
-                bool doMorphModToSubMulDiv = true;
+                bool doMorphModToAnd = false;
 
-                if (doMorphModToSubMulDiv)
+                if(oper == GT_UMOD && op2->IsCnsIntPow2())
+                {
+                    assert(!optValnumCSE_phase);
+
+                    tree = fgMorphUModToAndSub(tree->AsOp());
+                    op1  = tree->AsOp()->gtOp1;
+                    op2  = tree->AsOp()->gtOp2;
+                }
+                // Do "a % b = a - (a / b) * b" morph always, see TODO before this block.
+                else
                 {
                     assert(!optValnumCSE_phase);
 
@@ -14592,6 +14600,45 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     tree->CheckDivideByConstOptimized(this);
 
     return sub;
+}
+
+//------------------------------------------------------------------------
+// fgMorphModToSubMulDiv: Transform a % b into the equivalent a - (a / b) * b
+// (see ECMA III 3.55 and III.3.56).
+//
+// Arguments:
+//    tree - The GT_MOD/GT_UMOD tree to morph
+//
+// Returns:
+//    The morphed tree
+//
+// Notes:
+//    For ARM64 we don't have a remainder instruction so this transform is
+//    always done. For XARCH this transform is done if we know that magic
+//    division will be used, in that case this transform allows CSE to
+//    eliminate the redundant div from code like "x = a / 3; y = a % 3;".
+//
+GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
+{
+    JITDUMP("\nMorphing UMOD [%06u] to And/Sub\n", dspTreeID(tree));
+
+    if (tree->OperGet() != GT_UMOD)
+    {
+        noway_assert(!"Illegal gtOper in fgMorphUModToAndSub");
+    }
+
+    var_types type = tree->gtType;
+
+    GenTree* const copyOfNumeratorValue   = fgMakeMultiUse(&tree->gtOp1);
+    GenTree* const copyOfDenominatorValue = fgMakeMultiUse(&tree->gtOp2);
+    GenTree* const sub                    = gtNewOperNode(GT_SUB, type, copyOfDenominatorValue, gtNewOneConNode(type));
+    GenTree* const and                    = gtNewOperNode(GT_AND, type, copyOfNumeratorValue, sub);
+
+#ifdef DEBUG
+    and->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif
+
+    return and;
 }
 
 //------------------------------------------------------------------------------

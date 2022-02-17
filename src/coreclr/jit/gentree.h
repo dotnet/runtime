@@ -2107,6 +2107,8 @@ public:
 
     inline bool IsCnsIntOrI() const;
 
+    inline bool IsCnsIntPow2() const;
+
     inline bool IsIntegralConst() const;
 
     inline bool IsIntCnsFitsInI32(); // Constant fits in INT32
@@ -8302,6 +8304,11 @@ inline bool GenTree::IsCopyOrReloadOfMultiRegCall() const
 inline bool GenTree::IsCnsIntOrI() const
 {
     return (gtOper == GT_CNS_INT);
+}
+
+inline bool GenTree::IsCnsIntPow2() const
+{
+    return IsCnsIntOrI() && isPow2(AsIntConCommon()->IconValue());
 }
 
 inline bool GenTree::IsIntegralConst() const
