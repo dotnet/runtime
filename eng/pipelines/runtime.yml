@@ -196,7 +196,7 @@ jobs:
     - windows_x64
     jobParameters:
       testGroup: innerloop
-      runtimeFlavor: nativeaot
+      runtimeVariant: nativeaot
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
