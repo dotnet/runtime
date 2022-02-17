@@ -869,13 +869,22 @@ namespace System.Threading
         }
     }
 
-    internal sealed class ThreadPoolTypedWorkItemQueue<T> : IThreadPoolWorkItem
+    // A strongly typed callback for ThreadPoolTypedWorkItemQueue<T, TCallback>.
+    // This way we avoid the indirection of a delegate call.
+    internal interface IThreadPoolTypedWorkItemQueueCallback<T>
+    {
+        // TODO: Make it static abstract when we can.
+        void Invoke(T item);
+    }
+
+    internal sealed class ThreadPoolTypedWorkItemQueue<T, TCallback>
+        : IThreadPoolWorkItem where TCallback : struct, IThreadPoolTypedWorkItemQueueCallback<T>
     {
         private int _isScheduledForProcessing;
         private readonly ConcurrentQueue<T> _workItems = new ConcurrentQueue<T>();
-        private readonly Action<T> _callback;
+        private readonly TCallback _callback;
 
-        public ThreadPoolTypedWorkItemQueue(Action<T> callback) => _callback = callback;
+        public ThreadPoolTypedWorkItemQueue(TCallback callback) => _callback = callback;
 
         public int Count => _workItems.Count;
 
@@ -914,6 +923,11 @@ namespace System.Threading
                 return;
             }
 
+            // An work item was successfully dequeued, and there may be more work items to process. Schedule a work item to
+            // parallelize processing of work items, before processing more work items. Following this, it is the responsibility
+            // of the new work item and the poller thread to schedule more work items as necessary. The parallelization may be
+            // necessary here if the user callback as part of handling the work item blocks for some reason that may have a
+            // dependency on other queued work items.
             ScheduleForProcessing();
 
             ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.threadLocals!;
@@ -924,8 +938,15 @@ namespace System.Threading
             int startTimeMs = Environment.TickCount;
             while (true)
             {
-                _callback(workItem);
+                _callback.Invoke(workItem);
 
+                // This work item processes queued work items until certain conditions are met, and tracks some things:
+                // - Keep track of the number of work items processed, it will be added to the counter later
+                // - Local work items take precedence over all other types of work items, process them first
+                // - This work item should not run for too long. It is processing a specific type of work in batch, but should
+                //   not starve other thread pool work items. Check how long it has been since this work item has started, and
+                //   yield to the thread pool after some time. The threshold used is half of the thread pool's dispatch quantum,
+                //   which the thread pool uses for doing periodic work.
                 if (++completedCount == uint.MaxValue ||
                     (tl.workState & ThreadPoolWorkQueueThreadLocals.WorkState.MayHaveLocalWorkItems) != 0 ||
                     (uint)(Environment.TickCount - startTimeMs) >= ThreadPoolWorkQueue.DispatchQuantumMs / 2 ||

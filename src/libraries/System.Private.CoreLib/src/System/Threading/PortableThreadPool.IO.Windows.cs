@@ -104,11 +104,9 @@ namespace System.Threading
                 1024;
 #endif
 
-            private static readonly Action<Event> ProcessEventDelegate = ProcessEvent;
-
             private readonly nint _port;
             private readonly Interop.Kernel32.OVERLAPPED_ENTRY* _nativeEvents;
-            private readonly ThreadPoolTypedWorkItemQueue<Event> _events;
+            private readonly ThreadPoolTypedWorkItemQueue<Event, Callback> _events;
             private readonly Thread _thread;
 
             public IOCompletionPoller(nint port)
@@ -118,8 +116,8 @@ namespace System.Threading
 
                 _nativeEvents =
                     (Interop.Kernel32.OVERLAPPED_ENTRY*)
-                    NativeMemory.Alloc((nuint)NativeEventCapacity * (nuint)Unsafe.SizeOf<Interop.Kernel32.OVERLAPPED_ENTRY>());
-                _events = new ThreadPoolTypedWorkItemQueue<Event>(ProcessEventDelegate);
+                    NativeMemory.Alloc(NativeEventCapacity, (nuint)sizeof(Interop.Kernel32.OVERLAPPED_ENTRY));
+                _events = new(default);
 
                 // Thread pool threads must start in the default execution context without transferring the context, so
                 // using UnsafeStart() instead of Start()
@@ -127,9 +125,21 @@ namespace System.Threading
                 {
                     IsThreadPoolThread = true,
                     IsBackground = true,
-                    Priority = ThreadPriority.Highest,
                     Name = ".NET ThreadPool IO"
                 };
+
+                // Poller threads are typically expected to be few in number and have to compete for time slices with all other
+                // threads that are scheduled to run. They do only a small amount of work and don't run any user code. In
+                // situations where frequently, a large number of threads are scheduled to run, a scheduled poller thread may be
+                // delayed artificially quite a bit. The poller threads are given higher priority than normal to mitigate that
+                // issue. It's unlikely that these threads would starve a system because in such a situation IO completions
+                // would stop occurring. Since the number of IO pollers is configurable, avoid having too many poller threads at
+                // higher priority.
+                if (ProcessorsPerPoller >= 4)
+                {
+                    _thread.Priority = ThreadPriority.AboveNormal;
+                }
+
                 _thread.UnsafeStart();
             }
 
@@ -159,22 +169,25 @@ namespace System.Threading
                 ThrowHelper.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
             }
 
-            private static void ProcessEvent(Event e)
+            private struct Callback : IThreadPoolTypedWorkItemQueueCallback<Event>
             {
-                if (NativeRuntimeEventSource.Log.IsEnabled())
+                public void Invoke(Event e)
                 {
-                    NativeRuntimeEventSource.Log.ThreadPoolIODequeue(e.nativeOverlapped);
-                }
+                    if (NativeRuntimeEventSource.Log.IsEnabled())
+                    {
+                        NativeRuntimeEventSource.Log.ThreadPoolIODequeue(e.nativeOverlapped);
+                    }
 
-                // The NtStatus code for the operation is in the InternalLow field
-                uint ntStatus = (uint)(nint)e.nativeOverlapped->InternalLow;
-                uint errorCode = Interop.Errors.ERROR_SUCCESS;
-                if (ntStatus != Interop.StatusOptions.STATUS_SUCCESS)
-                {
-                    errorCode = Interop.NtDll.RtlNtStatusToDosError((int)ntStatus);
-                }
+                    // The NtStatus code for the operation is in the InternalLow field
+                    uint ntStatus = (uint)(nint)e.nativeOverlapped->InternalLow;
+                    uint errorCode = Interop.Errors.ERROR_SUCCESS;
+                    if (ntStatus != Interop.StatusOptions.STATUS_SUCCESS)
+                    {
+                        errorCode = Interop.NtDll.RtlNtStatusToDosError((int)ntStatus);
+                    }
 
-                _IOCompletionCallback.PerformSingleIOCompletionCallback(errorCode, e.bytesTransferred, e.nativeOverlapped);
+                    _IOCompletionCallback.PerformSingleIOCompletionCallback(errorCode, e.bytesTransferred, e.nativeOverlapped);
+                }
             }
 
             private readonly struct Event
