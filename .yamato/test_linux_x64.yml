@@ -12,6 +12,12 @@ dependencies:
 
 commands:
 # build/run tests
+#  - dotnet build unity/managed.sln -c Release
+#  - |
+#    cd unity/embed_api_tests
+#    cmake -DCMAKE_BUILD_TYPE=Release .
+#    cmake --build .
+#    ./mono_test_app
   - ./build.sh -subset libs.tests -test -a x64 -c release -ci -ninja
   - command: ./src/tests/build.sh x64 release ci
     retries: 1

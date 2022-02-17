@@ -807,6 +807,11 @@ class GCHandleStore : public IGCHandleStore
         return NULL;
     }
 
+    void DestroyHandle(OBJECTHANDLE handle)
+    {
+        *(Object**)handle = nullptr;
+    }
+
     
     void StoreObjectInHandle(OBJECTHANDLE handle, Object* object)
     {
@@ -873,11 +878,12 @@ class GCHandleManager : public IGCHandleManager
 
     virtual void DestroyHandleOfType(OBJECTHANDLE handle, HandleType type)
     {
+        m_pHandleStore->DestroyHandle(handle);
     }
 
     virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle)
     {
-        assert(0);
+        m_pHandleStore->DestroyHandle(handle);
     }
 
     virtual void SetExtraInfoForHandle(OBJECTHANDLE handle, HandleType type, void* pExtraInfo)

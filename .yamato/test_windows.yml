@@ -12,6 +12,12 @@ dependencies:
 
 commands:
 # build/run tests
+  - dotnet build unity\managed.sln -c Release
+#  - |
+#    cd unity\embed_api_tests
+#    cmake . -A Win32
+#    cmake --build . --config Release
+#    Release\mono_test_app.exe
   - build.cmd libs.tests -test -a x86 -c release -ci
   - src\tests\build.cmd x86 release ci
   - src\tests\run.cmd x86 release
