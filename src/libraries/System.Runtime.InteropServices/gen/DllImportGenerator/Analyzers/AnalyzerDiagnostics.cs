@@ -15,9 +15,9 @@ namespace Microsoft.Interop.Analyzers
             public const string Prefix = "DLLIMPORTGENANALYZER";
 
             // ManualTypeMarshalling
-            public const string BlittableTypeMustBeBlittable = Prefix + "001";
-            public const string CannotHaveMultipleMarshallingAttributes = Prefix + "002";
-            public const string NativeTypeMustBeNonNull = Prefix + "003";
+            public const string MarshallerTypeMustSpecifyManagedType = Prefix + "001";
+            public const string MarshallerKindMustBeValid = Prefix + "002";
+            public const string NativeTypeMustHaveCustomTypeMarshallerAttribute = Prefix + "003";
             public const string NativeTypeMustBeBlittable = Prefix + "004";
             public const string GetPinnableReferenceReturnTypeBlittable = Prefix + "005";
             public const string NativeTypeMustBePointerSized = Prefix + "006";

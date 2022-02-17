@@ -70,6 +70,35 @@ namespace System.Runtime.InteropServices
 #else
     internal
 #endif
+    sealed class CustomTypeMarshallerAttribute : Attribute
+    {
+        public CustomTypeMarshallerAttribute(Type managedType, CustomTypeMarshallerKind marshallerKind = CustomTypeMarshallerKind.Value)
+        {
+            ManagedType = managedType;
+            MarshallerKind = marshallerKind;
+        }
+
+        public Type ManagedType { get; }
+        public CustomTypeMarshallerKind MarshallerKind { get; }
+    }
+
+#if DLLIMPORT_GENERATOR_TEST
+    public
+#else
+    internal
+#endif
+    enum CustomTypeMarshallerKind
+    {
+        Value,
+        SpanCollection
+    }
+
+    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
+#if DLLIMPORT_GENERATOR_TEST
+    public
+#else
+    internal
+#endif
     sealed class GenericContiguousCollectionMarshallerAttribute : Attribute
     {
         public GenericContiguousCollectionMarshallerAttribute()

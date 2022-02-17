@@ -117,12 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="BlittableTypeMustBeBlittableDescription" xml:space="preserve">
-    <value>A type marked with 'BlittableTypeAttribute' must be blittable.</value>
-  </data>
-  <data name="BlittableTypeMustBeBlittableMessage" xml:space="preserve">
-    <value>Type '{0}' is marked with 'BlittableTypeAttribute' but is not blittable</value>
-  </data>
   <data name="CallerAllocConstructorMustHaveBufferSizeConstantDescription" xml:space="preserve">
     <value>When a constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named BufferSize to provide the size of the caller-allocated buffer.</value>
   </data>
@@ -135,14 +129,8 @@
   <data name="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage" xml:space="preserve">
     <value>Native type '{0}' has a constructor taking a caller-allocated buffer, but does not support marshalling in scenarios where using a caller-allocated buffer is impossible</value>
   </data>
-  <data name="CannotHaveMultipleMarshallingAttributesDescription" xml:space="preserve">
-    <value>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</value>
-  </data>
-  <data name="CannotHaveMultipleMarshallingAttributesMessage" xml:space="preserve">
-    <value>Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</value>
-  </data>
   <data name="CollectionNativeTypeMustHaveRequiredShapeDescription" xml:space="preserve">
-    <value>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</value>
+    <value>A 'SpanCollection'-kind native type must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</value>
   </data>
   <data name="CollectionNativeTypeMustHaveRequiredShapeMessage" xml:space="preserve">
     <value>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</value>
@@ -229,6 +217,18 @@
   <data name="MarshallerGetPinnableReferenceRequiresValuePropertyMessage" xml:space="preserve">
     <value>The 'GetPinnableReference' method cannot be provided on the native type '{0}' unless a 'Value' property is also provided</value>
   </data>
+  <data name="MarshallerKindMustBeValidDescription" xml:space="preserve">
+    <value>The specified marshaller kind must be valid value of the 'System.Runtime.InteropServices.CustomMarshallerKind' enum.</value>
+  </data>
+  <data name="MarshallerKindMustBeValidMessage" xml:space="preserve">
+    <value>The specified custom marshller kind for '{0}' is invalid</value>
+  </data>
+  <data name="MarshallerTypeMustSpecifyManagedTypeDescription" xml:space="preserve">
+    <value>A type with a 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' must specify a managed type</value>
+  </data>
+  <data name="MarshallerTypeMustSpecifyManagedTypeMessage" xml:space="preserve">
+    <value>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' applied to the type</value>
+  </data>
   <data name="NativeGenericTypeMustBeClosedDescription" xml:space="preserve">
     <value>The native type '{0}' must be a closed generic so the emitted code can use a specific instantiation.</value>
   </data>
@@ -239,16 +239,10 @@
     <value>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</value>
   </data>
   <data name="NativeTypeMustBeBlittableDescription" xml:space="preserve">
-    <value>A native type for a given type must be blittable.</value>
+    <value>A native type must be blittable.</value>
   </data>
   <data name="NativeTypeMustBeBlittableMessage" xml:space="preserve">
-    <value>The native type '{0}' for the type '{1}' is not blittable</value>
-  </data>
-  <data name="NativeTypeMustBeNonNullDescription" xml:space="preserve">
-    <value>A native type for a given type must be non-null.</value>
-  </data>
-  <data name="NativeTypeMustBeNonNullMessage" xml:space="preserve">
-    <value>The native type for the type '{0}' is null</value>
+    <value>The native type '{0}' for type '{1}' must be blittable</value>
   </data>
   <data name="NativeTypeMustBePointerSizedDescription" xml:space="preserve">
     <value>The native type must be pointer sized so the pinned result of 'GetPinnableReference' can be cast to the native type.</value>
@@ -256,8 +250,14 @@
   <data name="NativeTypeMustBePointerSizedMessage" xml:space="preserve">
     <value>The native type '{0}' must be pointer sized because the managed type '{1}' has a 'GetPinnableReference' method</value>
   </data>
+  <data name="NativeTypeMustHaveCustomTypeMarshallerAttributeDescription" xml:space="preserve">
+    <value>A native type for a given type must have the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type.</value>
+  </data>
+  <data name="NativeTypeMustHaveCustomTypeMarshallerAttributeMessage" xml:space="preserve">
+    <value>The native type for the type '{0}' must be a type with the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type</value>
+  </data>
   <data name="NativeTypeMustHaveRequiredShapeDescription" xml:space="preserve">
-    <value>The native type must have at least one of the two marshalling methods to enable marshalling the managed type.</value>
+    <value>A 'Value'-kind native type must have at least one of the two marshalling methods to enable marshalling the managed type.</value>
   </data>
   <data name="NativeTypeMustHaveRequiredShapeMessage" xml:space="preserve">
     <value>The native type '{0}' must be a value type and have a constructor that takes one parameter of type '{1}' or a parameterless instance method named 'ToManaged' that returns '{1}'</value>
@@ -267,9 +267,6 @@
   </data>
   <data name="RefValuePropertyUnsupportedMessage" xml:space="preserve">
     <value>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</value>
-  </data>
-  <data name="RuntimeMarshallingMustBeDisabled" xml:space="preserve">
-    <value />
   </data>
   <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
     <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>

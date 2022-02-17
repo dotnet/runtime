@@ -612,23 +612,17 @@ namespace Microsoft.Interop
                 }
             }
 
-            ITypeSymbol contiguousCollectionMarshalerAttribute = _compilation.GetTypeByMetadataName(TypeNames.GenericContiguousCollectionMarshallerAttribute)!;
-
-            bool isContiguousCollectionMarshaller = nativeType.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, contiguousCollectionMarshalerAttribute));
+            var (_, _, marshallingVariant) = ManualTypeMarshallingHelper.GetMarshallerShapeInfo(nativeType);
             IPropertySymbol? valueProperty = ManualTypeMarshallingHelper.FindValueProperty(nativeType);
-
-            ManualTypeMarshallingHelper.NativeTypeMarshallingVariant marshallingVariant = isContiguousCollectionMarshaller
-                ? ManualTypeMarshallingHelper.NativeTypeMarshallingVariant.ContiguousCollection
-                : ManualTypeMarshallingHelper.NativeTypeMarshallingVariant.Standard;
 
             bool hasInt32Constructor = false;
             foreach (IMethodSymbol ctor in nativeType.Constructors)
             {
-                if (ManualTypeMarshallingHelper.IsManagedToNativeConstructor(ctor, type, marshallingVariant) && (valueProperty is null or { GetMethod: not null }))
+                if (ManualTypeMarshallingHelper.IsManagedToNativeConstructor(ctor, type, marshallingVariant.Value) && (valueProperty is null or { GetMethod: not null }))
                 {
                     features |= CustomMarshallingFeatures.ManagedToNative;
                 }
-                else if (ManualTypeMarshallingHelper.IsCallerAllocatedSpanConstructor(ctor, type, spanOfByte, marshallingVariant)
+                else if (ManualTypeMarshallingHelper.IsCallerAllocatedSpanConstructor(ctor, type, spanOfByte, marshallingVariant.Value)
                     && (valueProperty is null or { GetMethod: not null }))
                 {
                     features |= CustomMarshallingFeatures.ManagedToNativeStackalloc;
@@ -641,7 +635,7 @@ namespace Microsoft.Interop
 
             // The constructor that takes only the native element size is required for collection marshallers
             // in the native-to-managed scenario.
-            if ((!isContiguousCollectionMarshaller
+            if ((marshallingVariant != ManualTypeMarshallingHelper.CustomTypeMarshallerKind.SpanCollection
                     || (hasInt32Constructor && ManualTypeMarshallingHelper.HasSetUnmarshalledCollectionLengthMethod(nativeType)))
                 && ManualTypeMarshallingHelper.HasToManagedMethod(nativeType, type)
                 && (valueProperty is null or { SetMethod: not null }))
@@ -653,7 +647,7 @@ namespace Microsoft.Interop
             {
                 _diagnostics.ReportInvalidMarshallingAttributeInfo(
                     attrData,
-                    isContiguousCollectionMarshaller
+                    marshallingVariant == ManualTypeMarshallingHelper.CustomTypeMarshallerKind.SpanCollection
                         ? nameof(Resources.CollectionNativeTypeMustHaveRequiredShapeMessage)
                         : nameof(Resources.NativeTypeMustHaveRequiredShapeMessage),
                     nativeType.ToDisplayString());
@@ -670,7 +664,7 @@ namespace Microsoft.Interop
                 features |= CustomMarshallingFeatures.NativeTypePinning;
             }
 
-            if (isContiguousCollectionMarshaller)
+            if (marshallingVariant == ManualTypeMarshallingHelper.CustomTypeMarshallerKind.SpanCollection)
             {
                 if (!ManualTypeMarshallingHelper.HasNativeValueStorageProperty(nativeType, spanOfByte))
                 {

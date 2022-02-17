@@ -61,24 +61,6 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to A type marked with &apos;BlittableTypeAttribute&apos; must be blittable..
-        /// </summary>
-        internal static string BlittableTypeMustBeBlittableDescription {
-            get {
-                return ResourceManager.GetString("BlittableTypeMustBeBlittableDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Type &apos;{0}&apos; is marked with &apos;BlittableTypeAttribute&apos; but is not blittable.
-        /// </summary>
-        internal static string BlittableTypeMustBeBlittableMessage {
-            get {
-                return ResourceManager.GetString("BlittableTypeMustBeBlittableMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to When a constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named BufferSize to provide the size of the caller-allocated buffer..
         /// </summary>
         internal static string CallerAllocConstructorMustHaveBufferSizeConstantDescription {
@@ -115,25 +97,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The &apos;BlittableTypeAttribute&apos; and &apos;NativeMarshallingAttribute&apos; attributes are mutually exclusive..
-        /// </summary>
-        internal static string CannotHaveMultipleMarshallingAttributesDescription {
-            get {
-                return ResourceManager.GetString("CannotHaveMultipleMarshallingAttributesDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Type &apos;{0}&apos; is marked with &apos;BlittableTypeAttribute&apos; and &apos;NativeMarshallingAttribute&apos;. A type can only have one of these two attributes..
-        /// </summary>
-        internal static string CannotHaveMultipleMarshallingAttributesMessage {
-            get {
-                return ResourceManager.GetString("CannotHaveMultipleMarshallingAttributesMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to A native type with the &apos;GenericContiguousCollectionMarshallerAttribute&apos; must have at least one of the two marshalling methods as well as a &apos;ManagedValues&apos; property of type &apos;Span&lt;T&gt;&apos; for some &apos;T&apos; and a &apos;NativeValueStorage&apos; property of type &apos;Span&lt;byte&gt;&apos; to enable marshalling the managed type..
+        ///   Looks up a localized string similar to A &apos;SpanCollection&apos;-kind native type must have at least one of the two marshalling methods as well as a &apos;ManagedValues&apos; property of type &apos;Span&lt;T&gt;&apos; for some &apos;T&apos; and a &apos;NativeValueStorage&apos; property of type &apos;Span&lt;byte&gt;&apos; to enable marshalling the managed type..
         /// </summary>
         internal static string CollectionNativeTypeMustHaveRequiredShapeDescription {
             get {
@@ -394,6 +358,42 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The specified marshaller kind must be valid value of the &apos;System.Runtime.InteropServices.CustomMarshallerKind&apos; enum..
+        /// </summary>
+        internal static string MarshallerKindMustBeValidDescription {
+            get {
+                return ResourceManager.GetString("MarshallerKindMustBeValidDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified custom marshller kind for &apos;{0}&apos; is invalid.
+        /// </summary>
+        internal static string MarshallerKindMustBeValidMessage {
+            get {
+                return ResourceManager.GetString("MarshallerKindMustBeValidMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A type with a &apos;System.Runtime.InteropServices.CustomTypeMarshallerAttribute&apos; must specify a managed type.
+        /// </summary>
+        internal static string MarshallerTypeMustSpecifyManagedTypeDescription {
+            get {
+                return ResourceManager.GetString("MarshallerTypeMustSpecifyManagedTypeDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; does not specify a managed type in the &apos;System.Runtime.InteropServices.CustomTypeMarshallerAttribute&apos; applied to the type.
+        /// </summary>
+        internal static string MarshallerTypeMustSpecifyManagedTypeMessage {
+            get {
+                return ResourceManager.GetString("MarshallerTypeMustSpecifyManagedTypeMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a closed generic so the emitted code can use a specific instantiation..
         /// </summary>
         internal static string NativeGenericTypeMustBeClosedDescription {
@@ -421,7 +421,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to A native type for a given type must be blittable..
+        ///   Looks up a localized string similar to A native type must be blittable..
         /// </summary>
         internal static string NativeTypeMustBeBlittableDescription {
             get {
@@ -430,29 +430,11 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; for the type &apos;{1}&apos; is not blittable.
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; for type &apos;{1}&apos; must be blittable.
         /// </summary>
         internal static string NativeTypeMustBeBlittableMessage {
             get {
                 return ResourceManager.GetString("NativeTypeMustBeBlittableMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to A native type for a given type must be non-null..
-        /// </summary>
-        internal static string NativeTypeMustBeNonNullDescription {
-            get {
-                return ResourceManager.GetString("NativeTypeMustBeNonNullDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The native type for the type &apos;{0}&apos; is null.
-        /// </summary>
-        internal static string NativeTypeMustBeNonNullMessage {
-            get {
-                return ResourceManager.GetString("NativeTypeMustBeNonNullMessage", resourceCulture);
             }
         }
         
@@ -475,7 +457,25 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type must have at least one of the two marshalling methods to enable marshalling the managed type..
+        ///   Looks up a localized string similar to A native type for a given type must have the &apos;System.Runtime.InteropServices.CustomTypeMarshallerAttribute&apos; that specifies this type as the managed type..
+        /// </summary>
+        internal static string NativeTypeMustHaveCustomTypeMarshallerAttributeDescription {
+            get {
+                return ResourceManager.GetString("NativeTypeMustHaveCustomTypeMarshallerAttributeDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The native type for the type &apos;{0}&apos; must be a type with the &apos;System.Runtime.InteropServices.CustomTypeMarshallerAttribute&apos; that specifies this type as the managed type.
+        /// </summary>
+        internal static string NativeTypeMustHaveCustomTypeMarshallerAttributeMessage {
+            get {
+                return ResourceManager.GetString("NativeTypeMustHaveCustomTypeMarshallerAttributeMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A &apos;Value&apos;-kind native type must have at least one of the two marshalling methods to enable marshalling the managed type..
         /// </summary>
         internal static string NativeTypeMustHaveRequiredShapeDescription {
             get {
@@ -507,15 +507,6 @@ namespace Microsoft.Interop {
         internal static string RefValuePropertyUnsupportedMessage {
             get {
                 return ResourceManager.GetString("RefValuePropertyUnsupportedMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to .
-        /// </summary>
-        internal static string RuntimeMarshallingMustBeDisabled {
-            get {
-                return ResourceManager.GetString("RuntimeMarshallingMustBeDisabled", resourceCulture);
             }
         }
         

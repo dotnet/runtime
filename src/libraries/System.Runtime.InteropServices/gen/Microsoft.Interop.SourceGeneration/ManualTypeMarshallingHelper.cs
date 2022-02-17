@@ -26,10 +26,63 @@ namespace Microsoft.Interop
             public const string ConstantElementCount = nameof(ConstantElementCount);
         }
 
-        public enum NativeTypeMarshallingVariant
+        public enum CustomTypeMarshallerKind
         {
-            Standard,
-            ContiguousCollection
+            Value,
+            SpanCollection
+        }
+
+        public static (bool hasAttribute, ITypeSymbol? managedType, CustomTypeMarshallerKind? kind) GetMarshallerShapeInfo(ITypeSymbol marshallerType)
+        {
+            var attr = marshallerType.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.ToDisplayString() == TypeNames.CustomTypeMarshallerAttribute);
+            if (attr is null)
+            {
+                return (false, null, null);
+            }
+            if (attr.ConstructorArguments.Length == 0)
+            {
+                return (true, null, null);
+            }
+            if (attr.ConstructorArguments.Length == 1)
+            {
+                return (true, attr.ConstructorArguments[0].Value as ITypeSymbol, CustomTypeMarshallerKind.Value);
+            }
+            return (true, attr.ConstructorArguments[0].Value as ITypeSymbol, attr.ConstructorArguments[1].Value is int i ? (CustomTypeMarshallerKind)i : null);
+        }
+
+        public static (AttributeData? attribute, INamedTypeSymbol? marshallerType) GetDefaultMarshallerInfo(ITypeSymbol managedType)
+        {
+            AttributeData? attr = managedType.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.ToDisplayString() == TypeNames.NativeMarshallingAttribute);
+            if (attr is null)
+            {
+                return (attr, null);
+            }
+            INamedTypeSymbol? marshallerType = null;
+            if (attr.ConstructorArguments.Length == 0)
+            {
+                return (attr, null);
+            }
+
+            marshallerType = attr.ConstructorArguments[0].Value as INamedTypeSymbol;
+            if (managedType is not INamedTypeSymbol namedType || marshallerType is null)
+            {
+                return (attr, null);
+            }
+            if (namedType.TypeArguments.Length == 0)
+            {
+                return (attr, marshallerType);
+            }
+            else if (marshallerType.TypeArguments.Length != namedType.TypeArguments.Length)
+            {
+                return (attr, null);
+            }
+            else if (marshallerType.IsGenericType)
+            {
+                // Construct the marshaler type around the same type arguments as the managed type.
+                return (attr, marshallerType.ConstructedFrom.Construct(namedType.TypeArguments, namedType.TypeArgumentNullableAnnotations));
+            }
+
+            return (attr, marshallerType);
         }
 
         public static bool HasToManagedMethod(ITypeSymbol nativeType, ITypeSymbol managedType)
@@ -46,9 +99,9 @@ namespace Microsoft.Interop
         public static bool IsManagedToNativeConstructor(
             IMethodSymbol ctor,
             ITypeSymbol managedType,
-            NativeTypeMarshallingVariant variant)
+            CustomTypeMarshallerKind variant)
         {
-            if (variant == NativeTypeMarshallingVariant.ContiguousCollection)
+            if (variant == CustomTypeMarshallerKind.SpanCollection)
             {
                 return ctor.Parameters.Length == 2
                 && SymbolEqualityComparer.Default.Equals(managedType, ctor.Parameters[0].Type)
@@ -62,9 +115,9 @@ namespace Microsoft.Interop
             IMethodSymbol ctor,
             ITypeSymbol managedType,
             ITypeSymbol spanOfByte,
-            NativeTypeMarshallingVariant variant)
+            CustomTypeMarshallerKind variant)
         {
-            if (variant == NativeTypeMarshallingVariant.ContiguousCollection)
+            if (variant == CustomTypeMarshallerKind.SpanCollection)
             {
                 return ctor.Parameters.Length == 3
                 && SymbolEqualityComparer.Default.Equals(managedType, ctor.Parameters[0].Type)

@@ -16,6 +16,7 @@ namespace SharedTypes
         public string str2;
     }
 
+    [CustomTypeMarshaller(typeof(StringContainer))]
     public struct StringContainerNative
     {
         public IntPtr str1;
@@ -43,6 +44,7 @@ namespace SharedTypes
         }
     }
 
+    [CustomTypeMarshaller(typeof(double))]
     public struct DoubleToLongMarshaler
     {
         public long l;
@@ -69,6 +71,7 @@ namespace SharedTypes
         public bool b3;
     }
 
+    [CustomTypeMarshaller(typeof(BoolStruct))]
     public struct BoolStructNative
     {
         public byte b1;
@@ -100,6 +103,7 @@ namespace SharedTypes
         public ref int GetPinnableReference() => ref i;
     }
 
+    [CustomTypeMarshaller(typeof(IntWrapper))]
     public unsafe struct IntWrapperMarshaler
     {
         public IntWrapperMarshaler(IntWrapper managed)
@@ -118,6 +122,7 @@ namespace SharedTypes
         }
     }
 
+    [CustomTypeMarshaller(typeof(string))]
     public unsafe ref struct Utf16StringMarshaler
     {
         private ushort* allocated;
@@ -201,6 +206,7 @@ namespace SharedTypes
         public int Value;
     }
 
+    [CustomTypeMarshaller(typeof(IntStructWrapper))]
     public struct IntStructWrapperNative
     {
         public int value;
@@ -212,7 +218,7 @@ namespace SharedTypes
         public IntStructWrapper ToManaged() => new IntStructWrapper { Value = value };
     }
 
-    [GenericContiguousCollectionMarshaller]
+    [CustomTypeMarshaller(typeof(List<>), CustomTypeMarshallerKind.SpanCollection)]
     public unsafe ref struct ListMarshaller<T>
     {
         private List<T> managedList;

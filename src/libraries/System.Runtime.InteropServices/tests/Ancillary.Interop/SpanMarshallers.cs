@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.GeneratedMarshalling
 {
-    [GenericContiguousCollectionMarshaller]
+    [CustomTypeMarshaller(typeof(ReadOnlySpan<>), CustomTypeMarshallerKind.SpanCollection)]
     public unsafe ref struct ReadOnlySpanMarshaller<T>
     {
         private ReadOnlySpan<T> _managedSpan;
@@ -95,7 +95,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-    [GenericContiguousCollectionMarshaller]
+    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection)]
     public unsafe ref struct SpanMarshaller<T>
     {
         private ReadOnlySpanMarshaller<T> _inner;
@@ -156,7 +156,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-    [GenericContiguousCollectionMarshaller]
+    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection)]
     public unsafe ref struct NeverNullSpanMarshaller<T>
     {
         private SpanMarshaller<T> _inner;
@@ -227,7 +227,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-    [GenericContiguousCollectionMarshaller]
+    [CustomTypeMarshaller(typeof(ReadOnlySpan<>), CustomTypeMarshallerKind.SpanCollection)]
     public unsafe ref struct NeverNullReadOnlySpanMarshaller<T>
     {
         private ReadOnlySpanMarshaller<T> _inner;
@@ -299,7 +299,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-    [GenericContiguousCollectionMarshaller]
+    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection)]
     public unsafe ref struct DirectSpanMarshaller<T>
         where T : unmanaged
     {
