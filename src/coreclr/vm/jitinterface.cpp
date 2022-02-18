@@ -9323,16 +9323,11 @@ CorInfoTypeWithMod CEEInfo::getArgType (
     return result;
 }
 
-// NOTE:
-// Although this is only used for LoongArch64-ABI now,
-// maybe it can be used for other architecture for getting ABI-info
-// between JIT/EE if the ABI is similar.
-//
 // Now the implementation is only focused on the float fields info,
 // while a struct-arg has no more than two fields and total size is no larger than two-pointer-size.
 // These depends on the platform's ABI rules.
 //
-// The returned value's encoding details whether a struct-arg using float regitsters:
+// The returned value's encoding details how a struct argument uses float registers:
 // see the enum `StructFloatFieldInfoFlags`.
 uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {

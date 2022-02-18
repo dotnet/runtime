@@ -1203,7 +1203,6 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(CORINFO_SIG_INFO*       sig,    
     },
     [&](DWORD exceptionCode)
     {
-
         this->mc->recGetArgType(sig, args, vcTypeRet, temp, exceptionCode);
     });
 
