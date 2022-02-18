@@ -464,6 +464,36 @@ namespace System.Reflection.Tests
             return;
         }
 
+        public static IEnumerable<object[]> TypeDescTypesIsPublic_TestData()
+        {
+            yield return new object[] { typeof(int).Project().MakeByRefType(), true, true };
+            yield return new object[] { typeof(int).Project().MakePointerType(), true, true };
+            yield return new object[] { typeof(int).Project(), true, true };
+            yield return new object[] { typeof(PubilcClass.InternalNestedClass).Project().MakeByRefType(), true, false };
+            yield return new object[] { typeof(PubilcClass.InternalNestedClass).Project().MakePointerType(), true, false };
+            yield return new object[] { typeof(PubilcClass.InternalNestedClass).Project(), false, false };
+            yield return new object[] { typeof(PubilcClass.InternalNestedGenericClass<>).Project().MakeGenericType(typeof(PubilcClass).Project()), false, false };
+            yield return new object[] { typeof(PubilcClass).Project().MakeByRefType(), true, true };
+            yield return new object[] { typeof(PubilcClass).Project().MakePointerType(), true, true };
+            yield return new object[] { typeof(PubilcClass).Project(), true, true };
+        }
+
+        [Theory]
+        [MemberData(nameof(TypeDescTypesIsPublic_TestData))]
+        public static void TypeDescTypesIsPublic(Type type, bool isPublic, bool isVisible)
+        {
+            Assert.Equal(isPublic, type.IsPublic);
+            Assert.Equal(!isPublic, type.IsNestedAssembly);
+            Assert.Equal(isVisible, type.IsVisible);
+        }
+
+        [Fact]
+        public static void FunctionPointerTypeIsPublic()
+        {
+            Assert.True(typeof(delegate*<string, int>).Project().IsPublic);
+            Assert.True(typeof(delegate*<string, int>).Project().MakePointerType().IsPublic);
+        }
+
         [Fact]
         public static void TestMethodSelection1()
         {

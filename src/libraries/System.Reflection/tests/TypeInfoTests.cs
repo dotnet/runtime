@@ -1175,24 +1175,28 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> TypeDescTypesIsPublic_TestData()
         {
-            yield return new object[] { typeof(int).MakeByRefType(), true };
-            yield return new object[] { typeof(int).MakePointerType(), true };
-            yield return new object[] { typeof(int).MakeArrayType(), true };
-            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakeByRefType(), false };
-            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakePointerType(), false };
-            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakeArrayType(), true };
-            yield return new object[] { typeof(TI_BaseClass.InternalNestedGenericClass<>).MakeGenericType(typeof(string)), false };
-            yield return new object[] { typeof(TI_BaseClass).MakeByRefType(), true };
-            yield return new object[] { typeof(TI_BaseClass).MakePointerType(), true };
-            yield return new object[] { typeof(TI_BaseClass).MakeArrayType(), true };
+            yield return new object[] { typeof(int).MakeByRefType(), true, true };
+            yield return new object[] { typeof(int).MakePointerType(), true, true };
+            yield return new object[] { typeof(List<int>), true, true };
+            yield return new object[] { typeof(int), true, true };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakeByRefType(), true, false };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakePointerType(), true, false };
+            yield return new object[] { typeof(List<TI_BaseClass.InternalNestedClass>), true, false };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass), false, false };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedGenericClass<string>), false, false };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedGenericClass<>).MakeGenericType(typeof(string)), false, false };
+            yield return new object[] { typeof(TI_BaseClass).MakeByRefType(), true, true };
+            yield return new object[] { typeof(TI_BaseClass).MakePointerType(), true, true };
+            yield return new object[] { typeof(List<TI_BaseClass>), true, true };
         }
 
         [Theory]
         [MemberData(nameof(TypeDescTypesIsPublic_TestData))]
-        public void TypeDescTypesIsPublic(Type type, bool expected)
+        public void TypeDescTypesIsPublic(Type type, bool isPublic, bool isVisible)
         {
-            Assert.Equal(expected, type.IsPublic);
-            Assert.Equal(!expected, type.IsNestedAssembly);
+            Assert.Equal(isPublic, type.IsPublic);
+            Assert.Equal(!isPublic, type.IsNestedAssembly);
+            Assert.Equal(isVisible, type.IsVisible);
         }
 
         public delegate void PublicDelegate(string str);
@@ -1206,8 +1210,8 @@ namespace System.Reflection.Tests
             Assert.True(typeof(PublicDelegate).IsNestedPublic);
             Assert.True(typeof(InternalDelegate).IsNestedAssembly);
             Assert.False(typeof(InternalDelegate).IsPublic);
-            Assert.True(typeof(InternalDelegate).MakePointerType().IsNestedAssembly);
-            Assert.False(typeof(InternalDelegate).MakePointerType().IsPublic);
+            Assert.False(typeof(InternalDelegate).MakePointerType().IsNestedAssembly);
+            Assert.True(typeof(InternalDelegate).MakePointerType().IsPublic);
             Assert.True(typeof(Delegate).MakePointerType().IsPublic);
             Assert.False(typeof(Delegate).MakePointerType().IsNotPublic);
         }
@@ -1217,14 +1221,6 @@ namespace System.Reflection.Tests
         {
             Assert.True(typeof(delegate*<string, int>).IsPublic);
             Assert.True(typeof(delegate*<string, int>).MakePointerType().IsPublic);
-        }
-
-        [Fact]
-        public void NestedPointerIsPublic()
-        {
-            Type pointerType = typeof(int***);
-            Assert.True(pointerType.IsPointer);
-            Assert.True(pointerType.IsPublic);
         }
 
         [Fact]

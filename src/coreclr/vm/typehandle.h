@@ -285,9 +285,6 @@ public:
     // Obtain element type for an array, byref or pointer, returning NULL otherwise
     TypeHandle GetTypeParam() const;
 
-    // Obtain attributes of the element type from a byref or pointer type, returns tdPublic for generic type variables, 0 otherwise
-    INT32 GetElementTypeAttributes() const;
-
     // Obtain instantiation from an instantiated type
     // NULL if not instantiated
     Instantiation GetInstantiation() const;
