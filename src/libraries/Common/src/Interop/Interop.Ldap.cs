@@ -44,6 +44,7 @@ namespace System.DirectoryServices.Protocols
         public string packageList;
         public int packageListLength;
 
+#if NET7_0_OR_GREATER
         [StructLayout(LayoutKind.Sequential)]
         [CustomTypeMarshaller(typeof(SEC_WINNT_AUTH_IDENTITY_EX))]
         internal struct Native
@@ -83,6 +84,7 @@ namespace System.DirectoryServices.Protocols
                 Marshal.FreeCoTaskMem(packageList);
             }
         }
+#endif
     }
 
     internal enum BindMethod : uint // Not Supported in Linux
