@@ -38,6 +38,7 @@ jobs:
 - template: /eng/pipelines/runtime-extra-platforms-wasm.yml
   parameters:
     isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+    isRollingBuild: ${{ variables.isRollingBuild }}
 
 # Any jobs that are not specific to any platform
 - ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
