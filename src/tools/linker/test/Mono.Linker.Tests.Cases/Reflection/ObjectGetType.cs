@@ -51,6 +51,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			ApplyingAnnotationIntroducesTypesToApplyAnnotationToEntireType.Test ();
 
 			EnumerationOverInstances.Test ();
+
+			DataFlowUnusedGetType.Test ();
 		}
 
 		[Kept]
@@ -1404,6 +1406,55 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{
 				foreach (var instance in GetInstances ()) {
 					instance.GetType ().GetMethod ("Method");
+				}
+			}
+		}
+
+		[Kept]
+		class DataFlowUnusedGetType
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			class AnnotatedType
+			{
+				[RequiresUnreferencedCode ("AnnotatedType.Method")]
+				public void Method () { }
+			}
+
+			[Kept]
+			static AnnotatedType GetInstance () => new AnnotatedType ();
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			class AnnotatedBase
+			{
+			}
+
+			class DerivedFromAnnotatedBase : AnnotatedBase
+			{
+				[RequiresUnreferencedCode ("DerivedFromAnnotatedBase.Method")]
+				public void Method () { }
+			}
+
+			[Kept]
+			static AnnotatedBase GetBaseInstance () => new AnnotatedBase ();
+
+			[Kept]
+			public static void Test ()
+			{
+				// Call GetType, but don't use it for any data flow related stuff (no reflection or annotations)
+				// Linker has an optimization which avoids marking the type for type hierarchy annotations in this case
+				var name = GetInstance ().GetType ().Name;
+
+				// Using GetType and isinst should not mark the type or apply the annotation either
+				// This is a specific test for a pattern we want the linker to trim correctly
+				// that is the type which is only referenced in the isinst in a condition like this should not be kept
+				if (GetBaseInstance ().GetType () is DerivedFromAnnotatedBase) {
+					Console.WriteLine ("Never get here");
 				}
 			}
 		}

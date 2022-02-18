@@ -4,12 +4,14 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 {
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	[KeptModuleReference ("Foo")]
+	[SetupCompileArgument ("/unsafe")]
 	class ComPInvokeWarning
 	{
 		[UnconditionalSuppressMessage ("trim", "IL2026")]
@@ -32,6 +34,9 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 			Call_CanSuppressWithRequiresUnreferencedCode ();
 			Call_CanSuppressPInvokeWithRequiresUnreferencedCode ();
 			Call_PInvokeWithRequiresUnreferencedCode ();
+			Call_PInvokeWithVoidPointerArg ();
+			Call_PInvokeWithStructPointerArg ();
+			Call_PInvokeWithSequentialStructPointerArg ();
 		}
 
 		[ExpectedWarning ("IL2050")]
@@ -185,6 +190,38 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		[DllImport ("Foo")]
 		static extern void PInvokeWithRequiresUnreferencedCode (IFoo foo);
 
+		static unsafe void Call_PInvokeWithVoidPointerArg ()
+		{
+			PInvokeWithVoidPointerArg (null);
+		}
+
+		[DllImport ("Foo")]
+		static extern unsafe void PInvokeWithVoidPointerArg (void* arg);
+
+		static unsafe void Call_PInvokeWithStructPointerArg ()
+		{
+			PInvokeWithStructPointerArg (null);
+		}
+
+		[DllImport ("Foo")]
+		static extern unsafe ExplicitLayoutStruct* PInvokeWithStructPointerArg (ExplicitLayoutStruct* arg);
+
+		static unsafe void Call_PInvokeWithSequentialStructPointerArg ()
+		{
+			PInvokeWithSequentialStructPointerArg (null);
+		}
+
+		[DllImport ("Foo")]
+		static extern unsafe SequentialLayoutStruct* PInvokeWithSequentialStructPointerArg (SequentialLayoutStruct* arg);
+
+		static unsafe void Call_PInvokeWithAutoStructPointerArg ()
+		{
+			PInvokeWithAutoStructPointerArg (null);
+		}
+
+		[DllImport ("Foo")]
+		static extern unsafe AutoLayoutStruct* PInvokeWithAutoStructPointerArg (AutoLayoutStruct* arg);
+
 		interface IFoo { }
 
 		class TestSafeHandle : SafeHandle
@@ -230,5 +267,19 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 		}
 
+		[StructLayout (LayoutKind.Explicit)]
+		public struct ExplicitLayoutStruct
+		{
+		}
+
+		[StructLayout (LayoutKind.Sequential)]
+		public struct SequentialLayoutStruct
+		{
+		}
+
+		[StructLayout (LayoutKind.Auto)]
+		public struct AutoLayoutStruct
+		{
+		}
 	}
 }

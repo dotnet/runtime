@@ -44,6 +44,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestNoWarningsInRUCMethod ();
 			TestNoWarningsInRUCType ();
+
+			// These are probably just bugs
+			TestBackwardEdgeWithLdElem ();
 		}
 
 		[ExpectedWarning ("IL2072",
@@ -391,6 +394,48 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				GetWithPublicMethods ().RequiresAll ();
 			}
+		}
+
+		// https://github.com/dotnet/linker/issues/2624
+		// [ExpectedWarning ("IL2063")] // The types loaded from the array don't have annotations, so the "return" should warn
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		public static Type TestBackwardEdgeWithLdElem (Type[] types = null)
+		{
+			Type resultType = null;
+			foreach (var type in types) {
+				resultType = type;
+			}
+
+			return resultType;
+		}
+
+		public static void RequireAll (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+			string type)
+		{
+		}
+
+		public static void RequirePublicFields (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+			string type)
+		{
+		}
+
+		public static void RequireNonPublicMethods (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)]
+			string type)
+		{
+		}
+		public static void RequirePublicMethods (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+			string type)
+		{
+		}
+
+		public static void RequirePublicConstructors (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+			string type)
+		{
 		}
 
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
