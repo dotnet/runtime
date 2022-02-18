@@ -221,7 +221,7 @@ namespace System.Runtime.InteropServices.Tests
             }
             else
             {
-                Assert.Equal(left + right, result.Value);
+                Assert.Equal(left + right, result.Value, 3);
             }
         }
 
@@ -241,7 +241,7 @@ namespace System.Runtime.InteropServices.Tests
             }
             else
             {
-                Assert.Equal(left - right, result.Value);
+                Assert.Equal(left - right, result.Value, 3);
             }
         }
 
@@ -261,7 +261,7 @@ namespace System.Runtime.InteropServices.Tests
             }
             else
             {
-                Assert.Equal(left * right, result.Value);
+                Assert.Equal(left * right, result.Value, 3);
             }
         }
 
