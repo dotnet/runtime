@@ -149,6 +149,9 @@ partial class Test
 
     [DllImport(""DoesNotExist"", ThrowOnUnmappableChar = false)]
     public static extern int [|Method2|](out int ret);
+
+    [DllImport(""DoesNotExist"", PreserveSig = true)]
+    public static extern int [|Method3|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
             string fixedSource = @$"
@@ -160,6 +163,9 @@ partial class Test
 
     [GeneratedDllImport(""DoesNotExist"")]
     public static partial int {{|CS8795:Method2|}}(out int ret);
+
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial int {{|CS8795:Method3|}}(out int ret);
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
@@ -235,6 +241,49 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
     public static partial int {{|CS8795:Method|}}(out int ret);
 }}";
+            await VerifyCS.VerifyCodeFixAsync(
+                source,
+                fixedSource);
+        }
+
+        [ConditionalFact]
+        public async Task PreserveSigFalseSignatureModified()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [DllImport(""DoesNotExist"", PreserveSig = false)]
+    public static extern void [|VoidMethod|](bool param);
+    [DllImport(""DoesNotExist"", PreserveSig = false)]
+    public static extern long [|Method|](bool param);
+
+    public static void Code()
+    {
+        Test.VoidMethod(true);
+        Test.Method(true);
+        long value = Test.Method(true);
+        value = Test.Method(true);
+    }
+}";
+            // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
+            string fixedSource = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial int {|CS8795:VoidMethod|}(bool param);
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial int {|CS8795:Method|}(bool param, out long @return);
+
+    public static void Code()
+    {
+        Marshal.ThrowExceptionForHR(Test.VoidMethod(true));
+        Marshal.ThrowExceptionForHR(Test.Method(true, out _));
+        Marshal.ThrowExceptionForHR(Test.Method(true, out long value));
+        Marshal.ThrowExceptionForHR(Test.Method(true, out value));
+    }
+}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
                 fixedSource);

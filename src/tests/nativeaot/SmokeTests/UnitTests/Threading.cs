@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 
 // TODO: Move these tests to CoreFX once they can be run on CoreRT
 
-internal static class Runner
+internal static class Threading
 {
     private const int Pass = 100;
 
-    public static int Main()
+    public static int Run()
     {
         Console.WriteLine("    WaitSubsystemTests.DoubleSetOnEventWithTimedOutWaiterShouldNotStayInWaitersList");
         WaitSubsystemTests.DoubleSetOnEventWithTimedOutWaiterShouldNotStayInWaitersList();

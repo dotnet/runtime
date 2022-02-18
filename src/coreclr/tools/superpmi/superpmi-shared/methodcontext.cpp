@@ -6122,6 +6122,31 @@ bool MethodContext::repGetSystemVAmd64PassStructInRegisterDescriptor(
     return value.result ? true : false;
 }
 
+void MethodContext::recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value)
+{
+    if (GetLoongArch64PassStructInRegisterFlags == nullptr)
+        GetLoongArch64PassStructInRegisterFlags = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(structHnd);
+
+    GetLoongArch64PassStructInRegisterFlags->Add(key, value);
+    DEBUG_REC(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
+}
+
+void MethodContext::dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
+{
+    printf("GetLoongArch64PassStructInRegisterFlags key %016llX value-%08X", key, value);
+}
+
+DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    DWORDLONG key = CastHandle(structHnd);
+
+    DWORD value = GetLoongArch64PassStructInRegisterFlags->Get(key);
+    DEBUG_REP(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
+    return value;
+}
+
 void MethodContext::recGetRelocTypeHint(void* target, WORD result)
 {
     if (GetRelocTypeHint == nullptr)

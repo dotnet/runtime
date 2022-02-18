@@ -126,17 +126,17 @@ namespace System.Text.Json
                     {
                         if (Current.JsonPropertyInfo != null)
                         {
-                            jsonTypeInfo = Current.JsonPropertyInfo.RuntimeTypeInfo;
+                            jsonTypeInfo = Current.JsonPropertyInfo.JsonTypeInfo;
                         }
                         else
                         {
-                            jsonTypeInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeTypeInfo;
+                            jsonTypeInfo = Current.CtorArgumentState!.JsonParameterInfo!.JsonTypeInfo;
                         }
                     }
                     else if (converterStrategy == ConverterStrategy.Value)
                     {
                         // Although ConverterStrategy.Value doesn't push, a custom custom converter may re-enter serialization.
-                        jsonTypeInfo = Current.JsonPropertyInfo!.RuntimeTypeInfo;
+                        jsonTypeInfo = Current.JsonPropertyInfo!.JsonTypeInfo;
                     }
                     else
                     {

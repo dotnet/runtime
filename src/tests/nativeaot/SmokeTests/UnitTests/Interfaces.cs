@@ -7,12 +7,12 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-public class BringUpTest
+public class Interfaces
 {
     const int Pass = 100;
     const int Fail = -1;
 
-    public static int Main()
+    public static int Run()
     {
         if (TestInterfaceCache() == Fail)
             return Fail;
@@ -576,10 +576,10 @@ public class BringUpTest
 
             var x = new Derived<Atom1, Atom2>() { InnerValue = "My inner value" };
             string r1 = ((IFace<Atom1>)x).GrabValue(new Atom1());
-            if (r1 != "'My inner value' over 'BringUpTest+TestSharedIntefaceMethods+Atom1' with 'The Atom1'")
+            if (r1 != "'My inner value' over 'Interfaces+TestSharedIntefaceMethods+Atom1' with 'The Atom1'")
                 throw new Exception();
             string r2 = ((IFace<Atom2>)x).GrabValue(new Atom2());
-            if (r2 != "'My inner value' over 'BringUpTest+TestSharedIntefaceMethods+Atom2' with 'The Atom2'")
+            if (r2 != "'My inner value' over 'Interfaces+TestSharedIntefaceMethods+Atom2' with 'The Atom2'")
                 throw new Exception();
 
             IFace<object> o = new Yadda() { InnerValue = "SomeString" };

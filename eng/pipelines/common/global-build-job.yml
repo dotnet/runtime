@@ -49,6 +49,10 @@ jobs:
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
 
+    # Component governance does not work on musl machines
+    ${{ if eq(parameters.osSubGroup, '_musl') }}:
+      disableComponentGovernance: true
+
     workspace:
       clean: all
     enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
@@ -124,7 +128,7 @@ jobs:
         inputs:
           artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
-    
+
     - ${{ if eq(parameters.buildingOnSourceBuildImage, true) }}:
       - template: /eng/common/templates/steps/source-build.yml
         parameters:

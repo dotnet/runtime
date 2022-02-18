@@ -1576,40 +1576,39 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
         return BuildSimple(putArgStk);
     }
 
-    ClassLayout* layout = src->AsObj()->GetLayout();
-
     ssize_t size = putArgStk->GetStackByteSize();
     switch (putArgStk->gtPutArgStkKind)
     {
-        case GenTreePutArgStk::Kind::Push:
-        case GenTreePutArgStk::Kind::PushAllSlots:
         case GenTreePutArgStk::Kind::Unroll:
             // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
-            if (!layout->HasGCPtr() && (size & (XMM_REGSIZE_BYTES - 1)) != 0)
+            if ((size % XMM_REGSIZE_BYTES) != 0)
             {
                 regMaskTP regMask = allRegs(TYP_INT);
                 buildInternalIntRegisterDefForNode(putArgStk, regMask);
             }
 
-#ifdef TARGET_X86
-            if (size >= 8)
-#else  // !TARGET_X86
             if (size >= XMM_REGSIZE_BYTES)
-#endif // !TARGET_X86
             {
-                // If we have a buffer larger than or equal to XMM_REGSIZE_BYTES on x64/ux,
-                // or larger than or equal to 8 bytes on x86, reserve an XMM register to use it for a
-                // series of 16-byte loads and stores.
+                // If we have a buffer larger than or equal to XMM_REGSIZE_BYTES, reserve
+                // an XMM register to use it for a series of 16-byte loads and stores.
                 buildInternalFloatRegisterDefForNode(putArgStk, internalFloatRegCandidates());
                 SetContainsAVXFlags();
             }
             break;
 
         case GenTreePutArgStk::Kind::RepInstr:
+#ifndef TARGET_X86
+        case GenTreePutArgStk::Kind::PartialRepInstr:
+#endif
             buildInternalIntRegisterDefForNode(putArgStk, RBM_RDI);
             buildInternalIntRegisterDefForNode(putArgStk, RBM_RCX);
             buildInternalIntRegisterDefForNode(putArgStk, RBM_RSI);
             break;
+
+#ifdef TARGET_X86
+        case GenTreePutArgStk::Kind::Push:
+            break;
+#endif // TARGET_X86
 
         default:
             unreached();
