@@ -37,6 +37,7 @@ node_paths = glob(node_root)
 upgrade = True
 
 npm = os.path.join(node_paths[0], "bin", "npm")
+os.environ["PATH"] += os.pathsep + os.path.join(node_paths[0], "bin")
 if not os.path.exists(npm):
     npm = "npm"
 
