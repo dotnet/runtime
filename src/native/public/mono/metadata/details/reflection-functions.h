@@ -62,5 +62,3 @@ MONO_API_FUNCTION(MONO_API MonoBoolean, mono_declsec_get_assembly_action, (MonoA
 MONO_API_FUNCTION(MONO_API MONO_RT_EXTERNAL_ONLY MonoType*, mono_reflection_type_get_type, (MonoReflectionType *reftype))
 
 MONO_API_FUNCTION(MONO_API MonoAssembly*, mono_reflection_assembly_get_assembly, (MonoReflectionAssembly *refassembly))
-
-

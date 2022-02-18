@@ -14,6 +14,3 @@
 MONO_API_FUNCTION(MONO_API void, mono_gc_register_bridge_callbacks, (MonoGCBridgeCallbacks *callbacks))
 
 MONO_API_FUNCTION(MONO_API MONO_RT_EXTERNAL_ONLY void, mono_gc_wait_for_bridge_processing, (void))
-
-
-

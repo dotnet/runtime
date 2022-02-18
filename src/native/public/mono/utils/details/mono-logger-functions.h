@@ -15,5 +15,3 @@ MONO_API_FUNCTION(MONO_API void, mono_trace_set_log_handler, (MonoLogCallback ca
 MONO_API_FUNCTION(MONO_API void, mono_trace_set_print_handler, (MonoPrintCallback callback))
 
 MONO_API_FUNCTION(MONO_API void, mono_trace_set_printerr_handler, (MonoPrintCallback callback))
-
-

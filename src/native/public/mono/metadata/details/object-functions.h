@@ -221,4 +221,3 @@ MONO_API_FUNCTION(MONO_API MONO_RT_EXTERNAL_ONLY void, mono_gc_wbarrier_generic_
 MONO_API_FUNCTION(MONO_API MONO_RT_EXTERNAL_ONLY void, mono_gc_wbarrier_generic_nostore, (void* ptr))
 MONO_API_FUNCTION(MONO_API MONO_RT_EXTERNAL_ONLY void, mono_gc_wbarrier_value_copy, (void* dest, /*const*/ void* src, int count, MonoClass *klass))
 MONO_API_FUNCTION(MONO_API MONO_RT_EXTERNAL_ONLY void, mono_gc_wbarrier_object_copy, (MonoObject* obj, MonoObject *src))
-

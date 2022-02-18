@@ -20,4 +20,3 @@ MONO_API_FUNCTION(MONO_API int, mono_gc_invoke_finalizers, (void))
 MONO_API_FUNCTION(MONO_API int, mono_gc_walk_heap, (int flags, MonoGCReferences callback, void *data))
 
 MONO_API_FUNCTION(MONO_API MONO_RT_EXTERNAL_ONLY void, mono_gc_init_finalizer_thread, (void))
-

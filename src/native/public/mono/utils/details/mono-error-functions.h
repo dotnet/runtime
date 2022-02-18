@@ -16,5 +16,3 @@ MONO_API_FUNCTION(MONO_API MONO_RT_EXTERNAL_ONLY mono_bool, mono_error_ok, (Mono
 MONO_API_FUNCTION(MONO_API unsigned short, mono_error_get_error_code, (MonoError *error))
 
 MONO_API_FUNCTION(MONO_API const char*, mono_error_get_message, (MonoError *error))
-
-

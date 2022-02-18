@@ -18,4 +18,3 @@ MONO_API_FUNCTION(MONO_API MONO_RT_EXTERNAL_ONLY MonoAssemblyLoadContextGCHandle
 MONO_API_FUNCTION(MONO_API void, mono_register_bundled_satellite_assemblies, (const MonoBundledSatelliteAssembly **assemblies))
 
 MONO_API_FUNCTION(MONO_API MonoBundledSatelliteAssembly *, mono_create_new_bundled_satellite_assembly, (const char *name, const char *culture, const unsigned char *data, unsigned int size))
-

@@ -97,4 +97,3 @@ MONO_API_FUNCTION(MONO_API MONO_RT_EXTERNAL_ONLY MonoException *, mono_get_excep
  * If no hook has been installed, the runtime will print a message before aborting.
  */
 MONO_API_FUNCTION(MONO_API void, mono_install_unhandled_exception_hook, (MonoUnhandledExceptionFunc func, void *user_data))
-

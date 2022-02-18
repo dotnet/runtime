@@ -73,6 +73,3 @@ MONO_API_FUNCTION(MONO_API void, mono_register_machine_config, (const char *conf
 MONO_API_FUNCTION(MONO_API void, mono_set_rootdir, (void))
 MONO_API_FUNCTION(MONO_API void, mono_set_dirs, (const char *assembly_dir, const char *config_dir))
 MONO_API_FUNCTION(MONO_API void, mono_set_assemblies_path, (const char* path))
-
-
-
