@@ -2905,6 +2905,10 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
+            Justification = "Trimming makes sure that interfaces are fully preserved, so the Interfaces annotation is transitive." +
+                            "The cache doesn't carry the necessary annotation since it returns an array type," +
+                            "so the analysis complains that the returned value doesn't have the necessary annotation.")]
         public override Type? GetInterface(string fullname!!, bool ignoreCase)
         {
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic;
