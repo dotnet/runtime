@@ -11428,7 +11428,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     op1  = tree->AsOp()->gtOp1;
                     op2  = tree->AsOp()->gtOp2;
                 }
-                // Do "a % b = a - (a / b) * b" morph always, see TODO before this block.
+                // Do "a % b = a - (a / b) * b" morph.
                 else
                 {
                     assert(!optValnumCSE_phase);
