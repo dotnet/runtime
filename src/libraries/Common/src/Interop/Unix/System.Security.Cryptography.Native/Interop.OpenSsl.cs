@@ -722,7 +722,7 @@ internal static partial class Interop
             IntPtr ptr = Ssl.SslCtxGetData(ctx);
             if (ptr == IntPtr.Zero)
             {
-                // Same as above, SafeSslContextHandle could be released while OpenSSL still holds refferecne.
+                // Same as above, SafeSslContextHandle could be released while OpenSSL still holds reference.
                 return;
             }
 
@@ -733,7 +733,6 @@ internal static partial class Interop
                 return;
             }
 
-            //string? name = Marshal.PtrToStringAnsi(Ssl.SessionGetHostname(session));a
             IntPtr name = Ssl.SessionGetHostname(session);
             Debug.Assert(name != IntPtr.Zero);
             ctxHandle.RemoveSession(name, session);
