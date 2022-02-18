@@ -11418,8 +11418,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             // in Morph we can't guarantee that `a` won't be transformed into a constant,
             // so can't guarantee that lower will be able to do this optimization.
             {
-                bool doMorphModToAnd = false;
-
                 if(oper == GT_UMOD && op2->IsCnsIntPow2())
                 {
                     assert(!optValnumCSE_phase);
