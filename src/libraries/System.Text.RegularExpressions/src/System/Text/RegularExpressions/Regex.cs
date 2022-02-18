@@ -390,59 +390,66 @@ namespace System.Text.RegularExpressions
                     runner.runtextpos += RightToLeft ? -1 : 1;
                 }
 
-                runner.Scan(span);
-
-                Match? match = runner.runmatch;
-                // if we got a match, set runmatch to null if quick is true
-                if (match!.FoundAMatch)
-                {
-                    runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
-
-                    if (match.Text != input)
-                    {
-                        match.Text = input;
-                    }
-
-                    if (quick)
-                    {
-                        runner.runmatch!.Text = null; // Drop reference to text
-                        return null;
-                    }
-
-                    runner.runmatch = null;
-                    match.Tidy(runner.runtextpos);
-
-                    // If there was a match and the original text was sliced, then add beginning to the index to get the real
-                    // Index of the match.
-                    if (match.Success && beginning != 0)
-                    {
-                        match.AddBeginningToIndex(beginning);
-                    }
-
-                    return match;
-                }
-
-                runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
-
-                if (!quick)
-                {
-                    runner.runmatch = null;
-                }
-                else
-                {
-
-                    if (runner.runmatch != null)
-                    {
-                        runner.runmatch.Text = null;
-                    }
-                }
-
-                return RegularExpressions.Match.Empty;
+                return InternalPerformScan(quick, input, beginning, runner, span, returnNullIfQuick: true);
             }
             finally
             {
                 _runner = runner;
             }
+        }
+
+        private static Match? InternalPerformScan(bool quick, string input, int beginning, RegexRunner runner, ReadOnlySpan<char> span, bool returnNullIfQuick)
+        {
+            runner.Scan(span);
+
+            Match? match = runner.runmatch;
+            // if we got a match, set runmatch to null if quick is true
+            if (match!.FoundAMatch)
+            {
+                runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
+
+                if (match.Text != input)
+                {
+                    match.Text = input;
+                }
+
+                if (quick && returnNullIfQuick)
+                {
+                    runner.runmatch!.Text = null; // Drop reference to text
+                    return null;
+                }
+
+                if (!quick)
+                    runner.runmatch = null;
+
+                match.Tidy(runner.runtextpos);
+
+                // If there was a match and the original text was sliced, then add beginning to the index to get the real
+                // Index of the match.
+                if (match.Success && beginning != 0)
+                {
+                    match.AddBeginningToIndex(beginning);
+                }
+
+                return match;
+            }
+
+            runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
+
+            if (!quick)
+            {
+                runner.runmatch = null;
+            }
+            else
+            {
+
+                if (runner.runmatch != null)
+                {
+                    runner.runmatch.Text = null;
+                }
+            }
+
+            return RegularExpressions.Match.Empty;
         }
 
         internal Match? Run(ReadOnlySpan<char> input, int startat)
@@ -485,26 +492,12 @@ namespace System.Text.RegularExpressions
                     runner.runtextpos = runtextpos;
 
                     int stoppos = RightToLeft ? 0 : input.Length;
-                    runner.Scan(input);
 
-                    Match? match = runner.runmatch;
+                    Match? match = InternalPerformScan(reuseMatchObject, input, 0, runner, input, false);
 
                     // if we got a match, set runmatch to null if quick is true
-                    if (match!.FoundAMatch)
+                    if (match!.Success)
                     {
-                        if (match.Text != input)
-                        {
-                            match.Text = input;
-                        }
-
-                        if (!reuseMatchObject)
-                        {
-                            // We're not reusing match objects, so null out our field reference to the instance.
-                            // It'll be recreated the next time one is needed.
-                            runner.runmatch = null;
-                        }
-
-                        match.Tidy(runner.runtextpos);
                         if (!callback(ref state, match))
                         {
                             if (reuseMatchObject)
@@ -551,17 +544,6 @@ namespace System.Text.RegularExpressions
                         // We failed to match at this position.  If we're at the stopping point, we're done.
                         if (runner.runtextpos == stoppos)
                         {
-                            if (!reuseMatchObject)
-                            {
-                                runner.runmatch = null;
-                            }
-                            else
-                            {
-                                if (runner.runmatch != null)
-                                {
-                                    runner.runmatch.Text = null!;
-                                }
-                            }
                             return;
                         }
                     }
