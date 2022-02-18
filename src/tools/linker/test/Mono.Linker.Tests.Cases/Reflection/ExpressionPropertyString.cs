@@ -9,10 +9,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	// Explicitly use roslyn to try and get a compiler that supports defining a static property without a setter
 	[SetupCSharpCompilerToUse ("csc")]
 	[Reference ("System.Core.dll")]
+	[ExpectedNoWarnings]
 	public class ExpressionPropertyString
 	{
-		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.Property),
-			new Type[] { typeof (Expression), typeof (Type), typeof (string) }, messageCode: "IL2072")]
+		[ExpectedWarning ("IL2072", nameof (Expression) + "." + nameof (Expression.Property))]
 		public static void Main ()
 		{
 			Expression.Property (Expression.Parameter (typeof (int), ""), typeof (ExpressionPropertyString), "Property");
@@ -21,7 +21,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Expression.Property (null, typeof (Derived), "PublicPropertyOnBase");
 			UnknownType.Test ();
 			UnknownString.Test ();
-			Expression.Property (null, GetType (), "This string will not be reached"); // UnrecognizedReflectionAccessPattern
+			Expression.Property (null, GetType (), "This string will not be reached"); // IL2072
 		}
 
 		[Kept]

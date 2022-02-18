@@ -7,7 +7,7 @@
     </attribute>
     <type fullname="Mono.Linker.Tests.Cases.DataFlow.SuppressWarningWithLinkAttributes">
       <field name="_typeWithPublicParameterlessConstructor">
-        <attribute fullname="System.DoesNotExistattribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+        <attribute fullname="System.DoesNotExistAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
           <argument>0</argument>
         </attribute>
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">

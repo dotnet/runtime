@@ -9,7 +9,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 [module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "type", Target = "T:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInType")]
 [module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers.Method")]
 [module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers.get_Property")]
-[module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression..get_Property")]
+[module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.SuppressWarningsInMembersAndTypesUsingTarget.NestedType.Warning")]
 [module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers.MultipleWarnings")]
 [module: UnconditionalSuppressMessage ("Test", "IL2026", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers.MultipleSuppressions")]
 
@@ -22,11 +22,17 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 	[LogDoesNotContain ("TriggerUnrecognizedPattern()")]
 	public class SuppressWarningsInMembersAndTypesUsingTarget
 	{
+		/// <summary>
+		/// This test case checks module level UnconditionalSuppressMessage, primarily using 
+		/// System.Linq.Expressions.Expression.(Type type, string methodName, Type[]? typeArguments, params System.Linq.Expressions.Expression[]? arguments)
+		/// which has a RUC attribute but is treated as an intrinsic by the trimmer. The test case also has some member level suppressions and its
+		/// own RUC method (the IL2026 suppression in the code is due to this)
+		/// </summary>
 		public static void Main ()
 		{
+			NestedType.Warning ();
 			var warningsInType = new WarningsInType ();
 			warningsInType.Warning1 ();
-			warningsInType.Warning2 ();
 			var warningInNestedType = new WarningsInType.NestedType ();
 			warningInNestedType.Warning3 ();
 

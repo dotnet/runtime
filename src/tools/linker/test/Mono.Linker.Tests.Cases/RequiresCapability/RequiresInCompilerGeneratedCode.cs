@@ -1000,7 +1000,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				Action _ = () => MethodWithRequires ();
 			}
 
-			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
 			[ExpectedWarning ("IL2067", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			[RequiresAssemblyFiles ("Suppress in body")]
@@ -1076,7 +1075,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				};
 			}
 
-			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
+			// TODO: Fix the discrepancy between linker and analyzer
+			// https://github.com/dotnet/linker/issues/2350
 			[ExpectedWarning ("IL2077", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			[RequiresAssemblyFiles ("Suppress in body")]
@@ -1147,7 +1147,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
 			static IEnumerable<int> TestDynamicallyAccessedMethodViaGenericMethodParameterInIterator ()
 			{
 				yield return 1;
@@ -1261,8 +1261,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				MethodWithRequires ();
 			}
 
-			[ExpectedWarning ("IL2026", "Requires to suppress", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "Requires to suppress", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "Requires to suppress")]
+			[ExpectedWarning ("IL2026", "Requires to suppress")]
 			public static void Test ()
 			{
 				// This is not a 100% reliable test, since in theory it can be marked in any order and so it could happen that the

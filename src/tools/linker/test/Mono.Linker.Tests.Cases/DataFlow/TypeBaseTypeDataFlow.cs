@@ -13,6 +13,7 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
+	[ExpectedNoWarnings]
 	public class TypeBaseTypeDataFlow
 	{
 		public static void Main ()
@@ -47,22 +48,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Mixed_Derived.Test (typeof (TestType), 0);
 		}
 
-		[RecognizedReflectionAccessPattern]
 		static void TestAllPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresAll ();
 		}
 
-		[RecognizedReflectionAccessPattern]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicConstructors), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
 		static void TestPublicConstructorsAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresPublicConstructors ();
 		}
 
-		[RecognizedReflectionAccessPattern]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicEvents), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicEvents))]
 		static void TestPublicEventsPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicEvents)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresPublicEvents ();
@@ -74,9 +72,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			derivedType.BaseType.RequiresNonPublicEvents ();
 		}
 
-		[RecognizedReflectionAccessPattern]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicFields), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicFields))]
 		static void TestPublicFieldsPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresPublicFields ();
@@ -88,9 +85,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			derivedType.BaseType.RequiresNonPublicFields ();
 		}
 
-		[RecognizedReflectionAccessPattern]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicProperties), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicMethods), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicProperties))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicMethods))]
 		static void TestPublicMethodsPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresPublicMethods ();
@@ -102,23 +98,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			derivedType.BaseType.RequiresNonPublicMethods ();
 		}
 
-		[RecognizedReflectionAccessPattern]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicNestedTypes), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicNestedTypes))]
 		static void TestPublicNestedTypesAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicNestedTypes)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresPublicNestedTypes ();
 		}
 
-		[RecognizedReflectionAccessPattern]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicParameterlessConstructor), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicParameterlessConstructor))]
 		static void TestPublicParameterlessConstructorIsNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresPublicParameterlessConstructor ();
 		}
 
-		[RecognizedReflectionAccessPattern]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicProperties), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicProperties))]
 		static void TestPublicPropertiesPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresPublicProperties ();
@@ -130,49 +123,47 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			derivedType.BaseType.RequiresNonPublicProperties ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors))]
 		static void TestNonPublicConstructorsAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicConstructors ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicEvents), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicEvents))]
 		static void TestNonPublicEventsAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicEvents)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicEvents ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicFields), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicFields))]
 		static void TestNonPublicFieldsAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicFields)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicFields ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicMethods), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicMethods))]
 		static void TestNonPublicMethodsAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicMethods ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicNestedTypes), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicNestedTypes))]
 		static void TestNonPublicNestedTypesAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicNestedTypes)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicNestedTypes ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicProperties), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicProperties))]
 		static void TestNonPublicPropertiesAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicProperties)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicProperties ();
 		}
 
-		[RecognizedReflectionAccessPattern]
 		static void TestInterfacesPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresInterfaces ();
 		}
 
-		[RecognizedReflectionAccessPattern]
 		static void TestCombinationOfPublicsIsPropagated (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties)] Type derivedType)
 		{
@@ -180,8 +171,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			derivedType.BaseType.RequiresPublicProperties ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicMethods), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicProperties), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicMethods))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicProperties))]
 		static void TestCombinationOfNonPublicsIsNotPropagated (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.NonPublicProperties)] Type derivedType)
 		{
@@ -189,7 +180,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			derivedType.BaseType.RequiresNonPublicProperties ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresNonPublicMethods), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicMethods))]
 		static void TestCombinationOfPublicAndNonPublicsPropagatesPublicOnly (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicProperties)] Type derivedType)
 		{
@@ -197,13 +188,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			derivedType.BaseType.RequiresPublicProperties ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 		static void TestNoAnnotation (Type derivedType)
 		{
 			derivedType.BaseType.RequiresPublicMethods ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 		static void TestAnnotatedAndUnannotated (
 			Type derivedTypeOne,
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type derivedTypeTwo,
@@ -213,7 +204,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.BaseType.RequiresPublicMethods ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) })]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 		static void TestNull ()
 		{
 			Type type = null;
@@ -228,7 +219,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class Mixed_Derived : Mixed_Base
 		{
-			[RecognizedReflectionAccessPattern]
 			public static void Test (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type typeWithPublicMethods,
 				int number)

@@ -4,6 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[ExpectedNoWarnings]
 	public class LocalDataFlowKeptMembers
 	{
 		public static void Main ()

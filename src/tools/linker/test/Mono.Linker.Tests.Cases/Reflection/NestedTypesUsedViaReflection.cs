@@ -9,6 +9,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
+	[ExpectedNoWarnings]
 	public class NestedTypesUsedViaReflection
 	{
 		public static void Main ()
@@ -27,7 +28,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public static class NestedType { }
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestGetNestedTypes ()
 		{
 			_ = typeof (NestedTypesUsedViaReflection).GetNestedType (nameof (NestedType));
@@ -43,14 +43,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		protected static class ProtectedNestedType { }
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestByBindingFlags ()
 		{
 			_ = typeof (NestedTypesUsedViaReflection).GetNestedTypes (BindingFlags.Public);
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestByUnknownBindingFlags (BindingFlags bindingFlags)
 		{
 			// Since the binding flags are not known linker should mark all nested types on the type
@@ -58,7 +56,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestNullType ()
 		{
 			Type type = null;
@@ -71,8 +68,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			return null;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetNestedTypes), new Type[] { typeof (BindingFlags) },
-			messageCode: "IL2075", message: new string[] { "FindType", "GetNestedTypes" })]
+		[ExpectedWarning ("IL2075", "FindType", "GetNestedTypes")]
 		[Kept]
 		static void TestDataFlowType ()
 		{
@@ -81,14 +77,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		private static void TestDataFlowWithAnnotation ([KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))][DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicNestedTypes)] Type type)
 		{
 			_ = type.GetNestedTypes (BindingFlags.Public | BindingFlags.Static);
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestIgnoreCaseBindingFlags ()
 		{
 			_ = typeof (IgnoreCaseClass).GetNestedTypes (BindingFlags.IgnoreCase | BindingFlags.Public);

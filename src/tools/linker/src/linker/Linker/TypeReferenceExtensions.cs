@@ -337,6 +337,21 @@ namespace Mono.Linker
 				&& type.Namespace == ns;
 		}
 
+		public static bool IsTypeOf (this TypeReference type, string fullTypeName)
+		{
+			var name = fullTypeName.AsSpan ();
+			if (type.Name.Length + 1 > name.Length)
+				return false;
+
+			if (!name.Slice (name.Length - type.Name.Length).Equals (type.Name.AsSpan (), StringComparison.Ordinal))
+				return false;
+
+			if (name[name.Length - type.Name.Length - 1] != '.')
+				return false;
+
+			return name.Slice (0, name.Length - type.Name.Length - 1).Equals (type.Namespace, StringComparison.Ordinal);
+		}
+
 		public static bool IsTypeOf<T> (this TypeReference tr)
 		{
 			var type = typeof (T);
@@ -353,6 +368,14 @@ namespace Mono.Linker
 			}
 
 			return false;
+		}
+
+		public static TypeReference WithoutModifiers (this TypeReference type)
+		{
+			while (type is IModifierType) {
+				type = ((IModifierType) type).ElementType;
+			}
+			return type;
 		}
 	}
 }

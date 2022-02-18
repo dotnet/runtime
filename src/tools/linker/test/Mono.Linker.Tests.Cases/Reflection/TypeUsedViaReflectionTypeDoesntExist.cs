@@ -5,7 +5,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[SetupCSharpCompilerToUse ("csc")]
-	[VerifyAllReflectionAccessPatternsAreValidated]
+	[ExpectedNoWarnings]
 	public class TypeUsedViaReflectionTypeDoesntExist
 	{
 		public static void Main ()

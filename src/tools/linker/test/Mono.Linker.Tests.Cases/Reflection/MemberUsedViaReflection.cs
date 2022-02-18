@@ -7,6 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[SetupCSharpCompilerToUse ("csc")]
+	[ExpectedNoWarnings]
 	public class MemberUsedViaReflection
 	{
 		public static void Main ()
@@ -24,7 +25,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestIfElse (true);
 		}
 
-		[RecognizedReflectionAccessPattern]
 		[Kept]
 		static void TestWithName ()
 		{
@@ -32,21 +32,18 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 
-		[RecognizedReflectionAccessPattern]
 		[Kept]
 		static void TestWithPrefixLookup ()
 		{
 			var members = typeof (PrefixLookupType).GetMember ("PrefixLookup*");
 		}
 
-		[RecognizedReflectionAccessPattern]
 		[Kept]
 		static void TestWithBindingFlags ()
 		{
 			var members = typeof (BindingFlagsType).GetMember ("PrefixLookup*", BindingFlags.Public | BindingFlags.NonPublic);
 		}
 
-		[RecognizedReflectionAccessPattern]
 		[Kept]
 		static void TestWithUnknownBindingFlags (BindingFlags bindingFlags)
 		{
@@ -54,7 +51,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			var members = typeof (UnknownBindingFlags).GetMember ("PrefixLookup*", bindingFlags);
 		}
 
-		[RecognizedReflectionAccessPattern]
 		[Kept]
 		static void TestWithMemberTypes ()
 		{
@@ -63,7 +59,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			var members = typeof (TestMemberTypes).GetMember ("PrefixLookup*", MemberTypes.Method, BindingFlags.Public);
 		}
 
-		[RecognizedReflectionAccessPattern]
 		[Kept]
 		static void TestNullType ()
 		{
@@ -77,8 +72,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			return null;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetMember), new Type[] { typeof (string) },
-			messageCode: "IL2075", message: new string[] { "FindType", "GetMember" })]
+		[ExpectedWarning ("IL2075", "FindType", "GetMember")]
 		[Kept]
 		static void TestDataFlowType ()
 		{
@@ -87,7 +81,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		private static void TestDataFlowWithAnnotation ([KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors |
 										 DynamicallyAccessedMemberTypes.PublicEvents |
@@ -100,7 +93,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestIfElse (bool decision)
 		{
 			Type myType;

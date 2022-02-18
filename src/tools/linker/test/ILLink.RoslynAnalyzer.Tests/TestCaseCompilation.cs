@@ -19,7 +19,8 @@ namespace ILLink.RoslynAnalyzer.Tests
 				new RequiresDynamicCodeAnalyzer (),
 				new COMAnalyzer (),
 				new RequiresAssemblyFilesAnalyzer (),
-				new RequiresUnreferencedCodeAnalyzer ());
+				new RequiresUnreferencedCodeAnalyzer (),
+				new DynamicallyAccessedMembersAnalyzer ());
 
 		public static Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics)> CreateCompilation (
 			string src,

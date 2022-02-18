@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Immutable;
 using ILLink.Shared;
+using ILLink.Shared.TrimAnalysis;
+using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -12,7 +14,7 @@ namespace ILLink.RoslynAnalyzer
 	[DiagnosticAnalyzer (LanguageNames.CSharp)]
 	public sealed class RequiresUnreferencedCodeAnalyzer : RequiresAnalyzerBase
 	{
-		const string RequiresUnreferencedCodeAttribute = nameof (RequiresUnreferencedCodeAttribute);
+		public const string RequiresUnreferencedCodeAttribute = nameof (RequiresUnreferencedCodeAttribute);
 		public const string FullyQualifiedRequiresUnreferencedCodeAttribute = "System.Diagnostics.CodeAnalysis." + RequiresUnreferencedCodeAttribute;
 
 		static readonly DiagnosticDescriptor s_requiresUnreferencedCodeRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresUnreferencedCode);
@@ -71,29 +73,10 @@ namespace ILLink.RoslynAnalyzer
 		protected override bool IsAnalyzerEnabled (AnalyzerOptions options, Compilation compilation) =>
 			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer, compilation);
 
-		protected override ImmutableArray<ISymbol> GetSpecialIncompatibleMembers (Compilation compilation)
-		{
-			var incompatibleMembers = ImmutableArray.CreateBuilder<ISymbol> ();
-			var typeType = compilation.GetTypeByMetadataName ("System.Type");
-			if (typeType != null) {
-				incompatibleMembers.AddRange (typeType.GetMembers ("MakeGenericType").OfType<IMethodSymbol> ());
-			}
-
-			var methodInfoType = compilation.GetTypeByMetadataName ("System.Reflection.MethodInfo");
-			if (methodInfoType != null) {
-				incompatibleMembers.AddRange (methodInfoType.GetMembers ("MakeGenericMethod").OfType<IMethodSymbol> ());
-			}
-
-			return incompatibleMembers.ToImmutable ();
-		}
-
 		protected override bool ReportSpecialIncompatibleMembersDiagnostic (OperationAnalysisContext operationContext, ImmutableArray<ISymbol> specialIncompatibleMembers, ISymbol member)
 		{
-			if (member is IMethodSymbol method && ImmutableArrayOperations.Contains (specialIncompatibleMembers, member, SymbolEqualityComparer.Default) &&
-				(method.Name == "MakeGenericMethod" || method.Name == "MakeGenericType")) {
-				// These two RUC-annotated APIs are intrinsically handled by the trimmer, which will not produce any
-				// RUC warning related to them. For unrecognized reflection patterns realted to generic type/method
-				// creation IL2055/IL2060 should be used instead.
+			// Some RUC-annotated APIs are intrinsically handled by the trimmer
+			if (member is IMethodSymbol method && Intrinsics.GetIntrinsicIdForMethod (new MethodProxy (method)) != IntrinsicId.None) {
 				return true;
 			}
 
@@ -110,10 +93,7 @@ namespace ILLink.RoslynAnalyzer
 		protected override bool VerifyAttributeArguments (AttributeData attribute) =>
 			RequiresUnreferencedCodeUtils.VerifyRequiresUnreferencedCodeAttributeArguments (attribute);
 
-		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute)
-		{
-			var message = (string) requiresAttribute!.ConstructorArguments[0].Value!;
-			return MessageFormat.FormatRequiresAttributeMessageArg (message);
-		}
+		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute) =>
+			RequiresUnreferencedCodeUtils.GetMessageFromAttribute (requiresAttribute);
 	}
 }

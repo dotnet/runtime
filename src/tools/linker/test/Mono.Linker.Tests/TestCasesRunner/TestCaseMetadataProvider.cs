@@ -95,40 +95,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				};
 			}
 
-			if (ValidatesReflectionAccessPatterns (_testCaseTypeDefinition)) {
-				customizations.ReflectionPatternRecorder = new TestReflectionPatternRecorder ();
-				customizations.CustomizeContext += context => {
-					customizations.ReflectionPatternRecorder.PreviousRecorder = context.ReflectionPatternRecorder;
-					context.ReflectionPatternRecorder = customizations.ReflectionPatternRecorder;
-					context.LogMessages = true;
-				};
-			}
-
 			if (ValidatesLogMessages (_testCaseTypeDefinition)) {
 				customizations.CustomizeContext += context => {
 					context.LogMessages = true;
 				};
 			}
-		}
-
-		bool ValidatesReflectionAccessPatterns (TypeDefinition testCaseTypeDefinition)
-		{
-			if (testCaseTypeDefinition.HasNestedTypes) {
-				var nestedTypes = new Queue<TypeDefinition> (testCaseTypeDefinition.NestedTypes.ToList ());
-				while (nestedTypes.Count > 0) {
-					if (ValidatesReflectionAccessPatterns (nestedTypes.Dequeue ()))
-						return true;
-				}
-			}
-
-			if (testCaseTypeDefinition.CustomAttributes.Any (attr =>
-					attr.AttributeType.Name == nameof (VerifyAllReflectionAccessPatternsAreValidatedAttribute))
-				|| testCaseTypeDefinition.AllMembers ().Concat (testCaseTypeDefinition.AllDefinedTypes ()).Any (m => m.CustomAttributes.Any (attr =>
-					  attr.AttributeType.Name == nameof (RecognizedReflectionAccessPatternAttribute) ||
-					  attr.AttributeType.Name == nameof (UnrecognizedReflectionAccessPatternAttribute))))
-				return true;
-
-			return false;
 		}
 
 		bool ValidatesLogMessages (TypeDefinition testCaseTypeDefinition)
