@@ -36,16 +36,12 @@ node_root = os.path.join(emsdk_path, "node")
 node_paths = glob(node_root)
 upgrade = True
 
-npm = os.path.join(node_paths[0], "bin", "npm")
 os.environ["PATH"] += os.pathsep + os.path.join(node_paths[0], "bin")
-if not os.path.exists(npm):
-    npm = "npm"
-
 
 def update_npm(path):
     try:
         os.chdir(os.path.join(path, "lib"))
-        os.system(npm + " install npm@latest")
+        os.system("npm install npm@latest")
         prune()
     except OSError as error:
         print("npm update failed")
@@ -59,7 +55,7 @@ def remove_npm(path):
 
 def prune():
     try:
-        os.system(npm + " prune --production")
+        os.system("npm prune --production")
     except OSError as error:
         print("npm prune failed")
         print(error)
