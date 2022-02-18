@@ -63,7 +63,7 @@
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chromedriver_win32%3B%PATH%" />
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chrome-win%3B%PATH%" />
 
-    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="for /f %i in ('dir %HELIX_CORRELATION_PAYLOAD%\build\emsdk\node /b') do set HELIX_NODEJS_VERSION=%i" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="for /f %%i in ('dir %HELIX_CORRELATION_PAYLOAD%\build\emsdk\node /b') do set HELIX_NODEJS_VERSION=%%i" />
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\node\%HELIX_NODEJS_VERSION%\bin%3B%PATH%" />
   </ItemGroup>
 
