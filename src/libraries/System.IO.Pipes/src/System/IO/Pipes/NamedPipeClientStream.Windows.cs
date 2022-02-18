@@ -57,8 +57,17 @@ namespace System.IO.Pipes
             {
                 int errorCode = Marshal.GetLastPInvokeError();
 
-                if (errorCode != Interop.Errors.ERROR_PIPE_BUSY &&
-                    errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND)
+                // CreateFileW: "If the CreateNamedPipe function was not successfully called on the server prior to this operation,
+                // a pipe will not exist and CreateFile will fail with ERROR_FILE_NOT_FOUND"
+                // WaitNamedPipeW: "If no instances of the specified named pipe exist,
+                // the WaitNamedPipe function returns immediately, regardless of the time-out value."
+                // We know that no instances exist, so we just quit without calling WaitNamedPipeW.
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                {
+                    return false;
+                }
+
+                if (errorCode != Interop.Errors.ERROR_PIPE_BUSY)
                 {
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
@@ -67,8 +76,7 @@ namespace System.IO.Pipes
                 {
                     errorCode = Marshal.GetLastPInvokeError();
 
-                    // Server is not yet created or a timeout occurred before a pipe instance was available.
-                    if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ||
+                    if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || // server has been closed
                         errorCode == Interop.Errors.ERROR_SEM_TIMEOUT)
                     {
                         return false;
@@ -90,9 +98,10 @@ namespace System.IO.Pipes
                 {
                     errorCode = Marshal.GetLastPInvokeError();
 
-                    // Handle the possible race condition of someone else connecting to the server
-                    // between our calls to WaitNamedPipe & CreateFile.
-                    if (errorCode == Interop.Errors.ERROR_PIPE_BUSY)
+                    // WaitNamedPipe: "A subsequent CreateFile call to the pipe can fail,
+                    // because the instance was closed by the server or opened by another client."
+                    if (errorCode == Interop.Errors.ERROR_PIPE_BUSY // opened by another client
+                        || errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND) // server has been closed
                     {
                         return false;
                     }
