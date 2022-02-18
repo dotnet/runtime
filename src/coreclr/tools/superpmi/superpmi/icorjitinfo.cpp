@@ -1227,6 +1227,12 @@ bool MyICJI::getSystemVAmd64PassStructInRegisterDescriptor(
     return jitInstance->mc->repGetSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
 }
 
+uint32_t MyICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    jitInstance->mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
+    return jitInstance->mc->repGetLoongArch64PassStructInRegisterFlags(structHnd);
+}
+
 // Stuff on ICorDynamicInfo
 uint32_t MyICJI::getThreadTLSIndex(void** ppIndirection)
 {
