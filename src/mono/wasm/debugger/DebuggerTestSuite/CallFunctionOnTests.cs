@@ -672,7 +672,7 @@ namespace DebuggerTests
                }
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InvokeInheritedAndPrivateGetters() => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.GetPropertiesTests.DerivedClass", "InstanceMethod", 1, "InstanceMethod",
             $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClass:run'); }})",

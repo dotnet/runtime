@@ -13,7 +13,7 @@ namespace DebuggerTests
 {
     public class MonoJsTests : DebuggerTestBase
     {
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task BadRaiseDebugEventsTest()
         {
             var bad_expressions = new[]
@@ -94,7 +94,7 @@ namespace DebuggerTests
                 expected_count
             );
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DuplicateAssemblyLoadedEventWithEmbeddedPdbNotLoadedFromBundle()
             => await AssemblyLoadedEventTest(
                 "lazy-debugger-test-embedded",

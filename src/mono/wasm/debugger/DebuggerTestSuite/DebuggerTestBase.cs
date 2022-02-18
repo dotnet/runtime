@@ -1473,4 +1473,22 @@ namespace DebuggerTests
         Out,
         Resume
     }
+
+    public sealed class FactDependingOnTheBrowser : FactAttribute
+    {
+        public FactDependingOnTheBrowser() {
+            #if !RUN_IN_CHROME
+                Skip = "Ignore on Firefox";
+            #endif
+        }
+    }
+
+    public sealed class TheoryDependingOnTheBrowser : TheoryAttribute
+    {
+        public TheoryDependingOnTheBrowser() {
+            #if !RUN_IN_CHROME
+                Skip = "Ignore on Firefox";
+            #endif
+        }
+    }
 }

@@ -16,7 +16,7 @@ namespace DebuggerTests
     {
         public override async Task InitializeAsync() => await Task.CompletedTask;
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InvalidInitCommands()
         {
             var bad_cmd_name = "non-existant.command";

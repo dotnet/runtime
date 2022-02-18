@@ -17,7 +17,7 @@ namespace DebuggerTests
     public class MiscTests : DebuggerTestBase
     {
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public void CheckThatAllSourcesAreSent()
         {
             Assert.Contains("dotnet://debugger-test.dll/debugger-test.cs", scripts.Values);
@@ -25,7 +25,7 @@ namespace DebuggerTests
             Assert.Contains("dotnet://debugger-test.dll/dependency.cs", scripts.Values);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task ExceptionThrownInJS()
         {
             var eval_req = JObject.FromObject(new
@@ -38,7 +38,7 @@ namespace DebuggerTests
             Assert.Equal("Uncaught", eval_res.Error["exceptionDetails"]?["text"]?.Value<string>());
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task ExceptionThrownInJSOutOfBand()
         {
             await SetBreakpoint("/debugger-driver.html", 27, 2);
@@ -77,7 +77,7 @@ namespace DebuggerTests
                 }
             );
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InspectPrimitiveTypeLocalsAtBreakpointSite() =>
             await CheckInspectLocalsAtBreakpointSite(
                 "dotnet://debugger-test.dll/debugger-test.cs", 154, 8, "PrimitiveTypesTest",
@@ -90,7 +90,7 @@ namespace DebuggerTests
                 }
             );
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InspectLocalsTypesAtBreakpointSite() =>
             await CheckInspectLocalsAtBreakpointSite(
                 "dotnet://debugger-test.dll/debugger-test2.cs", 50, 8, "Types",
@@ -122,7 +122,7 @@ namespace DebuggerTests
                 }
             );
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InspectSimpleStringLocals() =>
             await CheckInspectLocalsAtBreakpointSite(
                 "Math", "TestSimpleStrings", 13, "TestSimpleStrings",
@@ -220,7 +220,7 @@ namespace DebuggerTests
                 }
             );
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task RuntimeGetPropertiesWithInvalidScopeIdTest()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 49, 8);
@@ -599,7 +599,7 @@ namespace DebuggerTests
                 }, "sst_props");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InspectLocals()
         {
             var wait_res = await RunUntil("locals_inner");
@@ -645,7 +645,7 @@ namespace DebuggerTests
 
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task MulticastDelegateTest() => await CheckInspectLocalsAtBreakpointSite(
             "MulticastDelegateTestClass", "Test", 5, "Test",
             "window.setTimeout(function() { invoke_static_method('[debugger-test] MulticastDelegateTestClass:run'); })",
@@ -699,7 +699,7 @@ namespace DebuggerTests
             });
 
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task PreviousFrameForAReflectedCall() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.GetPropertiesTests.CloneableStruct", "SimpleStaticMethod", 1, "SimpleStaticMethod",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.GetPropertiesTests.TestWithReflection:run'); })",
@@ -734,7 +734,7 @@ namespace DebuggerTests
                     ?.Where(f => f["functionName"]?.Value<string>() == function_name)
                     ?.FirstOrDefault();
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebugLazyLoadedAssemblyWithPdb()
         {
             Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
@@ -758,7 +758,7 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb()
         {
             Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
@@ -782,7 +782,7 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebugLazyLoadedAssemblyWithEmbeddedPdbALC()
         {
             int line = 9;
@@ -799,7 +799,7 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CannotDebugLazyLoadedAssemblyWithoutPdb()
         {
             int line = 9;
@@ -815,7 +815,7 @@ namespace DebuggerTests
             Assert.DoesNotContain(source_location, scripts.Values);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task GetSourceUsingSourceLink()
         {
             var bp = await SetBreakpointInMethod("debugger-test-with-source-link.dll", "DebuggerTests.ClassToBreak", "TestBreakpoint", 0);
@@ -835,7 +835,7 @@ namespace DebuggerTests
             Assert.True(source.IsOk, $"Failed to getScriptSource: {source}");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task GetSourceEmbeddedSource()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -855,7 +855,7 @@ namespace DebuggerTests
             Assert.False(source.Value["scriptSource"].Value<string>().Contains("// Unable to read document"));
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InspectTaskAtLocals() => await CheckInspectLocalsAtBreakpointSite(
             "InspectTask",
             "RunInspectTask",
@@ -875,7 +875,7 @@ namespace DebuggerTests
             });
 
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InspectLocalsWithIndexAndPositionWithDifferentValues() //https://github.com/xamarin/xamarin-android/issues/6161
         {
             await EvaluateAndCheck(
@@ -890,7 +890,7 @@ namespace DebuggerTests
             );
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task MallocUntilReallocate() //https://github.com/xamarin/xamarin-android/issues/6161
         {
             string eval_expr = "window.setTimeout(function() { malloc_to_reallocate_test (); }, 1)";
@@ -932,7 +932,7 @@ namespace DebuggerTests
             );
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InspectLocalsUsingClassFromLibraryUsingDebugTypeFull()
         {
             var expression = $"{{ invoke_static_method('[debugger-test] DebugTypeFull:CallToEvaluateLocal'); }}";

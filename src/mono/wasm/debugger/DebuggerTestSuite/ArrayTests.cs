@@ -551,7 +551,7 @@ namespace DebuggerTests
                 label: "this#0");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
@@ -573,7 +573,7 @@ namespace DebuggerTests
                await GetProperties($"dotnet:array:{id.Value}", expect_ok: false);
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InvalidAccessors() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",

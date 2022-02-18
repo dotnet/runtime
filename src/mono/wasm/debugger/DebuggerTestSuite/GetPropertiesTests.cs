@@ -335,7 +335,7 @@ namespace DebuggerTests
             //AssertEqual(expected_names.Length, filtered_props.Count(), $"expected number of properties");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task GetObjectValueWithInheritance()
         {
             var pause_location = await EvaluateAndCheck(

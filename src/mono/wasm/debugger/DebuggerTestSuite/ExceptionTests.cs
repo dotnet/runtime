@@ -14,7 +14,7 @@ namespace DebuggerTests
 
     public class ExceptionTests : DebuggerTestBase
     {
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task ExceptionTestAll()
         {
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
@@ -61,7 +61,7 @@ namespace DebuggerTests
             await CheckString(exception_members, "message", "not implemented uncaught");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task JSExceptionTestAll()
         {
             await SetPauseOnException("all");
@@ -98,7 +98,7 @@ namespace DebuggerTests
 
         // FIXME? BUG? We seem to get the stack trace for Runtime.exceptionThrown at `call_method`,
         // but JS shows the original error type, and original trace
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task ExceptionTestNone()
         {
             //Collect events
@@ -133,7 +133,7 @@ namespace DebuggerTests
             Assert.True(false, "Expected to get an ArgumentException from the uncaught user exception");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task JSExceptionTestNone()
         {
             await SetPauseOnException("none");
@@ -192,7 +192,7 @@ namespace DebuggerTests
             await CheckString(exception_members, "message", exception_message);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task ExceptionTestUncaughtWithReload()
         {
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";

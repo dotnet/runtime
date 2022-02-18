@@ -14,7 +14,7 @@ namespace DebuggerTests
 {
     public class HarnessTests : DebuggerTestBase
     {
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task TimedOutWaitingForInvalidBreakpoint()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 100, 0);
@@ -23,7 +23,7 @@ namespace DebuggerTests
             Assert.Contains("timed out", tce.Message);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task ExceptionThrown()
         {
             var ae = await Assert.ThrowsAsync<ArgumentException>(
@@ -31,11 +31,11 @@ namespace DebuggerTests
             Assert.Contains("non_existant_fn is not defined", ae.Message);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task BrowserCrash() => await Assert.ThrowsAsync<WebSocketException>(async () =>
             await SendCommandAndCheck(null, "Browser.crash", null, -1, -1, null));
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InspectorWaitForAfterMessageAlreadyReceived()
         {
             Result res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -53,7 +53,7 @@ namespace DebuggerTests
             await insp.WaitFor(Inspector.PAUSE);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InspectorWaitForMessageThatNeverArrives()
         {
             var tce = await Assert.ThrowsAsync<TaskCanceledException>(async () => await insp.WaitFor("Message.that.never.arrives"));

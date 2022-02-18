@@ -40,7 +40,7 @@ namespace DebuggerTests
                 await CheckValue(res.Value["result"], TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"), "t.Status");
              });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task AsyncLocalsInContinueWithInstanceUsingThisBlock() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithInstanceUsingThisAsync", 5, "<ContinueWithInstanceUsingThisAsync>b__6_0",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
@@ -62,7 +62,7 @@ namespace DebuggerTests
                 await CheckValue(res.Value["result"], TDateTime(new DateTime(2510, 1, 2, 3, 4, 5)), "this.Date");
              });
 
-         [Fact] // NestedContinueWith
+         [FactDependingOnTheBrowser] // NestedContinueWith
          public async Task AsyncLocalsInNestedContinueWithStaticBlock() => await CheckInspectLocalsAtBreakpointSite(
               "DebuggerTests.AsyncTests.ContinueWithTests", "NestedContinueWithStaticAsync", 5, "MoveNext",
               "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",

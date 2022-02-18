@@ -11,7 +11,7 @@ namespace DebuggerTests
 {
     public class SteppingTests : DebuggerTestBase
     {
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task TrivalStepping()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -41,7 +41,7 @@ namespace DebuggerTests
             );
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InspectLocalsDuringStepping()
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
@@ -256,7 +256,7 @@ namespace DebuggerTests
             );
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task InspectLocalsDuringSteppingIn()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 86, 8);
@@ -498,7 +498,7 @@ namespace DebuggerTests
             // FIXME: check ss_local.gs.List's members
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CheckUpdatedValueTypeFieldsOnResume()
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
@@ -544,7 +544,7 @@ namespace DebuggerTests
             }
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CheckUpdatedValueTypeLocalsOnResumeAsync()
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
@@ -568,7 +568,7 @@ namespace DebuggerTests
             await CheckDateTime(locals, "dt", dt);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CheckUpdatedVTArrayMembersOnResume()
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
@@ -605,7 +605,7 @@ namespace DebuggerTests
             }
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task SteppingIntoMscorlib()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 83, 8);
@@ -625,7 +625,7 @@ namespace DebuggerTests
             Assert.Matches("^dotnet://(mscorlib|System\\.Console)\\.dll/Console.cs", scripts[script_id]);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CreateGoodBreakpointAndHitAndRemoveAndDontHit()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -643,7 +643,7 @@ namespace DebuggerTests
             await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CreateGoodBreakpointAndHitAndRemoveTwice()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -660,7 +660,7 @@ namespace DebuggerTests
             await RemoveBreakpoint(bp.Value["breakpointId"]?.ToString());
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CreateGoodBreakpointAndHitAndRemoveAndDontHitAndCreateAgainAndHit()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -680,7 +680,7 @@ namespace DebuggerTests
             await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "IntAdd");
         }
 
-        // [Fact]
+        // [FactDependingOnTheBrowser]
         //https://github.com/dotnet/runtime/issues/42421
         public async Task BreakAfterAwaitThenStepOverTillBackToCaller()
         {
@@ -697,7 +697,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 15, 12, "MoveNext");
         }
 
-        // [Fact]
+        // [FactDependingOnTheBrowser]
         //[ActiveIssue("https://github.com/dotnet/runtime/issues/42421")]
         public async Task StepOutOfAsyncMethod()
         {
@@ -712,7 +712,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Out, source_file, 15, 4, "TestAsyncStepOut");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task ResumeOutOfAsyncMethodToAsyncCallerWithBreakpoint()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -727,7 +727,7 @@ namespace DebuggerTests
             await SendCommandAndCheck(null, "Debugger.resume", source_file, 16, 8, "MoveNext");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task StepOutOfNonAsyncMethod()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -741,7 +741,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Out, source_file, 29, 12, "SimpleMethod");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task BreakOnAwaitThenStepOverToNextAwaitCall()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -755,7 +755,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, source_file, 54, 12, "MoveNext");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task BreakOnAwaitThenStepOverToNextLine()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -770,7 +770,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, source_file, 47, 12, "MoveNext");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task BreakOnAwaitThenResumeToNextBreakpoint()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -786,7 +786,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Resume, source_file, 48, 8, "MoveNext");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task BreakOnAwaitThenResumeToNextBreakpointAfterSecondAwaitInSameMethod()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -802,7 +802,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Resume, source_file, 56, 12, "MoveNext");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task BreakOnMethodCalledFromHiddenLine()
         {
             await SetBreakpointInMethod("debugger-test.dll", "HiddenSequencePointTest", "StepOverHiddenSP2", 0);
@@ -820,7 +820,7 @@ namespace DebuggerTests
             CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 537, 8, scripts, top_frame["location"]);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task StepOverHiddenLinesShouldResumeAtNextAvailableLineInTheMethod()
         {
             string source_loc = "dotnet://debugger-test.dll/debugger-test.cs";
@@ -834,7 +834,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, source_loc, 542, 8, "StepOverHiddenSP");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         async Task StepOverHiddenLinesInMethodWithNoNextAvailableLineShouldResumeAtCallSite()
         {
             string source_loc = "dotnet://debugger-test.dll/debugger-test.cs";
@@ -848,7 +848,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, source_loc, 544, 4, "StepOverHiddenSP");
         }
 
-        // [Fact]
+        // [FactDependingOnTheBrowser]
         // Issue: https://github.com/dotnet/runtime/issues/42704
         async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLine()
         {
@@ -859,7 +859,7 @@ namespace DebuggerTests
                 "StepOverHiddenSP2");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task BreakpointOnHiddenLineOfMethodWithNoNextVisibleLineShouldNotPause()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 554, 12);
@@ -872,7 +872,7 @@ namespace DebuggerTests
             Assert.True(t != pause_task, "Debugger unexpectedly paused");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task SimpleStep_RegressionTest_49141()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 674, 0);
@@ -886,7 +886,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 678, 4, "Bart");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task StepAndEvaluateExpression()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 682, 0);
@@ -903,7 +903,7 @@ namespace DebuggerTests
             await EvaluateOnCallFrameAndCheck(id, ("this.Bar", TString("Same of something")));
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task StepOverWithMoreThanOneCommandInSameLine()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 693, 0);
@@ -920,7 +920,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 702, 4, "OtherBar");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task StepOverWithMoreThanOneCommandInSameLineAsync()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 710, 0);
@@ -938,7 +938,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 720, 4, "MoveNext");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CheckResetFrameNumberForEachStep()
         {
             var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "SteppingInto", "MethodToStep", 1);
@@ -958,7 +958,7 @@ namespace DebuggerTests
             Assert.Equal(pause_location["callFrames"][0]["callFrameId"], "dotnet:scope:1");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebuggerHiddenIgnoreStepInto()
         {
             var pause_location = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerHidden", 1);

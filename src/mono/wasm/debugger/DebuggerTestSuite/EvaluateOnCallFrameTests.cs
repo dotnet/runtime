@@ -126,7 +126,7 @@ namespace DebuggerTests
                    ("  local_dt.Date", TDateTime(dt.Date)));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateStaticLocalsWithDeepMemberAccess() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
@@ -143,7 +143,7 @@ namespace DebuggerTests
                    ("f_s.dateTime.Date", TDateTime(dt.Date)));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateLocalsAsync() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Point", "AsyncInstanceMethod", 1, "MoveNext",
             "window.setTimeout(function() { invoke_static_method_async ('[debugger-test] DebuggerTests.ArrayTestsClass:EntryPointForStructMethod', true); })",
@@ -251,7 +251,7 @@ namespace DebuggerTests
                }
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateSimpleExpressions() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
@@ -408,7 +408,7 @@ namespace DebuggerTests
                }
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task JSEvaluate()
         {
             var bp_loc = "/other.js";
@@ -430,7 +430,7 @@ namespace DebuggerTests
             await EvaluateOnCallFrame(id, "obj.foo", expect_ok: true);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task NegativeTestsInInstanceMethod() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
@@ -457,7 +457,7 @@ namespace DebuggerTests
                   ("NullIfAIsNotZero.foo", "ReferenceError"));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task NegativeTestsInStaticMethod() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
@@ -471,7 +471,7 @@ namespace DebuggerTests
                    ("this.NullIfAIsNotZero.foo", "ReferenceError"));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluatePropertyThatThrows()
         => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateTestsClassWithProperties", "InstanceMethod", /*line_offset*/1, "InstanceMethod",
@@ -493,7 +493,7 @@ namespace DebuggerTests
         }
 
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateSimpleMethodCallsError() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -517,7 +517,7 @@ namespace DebuggerTests
                 AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateSimpleMethodCallsWithoutParms() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -534,7 +534,7 @@ namespace DebuggerTests
            });
 
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateSimpleMethodCallsWithConstParms() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -558,7 +558,7 @@ namespace DebuggerTests
                     ("this.CallMethodWithChar('a')", TString("str_const_a")));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateSimpleMethodCallsWithVariableParms() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -576,7 +576,7 @@ namespace DebuggerTests
                     ("this.CallMethodWithObj(this.objToTest)", TNumber(10)));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateExpressionsWithElementAccessByConstant() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
@@ -591,7 +591,7 @@ namespace DebuggerTests
                    ("f.textArray[0]", TString("1")));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateExpressionsWithElementAccessByLocalVariable() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
@@ -607,7 +607,7 @@ namespace DebuggerTests
                 
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateExpressionsWithElementAccessByMemberVariables() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
@@ -625,7 +625,7 @@ namespace DebuggerTests
                 
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateExpressionsWithElementAccessNested() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
@@ -642,7 +642,7 @@ namespace DebuggerTests
                 
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateExpressionsWithElementAccessMultidimentional() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
@@ -668,7 +668,7 @@ namespace DebuggerTests
                 
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateSimpleMethodCallsCheckChangedValue() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -688,7 +688,7 @@ namespace DebuggerTests
                 CheckNumber(props, "a", 11);
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateStaticClass() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -728,7 +728,7 @@ namespace DebuggerTests
                     ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateNonStaticClassWithStaticFields() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass", "EvaluateAsyncMethods", 3, "EvaluateAsyncMethods",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateAsyncMethods'); })",
@@ -747,7 +747,7 @@ namespace DebuggerTests
                     ("EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateStaticClassesNested() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass", "EvaluateMethods", 3, "EvaluateMethods",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -766,7 +766,7 @@ namespace DebuggerTests
                     ("EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateStaticClassesNestedWithNoNamespace() => await CheckInspectLocalsAtBreakpointSite(
             "NoNamespaceClass", "EvaluateMethods", 1, "EvaluateMethods",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] NoNamespaceClass:EvaluateMethods'); })",
@@ -782,7 +782,7 @@ namespace DebuggerTests
                     ("NoNamespaceClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 30")));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateStaticClassesFromDifferentNamespaceInDifferentFrames() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTestsV2.EvaluateStaticClass", "Run", 1, "Run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -804,7 +804,7 @@ namespace DebuggerTests
                     ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateStaticClassInvalidField() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -821,7 +821,7 @@ namespace DebuggerTests
                 AssertEqual("Failed to resolve member access for DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
            });
 
-         [Fact]
+         [FactDependingOnTheBrowser]
          public async Task AsyncLocalsInContinueWithBlock() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithStaticAsync", 4, "<ContinueWithStaticAsync>b__3_0",
             "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
@@ -841,7 +841,7 @@ namespace DebuggerTests
                 );
             });
         
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateConstantValueUsingRuntimeEvaluate() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
@@ -975,7 +975,7 @@ namespace DebuggerTests
                 Assert.Equal(mergedRefItems, testRootHiddenProps);
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateStaticAttributeInAssemblyNotRelatedButLoaded() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
@@ -985,7 +985,7 @@ namespace DebuggerTests
                    ("ClassToBreak.valueToCheck", TNumber(10)));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateLocalObjectFromAssemblyNotRelatedButLoaded()
          => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateTestsClass", "EvaluateLocalsFromAnotherAssembly", 5, "EvaluateLocalsFromAnotherAssembly",
@@ -996,7 +996,7 @@ namespace DebuggerTests
                    ("a.valueToCheck", TNumber(20)));
            });
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task EvaluateProtectionLevels() =>  await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateProtectionLevels", "Evaluate", 2, "Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateProtectionLevels:Evaluate'); })",
@@ -1017,7 +1017,7 @@ namespace DebuggerTests
                Assert.Equal(priv[0]["value"]["value"], "private");
            });
         
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task StructureGetters() =>  await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.StructureGetters", "Evaluate", 2, "Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.StructureGetters:Evaluate'); })",

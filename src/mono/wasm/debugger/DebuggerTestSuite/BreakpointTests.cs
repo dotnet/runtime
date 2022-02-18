@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
@@ -19,7 +20,7 @@ namespace DebuggerTests
     DebuggerTestFirefox
 #endif    
     {
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CreateGoodBreakpoint()
         {
             var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -35,7 +36,7 @@ namespace DebuggerTests
             Assert.Equal(8, (int)loc["columnNumber"]);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CreateJSBreakpoint()
         {
             // Test that js breakpoints get set correctly
@@ -64,7 +65,7 @@ namespace DebuggerTests
             Assert.Equal(53, (int)loc2["columnNumber"]);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CreateJS0Breakpoint()
         {
             // 13 24
@@ -92,7 +93,7 @@ namespace DebuggerTests
             Assert.Equal(53, (int)loc2["columnNumber"]);
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(0)]
         [InlineData(50)]
         public async Task CheckMultipleBreakpointsOnSameLine(int col)
@@ -114,7 +115,7 @@ namespace DebuggerTests
             CheckLocation("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 55, scripts, loc2);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CreateBadBreakpoint()
         {
             var bp1_req = JObject.FromObject(new
@@ -132,7 +133,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task CreateGoodBreakpointAndHit2()
+        public async Task CreateGoodBreakpointAndHit()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
 
@@ -157,6 +158,7 @@ namespace DebuggerTests
                     Assert.Equal("IntAdd", scope["name"]);
 
                     Assert.Equal("object", scope["object"]["type"]);
+
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
                     return Task.CompletedTask;
@@ -194,7 +196,7 @@ namespace DebuggerTests
             { "invoke_add()", "IntAdd", "null", false },
         };
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [MemberData(nameof(FalseConditions))]
         [MemberData(nameof(TrueConditions))]
         [MemberData(nameof(InvalidConditions))]
@@ -211,7 +213,7 @@ namespace DebuggerTests
                 method_to_stop);
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("c == 15", 78, 3, 78, 11)]
         [InlineData("c == 17", 78, 3, 79, 3)]
         [InlineData("g == 17", 78, 3, 79, 3)]
@@ -231,7 +233,7 @@ namespace DebuggerTests
                 "debugger-driver.html", line_expected, column_expected, "conditional_breakpoint_test");
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("invoke_add_with_parms(10, 20)", "invoke_add_with_parms(10, 20)",  "IntAdd", "c == 30", true, true)]
         [InlineData("invoke_add_with_parms(5, 10)", "invoke_add_with_parms(10, 20)",  "IntAdd", "c == 30", false, true)]
         [InlineData("invoke_add_with_parms(10, 20)", "invoke_add_with_parms(5, 10)",  "IntAdd", "c == 30", true, false)]
@@ -254,7 +256,7 @@ namespace DebuggerTests
                 method_to_stop);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task BreakOnDebuggerBreak()
         {
             await EvaluateAndCheck(
@@ -297,7 +299,7 @@ namespace DebuggerTests
             );
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task BreakpointInAssemblyUsingTypeFromAnotherAssembly_BothDynamicallyLoaded()
         {
             int line = 7;
@@ -326,7 +328,7 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebugHotReloadMethodChangedUserBreak()
         {
             var pause_location = await LoadAssemblyAndTestHotReload(
@@ -344,7 +346,7 @@ namespace DebuggerTests
             await CheckBool(locals, "c", true);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebugHotReloadMethodUnchanged()
         {
             var pause_location = await LoadAssemblyAndTestHotReload(
@@ -362,7 +364,7 @@ namespace DebuggerTests
             CheckNumber(locals, "a", 10);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebugHotReloadMethodAddBreakpoint()
         {
             int line = 30;
@@ -410,7 +412,7 @@ namespace DebuggerTests
         }
 
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebugHotReloadMethodEmpty()
         {
             int line = 38;
@@ -467,7 +469,7 @@ namespace DebuggerTests
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task ConditionalBreakpointInALoop()
         {
             var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i == 3");
@@ -492,7 +494,7 @@ namespace DebuggerTests
                 "LoopToBreak");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task ConditionalBreakpointInALoopStopMoreThanOnce()
         {
             var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i % 3 == 0");
@@ -550,7 +552,7 @@ namespace DebuggerTests
                 "LoopToBreak");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task ConditionalBreakpointNoStopInALoop()
         {
             var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i == \"10\"");
@@ -564,7 +566,7 @@ namespace DebuggerTests
             );
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task ConditionalBreakpointNotBooleanInALoop()
         {
             var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i + 4");
@@ -604,7 +606,7 @@ namespace DebuggerTests
                 });
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CreateGoodBreakpointAndHitGoToNonWasmPageComeBackAndHitAgain()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -674,7 +676,7 @@ namespace DebuggerTests
         }
 
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("RunDebuggerHidden", "HiddenMethod")]
         [InlineData("RunStepThroughWithHidden", "StepThroughWithHiddenBp")] // debuggerHidden shadows the effect of stepThrough
         [InlineData("RunNonUserCodeWithHidden", "NonUserCodeWithHiddenBp")] // and nonUserCode
@@ -692,7 +694,7 @@ namespace DebuggerTests
             );
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("RunDebuggerHidden")]
         [InlineData("RunStepThroughWithHidden")] // debuggerHidden shadows the effect of stepThrough
         [InlineData("RunNonUserCodeWithHidden")] // and nonUserCode
@@ -719,7 +721,7 @@ namespace DebuggerTests
                 evalFunName);
         }
     
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebugHotReloadMethodChangedUserBreakUsingSDB()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -751,7 +753,7 @@ namespace DebuggerTests
             await CheckBool(locals, "c", true);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebugHotReloadMethodUnchangedUsingSDB()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -780,7 +782,7 @@ namespace DebuggerTests
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, scripts, top_frame["location"]);
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebugHotReloadMethodAddBreakpointUsingSDB()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -844,7 +846,7 @@ namespace DebuggerTests
         }
 
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebugHotReloadMethodEmptyUsingSDB()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -902,7 +904,7 @@ namespace DebuggerTests
             //pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 8, "StaticMethod4");
         }
         
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false, "RunStepThrough", 847, 8)]
         [InlineData(true, "RunStepThrough", 847, 8)]
         [InlineData(false, "RunNonUserCode", 852, 4, "NonUserCodeBp")]
@@ -925,7 +927,7 @@ namespace DebuggerTests
             await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line, col, funcName);
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false, "RunStepThrough", "StepThrougBp", "", 846, 8)]
         [InlineData(true, "RunStepThrough", "StepThrougBp", "RunStepThrough", 847, 8)]
         [InlineData(false, "RunNonUserCode", "NonUserCodeBp", "NonUserCodeBp", 852, 4)]
@@ -959,7 +961,7 @@ namespace DebuggerTests
             await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line, col, funName);
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false, "RunStepThrough", "StepThrougBp")]
         [InlineData(true, "RunStepThrough", "StepThrougBp")]
         [InlineData(true, "RunNonUserCode", "NonUserCodeBp")]
@@ -989,7 +991,7 @@ namespace DebuggerTests
             await SendCommandAndCheck(null, "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", line2, 8, evalFunName);
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false, "Debugger.stepInto", "RunStepThrough", "StepThrougUserBp", 841, 8, "RunStepThrough", 848, 4)]
         [InlineData(true, "Debugger.stepInto", "RunStepThrough", "RunStepThrough", -1, 8, "RunStepThrough", -1, 4)]
         [InlineData(false, "Debugger.resume", "RunStepThrough", "StepThrougUserBp", 841, 8, "RunStepThrough", 848, 4)]
@@ -1028,7 +1030,7 @@ namespace DebuggerTests
             await SendCommandAndCheck(null, debuggingFunction, "dotnet://debugger-test.dll/debugger-test.cs", line2, col2, functionNameCheck2);
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("Debugger.stepInto", 1, 2, false)]
         [InlineData("Debugger.stepInto", 1, 2, true)]
         [InlineData("Debugger.resume", 1, 2, true)]
@@ -1063,7 +1065,7 @@ namespace DebuggerTests
             await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", line, col, "RunNoBoundary");
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task CreateGoodBreakpointAndHitGoToWasmPageWithoutAssetsComeBackAndHitAgain()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -1133,7 +1135,7 @@ namespace DebuggerTests
             );
         }
 
-        [Fact]
+        [FactDependingOnTheBrowser]
         public async Task DebugHotReloadMethod_CheckBreakpointLineUpdated_ByVS_Simulated()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
