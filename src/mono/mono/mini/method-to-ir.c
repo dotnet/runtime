@@ -3109,8 +3109,8 @@ handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int co
 	}
 }
 
-static MonoInst*
-handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_used)
+MonoInst*
+mini_handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst *val, int context_used)
 {
 	MonoInst *add;
 	int obj_reg;
@@ -3119,7 +3119,7 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 	int eclass_reg = alloc_dreg (cfg ,STACK_PTR);
 	int rank_reg = alloc_dreg (cfg ,STACK_I4);
 
-	obj_reg = sp [0]->dreg;
+	obj_reg = val->dreg;
 	MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, rank));
 
@@ -9194,7 +9194,7 @@ calli_end:
 			} else if (mono_class_is_nullable (klass)) {
 				res = handle_unbox_nullable (cfg, *sp, klass, context_used);
 			} else {
-				addr = handle_unbox (cfg, klass, sp, context_used);
+				addr = mini_handle_unbox (cfg, klass, *sp, context_used);
 				/* LDOBJ */
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), addr->dreg, 0);
 				res = ins;
@@ -9548,7 +9548,7 @@ calli_end:
 
 				*sp++= ins;
 			} else {
-				ins = handle_unbox (cfg, klass, sp, context_used);
+				ins = mini_handle_unbox (cfg, klass, *sp, context_used);
 				*sp++ = ins;
 			}
 			inline_costs += 2;

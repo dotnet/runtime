@@ -571,6 +571,28 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [1]->dreg, args [0]->dreg);
 		ins->type = STACK_PTR;
 		return ins;
+	} else if (!strcmp (cmethod->name, "Unbox")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+
+		t = ctx->method_inst->type_argv [0];
+		t = mini_get_underlying_type (t);
+
+		MonoClass *klass = mono_class_from_mono_type_internal (t);
+		int context_used = mini_class_check_context_used (cfg, klass);
+		return mini_handle_unbox (cfg, klass, args [0], context_used);
+	} else if (!strcmp (cmethod->name, "Copy")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+
+		t = ctx->method_inst->type_argv [0];
+		t = mini_get_underlying_type (t);
+
+		MonoClass *klass = mono_class_from_mono_type_internal (t);
+		mini_emit_memory_copy (cfg, args [0], args [1], klass, FALSE, 0);
+		return cfg->cbb->last_ins;
 	} else if (!strcmp (cmethod->name, "CopyBlock")) {
 		g_assert (fsig->param_count == 3);
 
