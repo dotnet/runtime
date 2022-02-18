@@ -48,6 +48,7 @@ jobs:
     pgoRunType: ${{ parameters.pgoRunType }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
+    mauiVersion: ${{ paramters.mauiVersion }}
     # Test job depends on the corresponding build job
     dependsOn:
     - ${{ if not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono')) }}:
