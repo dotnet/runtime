@@ -131,7 +131,7 @@ steps:
       chmod -R a+r .
       ../dotnet restore
       ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release -r android-arm64 --no-restore
-      mv ./bin/Release/net6.0-android/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
+      mv ./bin/Release/net6.0-android/android-arm64/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
