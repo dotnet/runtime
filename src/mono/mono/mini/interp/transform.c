@@ -2358,11 +2358,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			g_assert (ctx->method_inst);
 			g_assert (ctx->method_inst->type_argc == 1);
 
-			MonoClass *k = mono_defaults.boolean_class;
 			interp_add_ins (td, MINT_CGT_UN_P);
 			td->sp -= 2;
 			interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
-			push_type (td, stack_type [mint_type (m_class_get_byval_arg (k))], k);
+			push_simple_type (td, STACK_TYPE_I4);
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			td->ip += 5;
 			return TRUE;

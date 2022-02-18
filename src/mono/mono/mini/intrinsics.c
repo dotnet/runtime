@@ -597,30 +597,22 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (fsig->param_count == 3);
 
 		mini_emit_memory_copy_bytes (cfg, args [0], args [1], args [2], 0);
- 		MONO_INST_NEW (cfg, ins, OP_NOP);
-		MONO_ADD_INS (cfg->cbb, ins);
-		return ins;
+		return cfg->cbb->last_ins;
 	} else if (!strcmp (cmethod->name, "CopyBlockUnaligned")) {
 		g_assert (fsig->param_count == 3);
 
 		mini_emit_memory_copy_bytes (cfg, args [0], args [1], args [2], MONO_INST_UNALIGNED);
- 		MONO_INST_NEW (cfg, ins, OP_NOP);
-		MONO_ADD_INS (cfg->cbb, ins);
-		return ins;
+		return cfg->cbb->last_ins;
 	} else if (!strcmp (cmethod->name, "InitBlock")) {
 		g_assert (fsig->param_count == 3);
 
 		mini_emit_memory_init_bytes (cfg, args [0], args [1], args [2], 0);
- 		MONO_INST_NEW (cfg, ins, OP_NOP);
-		MONO_ADD_INS (cfg->cbb, ins);
-		return ins;
+		return cfg->cbb->last_ins;
 	} else if (!strcmp (cmethod->name, "InitBlockUnaligned")) {
 		g_assert (fsig->param_count == 3);
 
 		mini_emit_memory_init_bytes (cfg, args [0], args [1], args [2], MONO_INST_UNALIGNED);
- 		MONO_INST_NEW (cfg, ins, OP_NOP);
-		MONO_ADD_INS (cfg->cbb, ins);
-		return ins;
+		return cfg->cbb->last_ins;
 	}
 	else if (!strcmp (cmethod->name, "SkipInit")) {
  		MONO_INST_NEW (cfg, ins, OP_NOP);
@@ -632,22 +624,10 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
 
-		if (fsig->params [1]->type == MONO_TYPE_I || fsig->params [1]->type == MONO_TYPE_U) {
-			int dreg = alloc_preg (cfg);
-			EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [0]->dreg, args [1]->dreg);
-			ins->type = STACK_PTR;
-			return ins;
-		} else if (fsig->params [1]->type == MONO_TYPE_U8) {
-			int sreg = args [1]->dreg;
-			if (SIZEOF_REGISTER == 4) {
-				sreg = alloc_ireg (cfg);
-				EMIT_NEW_UNALU (cfg, ins, OP_LCONV_TO_U4, sreg, args [1]->dreg);
-			}
-			int dreg = alloc_preg (cfg);
-			EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [0]->dreg, sreg);
-			ins->type = STACK_PTR;
-			return ins;
-		}
+		int dreg = alloc_preg (cfg);
+		EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [0]->dreg, args [1]->dreg);
+		ins->type = STACK_PTR;
+		return ins;
 	} else if (!strcmp (cmethod->name, "IsNullRef")) {
 		g_assert (fsig->param_count == 1);
 
