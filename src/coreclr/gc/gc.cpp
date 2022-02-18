@@ -2444,8 +2444,6 @@ heap_segment* gc_heap::reserved_free_regions_sip[max_generation];
 
 int         gc_heap::num_sip_regions = 0;
 
-size_t      gc_heap::committed_in_free = 0;
-
 size_t      gc_heap::end_gen0_region_space = 0;
 
 size_t      gc_heap::gen0_pinned_free_space = 0;
@@ -5918,6 +5916,14 @@ extern "C" uint64_t __rdtsc();
 #else // _MSC_VER
     extern "C" ptrdiff_t get_cycle_count(void);
 #endif // _MSC_VER
+#elif defined(TARGET_LOONGARCH64)
+    static ptrdiff_t get_cycle_count()
+    {
+        ////FIXME: TODO for LOONGARCH64:
+        //ptrdiff_t  cycle;
+        __asm__ volatile ("break \n");
+        return 0;
+    }
 #else
     static ptrdiff_t get_cycle_count()
     {
@@ -11139,9 +11145,6 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
 {
     heap_segment* region = 0;
 
-    // TODO: the update to committed_in_free is incorrect - we'd need synchorization 'cause a thread
-    // could be getting a small and another one could be getting a large region at the same time.
-    // This is only used for recording.
     if (gen_number <= max_generation)
     {
         assert (size == 0);
@@ -11543,6 +11546,8 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
     if (use_large_pages_p)
         return;
     uint8_t*  page_start = align_on_page (heap_segment_allocated(seg));
+    assert (heap_segment_committed (seg) >= page_start);
+
     size_t size = heap_segment_committed (seg) - page_start;
     extra_space = align_on_page (extra_space);
     if (size >= max ((extra_space + 2*OS_PAGE_SIZE), MIN_DECOMMIT_SIZE))
@@ -11563,10 +11568,10 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
 #endif
     assert (!use_large_pages_p);
     uint8_t* page_start = align_on_page (new_committed);
-    size_t size = heap_segment_committed (seg) - page_start;
+    ptrdiff_t size = heap_segment_committed (seg) - page_start;
     if (size > 0)
     {
-        bool decommit_succeeded_p = virtual_decommit (page_start, size, heap_segment_oh (seg), heap_number);
+        bool decommit_succeeded_p = virtual_decommit (page_start, (size_t)size, heap_segment_oh (seg), heap_number);
         if (decommit_succeeded_p)
         {
             dprintf (3, ("Decommitting heap segment [%Ix, %Ix[(%d)",
@@ -13564,7 +13569,6 @@ gc_heap::init_gc_heap (int  h_number)
     sip_seg_maxgen_interval = 3;
     num_condemned_regions = 0;
 #endif //STRESS_REGIONS
-    committed_in_free = 0;
     end_gen0_region_space = 0;
     gen0_pinned_free_space = 0;
     gen0_large_chunk_found = false;
@@ -24370,8 +24374,17 @@ size_t gc_heap::committed_size()
     }
 
 #ifdef USE_REGIONS
+    size_t committed_in_free = 0;
+
+    for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
+    {
+        committed_in_free += free_regions[kind].get_size_committed_in_free();
+    }
+
+    dprintf (3, ("h%d committed in free %Id", heap_number, committed_in_free));
+
     total_committed += committed_in_free;
-#endif //USE_REGIO
+#endif //USE_REGIONS
 
     return total_committed;
 }
@@ -36101,6 +36114,8 @@ gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
     if (child_object_gen < current_gen)
     {
         cg_pointers_found++;
+        dprintf (4, ("cg pointer %Ix found, %Id so far",
+                     (size_t)*poo, cg_pointers_found ));
     }
 #else //USE_REGIONS
     assert (condemned_gen == -1);
@@ -36426,11 +36441,16 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
         {
             if (foundp && (cg_pointers_found == 0))
             {
+#ifndef USE_REGIONS
+                // in the segment case, need to recompute end_card so we don't clear cards
+                // for the next generation
+                end_card = card_of (end);
+#endif
                 dprintf(3,(" Clearing cards [%Ix, %Ix[ ", (size_t)card_address(card),
-                           (size_t)end));
-                clear_cards (card, card_of (end));
-                n_card_set -= (card_of (end) - card);
-                total_cards_cleared += (card_of (end) - card);
+                            (size_t)card_address(end_card)));
+                clear_cards (card, end_card);
+                n_card_set -= (end_card - card);
+                total_cards_cleared += (end_card - card);
             }
             n_eph += cg_pointers_found;
             cg_pointers_found = 0;
@@ -43566,7 +43586,11 @@ Object * GCHeap::NextObj (Object * object)
 #else //MULTIPLE_HEAPS
     gc_heap* hp = 0;
 #endif //MULTIPLE_HEAPS
+#ifdef USE_REGIONS
+    unsigned int g = heap_segment_gen_num (hs);
+#else
     unsigned int g = hp->object_gennum ((uint8_t*)object);
+#endif
     if ((g == 0) && hp->settings.demotion)
         return NULL;//could be racing with another core allocating.
     int align_const = get_alignment_constant (!large_object_p);

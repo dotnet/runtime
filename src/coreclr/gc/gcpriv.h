@@ -1175,6 +1175,7 @@ public:
     heap_segment* unlink_region_front();
     heap_segment* unlink_smallest_region (size_t size);
     size_t get_num_free_regions();
+    size_t get_size_committed_in_free() { return size_committed_in_free_regions; }
     size_t get_size_free_regions() { return size_free_regions; }
     heap_segment* get_first_free_region() { return head_free_region; }
     static void unlink_region (heap_segment* region);
@@ -3593,9 +3594,6 @@ public:
 
     PER_HEAP
     int num_sip_regions;
-
-    PER_HEAP
-    size_t committed_in_free;
 
     PER_HEAP
     // After plan we calculate this as the planned end gen0 space;

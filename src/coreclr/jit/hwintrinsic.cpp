@@ -285,7 +285,26 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
     bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
 
-    if ((strcmp(methodName, "get_IsSupported") == 0) || (strcmp(methodName, "get_IsHardwareAccelerated") == 0))
+    bool isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
+#ifdef TARGET_XARCH
+    if (isHardwareAcceleratedProp)
+    {
+        // Special case: Some of Vector128/256 APIs are hardware accelerated with Sse1 and Avx1,
+        // but we want IsHardwareAccelerated to return true only when all of them are (there are
+        // still can be cases where e.g. Sse41 might give an additional boost for Vector128, but it's
+        // not important enough to bump the minimal Sse version here)
+        if (strcmp(className, "Vector128") == 0)
+        {
+            isa = InstructionSet_SSE2;
+        }
+        else if (strcmp(className, "Vector256") == 0)
+        {
+            isa = InstructionSet_AVX2;
+        }
+    }
+#endif
+
+    if ((strcmp(methodName, "get_IsSupported") == 0) || isHardwareAcceleratedProp)
     {
         return isIsaSupported ? (comp->compExactlyDependsOn(isa) ? NI_IsSupported_True : NI_IsSupported_Dynamic)
                               : NI_IsSupported_False;
@@ -751,14 +770,23 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         unsigned int sizeBytes;
         simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
-        retType         = getSIMDTypeForSize(sizeBytes);
-        assert(sizeBytes != 0);
 
-        // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
-        // rather than deferring the decision after getting the simdBaseJitType of arg.
-        if (!isSupportedBaseType(intrinsic, simdBaseJitType))
+        if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
-            return nullptr;
+            assert(sizeBytes == 0);
+        }
+        else
+        {
+            assert(sizeBytes != 0);
+
+            // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
+            // rather than deferring the decision after getting the simdBaseJitType of arg.
+            if (!isSupportedBaseType(intrinsic, simdBaseJitType))
+            {
+                return nullptr;
+            }
+
+            retType = getSIMDTypeForSize(sizeBytes);
         }
     }
 
@@ -1169,7 +1197,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             // This operation contains an implicit indirection
-            //   it could point into the gloabal heap or
+            //   it could point into the global heap or
             //   it could throw a null reference exception.
             //
             retNode->gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);

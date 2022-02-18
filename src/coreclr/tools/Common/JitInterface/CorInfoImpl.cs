@@ -1118,6 +1118,15 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             }
 
+            // Internal calls typically turn into fcalls that do not always
+            // probe for GC. Be conservative here and always let JIT know that
+            // this method may not do GC checks so the JIT might need to make
+            // callers fully interruptible.
+            if (method.IsInternalCall)
+            {
+                result |= CorInfoFlag.CORINFO_FLG_NOGCCHECK;
+            }
+
             return (uint)result;
         }
 
@@ -1159,7 +1168,7 @@ namespace Internal.JitInterface
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
-        private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions)
+        private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);
             MethodDesc calleeMethod = HandleToObject(calleeHnd);

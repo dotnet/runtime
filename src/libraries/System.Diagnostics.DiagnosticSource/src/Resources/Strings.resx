@@ -144,9 +144,6 @@
   <data name="SetFormatOnStartedActivity" xml:space="preserve">
     <value>"Can not change format for an activity that was already started"</value>
   </data>
-  <data name="SetLinkInvalid" xml:space="preserve">
-    <value>"Can not add link to activity after it has been started"</value>
-  </data>
   <data name="SetParentIdOnActivityWithParent" xml:space="preserve">
     <value>"Can not set ParentId on activity which has parent"</value>
   </data>

@@ -317,7 +317,7 @@ namespace System.Numerics
             { // Check for hex number
                 if ((style & ~NumberStyles.HexNumber) != 0)
                 {
-                    e = new ArgumentException(SR.Argument_InvalidHexStyle);
+                    e = new ArgumentException(SR.Argument_InvalidHexStyle, nameof(style));
                     return false;
                 }
             }
@@ -360,13 +360,8 @@ namespace System.Numerics
             }
         }
 
-        internal static BigInteger ParseBigInteger(string value, NumberStyles style, NumberFormatInfo info)
+        internal static BigInteger ParseBigInteger(string value!!, NumberStyles style, NumberFormatInfo info)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             return ParseBigInteger(value.AsSpan(), style, info);
         }
 

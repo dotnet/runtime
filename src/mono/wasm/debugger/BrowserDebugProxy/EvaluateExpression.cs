@@ -390,17 +390,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
-            try {
+            try
+            {
                 var newScript = script.ContinueWith(
                     string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
 
                 var state = await newScript.RunAsync(cancellationToken: token);
-
                 return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
             }
-            catch (Exception)
+            catch (CompilationErrorException cee)
             {
-                throw new ReturnAsErrorException($"Cannot evaluate '{expression}'.", "CompilationError");
+                throw new ReturnAsErrorException($"Cannot evaluate '{expression}': {cee.Message}", "CompilationError");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Internal Error: Unable to run {expression}, error: {ex.Message}.", ex);
             }
         }
 
@@ -429,22 +433,38 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class ReturnAsErrorException : Exception
     {
-        public Result Error { get; }
+        private Result _error;
+        public Result Error
+        {
+            get
+            {
+                _error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
+                return _error;
+            }
+            set { }
+        }
         public ReturnAsErrorException(JObject error)
             => Error = Result.Err(error);
 
         public ReturnAsErrorException(string message, string className)
         {
-            Error = Result.Err(JObject.FromObject(new
+            var result = new
             {
-                result = new
+                type = "object",
+                subtype = "error",
+                description = message,
+                className
+            };
+            _error = Result.UserVisibleErr(JObject.FromObject(
+                new
                 {
-                    type = "object",
-                    subtype = "error",
-                    description = message,
-                    className
-                }
-            }));
+                    result = result,
+                    exceptionDetails = new
+                    {
+                        exception = result,
+                        stackTrace = StackTrace
+                    }
+                }));
         }
     }
 }

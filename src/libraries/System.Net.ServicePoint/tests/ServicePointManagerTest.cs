@@ -284,6 +284,7 @@ namespace System.Net.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36217", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64674", typeof(PlatformDetection), nameof(PlatformDetection.IsArmv6Process))]
         public static void FindServicePoint_Collectible()
         {
             RemoteExecutor.Invoke(() =>

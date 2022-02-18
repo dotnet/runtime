@@ -500,12 +500,8 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         internal XElement element;
         internal XName? name;
 
-        public XDeferredAxis(Func<XElement, XName?, IEnumerable<T>> func, XElement element, XName? name)
+        public XDeferredAxis(Func<XElement, XName?, IEnumerable<T>> func!!, XElement element!!, XName? name)
         {
-            if (func == null)
-                throw new ArgumentNullException(nameof(func));
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
             _func = func;
             this.element = element;
             this.name = name;
@@ -546,12 +542,8 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         internal XElement element;
         internal XName? name;
 
-        public XDeferredSingleton(Func<XElement, XName, T?> func, XElement element, XName? name)
+        public XDeferredSingleton(Func<XElement, XName, T?> func!!, XElement element!!, XName? name)
         {
-            if (func == null)
-                throw new ArgumentNullException(nameof(func));
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
             _func = func;
             this.element = element;
             this.name = name;

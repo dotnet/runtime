@@ -5,10 +5,7 @@ let node_url: any | undefined = undefined;
 
 export async function fetch_like(url: string): Promise<Response> {
     try {
-        if (typeof (globalThis.fetch) === "function") {
-            return globalThis.fetch(url, { credentials: "same-origin" });
-        }
-        else if (ENVIRONMENT_IS_NODE) {
+        if (ENVIRONMENT_IS_NODE) {
             if (!node_fs) {
                 const node_require = await requirePromise;
                 node_url = node_require("url");
@@ -25,6 +22,9 @@ export async function fetch_like(url: string): Promise<Response> {
                 arrayBuffer: () => arrayBuffer,
                 json: () => JSON.parse(arrayBuffer)
             };
+        }
+        else if (typeof (globalThis.fetch) === "function") {
+            return globalThis.fetch(url, { credentials: "same-origin" });
         }
         else if (typeof (read) === "function") {
             // note that it can't open files with unicode names, like Straße.xml

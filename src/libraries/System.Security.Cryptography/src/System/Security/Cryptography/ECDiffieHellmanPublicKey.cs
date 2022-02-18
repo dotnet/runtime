@@ -15,13 +15,8 @@ namespace System.Security.Cryptography
             _keyBlob = Array.Empty<byte>();
         }
 
-        protected ECDiffieHellmanPublicKey(byte[] keyBlob)
+        protected ECDiffieHellmanPublicKey(byte[] keyBlob!!)
         {
-            if (keyBlob == null)
-            {
-                throw new ArgumentNullException(nameof(keyBlob));
-            }
-
             _keyBlob = (byte[])keyBlob.Clone();
         }
 

@@ -155,6 +155,11 @@ It will unset callback if set is zero.
 PALEXPORT void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set);
 
 /*
+Requests that client sends Post-Handshake Authentication extension in ClientHello.
+*/
+PALEXPORT void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val);
+
+/*
 Sets session caching. 0 is disabled.
 */
 PALEXPORT int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode,  SslCtxNewSessionCallback newCb, SslCtxRemoveSessionCallback removeCb);
@@ -244,7 +249,7 @@ Shims the SSL_write method.
 Returns the positive number of bytes written when successful, 0 or a negative number
 when an error is encountered.
 */
-PALEXPORT int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num);
+PALEXPORT int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num, int32_t* error);
 
 /*
 Shims the SSL_read method.
@@ -252,14 +257,14 @@ Shims the SSL_read method.
 Returns the positive number of bytes read when successful, 0 or a negative number
 when an error is encountered.
 */
-PALEXPORT int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num);
+PALEXPORT int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error);
 
 /*
-Shims the SSL_renegotiate method.
+Shims the SSL_renegotiate method (up to TLS 1.2), or SSL_verify_client_post_handshake (TLS 1.3)
 
-Returns 1 when renegotiation started; 0 on error.
+Returns 1 when renegotiation/post-handshake authentication started; 0 on error.
 */
-PALEXPORT int32_t CryptoNative_SslRenegotiate(SSL* ssl);
+PALEXPORT int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error);
 
 /*
 Shims the SSL_renegotiate_pending method.
@@ -292,7 +297,7 @@ Returns:
 and by the specifications of the TLS/SSL protocol;
 <0 if the handshake was not successful because of a fatal error.
 */
-PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl);
+PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error);
 
 /*
 Gets a value indicating whether the SSL_state is SSL_ST_OK.

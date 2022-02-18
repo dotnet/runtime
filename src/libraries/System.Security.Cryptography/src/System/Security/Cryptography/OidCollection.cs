@@ -66,10 +66,8 @@ namespace System.Security.Cryptography
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        void ICollection.CopyTo(Array array, int index)
+        void ICollection.CopyTo(Array array!!, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)
@@ -84,13 +82,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        public void CopyTo(Oid[] array, int index)
+        public void CopyTo(Oid[] array!!, int index)
         {
             // Need to do part of the argument validation ourselves as OidCollection throws
             // ArgumentOutOfRangeException where List<>.CopyTo() throws ArgumentException.
-
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
 

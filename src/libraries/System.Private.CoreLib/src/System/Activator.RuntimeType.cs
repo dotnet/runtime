@@ -16,11 +16,8 @@ namespace System
         // Note: CreateInstance returns null for Nullable<T>, e.g. CreateInstance(typeof(int?)) returns null.
         //
 
-        public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
+        public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type!!, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-
             if (type is System.Reflection.Emit.TypeBuilder)
                 throw new NotSupportedException(SR.NotSupported_CreateInstanceWithTypeBuilder);
 
@@ -89,11 +86,8 @@ namespace System
         public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type, bool nonPublic) =>
             CreateInstance(type, nonPublic, wrapExceptions: true);
 
-        internal static object? CreateInstance(Type type, bool nonPublic, bool wrapExceptions)
+        internal static object? CreateInstance(Type type!!, bool nonPublic, bool wrapExceptions)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-
             if (type.UnderlyingSystemType is not RuntimeType rt)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 

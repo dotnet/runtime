@@ -390,6 +390,14 @@ internal static partial class Interop
                         sslCtxHandle.TrySetSession(sslHandle, punyCode);
                     }
 
+                    // relevant to TLS 1.3 only: if user supplied a client cert or cert callback,
+                    // advertise that we are willing to send the certificate post-handshake.
+                    if (sslAuthenticationOptions.ClientCertificates?.Count > 0 ||
+                        sslAuthenticationOptions.CertSelectionDelegate != null)
+                    {
+                        Ssl.SslSetPostHandshakeAuth(sslHandle, 1);
+                    }
+
                     // Set client cert callback, this will interrupt the handshake with SecurityStatusPalErrorCode.CredentialsNeeded
                     // if server actually requests a certificate.
                     Ssl.SslSetClientCertCallback(sslHandle, 1);
@@ -419,13 +427,12 @@ internal static partial class Interop
 
         internal static SecurityStatusPal SslRenegotiate(SafeSslHandle sslContext, out byte[]? outputBuffer)
         {
-            int ret = Interop.Ssl.SslRenegotiate(sslContext);
+            int ret = Interop.Ssl.SslRenegotiate(sslContext, out Ssl.SslErrorCode errorCode);
 
             outputBuffer = Array.Empty<byte>();
             if (ret != 1)
             {
-                GetSslError(sslContext, ret, out Exception? exception);
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exception);
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, GetSslError(ret, errorCode));
             }
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
@@ -445,23 +452,21 @@ internal static partial class Interop
                 }
             }
 
-            int retVal = Ssl.SslDoHandshake(context);
+            int retVal = Ssl.SslDoHandshake(context, out Ssl.SslErrorCode errorCode);
             if (retVal != 1)
             {
-                Exception? innerError;
-                Ssl.SslErrorCode error = GetSslError(context, retVal, out innerError);
-
-                if (error == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
+                if (errorCode == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
                 {
                     return SecurityStatusPalErrorCode.CredentialsNeeded;
                 }
 
-                if ((retVal != -1) || (error != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
+                if ((retVal != -1) || (errorCode != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
                 {
+                    Exception? innerError = GetSslError(retVal, errorCode);
+
                     // Handshake failed, but even if the handshake does not need to read, there may be an Alert going out.
                     // To handle that we will fall-through the block below to pull it out, and we will fail after.
-                    handshakeException = new SslException(SR.Format(SR.net_ssl_handshake_failed_error, error), innerError);
-                    Crypto.ErrClearError();
+                    handshakeException = new SslException(SR.Format(SR.net_ssl_handshake_failed_error, errorCode), innerError);
                 }
             }
 
@@ -510,17 +515,7 @@ internal static partial class Interop
             ulong assertNoError = Crypto.ErrPeekError();
             Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
 #endif
-            errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
-
-            int retVal;
-            Exception? innerError = null;
-
-            retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length);
-
-            if (retVal != input.Length)
-            {
-                errorCode = GetSslError(context, retVal, out innerError);
-            }
+            int retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length, out errorCode);
 
             if (retVal != input.Length)
             {
@@ -534,7 +529,7 @@ internal static partial class Interop
                         break;
 
                     default:
-                        throw new SslException(SR.Format(SR.net_ssl_encrypt_failed, errorCode), innerError);
+                        throw new SslException(SR.Format(SR.net_ssl_encrypt_failed, errorCode), GetSslError(retVal, errorCode));
                 }
             }
             else
@@ -564,17 +559,14 @@ internal static partial class Interop
             ulong assertNoError = Crypto.ErrPeekError();
             Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
 #endif
-            errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
-
             BioWrite(context.InputBio!, buffer);
 
-            int retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(buffer), buffer.Length);
+            int retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(buffer), buffer.Length, out errorCode);
             if (retVal > 0)
             {
                 return retVal;
             }
 
-            errorCode = GetSslError(context, retVal, out Exception? innerError);
             switch (errorCode)
             {
                 // indicate end-of-file
@@ -583,13 +575,20 @@ internal static partial class Interop
 
                 case Ssl.SslErrorCode.SSL_ERROR_WANT_READ:
                     // update error code to renegotiate if renegotiate is pending, otherwise make it SSL_ERROR_WANT_READ
-                    errorCode = Ssl.IsSslRenegotiatePending(context) ?
-                                Ssl.SslErrorCode.SSL_ERROR_RENEGOTIATE :
-                                Ssl.SslErrorCode.SSL_ERROR_WANT_READ;
+                    errorCode = Ssl.IsSslRenegotiatePending(context)
+                        ? Ssl.SslErrorCode.SSL_ERROR_RENEGOTIATE
+                        : Ssl.SslErrorCode.SSL_ERROR_WANT_READ;
+                    break;
+
+                case Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP:
+                    // This happens in TLS 1.3 when server requests post-handshake authentication
+                    // but no certificate is provided by client. We can process it the same way as
+                    // renegotiation on older TLS versions
+                    errorCode = Ssl.SslErrorCode.SSL_ERROR_RENEGOTIATE;
                     break;
 
                 default:
-                    throw new SslException(SR.Format(SR.net_ssl_decrypt_failed, errorCode), innerError);
+                    throw new SslException(SR.Format(SR.net_ssl_decrypt_failed, errorCode), GetSslError(retVal, errorCode));
             }
 
             return 0;
@@ -690,8 +689,8 @@ internal static partial class Interop
         [UnmanagedCallersOnly]
         // Invoked from OpenSSL when new session is created.
         // We attached GCHandle to the SSL so we can find back SafeSslContextHandle holding the cache.
-        // New session ahs refCount of 1.
-        // If this function return 0, OpenSSL will drop the refCount and discard the session.
+        // New session has refCount of 1.
+        // If this function returns 0, OpenSSL will drop the refCount and discard the session.
         // If we return 1, the ownership is transfered to us and we will need to call SessionFree().
         private static unsafe int NewSessionCallback(IntPtr ssl, IntPtr session)
         {
@@ -763,14 +762,13 @@ internal static partial class Interop
             }
         }
 
-        private static Ssl.SslErrorCode GetSslError(SafeSslHandle context, int result, out Exception? innerError)
+        private static Exception? GetSslError(int result, Ssl.SslErrorCode retVal)
         {
-            ErrorInfo lastErrno = Sys.GetLastErrorInfo(); // cache it before we make more P/Invoke calls, just in case we need it
-
-            Ssl.SslErrorCode retVal = Ssl.SslGetError(context, result);
+            Exception? innerError;
             switch (retVal)
             {
                 case Ssl.SslErrorCode.SSL_ERROR_SYSCALL:
+                    ErrorInfo lastErrno = Sys.GetLastErrorInfo();
                     // Some I/O error occurred
                     innerError =
                         Crypto.ErrPeekError() != 0 ? Crypto.CreateOpenSslCryptographicException() : // crypto error queue not empty
@@ -789,7 +787,8 @@ internal static partial class Interop
                     innerError = null;
                     break;
             }
-            return retVal;
+
+            return innerError;
         }
 
         private static void SetSslCertificate(SafeSslContextHandle contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)

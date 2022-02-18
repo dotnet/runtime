@@ -1579,19 +1579,17 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunClassConstructor(QCall::TypeHa
     END_QCALL;
 }
 
-// This method triggers the module constructor for a give module
+// This method triggers the module constructor for a given module
 extern "C" void QCALLTYPE ReflectionInvocation_RunModuleConstructor(QCall::ModuleHandle pModule)
 {
     QCALL_CONTRACT;
 
-    DomainFile *pDomainFile = pModule->GetDomainFile();
-    if (pDomainFile != NULL && pDomainFile->IsActive())
+    DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
+    if (pDomainAssembly != NULL && pDomainAssembly->IsActive())
         return;
 
     BEGIN_QCALL;
-    if(pDomainFile == NULL)
-        pDomainFile = pModule->GetDomainFile();
-    pDomainFile->EnsureActive();
+    pDomainAssembly->EnsureActive();
     END_QCALL;
 }
 

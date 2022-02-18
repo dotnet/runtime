@@ -127,7 +127,7 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
         onConfigLoaded: (config) => {
             if (!Module.config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");
-                set_exit_code(1,);
+                set_exit_code(1);
                 throw err;
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
@@ -214,7 +214,9 @@ const App = {
                 const result = await MONO.mono_run_main(main_assembly_name, app_args);
                 set_exit_code(result);
             } catch (error) {
-                set_exit_code(1, error);
+                if (error.name != "ExitStatus") {
+                    set_exit_code(1, error);
+                }
             }
         } else {
             set_exit_code(1, "Unhandled argument: " + processedArguments.applicationArgs[0]);
@@ -242,7 +244,7 @@ globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.
 
 function set_exit_code(exit_code, reason) {
     if (reason) {
-        console.error(reason.toString());
+        console.error(`${JSON.stringify(reason)}`);
         if (reason.stack) {
             console.error(reason.stack);
         }
@@ -314,6 +316,7 @@ function processArguments(incomingArguments) {
 
     // cheap way to let the testing infrastructure know we're running in a browser context (or not)
     setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
+    setenv["IsNodeJS"] = is_node.toString().toLowerCase();
 
     console.log("Application arguments: " + incomingArguments.join(' '));
 
@@ -358,13 +361,23 @@ if (is_node) {
     const modulesToLoad = processedArguments.setenv["NPM_MODULES"];
     if (modulesToLoad) {
         modulesToLoad.split(',').forEach(module => {
-            const parts = module.split(':');
+            const { 0:moduleName, 1:globalAlias } = module.split(':');
 
-            let message = `Loading npm '${parts[0]}'`;
-            const moduleExport = require(parts[0]);
-            if (parts.length == 2) {
-                message += ` and attaching to global as '${parts[1]}'.`;
-                globalThis[parts[1]] = moduleExport;
+            let message = `Loading npm '${moduleName}'`;
+            let moduleExport = require(moduleName);
+            
+            if (globalAlias) {
+                message += ` and attaching to global as '${globalAlias}'`;
+                globalThis[globalAlias] = moduleExport;
+            } else if(moduleName == "node-fetch") {
+                message += ' and attaching to global';
+                globalThis.fetch = moduleExport.default;
+                globalThis.Headers = moduleExport.Headers;
+                globalThis.Request = moduleExport.Request;
+                globalThis.Response = moduleExport.Response;
+            } else if(moduleName == "node-abort-controller") {
+                message += ' and attaching to global';
+                globalThis.AbortController = moduleExport.AbortController;
             }
 
             console.log(message);

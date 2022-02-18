@@ -78,58 +78,49 @@ namespace System.Xml.Schema
         // XmlAtomicValue constructors and methods
         //-----------------------------------------------
 
-        internal XmlAtomicValue(XmlSchemaType xmlType, bool value)
+        internal XmlAtomicValue(XmlSchemaType xmlType!!, bool value)
         {
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _clrType = TypeCode.Boolean;
             _unionVal.boolVal = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType, DateTime value)
+        internal XmlAtomicValue(XmlSchemaType xmlType!!, DateTime value)
         {
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _clrType = TypeCode.DateTime;
             _unionVal.dtVal = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType, double value)
+        internal XmlAtomicValue(XmlSchemaType xmlType!!, double value)
         {
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _clrType = TypeCode.Double;
             _unionVal.dblVal = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType, int value)
+        internal XmlAtomicValue(XmlSchemaType xmlType!!, int value)
         {
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _clrType = TypeCode.Int32;
             _unionVal.i32Val = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType, long value)
+        internal XmlAtomicValue(XmlSchemaType xmlType!!, long value)
         {
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _clrType = TypeCode.Int64;
             _unionVal.i64Val = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType, string value)
+        internal XmlAtomicValue(XmlSchemaType xmlType!!, string value!!)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _objVal = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType, string value, IXmlNamespaceResolver? nsResolver)
+        internal XmlAtomicValue(XmlSchemaType xmlType!!, string value!!, IXmlNamespaceResolver? nsResolver)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _objVal = value;
             if (nsResolver != null && (_xmlType.TypeCode == XmlTypeCode.QName || _xmlType.TypeCode == XmlTypeCode.Notation))
@@ -139,18 +130,14 @@ namespace System.Xml.Schema
             }
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType, object value)
+        internal XmlAtomicValue(XmlSchemaType xmlType!!, object value!!)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _objVal = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType, object value, IXmlNamespaceResolver? nsResolver)
+        internal XmlAtomicValue(XmlSchemaType xmlType!!, object value!!, IXmlNamespaceResolver? nsResolver)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _objVal = value;
 

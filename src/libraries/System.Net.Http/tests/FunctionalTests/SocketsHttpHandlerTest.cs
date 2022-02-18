@@ -1044,12 +1044,12 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
     }
 
-    [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Http11_Cancellation_Test : SocketsHttpHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Http11_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void ConnectTimeout_Default()
         {
             using (var handler = new SocketsHttpHandler())
@@ -1062,6 +1062,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(0)]
         [InlineData(-2)]
         [InlineData(int.MaxValue + 1L)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void ConnectTimeout_InvalidValues(long ms)
         {
             using (var handler = new SocketsHttpHandler())
@@ -1075,6 +1076,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1)]
         [InlineData(int.MaxValue - 1)]
         [InlineData(int.MaxValue)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void ConnectTimeout_ValidValues_Roundtrip(long ms)
         {
             using (var handler = new SocketsHttpHandler())
@@ -1085,6 +1087,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void ConnectTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
@@ -1098,6 +1101,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void Expect100ContinueTimeout_Default()
         {
             using (var handler = new SocketsHttpHandler())
@@ -1109,6 +1113,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(-2)]
         [InlineData(int.MaxValue + 1L)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void Expect100ContinueTimeout_InvalidValues(long ms)
         {
             using (var handler = new SocketsHttpHandler())
@@ -1122,6 +1127,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1)]
         [InlineData(int.MaxValue - 1)]
         [InlineData(int.MaxValue)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void Expect100ContinueTimeout_ValidValues_Roundtrip(long ms)
         {
             using (var handler = new SocketsHttpHandler())
@@ -1132,6 +1138,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void Expect100ContinueTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())

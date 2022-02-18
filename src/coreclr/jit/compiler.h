@@ -385,11 +385,12 @@ enum class DoNotEnregisterReason
 #endif
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
-    StoreBlkSrc,    // the local is used as STORE_BLK source.
-    OneAsgRetyping, // fgMorphOneAsgBlockOp prevents this local from being enregister.
-    SwizzleArg,     // the local is passed using LCL_FLD as another type.
-    BlockOpRet,     // the struct is returned and it promoted or there is a cast.
-    ReturnSpCheck   // the local is used to do SP check
+    StoreBlkSrc,      // the local is used as STORE_BLK source.
+    OneAsgRetyping,   // fgMorphOneAsgBlockOp prevents this local from being enregister.
+    SwizzleArg,       // the local is passed using LCL_FLD as another type.
+    BlockOpRet,       // the struct is returned and it promoted or there is a cast.
+    ReturnSpCheck,    // the local is used to do SP check
+    SimdUserForcesDep // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
 };
 
 enum class AddressExposedReason
@@ -1742,6 +1743,7 @@ public:
             case NonStandardArgKind::ShiftLow:
             case NonStandardArgKind::ShiftHigh:
             case NonStandardArgKind::FixedRetBuffer:
+            case NonStandardArgKind::ValidateIndirectCallTarget:
                 return false;
             case NonStandardArgKind::WrapperDelegateCell:
             case NonStandardArgKind::VirtualStubCell:
@@ -3359,6 +3361,7 @@ public:
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
+    var_types gtTypeForNullCheck(GenTree* tree);
     void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
 
     static fgArgTabEntry* gtArgEntryByArgNum(GenTreeCall* call, unsigned argNum);
@@ -4578,10 +4581,11 @@ public:
                                            GenTreeCall::Use*       args               = nullptr,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr);
 
-    GenTree* impCastClassOrIsInstToTree(GenTree*                op1,
-                                        GenTree*                op2,
-                                        CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                        bool                    isCastClass);
+    bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
+    bool impIsCastHelperMayHaveProfileData(GenTree* tree);
+
+    GenTree* impCastClassOrIsInstToTree(
+        GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSET ilOffset);
 
     GenTree* impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass);
 
@@ -4844,7 +4848,7 @@ private:
     static LONG jitNestingLevel;
 #endif // DEBUG
 
-    static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut);
+    static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut = nullptr);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
 
@@ -5217,7 +5221,15 @@ public:
 
     void fgAddInternal();
 
-    bool fgFoldConditional(BasicBlock* block);
+    enum class FoldResult
+    {
+        FOLD_DID_NOTHING,
+        FOLD_CHANGED_CONTROL_FLOW,
+        FOLD_REMOVED_LAST_STMT,
+        FOLD_ALTERED_LAST_STMT,
+    };
+
+    FoldResult fgFoldConditional(BasicBlock* block);
 
     void fgMorphStmts(BasicBlock* block);
     void fgMorphBlocks();
@@ -5506,7 +5518,7 @@ public:
     // Does value-numbering for a block assignment.
     void fgValueNumberBlockAssignment(GenTree* tree);
 
-    bool fgValueNumberIsStructReinterpretation(GenTreeLclVarCommon* lhsLclVarTree, GenTreeLclVarCommon* rhsLclVarTree);
+    bool fgValueNumberBlockAssignmentTypeCheck(LclVarDsc* dstVarDsc, FieldSeqNode* dstFldSeq, GenTree* src);
 
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
@@ -6410,6 +6422,9 @@ private:
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
+#ifdef FEATURE_HW_INTRINSICS
+    GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
+#endif
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
     GenTree* fgOptimizeAddition(GenTreeOp* add);
     GenTree* fgOptimizeMultiply(GenTreeOp* mul);
@@ -6423,7 +6438,7 @@ private:
 
     bool fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2);
 
-    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
+    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroyNodes = true);
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
     GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
@@ -6561,6 +6576,10 @@ private:
 
     void fgMarkAddressExposedLocals();
     void fgMarkAddressExposedLocals(Statement* stmt);
+
+    PhaseStatus fgForwardSub();
+    bool fgForwardSubBlock(BasicBlock* block);
+    bool fgForwardSubStatement(Statement* statement);
 
     static fgWalkPreFn  fgUpdateSideEffectsPre;
     static fgWalkPostFn fgUpdateSideEffectsPost;
@@ -7122,12 +7141,6 @@ protected:
 
     bool optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
 
-    /**************************************************************************
-     *                       Optimization conditions
-     *************************************************************************/
-
-    bool optAvoidIntMult(void);
-
 protected:
     //  The following is the upper limit on how many expressions we'll keep track
     //  of for the CSE analysis.
@@ -7283,7 +7296,6 @@ protected:
 
     // Given a binary tree node return true if it is safe to swap the order of evaluation for op1 and op2.
     bool optCSE_canSwap(GenTree* firstNode, GenTree* secondNode);
-    bool optCSE_canSwap(GenTree* tree);
 
     struct optCSEcostCmpEx
     {
@@ -7628,7 +7640,6 @@ public:
         O2K_CONST_INT,
         O2K_CONST_LONG,
         O2K_CONST_DOUBLE,
-        O2K_ARR_LEN,
         O2K_SUBRANGE,
         O2K_COUNT
     };
@@ -7668,7 +7679,11 @@ public:
                 GenTreeFlags iconFlags; // gtFlags
             };
             union {
-                SsaVar        lcl;
+                struct
+                {
+                    SsaVar        lcl;
+                    FieldSeqNode* zeroOffsetFieldSeq;
+                };
                 IntVal        u1;
                 __int64       lconVal;
                 double        dconVal;
@@ -7747,6 +7762,7 @@ public:
             {
                 return false;
             }
+
             switch (op2.kind)
             {
                 case O2K_IND_CNS_INT:
@@ -7761,9 +7777,9 @@ public:
                     return (memcmp(&op2.dconVal, &that->op2.dconVal, sizeof(double)) == 0);
 
                 case O2K_LCLVAR_COPY:
-                case O2K_ARR_LEN:
                     return (op2.lcl.lclNum == that->op2.lcl.lclNum) &&
-                           (!vnBased || op2.lcl.ssaNum == that->op2.lcl.ssaNum);
+                           (!vnBased || op2.lcl.ssaNum == that->op2.lcl.ssaNum) &&
+                           (op2.zeroOffsetFieldSeq == that->op2.zeroOffsetFieldSeq);
 
                 case O2K_SUBRANGE:
                     return op2.u2.Equals(that->op2.u2);
@@ -7776,6 +7792,7 @@ public:
                     assert(!"Unexpected value for op2.kind in AssertionDsc.");
                     break;
             }
+
             return false;
         }
 
@@ -8084,7 +8101,6 @@ public:
                        CORINFO_RESOLVED_TOKEN* pConstrainedToken,
                        CORINFO_CALLINFO_FLAGS  flags,
                        CORINFO_CALL_INFO*      pResult);
-    inline CORINFO_CALLINFO_FLAGS addVerifyFlag(CORINFO_CALLINFO_FLAGS flags);
 
     void eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         CORINFO_ACCESS_FLAGS    flags,
@@ -8408,18 +8424,6 @@ public:
     {
         codeGen->SetInterruptible(value);
     }
-
-#ifdef TARGET_ARMARCH
-
-    bool GetHasTailCalls()
-    {
-        return codeGen->GetHasTailCalls();
-    }
-    void SetHasTailCalls(bool value)
-    {
-        codeGen->SetHasTailCalls(value);
-    }
-#endif // TARGET_ARMARCH
 
 #if DOUBLE_ALIGN
     const bool genDoubleAlign()
@@ -9593,7 +9597,7 @@ public:
             compMinOptsIsUsed = true;
             return compMinOpts;
         }
-        bool IsMinOptsSet()
+        bool IsMinOptsSet() const
         {
             return compMinOptsIsSet;
         }
@@ -9602,7 +9606,7 @@ public:
         {
             return compMinOpts;
         }
-        bool IsMinOptsSet()
+        bool IsMinOptsSet() const
         {
             return compMinOptsIsSet;
         }
@@ -9626,22 +9630,54 @@ public:
         }
 
         // true if the CLFLG_* for an optimization is set.
-        bool OptEnabled(unsigned optFlag)
+        bool OptEnabled(unsigned optFlag) const
         {
             return !!(compFlags & optFlag);
         }
 
 #ifdef FEATURE_READYTORUN
-        bool IsReadyToRun()
+        bool IsReadyToRun() const
         {
             return jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN);
         }
 #else
-        bool IsReadyToRun()
+        bool IsReadyToRun() const
         {
             return false;
         }
 #endif
+
+        // Check if the compilation is control-flow guard enabled.
+        bool IsCFGEnabled() const
+        {
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+            // On these platforms we assume the register that the target is
+            // passed in is preserved by the validator and take care to get the
+            // target from the register for the call (even in debug mode).
+            static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH & (1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) == 0);
+            if (JitConfig.JitForceControlFlowGuard())
+                return true;
+
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_ENABLE_CFG);
+#else
+            // The remaining platforms are not supported and would require some
+            // work to support.
+            //
+            // ARM32:
+            //   The ARM32 validator does not preserve any volatile registers
+            //   which means we have to take special care to allocate and use a
+            //   callee-saved register (reloading the target from memory is a
+            //   security issue).
+            //
+            // x86:
+            //   On x86 some VSD calls disassemble the call site and expect an
+            //   indirect call which is fundamentally incompatible with CFG.
+            //   This would require a different way to pass this information
+            //   through.
+            //
+            return false;
+#endif
+        }
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         bool IsOSR() const
@@ -10510,6 +10546,7 @@ public:
         unsigned m_swizzleArg;
         unsigned m_blockOpRet;
         unsigned m_returnSpCheck;
+        unsigned m_simdUserForcesDep;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
         unsigned m_noRegVars;
@@ -10715,12 +10752,6 @@ public:
     */
 
 public:
-    // Set to true if verification cannot be skipped for this method
-    // CoreCLR does not ever run IL verification. Compile out the verifier from the JIT by making this a constant.
-    // TODO: Delete the verifier from the JIT? (https://github.com/dotnet/runtime/issues/32648)
-    // bool tiVerificationNeeded;
-    static const bool tiVerificationNeeded = false;
-
     // Returns true if child is equal to or a subtype of parent for merge purposes
     // This support is necessary to suport attributes that are not described in
     // for example, signatures. For example, the permanent home byref (byref that
@@ -10853,7 +10884,7 @@ public:
     struct ShadowParamVarInfo
     {
         FixedBitVect* assignGroup; // the closure set of variables whose values depend on each other
-        unsigned      shadowCopy;  // Lcl var num, valid only if not set to NO_SHADOW_COPY
+        unsigned      shadowCopy;  // Lcl var num, if not valid set to BAD_VAR_NUM
 
         static bool mayNeedShadowCopy(LclVarDsc* varDsc)
         {

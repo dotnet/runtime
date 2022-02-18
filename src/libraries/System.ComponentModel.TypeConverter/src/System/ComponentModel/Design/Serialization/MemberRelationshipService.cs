@@ -69,32 +69,14 @@ namespace System.ComponentModel.Design.Serialization
         /// Also sets a relationship between two objects. Null can be passed as the property value, in which
         /// case the relationship will be cleared.
         /// </summary>
-        public MemberRelationship this[object sourceOwner, MemberDescriptor sourceMember]
+        public MemberRelationship this[object sourceOwner!!, MemberDescriptor sourceMember!!]
         {
             get
             {
-                if (sourceOwner == null)
-                {
-                    throw new ArgumentNullException(nameof(sourceOwner));
-                }
-                if (sourceMember == null)
-                {
-                    throw new ArgumentNullException(nameof(sourceMember));
-                }
-
                 return GetRelationship(new MemberRelationship(sourceOwner, sourceMember));
             }
             set
             {
-                if (sourceOwner == null)
-                {
-                    throw new ArgumentNullException(nameof(sourceOwner));
-                }
-                if (sourceMember == null)
-                {
-                    throw new ArgumentNullException(nameof(sourceMember));
-                }
-
                 SetRelationship(new MemberRelationship(sourceOwner, sourceMember), value);
             }
         }
@@ -197,10 +179,10 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new member relationship.
         /// </summary>
-        public MemberRelationship(object owner, MemberDescriptor member)
+        public MemberRelationship(object owner!!, MemberDescriptor member!!)
         {
-            Owner = owner ?? throw new ArgumentNullException(nameof(owner));
-            Member = member ?? throw new ArgumentNullException(nameof(member));
+            Owner = owner;
+            Member = member;
         }
 
         /// <summary>

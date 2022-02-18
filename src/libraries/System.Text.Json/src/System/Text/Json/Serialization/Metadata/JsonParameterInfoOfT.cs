@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void InitializeDefaultValue(JsonPropertyInfo matchingProperty)
         {
-            Debug.Assert(ClrInfo.ParameterType == matchingProperty.DeclaredPropertyType);
+            Debug.Assert(ClrInfo.ParameterType == matchingProperty.PropertyType);
 
             if (ClrInfo.HasDefaultValue)
             {

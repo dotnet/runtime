@@ -292,7 +292,7 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+#if defined(TARGET_ARM)
         genInsertNopForUnwinder(block);
 #endif
 
@@ -1807,7 +1807,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
 #if FEATURE_ARG_SPLIT
 //------------------------------------------------------------------------
 // genConsumeArgRegSplit: Consume register(s) in Call node to set split struct argument.
-//                        Liveness update for the PutArgSplit node is not needed
 //
 // Arguments:
 //    putArgNode - the PUTARG_STK tree.
@@ -1822,8 +1821,7 @@ void CodeGen::genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode)
 
     genUnspillRegIfNeeded(putArgNode);
 
-    // Skip updating GC info
-    // GC info for all argument registers will be cleared in caller
+    gcInfo.gcMarkRegSetNpt(putArgNode->gtGetRegMask());
 
     genCheckConsumeNode(putArgNode);
 }

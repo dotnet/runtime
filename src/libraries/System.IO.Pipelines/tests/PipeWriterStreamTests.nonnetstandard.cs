@@ -177,10 +177,22 @@ namespace System.IO.Pipelines.Tests
             pipeWriter.AsStream(leaveOpen: true).Dispose();
         }
 
+        [Fact]
+        public async Task DisposeAsyncCallsCompleteAsync()
+        {
+            var pipeWriter = new TestPipeWriter();
+            Stream stream = pipeWriter.AsStream();
+
+            await stream.DisposeAsync();
+
+            Assert.True(pipeWriter.CompleteAsyncCalled);
+        }
+
         public class TestPipeWriter : PipeWriter
         {
             public bool FlushCalled { get; set; }
             public bool WriteAsyncCalled { get; set; }
+            public bool CompleteAsyncCalled { get; set; }
 
             public override void Advance(int bytes)
             {
@@ -195,6 +207,12 @@ namespace System.IO.Pipelines.Tests
             public override void Complete(Exception exception = null)
             {
                 throw new NotImplementedException();
+            }
+
+            public override ValueTask CompleteAsync(Exception exception = null)
+            {
+                CompleteAsyncCalled = true;
+                return default;
             }
 
             public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
