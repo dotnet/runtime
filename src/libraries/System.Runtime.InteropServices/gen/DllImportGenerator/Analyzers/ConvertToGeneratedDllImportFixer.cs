@@ -169,10 +169,6 @@ namespace Microsoft.Interop.Analyzers
             SyntaxNode generatedDeclaration = generator.ReplaceNode(methodSyntax, dllImportSyntax, generatedDllImportSyntax);
             if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
             {
-                generatedDeclaration = editor.Generator.WithType(
-                    generatedDeclaration,
-                    editor.Generator.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Int32)));
-
                 if (!methodSymbol.ReturnsVoid)
                 {
                     generatedDeclaration = editor.Generator.AddParameters(
@@ -182,6 +178,10 @@ namespace Microsoft.Interop.Analyzers
                         editor.Generator.ParameterDeclaration("@return", editor.Generator.GetType(generatedDeclaration), refKind: RefKind.Out)
                         });
                 }
+
+                generatedDeclaration = editor.Generator.WithType(
+                    generatedDeclaration,
+                    editor.Generator.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Int32)));
             }
 
             if (unmanagedCallConvAttributeMaybe is not null)
