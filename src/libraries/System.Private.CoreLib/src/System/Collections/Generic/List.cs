@@ -444,12 +444,12 @@ namespace System.Collections.Generic
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
-            var span = new ReadOnlySpan<T>(_items, 0, _size);
-            for (int i = 0; i < span.Length; i++)
+            T[] items = _items;
+            for (int i = 0; i < items.Length && i < _size; i++)
             {
-                if (match(span[i]))
+                if (match(items[i]))
                 {
-                    return span[i];
+                    return items[i];
                 }
             }
             return default;
@@ -463,12 +463,12 @@ namespace System.Collections.Generic
             }
 
             List<T> list = new List<T>();
-            var span = new ReadOnlySpan<T>(_items, 0, _size);
-            for (int i = 0; i < span.Length; i++)
+            T[] items = _items;
+            for (int i = 0; i < items.Length && i < _size; i++)
             {
-                if (match(span[i]))
+                if (match(items[i]))
                 {
-                    list.Add(span[i]);
+                    list.Add(items[i]);
                 }
             }
             return list;
@@ -1089,10 +1089,10 @@ namespace System.Collections.Generic
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
-            var span = new ReadOnlySpan<T>(_items, 0, _size);
-            for (int i = 0; i < span.Length; i++)
+            T[] items = _items;
+            for (int i = 0; i < items.Length && i < _size; i++)
             {
-                if (!match(span[i]))
+                if (!match(items[i]))
                 {
                     return false;
                 }
