@@ -122,14 +122,8 @@
   <data name="ErrorCreateTimer" xml:space="preserve">
     <value>Cannot create timer.</value>
   </data>
-  <data name="ErrorGetTempPath" xml:space="preserve">
-    <value>Cannot get temporary file name</value>
-  </data>
   <data name="ErrorKillTimer" xml:space="preserve">
     <value>Cannot end timer.</value>
-  </data>
-  <data name="ErrorSystemEventsNotSupported" xml:space="preserve">
-    <value>System event notifications are not supported under the current context. Server processes, for example, may not support global system event notifications.</value>
   </data>
   <data name="InvalidLowBoundArgument" xml:space="preserve">
     <value>'{1}' is not a valid value for '{0}'. '{0}' must be greater than {2}.</value>

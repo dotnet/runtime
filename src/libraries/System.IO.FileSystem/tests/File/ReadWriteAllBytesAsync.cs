@@ -177,7 +177,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
         public async Task ReadAllBytesAsync_NonSeekableFileStream_InWindows()
         {
-            string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
+            string pipeName = GetNamedPipeServerStreamName();
             string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
 
             var namedPipeWriterStream = new NamedPipeServerStream(pipeName, PipeDirection.Out);

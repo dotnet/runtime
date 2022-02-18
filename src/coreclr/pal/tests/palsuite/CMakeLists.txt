@@ -580,9 +580,6 @@ add_executable_clr(paltests
 #  filemapping_memmgt/GetProcAddress/test1/testlib.cpp
   filemapping_memmgt/GetProcAddress/test2/test2.cpp
 #  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
-  filemapping_memmgt/LocalAlloc/test1/LocalAlloc.cpp
-  filemapping_memmgt/LocalFree/test1/LocalFree.cpp
-  filemapping_memmgt/LocalFree/test2/LocalFree.cpp
   filemapping_memmgt/MapViewOfFile/test1/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test2/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test3/MapViewOfFile.cpp

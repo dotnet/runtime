@@ -42,8 +42,7 @@ bool getMethodInfo(
 
 CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
-          CORINFO_METHOD_HANDLE calleeHnd,
-          uint32_t* pRestrictions) override;
+          CORINFO_METHOD_HANDLE calleeHnd) override;
 
 void reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,

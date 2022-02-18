@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Management.Tests
 {
@@ -64,28 +65,33 @@ namespace System.Management.Tests
         [OuterLoop]
         public void Invoke_Instance_And_Static_Method_Win32_Process()
         {
-            var processClass = new ManagementClass("Win32_Process");
-            object[] methodArgs = { "notepad.exe", null, null, 0 };
-
-            object resultObj = processClass.InvokeMethod("Create", methodArgs);
-
-            var resultCode = (uint)resultObj;
-            Assert.Equal(0u, resultCode);
-
-            var processId = (uint)methodArgs[3];
-            Assert.True(0u != processId, $"Unexpected process ID: {processId}");
-
-            using (Process targetProcess = Process.GetProcessById((int)processId))
-            using (var process = new ManagementObject($"Win32_Process.Handle=\"{processId}\""))
+            // Retries are sometimes necessary as underlying API call can return
+            // ERROR_NOT_READY or occasionally ERROR_INVALID_BLOCK or ERROR_NOT_ENOUGH_MEMORY
+            RetryHelper.Execute(() =>
             {
-                Assert.False(targetProcess.HasExited);
+                var processClass = new ManagementClass("Win32_Process");
+                object[] methodArgs = { "notepad.exe", null, null, 0 };
 
-                resultObj = process.InvokeMethod("Terminate", new object[] { 0 });
-                resultCode = (uint)resultObj;
+                object resultObj = processClass.InvokeMethod("Create", methodArgs);
+
+                var resultCode = (uint)resultObj;
                 Assert.Equal(0u, resultCode);
 
-                Assert.True(targetProcess.HasExited);
-            }
+                var processId = (uint)methodArgs[3];
+                Assert.True(0u != processId, $"Unexpected process ID: {processId}");
+
+                using (Process targetProcess = Process.GetProcessById((int)processId))
+                using (var process = new ManagementObject($"Win32_Process.Handle=\"{processId}\""))
+                {
+                    Assert.False(targetProcess.HasExited);
+
+                    resultObj = process.InvokeMethod("Terminate", new object[] { 0 });
+                    resultCode = (uint)resultObj;
+                    Assert.Equal(0u, resultCode);
+
+                    Assert.True(targetProcess.HasExited);
+                }
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]

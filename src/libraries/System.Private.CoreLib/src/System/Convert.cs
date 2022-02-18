@@ -226,13 +226,9 @@ namespace System
             };
         }
 
-        internal static object DefaultToType(IConvertible value, Type targetType, IFormatProvider? provider)
+        internal static object DefaultToType(IConvertible value, Type targetType!!, IFormatProvider? provider)
         {
             Debug.Assert(value != null, "[Convert.DefaultToType]value!=null");
-            if (targetType == null)
-            {
-                throw new ArgumentNullException(nameof(targetType));
-            }
 
             if (ReferenceEquals(value.GetType(), targetType))
             {
@@ -289,13 +285,8 @@ namespace System
         }
 
         [return: NotNullIfNotNull("value")]
-        public static object? ChangeType(object? value, Type conversionType, IFormatProvider? provider)
+        public static object? ChangeType(object? value, Type conversionType!!, IFormatProvider? provider)
         {
-            if (conversionType is null)
-            {
-                throw new ArgumentNullException(nameof(conversionType));
-            }
-
             if (value == null)
             {
                 if (conversionType.IsValueType)
@@ -554,11 +545,8 @@ namespace System
             return ToChar(value, null);
         }
 
-        public static char ToChar(string value, IFormatProvider? provider)
+        public static char ToChar(string value!!, IFormatProvider? provider)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             if (value.Length != 1)
                 throw new FormatException(SR.Format_NeedSingleChar);
 
@@ -2309,21 +2297,13 @@ namespace System
             return ParseNumbers.LongToString(value, toBase, -1, ' ', 0);
         }
 
-        public static string ToBase64String(byte[] inArray)
+        public static string ToBase64String(byte[] inArray!!)
         {
-            if (inArray == null)
-            {
-                throw new ArgumentNullException(nameof(inArray));
-            }
             return ToBase64String(new ReadOnlySpan<byte>(inArray), Base64FormattingOptions.None);
         }
 
-        public static string ToBase64String(byte[] inArray, Base64FormattingOptions options)
+        public static string ToBase64String(byte[] inArray!!, Base64FormattingOptions options)
         {
-            if (inArray == null)
-            {
-                throw new ArgumentNullException(nameof(inArray));
-            }
             return ToBase64String(new ReadOnlySpan<byte>(inArray), options);
         }
 
@@ -2332,10 +2312,8 @@ namespace System
             return ToBase64String(inArray, offset, length, Base64FormattingOptions.None);
         }
 
-        public static string ToBase64String(byte[] inArray, int offset, int length, Base64FormattingOptions options)
+        public static string ToBase64String(byte[] inArray!!, int offset, int length, Base64FormattingOptions options)
         {
-            if (inArray == null)
-                throw new ArgumentNullException(nameof(inArray));
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
             if (offset < 0)
@@ -2379,13 +2357,8 @@ namespace System
             return ToBase64CharArray(inArray, offsetIn, length, outArray, offsetOut, Base64FormattingOptions.None);
         }
 
-        public static unsafe int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, Base64FormattingOptions options)
+        public static unsafe int ToBase64CharArray(byte[] inArray!!, int offsetIn, int length, char[] outArray!!, int offsetOut, Base64FormattingOptions options)
         {
-            // Do data verfication
-            if (inArray == null)
-                throw new ArgumentNullException(nameof(inArray));
-            if (outArray == null)
-                throw new ArgumentNullException(nameof(outArray));
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
             if (offsetIn < 0)
@@ -2709,11 +2682,8 @@ namespace System
         /// <param name="offset">A position within the input array.</param>
         /// <param name="length">Number of element to convert.</param>
         /// <returns>The array of bytes represented by the specified Base64 encoding characters.</returns>
-        public static byte[] FromBase64CharArray(char[] inArray, int offset, int length)
+        public static byte[] FromBase64CharArray(char[] inArray!!, int offset, int length)
         {
-            if (inArray == null)
-                throw new ArgumentNullException(nameof(inArray));
-
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
 
@@ -2887,11 +2857,8 @@ namespace System
         /// <returns>The string representation in hex of the elements in <paramref name="inArray"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="inArray"/> is <code>null</code>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inArray"/> is too large to be encoded.</exception>
-        public static string ToHexString(byte[] inArray)
+        public static string ToHexString(byte[] inArray!!)
         {
-            if (inArray == null)
-                throw new ArgumentNullException(nameof(inArray));
-
             return ToHexString(new ReadOnlySpan<byte>(inArray));
         }
 
@@ -2907,10 +2874,8 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> or <paramref name="length"/> is negative.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> plus <paramref name="length"/> is greater than the length of <paramref name="inArray"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inArray"/> is too large to be encoded.</exception>
-        public static string ToHexString(byte[] inArray, int offset, int length)
+        public static string ToHexString(byte[] inArray!!, int offset, int length)
         {
-            if (inArray == null)
-                throw new ArgumentNullException(nameof(inArray));
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
             if (offset < 0)

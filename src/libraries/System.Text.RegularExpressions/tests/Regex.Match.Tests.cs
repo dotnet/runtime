@@ -200,6 +200,16 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"((\d{2,3}?)){2}", "1234", RegexOptions.None, 0, 4, true, "1234");
                 yield return (@"(abc\d{2,3}?){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc45");
 
+                // Testing selected FindOptimizations finds the right prefix
+                yield return (@"(^|a+)bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
+                yield return (@"(^|($|a+))bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
+                yield return (@"yz(^|a+)bc", " yzaabc", RegexOptions.None, 0, 7, true, "yzaabc");
+                yield return (@"(^a|a$) bc", "a bc", RegexOptions.None, 0, 4, true, "a bc");
+                yield return (@"(abcdefg|abcdef|abc|a)h", "    ah  ", RegexOptions.None, 0, 8, true, "ah");
+                yield return (@"(^abcdefg|abcdef|^abc|a)h", "    abcdefh  ", RegexOptions.None, 0, 13, true, "abcdefh");
+                yield return (@"(a|^abcdefg|abcdef|^abc)h", "    abcdefh  ", RegexOptions.None, 0, 13, true, "abcdefh");
+                yield return (@"(abcdefg|abcdef)h", "    abcdefghij  ", RegexOptions.None, 0, 16, true, "abcdefgh");
+
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // Back references not support with NonBacktracking
@@ -223,34 +233,75 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@"(?>\w+?)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty);
                 }
 
-                yield return (@"(\d{2,3})+", "1234", RegexOptions.None, 0, 4, true, !RegexHelpers.IsNonBacktracking(engine) ? "123" : "1234"); // NonBacktracking engine allows the alternate longer eager match of \d{2}\d{2}
-                yield return (@"(\d{2,3})*", "123456", RegexOptions.None, 0, 4, true, !RegexHelpers.IsNonBacktracking(engine) ? "123" : "1234");
-                yield return (@"(\d{2,3})+?", "1234", RegexOptions.None, 0, 4, true, !RegexHelpers.IsNonBacktracking(engine) ? "123" : "1234");
+                yield return (@"(\d{2,3})+", "1234", RegexOptions.None, 0, 4, true, "123");
+                yield return (@"(\d{2,3})*", "123456", RegexOptions.None, 0, 4, true, "123");
+                yield return (@"(\d{2,3})+?", "1234", RegexOptions.None, 0, 4, true, "123");
                 yield return (@"(\d{2,3})*?", "123456", RegexOptions.None, 0, 4, true, "");
                 yield return (@"(\d{2,3}?)+", "1234", RegexOptions.None, 0, 4, true, "1234");
                 yield return (@"(\d{2,3}?)*", "123456", RegexOptions.None, 0, 4, true, "1234");
                 yield return (@"(\d{2,3}?)+?", "1234", RegexOptions.None, 0, 4, true, "12");
                 yield return (@"(\d{2,3}?)*?", "123456", RegexOptions.None, 0, 4, true, "");
 
-                foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
+                foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline })
                 {
                     yield return (@".*", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@".*c", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@"b.*", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@".*", "abc", lineOption, 2, 1, true, "c");
 
+                    yield return (@"a.*[bc]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*[bc]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*[bc]", "xyza12345d6789", lineOption, 0, 14, false, "");
+
+                    yield return (@"a.*[bcd]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*[bcd]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*[bcd]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                    yield return (@"a.*[bcd]", "xyza12345e6789", lineOption, 0, 14, false, "");
+
+                    yield return (@"a.*[bcde]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*[bcde]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*[bcde]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                    yield return (@"a.*[bcde]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
+                    yield return (@"a.*[bcde]", "xyza12345f6789", lineOption, 0, 14, false, "");
+
+                    yield return (@"a.*[bcdef]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*[bcdef]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*[bcdef]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                    yield return (@"a.*[bcdef]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
+                    yield return (@"a.*[bcdef]", "xyza12345f6789", lineOption, 0, 14, true, "a12345f");
+                    yield return (@"a.*[bcdef]", "xyza12345g6789", lineOption, 0, 14, false, "");
+
                     yield return (@".*?", "abc", lineOption, 1, 2, true, "");
                     yield return (@".*?c", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@"b.*?", "abc", lineOption, 1, 2, true, "b");
                     yield return (@".*?", "abc", lineOption, 2, 1, true, "");
+
+                    yield return (@"a.*?[bc]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*?[bc]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*?[bc]", "xyza12345d6789", lineOption, 0, 14, false, "");
+
+                    yield return (@"a.*?[bcd]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*?[bcd]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*?[bcd]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                    yield return (@"a.*?[bcd]", "xyza12345e6789", lineOption, 0, 14, false, "");
+
+                    yield return (@"a.*?[bcde]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*?[bcde]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*?[bcde]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                    yield return (@"a.*?[bcde]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
+                    yield return (@"a.*?[bcde]", "xyza12345f6789", lineOption, 0, 14, false, "");
+
+                    yield return (@"a.*?[bcdef]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*?[bcdef]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*?[bcdef]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                    yield return (@"a.*?[bcdef]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
+                    yield return (@"a.*?[bcdef]", "xyza12345f6789", lineOption, 0, 14, true, "a12345f");
+                    yield return (@"a.*?[bcdef]", "xyza12345g6789", lineOption, 0, 14, false, "");
                 }
 
                 // Nested loops
-                if (!RegexHelpers.IsNonBacktracking(engine))
-                {
-                    yield return ("a*(?:a[ab]*)*", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
-                    yield return ("a*(?:a[ab]*?)*?", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
-                }
+                yield return ("a*(?:a[ab]*)*", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
+                yield return ("a*(?:a[ab]*?)*?", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
 
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
                 yield return (@"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz");
@@ -274,8 +325,42 @@ namespace System.Text.RegularExpressions.Tests
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
                 yield return (@"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzza", RegexOptions.None, 0, 18, false, string.Empty);
 
+                // Anchors
+                foreach (RegexOptions anchorOptions in new[] { RegexOptions.None, RegexOptions.Multiline })
+                {
+                    yield return (@"^abc", "abc", anchorOptions, 0, 3, true, "abc");
+                    yield return (@"^abc", " abc", anchorOptions, 0, 4, false, "");
+                    yield return (@"^abc|^def", "def", anchorOptions, 0, 3, true, "def");
+                    yield return (@"^abc|^def", " abc", anchorOptions, 0, 4, false, "");
+                    yield return (@"^abc|^def", " def", anchorOptions, 0, 4, false, "");
+                    yield return (@"abc|^def", " abc", anchorOptions, 0, 4, true, "abc");
+                    yield return (@"abc|^def|^efg", " abc", anchorOptions, 0, 4, true, "abc");
+                    yield return (@"^abc|def|^efg", " def", anchorOptions, 0, 4, true, "def");
+                    yield return (@"^abc|def", " def", anchorOptions, 0, 4, true, "def");
+                    yield return (@"abcd$", "1234567890abcd", anchorOptions, 0, 14, true, "abcd");
+                    yield return (@"abc{1,4}d$", "1234567890abcd", anchorOptions, 0, 14, true, "abcd");
+                    yield return (@"abc{1,4}d$", "1234567890abccccd", anchorOptions, 0, 17, true, "abccccd");
+                }
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    yield return (@"\Gabc", "abc", RegexOptions.None, 0, 3, true, "abc");
+                    yield return (@"\Gabc", " abc", RegexOptions.None, 0, 4, false, "");
+                    yield return (@"\Gabc", " abc", RegexOptions.None, 1, 3, true, "abc");
+                    yield return (@"\Gabc|\Gdef", "def", RegexOptions.None, 0, 3, true, "def");
+                    yield return (@"\Gabc|\Gdef", " abc", RegexOptions.None, 0, 4, false, "");
+                    yield return (@"\Gabc|\Gdef", " def", RegexOptions.None, 0, 4, false, "");
+                    yield return (@"\Gabc|\Gdef", " abc", RegexOptions.None, 1, 3, true, "abc");
+                    yield return (@"\Gabc|\Gdef", " def", RegexOptions.None, 1, 3, true, "def");
+                    yield return (@"abc|\Gdef", " abc", RegexOptions.None, 0, 4, true, "abc");
+                    yield return (@"\Gabc|def", " def", RegexOptions.None, 0, 4, true, "def");
+                }
+
                 // Anchors and multiline
-                yield return (@"^A$", "ABC\n", RegexOptions.Multiline, 0, 2, false, string.Empty);
+                yield return (@"^A$", "A\n", RegexOptions.Multiline, 0, 2, true, "A");
+                yield return (@"^A$", "ABC\n", RegexOptions.Multiline, 0, 4, false, string.Empty);
+                yield return (@"^A$", "123\nA", RegexOptions.Multiline, 0, 5, true, "A");
+                yield return (@"^A$", "123\nA\n456", RegexOptions.Multiline, 0, 9, true, "A");
+                yield return (@"^A$|^B$", "123\nB\n456", RegexOptions.Multiline, 0, 9, true, "B");
 
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
                 yield return (@"\A(line2\n)line3\Z", "line2\nline3\n", RegexOptions.Multiline, 0, 12, true, "line2\nline3");
@@ -418,7 +503,40 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
                 // Alternation construct
+                foreach (string input in new[] { "abc", "def" })
+                {
+                    string upper = input.ToUpperInvariant();
+
+                    // Two branches
+                    yield return (@"abc|def", input, RegexOptions.None, 0, input.Length, true, input);
+                    yield return (@"abc|def", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
+                    yield return (@"abc|def", upper, RegexOptions.None, 0, input.Length, false, "");
+
+                    // Three branches
+                    yield return (@"abc|agh|def", input, RegexOptions.None, 0, input.Length, true, input);
+                    yield return (@"abc|agh|def", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
+                    yield return (@"abc|agh|def", upper, RegexOptions.None, 0, input.Length, false, "");
+
+                    // Four branches
+                    yield return (@"abc|agh|def|aij", input, RegexOptions.None, 0, input.Length, true, input);
+                    yield return (@"abc|agh|def|aij", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
+                    yield return (@"abc|agh|def|aij", upper, RegexOptions.None, 0, input.Length, false, "");
+
+                    // Four branches (containing various other constructs)
+                    if (!RegexHelpers.IsNonBacktracking(engine))
+                    {
+                        yield return (@"abc|(agh)|(?=def)def|(?:(?(aij)aij|(?!)))", input, RegexOptions.None, 0, input.Length, true, input);
+                        yield return (@"abc|(agh)|(?=def)def|(?:(?(aij)aij|(?!)))", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
+                        yield return (@"abc|(agh)|(?=def)def|(?:(?(aij)aij|(?!)))", upper, RegexOptions.None, 0, input.Length, false, "");
+                    }
+
+                    // Sets in various positions in each branch
+                    yield return (@"a\wc|\wgh|de\w", input, RegexOptions.None, 0, input.Length, true, input);
+                    yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
+                    yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.None, 0, input.Length, false, "");
+                }
                 yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
+                yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     yield return ("(?(dog2))", "dog2", RegexOptions.None, 0, 4, true, string.Empty);
@@ -435,12 +553,10 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@"(?(\w+)\w+)dog", "catdog", RegexOptions.None, 0, 6, true, "catdog");
                     yield return (@"(?(abc)\w+|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
                     yield return (@"(?(abc)cat|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
-                    yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
                     yield return ("(a|ab|abc|abcd)d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.None, 0, 4, false, string.Empty);
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
                 }
-                yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
 
                 // No Negation
                 yield return ("[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
@@ -577,13 +693,10 @@ namespace System.Text.RegularExpressions.Tests
 
                 yield return (@".*?\nFoo", "\nfooThis should match", RegexOptions.IgnoreCase, 0, 21, true, "\nfoo");
                 yield return (@".*?\dFoo", "This1foo should match", RegexOptions.IgnoreCase, 0, 21, true, "This1foo");
-                if (!RegexHelpers.IsNonBacktracking(engine)) // TODO: https://github.com/dotnet/runtime/issues/63395
-                {
-                    yield return (@".*?\dFoo", "This1foo should 2FoO match", RegexOptions.IgnoreCase, 0, 26, true, "This1foo");
-                    yield return (@".*?\dFoo", "This1Foo should 2fOo match", RegexOptions.IgnoreCase, 0, 26, true, "This1Foo");
-                    yield return (@".*?\dFo{2}", "This1foo should 2FoO match", RegexOptions.IgnoreCase, 0, 26, true, "This1foo");
-                    yield return (@".*?\dFo{2}", "This1Foo should 2fOo match", RegexOptions.IgnoreCase, 0, 26, true, "This1Foo");
-                }
+                yield return (@".*?\dFoo", "This1foo should 2FoO match", RegexOptions.IgnoreCase, 0, 26, true, "This1foo");
+                yield return (@".*?\dFoo", "This1Foo should 2fOo match", RegexOptions.IgnoreCase, 0, 26, true, "This1Foo");
+                yield return (@".*?\dFo{2}", "This1foo should 2FoO match", RegexOptions.IgnoreCase, 0, 26, true, "This1foo");
+                yield return (@".*?\dFo{2}", "This1Foo should 2fOo match", RegexOptions.IgnoreCase, 0, 26, true, "This1Foo");
                 yield return (@".*?\dfoo", "1fooThis1FOO should 1foo match", RegexOptions.IgnoreCase, 4, 9, true, "This1FOO");
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
@@ -756,11 +869,8 @@ namespace System.Text.RegularExpressions.Tests
 
                 // Groups can never be empty
                 Assert.True(match.Groups.Count >= 1);
-                if (!RegexHelpers.IsNonBacktracking(engine))
-                {
-                    Assert.Equal(expectedSuccess, match.Groups[0].Success);
-                    RegexAssert.Equal(expectedValue, match.Groups[0]);
-                }
+                Assert.Equal(expectedSuccess, match.Groups[0].Success);
+                RegexAssert.Equal(expectedValue, match.Groups[0]);
             }
         }
 
@@ -864,7 +974,7 @@ namespace System.Text.RegularExpressions.Tests
             }
             string input = new string(chars);
 
-            Regex re = await RegexHelpers.GetRegexAsync(engine, @"a.{20}$", RegexOptions.None, TimeSpan.FromMilliseconds(10));
+            Regex re = await RegexHelpers.GetRegexAsync(engine, @"a.{20}^", RegexOptions.None, TimeSpan.FromMilliseconds(10));
             Assert.Throws<RegexMatchTimeoutException>(() => { re.Match(input); });
         }
 
@@ -1018,6 +1128,18 @@ namespace System.Text.RegularExpressions.Tests
                         new CaptureData("d", 0, 1),
                         new CaptureData(string.Empty, 1, 0),
                         new CaptureData(string.Empty, 1, 0)
+                    }
+                };
+                yield return new object[]
+                {
+                    engine,
+                    "(d+?)(e*?)(f+)", "dddeeefff", RegexOptions.None, 0, 9,
+                    new CaptureData[]
+                    {
+                        new CaptureData("dddeeefff", 0, 9),
+                        new CaptureData("ddd", 0, 3),
+                        new CaptureData("eee", 3, 3),
+                        new CaptureData("fff", 6, 3),
                     }
                 };
 
@@ -1309,11 +1431,6 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Equal(expected[0].Index, match.Index);
                 Assert.Equal(expected[0].Length, match.Length);
 
-                if (RegexHelpers.IsNonBacktracking(engine))
-                {
-                    return;
-                }
-
                 Assert.Equal(1, match.Captures.Count);
                 RegexAssert.Equal(expected[0].Value, match.Captures[0]);
                 Assert.Equal(expected[0].Index, match.Captures[0].Index);
@@ -1328,12 +1445,24 @@ namespace System.Text.RegularExpressions.Tests
                     Assert.Equal(expected[i].Index, match.Groups[i].Index);
                     Assert.Equal(expected[i].Length, match.Groups[i].Length);
 
-                    Assert.Equal(expected[i].Captures.Length, match.Groups[i].Captures.Count);
-                    for (int j = 0; j < match.Groups[i].Captures.Count; j++)
+                    if (!RegexHelpers.IsNonBacktracking(engine))
                     {
-                        RegexAssert.Equal(expected[i].Captures[j].Value, match.Groups[i].Captures[j]);
-                        Assert.Equal(expected[i].Captures[j].Index, match.Groups[i].Captures[j].Index);
-                        Assert.Equal(expected[i].Captures[j].Length, match.Groups[i].Captures[j].Length);
+                        Assert.Equal(expected[i].Captures.Length, match.Groups[i].Captures.Count);
+                        for (int j = 0; j < match.Groups[i].Captures.Count; j++)
+                        {
+                            RegexAssert.Equal(expected[i].Captures[j].Value, match.Groups[i].Captures[j]);
+                            Assert.Equal(expected[i].Captures[j].Index, match.Groups[i].Captures[j].Index);
+                            Assert.Equal(expected[i].Captures[j].Length, match.Groups[i].Captures[j].Length);
+                        }
+                    }
+                    else
+                    {
+                        // NonBacktracking does not support multiple captures
+                        Assert.Equal(1, match.Groups[i].Captures.Count);
+                        int lastExpected = expected[i].Captures.Length - 1;
+                        RegexAssert.Equal(expected[i].Captures[lastExpected].Value, match.Groups[i].Captures[0]);
+                        Assert.Equal(expected[i].Captures[lastExpected].Index, match.Groups[i].Captures[0].Index);
+                        Assert.Equal(expected[i].Captures[lastExpected].Length, match.Groups[i].Captures[0].Length);
                     }
                 }
             }
@@ -1343,22 +1472,18 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                if (RegexHelpers.IsNonBacktracking(engine))
-                {
-                    continue;
-                }
-
-                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
+                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline, RegexOptions.Singleline | RegexOptions.Multiline })
                 {
                     // Anchors
                     yield return new object[] { engine, @"^.*", "abc", options, 0, true, true };
                     yield return new object[] { engine, @"^.*", "abc", options, 1, false, true };
+                }
 
-                    // Positive Lookbehinds
-                    yield return new object[] { engine, @"(?<=abc)def", "abcdef", options, 3, true, false };
-
-                    // Negative Lookbehinds
-                    yield return new object[] { engine, @"(?<!abc)def", "abcdef", options, 3, false, true };
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    // Positive and negative lookbehinds
+                    yield return new object[] { engine, @"(?<=abc)def", "abcdef", RegexOptions.None, 3, true, false };
+                    yield return new object[] { engine, @"(?<!abc)def", "abcdef", RegexOptions.None, 3, false, true };
                 }
             }
         }
@@ -1424,7 +1549,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [ConditionalTheory(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/runtime/issues/24749")]
-        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeConfiguration.Checked)]
+        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", ~RuntimeConfiguration.Release)]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeTestModes.JitMinOpts)]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public void Match_ExcessPrefix(RegexEngine engine)
@@ -1903,25 +2028,12 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> MatchAmbiguousRegexes_TestData()
         {
-            // Different results in NonBacktracking vs backtracking engines
-            yield return new object[] { RegexEngine.NonBacktracking, "(a|ab|c|bcd){0,}d*", "ababcd", (0, 6) };
-            yield return new object[] { RegexEngine.NonBacktracking, "(a|ab|c|bcd){0,10}d*", "ababcd", (0, 6) };
-            yield return new object[] { RegexEngine.NonBacktracking, "(a|ab|c|bcd)*d*", "ababcd", (0, 6) };
-            yield return new object[] { RegexEngine.NonBacktracking, @"(the)\s*([12][0-9]|3[01]|0?[1-9])", "it is the 10:00 time", (6, 5) };
-
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                if (engine == RegexEngine.NonBacktracking) continue;
-
                 yield return new object[] { engine, "(a|ab|c|bcd){0,}d*", "ababcd", (0, 1) };
                 yield return new object[] { engine, "(a|ab|c|bcd){0,10}d*", "ababcd", (0, 1) };
                 yield return new object[] { engine, "(a|ab|c|bcd)*d*", "ababcd", (0, 1) };
                 yield return new object[] { engine, @"(the)\s*([12][0-9]|3[01]|0?[1-9])", "it is the 10:00 time", (6, 6) };
-            }
-
-            // Same results in all engines after reordering of the alternatives above
-            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
-            {
                 yield return new object[] { engine, "(ab|a|bcd|c){0,}d*", "ababcd", (0, 6) };
                 yield return new object[] { engine, "(ab|a|bcd|c){0,10}d*", "ababcd", (0, 6) };
                 yield return new object[] { engine, "(ab|a|bcd|c)*d*", "ababcd", (0, 6) };
@@ -1929,11 +2041,6 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        /// <summary>
-        /// NonBacktracking engine ignores the order of alternatives in a union,
-        /// while a backtracking engine takes the order into account.
-        /// This may lead to different matches in ambiguous regexes.
-        /// </summary>
         [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [MemberData(nameof(MatchAmbiguousRegexes_TestData))]

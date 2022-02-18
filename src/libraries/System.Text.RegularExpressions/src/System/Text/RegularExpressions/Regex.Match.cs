@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Text.RegularExpressions
 {
     public partial class Regex
@@ -8,7 +10,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Searches the input string for one or more occurrences of the text supplied in the given pattern.
         /// </summary>
-        public static bool IsMatch(string input, string pattern) =>
+        public static bool IsMatch(string input, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern) =>
             RegexCache.GetOrAdd(pattern).IsMatch(input);
 
         /// <summary>
@@ -16,10 +18,10 @@ namespace System.Text.RegularExpressions
         /// supplied in the pattern parameter with matching options supplied in the options
         /// parameter.
         /// </summary>
-        public static bool IsMatch(string input, string pattern, RegexOptions options) =>
+        public static bool IsMatch(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).IsMatch(input);
 
-        public static bool IsMatch(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+        public static bool IsMatch(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).IsMatch(input);
 
         /// <summary>
@@ -54,7 +56,7 @@ namespace System.Text.RegularExpressions
         /// Searches the input string for one or more occurrences of the text
         /// supplied in the pattern parameter.
         /// </summary>
-        public static Match Match(string input, string pattern) =>
+        public static Match Match(string input, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern) =>
             RegexCache.GetOrAdd(pattern).Match(input);
 
         /// <summary>
@@ -62,10 +64,10 @@ namespace System.Text.RegularExpressions
         /// supplied in the pattern parameter. Matching is modified with an option
         /// string.
         /// </summary>
-        public static Match Match(string input, string pattern, RegexOptions options) =>
+        public static Match Match(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Match(input);
 
-        public static Match Match(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+        public static Match Match(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).Match(input);
 
         /// <summary>
@@ -112,16 +114,16 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Returns all the successful matches as if Match were called iteratively numerous times.
         /// </summary>
-        public static MatchCollection Matches(string input, string pattern) =>
+        public static MatchCollection Matches(string input, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern) =>
             RegexCache.GetOrAdd(pattern).Matches(input);
 
         /// <summary>
         /// Returns all the successful matches as if Match were called iteratively numerous times.
         /// </summary>
-        public static MatchCollection Matches(string input, string pattern, RegexOptions options) =>
+        public static MatchCollection Matches(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Matches(input);
 
-        public static MatchCollection Matches(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+        public static MatchCollection Matches(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).Matches(input);
 
         /// <summary>

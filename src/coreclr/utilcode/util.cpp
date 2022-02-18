@@ -19,66 +19,12 @@
 #include "corinfo.h"
 #include "volatile.h"
 #include "mdfileformat.h"
+#include <configuration.h>
 
 #ifndef DACCESS_COMPILE
 UINT32 g_nClrInstanceId = 0;
 #endif //!DACCESS_COMPILE
 
-//********** Code. ************************************************************
-
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORESYSTEM)
-extern WinRTStatusEnum gWinRTStatus = WINRT_STATUS_UNINITED;
-#endif // FEATURE_COMINTEROP && !FEATURE_CORESYSTEM
-
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORESYSTEM)
-//------------------------------------------------------------------------------
-//
-// Attempt to detect the presense of Windows Runtime support on the current OS.
-// Our algorithm to do this is to ensure that:
-//      1. combase.dll exists
-//      2. combase.dll contains a RoInitialize export
-//
-
-void InitWinRTStatus()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    WinRTStatusEnum winRTStatus = WINRT_STATUS_UNSUPPORTED;
-
-    const WCHAR wszComBaseDll[] = W("\\combase.dll");
-    const SIZE_T cchComBaseDll = ARRAY_SIZE(wszComBaseDll);
-
-    WCHAR wszComBasePath[MAX_LONGPATH + 1];
-    const SIZE_T cchComBasePath = ARRAY_SIZE(wszComBasePath);
-
-    ZeroMemory(wszComBasePath, cchComBasePath * sizeof(wszComBasePath[0]));
-
-    UINT cchSystemDirectory = WszGetSystemDirectory(wszComBasePath, MAX_LONGPATH);
-
-    // Make sure that we're only probing in the system directory.  If we can't find the system directory, or
-    // we find it but combase.dll doesn't fit into it, we'll fall back to a safe default of saying that WinRT
-    // is simply not present.
-    if (cchSystemDirectory > 0 && cchComBasePath - cchSystemDirectory >= cchComBaseDll)
-    {
-        if (wcscat_s(wszComBasePath, wszComBaseDll) == 0)
-        {
-            HModuleHolder hComBase(WszLoadLibrary(wszComBasePath));
-            if (hComBase != NULL)
-            {
-                FARPROC activateInstace = GetProcAddress(hComBase, "RoInitialize");
-                if (activateInstace != NULL)
-                {
-                    winRTStatus = WINRT_STATUS_SUPPORTED;
-                }
-            }
-        }
-    }
-
-    gWinRTStatus = winRTStatus;
-}
-#endif // FEATURE_COMINTEROP && !FEATURE_CORESYSTEM
 //*****************************************************************************
 // Convert a string of hex digits into a hex value of the specified # of bytes.
 //*****************************************************************************
@@ -827,7 +773,7 @@ DWORD LCM(DWORD u, DWORD v)
     CONTRACTL_END;
 
 #if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    BOOL enableGCCPUGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCCpuGroup) != 0;
+    BOOL enableGCCPUGroups = Configuration::GetKnobBooleanValue(W("System.GC.CpuGroup"), CLRConfig::EXTERNAL_GCCpuGroup);
 
     if (!enableGCCPUGroups)
         return;
@@ -1805,9 +1751,7 @@ HRESULT validateOneArg(
                 // Validate the referenced type.
                 if(FAILED(hr = validateOneArg(tk, pSig, pulNSentinels, pImport, FALSE))) IfFailGo(hr);
                 break;
-            case ELEMENT_TYPE_BYREF:  //fallthru
-                if(TypeFromToken(tk)==mdtFieldDef) IfFailGo(VLDTR_E_SIG_BYREFINFIELD);
-                FALLTHROUGH;
+            case ELEMENT_TYPE_BYREF:
             case ELEMENT_TYPE_PINNED:
             case ELEMENT_TYPE_SZARRAY:
                 // Validate the referenced type.

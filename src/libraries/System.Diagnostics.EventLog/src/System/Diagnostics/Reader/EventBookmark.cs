@@ -17,9 +17,9 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     public class EventBookmark
     {
-        internal EventBookmark(string bookmarkText)
+        internal EventBookmark(string bookmarkText!!)
         {
-            BookmarkText = bookmarkText ?? throw new ArgumentNullException(nameof(bookmarkText));
+            BookmarkText = bookmarkText;
         }
 
         internal string BookmarkText { get; }

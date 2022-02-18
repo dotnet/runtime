@@ -57,9 +57,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CompositionOperation_SharingLockRequired" xml:space="preserve">
-    <value>Sharing lock is required</value>
-  </data>
   <data name="Dependency_ExportNotFound" xml:space="preserve">
     <value>No export was found for the contract '{0}'</value>
   </data>
@@ -72,9 +69,6 @@
   </data>
   <data name="Dependency_ToStringFormat" xml:space="preserve">
     <value>'{0}' on contract '{1}' supplied by {2}</value>
-  </data>
-  <data name="ExportDescriptorNull" xml:space="preserve">
-    <value>Export descriptor fulfillment function returned null.</value>
   </data>
   <data name="ExportDescriptor_ToStringFormat" xml:space="preserve">
     <value>{0} supplied by {1}</value>
@@ -102,9 +96,6 @@
   </data>
   <data name="Component_NotCreatableOutsideSharingBoundary" xml:space="preserve">
     <value>The component (unknown) cannot be created outside the {0} sharing boundary.</value>
-  </data>
-  <data name="Keyword_MetadataViewProvider" xml:space="preserve">
-    <value>Metadata View Provider</value>
   </data>
   <data name="MetadataViewProvider_InvalidViewImplementation" xml:space="preserve">
     <value>The type '{0}' cannot be used as a metadata view. A metadata view must be a concrete class with a parameterless or dictionary constructor.</value>

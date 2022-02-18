@@ -26,8 +26,8 @@ typedef enum {
 	PROP_DECLSEC_FLAGS = 8, /* guint32 */
 	PROP_WEAK_BITMAP = 9,
 	PROP_DIM_CONFLICTS = 10, /* GSList of MonoMethod* */
-	PROP_FIELD_DEF_VALUES_2BYTESWIZZLE = 11, /* MonoFieldDefaultValue* with default values swizzled at 2 byte boundaries*/ 
-	PROP_FIELD_DEF_VALUES_4BYTESWIZZLE = 12, /* MonoFieldDefaultValue* with default values swizzled at 4 byte boundaries*/ 
+	PROP_FIELD_DEF_VALUES_2BYTESWIZZLE = 11, /* MonoFieldDefaultValue* with default values swizzled at 2 byte boundaries*/
+	PROP_FIELD_DEF_VALUES_4BYTESWIZZLE = 12, /* MonoFieldDefaultValue* with default values swizzled at 4 byte boundaries*/
 	PROP_FIELD_DEF_VALUES_8BYTESWIZZLE = 13, /* MonoFieldDefaultValue* with default values swizzled at 8 byte boundaries*/
 	PROP_METADATA_UPDATE_INFO = 14, /* MonoClassMetadataUpdateInfo* */
 }  InfrequentDataKind;
@@ -68,7 +68,9 @@ mono_class_try_get_generic_class (MonoClass *klass)
 guint32
 mono_class_get_flags (MonoClass *klass)
 {
-	switch (m_class_get_class_kind (klass)) {
+	g_assert (klass);
+	guint32 kind = m_class_get_class_kind (klass);
+	switch (kind) {
 	case MONO_CLASS_DEF:
 	case MONO_CLASS_GTD:
 		return m_classdef_get_flags ((MonoClassDef*)klass);
@@ -394,7 +396,7 @@ mono_class_get_field_def_values_with_swizzle (MonoClass *klass, int swizzle)
 		dataKind = PROP_FIELD_DEF_VALUES_2BYTESWIZZLE;
 	else if (swizzle == 4)
 		dataKind = PROP_FIELD_DEF_VALUES_4BYTESWIZZLE;
-	else
+	else if (swizzle == 8)
 		dataKind = PROP_FIELD_DEF_VALUES_8BYTESWIZZLE;
 	return (MonoFieldDefaultValue*)get_pointer_property (klass, dataKind);
 }
@@ -414,7 +416,7 @@ mono_class_set_field_def_values_with_swizzle (MonoClass *klass, MonoFieldDefault
 		dataKind = PROP_FIELD_DEF_VALUES_2BYTESWIZZLE;
 	else if (swizzle == 4)
 		dataKind = PROP_FIELD_DEF_VALUES_4BYTESWIZZLE;
-	else
+	else if (swizzle == 8)
 		dataKind = PROP_FIELD_DEF_VALUES_8BYTESWIZZLE;
 	set_pointer_property (klass, dataKind, values);
 }

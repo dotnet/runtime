@@ -28,10 +28,10 @@
 	 */
 #ifndef HOST_WIN32 // FIXME?
 #	if defined(MONO_KEYWORD_THREAD) && !defined(__powerpc__)
-	
+
         /* The local alloc stuff is in pthread_support.c, but solaris uses solaris_threads.c */
         /* It is also disabled on solaris/x86 by libgc/configure.ac */
-        /* 
+        /*
 		 * ARM has no definition for some atomic functions in gc_locks.h and
 		 * support is also disabled in libgc/configure.ac.
 		 */

@@ -11,7 +11,7 @@ test_shell_argv1 (void)
 	gchar **argv;
 	gboolean ret;
 
-	/* The next line prints a critical error and returns FALSE 
+	/* The next line prints a critical error and returns FALSE
 	ret = g_shell_parse_argv (NULL, NULL, NULL, NULL);
 	*/
 	ret = g_shell_parse_argv ("", NULL, NULL, NULL);
@@ -97,7 +97,7 @@ test_shell_argv1 (void)
 		return FAILED ("24. argv[2] was %s", argv [1]);
 	if (gerror != NULL)
 		return FAILED ("25. error is not null");
-	
+
 	return OK;
 }
 
@@ -268,7 +268,7 @@ test_shell_argv4 (void)
 		return FAILED ("6. Expected -e, got: %s", argv [1]);
 	if (strcmp (argv [2], "bash -c 'read -p \"Press any key to continue...\" -n1;'"))
 		return FAILED ("7. Got unexpected result: %s\n", argv [2]);
-	
+
 	return OK;
 }
 
@@ -299,7 +299,7 @@ test_shell_argv5 (void)
 		return FAILED ("5. Expected echo got %s", argv [0]);
 	if (strcmp (argv [1], "foo,bar"))
 		return FAILED ("6. Expected foo,bar, got: %s", argv [1]);
-	
+
 	return OK;
 }
 

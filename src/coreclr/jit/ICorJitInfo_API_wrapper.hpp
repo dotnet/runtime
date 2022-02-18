@@ -61,11 +61,10 @@ bool WrapICorJitInfo::getMethodInfo(
 
 CorInfoInline WrapICorJitInfo::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
-          CORINFO_METHOD_HANDLE calleeHnd,
-          uint32_t* pRestrictions)
+          CORINFO_METHOD_HANDLE calleeHnd)
 {
     API_ENTER(canInline);
-    CorInfoInline temp = wrapHnd->canInline(callerHnd, calleeHnd, pRestrictions);
+    CorInfoInline temp = wrapHnd->canInline(callerHnd, calleeHnd);
     API_LEAVE(canInline);
     return temp;
 }

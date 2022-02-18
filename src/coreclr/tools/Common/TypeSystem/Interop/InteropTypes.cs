@@ -54,6 +54,11 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");
         }
 
+        public static MetadataType GetMarshalDirectiveException(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "MarshalDirectiveException");
+        }
+
         public static MetadataType GetVariant(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "Variant");

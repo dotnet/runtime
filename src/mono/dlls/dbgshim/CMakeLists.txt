@@ -81,5 +81,5 @@ if(CLR_CMAKE_HOST_UNIX)
     )
 endif()
 
-target_link_libraries(dbgshim ${DBGSHIM_LIBRARIES})
+target_link_libraries(dbgshim ${DBGSHIM_LIBRARIES} monoapi)
 install(TARGETS dbgshim DESTINATION lib)

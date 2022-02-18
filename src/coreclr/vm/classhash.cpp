@@ -267,7 +267,7 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
             mdToken mdtUncompressed = UncompressModuleAndClassDef(Data);
             if (TypeFromToken(mdtUncompressed) == mdtExportedType)
             {
-                IfFailThrow(GetModule()->GetClassLoader()->GetAssembly()->GetManifestImport()->GetExportedTypeProps(
+                IfFailThrow(GetModule()->GetClassLoader()->GetAssembly()->GetMDImport()->GetExportedTypeProps(
                     mdtUncompressed,
                     (LPCSTR *)&pszNameSpace,
                     (LPCSTR *)&pszName,

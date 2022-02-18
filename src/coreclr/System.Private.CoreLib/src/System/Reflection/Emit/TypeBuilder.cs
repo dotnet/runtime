@@ -25,23 +25,14 @@ namespace System.Reflection.Emit
             private readonly byte[]? m_binaryAttribute;
             private readonly CustomAttributeBuilder? m_customBuilder;
 
-            public CustAttr(ConstructorInfo con, byte[] binaryAttribute)
+            public CustAttr(ConstructorInfo con!!, byte[] binaryAttribute!!)
             {
-                if (con is null)
-                    throw new ArgumentNullException(nameof(con));
-
-                if (binaryAttribute is null)
-                    throw new ArgumentNullException(nameof(binaryAttribute));
-
                 m_con = con;
                 m_binaryAttribute = binaryAttribute;
             }
 
-            public CustAttr(CustomAttributeBuilder customBuilder)
+            public CustAttr(CustomAttributeBuilder customBuilder!!)
             {
-                if (customBuilder is null)
-                    throw new ArgumentNullException(nameof(customBuilder));
-
                 m_customBuilder = customBuilder;
             }
 
@@ -480,11 +471,7 @@ namespace System.Reflection.Emit
             string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, ModuleBuilder module,
             PackingSize iPackingSize, int iTypeSize, TypeBuilder? enclosingType)
         {
-            if (fullname == null)
-                throw new ArgumentNullException(nameof(fullname));
-
-            if (fullname.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(fullname));
+            ArgumentException.ThrowIfNullOrEmpty(fullname);
 
             if (fullname[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(fullname));
@@ -513,11 +500,8 @@ namespace System.Reflection.Emit
             {
                 for (i = 0; i < interfaces.Length; i++)
                 {
-                    if (interfaces[i] == null)
-                    {
-                        // cannot contain null in the interface list
-                        throw new ArgumentNullException(nameof(interfaces));
-                    }
+                    // cannot contain null in the interface list
+                    ArgumentNullException.ThrowIfNull(interfaces[i], nameof(interfaces));
                 }
                 interfaceTokens = new int[interfaces.Length + 1];
                 for (i = 0; i < interfaces.Length; i++)
@@ -581,11 +565,7 @@ namespace System.Reflection.Emit
             FieldBuilder fdBuilder;
             TypeAttributes typeAttributes;
 
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (name.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             if (size <= 0 || size >= 0x003f0000)
                 throw new ArgumentException(SR.Argument_BadSizeForData);
@@ -1128,8 +1108,7 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
@@ -1142,8 +1121,7 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
@@ -1169,17 +1147,13 @@ namespace System.Reflection.Emit
             }
         }
 
-        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names!!)
         {
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
-
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
             for (int i = 0; i < names.Length; i++)
-                if (names[i] == null)
-                    throw new ArgumentNullException(nameof(names));
+                ArgumentNullException.ThrowIfNull(names[i], nameof(names));
 
             if (m_inst != null)
                 throw new InvalidOperationException();
@@ -1222,14 +1196,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void DefineMethodOverrideNoLock(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
+        private void DefineMethodOverrideNoLock(MethodInfo methodInfoBody!!, MethodInfo methodInfoDeclaration!!)
         {
-            if (methodInfoBody == null)
-                throw new ArgumentNullException(nameof(methodInfoBody));
-
-            if (methodInfoDeclaration == null)
-                throw new ArgumentNullException(nameof(methodInfoDeclaration));
-
             ThrowIfCreated();
 
             if (!ReferenceEquals(methodInfoBody.DeclaringType, this))
@@ -1282,11 +1250,7 @@ namespace System.Reflection.Emit
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (name.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             AssemblyBuilder.CheckContext(returnType);
             AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
@@ -1374,23 +1338,9 @@ namespace System.Reflection.Emit
 
             lock (SyncRoot)
             {
-                if (name == null)
-                    throw new ArgumentNullException(nameof(name));
-
-                if (name.Length == 0)
-                    throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
-
-                if (dllName == null)
-                    throw new ArgumentNullException(nameof(dllName));
-
-                if (dllName.Length == 0)
-                    throw new ArgumentException(SR.Argument_EmptyName, nameof(dllName));
-
-                if (importName == null)
-                    throw new ArgumentNullException(nameof(importName));
-
-                if (importName.Length == 0)
-                    throw new ArgumentException(SR.Argument_EmptyName, nameof(importName));
+                ArgumentException.ThrowIfNullOrEmpty(name);
+                ArgumentException.ThrowIfNullOrEmpty(dllName);
+                ArgumentException.ThrowIfNullOrEmpty(importName);
 
                 if ((attributes & MethodAttributes.Abstract) != 0)
                     throw new ArgumentException(SR.Argument_BadPInvokeMethod);
@@ -1726,11 +1676,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        private FieldBuilder DefineInitializedDataNoLock(string name, byte[] data, FieldAttributes attributes)
+        private FieldBuilder DefineInitializedDataNoLock(string name, byte[] data!!, FieldAttributes attributes)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-
             // This method will define an initialized Data in .sdata.
             // We will create a fake TypeDef to represent the data with size. This TypeDef
             // will be the signature for the Field.
@@ -1792,10 +1739,7 @@ namespace System.Reflection.Emit
             Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             AssemblyBuilder.CheckContext(returnType);
             AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
@@ -1830,7 +1774,6 @@ namespace System.Reflection.Emit
             return new PropertyBuilder(
                     m_module,
                     name,
-                    sigHelper,
                     attributes,
                     returnType,
                     prToken,
@@ -1847,10 +1790,7 @@ namespace System.Reflection.Emit
 
         private EventBuilder DefineEventNoLock(string name, EventAttributes attributes, Type eventtype)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
             if (name[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
 
@@ -1922,7 +1862,9 @@ namespace System.Reflection.Emit
 
             int tkParent = 0;
             if (m_typeParent != null)
+            {
                 tkParent = m_module.GetTypeTokenInternal(m_typeParent);
+            }
 
             ModuleBuilder module = m_module;
 
@@ -2126,13 +2068,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType!!)
         {
-            if (interfaceType == null)
-            {
-                throw new ArgumentNullException(nameof(interfaceType));
-            }
-
             AssemblyBuilder.CheckContext(interfaceType);
 
             ThrowIfCreated();
@@ -2155,23 +2092,14 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
-
             DefineCustomAttribute(m_module, m_tdType, ((ModuleBuilder)m_module).GetConstructorToken(con),
                 binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
-
             customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, m_tdType);
         }
 

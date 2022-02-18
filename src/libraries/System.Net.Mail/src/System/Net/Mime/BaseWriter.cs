@@ -26,13 +26,8 @@ namespace System.Net.Mime
         protected Stream _contentStream = null!; // set to null on dispose
         protected bool _isInContent;
 
-        protected BaseWriter(Stream stream, bool shouldEncodeLeadingDots)
+        protected BaseWriter(Stream stream!!, bool shouldEncodeLeadingDots)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             _stream = stream;
             _shouldEncodeLeadingDots = shouldEncodeLeadingDots;
             _onCloseHandler = new EventHandler(OnClose);
@@ -44,16 +39,8 @@ namespace System.Net.Mime
 
         internal abstract void WriteHeaders(NameValueCollection headers, bool allowUnicode);
 
-        internal void WriteHeader(string name, string value, bool allowUnicode)
+        internal void WriteHeader(string name!!, string value!!, bool allowUnicode)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
             if (_isInContent)
             {
                 throw new InvalidOperationException(SR.MailWriterIsInContent);

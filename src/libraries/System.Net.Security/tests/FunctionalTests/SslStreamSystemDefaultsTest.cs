@@ -76,7 +76,7 @@ namespace System.Net.Security.Tests
         [MemberData(nameof(OneOrBothUseDefaulData))]
         public async Task ClientAndServer_OneOrBothUseDefault_Ok(SslProtocols? clientProtocols, SslProtocols? serverProtocols)
         {
-            if (PlatformDetection.IsWindows10Version22000OrGreater)
+            if (PlatformDetection.IsWindows10Version20348OrGreater)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/58927")]
                 throw new SkipTestException("Unstable on Windows 11");

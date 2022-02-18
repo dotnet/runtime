@@ -16,18 +16,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
-#include "metadata.h"
+#include <mono/metadata/metadata.h>
 #include "tabledefs.h"
 #include "mono-endian.h"
 #include "cil-coff.h"
-#include "tokentype.h"
+#include <mono/metadata/tokentype.h>
 #include "class-internals.h"
 #include "metadata-internals.h"
 #include "reflection-internals.h"
 #include "metadata-update.h"
-#include "class.h"
+#include <mono/metadata/class.h>
 #include "marshal.h"
-#include "debug-helpers.h"
+#include <mono/metadata/debug-helpers.h>
 #include "abi-details.h"
 #include "cominterop.h"
 #include "components.h"
@@ -4994,7 +4994,7 @@ mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
 		if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
 			return 0;
 	}
-	
+
 	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
 	return mono_metadata_decode_row_col (tdef, loc.result, MONO_NESTED_CLASS_ENCLOSING) | MONO_TOKEN_TYPE_DEF;
 }

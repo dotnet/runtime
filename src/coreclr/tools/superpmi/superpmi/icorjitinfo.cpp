@@ -81,23 +81,20 @@ bool MyICJI::getMethodInfo(CORINFO_METHOD_HANDLE ftn, /* IN  */
 }
 
 // Decides if you have any limitations for inlining. If everything's OK, it will return
-// INLINE_PASS and will fill out pRestrictions with a mask of restrictions the caller of this
-// function must respect. If caller passes pRestrictions = nullptr, if there are any restrictions
-// INLINE_FAIL will be returned
+// INLINE_PASS.
 //
 // The callerHnd must be the immediate caller (i.e. when we have a chain of inlined calls)
 //
 // The inlined method need not be verified
 
 CorInfoInline MyICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /* IN  */
-                                CORINFO_METHOD_HANDLE calleeHnd,    /* IN  */
-                                uint32_t*             pRestrictions /* OUT */
+                                CORINFO_METHOD_HANDLE calleeHnd     /* IN  */
                                 )
 {
     jitInstance->mc->cr->AddCall("canInline");
 
     DWORD         exceptionCode = 0;
-    CorInfoInline result        = jitInstance->mc->repCanInline(callerHnd, calleeHnd, pRestrictions, &exceptionCode);
+    CorInfoInline result        = jitInstance->mc->repCanInline(callerHnd, calleeHnd, &exceptionCode);
     if (exceptionCode != 0)
         ThrowException(exceptionCode);
     return result;

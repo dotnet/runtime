@@ -27,23 +27,14 @@ namespace System.Xml
             _impl.OuterReader = this;
         }
 
-        public XmlValidatingReader(string xmlFragment, XmlNodeType fragType, XmlParserContext context)
+        public XmlValidatingReader(string xmlFragment!!, XmlNodeType fragType, XmlParserContext context)
         {
-            if (xmlFragment == null)
-            {
-                throw new ArgumentNullException(nameof(xmlFragment));
-            }
-
             _impl = new XmlValidatingReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
         }
 
-        public XmlValidatingReader(Stream xmlFragment, XmlNodeType fragType, XmlParserContext context)
+        public XmlValidatingReader(Stream xmlFragment!!, XmlNodeType fragType, XmlParserContext context)
         {
-            if (xmlFragment == null)
-            {
-                throw new ArgumentNullException(nameof(xmlFragment));
-            }
             _impl = new XmlValidatingReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
         }
