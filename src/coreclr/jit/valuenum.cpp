@@ -1888,7 +1888,7 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
             // "fully zeroed" vectors, and here we may be loading one from memory, leaving upper
             // bits undefined. So using "SIMD_Init" is "the next best thing", so to speak, and
             // TYP_FLOAT is one of the more popular base types, so that's why we use it here.
-            return VNForFunc(typ, VNF_SIMD_Init, VNForFloatCon(0), VNForSimdType(genTypeSize(typ), TYP_FLOAT));
+            return VNForFunc(typ, VNF_SIMD_Init, VNForFloatCon(0), VNForSimdType(genTypeSize(typ), CORINFO_TYPE_FLOAT));
 #endif // FEATURE_SIMD
 
         // These should be unreached.
@@ -1935,9 +1935,9 @@ ValueNum ValueNumStore::VNOneForType(var_types typ)
 }
 
 #ifdef FEATURE_SIMD
-ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, var_types simdBaseType)
+ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType)
 {
-    ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseType));
+    ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseJitType));
     ValueNum sizeVN     = VNForIntCon(simdSize);
     ValueNum simdTypeVN = VNForFunc(TYP_REF, VNF_SimdType, sizeVN, baseTypeVN);
 
@@ -4167,32 +4167,33 @@ ValueNum ValueNumStore::VNForFieldSeq(FieldSeqNode* fieldSeq)
     {
         return VNForNull();
     }
-    else if (fieldSeq == FieldSeqStore::NotAField())
+
+    ValueNum fieldSeqVN;
+    if (fieldSeq == FieldSeqStore::NotAField())
     {
         // We always allocate a new, unique VN in this call.
         Chunk*   c                 = GetAllocChunk(TYP_REF, CEA_NotAField);
         unsigned offsetWithinChunk = c->AllocVN();
-        ValueNum result            = c->m_baseVN + offsetWithinChunk;
-        return result;
+        fieldSeqVN                 = c->m_baseVN + offsetWithinChunk;
     }
     else
     {
         ssize_t  fieldHndVal = ssize_t(fieldSeq->m_fieldHnd);
         ValueNum fieldHndVN  = VNForHandle(fieldHndVal, GTF_ICON_FIELD_HDL);
         ValueNum seqNextVN   = VNForFieldSeq(fieldSeq->m_next);
-        ValueNum fieldSeqVN  = VNForFunc(TYP_REF, VNF_FieldSeq, fieldHndVN, seqNextVN);
+        fieldSeqVN           = VNForFunc(TYP_REF, VNF_FieldSeq, fieldHndVN, seqNextVN);
+    }
 
 #ifdef DEBUG
-        if (m_pComp->verbose)
-        {
-            printf("    FieldSeq");
-            vnDump(m_pComp, fieldSeqVN);
-            printf(" is " FMT_VN "\n", fieldSeqVN);
-        }
+    if (m_pComp->verbose)
+    {
+        printf("    FieldSeq");
+        vnDump(m_pComp, fieldSeqVN);
+        printf(" is " FMT_VN "\n", fieldSeqVN);
+    }
 #endif
 
-        return fieldSeqVN;
-    }
+    return fieldSeqVN;
 }
 
 FieldSeqNode* ValueNumStore::FieldSeqVNToFieldSeq(ValueNum vn)
@@ -4593,6 +4594,114 @@ bool ValueNumStore::IsVNConstant(ValueNum vn)
         return c->m_attribs == CEA_Handle;
     }
 }
+
+//------------------------------------------------------------------------
+// IsVNVectorZero: Checks if the value number is a Vector*_get_Zero.
+//
+// Arguments:
+//    vn - The value number.
+//
+// Return Value:
+//    true  - The value number is a Vector*_get_Zero.
+//    false - The value number is not a Vector*_get_Zero.
+bool ValueNumStore::IsVNVectorZero(ValueNum vn)
+{
+#ifdef FEATURE_SIMD
+    VNSimdTypeInfo vnInfo = GetVectorZeroSimdTypeOfVN(vn);
+    // Check the size to see if we got a valid SIMD type.
+    // '0' means it is not valid.
+    if (vnInfo.m_simdSize != 0)
+    {
+        return true;
+    }
+#endif
+    return false;
+}
+
+#ifdef FEATURE_SIMD
+//------------------------------------------------------------------------
+// GetSimdTypeOfVN: Returns the SIMD type information based on the given value number.
+//
+// Arguments:
+//    vn - The value number.
+//
+// Return Value:
+//    Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type.
+VNSimdTypeInfo ValueNumStore::GetSimdTypeOfVN(ValueNum vn)
+{
+    VNSimdTypeInfo vnInfo;
+
+    // The SIMD type is encoded as a function,
+    // even though it is not actually a function.
+    VNFuncApp simdType;
+    if (GetVNFunc(vn, &simdType) && simdType.m_func == VNF_SimdType)
+    {
+        assert(simdType.m_arity == 2);
+        vnInfo.m_simdSize        = GetConstantInt32(simdType.m_args[0]);
+        vnInfo.m_simdBaseJitType = (CorInfoType)GetConstantInt32(simdType.m_args[1]);
+        return vnInfo;
+    }
+
+    vnInfo.m_simdSize        = 0;
+    vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
+    return vnInfo;
+}
+
+//------------------------------------------------------------------------
+// GetVectorZeroSimdTypeOfVN: Returns the SIMD type information based on the given value number
+//                            if it's Vector*_get_Zero.
+//
+// Arguments:
+//    vn - The value number.
+//
+// Return Value:
+//    Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type
+//    for a Vector*_get_Zero value number.
+//
+// REVIEW: Vector*_get_Zero nodes in VN currently encode their SIMD type for
+//         conservative reasons. In the future, it might be possible not do this
+//         on most platforms since Vector*_get_Zero's base type does not matter.
+VNSimdTypeInfo ValueNumStore::GetVectorZeroSimdTypeOfVN(ValueNum vn)
+{
+#ifdef FEATURE_HW_INTRINSICS
+    // REVIEW: This will only return true if Vector*_get_Zero encodes
+    //         its base type as an argument. On XARCH there may be
+    //         scenarios where Vector*_get_Zero will not encode its base type;
+    //         therefore, returning false here.
+    // Vector*_get_Zero does not have any arguments,
+    // but its SIMD type is encoded as an argument.
+    VNFuncApp funcApp;
+    if (GetVNFunc(vn, &funcApp) && funcApp.m_arity == 1)
+    {
+        switch (funcApp.m_func)
+        {
+            case VNF_HWI_Vector128_get_Zero:
+#if defined(TARGET_XARCH)
+            case VNF_HWI_Vector256_get_Zero:
+#elif defined(TARGET_ARM64)
+            case VNF_HWI_Vector64_get_Zero:
+#endif
+            {
+                return GetSimdTypeOfVN(funcApp.m_args[0]);
+            }
+
+            default:
+            {
+                VNSimdTypeInfo vnInfo;
+                vnInfo.m_simdSize        = 0;
+                vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
+                return vnInfo;
+            }
+        }
+    }
+#endif
+
+    VNSimdTypeInfo vnInfo;
+    vnInfo.m_simdSize        = 0;
+    vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
+    return vnInfo;
+}
+#endif // FEATURE_SIMD
 
 bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 {
@@ -5961,6 +6070,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
         switch (funcApp.m_func)
         {
             case VNF_FieldSeq:
+            case VNF_NotAField:
                 vnDumpFieldSeq(comp, &funcApp, true);
                 break;
             case VNF_MapSelect:
@@ -6068,6 +6178,12 @@ void ValueNumStore::vnDumpExcSeq(Compiler* comp, VNFuncApp* excSeq, bool isHead)
 
 void ValueNumStore::vnDumpFieldSeq(Compiler* comp, VNFuncApp* fieldSeq, bool isHead)
 {
+    if (fieldSeq->m_func == VNF_NotAField)
+    {
+        printf("<NotAField>");
+        return;
+    }
+
     assert(fieldSeq->m_func == VNF_FieldSeq); // Precondition.
     // First arg is the field handle VN.
     assert(IsVNConstant(fieldSeq->m_args[0]) && TypeOfVN(fieldSeq->m_args[0]) == TYP_I_IMPL);
@@ -6170,10 +6286,10 @@ void ValueNumStore::vnDumpSimdType(Compiler* comp, VNFuncApp* simdType)
     assert(IsVNConstant(simdType->m_args[0]));
     assert(IsVNConstant(simdType->m_args[1]));
 
-    int       simdSize = ConstantValue<int>(simdType->m_args[0]);
-    var_types baseType = (var_types)ConstantValue<int>(simdType->m_args[1]);
+    int         simdSize    = ConstantValue<int>(simdType->m_args[0]);
+    CorInfoType baseJitType = (CorInfoType)ConstantValue<int>(simdType->m_args[1]);
 
-    printf("%s(simd%d, %s)", VNFuncName(simdType->m_func), simdSize, varTypeName(baseType));
+    printf("%s(simd%d, %s)", VNFuncName(simdType->m_func), simdSize, varTypeName(JitType2PreciseVarType(baseJitType)));
 }
 #endif // FEATURE_SIMD
 
@@ -8592,12 +8708,21 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         newVN = vnStore->VNForExpr(compCurBB, TYP_BYREF);
                     }
                 }
+
                 if (newVN == ValueNumStore::NoVN)
                 {
+                    // We may have a zero-offset field sequence on this ADDR.
+                    FieldSeqNode* zeroOffsetFieldSeq = nullptr;
+                    if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFieldSeq))
+                    {
+                        fieldSeq = GetFieldSeqStore()->Append(fieldSeq, zeroOffsetFieldSeq);
+                    }
+
                     newVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc,
                                                vnStore->VNForIntCon(arg->AsLclVarCommon()->GetLclNum()),
                                                vnStore->VNForFieldSeq(fieldSeq));
                 }
+
                 tree->gtVNPair.SetBoth(newVN);
             }
             else if ((arg->gtOper == GT_IND) || arg->OperIsBlk())
@@ -8608,8 +8733,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 ValueNumPair  addrVNP            = ValueNumPair();
                 FieldSeqNode* zeroOffsetFieldSeq = nullptr;
-                if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFieldSeq) &&
-                    (zeroOffsetFieldSeq != FieldSeqStore::NotAField()))
+                if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFieldSeq))
                 {
                     ValueNum addrExtended = vnStore->ExtendPtrVN(arg->AsIndir()->Addr(), zeroOffsetFieldSeq);
                     if (addrExtended != ValueNumStore::NoVN)
@@ -9270,6 +9394,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             printf("\n");
         }
     }
+
+    fgDebugCheckValueNumberedTree(tree);
 #endif // DEBUG
 }
 
@@ -9404,7 +9530,7 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
 
         if (encodeResultType)
         {
-            ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseType());
+            ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetNormalizedSimdBaseJitType());
             resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG
@@ -9519,7 +9645,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     if (encodeResultType)
     {
-        ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseType());
+        ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetNormalizedSimdBaseJitType());
         resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG
@@ -10961,6 +11087,72 @@ void Compiler::fgDebugCheckExceptionSets()
             }
 
             ExceptionSetsChecker::CheckTree(stmt->GetRootNode(), vnStore);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckValueNumberedTree: Verify proper numbering for "tree".
+//
+// Currently only checks that we have not forgotten to add a zero-offset
+// field sequence to "tree"'s value number.
+//
+// Arguments:
+//    tree - The tree, that has just been numbered, to check
+//
+void Compiler::fgDebugCheckValueNumberedTree(GenTree* tree)
+{
+    FieldSeqNode* zeroOffsetFldSeq;
+    if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFldSeq))
+    {
+        // Empty field sequences should never be recorded in the map.
+        assert(zeroOffsetFldSeq != nullptr);
+
+        ValueNum vns[] = {tree->GetVN(VNK_Liberal), tree->GetVN(VNK_Conservative)};
+        for (ValueNum vn : vns)
+        {
+            VNFuncApp vnFunc;
+            if (vnStore->GetVNFunc(vn, &vnFunc))
+            {
+                FieldSeqNode* fullFldSeq;
+                switch (vnFunc.m_func)
+                {
+                    case VNF_PtrToLoc:
+                    case VNF_PtrToStatic:
+                        fullFldSeq = vnStore->FieldSeqVNToFieldSeq(vnFunc.m_args[1]);
+                        break;
+
+                    case VNF_PtrToArrElem:
+                        fullFldSeq = vnStore->FieldSeqVNToFieldSeq(vnFunc.m_args[3]);
+                        break;
+
+                    default:
+                        continue;
+                }
+
+                // Verify that the "fullFldSeq" we have just collected is of the
+                // form "[outer fields, zeroOffsetFldSeq]", or is "NotAField".
+                if (fullFldSeq == FieldSeqStore::NotAField())
+                {
+                    continue;
+                }
+
+                // This check relies on the canonicality of field sequences.
+                FieldSeqNode* fldSeq                = fullFldSeq;
+                bool          zeroOffsetFldSeqFound = false;
+                while (fldSeq != nullptr)
+                {
+                    if (fldSeq == zeroOffsetFldSeq)
+                    {
+                        zeroOffsetFldSeqFound = true;
+                        break;
+                    }
+
+                    fldSeq = fldSeq->m_next;
+                }
+
+                assert(zeroOffsetFldSeqFound);
+            }
         }
     }
 }
