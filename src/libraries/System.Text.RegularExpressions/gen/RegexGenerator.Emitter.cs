@@ -281,42 +281,16 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 writer.WriteLine($"            /// <summary>Determines whether the character at the specified index is a boundary.</summary>");
                 writer.WriteLine($"            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]");
-                writer.WriteLine($"            private static bool IsBoundary(global::System.ReadOnlySpan<char>inputSpan, int index, int startpos, int endpos)");
+                writer.WriteLine($"            private bool IsBoundary(global::System.ReadOnlySpan<char>inputSpan, int index)");
                 writer.WriteLine($"            {{");
-                writer.WriteLine($"                return (index > startpos && IsBoundaryWordChar(inputSpan![index - 1])) !=");
-                writer.WriteLine($"                       (index < endpos && IsBoundaryWordChar(inputSpan![index]));");
+                writer.WriteLine($"                const char ZeroWidthNonJoiner = '\\u200C', ZeroWidthJoiner = '\\u200D';");
                 writer.WriteLine();
-                writer.WriteLine($"                bool IsBoundaryWordChar(char ch)");
-                writer.WriteLine($"                {{");
-                writer.WriteLine($"                    global::System.ReadOnlySpan<byte> asciiLookup = new byte[]");
-                writer.WriteLine($"                    {{");
-                writer.WriteLine($"                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,");
-                writer.WriteLine($"                        0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07");
-                writer.WriteLine($"                    }};");
+                writer.WriteLine($"                return (index > base.runtextbeg && IsBoundaryWordChar(inputSpan![index - 1])) !=");
+                writer.WriteLine($"                       (index < inputSpan.Length && IsBoundaryWordChar(inputSpan![index]));");
                 writer.WriteLine();
-                writer.WriteLine($"                    int chDiv8 = ch >> 3;");
-                writer.WriteLine($"                    if ((uint)chDiv8 < (uint)asciiLookup.Length)");
-                writer.WriteLine($"                    {{");
-                writer.WriteLine($"                        return (asciiLookup[chDiv8] & (1 << (ch & 0x7))) != 0;");
-                writer.WriteLine($"                    }}");
-                writer.WriteLine();
-                writer.WriteLine($"                    switch (global::System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch))");
-                writer.WriteLine($"                    {{");
-                writer.WriteLine($"                        case global::System.Globalization.UnicodeCategory.UppercaseLetter:");
-                writer.WriteLine($"                        case global::System.Globalization.UnicodeCategory.LowercaseLetter:");
-                writer.WriteLine($"                        case global::System.Globalization.UnicodeCategory.TitlecaseLetter:");
-                writer.WriteLine($"                        case global::System.Globalization.UnicodeCategory.ModifierLetter:");
-                writer.WriteLine($"                        case global::System.Globalization.UnicodeCategory.OtherLetter:");
-                writer.WriteLine($"                        case global::System.Globalization.UnicodeCategory.NonSpacingMark:");
-                writer.WriteLine($"                        case global::System.Globalization.UnicodeCategory.DecimalDigitNumber:");
-                writer.WriteLine($"                        case global::System.Globalization.UnicodeCategory.ConnectorPunctuation:");
-                writer.WriteLine($"                            return true;");
-                writer.WriteLine();
-                writer.WriteLine($"                        default:");
-                writer.WriteLine($"                            const char ZeroWidthNonJoiner = '\u200C', ZeroWidthJoiner = '\u200D';");
-                writer.WriteLine($"                            return ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner;");
-                writer.WriteLine($"                    }}");
-                writer.WriteLine($"                }}");
+                writer.WriteLine($"                bool IsBoundaryWordChar(char ch) =>");
+                writer.WriteLine($"                    IsWordChar(ch) ||");
+                writer.WriteLine($"                    (ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner);");
                 writer.WriteLine($"            }}");
             }
 
@@ -325,16 +299,16 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 writer.WriteLine($"            /// <summary>Determines whether the character at the specified index is a boundary.</summary>");
                 writer.WriteLine($"            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]");
-                writer.WriteLine($"            private static bool IsECMABoundary(global::System.ReadOnlySpan<char>inputSpan, int index, int startpos, int endpos)");
+                writer.WriteLine($"            private bool IsECMABoundary(global::System.ReadOnlySpan<char>inputSpan, int index)");
                 writer.WriteLine($"            {{");
-                writer.WriteLine($"                return (index > startpos && IsECMAWordChar(inputSpan![index - 1])) !=");
-                writer.WriteLine($"                       (index < endpos && IsECMAWordChar(inputSpan![index]));");
+                writer.WriteLine($"                return (index > base.runtextbeg && IsECMAWordChar(inputSpan![index - 1])) !=");
+                writer.WriteLine($"                       (index < inputSpan.Length && IsECMAWordChar(inputSpan![index]));");
                 writer.WriteLine();
                 writer.WriteLine($"                bool IsECMAWordChar(char ch) =>");
                 writer.WriteLine($"                    ((((uint)ch - 'A') & ~0x20) < 26) || // ASCII letter");
                 writer.WriteLine($"                    (((uint)ch - '0') < 10) || // digit");
                 writer.WriteLine($"                    ch == '_' || // underscore");
-                writer.WriteLine($"                    ch == '\u0130'; // latin capital letter I with dot above");
+                writer.WriteLine($"                    ch == '\\u0130'; // latin capital letter I with dot above");
                 writer.WriteLine($"            }}");
             }
 
@@ -2247,13 +2221,13 @@ namespace System.Text.RegularExpressions.Generator
                 var boundaryFunctionRequired = node.Kind switch
                 {
                     RegexNodeKind.Boundary or
-                    RegexNodeKind.NonBoundary => RequiredHelperFunctions.IsBoundary,
+                    RegexNodeKind.NonBoundary => RequiredHelperFunctions.IsBoundary | RequiredHelperFunctions.IsWordChar, // IsBoundary internally uses IsWordChar
                     _ => RequiredHelperFunctions.IsECMABoundary
                 };
 
                 requiredHelpers |= boundaryFunctionRequired;
 
-                using (EmitBlock(writer, $"if ({call}(inputSpan, pos{(sliceStaticPos > 0 ? $" + {sliceStaticPos}" : "")}, base.runtextbeg, end))"))
+                using (EmitBlock(writer, $"if ({call}(inputSpan, pos{(sliceStaticPos > 0 ? $" + {sliceStaticPos}" : "")}))"))
                 {
                     writer.WriteLine($"goto {doneLabel};");
                 }
