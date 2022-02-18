@@ -52,13 +52,16 @@
   <PropertyGroup>
     <!-- Code analysis dependencies -->
     <MicrosoftCodeAnalysisAnalyzersVersion>3.3.3</MicrosoftCodeAnalysisAnalyzersVersion>
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.2.0-2.22105.4</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.2.0-2.22105.4</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
-    <MicrosoftCodeAnalysisCSharpVersion>4.2.0-2.22105.4</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.2.0-2.22118.4</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.2.0-2.22118.4</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.2.0-2.22118.4</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22115.3</MicrosoftCodeAnalysisNetAnalyzersVersion>
-    <MicrosoftCodeAnalysisVersion>4.2.0-2.22105.4</MicrosoftCodeAnalysisVersion>
-    <!-- TODO: Remove pinned compiler version once arcade supplies runtime with a compiler capable of handling !! -->
-    <MicrosoftNetCompilersToolsetVersion>4.2.0-2.22105.4</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftCodeAnalysisVersion>4.2.0-2.22118.4</MicrosoftCodeAnalysisVersion>
+    <!--
+      TODO: Remove pinned compiler version once arcade supplies runtime with a compiler capable of handling !!
+      and has https://github.com/dotnet/roslyn/pull/59578
+    -->
+    <MicrosoftNetCompilersToolsetVersion>4.2.0-2.22118.4</MicrosoftNetCompilersToolsetVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22107.2</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetCompatibilityVersion>2.0.0-alpha.1.21525.11</MicrosoftDotNetCompatibilityVersion>
