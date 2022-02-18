@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Globalization;
 using System.Collections;
 using System.Collections.Specialized;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -285,6 +287,32 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(9, counterSample.RawValue);
                 Helpers.DeleteCategory(name);
             }
+        }
+
+        private static bool CanRunInInvariantMode => RemoteExecutor.IsSupported && !PlatformDetection.IsNetFramework;
+
+        [ConditionalTheory(nameof(CanRunInInvariantMode))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void RunWithGlobalizationInvariantModeTest(bool predefinedCultures)
+        {
+            ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCultures ? "1" : "0");
+            RemoteExecutor.Invoke(() =>
+            {
+                // Ensure we are running inside the Globalization invariant mode.
+                Assert.Equal("", CultureInfo.CurrentCulture.Name);
+
+                // This test ensure creating PerformanceCounter object while we are running with Globalization Invariant Mode.
+                // PerformanceCounter used to create cultures using LCID's which fail in Globalization Invariant Mode.
+                // This test ensure no failure should be encountered in this case.
+                using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
+                {
+                    Assert.Equal("Processor", counterSample.CategoryName);
+                }
+            }, new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
         }
 
         public static PerformanceCounter CreateCounterWithCategory(string name, bool readOnly, PerformanceCounterCategoryType categoryType )
