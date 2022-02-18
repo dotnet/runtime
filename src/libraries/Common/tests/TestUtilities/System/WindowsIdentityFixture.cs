@@ -109,7 +109,7 @@ namespace System
             }
         }
 
-        [GeneratedDllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [GeneratedDllImport("advapi32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         private static partial bool LogonUser(string userName, string domain, string password, int logonType, int logonProvider, out SafeAccessTokenHandle safeAccessTokenHandle);
 
 
