@@ -441,11 +441,12 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
         argCall = span->AsCall();
     }
 
-    if ((argCall != nullptr) && (argCall->callSig != nullptr) && (argCall->callSig->numArgs == 1))
+    if ((argCall != nullptr) && ((argCall->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0))
     {
-        NamedIntrinsic ni = lookupNamedIntrinsic(argCall->gtCallMethHnd);
+        const NamedIntrinsic ni = lookupNamedIntrinsic(argCall->gtCallMethHnd);
         if ((ni == NI_System_MemoryExtensions_AsSpan) || (ni == NI_System_String_op_Implicit))
         {
+            assert(argCall->gtCallArgs->GetNext() == nullptr);
             if (argCall->gtCallArgs->GetNode()->OperIs(GT_CNS_STR))
             {
                 return argCall->gtCallArgs->GetNode()->AsStrCon();
