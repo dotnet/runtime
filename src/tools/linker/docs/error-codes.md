@@ -1274,8 +1274,8 @@ class Test
   [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
   Type TestMethod()
   {
-      // IL2076 Trim analysis: 'target method' method return value does not satisfy 'DynamicallyAccessedMembersAttribute' requirements. The field 'source field' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-      _typeField;
+      // IL2076 Trim analysis: 'TestMethod' method return value does not satisfy 'DynamicallyAccessedMembersAttribute' requirements. The field '_typeField' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+      return _typeField;
   }
   ```
 
