@@ -17,7 +17,6 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Contains generic, low-level functionality for manipulating pointers.
     /// </summary>
-    [CLSCompliant(false)]
     public static unsafe partial class Unsafe
     {
         /// <summary>
@@ -28,6 +27,7 @@ namespace System.Runtime.CompilerServices
         // CG2:AsPointer
         // Mono:AsPointer
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void* AsPointer<T>(ref T value)
         {
@@ -110,12 +110,11 @@ namespace System.Runtime.CompilerServices
 #else
             return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
 #endif
-
+            // ldarg .0
             // ldarg .1
             // sizeof !!T
             // conv.i
             // mul
-            // ldarg .0
             // add
             // ret
         }
@@ -138,10 +137,10 @@ namespace System.Runtime.CompilerServices
             return ref AddByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)SizeOf<T>()));
 #endif
 
+            // ldarg .0
             // ldarg .1
             // sizeof !!T
             // mul
-            // ldarg .0
             // add
             // ret
         }
@@ -154,6 +153,7 @@ namespace System.Runtime.CompilerServices
         // CG2:Add
         // Mono:Add
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void* Add<T>(void* source, int elementOffset)
         {
@@ -179,6 +179,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Add<T>(ref T source, nuint elementOffset)
         {
@@ -205,6 +206,7 @@ namespace System.Runtime.CompilerServices
         // CG2:AddByteOffset
         // Mono:AddByteOffset
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
         {
@@ -246,6 +248,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_BYREF_COPY
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Copy<T>(void* destination, ref T source)
         {
@@ -264,6 +267,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_PTR_COPY
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Copy<T>(ref T destination, void* source)
         {
@@ -282,6 +286,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_COPY_BLOCK
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyBlock(void* destination, void* source, uint byteCount)
         {
@@ -300,6 +305,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_COPY_BLOCK
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyBlock(ref byte destination, ref byte source, uint byteCount)
         {
@@ -318,6 +324,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_COPY_BLOCK_UNALIGNED
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyBlockUnaligned(void* destination, void* source, uint byteCount)
         {
@@ -337,6 +344,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_COPY_BLOCK_UNALIGNED
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyBlockUnaligned(ref byte destination, ref byte source, uint byteCount)
         {
@@ -402,6 +410,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_INIT_BLOCK
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InitBlock(void* startAddress, byte value, uint byteCount)
         {
@@ -420,6 +429,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INIT_BLOCK
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InitBlock(ref byte startAddress, byte value, uint byteCount)
         {
@@ -439,6 +449,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_INIT_BLOCK_UNALIGNED
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount)
         {
@@ -461,6 +472,7 @@ namespace System.Runtime.CompilerServices
         // CG2:InitBlockUnaligned
         // Mono:InitBlockUnaligned
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount)
         {
@@ -485,6 +497,7 @@ namespace System.Runtime.CompilerServices
         // CG2:ReadUnaligned
         // Mono:ReadUnaligned
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ReadUnaligned<T>(void* source)
         {
@@ -533,6 +546,7 @@ namespace System.Runtime.CompilerServices
         // CG2:WriteUnaligned
         // Mono:WriteUnaligned
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUnaligned<T>(void* destination, T value)
         {
@@ -601,6 +615,7 @@ namespace System.Runtime.CompilerServices
         //[Intrinsic]
         // CG2:Read
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(void* source)
         {
@@ -617,6 +632,7 @@ namespace System.Runtime.CompilerServices
         //[Intrinsic]
         // CG2:Write
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Write<T>(void* destination, T value)
         {
@@ -636,6 +652,7 @@ namespace System.Runtime.CompilerServices
         // CG2:AsRef
         // Mono:AsRef
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AsRef<T>(void* source)
         {
@@ -752,11 +769,11 @@ namespace System.Runtime.CompilerServices
             return ref SubtractByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
 #endif
 
+            // ldarg .0
             // ldarg .1
             // sizeof !!T
             // conv.i
             // mul
-            // ldarg .0
             // sub
             // ret
         }
@@ -767,6 +784,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_INT_SUBTRACT
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void* Subtract<T>(void* source, int elementOffset)
         {
@@ -777,11 +795,11 @@ namespace System.Runtime.CompilerServices
             return (byte*)source - (elementOffset * (nint)Unsafe.SizeOf<T>());
 #endif
 
+            // ldarg .0
             // ldarg .1
             // sizeof !!T
             // conv.i
             // mul
-            // ldarg .0
             // sub
             // ret
         }
@@ -802,10 +820,10 @@ namespace System.Runtime.CompilerServices
             return ref SubtractByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)SizeOf<T>()));
 #endif
 
+            // ldarg .0
             // ldarg .1
             // sizeof !!T
             // mul
-            // ldarg .0
             // sub
             // ret
         }
@@ -816,6 +834,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Subtract<T>(ref T source, nuint elementOffset)
         {
@@ -826,10 +845,10 @@ namespace System.Runtime.CompilerServices
             return ref SubtractByteOffset(ref source, (nuint)(elementOffset * (nuint)Unsafe.SizeOf<T>()));
 #endif
 
+            // ldarg .0
             // ldarg .1
             // sizeof !!T
             // mul
-            // ldarg .0
             // sub
             // ret
         }
@@ -857,6 +876,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET
         [NonVersionable]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T SubtractByteOffset<T>(ref T source, nuint byteOffset)
         {

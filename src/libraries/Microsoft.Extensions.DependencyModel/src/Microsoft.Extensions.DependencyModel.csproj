@@ -41,7 +41,6 @@ Microsoft.Extensions.DependencyModel.DependencyContext</PackageDescription>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
-    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
   </ItemGroup>
   
 </Project>

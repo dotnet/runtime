@@ -571,6 +571,27 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [1]->dreg, args [0]->dreg);
 		ins->type = STACK_PTR;
 		return ins;
+	} else if (!strcmp (cmethod->name, "CopyBlock")) {
+		g_assert (fsig->param_count == 3);
+
+		mini_emit_memory_copy_bytes (cfg, args [0], args [1], args [2], 0);
+ 		MONO_INST_NEW (cfg, ins, OP_NOP);
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
+	} else if (!strcmp (cmethod->name, "CopyBlockUnaligned")) {
+		g_assert (fsig->param_count == 3);
+
+		mini_emit_memory_copy_bytes (cfg, args [0], args [1], args [2], MONO_INST_UNALIGNED);
+ 		MONO_INST_NEW (cfg, ins, OP_NOP);
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
+	} else if (!strcmp (cmethod->name, "InitBlock")) {
+		g_assert (fsig->param_count == 3);
+
+		mini_emit_memory_init_bytes (cfg, args [0], args [1], args [2], 0);
+ 		MONO_INST_NEW (cfg, ins, OP_NOP);
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
 	} else if (!strcmp (cmethod->name, "InitBlockUnaligned")) {
 		g_assert (fsig->param_count == 3);
 
@@ -583,6 +604,28 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
  		MONO_INST_NEW (cfg, ins, OP_NOP);
 		MONO_ADD_INS (cfg->cbb, ins);
 		return ins;
+	} else if (!strcmp (cmethod->name, "SubtractByteOffset")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		if (fsig->params [1]->type == MONO_TYPE_I || fsig->params [1]->type == MONO_TYPE_U) {
+			int dreg = alloc_preg (cfg);
+			EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [0]->dreg, args [1]->dreg);
+			ins->type = STACK_PTR;
+			return ins;
+		} else if (fsig->params [1]->type == MONO_TYPE_U8) {
+			int sreg = args [1]->dreg;
+			if (SIZEOF_REGISTER == 4) {
+				sreg = alloc_ireg (cfg);
+				EMIT_NEW_UNALU (cfg, ins, OP_LCONV_TO_U4, sreg, args [1]->dreg);
+			}
+			int dreg = alloc_preg (cfg);
+			EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [0]->dreg, sreg);
+			ins->type = STACK_PTR;
+			return ins;
+		}
 	} else if (!strcmp (cmethod->name, "IsNullRef")) {
 		g_assert (fsig->param_count == 1);
 
@@ -2004,12 +2047,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			   (!strcmp (cmethod_klass_name, "Span`1") || !strcmp (cmethod_klass_name, "ReadOnlySpan`1"))) {
 		return emit_span_intrinsics (cfg, cmethod, fsig, args);
 	} else if (in_corlib &&
-			   !strcmp (cmethod_klass_name_space, "Internal.Runtime.CompilerServices") &&
+			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
 			   !strcmp (cmethod_klass_name, "Unsafe")) {
-		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
-	} else if (!strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
-			   !strcmp (cmethod_klass_name, "Unsafe") &&
-			   (in_corlib || !strcmp (cmethod_klass_image->assembly->aname.name, "System.Runtime.CompilerServices.Unsafe"))) {
 		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
 	} else if (in_corlib &&
 			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&

@@ -6607,16 +6607,16 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         static const BYTE ilcode[] =
         {
+            CEE_LDARG_0,
             CEE_LDARG_1,
             CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
             CEE_CONV_I,
             CEE_MUL,
-            CEE_LDARG_0,
             CEE_ADD,
             CEE_RET
         };
 
-        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
 
         return true;
     }
@@ -6627,15 +6627,15 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         static const BYTE ilcode[] =
         {
+            CEE_LDARG_0,
             CEE_LDARG_1,
             CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
             CEE_MUL,
-            CEE_LDARG_0,
             CEE_ADD,
             CEE_RET
         };
 
-        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
 
         return true;
     }
@@ -6908,16 +6908,16 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         static const BYTE ilcode[] =
         {
+            CEE_LDARG_0,
             CEE_LDARG_1,
             CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
             CEE_CONV_I,
             CEE_MUL,
-            CEE_LDARG_0,
             CEE_SUB,
             CEE_RET
         };
 
-        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
 
         return true;
     }
@@ -6928,15 +6928,15 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         static const BYTE ilcode[] =
         {
+            CEE_LDARG_0,
             CEE_LDARG_1,
             CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
             CEE_MUL,
-            CEE_LDARG_0,
             CEE_SUB,
             CEE_RET
         };
 
-        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
+        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 3);
 
         return true;
     }

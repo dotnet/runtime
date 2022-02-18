@@ -138,11 +138,11 @@ namespace Internal.IL.Stubs
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
 
+            codeStream.Emit(ILOpcode.ldarg_0);
             codeStream.Emit(ILOpcode.ldarg_1);
             codeStream.Emit(ILOpcode.sizeof_, emit.NewToken(context.GetSignatureVariable(0, method: true)));
             codeStream.Emit(ILOpcode.conv_i);
             codeStream.Emit(ILOpcode.mul);
-            codeStream.Emit(ILOpcode.ldarg_0);
             codeStream.Emit(ILOpcode.sub);
             codeStream.Emit(ILOpcode.ret);
 
