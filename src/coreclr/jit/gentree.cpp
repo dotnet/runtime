@@ -21518,7 +21518,7 @@ GenTree* Compiler::gtNewSimdZeroNode(var_types   type,
 #if defined(TARGET_XARCH)
     intrinsic = (simdSize == 32) ? NI_Vector256_get_Zero : NI_Vector128_get_Zero;
 #elif defined(TARGET_ARM64)
-    intrinsic     = (simdSize == 16) ? NI_Vector128_get_Zero : NI_Vector64_get_Zero;
+    intrinsic     = (simdSize > 8) ? NI_Vector128_get_Zero : NI_Vector64_get_Zero;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
