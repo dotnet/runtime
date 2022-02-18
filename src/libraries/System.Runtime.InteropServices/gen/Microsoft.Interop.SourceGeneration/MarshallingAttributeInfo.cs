@@ -60,7 +60,6 @@ namespace Microsoft.Interop
         Utf8,
         Utf16,
         Ansi,
-        PlatformDefined,
         Custom
     }
 
