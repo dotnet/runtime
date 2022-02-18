@@ -153,14 +153,14 @@ namespace Microsoft.Interop
         {
             // Compute the current default string encoding value.
             CharEncoding defaultEncoding = CharEncoding.Undefined;
-            if (dllImportData.IsUserDefined.HasFlag(DllImportMember.CharSet))
+            if (dllImportData.IsUserDefined.HasFlag(DllImportMember.StringMarshalling))
             {
-                defaultEncoding = dllImportData.CharSet switch
+                defaultEncoding = dllImportData.StringMarshalling switch
                 {
-                    CharSet.Unicode => CharEncoding.Utf16,
-                    CharSet.Auto => CharEncoding.PlatformDefined,
-                    CharSet.Ansi => CharEncoding.Ansi,
-                    _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value for None
+                    StringMarshalling.Utf16 => CharEncoding.Utf16,
+                    StringMarshalling.Utf8 => CharEncoding.Utf8,
+                    StringMarshalling.Custom => CharEncoding.Custom,
+                    _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value
                 };
             }
 
