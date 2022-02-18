@@ -36,11 +36,14 @@ node_root = os.path.join(emsdk_path, "node")
 node_paths = glob(node_root)
 upgrade = True
 
+# Add the local node bin directory to the path so that
+# npm can find it when doing the updating or pruning
 os.environ["PATH"] += os.pathsep + os.path.join(node_paths[0], "bin")
 
 def update_npm(path):
     try:
         os.chdir(os.path.join(path, "lib"))
+        os.system("npm install npm@latest")
         os.system("npm install npm@latest")
         prune()
     except OSError as error:
@@ -63,16 +66,23 @@ def prune():
 
 os.chdir(emscripten_path)
 rewrite_package_json("package.json")
-prune()
+
 
 remove(
     "tests",
+    "node_modules/google-closure-compiler",
+    "node_modules/google-closure-compiler-java",
+    "node_modules/google-closure-compiler-osx",
+    "node_modules/google-closure-compiler-windows",
+    "node_modules/google-closure-compiler-linux",
     "third_party/closure-compiler",
     "third_party/jni",
     "third_party/ply",
     "third_party/uglify-js",
     "third_party/websockify",
 )
+
+prune()
 
 for path in node_paths:
     if upgrade:
