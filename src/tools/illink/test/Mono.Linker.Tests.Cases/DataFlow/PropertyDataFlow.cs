@@ -192,7 +192,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			// Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
+			// This test creates a property and field which linker will recognized as a compiler generated backing field for the property
+			// The purpose of the test is to verify, that linker flows the annotation to the backing field and since there's
+			// no good way to reference actual compiler generated backing field, we "Fake" it here as compiler generated.
+			// But this doesn't fool the analyzer - since it's seen as yet another user declared field, so it doesn't propagate the
+			// annotation.
+			// This discrepancy is currently by design and not worth the trouble to implement logic for it in the analyzer.
+			// Producing fields which are annotated with CompilerGeneratedAttribute and making them look like backing fields
+			// is highly unlikely to be done by anybody. If it happens, the analyzer will produce warnings which the linker will not
+			// but those warnings are not really wrong, so it's better if the developer fixes them anyway.
 			[ExpectedWarning ("IL2077", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)",
 				nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWhichLooksLikeCompilerGenerated_Field),
 				ProducedBy = ProducedBy.Analyzer)]
@@ -208,7 +216,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			static Type PropertyWhichLooksLikeCompilerGenerated {
-				// Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
+				// See above comment about fake compiler generated backing fields - this warning is expected from the analyzer
 				[ExpectedWarning ("IL2078", nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWhichLooksLikeCompilerGenerated) + ".get",
 					nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWhichLooksLikeCompilerGenerated_Field),
 					ProducedBy = ProducedBy.Analyzer)]
@@ -355,7 +363,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type PropertyWithConflictingNoneAttributes {
-				// Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
+				// See above comment about fake compiler generated backing fields - this warning is expected from analyzer
 				[ExpectedWarning ("IL2078", nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWithConflictingNoneAttributes) + ".get",
 					nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWithConflictingNoneAttributes_Field),
 					ProducedBy = ProducedBy.Analyzer)]
