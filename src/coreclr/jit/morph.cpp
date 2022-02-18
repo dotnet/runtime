@@ -6772,15 +6772,9 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 
     unsigned calleeArgStackSize = 0;
     unsigned callerArgStackSize = info.compArgStackSize;
-
-    for (unsigned index = 0; index < argInfo->ArgCount(); ++index)
-    {
-        fgArgTabEntry* arg = argInfo->GetArgEntry(index, false);
-
-        calleeArgStackSize = roundUp(calleeArgStackSize, arg->GetByteAlignment());
-        calleeArgStackSize += arg->GetStackByteSize();
-    }
-    calleeArgStackSize = GetOutgoingArgByteSize(calleeArgStackSize);
+#ifdef TARGET_ARM
+    unsigned preSpilledRegsSize = genCountBits(codeGen->regSet.rsMaskPreSpillRegArg) * REGSIZE_BYTES;
+#endif
 
     auto reportFastTailCallDecision = [&](const char* thisFailReason) {
         if (failReason != nullptr)
@@ -6832,6 +6826,47 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #endif // DEBUG
     };
 
+    for (unsigned index = 0; index < argInfo->ArgCount(); ++index)
+    {
+        fgArgTabEntry* info = argInfo->GetArgEntry(index, false);
+
+        calleeArgStackSize = roundUp(calleeArgStackSize, info->GetByteAlignment());
+        calleeArgStackSize += info->GetStackByteSize();
+#ifdef TARGET_ARM
+        if (info->IsSplit()) {
+            reportFastTailCallDecision("Splitted arguments not supported on ARM");
+            return false;
+        }
+
+        if (info->GetRegNum() == REG_STK)
+        {
+            GenTree* arg = info->GetNode();
+            if (arg->OperIs(GT_LCL_FLD))
+            {
+                if (arg->AsLclFld()->GetLclOffs() < info->GetByteOffset() + preSpilledRegsSize)
+                {
+                    reportFastTailCallDecision("Can use overwritten local field on ARM");
+                    return false;
+                }
+            }
+            else if (arg->OperIs(GT_OBJ))
+            {
+                GenTreeLclVarCommon* lcl = arg->AsObj()->Addr()->IsLocalAddrExpr();
+                if (lcl && lcl->GetLclOffs() < info->GetByteOffset() + preSpilledRegsSize)
+                {
+                    reportFastTailCallDecision("Can use overwritten local obj on ARM");
+                    return false;
+                }
+            }
+        }
+#endif // TARGET_ARM
+    }
+    calleeArgStackSize = GetOutgoingArgByteSize(calleeArgStackSize);
+#ifdef TARGET_ARM
+    calleeArgStackSize += preSpilledRegsSize;
+#endif // TARGET_ARM
+
+
     if (!opts.compFastTailCalls)
     {
         reportFastTailCallDecision("Configuration doesn't allow fast tail calls");
@@ -6843,6 +6878,14 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         reportFastTailCallDecision("Fast tail calls are not performed under tail call stress");
         return false;
     }
+
+#ifdef TARGET_ARM
+    if (callee->IsR2RRelativeIndir() || callee->HasNonStandardAddedArgs(this)) {
+        reportFastTailCallDecision(
+                "Method with non-standard args passed in callee trash register cannot be tail called");
+        return false;
+    }
+#endif
 
     // Note on vararg methods:
     // If the caller is vararg method, we don't know the number of arguments passed by caller's caller.
@@ -7252,6 +7295,14 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         failTailCall("Might turn into an intrinsic");
         return nullptr;
     }
+
+#ifdef TARGET_ARM
+    if (call->gtCallMoreFlags & GTF_CALL_M_WRAPPER_DELEGATE_INV)
+    {
+        failTailCall("Non-standard calling convention");
+        return nullptr;
+    }
+#endif
 
     if (call->IsNoReturn() && !call->IsTailPrefixedCall())
     {

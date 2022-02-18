@@ -1857,6 +1857,14 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         regNumber reg             = nextArgNode->GetRegNum();
         var_types type            = use.GetType();
         unsigned  thisFieldOffset = argOffset + use.GetOffset();
+#if FEATURE_FASTTAILCALL
+#ifdef TARGET_ARM
+        if (putArgStk->putInIncomingArgArea())
+        {
+            thisFieldOffset += genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
+        }
+#endif // TARGET_ARM
+#endif // FEATURE_FASTTAILCALL
 
 // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
 // argument area.

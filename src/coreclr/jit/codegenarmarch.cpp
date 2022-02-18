@@ -778,6 +778,12 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         // This must be a fast tail call.
         assert(treeNode->gtCall->IsFastTailCall());
 
+#ifdef TARGET_ARM
+        varNumOut = getFirstArg();
+        argOffsetOut += genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
+        assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
+#endif // TARGET_ARM
+
         // Since it is a fast tail call, the existence of first incoming arg is guaranteed
         // because fast tail call requires that in-coming arg area of caller is >= out-going
         // arg area required for tail call.

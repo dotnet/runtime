@@ -90,6 +90,44 @@ bool CodeGen::genInstrWithConstant(
     return immFitsInIns;
 }
 
+//------------------------------------------------------------------------------------------------ //
+// getFirstArg - returns the first argument on the caller's frame.
+//
+// Return value:
+//    The number of the first argument on the caller's frame.
+//
+// Note:
+//    Find the first passed argument from the caller for FAST TAIL CALL on ARM32. This is done by
+//    iterating over all the lvParam variables and finding the first with StackOffset is zeor or
+//    positive number.
+//
+
+unsigned CodeGen::getFirstArg()
+{
+    unsigned baseVarNum = 0;
+    // Iterate over all the lvParam variables in the Lcl var table until we find the first one
+    // that's passed on the stack or register.
+    LclVarDsc* varDsc = nullptr;
+    int delta = isFramePointerUsed() ? 2 * REGSIZE_BYTES : genTotalFrameSize();
+    for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
+    {
+        varDsc = compiler->lvaGetDesc(i);
+
+        // We should have found a parameter (and broken out of this loop) before
+        // we find any non-parameters.
+        assert(varDsc->lvIsParam);
+
+        if (varDsc->GetStackOffset() == delta)
+        {
+            baseVarNum = i;
+            break;
+        }
+    }
+    assert(varDsc != nullptr);
+
+    return baseVarNum;
+}
+
 //------------------------------------------------------------------------
 // genStackPointerAdjustment: add a specified constant value to the stack pointer.
 // An available temporary register is required to be specified, in case the constant
