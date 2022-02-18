@@ -444,12 +444,12 @@ namespace System.Collections.Generic
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
-
-            for (int i = 0; i < _size; i++)
+            T[] items = _items;
+            for (int i = 0; i < items.Length && i < _size; i++)
             {
-                if (match(_items[i]))
+                if (match(items[i]))
                 {
-                    return _items[i];
+                    return items[i];
                 }
             }
             return default;
@@ -463,11 +463,12 @@ namespace System.Collections.Generic
             }
 
             List<T> list = new List<T>();
-            for (int i = 0; i < _size; i++)
+            T[] items = _items;
+            for (int i = 0; i < items.Length && i < _size; i++)
             {
-                if (match(_items[i]))
+                if (match(items[i]))
                 {
-                    list.Add(_items[i]);
+                    list.Add(items[i]);
                 }
             }
             return list;
@@ -1088,10 +1089,10 @@ namespace System.Collections.Generic
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
-
-            for (int i = 0; i < _size; i++)
+            T[] items = _items;
+            for (int i = 0; i < items.Length && i < _size; i++)
             {
-                if (!match(_items[i]))
+                if (!match(items[i]))
                 {
                     return false;
                 }
