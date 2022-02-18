@@ -1087,6 +1087,7 @@ namespace System.Diagnostics.Tests
 
                 bool setTraceWithStringParent = false;
                 string? traceStateValueWithStringParent = null;
+                string? floatingTraceState = null;
 
                 SampleActivity<string> sampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
                 {
@@ -1102,6 +1103,10 @@ namespace System.Diagnostics.Tests
                 string? traceStateValueWithContextParent = null;
 
                 SampleActivity<ActivityContext> sampleUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => {
+                    if (floatingTraceState is not null)
+                    {
+                        Assert.Equal(floatingTraceState, activityOptions.TraceState);
+                    }
                     if (setTraceWithContextParent)
                     {
                         activityOptions = activityOptions with { TraceState = traceStateValueWithContextParent };
@@ -1211,6 +1216,17 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.Equal(traceStateValueWithContextParent, a.TraceStateString); // listener1 is the only one registered to handle context, should win.
                 }
+
+                //
+                // Test setting the trace state in one listener will be accessible in the next listener
+                //
+
+                floatingTraceState = traceStateValueWithStringParent;
+                using (Activity a = aSource.CreateActivity("a", ActivityKind.Server, "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01", default, default, ActivityIdFormat.W3C))
+                {
+                    Assert.Equal(traceStateValueWithContextParent, a.TraceStateString); // listener1 is the last one overwrite the trace state, should win.
+                }
+
             }).Dispose();
         }
 
