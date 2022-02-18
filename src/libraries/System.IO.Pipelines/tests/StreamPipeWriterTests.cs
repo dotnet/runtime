@@ -467,6 +467,7 @@ namespace System.IO.Pipelines.Tests
             Assert.True(stream.DisposeCalled);
         }
 
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
         [Fact]
         public async Task CompleteAsyncAlwaysCallsDisposeAsync()
         {
@@ -476,6 +477,7 @@ namespace System.IO.Pipelines.Tests
 
             Assert.True(stream.DisposeAsyncCalled);
         }
+#endif
 
         [Fact]
         public void GetMemorySameAsTheMaxPoolSizeUsesThePool()
