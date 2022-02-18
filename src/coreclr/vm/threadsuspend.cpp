@@ -2510,17 +2510,6 @@ void RedirectedThreadFrame::ExceptionUnwind()
 
 #ifdef TARGET_X86
 
-// a helper to make sure these calls are not inlined into a filter function.
-// in particular we do not want a possibility of inlined destructor calls.
-NOINLINE void CopyContextHelper(CONTEXT* pTarget, CONTEXT* pCtx)
-{
-    if (!CopyContext(pTarget, pTarget->ContextFlags, pCtx))
-    {
-        STRESS_LOG1(LF_SYNC, LL_ERROR, "ERROR: Could not set context record, lastError = 0x%x\n", GetLastError());
-        ThrowLastError();
-    }
-}
-
 //****************************************************************************************
 // This will check who caused the exception.  If it was caused by the the redirect function,
 // the reason is to resume the thread back at the point it was redirected in the first
@@ -2593,7 +2582,11 @@ int RedirectedHandledJITCaseExceptionFilter(
     //     these contexts may contain extended registers and may have different format
     //     for reasons such as alignment or context compaction
     CONTEXT* pTarget = pExcepPtrs->ContextRecord;
-    CopyContextHelper(pTarget, pCtx);
+    if (!CopyContext(pTarget, pTarget->ContextFlags, pCtx))
+    {
+        STRESS_LOG1(LF_SYNC, LL_ERROR, "ERROR: Could not set context record, lastError = 0x%x\n", GetLastError());
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
 
     DWORD espValue = pCtx->Esp;
 
