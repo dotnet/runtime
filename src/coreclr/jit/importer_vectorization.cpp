@@ -441,14 +441,11 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
         argCall = span->AsCall();
     }
 
-    if (argCall != nullptr)
+    if ((argCall != nullptr) && (argCall->callSig != nullptr) && (argCall->callSig->numArgs == 1))
     {
         NamedIntrinsic ni = lookupNamedIntrinsic(argCall->gtCallMethHnd);
         if ((ni == NI_System_MemoryExtensions_AsSpan) || (ni == NI_System_String_op_Implicit))
         {
-            // To make sure only single-arg methods are marked as [Intrinsic]
-            assert(argCall->gtCallArgs->GetNext() == nullptr);
-
             if (argCall->gtCallArgs->GetNode()->OperIs(GT_CNS_STR))
             {
                 return argCall->gtCallArgs->GetNode()->AsStrCon();
