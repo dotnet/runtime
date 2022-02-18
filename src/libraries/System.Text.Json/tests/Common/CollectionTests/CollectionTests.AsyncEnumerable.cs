@@ -74,6 +74,29 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
         }
 
+        [Theory]
+        [MemberData(nameof(GetAsyncEnumerableSources))]
+        public async Task WriteNestedAsyncEnumerable_Nullable<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
+        {
+            // Primarily tests the ability of NullableConverter to flow async serialization state
+
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                DefaultBufferSize = bufferSize,
+                IncludeFields = true,
+            };
+
+            string expectedJson = await JsonSerializerWrapperForString.SerializeWrapper<(IEnumerable<TElement>, bool)?>((source, false), options);
+
+            using var stream = new Utf8MemoryStream();
+            var asyncEnumerable = new MockedAsyncEnumerable<TElement>(source, delayInterval);
+            await JsonSerializerWrapperForStream.SerializeWrapper<(IAsyncEnumerable<TElement>, bool)?>(stream, (asyncEnumerable, false), options);
+
+            JsonTestHelper.AssertJsonEqual(expectedJson, stream.ToString());
+            Assert.Equal(1, asyncEnumerable.TotalCreatedEnumerators);
+            Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
+        }
+
         [Theory, OuterLoop]
         [InlineData(5000, 1000, true)]
         [InlineData(5000, 1000, false)]

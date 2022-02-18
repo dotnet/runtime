@@ -6,12 +6,12 @@ using System.Linq.Expressions;
 
 using Pointer = System.Reflection.Pointer;
 
-public class BringUpTests
+public class Delegates
 {
     const int Pass = 100;
     const int Fail = -1;
 
-    public static int Main()
+    public static int Run()
     {
         int result = Pass;
 

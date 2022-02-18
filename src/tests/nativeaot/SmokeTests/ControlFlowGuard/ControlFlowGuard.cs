@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -129,6 +130,10 @@ unsafe class ControlFlowGuardTests
             public override string ToString() => "TotallyUniqueString";
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
+            Justification = "Hiding the parameter to Type.GetType on purpose")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is over a reference type")]
         public static int Run()
         {
             // Obscure `typeof(string)` so that dataflow analysis can't see it and the MakeGenericType
