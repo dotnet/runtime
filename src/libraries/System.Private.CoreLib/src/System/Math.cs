@@ -884,6 +884,16 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Max(double val1, double val2)
         {
+            if (AdvSimd.Arm64.IsSupported &&
+                (!RuntimeHelpers.IsKnownConstant(val1) || !RuntimeHelpers.IsKnownConstant(val1)))
+            {
+                // Unlike x86, ARM has a hw instruction for IEEE 754:2019 `maximum`
+                // If both val1 and val2 are constants - let the JIT fold it without this path
+                return AdvSimd.Arm64.MaxNumber(
+                    Vector128.CreateScalarUnsafe(val1),
+                    Vector128.CreateScalarUnsafe(val2)).ToScalar();
+            }
+
             // This matches the IEEE 754:2019 `maximum` function
             //
             // It propagates NaN inputs back to the caller and
@@ -941,6 +951,16 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Max(float val1, float val2)
         {
+            if (AdvSimd.IsSupported &&
+                (!RuntimeHelpers.IsKnownConstant(val1) || !RuntimeHelpers.IsKnownConstant(val1)))
+            {
+                // Unlike x86, ARM has a hw instruction for IEEE 754:2019 `maximum`
+                // If both val1 and val2 are constants - let the JIT fold it without this path
+                return AdvSimd.MaxNumber(
+                    Vector128.CreateScalarUnsafe(val1),
+                    Vector128.CreateScalarUnsafe(val2)).ToScalar();
+            }
+
             // This matches the IEEE 754:2019 `maximum` function
             //
             // It propagates NaN inputs back to the caller and
@@ -1031,6 +1051,16 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Min(double val1, double val2)
         {
+            if (AdvSimd.Arm64.IsSupported &&
+                (!RuntimeHelpers.IsKnownConstant(val1) || !RuntimeHelpers.IsKnownConstant(val1)))
+            {
+                // Unlike x86, ARM has a hw instruction for IEEE 754:2019 `minimum`
+                // If both val1 and val2 are constants - let the JIT fold it without this path
+                return AdvSimd.Arm64.MinNumber(
+                    Vector128.CreateScalarUnsafe(val1),
+                    Vector128.CreateScalarUnsafe(val2)).ToScalar();
+            }
+
             // This matches the IEEE 754:2019 `minimum` function
             //
             // It propagates NaN inputs back to the caller and
@@ -1083,6 +1113,16 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Min(float val1, float val2)
         {
+            if (AdvSimd.IsSupported &&
+                (!RuntimeHelpers.IsKnownConstant(val1) || !RuntimeHelpers.IsKnownConstant(val1)))
+            {
+                // Unlike x86, ARM has a hw instruction for IEEE 754:2019 `minimum`
+                // If both val1 and val2 are constants - let the JIT fold it without this path
+                return AdvSimd.MinNumber(
+                    Vector128.CreateScalarUnsafe(val1),
+                    Vector128.CreateScalarUnsafe(val2)).ToScalar();
+            }
+
             // This matches the IEEE 754:2019 `minimum` function
             //
             // It propagates NaN inputs back to the caller and
