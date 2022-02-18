@@ -10,7 +10,7 @@ variables:
   value: 1000
 
 - name: isOfficialBuild
-  value: ${{ and(eq(variables['System.TeamProject'], 'internal'), eq(variables['Build.DefinitionName'], 'dotnet-runtime-official')) }}
+  value: ${{ and(eq(variables['Build.DefinitionName'], 'dotnet-runtime-official'), eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}
 - name: isFullMatrix
   value: ${{ ne(variables['Build.Reason'], 'PullRequest') }}
 
