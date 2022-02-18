@@ -136,7 +136,7 @@ steps:
       ../../../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
       mv ../../bin/Release/net6.0-android/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
     displayName: Build MAUI Android
-    workingDirectory: $(Build.SourcesDirectory)/dotnet-podcast/src/Mobile
+    workingDirectory: $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
 
 
   - task: PublishBuildArtifacts@1
