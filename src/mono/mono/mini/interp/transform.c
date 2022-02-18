@@ -2304,6 +2304,38 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_CEQ_P;
 		} else if (!strcmp (tm, "ByteOffset")) {
 			*op = MINT_INTRINS_UNSAFE_BYTE_OFFSET;
+		} else if (!strcmp (tm, "Unbox")) {
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+
+			MonoType *type = ctx->method_inst->type_argv [0];
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+			interp_add_ins (td, MINT_UNBOX);
+			td->sp--;
+			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
+			push_simple_type (td, STACK_TYPE_MP);
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			td->last_ins->data [0] = get_data_item_index (td, klass);
+
+			td->ip += 5;
+			return TRUE;
+		} else if (!strcmp (tm, "Copy")) {
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+
+			MonoType *type = ctx->method_inst->type_argv [0];
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+			interp_emit_ldobj (td, klass);
+			interp_emit_stobj (td, klass);
+
+			td->ip += 5;
+			return TRUE;
 		} else if (!strcmp (tm, "CopyBlockUnaligned") || !strcmp (tm, "CopyBlock")) {
 			*op = MINT_CPBLK;
 		} else if (!strcmp (tm, "IsAddressLessThan")) {
