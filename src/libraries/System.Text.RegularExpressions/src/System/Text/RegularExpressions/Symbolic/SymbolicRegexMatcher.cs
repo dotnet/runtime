@@ -525,7 +525,8 @@ namespace System.Text.RegularExpressions.Symbolic
             // Determine whether there is a match by finding the first final state position.  This only tells
             // us whether there is a match but needn't give us the longest possible match. This may return -1 as
             // a legitimate value when the initial state is nullable and startat == 0. It returns NoMatchExists (-2)
-            // when there is no match.
+            // when there is no match.  As an example, consider the pattern a{5,10}b* run against an input
+            // of aaaaaaaaaaaaaaabbbc: phase 1 will find the position of the first b: aaaaaaaaaaaaaaab.
             int i = FindFinalStatePosition(input, startat, timeoutOccursAt, out int matchStartLowBoundary, out int watchdog);
 
             // If there wasn't a match, we're done.
@@ -545,7 +546,8 @@ namespace System.Text.RegularExpressions.Symbolic
             // Match backwards through the input matching against the reverse of the pattern, looking for the earliest
             // start position.  That tells us the actual starting position of the match.  We can skip this phase if we
             // recorded a fixed-length marker for the portion of the pattern that matched, as we can then jump that
-            // exact number of positions backwards.
+            // exact number of positions backwards.  Continuing the previous example, phase 2 will walk backwards from
+            // that first b until it finds the 6th a: aaaaaaaaaab.
             int matchStart;
             if (watchdog >= 0)
             {
@@ -564,8 +566,9 @@ namespace System.Text.RegularExpressions.Symbolic
             // and end then represent the bounds of the match.  If the pattern has subcaptures (captures other than
             // the top-level capture for the whole match), we need to do more work to compute their exact bounds, so we
             // take a faster path if captures aren't required.  Further, if captures aren't needed, and if any possible
-            // match of the pattern is a fixed length, we can skip this phase as well, just using that fixed-length to
-            // compute the ending position based on the starting position.
+            // match of the whole pattern is a fixed length, we can skip this phase as well, just using that fixed-length
+            // to compute the ending position based on the starting position.  Continuing the previous example, phase 3
+            // will walk forwards from the 6th a until it finds the end of the match: aaaaaaaaaabbb.
             if (!HasSubcaptures)
             {
                 if (_fixedMatchLength.HasValue)
