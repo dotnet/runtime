@@ -57,7 +57,7 @@ namespace System.Text.Json.Serialization
 
         protected static JsonConverter<TElement> GetElementConverter(ref WriteStack state)
         {
-            JsonConverter<TElement> converter = (JsonConverter<TElement>)state.Current.DeclaredJsonPropertyInfo!.ConverterBase;
+            JsonConverter<TElement> converter = (JsonConverter<TElement>)state.Current.JsonPropertyInfo!.ConverterBase;
             Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
 
             return converter;
@@ -282,7 +282,7 @@ namespace System.Text.Json.Serialization
                         writer.WriteStartArray();
                     }
 
-                    state.Current.DeclaredJsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
+                    state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
                 }
 
                 success = OnWriteResume(writer, value, options, ref state);
