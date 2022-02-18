@@ -14633,13 +14633,13 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
     GenTree* const copyOfNumeratorValue   = fgMakeMultiUse(&tree->gtOp1);
     GenTree* const copyOfDenominatorValue = fgMakeMultiUse(&tree->gtOp2);
     GenTree* const sub                    = gtNewOperNode(GT_SUB, type, copyOfDenominatorValue, gtNewOneConNode(type));
-    GenTree* const and                    = gtNewOperNode(GT_AND, type, copyOfNumeratorValue, sub);
+    GenTree* const andSub                 = gtNewOperNode(GT_AND, type, copyOfNumeratorValue, sub);
 
 #ifdef DEBUG
-    and->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+    andSub->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
 
-    return and;
+    return andSub;
 }
 
 //------------------------------------------------------------------------------
