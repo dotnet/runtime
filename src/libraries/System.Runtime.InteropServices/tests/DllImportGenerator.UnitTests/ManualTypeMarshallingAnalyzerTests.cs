@@ -1227,5 +1227,53 @@ struct Native
             await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(CallerAllocConstructorMustHaveBufferSizeConstantRule).WithLocation(0).WithArguments("Native"));
         }
+
+        [ConditionalFact]
+        public async Task CustomTypeMarshallerForArrayTypeWithPlaceholder_DoesNotReportDiagnostic()
+        {
+            string source = @"
+using System;
+using System.Runtime.InteropServices;
+
+[CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder[]))]
+struct Native<T>
+{
+    public Native(T[] a) {}
+}";
+
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [ConditionalFact]
+        public async Task CustomTypeMarshallerForPointerTypeWithPlaceholder_DoesNotReportDiagnostic()
+        {
+            string source = @"
+using System;
+using System.Runtime.InteropServices;
+
+[CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*))]
+unsafe struct Native<T> where T : unmanaged
+{
+    public Native(T* a) {}
+}";
+
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [ConditionalFact]
+        public async Task CustomTypeMarshallerForArrayOfPointerTypeWithPlaceholder_DoesNotReportDiagnostic()
+        {
+            string source = @"
+using System;
+using System.Runtime.InteropServices;
+
+[CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]))]
+unsafe struct Native<T> where T : unmanaged
+{
+    public Native(T*[] a) {}
+}";
+
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
     }
 }

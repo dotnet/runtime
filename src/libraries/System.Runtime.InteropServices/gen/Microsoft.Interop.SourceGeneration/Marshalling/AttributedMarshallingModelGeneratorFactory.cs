@@ -93,7 +93,7 @@ namespace Microsoft.Interop
 
                 for (int i = 0; i < numIndirectionLevels; i++)
                 {
-                    if (marshallingInfo is NativeContiguousCollectionMarshallingInfo collectionInfo)
+                    if (marshallingInfo is NativeSpanCollectionMarshallingInfo collectionInfo)
                     {
                         type = collectionInfo.ElementType;
                         marshallingInfo = collectionInfo.ElementMarshallingInfo;
@@ -159,7 +159,11 @@ namespace Microsoft.Interop
 
             if ((marshalInfo.MarshallingFeatures & CustomMarshallingFeatures.ManagedToNativeStackalloc) != 0)
             {
-                marshallingStrategy = new StackallocOptimizationMarshalling(marshallingStrategy);
+                if (marshalInfo.BufferSize is null)
+                {
+                    throw new MarshallingNotSupportedException(info, context);
+                }
+                marshallingStrategy = new StackallocOptimizationMarshalling(marshallingStrategy, marshalInfo.BufferSize.Value);
             }
 
             if ((marshalInfo.MarshallingFeatures & CustomMarshallingFeatures.FreeNativeResources) != 0)
@@ -168,7 +172,7 @@ namespace Microsoft.Interop
             }
 
             // Collections have extra configuration, so handle them here.
-            if (marshalInfo is NativeContiguousCollectionMarshallingInfo collectionMarshallingInfo)
+            if (marshalInfo is NativeSpanCollectionMarshallingInfo collectionMarshallingInfo)
             {
                 return CreateNativeCollectionMarshaller(info, context, collectionMarshallingInfo, marshallingStrategy);
             }
@@ -251,7 +255,7 @@ namespace Microsoft.Interop
         private IMarshallingGenerator CreateNativeCollectionMarshaller(
             TypePositionInfo info,
             StubCodeContext context,
-            NativeContiguousCollectionMarshallingInfo collectionInfo,
+            NativeSpanCollectionMarshallingInfo collectionInfo,
             ICustomNativeTypeMarshallingStrategy marshallingStrategy)
         {
             var elementInfo = new TypePositionInfo(collectionInfo.ElementType, collectionInfo.ElementMarshallingInfo) { ManagedIndex = info.ManagedIndex };

@@ -281,10 +281,12 @@ namespace Microsoft.Interop
     internal sealed class StackallocOptimizationMarshalling : ICustomNativeTypeMarshallingStrategy
     {
         private readonly ICustomNativeTypeMarshallingStrategy _innerMarshaller;
+        private readonly int _bufferSize;
 
-        public StackallocOptimizationMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller)
+        public StackallocOptimizationMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, int bufferSize)
         {
             _innerMarshaller = innerMarshaller;
+            _bufferSize = bufferSize;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -306,7 +308,7 @@ namespace Microsoft.Interop
         {
             if (StackAllocOptimizationValid(info, context))
             {
-                // byte* <managedIdentifier>__stackptr = stackalloc byte[<_nativeLocalType>.BufferSize];
+                // byte* <managedIdentifier>__stackptr = stackalloc byte[<_bufferSize>];
                 yield return LocalDeclarationStatement(
                 VariableDeclaration(
                     PointerType(PredefinedType(Token(SyntaxKind.ByteKeyword))),
@@ -317,9 +319,7 @@ namespace Microsoft.Interop
                                         ArrayType(
                                             PredefinedType(Token(SyntaxKind.ByteKeyword)),
                                             SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
-                                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                    AsNativeType(info),
-                                                    IdentifierName(ManualTypeMarshallingHelper.BufferSizeFieldName))
+                                                LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_bufferSize))
                                             ))))))))));
             }
 
@@ -371,9 +371,7 @@ namespace Microsoft.Interop
                         ArgumentList(SeparatedList(new ArgumentSyntax[]
                         {
                             Argument(IdentifierName(GetStackAllocPointerIdentifier(info, context))),
-                            Argument(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                    AsNativeType(info),
-                                    IdentifierName(ManualTypeMarshallingHelper.BufferSizeFieldName)))
+                            Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_bufferSize)))
                         }))));
             }
         }

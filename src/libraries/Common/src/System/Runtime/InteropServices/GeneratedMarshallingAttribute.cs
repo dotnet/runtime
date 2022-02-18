@@ -80,6 +80,16 @@ namespace System.Runtime.InteropServices
 
         public Type ManagedType { get; }
         public CustomTypeMarshallerKind MarshallerKind { get; }
+        public int BufferSize { get; set; }
+        public bool RequiresStackBuffer { get; set; }
+
+        /// <summary>
+        /// This type is used as a placeholder for the first generic parameter when generic parameters cannot be used
+        /// to identify the managed type (i.e. when the marshaller type is generic over T and the managed type is T[])
+        /// </summary>
+        public struct GenericPlaceholder
+        {
+        }
     }
 
 #if DLLIMPORT_GENERATOR_TEST
@@ -91,18 +101,5 @@ namespace System.Runtime.InteropServices
     {
         Value,
         SpanCollection
-    }
-
-    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
-#if DLLIMPORT_GENERATOR_TEST
-    public
-#else
-    internal
-#endif
-    sealed class GenericContiguousCollectionMarshallerAttribute : Attribute
-    {
-        public GenericContiguousCollectionMarshallerAttribute()
-        {
-        }
     }
 }

@@ -122,7 +122,7 @@ namespace SharedTypes
         }
     }
 
-    [CustomTypeMarshaller(typeof(string))]
+    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100, RequiresStackBuffer = true)]
     public unsafe ref struct Utf16StringMarshaler
     {
         private ushort* allocated;
@@ -194,9 +194,6 @@ namespace SharedTypes
         {
             Marshal.FreeCoTaskMem((IntPtr)allocated);
         }
-
-        public const int BufferSize = 0x100;
-        public const bool RequiresStackBuffer = true;
     }
 
 
@@ -218,7 +215,7 @@ namespace SharedTypes
         public IntStructWrapper ToManaged() => new IntStructWrapper { Value = value };
     }
 
-    [CustomTypeMarshaller(typeof(List<>), CustomTypeMarshallerKind.SpanCollection)]
+    [CustomTypeMarshaller(typeof(List<>), CustomTypeMarshallerKind.SpanCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
     public unsafe ref struct ListMarshaller<T>
     {
         private List<T> managedList;
@@ -259,14 +256,6 @@ namespace SharedTypes
                 NativeValueStorage = new Span<byte>((void*)allocatedMemory, spaceToAllocate);
             }
         }
-
-        /// <summary>
-        /// Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
-        /// Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
-        /// blow the stack since this is a new optimization in the code-generated interop.
-        /// </summary>
-        public const int BufferSize = 0x200;
-        public const bool RequiresStackBuffer = true;
 
         public Span<T> ManagedValues => CollectionsMarshal.AsSpan(managedList);
 

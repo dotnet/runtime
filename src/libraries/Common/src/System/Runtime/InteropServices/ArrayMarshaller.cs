@@ -15,6 +15,10 @@ using System.Diagnostics;
 
 namespace System.Runtime.InteropServices.GeneratedMarshalling
 {
+    // Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
+    // Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
+    // blow the stack since this is a new optimization in the code-generated interop.
+    [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder[]), CustomTypeMarshallerKind.SpanCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
 #if DLLIMPORT_GENERATOR_TEST
     public
 #else
@@ -61,14 +65,6 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
             }
         }
 
-        /// <summary>
-        /// Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
-        /// Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
-        /// blow the stack since this is a new optimization in the code-generated interop.
-        /// </summary>
-        public const int BufferSize = 0x200;
-        public const bool RequiresStackBuffer = true;
-
         public Span<T> ManagedValues => _managedArray;
 
         public Span<byte> NativeValueStorage { get; private set; }
@@ -109,6 +105,10 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
+    // Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
+    // Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
+    // blow the stack since this is a new optimization in the code-generated interop.
+    [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]), CustomTypeMarshallerKind.SpanCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
 #if DLLIMPORT_GENERATOR_TEST
     public
 #else
@@ -154,14 +154,6 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
                 NativeValueStorage = new Span<byte>((void*)_allocatedMemory, spaceToAllocate);
             }
         }
-
-        /// <summary>
-        /// Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
-        /// Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
-        /// blow the stack since this is a new optimization in the code-generated interop.
-        /// </summary>
-        public const int BufferSize = 0x200;
-        public const bool RequiresStackBuffer = true;
 
         public Span<IntPtr> ManagedValues => Unsafe.As<IntPtr[]>(_managedArray);
 

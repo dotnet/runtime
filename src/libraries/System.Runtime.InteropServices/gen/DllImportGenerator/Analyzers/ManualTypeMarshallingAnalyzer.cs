@@ -296,6 +296,8 @@ namespace Microsoft.Interop.Analyzers
 
                 (bool hasCustomTypeMarshallerAttribute, ITypeSymbol? marshallerManagedType, _) = ManualTypeMarshallingHelper.GetMarshallerShapeInfo(marshallerType);
 
+                marshallerManagedType = ManualTypeMarshallingHelper.ResolveManagedType(marshallerManagedType, marshallerType, context.Compilation);
+
                 if (!hasCustomTypeMarshallerAttribute)
                 {
                     context.ReportDiagnostic(
@@ -336,7 +338,9 @@ namespace Microsoft.Interop.Analyzers
             public void AnalyzeMarshallerType(SymbolAnalysisContext context)
             {
                 INamedTypeSymbol marshallerType = (INamedTypeSymbol)context.Symbol;
-                (bool hasCustomTypeMarshallerAttribute, ITypeSymbol? type, ManualTypeMarshallingHelper.CustomTypeMarshallerKind? marshallerKind) = ManualTypeMarshallingHelper.GetMarshallerShapeInfo(marshallerType);
+                (bool hasCustomTypeMarshallerAttribute, ITypeSymbol? type, CustomTypeMarshallerData? marshallerData) = ManualTypeMarshallingHelper.GetMarshallerShapeInfo(marshallerType);
+                type = ManualTypeMarshallingHelper.ResolveManagedType(type, marshallerType, context.Compilation);
+
                 if (!hasCustomTypeMarshallerAttribute)
                 {
                     return;
@@ -347,7 +351,7 @@ namespace Microsoft.Interop.Analyzers
                     return;
                 }
 
-                if (marshallerKind == null || !Enum.IsDefined(typeof(ManualTypeMarshallingHelper.CustomTypeMarshallerKind), marshallerKind))
+                if (marshallerData == null || !Enum.IsDefined(typeof(CustomTypeMarshallerKind), marshallerData.Value.Kind))
                 {
                     context.ReportDiagnostic(marshallerType.CreateDiagnostic(MarshallerKindMustBeValidRule, marshallerType.ToDisplayString()));
                 }
@@ -366,10 +370,10 @@ namespace Microsoft.Interop.Analyzers
                     type = generic.ConstructedFrom.Construct(marshallerType.TypeArguments, marshallerType.TypeArgumentNullableAnnotations);
                 }
 
-                DiagnosticDescriptor requiredShapeRule = marshallerKind switch
+                DiagnosticDescriptor requiredShapeRule = marshallerData.Value.Kind switch
                 {
-                    ManualTypeMarshallingHelper.CustomTypeMarshallerKind.Value => NativeTypeMustHaveRequiredShapeRule,
-                    ManualTypeMarshallingHelper.CustomTypeMarshallerKind.SpanCollection => CollectionNativeTypeMustHaveRequiredShapeRule,
+                    CustomTypeMarshallerKind.Value => NativeTypeMustHaveRequiredShapeRule,
+                    CustomTypeMarshallerKind.SpanCollection => CollectionNativeTypeMustHaveRequiredShapeRule,
                     _ => throw new InvalidOperationException()
                 };
 
@@ -391,9 +395,9 @@ namespace Microsoft.Interop.Analyzers
                         continue;
                     }
 
-                    hasConstructor = hasConstructor || ManualTypeMarshallingHelper.IsManagedToNativeConstructor(ctor, type, marshallerKind.Value);
+                    hasConstructor = hasConstructor || ManualTypeMarshallingHelper.IsManagedToNativeConstructor(ctor, type, marshallerData.Value.Kind);
 
-                    if (!hasCallerAllocSpanConstructor && ManualTypeMarshallingHelper.IsCallerAllocatedSpanConstructor(ctor, type, _spanOfByte, marshallerKind.Value))
+                    if (!hasCallerAllocSpanConstructor && ManualTypeMarshallingHelper.IsCallerAllocatedSpanConstructor(ctor, type, _spanOfByte, marshallerData.Value.Kind))
                     {
                         hasCallerAllocSpanConstructor = true;
                         IFieldSymbol bufferSizeField = marshallerType.GetMembers(ManualTypeMarshallingHelper.BufferSizeFieldName).OfType<IFieldSymbol>().FirstOrDefault();
@@ -407,7 +411,7 @@ namespace Microsoft.Interop.Analyzers
                     }
                 }
 
-                if (marshallerKind == ManualTypeMarshallingHelper.CustomTypeMarshallerKind.SpanCollection)
+                if (marshallerData.Value.Kind == CustomTypeMarshallerKind.SpanCollection)
                 {
                     requiredShapeRule = CollectionNativeTypeMustHaveRequiredShapeRule;
                     if (!ManualTypeMarshallingHelper.TryGetManagedValuesProperty(marshallerType, out _)

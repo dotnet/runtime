@@ -2,11 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
+    public enum CustomTypeMarshallerKind
+    {
+        Value,
+        SpanCollection
+    }
+    public readonly record struct CustomTypeMarshallerData(CustomTypeMarshallerKind Kind, int? BufferSize, bool RequiresStackBuffer);
     public static class ManualTypeMarshallingHelper
     {
         public const string ValuePropertyName = "Value";
@@ -26,13 +34,7 @@ namespace Microsoft.Interop
             public const string ConstantElementCount = nameof(ConstantElementCount);
         }
 
-        public enum CustomTypeMarshallerKind
-        {
-            Value,
-            SpanCollection
-        }
-
-        public static (bool hasAttribute, ITypeSymbol? managedType, CustomTypeMarshallerKind? kind) GetMarshallerShapeInfo(ITypeSymbol marshallerType)
+        public static (bool hasAttribute, ITypeSymbol? managedType, CustomTypeMarshallerData? kind) GetMarshallerShapeInfo(ITypeSymbol marshallerType)
         {
             var attr = marshallerType.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.ToDisplayString() == TypeNames.CustomTypeMarshallerAttribute);
             if (attr is null)
@@ -43,11 +45,83 @@ namespace Microsoft.Interop
             {
                 return (true, null, null);
             }
-            if (attr.ConstructorArguments.Length == 1)
+            CustomTypeMarshallerKind kind = CustomTypeMarshallerKind.Value;
+            ITypeSymbol? managedType = attr.ConstructorArguments[0].Value as ITypeSymbol;
+            if (attr.ConstructorArguments.Length >= 1)
             {
-                return (true, attr.ConstructorArguments[0].Value as ITypeSymbol, CustomTypeMarshallerKind.Value);
+                if (attr.ConstructorArguments[1].Value is not int i)
+                {
+                    return (true, managedType, null);
+                }
+                kind = (CustomTypeMarshallerKind)i;
             }
-            return (true, attr.ConstructorArguments[0].Value as ITypeSymbol, attr.ConstructorArguments[1].Value is int i ? (CustomTypeMarshallerKind)i : null);
+            var namedArguments = attr.NamedArguments.ToImmutableDictionary();
+            int? bufferSize = null;
+            if (namedArguments.TryGetValue(BufferSizeFieldName, out TypedConstant bufferSizeConstant))
+            {
+                bufferSize = bufferSizeConstant.Value as int?;
+            }
+            bool requiresStackBuffer = false;
+            if (namedArguments.TryGetValue(RequiresStackBufferFieldName, out TypedConstant requiresStackBufferConstant))
+            {
+                requiresStackBuffer = bufferSizeConstant.Value as bool? ?? false;
+            }
+            return (true, managedType, new CustomTypeMarshallerData(kind, bufferSize, requiresStackBuffer));
+        }
+
+        /// <summary>
+        /// Resolve a non-<see cref="INamedTypeSymbol"/> <paramref name="managedType"/> to the correct managed type if <paramref name="marshallerType"/> is generic and <paramref name="managedType"/> is using any placeholder types.
+        /// </summary>
+        /// <param name="managedType">The non-named managed type.</param>
+        /// <param name="marshallerType">The marshaller type.</param>
+        /// <param name="compilation">The compilation to use to make new type symbols.</param>
+        /// <returns>The resolved managed type, or <paramref name="managedType"/> if the provided type did not have any placeholders.</returns>
+        public static ITypeSymbol? ResolveManagedType(ITypeSymbol? managedType, INamedTypeSymbol marshallerType, Compilation compilation)
+        {
+            if (managedType is null or INamedTypeSymbol || !marshallerType.IsGenericType)
+            {
+                return managedType;
+            }
+            Stack<ITypeSymbol> typeStack = new();
+            ITypeSymbol? innerType = managedType;
+            while (innerType.TypeKind is TypeKind.Array or TypeKind.Pointer)
+            {
+                if (innerType is IArrayTypeSymbol array)
+                {
+                    typeStack.Push(innerType);
+                    innerType = array.ElementType;
+                }
+                else if (innerType is IPointerTypeSymbol pointerType)
+                {
+                    typeStack.Push(innerType);
+                    innerType = pointerType.PointedAtType;
+                }
+            }
+
+            if (innerType.ToDisplayString() != TypeNames.CustomTypeMarshallerAttributeGenericPlaceholder)
+            {
+                return managedType;
+            }
+
+            ITypeSymbol resultType = marshallerType.TypeArguments[0];
+
+            while (typeStack.Count > 0)
+            {
+                ITypeSymbol wrapperType = typeStack.Pop();
+                if (wrapperType.TypeKind == TypeKind.Pointer)
+                {
+                    resultType = compilation.CreatePointerTypeSymbol(resultType);
+                }
+                else if (wrapperType.TypeKind == TypeKind.Array)
+                {
+                    IArrayTypeSymbol arrayType = (IArrayTypeSymbol)wrapperType;
+                    if (arrayType.IsSZArray)
+                    {
+                        resultType = compilation.CreateArrayTypeSymbol(resultType, arrayType.Rank);
+                    }
+                }
+            }
+            return resultType;
         }
 
         public static (AttributeData? attribute, INamedTypeSymbol? marshallerType) GetDefaultMarshallerInfo(ITypeSymbol managedType)
