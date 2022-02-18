@@ -9759,7 +9759,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         vnpUniq.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
     }
 
-    if (call->HasIndirectionCellArg(nullptr))
+    if (call->HasIndirectionCellArg())
     {
         // If we are VN'ing a call with indirection cell arg (e.g. because this
         // is a helper in a R2R compilation) then morph should already have

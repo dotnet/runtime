@@ -4684,7 +4684,7 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_EXPANDED_EARLY) != 0;
     }
 
-    bool HasIndirectionCellArg(fgArgTabEntry** entry) const;
+    bool HasIndirectionCellArg(fgArgTabEntry** entry = nullptr) const;
 
     CFGCallKind GetCFGCallKind()
     {
@@ -4692,7 +4692,7 @@ struct GenTreeCall final : public GenTree
         // On x64 the dispatcher is more performant, but we cannot use it when
         // we need to pass indirection cells as those go into registers that
         // are clobbered by the dispatch helper.
-        bool mayUseDispatcher    = !HasIndirectionCellArg(nullptr);
+        bool mayUseDispatcher    = !HasIndirectionCellArg();
         bool shouldUseDispatcher = true;
 #elif defined(TARGET_ARM64)
         bool mayUseDispatcher = true;
