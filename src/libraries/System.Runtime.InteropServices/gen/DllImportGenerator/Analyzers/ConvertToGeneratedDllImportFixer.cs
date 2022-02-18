@@ -88,6 +88,10 @@ namespace Microsoft.Interop.Analyzers
             DllImportData dllImportData = methodSymbol.GetDllImportData()!;
             if (!dllImportData.ExactSpelling)
             {
+                // CharSet.Auto traditionally maps to either an A or W suffix
+                // depending on the default CharSet of the platform.
+                // We will offer both suffix options when CharSet.Auto is provided
+                // to enable developers to pick which variant they mean (since they could explicitly decide they want one or the other)
                 if (dllImportData.CharacterSet is CharSet.None or CharSet.Ansi or CharSet.Auto)
                 {
                     context.RegisterCodeFix(
