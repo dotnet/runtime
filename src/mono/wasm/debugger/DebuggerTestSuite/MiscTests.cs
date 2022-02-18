@@ -58,7 +58,7 @@ namespace DebuggerTests
             Assert.Equal(dicFileToUrl["/debugger-driver.html"], ex_json["exceptionDetails"]?["url"]?.Value<string>());
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsAtBreakpointSite(bool use_cfo) =>
@@ -157,7 +157,7 @@ namespace DebuggerTests
                 }
             );
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("TestNullableLocal", false)]
         [InlineData("TestNullableLocalAsync", true)]
         public async Task InspectNullableLocals(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -194,7 +194,7 @@ namespace DebuggerTests
                 }, nameof(n_gs));
             });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsWithGenericTypesAtBreakpointSite(bool use_cfo) =>
@@ -250,7 +250,7 @@ namespace DebuggerTests
             );
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsWithStructs(bool use_cfo)
@@ -341,7 +341,7 @@ namespace DebuggerTests
             // FIXME: check ss_local.gs.List's members
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("BoxingTest", false)]
         [InlineData("BoxingTestAsync", true)]
         public async Task InspectBoxedLocals(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -394,7 +394,7 @@ namespace DebuggerTests
                 }, nameof(o_ia_props));
             });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("BoxedTypeObjectTest", false)]
         [InlineData("BoxedTypeObjectTestAsync", true)]
         public async Task InspectBoxedTypeObject(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -420,7 +420,7 @@ namespace DebuggerTests
                 }, "locals");
             });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("BoxedAsClass", false)]
         [InlineData("BoxedAsClassAsync", true)]
         public async Task InspectBoxedAsClassLocals(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -444,7 +444,7 @@ namespace DebuggerTests
                 }, "locals");
             });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsWithStructsStaticAsync(bool use_cfo)
@@ -508,7 +508,7 @@ namespace DebuggerTests
             // FIXME: check ss_local.gs.List's members
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(137, 12, "MethodWithLocalsForToStringTest", false, false)]
         [InlineData(147, 12, "MethodWithArgumentsForToStringTest", true, false)]
         [InlineData(192, 12, "MethodWithArgumentsForToStringTestAsync", true, true)]
@@ -606,7 +606,7 @@ namespace DebuggerTests
             var locals = await GetProperties(wait_res["callFrames"][1]["callFrameId"].Value<string>());
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsForStructInstanceMethod(bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
@@ -659,7 +659,7 @@ namespace DebuggerTests
                 }, "this_props");
             });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("EmptyClass", false)]
         [InlineData("EmptyClass", true)]
         [InlineData("EmptyStruct", false)]
@@ -676,7 +676,7 @@ namespace DebuggerTests
                 AssertEqual(0, frame_locals.Values<JToken>().Count(), "locals");
             });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task StaticMethodWithLocalEmptyStructThatWillGetExpanded(bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -955,7 +955,7 @@ namespace DebuggerTests
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(
             "DebuggerTests.CheckSpecialCharactersInPath", 
             "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]

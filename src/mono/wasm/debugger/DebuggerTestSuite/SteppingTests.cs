@@ -87,7 +87,7 @@ namespace DebuggerTests
             );
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsInPreviousFramesDuringSteppingIn2(bool use_cfo)
@@ -154,7 +154,7 @@ namespace DebuggerTests
             await CheckString(props, "c", "20_xx");
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsInPreviousFramesDuringSteppingIn(bool use_cfo)
@@ -319,7 +319,7 @@ namespace DebuggerTests
             );
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsInAsyncMethods(bool use_cfo)
@@ -376,7 +376,7 @@ namespace DebuggerTests
             // TODO: Check `this` properties
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeMethodArgsWhileStepping(bool use_cfo)
@@ -976,7 +976,7 @@ namespace DebuggerTests
                 );
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("Debugger.stepInto")]
         [InlineData("Debugger.stepOver")]
         public async Task DebuggerHiddenIgnoreStepUserBreakpoint(string steppingFunction)

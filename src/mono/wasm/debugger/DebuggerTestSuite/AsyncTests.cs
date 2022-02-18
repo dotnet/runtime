@@ -19,7 +19,7 @@ namespace DebuggerTests
         // FIXME: check object properties..
 
         //FIXME: function name
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("ContinueWithStaticAsync", "<ContinueWithStaticAsync>b__3_0")]
         [InlineData("ContinueWithInstanceAsync", "<ContinueWithInstanceAsync>b__5_0")]
         public async Task AsyncLocalsInContinueWith(string method_name, string expected_method_name) => await CheckInspectLocalsAtBreakpointSite(

@@ -12,7 +12,7 @@ namespace DebuggerTests
     public class ArrayTests : DebuggerTestBase
     {
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(19, 8, "PrimitiveTypeLocals", false, 0, false)]
         [InlineData(19, 8, "PrimitiveTypeLocals", false, 0, true)]
         [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
@@ -29,7 +29,7 @@ namespace DebuggerTests
             frame_idx: frame_idx,
             use_cfo: use_cfo);
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(36, 8, "ValueTypeLocals", false, 0, false)]
         [InlineData(36, 8, "ValueTypeLocals", false, 0, true)]
         [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
@@ -54,7 +54,7 @@ namespace DebuggerTests
             frame_idx: frame_idx,
             use_cfo: use_cfo);
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(54, 8, "ObjectTypeLocals", false, 0, false)]
         [InlineData(54, 8, "ObjectTypeLocals", false, 0, true)]
         [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
@@ -81,7 +81,7 @@ namespace DebuggerTests
             frame_idx: frame_idx,
             use_cfo: use_cfo);
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(72, 8, "GenericTypeLocals", false, 0, false)]
         [InlineData(72, 8, "GenericTypeLocals", false, 0, true)]
         [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
@@ -118,7 +118,7 @@ namespace DebuggerTests
             frame_idx: frame_idx,
             use_cfo: use_cfo);
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(89, 8, "GenericValueTypeLocals", false, 0, false)]
         [InlineData(89, 8, "GenericValueTypeLocals", false, 0, true)]
         [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
@@ -153,7 +153,7 @@ namespace DebuggerTests
             frame_idx: frame_idx,
             use_cfo: use_cfo);
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(213, 8, "GenericValueTypeLocals2", false, 0, false)]
         [InlineData(213, 8, "GenericValueTypeLocals2", false, 0, true)]
         [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
@@ -282,7 +282,7 @@ namespace DebuggerTests
             await CheckProps(props, new object[0], "${local_var_name_prefix}_arr_empty");
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectObjectArrayMembers(bool use_cfo)
@@ -354,7 +354,7 @@ namespace DebuggerTests
                 label: "c#PointsField");
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsStaticAsync(bool use_cfo)
@@ -418,7 +418,7 @@ namespace DebuggerTests
         }
 
         // TODO: Check previous frame too
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsInstanceAsync(bool use_cfo)
@@ -470,7 +470,7 @@ namespace DebuggerTests
                 TPoint(45, 51, "point#Id", "Green"));
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsInAsyncStaticStructMethod(bool use_cfo)
@@ -502,7 +502,7 @@ namespace DebuggerTests
             }, "InspectValueTypeArrayLocalsInAsyncStaticStructMethod#locals");
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsInAsyncInstanceStructMethod(bool use_cfo)
@@ -605,7 +605,7 @@ namespace DebuggerTests
                 }
            });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectPrimitiveTypeMultiArrayLocals(bool use_cfo)

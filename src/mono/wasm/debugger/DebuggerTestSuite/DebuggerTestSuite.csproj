@@ -6,7 +6,6 @@
     <RunAnalyzers>false</RunAnalyzers>
     <IsTestProject>true</IsTestProject>
     <DefineConstants Condition="'$(RunInFirefox)'!='1'">$(DefineConstants);RUN_IN_CHROME</DefineConstants>
-    <VSTestTestCaseFilter>"$(VSTestTestCaseFilter)--thays"</VSTestTestCaseFilter>
   </PropertyGroup>
 
   <ItemGroup>

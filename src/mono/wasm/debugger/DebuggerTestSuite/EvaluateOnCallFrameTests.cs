@@ -42,7 +42,7 @@ namespace DebuggerTests
             yield return new object[] { type_name, "EvaluateMethods", "EvaluateMethods", false };
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [MemberData(nameof(InstanceMethodForTypeMembersTestData), parameters: "DebuggerTests.EvaluateTestsStructWithProperties")]
         [MemberData(nameof(InstanceMethodForTypeMembersTestData), parameters: "DebuggerTests.EvaluateTestsClassWithProperties")]
         public async Task EvaluateTypeInstanceMembers(string prefix, int bias, string type, string method, string bp_function_name, bool is_async)
@@ -77,7 +77,7 @@ namespace DebuggerTests
                }
            });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [MemberData(nameof(InstanceMethodsTestData), parameters: "DebuggerTests.EvaluateTestsStructWithProperties")]
         [MemberData(nameof(InstanceMethodsTestData), parameters: "DebuggerTests.EvaluateTestsClassWithProperties")]
         public async Task EvaluateInstanceMethodArguments(string type, string method, string bp_function_name, bool is_async)
@@ -100,7 +100,7 @@ namespace DebuggerTests
                    ("me.DTProp.Second + (me.IntProp - 5)", TNumber(DTProp.Second + 4)));
            });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [MemberData(nameof(InstanceMethodsTestData), parameters: "DebuggerTests.EvaluateTestsStructWithProperties")]
         [MemberData(nameof(InstanceMethodsTestData), parameters: "DebuggerTests.EvaluateTestsClassWithProperties")]
         public async Task EvaluateMethodLocals(string type, string method, string bp_function_name, bool is_async)
@@ -192,7 +192,7 @@ namespace DebuggerTests
                }
            });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [MemberData(nameof(InstanceMethodForTypeMembersTestData), parameters: "DebuggerTests.EvaluateTestsStructWithProperties")]
         [MemberData(nameof(InstanceMethodForTypeMembersTestData), parameters: "DebuggerTests.EvaluateTestsClassWithProperties")]
         public async Task EvaluateExpressionsWithDeepMemberAccesses(string prefix, int bias, string type, string method, string bp_function_name, bool _)
@@ -216,7 +216,7 @@ namespace DebuggerTests
                    ($"local_dt.Date.Year * 10", TNumber(10)));
            });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("")]
         [InlineData("this.")]
         public async Task InheritedAndPrivateMembersInAClass(string prefix)
@@ -292,7 +292,7 @@ namespace DebuggerTests
             { "DebuggerTests.EvaluateTestsStructWithProperties", "EvaluateShadowAsync", "MoveNext" },
         };
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [MemberData(nameof(ShadowMethodArgsTestData))]
         public async Task LocalsAndArgsShadowingThisMembers(string type_name, string method, string bp_function_name) => await CheckInspectLocalsAtBreakpointSite(
             type_name, method, 2, bp_function_name,
@@ -317,7 +317,7 @@ namespace DebuggerTests
                }
            });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("DebuggerTests.EvaluateTestsStructWithProperties", true)]
         [InlineData("DebuggerTests.EvaluateTestsClassWithProperties", false)]
         public async Task EvaluateOnPreviousFrames(string type_name, bool is_valuetype) => await CheckInspectLocalsAtBreakpointSite(
@@ -706,7 +706,7 @@ namespace DebuggerTests
                     ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
            });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "DebuggerTests.EvaluateMethodTestsClass")]
         // [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "EvaluateMethodTestsClass")]
         public async Task EvaluateStaticClassFromStaticMethod(string type, string method, string bp_function_name, bool is_async)
@@ -855,7 +855,7 @@ namespace DebuggerTests
                    ("\"15\"", TString("15")));
            });
         
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
         [InlineData("EvaluateBrowsableCustomProperties", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
@@ -886,7 +886,7 @@ namespace DebuggerTests
                     }, "testNoneProps#1");
            });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
         [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
@@ -907,7 +907,7 @@ namespace DebuggerTests
                 }, "testNeverProps#1");
            });
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsCollapsed", "testFieldsCollapsed", 10)]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
         [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluateFieldsCollapsed", "testFieldsCollapsed", 10)]
@@ -939,7 +939,7 @@ namespace DebuggerTests
                     }, "testCollapsedProps#1");
            });
         
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
         [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]

@@ -166,7 +166,7 @@ namespace DebuggerTests
             Assert.True(false, "Expected to get an ArgumentException from the uncaught user exception");
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("function () { exceptions_test (); }", null, 0, 0, "exception_uncaught_test", "RangeError", "exception uncaught")]
         [InlineData("function () { invoke_static_method ('[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions'); }",
             "dotnet://debugger-test.dll/debugger-exception-test.cs", 28, 16, "run",
@@ -232,7 +232,7 @@ namespace DebuggerTests
             await CheckString(exception_members, "message", "not implemented uncaught");
         }
 
-        [Theory]
+        [TheoryDependingOnTheBrowser]
         [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClassDefault:TestExceptions", "System.Exception", 76)]
         [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions", "DebuggerTests.CustomException", 28)]
         public async Task ExceptionTestAllWithReload(string entry_method_name, string class_name, int line_number)
