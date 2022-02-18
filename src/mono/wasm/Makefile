@@ -7,6 +7,12 @@ ifneq ($(V),)
 MSBUILD_ARGS+=/p:MonoVerboseBuild=true
 endif
 
+ifeq ("$(wildcard /.dockerenv)", "")
+	NO_SANDBOX_IN_CONTAINER=--no-sandbox
+else
+	NO_SANDBOX_IN_CONTAINER=
+endif
+
 DOTNET=$(TOP)/dotnet.sh
 JSVU=$(HOME)/.jsvu
 CHROMEDRIVER?=$(HOME)/.chromedriver
