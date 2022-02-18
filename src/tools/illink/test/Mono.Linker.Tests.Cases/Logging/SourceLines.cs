@@ -9,10 +9,10 @@ namespace Mono.Linker.Tests.Cases.Logging
 	[SkipKeptItemsValidation]
 	[SetupCompileArgument ("/debug:full")]
 	[ExpectedNoWarnings]
-	[ExpectedWarning ("IL2074", FileName = "", SourceLine = 34, SourceColumn = 4)]
-	[ExpectedWarning ("IL2074", FileName = "", SourceLine = 35, SourceColumn = 4)]
-	[ExpectedWarning ("IL2091", FileName = "", SourceLine = 44, SourceColumn = 4)]
-	[ExpectedWarning ("IL2089", FileName = "", SourceLine = 48, SourceColumn = 36)]
+	[ExpectedWarning ("IL2074", FileName = "", SourceLine = 39, SourceColumn = 4)]
+	[ExpectedWarning ("IL2074", FileName = "", SourceLine = 40, SourceColumn = 4)]
+	[ExpectedWarning ("IL2091", FileName = "", SourceLine = 51, SourceColumn = 4)]
+	[ExpectedWarning ("IL2089", FileName = "", SourceLine = 55, SourceColumn = 36)]
 	public class SourceLines
 	{
 		public static void Main ()
@@ -29,12 +29,19 @@ namespace Mono.Linker.Tests.Cases.Logging
 			return typeof (SourceLines);
 		}
 
+		// Analyzer test infrastructure doesn't support ExpectedWarning at the top-level.
+		// This is OK because the test is meant to validate that the linker infrastructure produces the right line numbers,
+		// and we have separate tests to check the line number of analyzer warnings.
+		[ExpectedWarning ("IL2074", nameof (SourceLines) + "." + nameof (type), nameof (SourceLines) + "." + nameof (GetUnknownType) + "()", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2074", nameof (SourceLines) + "." + nameof (type), nameof (SourceLines) + "." + nameof (GetUnknownType) + "()", ProducedBy = ProducedBy.Analyzer)]
 		static void UnrecognizedReflectionPattern ()
 		{
 			type = GetUnknownType (); // IL2074
 			type = GetUnknownType (); // IL2074
 		}
 
+		[ExpectedWarning ("IL2091", "LocalFunction()", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2089", nameof (SourceLines) + "." + nameof (type), "TOuterMethod", ProducedBy = ProducedBy.Analyzer)]
 		static IEnumerable<int> GenericMethodIteratorWithRequirement<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TOuterMethod> ()
 		{
 			// Since this is iterator it will turn into a subclass with generic T

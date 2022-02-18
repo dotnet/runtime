@@ -32,6 +32,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static DiagnosticResult Diagnostic (DiagnosticDescriptor descriptor)
 			=> CSharpAnalyzerVerifier<TAnalyzer, XUnitVerifier>.Diagnostic (descriptor);
 
+		public static DiagnosticResult Diagnostic (DiagnosticId diagnosticId)
+			=> CSharpAnalyzerVerifier<TAnalyzer, XUnitVerifier>.Diagnostic (DiagnosticDescriptors.GetDiagnosticDescriptor (diagnosticId));
+
 		/// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
 		public static async Task VerifyAnalyzerAsync (string src, (string, string)[]? analyzerOptions = null, IEnumerable<MetadataReference>? additionalReferences = null, params DiagnosticResult[] expected)
 		{

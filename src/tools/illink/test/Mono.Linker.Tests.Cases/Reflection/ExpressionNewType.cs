@@ -8,6 +8,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[Reference ("System.Core.dll")]
+	[ExpectedNoWarnings]
 	public class ExpressionNewType
 	{
 		public static void Main ()
@@ -25,11 +26,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Expression.New (5 + 7 == 12 ? null : typeof (RemovedType));
 		}
 
-		#region RecognizedReflectionAccessPatterns
-		[RecognizedReflectionAccessPattern (
-			typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) }, typeof (A), "A", new Type[0])]
-		[RecognizedReflectionAccessPattern (
-			typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) }, typeof (B), "B", new Type[0])]
 		[Kept]
 		static void Branch_SystemTypeValueNode (int i)
 		{
@@ -47,25 +43,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			Expression.New (T);
 		}
-		#endregion
 
-		#region UnrecognizedReflectionAccessPatterns
-		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) }, messageCode: "IL2067")]
+		[ExpectedWarning ("IL2067", nameof (Expression) + "." + nameof (Expression.New))]
 		[Kept]
 		static void Branch_MethodParameterValueNode (Type T)
 		{
 			Expression.New (T);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) }, messageCode: "IL2072")]
-		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) }, messageCode: "IL2072")]
+		[ExpectedWarning ("IL2072", nameof (Expression) + "." + nameof (Expression.New), "'System." + nameof (Type) + "." + nameof (Type.GetType))]
+		[ExpectedWarning ("IL2072", nameof (Expression) + "." + nameof (Expression.New), nameof (ExpressionNewType) + "." + nameof (ExpressionNewType.GetType))]
 		[Kept]
 		static void Branch_UnrecognizedPatterns ()
 		{
 			Expression.New (Type.GetType ("RemovedType"));
 			Expression.New (GetType ());
 		}
-		#endregion
 
 		#region Helpers
 		[Kept]

@@ -242,5 +242,38 @@ namespace ILLink.RoslynAnalyzer
 				return false;
 			}
 		}
+
+		/// <summary>
+		/// Finds the symbol of the caller to the current operation, helps to find out the symbol in cases where the operation passes
+		/// through a lambda or a local function.
+		/// </summary>
+		/// <param name="operation">The operation to find the symbol for.</param>
+		/// <param name="owningSymbol">The owning symbol of the entire operation context.</param>
+		/// <returns>The symbol of the caller to the operation</returns>
+		public static ISymbol FindContainingSymbol (this IOperation operation, ISymbol owningSymbol)
+		{
+			var parent = operation.Parent;
+			while (parent is not null) {
+				switch (parent) {
+				case IAnonymousFunctionOperation lambda:
+					return lambda.Symbol;
+
+				case ILocalFunctionOperation local:
+					return local.Symbol;
+
+				case IMethodBodyBaseOperation:
+				case IPropertyReferenceOperation:
+				case IFieldReferenceOperation:
+				case IEventReferenceOperation:
+					return owningSymbol;
+
+				default:
+					parent = parent.Parent;
+					break;
+				}
+			}
+
+			return owningSymbol;
+		}
 	}
 }

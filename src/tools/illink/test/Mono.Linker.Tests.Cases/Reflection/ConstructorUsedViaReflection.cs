@@ -7,6 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[SetupCSharpCompilerToUse ("csc")]
+	[ExpectedNoWarnings]
 	public class ConstructorUsedViaReflection
 	{
 		public static void Main ()
@@ -58,9 +59,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[RecognizedReflectionAccessPattern (
-				typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (Type[]) },
-				typeof (EmptyTypes), nameof (EmptyTypes), new Type[0])]
 			static void TestConstructorWithTypes_EmptyTypes ()
 			{
 				var constructor = typeof (EmptyTypes).GetConstructor (new Type[] { });
@@ -68,7 +66,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[RecognizedReflectionAccessPattern]
 			static void TestConstructorWithTypes_NonEmptyTypes ()
 			{
 				var constructor = typeof (GetConstructor_Types).GetConstructor (new Type[] { typeof (int) });
@@ -76,7 +73,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[RecognizedReflectionAccessPattern]
 			static void TestConstructorWithTypes_EmptyTypes_DataFlow (
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
@@ -87,8 +83,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[UnrecognizedReflectionAccessPattern (
-				typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (Type[]) }, messageCode: "IL2070")]
+			[ExpectedWarning ("IL2070", nameof (Type.GetConstructor))]
 			static void TestConstructorWithTypes_NonEmptyTypes_DataFlow (
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
@@ -123,9 +118,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[RecognizedReflectionAccessPattern (
-				typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
-				typeof (KnownBindingFlags), nameof (KnownBindingFlags), new Type[0])]
 			public static void TestWithBindingFlags ()
 			{
 				var constructor = typeof (KnownBindingFlags).GetConstructor (BindingFlags.Public, GetNullValue ("some argument", 2, 3), new Type[] { }, new ParameterModifier[] { });
@@ -157,8 +149,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[RecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
-					typeof (UnknownBindingFlags), nameof (UnknownBindingFlags), new Type[0])]
 			public static void TestWithUnknownBindingFlags (BindingFlags bindingFlags)
 			{
 				// Since the binding flags are not known linker should mark all constructors on the type
@@ -187,9 +177,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{ }
 
 			[Kept]
-			[RecognizedReflectionAccessPattern (
-				typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (BindingFlags), typeof (Binder), typeof (CallingConventions), typeof (Type[]), typeof (ParameterModifier[]) },
-				typeof (GetConstructor_BindingAttr_Binder_CallConvention_Types_Modifiers), nameof (GetConstructor_BindingAttr_Binder_CallConvention_Types_Modifiers), new Type[0])]
 			public static void TestWithCallingConvention ()
 			{
 				var constructor = typeof (GetConstructor_BindingAttr_Binder_CallConvention_Types_Modifiers).GetConstructor (BindingFlags.Public, GetNullValue ("some argument", 2, 3), CallingConventions.HasThis, new Type[] { }, new ParameterModifier[] { });
@@ -236,9 +223,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[RecognizedReflectionAccessPattern (
-				typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (BindingFlags), typeof (Type[]) },
-				typeof (GetConstructor_BindingAttr_Types), nameof (GetConstructor_BindingAttr_Types), new Type[0])]
 			static void TestWithBindingFlagsAndTypes_EmptyTypes ()
 			{
 				var constructor = typeof (GetConstructor_BindingAttr_Types).GetConstructor (BindingFlags.Public, new Type[] { });
@@ -246,7 +230,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[RecognizedReflectionAccessPattern]
 			static void TestWithBindingFlagsAndTypes_NonEmptyTypes ()
 			{
 				var constructor = typeof (NonEmptyTypes).GetConstructor (BindingFlags.Public, new Type[] { typeof (TestType) });
@@ -254,7 +237,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[RecognizedReflectionAccessPattern]
 			static void TestWithBindingFlagsAndTypes_EmptyTypes_DataFlow (
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
@@ -264,8 +246,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[UnrecognizedReflectionAccessPattern (
-				typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (BindingFlags), typeof (Type[]) }, messageCode: "IL2070")]
+			[ExpectedWarning ("IL2070", nameof (Type.GetConstructor))]
 			static void TestWithBindingFlagsAndTypes_NonEmptyTypes_DataFlow (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
@@ -289,8 +270,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			return null;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (Type[]) },
-			messageCode: "IL2075", message: new string[] { "FindType", "GetConstructor" })]
+		[ExpectedWarning ("IL2075", "FindType", "GetConstructor")]
 		[Kept]
 		static void TestDataFlowType ()
 		{
@@ -342,12 +322,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[RecognizedReflectionAccessPattern (
-				typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
-				typeof (IfConstructor), nameof (IfConstructor), new Type[0])]
-			[RecognizedReflectionAccessPattern (
-				typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
-				typeof (ElseConstructor), nameof (ElseConstructor), new Type[0])]
 			public static void TestIfElse (bool decision)
 			{
 				Type myType;

@@ -8,6 +8,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
+	[ExpectedNoWarnings]
 	public class RequiresCapabilityReflectionAnalysisEnabled
 	{
 		[LogContains ("-- DynamicallyAccessedMembersEnabled --")]
@@ -24,7 +25,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[Kept]
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode ("-- DynamicallyAccessedMembersEnabled --")]
-		[RecognizedReflectionAccessPattern]
 		static void TestRequiresAttributeWithDynamicallyAccessedMembersEnabled ()
 		{
 			typeof (TypeWithPublicFieldsAccessed).RequiresPublicFields ();
@@ -42,7 +42,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[Kept]
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode ("-- ReflectionPattern --")]
-		[RecognizedReflectionAccessPattern]
 		static void TestRequiresAttributeWithReflectionPattern ()
 		{
 			typeof (TypeWithMethodAccessed).GetMethod ("PublicMethod");
@@ -60,7 +59,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[Kept]
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode ("-- DynamicallyAccessedMembersOnGenericsEnabled --")]
-		[RecognizedReflectionAccessPattern]
 		static void TestRequiresAttributeWithDynamicallyAccessedMembersOnGenericsEnabled ()
 		{
 			TypeRequiresPublicFields<TypeWithPublicFieldsForGenericType>.Method ();
@@ -104,13 +102,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[Kept]
-		[ExpectedNoWarnings]
 		class TestRequiresAndDynamicallyAccessedMembers
 		{
 			[Kept]
 			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 			[RequiresUnreferencedCode ("--- RequiresAndPublicMethods ---")]
-			[RecognizedReflectionAccessPattern]
 			static void RequiresAndPublicMethods (
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]

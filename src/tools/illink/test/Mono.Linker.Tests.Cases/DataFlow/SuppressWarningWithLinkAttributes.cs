@@ -13,6 +13,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[SkipKeptItemsValidation]
 	[SetupLinkAttributesFile ("SuppressWarningWithLinkAttributes.xml")]
 	[LogDoesNotContain ("Trim analysis warning IL2067: Mono.Linker.Tests.Cases.DataFlow.SuppressWarningWithLinkAttributes::ReadFromInstanceField()")]
+	[ExpectedWarning ("IL2031", "System.DoesNotExistAttribute", FileName = "SuppressWarningWithLinkAttributes.xml")]
+	[ExpectedNoWarnings]
 	class SuppressWarningWithLinkAttributes
 	{
 		public static void Main ()
@@ -26,9 +28,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		Type PropertyWithPublicParameterlessConstructor { get; set; }
 
-		[UnrecognizedReflectionAccessPattern (typeof (SuppressWarningWithLinkAttributes), nameof (RequirePublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2077")]
-		[UnrecognizedReflectionAccessPattern (typeof (SuppressWarningWithLinkAttributes), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2077")]
-		[RecognizedReflectionAccessPattern]
+		[ExpectedWarning ("IL2077", nameof (SuppressWarningWithLinkAttributes) + "." + nameof (RequirePublicConstructors))]
+		[ExpectedWarning ("IL2077", nameof (SuppressWarningWithLinkAttributes) + "." + nameof (RequireNonPublicConstructors))]
 		private void ReadFromInstanceField ()
 		{
 			RequirePublicParameterlessConstructor (_typeWithPublicParameterlessConstructor);

@@ -253,7 +253,7 @@ class C
 }";
 			return VerifyRequiresAssemblyFilesAnalyzer (src,
 				// (8,13): warning IL3001: Assemblies embedded in a single-file app cannot have additional files in the manifest.
-				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (8, 13, 8, 41).WithArguments ("System.Reflection.Assembly.GetFile(string)"),
+				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (8, 13, 8, 41).WithArguments ("System.Reflection.Assembly.GetFile(String)"),
 				// (9,13): warning IL3001: Assemblies embedded in a single-file app cannot have additional files in the manifest.
 				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (9, 13, 9, 25).WithArguments ("System.Reflection.Assembly.GetFiles()")
 				);

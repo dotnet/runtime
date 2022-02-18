@@ -23,21 +23,29 @@ namespace Mono.Linker.Tests
 			switch (member.MetadataToken.TokenType) {
 			case TokenType.TypeRef:
 			case TokenType.TypeDef:
-				var x = (member as TypeReference).GetDisplayName ();
 				Assert.AreEqual (expectedDisplayName, (member as TypeReference).GetDisplayName ());
 				break;
 			case TokenType.MemberRef:
 			case TokenType.Method:
-				var y = (member as MethodReference).GetDisplayName ();
 				Assert.AreEqual (expectedDisplayName, (member as MethodReference).GetDisplayName ());
+				break;
+			case TokenType.Field:
+				Assert.AreEqual (expectedDisplayName, (member as FieldReference).GetDisplayName ());
 				break;
 			default:
 				throw new NotImplementedException ();
 			}
-
 		}
 
 		public static IEnumerable<TestCaseData> GetMemberAssertions (Type type) => MemberAssertionsCollector.GetMemberAssertionsData (type);
+
+		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.Field")]
+		public int Field;
+
+		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MultipleParameters(Int32, Int32)")]
+		public static void MultipleParameters (int a, int b)
+		{
+		}
 
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A")]
 		public class A
@@ -127,7 +135,7 @@ namespace Mono.Linker.Tests
 				[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.GenericClassOneParameter<T>.NestedGenericClassOneParameter<S>.Delegate<U>")]
 				public delegate void Delegate<U> (U p);
 
-				[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.GenericClassOneParameter<T>.NestedGenericClassOneParameter<S>.MethodGenericArray<U,V>(IList<U>,V)")]
+				[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.GenericClassOneParameter<T>.NestedGenericClassOneParameter<S>.MethodGenericArray<U,V>(IList<U>, V)")]
 				public void MethodGenericArray<U, V> (IList<U> p, V q)
 				{
 				}

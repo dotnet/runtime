@@ -5,6 +5,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[ExpectedNoWarnings]
 	public class DynamicDependencyDataflow
 	{
 		public static void Main ()
@@ -17,16 +18,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		static Type TypeWithPublicMethods;
 
+		// Intrinsic is disabled https://github.com/dotnet/linker/issues/2559
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Type), "GetField", new Type[] { typeof (string) }, messageCode: "IL2080")]
+		[ExpectedWarning ("IL2080", nameof (Type.GetField), ProducedBy = ProducedBy.Trimmer)]
 		[DynamicDependency ("DynamicDependencyTo")]
 		static void DynamicDependencyFrom ()
 		{
 			_ = TypeWithPublicMethods.GetField ("f");
 		}
 
+		// Intrinsic is disabled https://github.com/dotnet/linker/issues/2559
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Type), "GetProperty", new Type[] { typeof (string) }, messageCode: "IL2080")]
+		[ExpectedWarning ("IL2080", nameof (Type.GetProperty), ProducedBy = ProducedBy.Trimmer)]
 		static void DynamicDependencyTo ()
 		{
 			_ = TypeWithPublicMethods.GetProperty ("p");

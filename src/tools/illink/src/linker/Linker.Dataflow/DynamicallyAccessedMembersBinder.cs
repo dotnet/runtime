@@ -5,17 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	// Temporary workaround - should be removed once linker can be upgraded to build against
-	// high enough version of the framework which has this enum value.
-	internal static class DynamicallyAccessedMemberTypesOverlay
-	{
-		public const DynamicallyAccessedMemberTypes Interfaces = (DynamicallyAccessedMemberTypes) 0x2000;
-	}
-
 	internal static class DynamicallyAccessedMembersBinder
 	{
 		// Returns the members of the type bound by memberTypes. For DynamicallyAccessedMemberTypes.All, this returns all members of the type and its
