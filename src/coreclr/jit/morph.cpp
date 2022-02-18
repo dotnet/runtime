@@ -11408,7 +11408,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             //
             // a % b = a - (a / b) * b;
             //
-            // TODO: there are special cases where it can be done better, for example
+            // There are special cases where it can be done better, for example
             // when the modulo operation is unsigned and the divisor is a
             // integer constant power of two.  In this case, we can make the transform:
             //
