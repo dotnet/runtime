@@ -260,12 +260,8 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// Returns true if the key exists in the table, false otherwise.
         /// </devdoc>
-        public bool Contains(object key)
+        public bool Contains(object key!!)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
             if (_objectsTable == null)
             {
                 return false;
@@ -357,10 +353,7 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             int index = IndexOfKey(key);
             if (index < 0)
@@ -391,13 +384,8 @@ namespace System.Collections.Specialized
 #endregion
 
 #region ISerializable implementation
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        public virtual void GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             info.AddValue(KeyComparerName, _comparer, typeof(IEqualityComparer));
             info.AddValue(ReadOnlyName, _readOnly);
             info.AddValue(InitCapacityName, _initialCapacity);
@@ -566,10 +554,8 @@ namespace System.Collections.Specialized
 
             private bool IsKeys => _objectsTable is not null;
 
-            void ICollection.CopyTo(Array array, int index)
+            void ICollection.CopyTo(Array array!!, int index)
             {
-                if (array == null)
-                    throw new ArgumentNullException(nameof(array));
                 if (index < 0)
                     throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
                 foreach (object? o in _objects)

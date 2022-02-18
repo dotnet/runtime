@@ -351,20 +351,13 @@ namespace System.Threading
         private static extern long GetPendingUnmanagedWorkItemCount();
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
-             WaitHandle? waitObject,
-             WaitOrTimerCallback? callBack,
+             WaitHandle waitObject!!,
+             WaitOrTimerCallback callBack!!,
              object? state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-
-            if (waitObject == null)
-                throw new ArgumentNullException(nameof(waitObject));
-
-            if (callBack == null)
-                throw new ArgumentNullException(nameof(callBack));
-
             RegisteredWaitHandle registeredWaitHandle = new RegisteredWaitHandle(
                 waitObject,
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
@@ -552,11 +545,8 @@ namespace System.Threading
         }
 
         [SupportedOSPlatform("windows")]
-        public static bool BindHandle(SafeHandle osHandle)
+        public static bool BindHandle(SafeHandle osHandle!!)
         {
-            if (osHandle == null)
-                throw new ArgumentNullException(nameof(osHandle));
-
             bool ret = false;
             bool mustReleaseSafeHandle = false;
             try

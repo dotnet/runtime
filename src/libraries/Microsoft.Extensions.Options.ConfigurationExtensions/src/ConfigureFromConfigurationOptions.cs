@@ -23,13 +23,9 @@ namespace Microsoft.Extensions.Options
         /// <param name="config">The <see cref="IConfiguration"/> instance.</param>
         //Even though TOptions is annotated, we need to annotate as RUC as we can't guarantee properties on referenced types are preserved.
         [RequiresUnreferencedCode(OptionsBuilderConfigurationExtensions.TrimmingRequiredUnreferencedCodeMessage)]
-        public ConfigureFromConfigurationOptions(IConfiguration config)
+        public ConfigureFromConfigurationOptions(IConfiguration config!!)
             : base(options => BindFromOptions(options, config))
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",

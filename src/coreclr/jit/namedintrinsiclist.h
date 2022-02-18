@@ -43,6 +43,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Sqrt,
     NI_System_Math_Tan,
     NI_System_Math_Tanh,
+    NI_System_Math_Truncate,
     NI_SYSTEM_MATH_END,
 
     NI_System_Collections_Generic_Comparer_get_Default,

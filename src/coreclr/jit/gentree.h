@@ -85,7 +85,7 @@ enum genTreeOps : BYTE
 // The following enum defines a set of bit flags that can be used
 // to classify expression tree nodes.
 //
-enum genTreeKinds
+enum GenTreeOperKind
 {
     GTK_SPECIAL = 0x00, // special operator
     GTK_LEAF    = 0x01, // leaf    operator
@@ -95,12 +95,28 @@ enum genTreeKinds
     GTK_KINDMASK = (GTK_SPECIAL | GTK_LEAF | GTK_UNOP | GTK_BINOP), // operator kind mask
     GTK_SMPOP    = (GTK_UNOP | GTK_BINOP),
 
-    GTK_COMMUTE = 0x08,   // commutative  operator
-    GTK_EXOP    = 0x10,   // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
-                          // by adding non-node fields to unary or binary operator.
-    GTK_NOVALUE   = 0x20, // node does not produce a value
-    GTK_NOTLIR    = 0x40, // node is not allowed in LIR
-    GTK_NOCONTAIN = 0x80, // this node is a value, but may not be contained
+    GTK_COMMUTE = 0x08, // commutative  operator
+    GTK_EXOP    = 0x10, // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
+                        // by adding non-node fields to unary or binary operator.
+    GTK_NOVALUE = 0x20, // node does not produce a value
+
+    GTK_MASK = 0xFF
+};
+
+// The following enum defines a set of bit flags that describe opers for the purposes
+// of DEBUG-only checks. This is separate from the above "GenTreeOperKind"s to avoid
+// making the table for those larger in Release builds. However, it resides in the same
+// "namespace" and so all values here must be distinct from those in "GenTreeOperKind".
+//
+enum GenTreeDebugOperKind
+{
+    DBK_FIRST_FLAG = GTK_MASK + 1,
+
+    DBK_NOTHIR    = DBK_FIRST_FLAG,      // This oper is not supported in HIR (before rationalization).
+    DBK_NOTLIR    = DBK_FIRST_FLAG << 1, // This oper is not supported in LIR (after rationalization).
+    DBK_NOCONTAIN = DBK_FIRST_FLAG << 2, // This oper produces a value, but may not be contained.
+
+    DBK_MASK = ~GTK_MASK
 };
 
 /*****************************************************************************/
@@ -878,8 +894,11 @@ private:
 public:
     // The register number is stored in a small format (8 bits), but the getters return and the setters take
     // a full-size (unsigned) format, to localize the casts here.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
+#ifdef DEBUG
     bool canBeContained() const;
+#endif
 
     // for codegen purposes, is this node a subnode of its parent
     bool isContained() const;
@@ -1073,34 +1092,6 @@ public:
         return true;
     }
 
-    bool IsLIR() const
-    {
-        if ((OperKind(gtOper) & GTK_NOTLIR) != 0)
-        {
-            return false;
-        }
-
-        switch (gtOper)
-        {
-            case GT_NOP:
-                // NOPs may only be present in LIR if they do not produce a value.
-                return IsNothingNode();
-
-            case GT_ADDR:
-            {
-                // ADDR ndoes may only be present in LIR if the location they refer to is not a
-                // local, class variable, or IND node.
-                GenTree*   location   = gtGetOp1();
-                genTreeOps locationOp = location->OperGet();
-                return !location->IsLocal() && (locationOp != GT_CLS_VAR) && (locationOp != GT_IND);
-            }
-
-            default:
-                // All other nodes are assumed to be correct.
-                return true;
-        }
-    }
-
     // LIR flags
     //   These helper methods, along with the flag values they manipulate, are defined in lir.h
     //
@@ -1284,6 +1275,11 @@ public:
     bool OperIsPutArg() const
     {
         return OperIsPutArgStk() || OperIsPutArgReg() || OperIsPutArgSplit();
+    }
+
+    bool OperIsFieldList() const
+    {
+        return OperIs(GT_FIELD_LIST);
     }
 
     bool OperIsMultiRegOp() const
@@ -1645,6 +1641,20 @@ public:
     }
 
 #ifdef DEBUG
+    static const GenTreeDebugOperKind gtDebugOperKindTable[];
+
+    static GenTreeDebugOperKind DebugOperKind(genTreeOps oper)
+    {
+        assert(oper < GT_COUNT);
+
+        return gtDebugOperKindTable[oper];
+    }
+
+    GenTreeDebugOperKind DebugOperKind() const
+    {
+        return DebugOperKind(OperGet());
+    }
+
     bool NullOp1Legal() const
     {
         assert(OperIsSimple());
@@ -1681,6 +1691,17 @@ public:
             default:
                 return false;
         }
+    }
+
+    bool OperIsLIR() const
+    {
+        if (OperIs(GT_NOP))
+        {
+            // NOPs may only be present in LIR if they do not produce a value.
+            return IsNothingNode();
+        }
+
+        return (DebugOperKind() & DBK_NOTLIR) == 0;
     }
 
     bool        OperSupportsReverseOps() const;
@@ -1742,10 +1763,10 @@ public:
     inline bool IsMultiRegLclVar() const;
 
     // Returns true if it is a node returning its value in more than one register
-    inline bool IsMultiRegNode() const;
+    bool IsMultiRegNode() const;
 
     // Returns the number of registers defined by a multireg node.
-    unsigned GetMultiRegCount();
+    unsigned GetMultiRegCount() const;
 
     // Returns the regIndex'th register defined by a possibly-multireg node.
     regNumber GetRegByIndex(int regIndex);
@@ -3979,6 +4000,7 @@ enum class NonStandardArgKind : unsigned
     FixedRetBuffer,
     VirtualStubCell,
     R2RIndirectionCell,
+    ValidateIndirectCallTarget,
 
     // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate in fgArgInfo
 };
@@ -3986,6 +4008,12 @@ enum class NonStandardArgKind : unsigned
 #ifdef DEBUG
 const char* getNonStandardArgKindName(NonStandardArgKind kind);
 #endif
+
+enum class CFGCallKind
+{
+    ValidateAndCall,
+    Dispatch,
+};
 
 struct GenTreeCall final : public GenTree
 {
@@ -4687,6 +4715,42 @@ struct GenTreeCall final : public GenTree
 #endif
 
         return NonStandardArgKind::None;
+    }
+
+    CFGCallKind GetCFGCallKind()
+    {
+#if defined(TARGET_AMD64)
+        // On x64 the dispatcher is more performant, but we cannot use it when
+        // we need to pass indirection cells as those go into registers that
+        // are clobbered by the dispatch helper.
+        bool mayUseDispatcher    = GetIndirectionCellArgKind() == NonStandardArgKind::None;
+        bool shouldUseDispatcher = true;
+#elif defined(TARGET_ARM64)
+        bool mayUseDispatcher = true;
+        // Branch predictors on ARM64 generally do not handle the dispatcher as
+        // well as on x64 hardware, so only use the validator by default.
+        bool       shouldUseDispatcher = false;
+#else
+        // Other platforms do not even support the dispatcher.
+        bool mayUseDispatcher    = false;
+        bool shouldUseDispatcher = false;
+#endif
+
+#ifdef DEBUG
+        switch (JitConfig.JitCFGUseDispatcher())
+        {
+            case 0:
+                shouldUseDispatcher = false;
+                break;
+            case 1:
+                shouldUseDispatcher = true;
+                break;
+            default:
+                break;
+        }
+#endif
+
+        return mayUseDispatcher && shouldUseDispatcher ? CFGCallKind::Dispatch : CFGCallKind::ValidateAndCall;
     }
 
     void ResetArgInfo();
@@ -6428,7 +6492,6 @@ public:
         , m_lastILOffset(BAD_IL_OFFSET)
         , m_stmtID(stmtID)
 #endif
-        , m_compilerAdded(false)
     {
     }
 
@@ -6515,16 +6578,6 @@ public:
         m_prev = prevStmt;
     }
 
-    bool IsCompilerAdded() const
-    {
-        return m_compilerAdded;
-    }
-
-    void SetCompilerAdded()
-    {
-        m_compilerAdded = true;
-    }
-
     bool IsPhiDefnStmt() const
     {
         return m_rootNode->IsPhiDefn();
@@ -6561,8 +6614,6 @@ private:
     IL_OFFSET m_lastILOffset; // The instr offset at the end of this statement.
     unsigned  m_stmtID;
 #endif
-
-    bool m_compilerAdded; // Was the statement created by optimizer?
 };
 
 // StatementList: adapter class for forward iteration of the statement linked list using range-based `for`,
@@ -6724,7 +6775,7 @@ public:
     // block node.
 
     enum class Kind : __int8{
-        Invalid, RepInstr, Unroll, Push, PushAllSlots,
+        Invalid, RepInstr, PartialRepInstr, Unroll, Push, PushAllSlots,
     };
     Kind gtPutArgStkKind;
 #endif
@@ -6772,6 +6823,11 @@ public:
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
         DEBUG_ARG_SLOTS_ASSERT(m_byteSize == gtNumSlots * TARGET_POINTER_SIZE);
 #endif
+    }
+
+    GenTree*& Data()
+    {
+        return gtOp1;
     }
 
 #if FEATURE_FASTTAILCALL
@@ -7114,7 +7170,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 #endif
     }
 
-    unsigned GetRegCount()
+    unsigned GetRegCount() const
     {
 #if FEATURE_MULTIREG_RET
         // We need to return the highest index for which we have a valid register.
@@ -7651,16 +7707,23 @@ inline bool GenTree::IsSIMDZero() const
 //
 inline bool GenTree::IsFloatPositiveZero() const
 {
-    return IsCnsFltOrDbl() && !IsCnsNonZeroFltOrDbl();
+    if (IsCnsFltOrDbl())
+    {
+        // This implementation is almost identical to IsCnsNonZeroFltOrDbl
+        // but it is easier to parse out
+        // rather than using !IsCnsNonZeroFltOrDbl.
+        double constValue = AsDblCon()->gtDconVal;
+        return *(__int64*)&constValue == 0;
+    }
+
+    return false;
 }
 
 //-------------------------------------------------------------------
-// IsVectorZero: returns true if this is an integral or floating-point (SIMD or HW intrinsic) vector
-// with all its elements equal to zero.
+// IsVectorZero: returns true if this node is a HWIntrinsic that is Vector*_get_Zero.
 //
 // Returns:
-//     True if this represents an integral or floating-point const (SIMD or HW intrinsic) vector with all its elements
-//     equal to zero.
+//     True if this represents a HWIntrinsic node that is Vector*_get_Zero.
 //
 // TODO: We already have IsSIMDZero() and IsIntegralConstVector(0),
 //       however, IsSIMDZero() does not cover hardware intrinsics, and IsIntegralConstVector(0) does not cover floating
@@ -7669,46 +7732,17 @@ inline bool GenTree::IsFloatPositiveZero() const
 //       separate ones; preferably this one.
 inline bool GenTree::IsVectorZero() const
 {
-#ifdef FEATURE_SIMD
-    if (gtOper == GT_SIMD)
-    {
-        const GenTreeSIMD* node = AsSIMD();
-
-        if (node->GetSIMDIntrinsicId() == SIMDIntrinsicInit)
-        {
-            return (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero());
-        }
-    }
-#endif
-
 #ifdef FEATURE_HW_INTRINSICS
     if (gtOper == GT_HWINTRINSIC)
     {
-        const GenTreeHWIntrinsic* node         = AsHWIntrinsic();
-        const var_types           simdBaseType = node->GetSimdBaseType();
+        const GenTreeHWIntrinsic* node        = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId = node->GetHWIntrinsicId();
 
-        if (varTypeIsIntegral(simdBaseType) || varTypeIsFloating(simdBaseType))
-        {
-            const NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-
-            if (node->GetOperandCount() == 0)
-            {
 #if defined(TARGET_XARCH)
-                return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
+        return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
 #elif defined(TARGET_ARM64)
-                return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
+        return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
 #endif // !TARGET_XARCH && !TARGET_ARM64
-            }
-            else if ((node->GetOperandCount() == 1) &&
-                     (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero()))
-            {
-#if defined(TARGET_XARCH)
-                return (intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create);
-#elif defined(TARGET_ARM64)
-                return (intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create);
-#endif // !TARGET_XARCH && !TARGET_ARM64
-            }
-        }
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -7964,117 +7998,6 @@ inline bool GenTree::IsMultiRegLclVar() const
 }
 
 //-----------------------------------------------------------------------------------
-// IsMultiRegNode: whether a node returning its value in more than one register
-//
-// Arguments:
-//     None
-//
-// Return Value:
-//     Returns true if this GenTree is a multi-reg node.
-//
-// Notes:
-//     All targets that support multi-reg ops of any kind also support multi-reg return
-//     values for calls. Should that change with a future target, this method will need
-//     to change accordingly.
-//
-inline bool GenTree::IsMultiRegNode() const
-{
-#if FEATURE_MULTIREG_RET
-    if (IsMultiRegCall())
-    {
-        return true;
-    }
-
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return true;
-    }
-#endif
-
-#if !defined(TARGET_64BIT)
-    if (OperIsMultiRegOp())
-    {
-        return true;
-    }
-#endif
-
-    if (OperIs(GT_COPY, GT_RELOAD))
-    {
-        return true;
-    }
-#endif // FEATURE_MULTIREG_RET
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
-    {
-        return (TypeGet() == TYP_STRUCT);
-    }
-#endif
-    if (IsMultiRegLclVar())
-    {
-        return true;
-    }
-    return false;
-}
-//-----------------------------------------------------------------------------------
-// GetMultiRegCount: Return the register count for a multi-reg node.
-//
-// Arguments:
-//     None
-//
-// Return Value:
-//     Returns the number of registers defined by this node.
-//
-inline unsigned GenTree::GetMultiRegCount()
-{
-#if FEATURE_MULTIREG_RET
-    if (IsMultiRegCall())
-    {
-        return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
-    }
-
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return AsPutArgSplit()->gtNumRegs;
-    }
-#endif
-
-#if !defined(TARGET_64BIT)
-    if (OperIsMultiRegOp())
-    {
-        return AsMultiRegOp()->GetRegCount();
-    }
-#endif
-
-    if (OperIs(GT_COPY, GT_RELOAD))
-    {
-        return AsCopyOrReload()->GetRegCount();
-    }
-#endif // FEATURE_MULTIREG_RET
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
-    {
-        assert(TypeGet() == TYP_STRUCT);
-        return 2;
-    }
-#endif
-    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
-    {
-        assert((gtFlags & GTF_VAR_MULTIREG) != 0);
-        // The register count for a multireg lclVar requires looking at the LclVarDsc,
-        // which requires a Compiler instance. The caller must handle this separately.
-        // The register count for a multireg lclVar requires looking at the LclVarDsc,
-        // which requires a Compiler instance. The caller must use the GetFieldCount
-        // method on GenTreeLclVar.
-
-        assert(!"MultiRegCount for LclVar");
-    }
-    assert(!"GetMultiRegCount called with non-multireg node");
-    return 1;
-}
-
-//-----------------------------------------------------------------------------------
 // GetRegByIndex: Get a specific register, based on regIndex, that is produced
 //                by this node.
 //
@@ -8121,13 +8044,14 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
         return AsCopyOrReload()->GetRegNumByIdx(regIndex);
     }
 #endif // FEATURE_MULTIREG_RET
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#ifdef FEATURE_HW_INTRINSICS
     if (OperIs(GT_HWINTRINSIC))
     {
         assert(regIndex == 1);
+        // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
         return AsHWIntrinsic()->GetOtherReg();
     }
-#endif
+#endif // FEATURE_HW_INTRINSICS
     if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
     {
         return AsLclVar()->GetRegNumByIdx(regIndex);
@@ -8178,15 +8102,26 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex)
 
 #endif // FEATURE_MULTIREG_RET
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
+    if (OperIsHWIntrinsic())
     {
+        assert(TypeGet() == TYP_STRUCT);
+#ifdef TARGET_ARM64
+        if (AsHWIntrinsic()->GetSimdSize() == 16)
+        {
+            return TYP_SIMD16;
+        }
+        else
+        {
+            assert(AsHWIntrinsic()->GetSimdSize() == 8);
+            return TYP_SIMD8;
+        }
+#elif defined(TARGET_XARCH)
         // At this time, the only multi-reg HW intrinsics all return the type of their
         // arguments. If this changes, we will need a way to record or determine this.
-        assert(TypeGet() == TYP_STRUCT);
         return gtGetOp1()->TypeGet();
-    }
 #endif
+    }
+
     if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
     {
         if (TypeGet() == TYP_LONG)

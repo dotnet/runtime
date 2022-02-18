@@ -10,10 +10,11 @@ namespace System.Linq.Tests
     {
         public static T[] Shuffle<T>(T[] array)
         {
+            var r = new Random(42);
             int i = array.Length;
             while (i > 1)
             {
-                int j = Random.Shared.Next(i--);
+                int j = r.Next(i--);
                 (array[i], array[j]) = (array[j], array[i]);
             }
             return array;
@@ -47,7 +48,7 @@ namespace System.Linq.Tests
 
             public IEnumerator<T> GetEnumerator()
             {
-                Random rnd = _seed.HasValue ? new Random(_seed.GetValueOrDefault()) : new Random();
+                Random rnd = new Random(_seed.HasValue ? _seed.GetValueOrDefault() : 42);
                 T[] array = _source.ToArray();
                 int count = array.Length;
                 for (int i = array.Length - 1; i > 0; --i)

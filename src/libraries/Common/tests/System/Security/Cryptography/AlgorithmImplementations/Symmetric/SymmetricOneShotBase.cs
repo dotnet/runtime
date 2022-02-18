@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Security.Cryptography;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -406,6 +407,33 @@ namespace System.Security.Cryptography.Tests
             }
 
             Assert.Empty(missingMethods);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public void DecryptOneShot_Cfb8_ToleratesExtraPadding()
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                if (alg is RC2)
+                {
+                    throw new SkipTestException("RC2 does not support CFB.");
+                }
+
+                alg.Key = Key;
+
+                // This is a plaintext that is manually padded. It contains one byte of
+                // data, padded up to the block size, in bytes, of the algorithm.
+                Span<byte> excessPadding = new byte[alg.BlockSize / 8];
+                excessPadding.Fill((byte)(alg.BlockSize / 8 - 1));
+                excessPadding[0] = 0x42;
+
+                // Use paddingMode: None since we manually padded our data
+                byte[] ciphertext = alg.EncryptCfb(excessPadding, IV, paddingMode: PaddingMode.None, feedbackSizeInBits: 8);
+
+                // Now decrypt it with PKCS7 padding mode. It should remove all but the first byte since it is not padding.
+                byte[] decrypted = alg.DecryptCfb(ciphertext, IV, paddingMode: PaddingMode.PKCS7, feedbackSizeInBits: 8);
+                Assert.Equal(new byte[] { 0x42 }, decrypted);
+            }
         }
 
         private static void AssertPlaintexts(ReadOnlySpan<byte> expected, ReadOnlySpan<byte> actual, PaddingMode padding)

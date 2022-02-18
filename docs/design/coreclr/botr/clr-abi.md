@@ -752,3 +752,43 @@ The return value is handled as follows:
 4. All other cases require the use of a return buffer, through which the value is returned.
 
 In addition, there is a guarantee that if a return buffer is used a value is stored there only upon ordinary exit from the method. The buffer is not allowed to be used for temporary storage within the method and its contents will be unaltered if an exception occurs while executing the method.
+
+# Control Flow Guard (CFG) support on Windows
+
+Control Flow Guard (CFG) is a security mitigation available in Windows.
+When CFG is enabled, the operating system maintains data structures that can be used to verify whether an address is to be considered a valid indirect call target.
+This mechanism is exposed through two different helper functions, each with different characteristics.
+
+The first mechanism is a validator that takes the target address as an argument and fails fast if the address is not an expected indirect call target; otherwise, it does nothing and returns.
+The second mechanism is a dispatcher that takes the target address in a non-standard register; on successful validation of the address, it jumps directly to the target function.
+Windows makes the dispatcher available only on ARM64 and x64, while the validator is available on all platforms.
+However, the JIT supports CFG only on ARM64 and x64, with CFG by default being disabled for these platforms.
+The expected use of the CFG feature is for NativeAOT scenarios that are running in constrained environments where CFG is required.
+
+The helpers are exposed to the JIT as standard JIT helpers `CORINFO_HELP_VALIDATE_INDIRECT_CALL` and `CORINFO_HELP_DISPATCH_INDIRECT_CALL`.
+
+To use the validator the JIT expands indirect calls into a call to the validator followed by a call to the validated address.
+For the dispatcher the JIT will transform calls to pass the target along but otherwise set up the call as normal.
+
+Note that "indirect call" here refers to any call that is not to an immediate (in the instruction stream) address.
+For example, even direct calls may emit indirect call instructions in JIT codegen due to e.g. tiering or if they have not been compiled yet; these are expanded with the CFG mechanism as well.
+
+The next sections describe the calling convention that the JIT expects from these helpers.
+
+## CFG details for ARM64
+
+On ARM64, `CORINFO_HELP_VALIDATE_INDIRECT_CALL` takes the call address in `x15`.
+In addition to the usual registers it preserves all float registers, `x0`-`x8` and `x15`.
+
+`CORINFO_HELP_DISPATCH_INDIRECT_CALL` takes the call address in `x9`.
+The JIT does not use the dispatch helper by default due to worse branch predictor performance.
+Therefore it will expand all indirect calls via the validation helper and a manual call.
+
+## CFG details for x64
+
+On x64, `CORINFO_HELP_VALIDATE_INDIRECT_CALL` takes the call address in `rcx`.
+In addition to the usual registers it also preserves all float registers and `rcx` and `r10`; furthermore, shadow stack space is not required to be allocated.
+
+`CORINFO_HELP_DISPATCH_INDIRECT_CALL` takes the call address in `rax` and it reserves the right to use and trash `r10` and `r11`.
+The JIT uses the dispatch helper on x64 whenever possible as it is expected that the code size benefits outweighs the less accurate branch prediction.
+However, note that the use of `r11` in the dispatcher makes it incompatible with VSD calls where the JIT must fall back to the validator and a manual call.
