@@ -396,8 +396,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		// https://github.com/dotnet/linker/issues/2624
-		// [ExpectedWarning ("IL2063")] // The types loaded from the array don't have annotations, so the "return" should warn
+		// https://github.com/dotnet/linker/issues/2273
+		// Analyzer doesn't see through foreach over array at all -  will not warn
+		[ExpectedWarning ("IL2063", ProducedBy = ProducedBy.Trimmer)] // The types loaded from the array don't have annotations, so the "return" should warn
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		public static Type TestBackwardEdgeWithLdElem (Type[] types = null)
 		{
