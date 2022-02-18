@@ -132,10 +132,12 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
   # files already in /cores/ at this point. This is being done to prevent
   # inadvertently flooding the CI machines with dumps.
   if [[ ! -d "/cores" || ! "$(ls -A /cores)" ]]; then
-    # TODO: Re-enable core dumps - https://github.com/dotnet/runtime/issues/65000
-    # Temporarily disabling core dumps on osx as runtime work items uploading dumps
-    # are affecting the entire queue
-    # ulimit -c unlimited
+    # Disabling core dumps on macOS. System dumps are large (even for very small
+    # programs) and not configurable. As a result, if a single PR build causes a
+    # lot of tests to crash, we can take out the entire queue.
+    # See discussions in:
+    #   https://github.com/dotnet/core-eng/issues/15333
+    #   https://github.com/dotnet/core-eng/issues/15597
     ulimit -c 0
   fi
 

@@ -222,13 +222,8 @@ namespace System.Xml.Resolvers
             return base.ResolveUri(baseUri, relativeUri);
         }
 
-        public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
+        public override object? GetEntity(Uri absoluteUri!!, string? role, Type? ofObjectToReturn)
         {
-            if (absoluteUri == null)
-            {
-                throw new ArgumentNullException(nameof(absoluteUri));
-            }
-
             PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))
             {
@@ -265,13 +260,8 @@ namespace System.Xml.Resolvers
             }
         }
 
-        public override bool SupportsType(Uri absoluteUri, Type? type)
+        public override bool SupportsType(Uri absoluteUri!!, Type? type)
         {
-            if (absoluteUri == null)
-            {
-                throw new ArgumentNullException(nameof(absoluteUri));
-            }
-
             PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))
             {

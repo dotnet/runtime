@@ -78,10 +78,7 @@ namespace Internal.Runtime.InteropServices
                     throw new ArgumentOutOfRangeException(nameof(reserved));
                 }
 
-                if (functionHandle == IntPtr.Zero)
-                {
-                    throw new ArgumentNullException(nameof(functionHandle));
-                }
+                ArgumentNullException.ThrowIfNull(functionHandle);
 
                 // Set up the AssemblyLoadContext for this delegate.
                 AssemblyLoadContext alc = GetIsolatedComponentLoadContext(assemblyPath);
@@ -133,10 +130,7 @@ namespace Internal.Runtime.InteropServices
                     throw new ArgumentOutOfRangeException(nameof(reserved));
                 }
 
-                if (functionHandle == IntPtr.Zero)
-                {
-                    throw new ArgumentNullException(nameof(functionHandle));
-                }
+                ArgumentNullException.ThrowIfNull(functionHandle);
 
                 // Create the function pointer.
                 *(IntPtr*)functionHandle = InternalGetFunctionPointer(AssemblyLoadContext.Default, typeName, methodName, delegateTypeNative);

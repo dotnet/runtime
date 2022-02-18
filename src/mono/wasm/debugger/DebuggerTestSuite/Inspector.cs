@@ -259,7 +259,7 @@ namespace DebuggerTests
                     }
 
                     Result res = completedTask.Result;
-                    if (res.IsErr)
+                    if (!res.IsOk)
                         throw new ArgumentException($"Command {cmd_name} failed with: {res.Error}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}");
 
                     init_cmds.RemoveAt(cmdIdx);

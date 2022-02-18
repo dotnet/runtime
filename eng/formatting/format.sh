@@ -17,7 +17,7 @@ fi
 
 if [ -n "$MANAGED_FILES" ]; then
     # Format all selected files
-    echo "$MANAGED_FILES" | cat | xargs | sed -e 's/ /,/g' | dotnet format --include
+    echo "$MANAGED_FILES" | cat | xargs | sed -e 's/ /,/g' | dotnet format --no-restore --include -
 
     # Add back the modified files to staging
     echo "$MANAGED_FILES" | xargs git add

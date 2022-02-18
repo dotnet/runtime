@@ -21,9 +21,6 @@ namespace Microsoft.Interop
     [Generator]
     public sealed class DllImportGenerator : IIncrementalGenerator
     {
-        private const string GeneratedDllImport = nameof(GeneratedDllImport);
-        private const string GeneratedDllImportAttribute = nameof(GeneratedDllImportAttribute);
-
         internal sealed record IncrementalStubGenerationContext(
             StubEnvironment Environment,
             DllImportStubContext StubContext,
@@ -173,7 +170,7 @@ namespace Microsoft.Interop
                 });
         }
 
-        private static List<AttributeSyntax> GenerateSyntaxForForwardedAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute)
+        private static List<AttributeSyntax> GenerateSyntaxForForwardedAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute, AttributeData? defaultDllImportSearchPathsAttribute)
         {
             const string CallConvsField = "CallConvs";
             // Manually rehydrate the forwarded attributes with fully qualified types so we don't have to worry about any using directives.
@@ -207,6 +204,15 @@ namespace Microsoft.Interop
                     }
                 }
                 attributes.Add(unmanagedCallConvSyntax);
+            }
+            if (defaultDllImportSearchPathsAttribute is not null)
+            {
+                attributes.Add(
+                    Attribute(ParseName(TypeNames.DefaultDllImportSearchPathsAttribute)).AddArgumentListArguments(
+                        AttributeArgument(
+                            CastExpression(ParseTypeName(TypeNames.DllImportSearchPath),
+                                LiteralExpression(SyntaxKind.NumericLiteralExpression,
+                                    Literal((int)defaultDllImportSearchPathsAttribute.ConstructorArguments[0].Value!))))));
             }
             return attributes;
         }
@@ -307,14 +313,13 @@ namespace Microsoft.Interop
             };
         }
 
-        private static GeneratedDllImportData ProcessGeneratedDllImportAttribute(AttributeData attrData)
+        private static GeneratedDllImportData? ProcessGeneratedDllImportAttribute(AttributeData attrData)
         {
             // Found the GeneratedDllImport, but it has an error so report the error.
             // This is most likely an issue with targeting an incorrect TFM.
             if (attrData.AttributeClass?.TypeKind is null or TypeKind.Error)
             {
-                // [TODO] Report GeneratedDllImport has an error - corrupt metadata?
-                throw new InvalidProgramException();
+                return null;
             }
 
             // Default values for these properties are based on the
@@ -324,7 +329,6 @@ namespace Microsoft.Interop
             CharSet charSet = CharSet.Ansi;
             string? entryPoint = null;
             bool exactSpelling = false; // VB has different and unusual default behavior here.
-            bool preserveSig = true;
             bool setLastError = false;
 
             // All other data on attribute is defined as NamedArguments.
@@ -333,29 +337,48 @@ namespace Microsoft.Interop
                 switch (namedArg.Key)
                 {
                     default:
-                        Debug.Fail($"An unknown member was found on {GeneratedDllImport}");
+                        Debug.Fail($"An unknown member was found on {attrData.AttributeClass}");
                         continue;
                     case nameof(GeneratedDllImportData.CharSet):
                         userDefinedValues |= DllImportMember.CharSet;
+                        // TypedConstant's Value property only contains primitive values.
+                        if (namedArg.Value.Value is not int)
+                        {
+                            return null;
+                        }
+                        // A boxed primitive can be unboxed to an enum with the same underlying type.
                         charSet = (CharSet)namedArg.Value.Value!;
                         break;
                     case nameof(GeneratedDllImportData.EntryPoint):
                         userDefinedValues |= DllImportMember.EntryPoint;
+                        if (namedArg.Value.Value is not string)
+                        {
+                            return null;
+                        }
                         entryPoint = (string)namedArg.Value.Value!;
                         break;
                     case nameof(GeneratedDllImportData.ExactSpelling):
                         userDefinedValues |= DllImportMember.ExactSpelling;
+                        if (namedArg.Value.Value is not bool)
+                        {
+                            return null;
+                        }
                         exactSpelling = (bool)namedArg.Value.Value!;
-                        break;
-                    case nameof(GeneratedDllImportData.PreserveSig):
-                        userDefinedValues |= DllImportMember.PreserveSig;
-                        preserveSig = (bool)namedArg.Value.Value!;
                         break;
                     case nameof(GeneratedDllImportData.SetLastError):
                         userDefinedValues |= DllImportMember.SetLastError;
+                        if (namedArg.Value.Value is not bool)
+                        {
+                            return null;
+                        }
                         setLastError = (bool)namedArg.Value.Value!;
                         break;
                 }
+            }
+
+            if (attrData.ConstructorArguments.Length == 0)
+            {
+                return null;
             }
 
             return new GeneratedDllImportData(attrData.ConstructorArguments[0].Value!.ToString())
@@ -364,7 +387,6 @@ namespace Microsoft.Interop
                 CharSet = charSet,
                 EntryPoint = entryPoint,
                 ExactSpelling = exactSpelling,
-                PreserveSig = preserveSig,
                 SetLastError = setLastError,
             };
         }
@@ -374,11 +396,13 @@ namespace Microsoft.Interop
             INamedTypeSymbol? lcidConversionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute);
             INamedTypeSymbol? suppressGCTransitionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.SuppressGCTransitionAttribute);
             INamedTypeSymbol? unmanagedCallConvAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.UnmanagedCallConvAttribute);
+            INamedTypeSymbol? defaultDllImportSearchPathsAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.DefaultDllImportSearchPathsAttribute);
             // Get any attributes of interest on the method
             AttributeData? generatedDllImportAttr = null;
             AttributeData? lcidConversionAttr = null;
             AttributeData? suppressGCTransitionAttribute = null;
             AttributeData? unmanagedCallConvAttribute = null;
+            AttributeData? defaultDllImportSearchPathsAttribute = null;
             foreach (AttributeData attr in symbol.GetAttributes())
             {
                 if (attr.AttributeClass is not null
@@ -386,17 +410,21 @@ namespace Microsoft.Interop
                 {
                     generatedDllImportAttr = attr;
                 }
-                else if (lcidConversionAttrType != null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, lcidConversionAttrType))
+                else if (lcidConversionAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, lcidConversionAttrType))
                 {
                     lcidConversionAttr = attr;
                 }
-                else if (suppressGCTransitionAttrType != null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, suppressGCTransitionAttrType))
+                else if (suppressGCTransitionAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, suppressGCTransitionAttrType))
                 {
                     suppressGCTransitionAttribute = attr;
                 }
-                else if (unmanagedCallConvAttrType != null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, unmanagedCallConvAttrType))
+                else if (unmanagedCallConvAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, unmanagedCallConvAttrType))
                 {
                     unmanagedCallConvAttribute = attr;
+                }
+                else if (defaultDllImportSearchPathsAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, defaultDllImportSearchPathsAttrType))
+                {
+                    defaultDllImportSearchPathsAttribute = attr;
                 }
             }
 
@@ -405,9 +433,15 @@ namespace Microsoft.Interop
             var generatorDiagnostics = new GeneratorDiagnostics();
 
             // Process the GeneratedDllImport attribute
-            GeneratedDllImportData stubDllImportData = ProcessGeneratedDllImportAttribute(generatedDllImportAttr!);
+            GeneratedDllImportData? stubDllImportData = ProcessGeneratedDllImportAttribute(generatedDllImportAttr!);
 
-            if (lcidConversionAttr != null)
+            if (stubDllImportData is null)
+            {
+                generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr!, "Invalid syntax");
+                stubDllImportData = new GeneratedDllImportData("INVALID_CSHARP_SYNTAX");
+            }
+
+            if (lcidConversionAttr is not null)
             {
                 // Using LCIDConversion with GeneratedDllImport is not supported
                 generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
@@ -416,7 +450,7 @@ namespace Microsoft.Interop
             // Create the stub.
             var dllImportStub = DllImportStubContext.Create(symbol, stubDllImportData, environment, generatorDiagnostics, ct);
 
-            List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
+            List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute);
             return new IncrementalStubGenerationContext(environment, dllImportStub, additionalAttributes.ToImmutableArray(), stubDllImportData, generatorDiagnostics.Diagnostics.ToImmutableArray());
         }
 
@@ -437,7 +471,10 @@ namespace Microsoft.Interop
                 dllImportStub.Environment,
                 dllImportStub.StubContext.ElementTypeInformation,
                 dllImportStub.DllImportData.SetLastError && !options.GenerateForwarders,
-                (elementInfo, ex) => diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails),
+                (elementInfo, ex) =>
+                {
+                    diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails);
+                },
                 dllImportStub.StubContext.GeneratorFactory);
 
             // Check if the generator should produce a forwarder stub - regular DllImport.
@@ -554,12 +591,6 @@ namespace Microsoft.Interop
                 ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.ExactSpelling);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
-            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.PreserveSig))
-            {
-                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.PreserveSig));
-                ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.PreserveSig);
-                newAttributeArgs.Add(AttributeArgument(name, null, value));
-            }
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.SetLastError))
             {
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.SetLastError));
@@ -599,9 +630,6 @@ namespace Microsoft.Interop
         private static GeneratedDllImportData GetTargetDllImportDataFromStubData(GeneratedDllImportData dllImportData, string originalMethodName, bool forwardAll)
         {
             DllImportMember membersToForward = DllImportMember.All
-                               // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.preservesig
-                               // If PreserveSig=false (default is true), the P/Invoke stub checks/converts a returned HRESULT to an exception.
-                               & ~DllImportMember.PreserveSig
                                // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.setlasterror
                                // If SetLastError=true (default is false), the P/Invoke stub gets/caches the last error after invoking the native function.
                                & ~DllImportMember.SetLastError;
@@ -616,7 +644,6 @@ namespace Microsoft.Interop
                 EntryPoint = dllImportData.EntryPoint,
                 ExactSpelling = dllImportData.ExactSpelling,
                 SetLastError = dllImportData.SetLastError,
-                PreserveSig = dllImportData.PreserveSig,
                 IsUserDefined = dllImportData.IsUserDefined & membersToForward
             };
 

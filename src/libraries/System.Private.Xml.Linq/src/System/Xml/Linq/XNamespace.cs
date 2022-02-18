@@ -134,9 +134,8 @@ namespace System.Xml.Linq
         /// <param name="ns">The namespace for the expanded name.</param>
         /// <param name="localName">The local name for the expanded name.</param>
         /// <returns>The new XName constructed from the namespace and local name.</returns>
-        public static XName operator +(XNamespace ns, string localName)
+        public static XName operator +(XNamespace ns!!, string localName)
         {
-            if (ns == null) throw new ArgumentNullException(nameof(ns));
             return ns.GetName(localName);
         }
 

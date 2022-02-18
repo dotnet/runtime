@@ -15,8 +15,6 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
-    - OSX_arm64
-    - OSX_x64
     - Linux_arm64
     - Linux_x64
     - windows_arm64
@@ -39,8 +37,6 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platforms:
-    - OSX_arm64
-    - OSX_x64
     - Linux_arm64
     - Linux_x64
     - windows_arm64

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,14 +16,16 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly SymbolicRegexBuilder<BDD> _builder;
         private readonly CultureInfo _culture;
         private readonly Dictionary<(bool, string), BDD> _createConditionFromSet_Cache = new();
+        private readonly Hashtable? _caps;
 
         /// <summary>Constructs a regex to symbolic finite automata converter</summary>
-        public RegexNodeToSymbolicConverter(Unicode.UnicodeCategoryTheory<BDD> categorizer, CultureInfo culture)
+        public RegexNodeToSymbolicConverter(Unicode.UnicodeCategoryTheory<BDD> categorizer, CultureInfo culture, Hashtable? caps)
         {
             _categorizer = categorizer;
             _culture = culture;
             Solver = categorizer._solver;
             _builder = new SymbolicRegexBuilder<BDD>(Solver);
+            _caps = caps;
         }
 
         /// <summary>The character solver associated with the regex converter</summary>
@@ -220,7 +223,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         {
                             nested[i] = Convert(node.Child(i), topLevel);
                         }
-                        return _builder.MkOr(nested);
+                        return _builder.MkOrderedOr(nested);
                     }
 
                 case RegexNodeKind.Beginning:
@@ -231,15 +234,17 @@ namespace System.Text.RegularExpressions.Symbolic
                     return _builder._bolAnchor;
 
                 case RegexNodeKind.Capture when node.N == -1:
-                    return Convert(node.Child(0), topLevel); // treat as non-capturing group (...)
+                    int captureNum;
+                    if (_caps == null || !_caps.TryGetValue(node.M, out captureNum))
+                        captureNum = node.M;
+                    return _builder.MkCapture(Convert(node.Child(0), topLevel: false), captureNum);
 
                 case RegexNodeKind.Concatenate:
                     {
-                        List<RegexNode> nested = FlattenNestedConcatenations(node);
-                        var converted = new SymbolicRegexNode<BDD>[nested.Count];
-                        for (int i = 0; i < converted.Length; i++)
+                        var converted = new SymbolicRegexNode<BDD>[node.ChildCount()];
+                        for (int i = 0; i < node.ChildCount(); ++i)
                         {
-                            converted[i] = Convert(nested[i], topLevel: false);
+                            converted[i] = Convert(node.Child(i), topLevel: false);
                         }
                         return _builder.MkConcat(converted, topLevel);
                     }
@@ -369,45 +374,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     // Use the predicate including joiner and non joiner
                     _builder._wordLetterPredicateForAnchors = _categorizer.WordLetterConditionForAnchors;
                 }
-            }
-
-            List<RegexNode> FlattenNestedConcatenations(RegexNode concat)
-            {
-                var results = new List<RegexNode>();
-
-                var todo = new Stack<RegexNode>();
-                todo.Push(concat);
-
-                while (todo.TryPop(out RegexNode? node))
-                {
-                    if (node.Kind == RegexNodeKind.Concatenate)
-                    {
-                        // Flatten nested concatenations
-                        for (int i = node.ChildCount() - 1; i >= 0; i--)
-                        {
-                            todo.Push(node.Child(i));
-                        }
-                    }
-                    else if (node.Kind == RegexNodeKind.Capture)
-                    {
-                        if (node.N == -1)
-                        {
-                            // Unwrap nonbalancing capture groups
-                            todo.Push(node.Child(0));
-                        }
-                        else
-                        {
-                            // Balancing groups are not supported
-                            throw new NotSupportedException(SR.Format(SR.NotSupported_NonBacktrackingConflictingExpression, SR.ExpressionDescription_BalancingGroup));
-                        }
-                    }
-                    else
-                    {
-                        results.Add(node);
-                    }
-                }
-
-                return results;
             }
 
             SymbolicRegexNode<BDD> ConvertMulti(RegexNode node, bool topLevel)

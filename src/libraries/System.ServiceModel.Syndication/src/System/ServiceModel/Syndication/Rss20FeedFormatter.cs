@@ -30,12 +30,8 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Rss20FeedFormatter(Type feedTypeToCreate) : base()
+        public Rss20FeedFormatter(Type feedTypeToCreate!!) : base()
         {
-            if (feedTypeToCreate == null)
-            {
-                throw new ArgumentNullException(nameof(feedTypeToCreate));
-            }
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(feedTypeToCreate), nameof(SyndicationFeed)), nameof(feedTypeToCreate));
