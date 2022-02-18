@@ -34,7 +34,7 @@ namespace DebuggerTests
             });
 
             var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
-            Assert.True(eval_res.IsErr);
+            Assert.False(eval_res.IsOk);
             Assert.Equal("Uncaught", eval_res.Error["exceptionDetails"]?["text"]?.Value<string>());
         }
 
@@ -245,7 +245,7 @@ namespace DebuggerTests
                    });
 
                    var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
-                   Assert.True(frame_props.IsErr);
+                   Assert.False(frame_props.IsOk);
                }
             );
         }
