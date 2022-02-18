@@ -42,7 +42,7 @@
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
 
     <!-- Fix symbolic links that are broken already on build machine and also in the correlation payload -->
-    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export HELIX_NODEJS_VERSION=$(ls $HELIX_CORRELATION_PAYLOAD/build/emsdk/node)" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export HELIX_NODEJS_VERSION=%24(ls $HELIX_CORRELATION_PAYLOAD/build/emsdk/node)" />
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export HELIX_NODEJS_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/$HELIX_NODEJS_VERSION" />
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export PATH=$HELIX_NODEJS_PATH/bin:$PATH" />
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="rm $HELIX_NODEJS_PATH/bin/npm" />
