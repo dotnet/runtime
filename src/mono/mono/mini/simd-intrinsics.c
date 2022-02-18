@@ -761,13 +761,25 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 	case SN_BitwiseAnd:
-		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IAND, arg0_type, fsig, args);
 	case SN_BitwiseOr:
-		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IOR, arg0_type, fsig, args);
 	case SN_Xor: {
-		if ((arg0_type == MONO_TYPE_R4) || (arg0_type == MONO_TYPE_R8))
-			return NULL;
-		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IXOR, arg0_type, fsig, args);
+		// if ((arg0_type == MONO_TYPE_R4) || (arg0_type == MONO_TYPE_R8))
+		// 	return NULL;
+		int instc0 = -1;
+		switch (id) {
+		case SN_BitwiseAnd:
+			instc0 = XBINOP_FORCEINT_and;
+			break;
+		case SN_BitwiseOr:
+			instc0 = XBINOP_FORCEINT_or;
+			break;
+		case SN_Xor:
+			instc0 = XBINOP_FORCEINT_xor;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+		return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP_FORCEINT, instc0, arg0_type, fsig, args);
 	}
 	case SN_As:
 	case SN_AsByte:
