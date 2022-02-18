@@ -473,7 +473,7 @@ namespace System.IO.Pipelines.Tests
         {
             var stream = new CountsDisposesStream();
             PipeWriter writer = PipeWriter.Create(stream);
-            await writer.Complete();
+            await writer.CompleteAsync();
 
             Assert.True(stream.DisposeAsyncCalled);
         }
