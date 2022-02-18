@@ -808,8 +808,7 @@ public:
     // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant.
     bool IsVNConstantBound(ValueNum vn);
 
-    // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant.
-    // while the other one is under (uint) cast. E.g. (uint)x < 10
+    // If "vn" is of the form "(uint)var relop cns" for any relop except for == and !=
     bool IsVNConstantBoundUnsigned(ValueNum vn);
 
     // If "vn" is constant bound, then populate the "info" fields for constVal, cmpOp, cmpOper.

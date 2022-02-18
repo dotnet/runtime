@@ -12176,6 +12176,14 @@ DONE_MORPHING_CHILDREN:
         case GT_GE:
         case GT_GT:
 
+            if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
+            {
+                tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
+                oper = tree->OperGet();
+                op1  = tree->gtGetOp1();
+                op2  = tree->gtGetOp2();
+            }
+
             // op2's value may be changed, so it cannot be a CSE candidate.
             if (op2->IsIntegralConst() && !gtIsActiveCSE_Candidate(op2))
             {
@@ -13970,9 +13978,8 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
 }
 
 //------------------------------------------------------------------------
-// fgOptimizeRelationalComparisonWithCasts: optimizes a comparison operation.
-//   Recognizes comparisons against various cast operands and tries to remove
-//   them. E.g.:
+// fgOptimizeRelationalComparisonWithCasts: Recognizes comparisons against
+//   various cast operands and tries to remove them. E.g.:
 //
 //   *  GE        int
 //   +--*  CAST      long <- ulong <- uint
@@ -14009,8 +14016,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
     // Caller is expected to call this function only if we have CAST nodes
     assert(castedOp->OperIs(GT_CAST) || knownPositiveOp->OperIs(GT_CAST));
 
-    if (optValnumCSE_phase || gtIsActiveCSE_Candidate(tree) || gtIsActiveCSE_Candidate(castedOp) ||
-        gtIsActiveCSE_Candidate(knownPositiveOp))
+    if (optValnumCSE_phase)
     {
         // We're going to modify all of them
         return tree;
@@ -14054,6 +14060,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
         {
             knownPositiveFitsIntoU32 = true;
             // TODO: we need to recognize Span._length here as well
+            // https://github.com/dotnet/runtime/issues/59922#issuecomment-933495507
         }
 
         if (!knownPositiveFitsIntoU32)
