@@ -1435,6 +1435,42 @@ namespace System.Reflection
 
             return attributeUsageAttribute ?? AttributeUsageAttribute.Default;
         }
+
+        internal static object[] CreateAttributeArrayHelper(RuntimeType caType, int elementCount)
+        {
+            bool useAttributeArray = false;
+            bool useObjectArray = false;
+
+            if (caType == typeof(Attribute))
+            {
+                useAttributeArray = true;
+            }
+            else if (caType.IsValueType)
+            {
+                useObjectArray = true;
+            }
+            else if (caType.ContainsGenericParameters)
+            {
+                if (caType.IsSubclassOf(typeof(Attribute)))
+                {
+                    useAttributeArray = true;
+                }
+                else
+                {
+                    useObjectArray = true;
+                }
+            }
+
+            if (useAttributeArray)
+            {
+                return elementCount == 0 ? Array.Empty<Attribute>() : new Attribute[elementCount];
+            }
+            if (useObjectArray)
+            {
+                return elementCount == 0 ? Array.Empty<object>() : new object[elementCount];
+            }
+            return elementCount == 0 ? caType.GetEmptyArray() : (object[])Array.CreateInstance(caType, elementCount);
+        }
         #endregion
 
         #region Private Static FCalls
@@ -1471,34 +1507,6 @@ namespace System.Reflection
             _GetPropertyOrFieldData(
                 module, &pBlobStart, (byte*)blobEnd, out name, out isProperty, out type, out value);
             blobStart = (IntPtr)pBlobStart;
-        }
-
-        private static object[] CreateAttributeArrayHelper(RuntimeType caType, int elementCount)
-        {
-            if (caType.IsValueType)
-            {
-                return CreateArray<object>();
-            }
-
-            if (caType.ContainsGenericParameters)
-            {
-                if (caType.IsSubclassOf(typeof(Attribute)))
-                {
-                    return CreateArray<Attribute>();
-                }
-
-                return CreateArray<object>();
-            }
-
-            // If we have 0 elements, don't allocate a new array
-            if (elementCount == 0)
-            {
-                return caType.GetEmptyArray();
-            }
-
-            return (object[])Array.CreateInstance(caType, elementCount);
-
-            T[] CreateArray<T>() => elementCount == 0 ? Array.Empty<T>() : new T[elementCount];
         }
         #endregion
     }
