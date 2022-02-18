@@ -117,11 +117,11 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CallerAllocConstructorMustHaveBufferSizeConstantDescription" xml:space="preserve">
-    <value>When a constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named BufferSize to provide the size of the caller-allocated buffer.</value>
+  <data name="CallerAllocConstructorMustHaveBufferSizeDescription" xml:space="preserve">
+    <value>When a constructor taking a ''Span&lt;byte&gt; is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</value>
   </data>
-  <data name="CallerAllocConstructorMustHaveBufferSizeConstantMessage" xml:space="preserve">
-    <value>The native type '{0}' must have a 'public const int BufferSize' field that specifies the size of the stack buffer because it has a constructor that takes a caller-allocated Span&lt;byte&gt;</value>
+  <data name="CallerAllocConstructorMustHaveBufferSizeMessage" xml:space="preserve">
+    <value>The native type '{0}' must set the 'BufferSize' field on the applied 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to specify the size of the caller-allocated buffer because it has a constructor that takes a caller-allocated 'Span&lt;byte&gt;'</value>
   </data>
   <data name="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription" xml:space="preserve">
     <value>A type that supports marshalling from managed to native using a caller-allocated buffer should also support marshalling from managed to native where using a caller-allocated buffer is impossible.</value>

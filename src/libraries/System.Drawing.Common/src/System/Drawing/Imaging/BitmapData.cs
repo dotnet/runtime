@@ -98,6 +98,7 @@ namespace System.Drawing.Imaging
         internal ref int GetPinnableReference() => ref _width;
 
 #if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(BitmapData))]
         internal unsafe struct PinningMarshaller
         {
             private readonly BitmapData _managed;

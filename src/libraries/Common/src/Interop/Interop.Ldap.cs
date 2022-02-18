@@ -45,6 +45,7 @@ namespace System.DirectoryServices.Protocols
         public int packageListLength;
 
         [StructLayout(LayoutKind.Sequential)]
+        [CustomTypeMarshaller(typeof(SEC_WINNT_AUTH_IDENTITY_EX))]
         internal struct Native
         {
             public int version;
@@ -173,6 +174,7 @@ namespace System.DirectoryServices.Protocols
         public IntPtr bv_val = IntPtr.Zero;
 
 #if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(BerVal))]
         internal unsafe struct PinningMarshaller
         {
             private readonly BerVal _managed;
@@ -211,6 +213,7 @@ namespace System.DirectoryServices.Protocols
 #if NET7_0_OR_GREATER
         public static readonly unsafe int Size = sizeof(Marshaller.Native);
 
+        [CustomTypeMarshaller(typeof(LdapReferralCallback))]
         public unsafe struct Marshaller
         {
             public unsafe struct Native

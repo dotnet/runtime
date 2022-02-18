@@ -55,16 +55,28 @@ Span marshalling would still be implemented with similar semantics as mentioned 
 
 ### Proposed extension to the custom type marshalling design
 
-Introduce a new attribute named `GenericContiguousCollectionMarshallerAttribute`. This attribute would have the following shape:
+Introduce a marshaller kind named `SpanCollection`.
 
-```csharp
+```diff
 namespace System.Runtime.InteropServices
 { 
-    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
-    public sealed class GenericContiguousCollectionMarshallerAttribute : Attribute
-    {
-        public GenericContiguousCollectionMarshallerAttribute();
-    }
+  [AttributeUsage(AttributeTargets.Struct)]
+  public sealed class CustomTypeMarshallerAttribute : Attribute
+  {
++       /// <summary>
++       /// This type is used as a placeholder for the first generic parameter when generic parameters cannot be used
++       /// to identify the managed type (i.e. when the marshaller type is generic over T and the managed type is T[])
++       /// </summary>
++       public struct GenericPlaceholder
++       {
++       }
+  }
+
+  public enum CustomTypeMarshallerKind
+  {
+      Value,
++     SpanCollection
+  }
 }
 ```
 
@@ -77,21 +89,27 @@ public ref struct Span<T>
   ...
 }
 
-[GenericContiguousCollectionMarshaller]
+[CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection)]
 public ref struct DefaultSpanMarshaler<T>
 {
   ...
 }
 ```
 
-The `GenericContiguousCollectionMarshallerAttribute` attribute is applied to a generic marshaler type with the "collection marshaller" shape described below. Since generic parameters cannot be used in attributes, open generic types will be permitted in the `NativeTypeMarshallingAttribute` constructor as long as they have the same arity as the type the attribute is applied to and generic parameters provided to the applied-to type can also be used to construct the type passed as a parameter.
+The `CustomTypeMarshallerKind.SpanCollection` kind is applied to a generic marshaler type with the "SpanCollection marshaller shape" described below.
 
-#### Generic collection marshaller shape
+#### Supporting generics
 
-A generic collection marshaller would be required to have the following shape, in addition to the requirements for marshaler types used with the `NativeTypeMarshallingAttribute`, excluding the constructors.
+Since generic parameters cannot be used in attributes, open generic types will be permitted in the `NativeTypeMarshallingAttribute` and the `CustomTypeMarshallerAttribute` as long as they have the same arity as the type the attribute is applied to and generic parameters provided to the applied-to type can also be used to construct the type passed as a parameter.
+
+If a `CustomTypeMarshaller`-attributed type is a marshaller for a type for a pointer, an array, or a combination of pointers and arrays, the `CustomTypeMarshallerAttribute.GenericPlaceholder` type can be used in the place of the first generic parameter of the marshaller type.
+
+#### SpanCollection marshaller shape
+
+A generic collection marshaller would be required to have the following shape, in addition to the requirements for marshaler types used with the `CustomTypeMarshallerKind.Value` shape, excluding the constructors.
 
 ```csharp
-[GenericContiguousCollectionMarshaller]
+[CustomTypeMarshaller(typeof(GenericCollection<, , ,...>), CustomTypeMarshallerKind.SpanCollection)]
 public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
 {
     // this constructor is required if marshalling from native to managed is supported.
@@ -174,7 +192,7 @@ Alternatively, the `MarshalUsingAttribute` could provide a `Type ElementNativeTy
 This design could be used to provide a default marshaller for spans and arrays. Below is an example simple marshaller for `Span<T>`. This design does not include all possible optimizations, such as stack allocation, for simpilicity of the example.
 
 ```csharp
-[GenericContiguousCollectionMarshaller]
+[CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection)]
 public ref struct SpanMarshaler<T>
 {
     private Span<T> managedCollection;
@@ -261,11 +279,11 @@ This design could also be applied to support the built-in array marshalling if i
 
 If a managed or native representation of a collection has a non-contiguous element layout, then developers currently will need to convert to or from array/span types at the interop boundary. This section proposes an API that would enable developers to convert directly between a managed and native non-contiguous collection layout as part of marshalling.
 
-A new attribute named `GenericCollectionMarshaller` attribute could be added that would specify that the collection is noncontiguous in either managed or native representations. Then additional methods should be added to the generic collection model, and some methods would be removed:
+A new marshaller kind named `GenericCollection` could be added that would specify that the collection is noncontiguous in either managed or native representations. Then additional methods should be added to the generic collection model, and some methods would be removed:
 
 ```diff
-- [GenericContiguousCollectionMarshaller]
-+ [GenericCollectionMarshaller]
+- [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection)]
++ [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.GenericCollection)]
 public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
 {
     // these constructors are required if marshalling from managed to native is supported.
@@ -312,6 +330,6 @@ Cons:
 - Introduces more attribute types into the BCL.
 - Introduces more complexity in the marshalling type model.
   - It may be worth describing the required members (other than constructors) in interfaces just to simplify the mental load of which members are required for which scenarios.
-    - A set of interfaces (one for managed-to-native members, one for native-to-managed members, and one for the sequential-specific members) could replace the `GenericContiguousCollectionMarshaller` attribute.
+    - A set of interfaces (one for managed-to-native members, one for native-to-managed members, and one for the sequential-specific members) could replace the new marshaller kind.
 - The base proposal only supports contiguous collections.
   - The feeling at time of writing is that we are okay asking developers to convert to/from arrays or spans at the interop boundary.

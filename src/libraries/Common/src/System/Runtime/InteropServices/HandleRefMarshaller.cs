@@ -6,6 +6,7 @@
 
 namespace System.Runtime.InteropServices.GeneratedMarshalling
 {
+    [CustomTypeMarshaller(typeof(HandleRef))]
     internal struct HandleRefMarshaller
     {
         private HandleRef _handle;

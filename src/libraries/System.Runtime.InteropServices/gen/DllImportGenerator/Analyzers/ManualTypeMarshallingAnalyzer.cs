@@ -138,15 +138,15 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription)));
 
-        public static readonly DiagnosticDescriptor CallerAllocConstructorMustHaveBufferSizeConstantRule =
+        public static readonly DiagnosticDescriptor CallerAllocConstructorMustHaveBufferSizeRule =
             new DiagnosticDescriptor(
-                Ids.CallerAllocConstructorMustHaveStackBufferSizeConstant,
-                "CallerAllocConstructorMustHaveBufferSizeConstant",
-                GetResourceString(nameof(Resources.CallerAllocConstructorMustHaveBufferSizeConstantMessage)),
+                Ids.CallerAllocConstructorMustHaveStackBufferSize,
+                "CallerAllocConstructorMustHaveBufferSize",
+                GetResourceString(nameof(Resources.CallerAllocConstructorMustHaveBufferSizeMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.CallerAllocConstructorMustHaveBufferSizeConstantDescription)));
+                description: GetResourceString(nameof(Resources.CallerAllocConstructorMustHaveBufferSizeDescription)));
 
         public static readonly DiagnosticDescriptor RefValuePropertyUnsupportedRule =
             new DiagnosticDescriptor(
@@ -192,7 +192,7 @@ namespace Microsoft.Interop.Analyzers
                 ValuePropertyMustHaveGetterRule,
                 GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule,
                 CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackRule,
-                CallerAllocConstructorMustHaveBufferSizeConstantRule,
+                CallerAllocConstructorMustHaveBufferSizeRule,
                 RefValuePropertyUnsupportedRule,
                 NativeGenericTypeMustBeClosedOrMatchArityRule,
                 MarshallerGetPinnableReferenceRequiresValuePropertyRule);
@@ -400,12 +400,11 @@ namespace Microsoft.Interop.Analyzers
                     if (!hasCallerAllocSpanConstructor && ManualTypeMarshallingHelper.IsCallerAllocatedSpanConstructor(ctor, type, _spanOfByte, marshallerData.Value.Kind))
                     {
                         hasCallerAllocSpanConstructor = true;
-                        IFieldSymbol bufferSizeField = marshallerType.GetMembers(ManualTypeMarshallingHelper.BufferSizeFieldName).OfType<IFieldSymbol>().FirstOrDefault();
-                        if (bufferSizeField is null or { DeclaredAccessibility: not Accessibility.Public } or { IsConst: false } or { Type: not { SpecialType: SpecialType.System_Int32 } })
+                        if (marshallerData.Value.BufferSize == null)
                         {
                             context.ReportDiagnostic(
                                 ctor.CreateDiagnostic(
-                                    CallerAllocConstructorMustHaveBufferSizeConstantRule,
+                                    CallerAllocConstructorMustHaveBufferSizeRule,
                                     marshallerType.ToDisplayString()));
                         }
                     }

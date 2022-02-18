@@ -74,6 +74,7 @@ internal static partial class Interop
             internal byte[] MulticastAddress; // IP address of group.
             internal int InterfaceIndex; // Local interface index.
 
+            [CustomTypeMarshaller(typeof(IPv6MulticastRequest))]
             public unsafe struct Native
             {
                 private const int MulticastAddressLength = 16;

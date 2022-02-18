@@ -64,7 +64,7 @@ namespace System.Runtime.InteropServices
         public const string ReturnsCountValue = "return-value";
     }
 
-    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
+    [AttributeUsage(AttributeTargets.Struct)]
 #if DLLIMPORT_GENERATOR_TEST
     public
 #else

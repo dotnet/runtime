@@ -61,20 +61,20 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to When a constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named BufferSize to provide the size of the caller-allocated buffer..
+        ///   Looks up a localized string similar to When a constructor taking a &apos;&apos;Span&lt;byte&gt; is specified on the native type, the type must set the BufferSize field on the &apos;System.Runtime.InteropServices.CustomTypeMarshallerAttribute&apos; to provide the size of the caller-allocated buffer..
         /// </summary>
-        internal static string CallerAllocConstructorMustHaveBufferSizeConstantDescription {
+        internal static string CallerAllocConstructorMustHaveBufferSizeDescription {
             get {
-                return ResourceManager.GetString("CallerAllocConstructorMustHaveBufferSizeConstantDescription", resourceCulture);
+                return ResourceManager.GetString("CallerAllocConstructorMustHaveBufferSizeDescription", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must have a &apos;public const int BufferSize&apos; field that specifies the size of the stack buffer because it has a constructor that takes a caller-allocated Span&lt;byte&gt;.
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must set the &apos;BufferSize&apos; field on the applied &apos;System.Runtime.InteropServices.CustomTypeMarshallerAttribute&apos; to specify the size of the caller-allocated buffer because it has a constructor that takes a caller-allocated &apos;Span&lt;byte&gt;&apos;.
         /// </summary>
-        internal static string CallerAllocConstructorMustHaveBufferSizeConstantMessage {
+        internal static string CallerAllocConstructorMustHaveBufferSizeMessage {
             get {
-                return ResourceManager.GetString("CallerAllocConstructorMustHaveBufferSizeConstantMessage", resourceCulture);
+                return ResourceManager.GetString("CallerAllocConstructorMustHaveBufferSizeMessage", resourceCulture);
             }
         }
         

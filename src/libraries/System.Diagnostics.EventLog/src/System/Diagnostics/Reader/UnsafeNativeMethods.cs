@@ -353,6 +353,7 @@ namespace Microsoft.Win32
             public CoTaskMemUnicodeSafeHandle Password;
             public int Flags;
 #if NET7_0_OR_GREATER
+            [CustomTypeMarshaller(typeof(EvtRpcLogin))]
             public struct Marshaller
             {
                 public struct Native
@@ -680,6 +681,7 @@ namespace Microsoft.Win32
             public uint Type;
 
 #if NET7_0_OR_GREATER
+            [CustomTypeMarshaller(typeof(EvtStringVariant))]
             [StructLayout(LayoutKind.Explicit)]
             public struct Native
             {

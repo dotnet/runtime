@@ -53,6 +53,7 @@ internal static partial class Interop
             uint modifiers);
 
 #if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(StringBuilder))]
         private unsafe struct SimpleStringBufferMarshaller
         {
             public SimpleStringBufferMarshaller(StringBuilder builder)

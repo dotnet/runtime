@@ -34,6 +34,7 @@ namespace System.Drawing.Imaging
         internal ref byte GetPinnableReference() => ref Unsafe.As<MetafileType, byte>(ref type);
 
 #if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(MetafileHeaderEmf))]
         internal unsafe struct PinningMarshaller
         {
             private readonly MetafileHeaderEmf _managed;

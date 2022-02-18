@@ -88,7 +88,7 @@ struct S
     public string s;
 }
 
-[CustomTypeMarshaller(typeof(S))]
+[{|CS0592:CustomTypeMarshaller|}(typeof(S))]
 class {|#0:Native|}
 {
     private IntPtr value;
@@ -209,7 +209,7 @@ struct S
     public string s;
 }
 
-[CustomTypeMarshaller(typeof(S))]
+[{|CS0592:CustomTypeMarshaller|}(typeof(S))]
 class {|#0:Native|}
 {
     private string value;
@@ -665,12 +665,10 @@ class S
     public byte c;
 }
 
-[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.SpanCollection, BufferSize = 1)]
 ref struct {|#0:Native|}
 {
     public Native(S s, Span<byte> stackSpace) : this() {}
-
-    public const int BufferSize = 1;
 
     public Span<int> ManagedValues { get; set; }
     public Span<byte> NativeValueStorage { get; set; }
@@ -695,12 +693,10 @@ class S
     public byte c;
 }
 
-[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(S), CustomTypeMarshallerKind.SpanCollection, BufferSize = 1)]
 ref struct {|#0:Native|}
 {
     public Native(S s, Span<byte> stackSpace, int nativeElementSize) : this() {}
-
-    public const int BufferSize = 1;
 
     public Span<int> ManagedValues { get; set; }
     public Span<byte> NativeValueStorage { get; set; }
@@ -823,12 +819,10 @@ class S
     public byte c;
 }
 
-[CustomTypeMarshaller(typeof(S))]
+[CustomTypeMarshaller(typeof(S), BufferSize = 0x100)]
 struct {|#0:Native|}
 {
     public Native(S s, Span<byte> buffer) {}
-
-    public const int BufferSize = 0x100;
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
@@ -852,11 +846,9 @@ class {|#0:S|}
 [CustomTypeMarshaller(typeof(S))]
 struct {|#1:Native|}
 {
-    public Native(S s, Span<byte> buffer) {}
+    public Native(S s, Span<byte> buffer, BufferSize = 0x100) {}
 
     public IntPtr Value => IntPtr.Zero;
-
-    public const int BufferSize = 0x100;
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
@@ -1225,7 +1217,7 @@ struct Native
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(CallerAllocConstructorMustHaveBufferSizeConstantRule).WithLocation(0).WithArguments("Native"));
+                VerifyCS.Diagnostic(CallerAllocConstructorMustHaveBufferSizeRule).WithLocation(0).WithArguments("Native"));
         }
 
         [ConditionalFact]

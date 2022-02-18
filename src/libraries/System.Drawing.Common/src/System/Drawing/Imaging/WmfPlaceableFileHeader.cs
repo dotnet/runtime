@@ -106,6 +106,7 @@ namespace System.Drawing.Imaging
         internal ref int GetPinnableReference() => ref _key;
 
 #if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(WmfPlaceableFileHeader))]
         internal unsafe struct PinningMarshaller
         {
             private readonly WmfPlaceableFileHeader _managed;

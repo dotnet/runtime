@@ -25,24 +25,45 @@ All design options would use these attributes:
 ```csharp
 
 [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
-public class GeneratedMarshallingAttribute : Attribute {}
+public sealed class GeneratedMarshallingAttribute : Attribute {}
 
 [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
-public class NativeMarshallingAttribute : Attribute
+public sealed class NativeMarshallingAttribute : Attribute
 {
      public NativeMarshallingAttribute(Type nativeType) {}
 }
 
 [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.Field)]
-public class MarshalUsingAttribute : Attribute
+public sealed class MarshalUsingAttribute : Attribute
 {
      public MarshalUsingAttribute(Type nativeType) {}
 }
+
+[AttributeUsage(AttributeTargets.Struct)]
+public sealed class CustomTypeMarshallerAttribute : Attribute
+{
+     public CustomTypeMarshallerAttribute(Type managedType, CustomTypeMarshallerKind marshallerKind = CustomTypeMarshallerKind.Value)
+     {
+          ManagedType = managedType;
+          MarshallerKind = marshallerKind;
+     }
+
+     public Type ManagedType { get; }
+     public CustomTypeMarshallerKind MarshallerKind { get; }
+     public int BufferSize { get; set; }
+     public bool RequiresStackBuffer { get; set; }
+}
+
+public enum CustomTypeMarshallerKind
+{
+     Value
+}
 ```
 
-The `NativeMarshallingAttribute` and `MarshalUsingAttribute` attributes would require that the provided native type `TNative` is a `struct` that does not require any marshalling and has a subset of three methods with the following names and shapes (with the managed type named TManaged):
+The `NativeMarshallingAttribute` and `MarshalUsingAttribute` attributes would require that the provided native type `TNative` is a `struct` that does not require any marshalling and has the `CustomTypeMarshallerAttribute` with the first parameter being a `typeof()` of the managed type and a subset of three methods with the following names and shapes (with the managed type named TManaged):
 
 ```csharp
+[CustomTypeMarshaller(typeof(TManaged))]
 partial struct TNative
 {
      public TNative(TManaged managed) {}
@@ -57,7 +78,7 @@ The analyzer will report an error if neither the constructor nor the `ToManaged`
 
 > :question: Does this API surface and shape work for all marshalling scenarios we plan on supporting? It may have issues with the current "layout class" by-value `[Out]` parameter marshalling where the runtime updates a `class` typed object in place. We already recommend against using classes for interop for performance reasons and a struct value passed via `ref` or `out` with the same members would cover this scenario.
 
-If the native type `TNative` also has a public `Value` property, then the value of the `Value` property will be passed to native code instead of the `TNative` value itself. As a result, the type `TNative` will be allowed to require marshalling and the type of the `Value` property will be required be passable to native code without any additional marshalling. If the `Value` property is settable, then when marshalling in the native-to-managed direction, a default value of `TNative` will have its `Value` property set to the native value. If `Value` does not have a setter, then marshalling from native to managed is not supported.
+If the native type `TNative` also has a public `Value` property, then the value of the `Value` property will be passed to native code instead of the `TNative` value itself. As a result, the type `TNative` will be allowed to require marshalling and the type of the `Value` property will be required be passable to native code without any additional marshalling. When the `Value` property is provided, the `CustomTypeMarshallerAttribute` will still need to be provided on `TNative`. If the `Value` property is settable, then when marshalling in the native-to-managed direction, a default value of `TNative` will have its `Value` property set to the native value. If `Value` does not have a setter, then marshalling from native to managed is not supported.
 
 If a `Value` property is provided, the developer may also provide a ref-returning or readonly-ref-returning `GetPinnableReference` method. The `GetPinnableReference` method will be called before the `Value` property getter is called. The ref returned by `GetPinnableReference` will be pinned with a `fixed` statement, but the pinned value will not be used (it acts exclusively as a side-effect).
 
@@ -70,6 +91,7 @@ public struct TManaged
      // ...
 }
 
+[CustomTypeMarshaller(typeof(TManaged))]
 public struct TMarshaler
 {
      public TMarshaler(TManaged managed) {}
@@ -92,20 +114,17 @@ Since C# 7.3 added a feature to enable custom pinning logic for user types, we s
 
 #### Caller-allocated memory
 
-Custom marshalers of collection-like types or custom string encodings (such as UTF-32) may want to use stack space for extra storage for additional performance when possible. If the `TNative` type provides additional members with the following signatures, then it will opt in to using a caller-allocated buffer:
+Custom marshalers of collection-like types or custom string encodings (such as UTF-32) may want to use stack space for extra storage for additional performance when possible. If the `TNative` type provides additional constructor with the following signature and sets the `BufferSize` field on the `CustomTypeMarshallerAttribute`, then it will opt in to using a caller-allocated buffer:
 
 ```csharp
+[CustomTypeMarshaller(typeof(TManaged), BufferSize = /* */, RequiresStackBuffer = /* */)]
 partial struct TNative
 {
      public TNative(TManaged managed, Span<byte> buffer) {}
-
-     public const int BufferSize = /* */;
-
-     public const bool RequiresStackBuffer = /* */;
 }
 ```
 
-When these members are present, the source generator will call the two-parameter constructor with a possibly stack-allocated buffer of `BufferSize` bytes when a stack-allocated buffer is usable. If a stack-allocated buffer is a requirement, the `RequiresStackBuffer` field should be set to `true` and the `buffer` will be guaranteed to be allocated on the stack. Setting the `RequiresStackBuffer` field to `false` is the same as omitting the field definition. Since a dynamically allocated buffer is not usable in all scenarios, for example Reverse P/Invoke and struct marshalling, a one-parameter constructor must also be provided for usage in those scenarios. This may also be provided by providing a two-parameter constructor with a default value for the second parameter.
+When these members are present, the source generator will call the two-parameter constructor with a possibly stack-allocated buffer of `BufferSize` bytes when a stack-allocated buffer is usable. If a stack-allocated buffer is a requirement, the `RequiresStackBuffer` field should be set to `true` and the `buffer` will be guaranteed to be allocated on the stack. Setting the `RequiresStackBuffer` field to `false` is the same as not specifying the value in the attribute. Since a dynamically allocated buffer is not usable in all scenarios, for example Reverse P/Invoke and struct marshalling, a one-parameter constructor must also be provided for usage in those scenarios. This may also be provided by providing a two-parameter constructor with a default value for the second parameter.
 
 Type authors can pass down the `buffer` pointer to native code by defining a `Value` property that returns a pointer to the first element, generally through code using `MemoryMarshal.GetReference()` and `Unsafe.AsPointer`. If `RequiresStackBuffer` is not provided or set to `false`, the `buffer` span must be pinned to be used safely. The `buffer` span can be pinned by defining a `GetPinnableReference()` method on the native type that returns a reference to the first element of the span.
 
@@ -251,6 +270,7 @@ struct HResult
      public readonly int Result;
 }
 
+[CustomTypeMarshaller(typeof(HResult))]
 struct HRESULT
 {
      public HRESULT(HResult hr)
@@ -276,21 +296,20 @@ Building on this Transparent Structures support, we can also support ComWrappers
 class Foo
 {}
 
-struct ComWrappersMarshaler<TClass, TComWrappers>
-     where TComWrappers : ComWrappers, new()
+struct FooComWrappersMarshaler
 {
-     private static readonly TComWrappers ComWrappers = new TComWrappers();
+     private static readonly FooComWrappers ComWrappers = new FooComWrappers();
 
      private IntPtr nativeObj;
 
-     public ComWrappersMarshaler(TClass obj)
+     public ComWrappersMarshaler(Foo obj)
      {
           nativeObj = ComWrappers.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.None);
      }
 
      public IntPtr Value { get => nativeObj; set => nativeObj = value; }
 
-     public TClass ToManaged() => (TClass)ComWrappers.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
+     public Foo ToManaged() => (Foo)ComWrappers.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
 
      public unsafe void FreeNative()
      {
