@@ -240,7 +240,7 @@ jobs:
         logicalmachine: 'perfpixel4a'
         variables:
           mauiVersion: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion'] ]
-        additionalSetupParameters: "-MauiVersion $mauiVersion"
+        additionalSetupParameters: "-MauiVersion $mauiVersion -TestIrrelevent $(getMauiVersion.mauiVersion)"
 
   ## run mono iOS scenarios and maui iOS scenarios
   #- template: /eng/pipelines/common/platform-matrix.yml
