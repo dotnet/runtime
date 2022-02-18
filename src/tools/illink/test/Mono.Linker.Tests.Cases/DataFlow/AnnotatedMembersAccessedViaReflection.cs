@@ -563,6 +563,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedProperty).RequiresAll ();
 			}
 
+			// Analyzer doesn't produce this warning https://github.com/dotnet/linker/issues/2628
+			[ExpectedWarning ("IL2110", nameof (Property1WithAnnotation), ProducedBy = ProducedBy.Trimmer)]
+			static void DynamicallyAccessedFields ()
+			{
+				typeof (AnnotatedProperty).RequiresNonPublicFields ();
+			}
+
 			[UnconditionalSuppressMessage ("test", "IL2026")]
 			public static void Test ()
 			{
@@ -580,6 +587,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				DynamicallyAccessedMembersSuppressedByRUC ();
 				DynamicallyAccessedMembersAll1 ();
 				DynamicallyAccessedMembersAll2 ();
+				DynamicallyAccessedFields ();
 			}
 		}
 
