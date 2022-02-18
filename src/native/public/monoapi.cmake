@@ -105,7 +105,10 @@ add_library(monoapi_mini INTERFACE)
 
 set(mini_public_headers_base
   jit.h
-  mono-private-unstable.h)
+  mono-private-unstable.h
+  details/jit-types.h
+  details/jit-functions.h
+  )
 addprefix(mini_public_headers ./mono/mini "${mini_public_headers_base}")
 
 set_target_properties(monoapi_mini PROPERTIES PUBLIC_HEADER "${mini_public_headers}")
