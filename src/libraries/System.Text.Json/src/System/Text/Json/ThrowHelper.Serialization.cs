@@ -408,7 +408,7 @@ namespace System.Text.Json
             Debug.Assert(!message.Contains(" Path: "));
 
             // Obtain the type to show in the message.
-            Type? propertyType = state.Current.DeclaredJsonPropertyInfo?.PropertyType;
+            Type? propertyType = state.Current.JsonPropertyInfo?.PropertyType;
             if (propertyType == null)
             {
                 propertyType = state.Current.JsonTypeInfo.Type;
