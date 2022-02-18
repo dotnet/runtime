@@ -50,7 +50,20 @@ class TempDir:
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.cwd)
         if not self._skip_cleanup:
-            shutil.rmtree(self.mydir)
+            try:
+                shutil.rmtree(self.mydir)
+            except Exception as ex:
+                logging.warning("Warning: failed to remove directory \"%s\": %s", self.mydir, ex)
+                # Print out all the remaining files and directories, in case that provides useful information
+                # for diagnosing the failure. If there is an exception doing this, ignore it.
+                try:
+                    for dirpath, dirnames, filenames in os.walk(self.mydir):
+                        for dir_name in dirnames:
+                            logging.warning("  Remaining directory: \"%s\"", os.path.join(dirpath, dir_name))
+                        for file_name in filenames:
+                            logging.warning("  Remaining file: \"%s\"", os.path.join(dirpath, file_name))
+                except Exception:
+                    pass
 
 class ChangeDir:
     """ Class to temporarily change to a given directory. Use with "with".
@@ -255,6 +268,8 @@ def is_nonzero_length_file(fpath):
 
 def make_safe_filename(s):
     """ Turn a string into a string usable as a single file name component; replace illegal characters with underscores.
+        Also, limit the length of the file name to avoid creating illegally long file names. This is done by taking a
+        suffix of the name no longer than the maximum allowed file name length.
 
     Args:
         s (str) : string to convert to a file name
@@ -267,7 +282,12 @@ def make_safe_filename(s):
             return c
         else:
             return "_"
-    return "".join(safe_char(c) for c in s)
+    # Typically, a max filename length is 256, but let's limit it far below that, because callers typically add additional
+    # strings to this.
+    max_allowed_file_name_length = 150
+    s = "".join(safe_char(c) for c in s)
+    s = s[-max_allowed_file_name_length:]
+    return s
 
 
 def find_in_path(name, pathlist, match_func=os.path.isfile):
