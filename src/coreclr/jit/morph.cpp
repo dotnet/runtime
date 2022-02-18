@@ -14603,20 +14603,19 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
-// fgMorphModToSubMulDiv: Transform a % b into the equivalent a - (a / b) * b
-// (see ECMA III 3.55 and III.3.56).
+// fgMorphUModToAndSub: Transform a % b into the equivalent a & (b - 1).
+// '%' must be unsigned (GT_UMOD).
+// 'a' and 'b' must be integers.
+// 'b' must be a constant and a power of two.
 //
 // Arguments:
-//    tree - The GT_MOD/GT_UMOD tree to morph
+//    tree - The GT_UMOD tree to morph
 //
 // Returns:
 //    The morphed tree
 //
 // Notes:
-//    For ARM64 we don't have a remainder instruction so this transform is
-//    always done. For XARCH this transform is done if we know that magic
-//    division will be used, in that case this transform allows CSE to
-//    eliminate the redundant div from code like "x = a / 3; y = a % 3;".
+//    For ARM64 this is an optimization versus calling fgMorphModToSubMulDiv.
 //
 GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 {
@@ -14626,6 +14625,8 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
     {
         noway_assert(!"Illegal gtOper in fgMorphUModToAndSub");
     }
+
+    assert(tree->gtOp2->IsCnsIntPow2());
 
     var_types type = tree->gtType;
 
