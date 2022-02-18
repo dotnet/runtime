@@ -255,15 +255,13 @@ namespace System.Linq
         }
 
         private static ILookup<string, MethodInfo>? s_seqMethods;
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-            Justification = "Enumerable methods don't have trim annotations.")]
         private static MethodInfo FindEnumerableMethodForQueryable(string name, ReadOnlyCollection<Expression> args, params Type[]? typeArgs)
         {
             s_seqMethods ??= GetEnumerableStaticMethods(typeof(Enumerable)).ToLookup(m => m.Name);
 
             MethodInfo[] matchingMethods = s_seqMethods[name]
                 .Where(m => ArgsMatch(m, args, typeArgs))
-                .Select(m => typeArgs == null ? m : m.MakeGenericMethod(typeArgs))
+                .Select(ApplyTypeArgs)
                 .ToArray();
 
             Debug.Assert(matchingMethods.Length > 0, "All static methods with arguments on Queryable have equivalents on Enumerable.");
@@ -280,6 +278,10 @@ namespace System.Linq
                 "This is safe because all Queryable methods have a DynamicDependency to the corresponding Enumerable method.")]
             static MethodInfo[] GetEnumerableStaticMethods(Type type) =>
                 type.GetMethods(BindingFlags.Public | BindingFlags.Static);
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+                Justification = "Enumerable methods don't have trim annotations.")]
+            MethodInfo ApplyTypeArgs(MethodInfo methodInfo) => typeArgs == null ? methodInfo : methodInfo.MakeGenericMethod(typeArgs);
 
             // In certain cases, there might be ambiguities when resolving matching overloads, for example between
             //   1. FirstOrDefault<object>(IEnumerable<object> source, Func<object, bool> predicate) and
