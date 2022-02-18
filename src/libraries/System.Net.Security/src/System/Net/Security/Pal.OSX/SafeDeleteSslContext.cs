@@ -115,38 +115,22 @@ namespace System.Net
                 if (sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
                 {
                     SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
-                    SetCertificateAuthorities(trust._trustList ?? trust._store!.Certificates);
-                }
-            }
-        }
+                    X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
 
-        internal void SetCertificateAuthorities(X509Certificate2Collection certList)
-        {
-            Debug.Assert(certList != null, "certList != null");
-            Span<IntPtr> handles = certList.Count <= 256
-                ? stackalloc IntPtr[256]
-                : new IntPtr[certList.Count];
+                    Debug.Assert(certList != null, "certList != null");
+                    Span<IntPtr> handles = certList.Count <= 256
+                        ? stackalloc IntPtr[256]
+                        : new IntPtr[certList.Count];
 
-            int certCount = 0;
-            for (int i = 0; i < certList.Count; i++)
-            {
-                foreach (X509Extension ext in certList[i].Extensions)
-                {
-                    // filter out non-CA certificates
-                    if (ext is X509BasicConstraintsExtension ex)
+                    for (int i = 0; i < certList.Count; i++)
                     {
-                        if (ex.CertificateAuthority)
-                        {
-                            handles[certCount++] = certList[i].Handle;
-                        }
-                        break;
+                        handles[i] = certList[i].Handle;
                     }
+
+                    Interop.AppleCrypto.SslSetCertificateAuthorities(_sslContext, handles.Slice(0, certList.Count), true);
                 }
             }
-
-            Interop.AppleCrypto.SslSetCertificateAuthorities(_sslContext, handles.Slice(0, certCount), true);
         }
-
 
         private static SafeSslHandle CreateSslContext(SafeFreeSslCredentials credential, bool isServer)
         {

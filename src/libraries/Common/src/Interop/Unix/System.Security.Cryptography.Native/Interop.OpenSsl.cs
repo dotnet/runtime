@@ -350,7 +350,25 @@ internal static partial class Interop
                     if (sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
                     {
                         SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
-                        SetCertificateAuthorities(sslHandle, trust._trustList ?? trust._store!.Certificates);
+                        X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
+
+                        Debug.Assert(certList != null, "certList != null");
+                        Span<IntPtr> handles = certList.Count <= 256
+                            ? stackalloc IntPtr[256]
+                            : new IntPtr[certList.Count];
+
+                        for (int i = 0; i < certList.Count; i++)
+                        {
+                            handles[i] = certList[i].Handle;
+                        }
+
+                        if (!Ssl.SslAddClientCAs(sslHandle, handles.Slice(0, certList.Count)))
+                        {
+                            // The method can fail only when the number of cert names exceeds the maximum capacity
+                            // supported by STACK_OF(X509_NAME) structure, which should not happen under normal
+                            // operation.
+                            Debug.Fail("Failed to add issuer to trusted CA list.");
+                        }
                     }
                 }
             }
@@ -369,39 +387,6 @@ internal static partial class Interop
             }
 
             return sslHandle;
-        }
-
-        internal static void SetCertificateAuthorities(SafeSslHandle sslHandle, X509Certificate2Collection certList)
-        {
-            Debug.Assert(certList != null, "certList != null");
-            Span<IntPtr> handles = certList.Count <= 256
-                ? stackalloc IntPtr[256]
-                : new IntPtr[certList.Count];
-
-            int certCount = 0;
-            for (int i = 0; i < certList.Count; i++)
-            {
-                foreach (X509Extension ext in certList[i].Extensions)
-                {
-                    // filter out non-CA certificates
-                    if (ext is X509BasicConstraintsExtension ex)
-                    {
-                        if (ex.CertificateAuthority)
-                        {
-                            handles[certCount++] = certList[i].Handle;
-                        }
-                        break;
-                    }
-                }
-            }
-
-            if (!Ssl.SslAddClientCAs(sslHandle, handles.Slice(0, certCount)))
-            {
-                // The method can fail only when the number of cert names exceeds the maximum capacity
-                // supported by STACK_OF(X509_NAME) structure, which should not happen under normal
-                // operation.
-                Debug.Fail("Failed to add issuer to trusted CA list.");
-            }
         }
 
         internal static SecurityStatusPal SslRenegotiate(SafeSslHandle sslContext, out byte[]? outputBuffer)
