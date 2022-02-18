@@ -117,9 +117,6 @@
       Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
       AfterTargets="Build"
       BeforeTargets="CopyNativeProjectBinaries">
-    <PropertyGroup>
-          <CopyMergedWrapperReferencesHasRun>true</CopyMergedWrapperReferencesHasRun>
-    </PropertyGroup>
     <ItemGroup>
       <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
       <!-- For merged project wrappers, include native libraries in all project references -->
