@@ -463,7 +463,7 @@ namespace System.Text.RegularExpressions
                    (index < endpos && RegexCharClass.IsBoundaryWordChar(runtext![index]));
         }
 
-        protected bool IsBoundary(ReadOnlySpan<char> inputSpan, int index)
+        internal bool IsBoundary(ReadOnlySpan<char> inputSpan, int index)
         {
             return (index > runtextbeg && RegexCharClass.IsBoundaryWordChar(inputSpan[index - 1])) !=
                    (index < inputSpan.Length && RegexCharClass.IsBoundaryWordChar(inputSpan[index]));
@@ -478,7 +478,7 @@ namespace System.Text.RegularExpressions
                    (index < endpos && RegexCharClass.IsECMAWordChar(runtext![index]));
         }
 
-        protected bool IsECMABoundary(ReadOnlySpan<char> inputSpan, int index)
+        internal bool IsECMABoundary(ReadOnlySpan<char> inputSpan, int index)
         {
             return (index > runtextbeg && RegexCharClass.IsECMAWordChar(inputSpan[index - 1])) !=
                    (index < inputSpan.Length && RegexCharClass.IsECMAWordChar(inputSpan[index]));
