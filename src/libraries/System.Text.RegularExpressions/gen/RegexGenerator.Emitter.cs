@@ -2230,14 +2230,18 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emits the code to handle a multiple-character match.
-            void EmitMultiChar(RegexNode node, bool emitLengthCheck = true)
+            void EmitMultiChar(RegexNode node, bool emitLengthCheck)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Multi, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.Str is not null);
+                EmitMultiCharString(node.Str, IsCaseInsensitive(node), emitLengthCheck);
+            }
 
-                string str = node.Str!;
+            void EmitMultiCharString(string str, bool caseInsensitive, bool emitLengthCheck)
+            {
                 Debug.Assert(str.Length >= 2);
 
-                if (IsCaseInsensitive(node)) // StartsWith(..., XxIgnoreCase) won't necessarily be the same as char-by-char comparison
+                if (caseInsensitive) // StartsWith(..., XxIgnoreCase) won't necessarily be the same as char-by-char comparison
                 {
                     // This case should be relatively rare.  It will only occur with IgnoreCase and a series of non-ASCII characters.
 
@@ -2246,7 +2250,7 @@ namespace System.Text.RegularExpressions.Generator
                         EmitSpanLengthCheck(str.Length);
                     }
 
-                    using (EmitBlock(writer, $"for (int i = 0; i < {Literal(node.Str)}.Length; i++)"))
+                    using (EmitBlock(writer, $"for (int i = 0; i < {Literal(str)}.Length; i++)"))
                     {
                         string textSpanIndex = sliceStaticPos > 0 ? $"i + {sliceStaticPos}" : "i";
                         using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"{sliceSpan}[{textSpanIndex}]")} != {Literal(str)}[i])"))
@@ -2258,13 +2262,13 @@ namespace System.Text.RegularExpressions.Generator
                 else
                 {
                     string sourceSpan = sliceStaticPos > 0 ? $"{sliceSpan}.Slice({sliceStaticPos})" : sliceSpan;
-                    using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({sourceSpan}, {Literal(node.Str)}))"))
+                    using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({sourceSpan}, {Literal(str)}))"))
                     {
                         writer.WriteLine($"goto {doneLabel};");
                     }
                 }
 
-                sliceStaticPos += node.Str.Length;
+                sliceStaticPos += str.Length;
             }
 
             void EmitSingleCharLoop(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
@@ -2375,6 +2379,12 @@ namespace System.Text.RegularExpressions.Generator
                 if (node.M == node.N || node.IsAtomicByParent())
                 {
                     return;
+                }
+
+                if (node.M > 0)
+                {
+                    // We emitted a repeater to handle the required iterations; add a newline after it.
+                    writer.WriteLine();
                 }
 
                 Debug.Assert(node.M < node.N);
@@ -2742,16 +2752,29 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emits the code to handle a loop (repeater) with a fixed number of iterations.
-            // RegexNode.M is used for the number of iterations; RegexNode.N is ignored.
+            // RegexNode.M is used for the number of iterations (RegexNode.N is ignored), as this
+            // might be used to implement the required iterations of other kinds of loops.
             void EmitSingleCharRepeater(RegexNode node, bool emitLengthCheck = true)
             {
                 Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
                 int iterations = node.M;
-                if (iterations == 0)
+                switch (iterations)
                 {
-                    // No iterations, nothing to do.
-                    return;
+                    case 0:
+                        // No iterations, nothing to do.
+                        return;
+
+                    case 1:
+                        // Just match the individual item
+                        EmitSingleChar(node, emitLengthCheck);
+                        return;
+
+                    case <= RegexNode.MultiVsRepeaterLimit when node.IsOneFamily && !IsCaseInsensitive(node):
+                        // This is a repeated case-sensitive character; emit it as a multi in order to get all the optimizations
+                        // afforded to a multi, e.g. unrolling the loop with multi-char reads/comparisons at a time.
+                        EmitMultiCharString(new string(node.Ch, iterations), caseInsensitive: false, emitLengthCheck);
+                        return;
                 }
 
                 if (iterations <= MaxUnrollSize)

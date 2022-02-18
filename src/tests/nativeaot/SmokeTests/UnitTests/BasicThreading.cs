@@ -7,12 +7,12 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-class Program
+class BasicThreading
 {
     public const int Pass = 100;
     public const int Fail = -1;
 
-    static int Main()
+    internal static int Run()
     {
         SimpleReadWriteThreadStaticTest.Run(42, "SimpleReadWriteThreadStatic");
 
@@ -54,12 +54,12 @@ class FinalizeTest
         if (visited)
         {
             Console.WriteLine("FinalizeTest passed");
-            return Program.Pass;
+            return BasicThreading.Pass;
         }
         else
         {
             Console.WriteLine("FinalizeTest failed");
-            return Program.Fail;
+            return BasicThreading.Fail;
         }
     }
 }
@@ -510,7 +510,7 @@ class ThreadTest
         
         TestConcurrentIsBackgroundProperty();
 
-        return (s_failed == 0) ? Program.Pass : Program.Fail;
+        return (s_failed == 0) ? BasicThreading.Pass : BasicThreading.Fail;
     }
 
     /// <summary>
@@ -605,7 +605,7 @@ class TimerTest
         if (!timerFired)
         {
             Console.WriteLine("The timer test failed: timer has not fired.");
-            return Program.Fail;
+            return BasicThreading.Fail;
         }
 
         // Change the timer to a very long value
@@ -615,7 +615,7 @@ class TimerTest
         if (timerFired)
         {
             Console.WriteLine("The timer test failed: timer fired earlier than expected.");
-            return Program.Fail;
+            return BasicThreading.Fail;
         }
 
         // Try change existing timer to a small value and make sure it fires
@@ -625,7 +625,7 @@ class TimerTest
         if (!timerFired)
         {
             Console.WriteLine("The timer test failed: failed to change the existing timer.");
-            return Program.Fail;
+            return BasicThreading.Fail;
         }
 
         // Test a periodic timer
@@ -638,14 +638,14 @@ class TimerTest
             if (!timerFired)
             {
                 Console.WriteLine("The timer test failed: the periodic timer has not fired.");
-                return Program.Fail;
+                return BasicThreading.Fail;
             }
         }
 
         // Stop the periodic timer
         s_timer.Change(Timeout.Infinite, Timeout.Infinite);
 
-        return Program.Pass;
+        return BasicThreading.Pass;
     }
 
     private static void TimerCallback(object state)

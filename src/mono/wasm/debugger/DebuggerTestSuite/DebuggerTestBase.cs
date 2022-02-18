@@ -1008,7 +1008,7 @@ namespace DebuggerTests
             });
 
             var res = await cli.SendCommand("Debugger.removeBreakpoint", remove_bp, token);
-            Assert.True(expect_ok ? res.IsOk : res.IsErr);
+            Assert.True(expect_ok ? res.IsOk : !res.IsOk);
 
             return res;
         }
@@ -1020,7 +1020,7 @@ namespace DebuggerTests
                 JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, condition });
 
             var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
-            Assert.True(expect_ok ? bp1_res.IsOk : bp1_res.IsErr);
+            Assert.True(expect_ok ? bp1_res.IsOk : !bp1_res.IsOk);
 
             return bp1_res;
         }

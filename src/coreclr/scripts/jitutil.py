@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import logging
+import time
 import urllib
 import urllib.request
 import zipfile
@@ -550,6 +551,7 @@ def download_progress_hook(count, block_size, total_size):
 
 def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=True, display_progress=True):
     """ Do an URI download using urllib.request.urlretrieve with a progress hook.
+        Retries the download up to 5 times unless the URL returns 404.
 
         Outputs messages using the `logging` package.
 
@@ -564,15 +566,32 @@ def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=T
     """
     logging.info("Download: %s -> %s", uri, target_location)
 
-    ok = True
-    try:
-        progress_display_method = download_progress_hook if display_progress else None
-        urllib.request.urlretrieve(uri, target_location, reporthook=progress_display_method)
-    except urllib.error.HTTPError as httperror:
-        if (httperror == 404) and fail_if_not_found:
-            logging.error("HTTP 404 error")
-            raise httperror
-        ok = False
+    ok = False
+    num_tries = 5
+    for try_num in range(num_tries):
+        try:
+            progress_display_method = download_progress_hook if display_progress else None
+            urllib.request.urlretrieve(uri, target_location, reporthook=progress_display_method)
+            ok = True
+            break
+        except Exception as ex:
+            if try_num == num_tries - 1:
+                raise ex
+
+            if ex is urllib.error.HTTPError and ex == 404:
+                if fail_if_not_found:
+                    logging.error("HTTP 404 error")
+                    raise ex
+                # Do not retry; assume we won't progress
+                break
+
+            if display_progress:
+                sys.stdout.write("\n")
+
+            logging.error("Try {}/{} got error: {}".format(try_num + 1, num_tries, ex))
+            sleep_time = (try_num + 1) * 2.0
+            logging.info("Sleeping for {} seconds before next try".format(sleep_time))
+            time.sleep(sleep_time)
 
     if display_progress:
         sys.stdout.write("\n") # Add newline after progress hook

@@ -2936,6 +2936,11 @@ namespace Internal.JitInterface
             }
         }
 
+        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
+        {
+            throw new NotImplementedException("For LoongArch64, would be implemented later");
+        }
+
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
         {
             int index = (int)args;

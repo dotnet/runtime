@@ -112,7 +112,7 @@ namespace System.Text.Json
         {
             // For perf, avoid the dictionary lookup in GetOrAddClass() for every element of a collection
             // if the current element is the same type as the previous element.
-            if (PolymorphicJsonPropertyInfo?.RuntimePropertyType != type)
+            if (PolymorphicJsonPropertyInfo?.PropertyType != type)
             {
                 JsonTypeInfo typeInfo = options.GetOrAddJsonTypeInfo(type);
                 PolymorphicJsonPropertyInfo = typeInfo.PropertyInfoForTypeInfo;

@@ -10451,25 +10451,6 @@ MethodTableBuilder::SetupMethodTable2(
 #ifdef FEATURE_COMINTEROP
     if (bmtProp->fSparse)
         pClass->SetSparseForCOMInterop();
-
-    if (IsInterface() && IsComImport())
-    {
-        // Determine if we are creating an interface methodtable that may be used to dispatch through VSD
-        // on an object that has the methodtable of __ComObject.
-
-        // This is done to allow COM tearoff interfaces, but as a side-effect of this feature,
-        // we end up using a domain-shared type (__ComObject) with a domain-specific dispatch token.
-        // This is a problem because the same domain-specific dispatch token value can appear in
-        // multiple unshared domains (VSD takes advantage of the fact that in general a shared type
-        // cannot implement an unshared interface). This means that the same <token, __ComObject> pair
-        // value can mean different things in different domains (since the token could represent
-        // IFoo in one domain and IBar in another). This is a problem because the
-        // VSD polymorphic lookup mechanism relies on a process-wide cache table, and as a result
-        // these duplicate values would collide if we didn't use fat dispatch token to ensure uniqueness
-        // and the interface methodtable is not in the shared domain.
-
-        pMT->SetRequiresFatDispatchTokens();
-    }
 #endif // FEATURE_COMINTEROP
 
     if (bmtVT->pCCtor != NULL)
