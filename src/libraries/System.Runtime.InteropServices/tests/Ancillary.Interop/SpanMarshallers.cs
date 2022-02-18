@@ -6,7 +6,10 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.GeneratedMarshalling
 {
-    [CustomTypeMarshaller(typeof(ReadOnlySpan<>), CustomTypeMarshallerKind.SpanCollection)]
+    // Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
+    // Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
+    // blow the stack since this is a new optimization in the code-generated interop.
+    [CustomTypeMarshaller(typeof(ReadOnlySpan<>), CustomTypeMarshallerKind.SpanCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
     public unsafe ref struct ReadOnlySpanMarshaller<T>
     {
         private ReadOnlySpan<T> _managedSpan;
@@ -46,14 +49,6 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
                 NativeValueStorage = new Span<byte>((void*)_allocatedMemory, spaceToAllocate);
             }
         }
-
-        /// <summary>
-        /// Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
-        /// Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
-        /// blow the stack since this is a new optimization in the code-generated interop.
-        /// </summary>
-        public const int BufferSize = 0x200;
-        public const bool RequiresStackBuffer = true;
 
         public Span<T> ManagedValues => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(_managedSpan), _managedSpan.Length);
 
@@ -95,7 +90,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection)]
+    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
     public unsafe ref struct SpanMarshaller<T>
     {
         private ReadOnlySpanMarshaller<T> _inner;
@@ -115,14 +110,6 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         {
             _inner = new ReadOnlySpanMarshaller<T>(managed, stackSpace, sizeOfNativeElement);
         }
-
-        /// <summary>
-        /// Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
-        /// Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
-        /// blow the stack since this is a new optimization in the code-generated interop.
-        /// </summary>
-        public const int BufferSize = ReadOnlySpanMarshaller<T>.BufferSize;
-        public const bool RequiresStackBuffer = ReadOnlySpanMarshaller<T>.RequiresStackBuffer;
 
         public Span<T> ManagedValues => _inner.ManagedValues;
 
@@ -156,7 +143,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection)]
+    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
     public unsafe ref struct NeverNullSpanMarshaller<T>
     {
         private SpanMarshaller<T> _inner;
@@ -176,13 +163,6 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         {
             _inner = new SpanMarshaller<T>(managed, stackSpace, sizeOfNativeElement);
         }
-
-        /// <summary>
-        /// Stack-alloc threshold set to 256 bytes to enable small spans to be passed on the stack.
-        /// Number kept small to ensure that P/Invokes with a lot of span parameters doesn't
-        /// blow the stack.
-        /// </summary>
-        public const int BufferSize = SpanMarshaller<T>.BufferSize;
 
         public Span<T> ManagedValues => _inner.ManagedValues;
 
@@ -227,7 +207,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-    [CustomTypeMarshaller(typeof(ReadOnlySpan<>), CustomTypeMarshallerKind.SpanCollection)]
+    [CustomTypeMarshaller(typeof(ReadOnlySpan<>), CustomTypeMarshallerKind.SpanCollection, BufferSize = 0x200, RequiresStackBuffer = true)]
     public unsafe ref struct NeverNullReadOnlySpanMarshaller<T>
     {
         private ReadOnlySpanMarshaller<T> _inner;
@@ -247,14 +227,6 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         {
             _inner = new ReadOnlySpanMarshaller<T>(managed, stackSpace, sizeOfNativeElement);
         }
-
-        /// <summary>
-        /// Stack-alloc threshold set to 256 bytes to enable small spans to be passed on the stack.
-        /// Number kept small to ensure that P/Invokes with a lot of span parameters doesn't
-        /// blow the stack.
-        /// </summary>
-        public const int BufferSize = SpanMarshaller<T>.BufferSize;
-        public const bool RequiresStackBuffer = SpanMarshaller<T>.RequiresStackBuffer;
 
         public Span<T> ManagedValues => _inner.ManagedValues;
 
@@ -299,7 +271,8 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection)]
+    // Stack-alloc threshold set to 0 so that the generator can use the constructor that takes a stackSpace to let the marshaller know that the original data span can be used and safely pinned.
+    [CustomTypeMarshaller(typeof(Span<>), CustomTypeMarshallerKind.SpanCollection, BufferSize = 0)]
     public unsafe ref struct DirectSpanMarshaller<T>
         where T : unmanaged
     {
@@ -311,7 +284,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
             :this()
         {
             // This check is not exhaustive, but it will catch the majority of cases.
-            if (typeof(T) == typeof(bool) || typeof(T) == typeof(char) || Unsafe.SizeOf<T>() != sizeOfNativeElement)
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 throw new ArgumentException("This marshaller only supports blittable element types. The provided type parameter must be blittable", nameof(T));
             }
@@ -336,11 +309,6 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
             Debug.Assert(stackSpace.IsEmpty);
             _data = managed;
         }
-
-        /// <summary>
-        /// Stack-alloc threshold set to 0 so that the generator can use the constructor that takes a stackSpace to let the marshaller know that the original data span can be used and safely pinned.
-        /// </summary>
-        public const int BufferSize = 0;
 
         public Span<T> ManagedValues => _data;
 

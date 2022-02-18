@@ -8,6 +8,7 @@ using Xunit;
 
 namespace DllImportGenerator.IntegrationTests
 {
+    [CustomTypeMarshaller(typeof(int))]
     public struct SetLastErrorMarshaller
     {
         public int val;
