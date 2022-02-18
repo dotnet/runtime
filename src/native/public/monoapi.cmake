@@ -101,23 +101,23 @@ addprefix(metadata_public_headers ./mono/metadata/ "${metadata_public_headers_ba
 
 set_target_properties(monoapi_metadata PROPERTIES PUBLIC_HEADER "${metadata_public_headers}")
 
-add_library(monoapi_mini INTERFACE)
+add_library(monoapi_jit INTERFACE)
 
-set(mini_public_headers_base
+set(jit_public_headers_base
   jit.h
   mono-private-unstable.h
   details/jit-types.h
   details/jit-functions.h
   )
-addprefix(mini_public_headers ./mono/mini "${mini_public_headers_base}")
+addprefix(jit_public_headers ./mono/jit "${jit_public_headers_base}")
 
-set_target_properties(monoapi_mini PROPERTIES PUBLIC_HEADER "${mini_public_headers}")
+set_target_properties(monoapi_jit PROPERTIES PUBLIC_HEADER "${jit_public_headers}")
 
 add_library(monoapi INTERFACE)
-target_link_libraries(monoapi INTERFACE monoapi_utils monoapi_metadata monoapi_mini)
+target_link_libraries(monoapi INTERFACE monoapi_utils monoapi_metadata monoapi_jit)
 
 if(INSTALL_MONO_API)
   install(DIRECTORY mono/utils/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/utils)
   install(DIRECTORY mono/metadata/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/metadata)
-  install(DIRECTORY mono/mini/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
+  install(DIRECTORY mono/jit/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
 endif()
