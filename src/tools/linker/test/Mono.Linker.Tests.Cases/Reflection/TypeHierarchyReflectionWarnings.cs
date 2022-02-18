@@ -48,6 +48,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			// Check that this field doesn't produce a warning even if it is kept
 			// for some non-reflection access.
 			var f = AnnotatedPublicMethods.DAMField;
+
+			CompilerGeneratedBackingField.Test ();
 		}
 
 		[Kept]
@@ -591,6 +593,36 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[ExpectedWarning ("IL2112", "--AnnotatedRUCPublicMethods--")]
 			public static void StaticMethod () { }
+		}
+
+		[Kept]
+		class CompilerGeneratedBackingField
+		{
+			[Kept]
+			public class BaseWithField
+			{
+				[KeptBackingField]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public Type CompilerGeneratedProperty { get; set; }
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[KeptBaseType (typeof (BaseWithField))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicFields)]
+			[ExpectedWarning ("IL2115", nameof (BaseWithField), nameof (BaseWithField.CompilerGeneratedProperty))]
+			public class DerivedWithAnnotation : BaseWithField
+			{
+			}
+
+			[Kept]
+			static DerivedWithAnnotation derivedInstance;
+
+			[Kept]
+			public static void Test ()
+			{
+				derivedInstance.GetType ().RequiresNonPublicFields ();
+			}
 		}
 	}
 }
