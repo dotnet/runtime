@@ -22,24 +22,6 @@
     <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
   </PropertyGroup>
-  <!--
-    Servicing build settings for Setup/Installer packages. Instructions:
-
-    * To enable a package build for the current patch release, set PatchVersion to match the current
-      patch version of that package. ("major.minor.patch".) This is normally the same as
-      PatchVersion above, but not always. Notably, NETStandard has its own patch version.
-    * When the PatchVersion property above is incremented at the beginning of the next servicing
-      release, all packages listed below automatically stop building because the property no longer
-      matches the metadata. (Do not delete the items!)
-
-    If the PatchVersion below is never changed from '0', the package will build in the 'main'
-    branch, and during a forked RTM release ("X.Y.0"). It will stop building for "X.Y.1" unless
-    manually enabled by updating the metadata.
-  -->
-  <ItemGroup>
-    <!-- Targeting packs are only patched in extreme cases. -->
-    <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="0" />
-  </ItemGroup>
   <PropertyGroup>
     <!-- For source generator support we need to target multiple versions of Rolsyn in order to be able to run on older versions of Roslyn -->
     <MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11>3.11.0</MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11>
