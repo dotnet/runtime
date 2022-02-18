@@ -5994,6 +5994,50 @@ MethodDesc * MethodTable::ReverseInterfaceMDLookup(UINT32 slotNumber)
 }
 
 //==========================================================================================
+bool MethodTable::GetTypeIDOnFlags(UINT32 *typeID)
+{
+    UINT32 flags = VolatileLoadWithoutBarrier(&m_dwWriteableFlags);
+    flags &= enum_mask_TypeID;
+    *typeID = flags >> TypeIDShift;
+    static_assert_no_msg((0xFFFFFFFF << TypeIDShift) == enum_mask_TypeID);
+    if (*typeID == 0)
+    {
+        *typeID = TypeIDProvider::INVALID_TYPE_ID;
+    }
+    else if (*typeID == enum_mask_TypeID)
+    {
+        // TypeID was not able to be stored previously, and must be found elsewhere
+        *typeID = 0;
+        return false;
+    }
+    return true;
+}
+
+//==========================================================================================
+bool MethodTable::SetTypeIDOnFlags(UINT32 typeID)
+{
+#ifdef _DEBUG
+    UINT32 oldTypeID;
+    GetTypeIDOnFlags(&oldTypeID);
+    _ASSERTE(oldTypeID == TypeIDProvider::INVALID_TYPE_ID);
+#endif
+
+    DWFLAGS_WRITEABLE_ENUM flagToSet;
+    bool returnValue;
+    if ((typeID == 0) || (typeID >= (enum_mask_TypeID >> TypeIDShift)))
+    {
+        flagToSet = enum_mask_TypeID;
+        returnValue = false; // Unable to set TypeID
+    }
+    else
+    {
+        flagToSet = (DWFLAGS_WRITEABLE_ENUM)(typeID << TypeIDShift);
+        returnValue = true; // Unable to set TypeID
+    }
+    SetFlag(flagToSet);
+}
+
+//==========================================================================================
 UINT32 MethodTable::GetTypeID()
 {
     CONTRACTL {

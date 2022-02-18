@@ -2064,6 +2064,10 @@ public:
     // Lookup, will assign ID if not already done.
     UINT32 GetTypeID();
 
+    // Functions used to optimize type id lookup by the TypeIDMap.
+    bool GetTypeIDOnFlags(UINT32 *typeID);
+    bool SetTypeIDOnFlags(UINT32 typeID);
+
 
     // Will return either the dispatch map type. May trigger type loader in order to get
     // exact result.
@@ -2188,12 +2192,6 @@ public:
         WRAPPER_NO_CONTRACT;
         _ASSERTE(HasGenericsStaticsInfo());
         return GetGenericsStaticsInfo()->m_pFieldDescs;
-    }
-
-    BOOL HasCrossModuleGenericStaticsInfo()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TestFlagWithMask(enum_flag_StaticsMask, enum_flag_StaticsMask_CrossModuleGenerics);
     }
 
     PTR_Module GetGenericsStaticsModuleAndID(DWORD * pID);
@@ -3179,10 +3177,8 @@ private:
         enum_flag_StaticsMask_NonDynamic    = 0x00000000,
         enum_flag_StaticsMask_Dynamic       = 0x00000002,   // dynamic statics (EnC, reflection.emit)
         enum_flag_StaticsMask_Generics      = 0x00000004,   // generics statics
-        enum_flag_StaticsMask_CrossModuleGenerics       = 0x00000006, // cross module generics statics (NGen)
-        enum_flag_StaticsMask_IfGenericsThenCrossModule = 0x00000002, // helper constant to get rid of unnecessary check
 
-        enum_flag_NotInPZM                  = 0x00000008,   // True if this type is not in its PreferredZapModule
+        enum_flag_UNUSED_ComponentSize_2    = 0x00000008,
 
         enum_flag_GenericsMask              = 0x00000030,
         enum_flag_GenericsMask_NonGeneric   = 0x00000000,   // no instantiation
@@ -3226,7 +3222,6 @@ private:
         // to be up to date to reflect the default values of those flags for the
         // case where this MethodTable is for a String or Array
         enum_flag_StringArrayValues = SET_TRUE(enum_flag_StaticsMask_NonDynamic) |
-                                      SET_FALSE(enum_flag_NotInPZM) |
                                       SET_TRUE(enum_flag_GenericsMask_NonGeneric) |
                                       SET_FALSE(enum_flag_HasVariance) |
                                       SET_FALSE(enum_flag_HasDefaultCtor) |
@@ -3348,6 +3343,7 @@ private:
 
     };  // enum WFLAGS2_ENUM
 
+    const static int TypeIDShift = 12;
     enum DWFLAGS_WRITEABLE_ENUM
     {
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
@@ -3365,24 +3361,12 @@ private:
         enum_flag_CanCompareBitsOrUseFastGetHashCode             = 0x00000080,     // Is any field type or sub field type overrode Equals or GetHashCode
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x00000100,  // Whether we have checked the overridden Equals or GetHashCode
 
-        // enum_unused                      = 0x00000080,
-        // enum_unused                      = 0x00000100,
-
-        // enum_unused                      = 0x00000200,
-        // enum_unused                      = 0x00000400,
-
-        // enum_unused                      = 0x00010000,
-        // enum_unused                      = 0x00020000,
-        // enum_unused                      = 0x00040000,
-        // enum_unused                      = 0x00080000,        // enum_unused                      = 0x0010000,
-        // enum_unused                      = 0x0020000,
-        // enum_unused                      = 0x0040000,
-        // enum_unused                      = 0x0080000,
-
 #ifdef _DEBUG
-        enum_flag_ParentMethodTablePointerValid                  = 0x40000000,
-        enum_flag_HasInjectedInterfaceDuplicates                 = 0x80000000,
+        enum_flag_ParentMethodTablePointerValid                  = 0x00000200,
+        enum_flag_HasInjectedInterfaceDuplicates                 = 0x00000400,
 #endif
+
+        enum_mask_TypeID                                         = 0xFFFFF000, // The logic that works with this assumes that this mask uses all the bits to the high bit of the enum
     };
 
     __forceinline void SetFlag(DWFLAGS_WRITEABLE_ENUM flag)
