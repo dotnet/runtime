@@ -17,6 +17,7 @@ namespace System.Diagnostics.Tracing
         public static class Keywords
         {
             public const EventKeywords AppContext = (EventKeywords)0x1;
+            public const EventKeywords NumProcesses = (EventKeywords)0x2;
         }
 
         private static RuntimeEventSource? s_RuntimeEventSource;
@@ -57,13 +58,20 @@ namespace System.Diagnostics.Tracing
 
         private enum EventId : int
         {
-            AppContextSwitch = 1
+            AppContextSwitch = 1,
+            ProcessorCount = 2
         }
 
         [Event((int)EventId.AppContextSwitch, Level = EventLevel.Informational, Keywords = Keywords.AppContext)]
         internal void LogAppContextSwitch(string switchName, int value)
         {
             base.WriteEvent((int)EventId.AppContextSwitch, switchName, value);
+        }
+
+        [Event((int)EventId.ProcessorCount, Level = EventLevel.Informational, Keywords = Keywords.NumProcesses)]
+        internal void ProcessorCount(int processorCount)
+        {
+            base.WriteEvent((int)EventId.ProcessorCount, processorCount);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
