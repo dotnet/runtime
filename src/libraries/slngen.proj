@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- By default glob all solutions: "src/libraries/*" unless a /p:SolutionName property is passed in. -->
+    <!-- Unless a "/p:SolutionName" property is passed in, glob all solutions under src/libraries. -->
     <SolutionFile Include="$(MSBuildThisFileDirectory)$([MSBuild]::ValueOrDefault('$(SolutionName)', '%2A'))\*.sln" />
   </ItemGroup>
 
