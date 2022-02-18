@@ -1085,8 +1085,14 @@ namespace DebuggerTests
                    ("test.GetNull()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
                    
                    ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
-                   ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5))
+                   ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
+                   ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
+                   ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
+                   ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))
                    );
+                
+                var (_, res) = await EvaluateOnCallFrame(id, "test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)", expect_ok: false );
+                AssertEqual("Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'", res.Error["message"]?.Value<string>(), "wrong error message");
            });
     }
 

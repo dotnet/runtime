@@ -408,7 +408,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
             ParametersInfo = GetMethodParamsInfo();
-            OptionalParametersCnt = ParametersInfo.Count(p => p.HasDefaultValue);
+            OptionalParametersCnt = ParametersInfo.Count(p => p.Value != null);
         }
 
         public ParameterInfo[] GetMethodParamsInfo()
@@ -564,19 +564,16 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class ParameterInfo
     {
-        public string Name { get; private set; }
+        public string Name { get; init; }
 
-        public bool HasDefaultValue { get; private set; }
+        public ElementType? TypeCode { get; init; }
 
-        public ElementType? TypeCode { get; private set; }
-
-        public object Value { get; set; }
+        public object Value { get; init; }
 
         public ParameterInfo(string name, ConstantTypeCode? typeCode = null, byte[] value = null)
         {
             Name = name;
-            HasDefaultValue = value != null;
-            if (!HasDefaultValue)
+            if (value == null)
                 return;
             switch (typeCode)
             {

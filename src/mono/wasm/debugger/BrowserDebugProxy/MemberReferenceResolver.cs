@@ -11,7 +11,6 @@ using System.IO;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Net.WebSockets;
-using System.Reflection.Metadata;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -465,7 +464,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 }
                                 else
                                 {
-                                    logger.LogDebug($"Unable to write, not recognized expression type");
+                                    logger.LogDebug($"Unable to write, not recognized expression type: {arg.Expression.GetType().Name}");
                                     return null;
                                 }
                             }
