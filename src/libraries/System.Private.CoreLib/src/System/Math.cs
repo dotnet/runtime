@@ -950,7 +950,7 @@ namespace System
         public static float Max(float val1, float val2)
         {
             if (AdvSimd.Arm64.IsSupported &&
-                (!RuntimeHelpers.IsKnownConstant(val1) || !RuntimeHelpers.IsKnownConstant(val1)))
+                (!RuntimeHelpers.IsKnownConstant(val1) || !RuntimeHelpers.IsKnownConstant(val2)))
             {
                 // Unlike x86, ARM has a hw instruction for IEEE 754:2019 `maximum`
                 // If both val1 and val2 are constants - let the JIT fold it without this path
@@ -1048,7 +1048,7 @@ namespace System
         public static double Min(double val1, double val2)
         {
             if (AdvSimd.Arm64.IsSupported &&
-                (!RuntimeHelpers.IsKnownConstant(val1) || !RuntimeHelpers.IsKnownConstant(val1)))
+                (!RuntimeHelpers.IsKnownConstant(val1) || !RuntimeHelpers.IsKnownConstant(val2)))
             {
                 // Unlike x86, ARM has a hw instruction for IEEE 754:2019 `minimum`
                 // If both val1 and val2 are constants - let the JIT fold it without this path
@@ -1108,7 +1108,7 @@ namespace System
         public static float Min(float val1, float val2)
         {
             if (AdvSimd.Arm64.IsSupported &&
-                (!RuntimeHelpers.IsKnownConstant(val1) || !RuntimeHelpers.IsKnownConstant(val1)))
+                (!RuntimeHelpers.IsKnownConstant(val1) || !RuntimeHelpers.IsKnownConstant(val2)))
             {
                 // Unlike x86, ARM has a hw instruction for IEEE 754:2019 `minimum`
                 // If both val1 and val2 are constants - let the JIT fold it without this path

@@ -121,10 +121,7 @@ namespace System.Runtime.CompilerServices
         internal static bool IsKnownConstant(string? t) => false;
 
         [Intrinsic]
-        internal static bool IsKnownConstant(char t) => false;
-
-        [Intrinsic]
-        internal static bool IsKnownConstant(int t) => false;
+        internal static bool IsKnownConstant<T>(T t) where T : unmanaged => false;
 #pragma warning restore IDE0060
     }
 }
