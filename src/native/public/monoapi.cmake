@@ -108,6 +108,8 @@ set(jit_public_headers_base
   mono-private-unstable.h
   details/jit-types.h
   details/jit-functions.h
+  details/mono-private-unstable-types.h
+  details/mono-private-unstable-functions.h
   )
 addprefix(jit_public_headers ./mono/jit "${jit_public_headers_base}")
 
