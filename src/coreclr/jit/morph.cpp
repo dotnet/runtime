@@ -2584,7 +2584,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     // That's ok; after making something a tailcall, we will invalidate this information
     // and reconstruct it if necessary. The tailcalling decision does not change since
     // this is a non-standard arg in a register.
-    // 
+    //
     // Note that calls to Delegate::Invoke will be expanded in lowering to
     // something that looks more like a vtable call so they should not have the
     // indirection cell address inserted.
