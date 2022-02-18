@@ -885,9 +885,14 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
         killMask &= ~RBM_FLT_CALLEE_TRASH;
     }
 #ifdef TARGET_ARM
-    if (call->IsVirtualStub())
+    fgArgTabEntry* indirCellArg;
+    if (call->HasIndirectionCellArg(&indirCellArg))
     {
-        killMask |= compiler->virtualStubParamInfo->GetRegMask();
+        // Indirection cell arg goes in callee saved register on ARM.
+        // Technically these may not be killed by the call, but we have special
+        // handling for arguments to keep their registers busy until they are
+        // killed expecting to see this kill at the call site.
+        killMask |= genRegMask(indirCellArg->GetRegNum());
     }
 #else  // !TARGET_ARM
     // Verify that the special virtual stub call registers are in the kill mask.

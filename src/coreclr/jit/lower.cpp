@@ -4165,6 +4165,15 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     GenTree* result     = new (comp, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
     GenTree* callTarget = Ind(result);
 
+#ifdef FEATURE_READYTORUN
+    // Call will no longer be a R2R indir call as it now looks more like a
+    // vtable call, so to avoid confusing later phases we clear the R2R info
+    // out here.
+    call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_REL_INDIRECT;
+    call->gtEntryPoint.addr       = nullptr;
+    call->gtEntryPoint.accessType = IAT_VALUE;
+#endif
+
     // don't need to sequence and insert this tree, caller will do it
 
     return callTarget;

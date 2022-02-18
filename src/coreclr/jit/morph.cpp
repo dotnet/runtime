@@ -2576,12 +2576,18 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #if defined(FEATURE_READYTORUN)
     // For arm/arm64, we dispatch code same as VSD using virtualStubParamInfo->GetReg()
     // for indirection cell address, which ZapIndirectHelperThunk expects.
+    //
     // For x64/x86 we use return address to get the indirection cell by disassembling the call site.
+    //
     // That is not possible for fast tailcalls, so we only need this logic for fast tailcalls on xarch.
     // Note that we call this before we know if something will be a fast tailcall or not.
     // That's ok; after making something a tailcall, we will invalidate this information
     // and reconstruct it if necessary. The tailcalling decision does not change since
     // this is a non-standard arg in a register.
+    // 
+    // Note that calls to Delegate::Invoke will be expanded in lowering to
+    // something that looks more like a vtable call so they should not have the
+    // indirection cell address inserted.
     bool needsIndirectionCell = call->IsR2RRelativeIndir() && !call->IsDelegateInvoke();
 #if defined(TARGET_XARCH)
     needsIndirectionCell &= call->IsFastTailCall();
