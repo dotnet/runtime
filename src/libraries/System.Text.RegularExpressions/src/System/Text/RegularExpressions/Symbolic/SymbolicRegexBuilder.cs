@@ -102,7 +102,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// contributing non-trivial overhead (https://github.com/dotnet/runtime/issues/65789).
         /// </remarks>
         internal DfaMatchingState<TElement>?[]? _delta;
-        internal List<(DfaMatchingState<TElement>, List<DerivativeEffect>)>?[]? _capturingDelta;
+        internal List<(DfaMatchingState<TElement>, DerivativeEffect[])>?[]? _capturingDelta;
         private const int InitialStateLimit = 1024;
 
         /// <summary>1 + Log2(_minterms.Length), the smallest k s.t. 2^k >= minterms.Length + 1</summary>
@@ -154,7 +154,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // the extra +1 slot with id minterms.Length is reserved for \Z (last occurrence of \n)
                 _mintermsLog = BitOperations.Log2((uint)_minterms.Length) + 1;
                 _delta = new DfaMatchingState<TElement>[InitialStateLimit << _mintermsLog];
-                _capturingDelta = new List<(DfaMatchingState<TElement>, List<DerivativeEffect>)>[InitialStateLimit << _mintermsLog];
+                _capturingDelta = new List<(DfaMatchingState<TElement>, DerivativeEffect[])>[InitialStateLimit << _mintermsLog];
             }
 
             // initialized to False but updated later to the actual condition ony if \b or \B occurs anywhere in the regex

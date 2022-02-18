@@ -105,7 +105,7 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            SymbolicRegexNode<T> derivative = Node.CreateDerivativeWithEffects(eager: true).TransitionOrdered(minterm, context);
+            SymbolicRegexNode<T> derivative = Node.MkEagerDerivative(minterm, context);
 
             // nextCharKind will be the PrevCharKind of the target state
             // use an existing state instead if one exists already
@@ -118,7 +118,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
         /// <returns>an enumeration of the transitions as pairs of the target state and a list of effects to be applied</returns>
-        internal List<(DfaMatchingState<T> derivative, List<DerivativeEffect> effects)> NfaEagerNextWithEffects(T minterm)
+        internal List<(DfaMatchingState<T> derivative, DerivativeEffect[] effects)> NfaEagerNextWithEffects(T minterm)
         {
             uint nextCharKind = GetNextCharKind(ref minterm);
 
@@ -126,16 +126,15 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the transitions for the given context
-            IEnumerable<(SymbolicRegexNode<T>, List<DerivativeEffect>)> derivativesAndEffects =
-                Node.CreateDerivativeWithEffects(eager: true).TransitionsWithEffects(minterm, context);
+            List<(SymbolicRegexNode<T>, DerivativeEffect[]?)> derivativesAndEffects = Node.MkEagerDerivativeWithEffects(minterm, context);
 
-            var list = new List<(DfaMatchingState<T> derivative, List<DerivativeEffect> effects)>();
-            foreach ((SymbolicRegexNode<T> derivative, List<DerivativeEffect> effects) in derivativesAndEffects)
+            var list = new List<(DfaMatchingState<T> derivative, DerivativeEffect[] effects)>();
+            foreach ((SymbolicRegexNode<T> derivative, DerivativeEffect[]? effects) in derivativesAndEffects)
             {
                 // nextCharKind will be the PrevCharKind of the target state
                 // use an existing state instead if one exists already
                 // otherwise create a new new id for it
-                list.Add((Node._builder.CreateState(derivative, nextCharKind, capturing: true), effects));
+                list.Add((Node._builder.CreateState(derivative, nextCharKind, capturing: true), effects ?? Array.Empty<DerivativeEffect>()));
             }
             return list;
         }
