@@ -5726,6 +5726,22 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
+                case NI_System_Math_Max:
+                {
+                    assert(typ == TypeOfVN(arg1VN));
+                    double arg1Val = GetConstantDouble(arg1VN);
+                    res            = FloatingPointUtils::maximum(arg0Val, arg1Val);
+                    break;
+                }
+
+                case NI_System_Math_Min:
+                {
+                    assert(typ == TypeOfVN(arg1VN));
+                    double arg1Val = GetConstantDouble(arg1VN);
+                    res            = FloatingPointUtils::minimum(arg0Val, arg1Val);
+                    break;
+                }
+
                 default:
                     // the above are the only binary math intrinsics at the time of this writing.
                     unreached();
@@ -5759,6 +5775,22 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
+                case NI_System_Math_Max:
+                {
+                    assert(typ == TypeOfVN(arg1VN));
+                    float arg1Val = GetConstantSingle(arg1VN);
+                    res           = FloatingPointUtils::maximum(arg0Val, arg1Val);
+                    break;
+                }
+
+                case NI_System_Math_Min:
+                {
+                    assert(typ == TypeOfVN(arg1VN));
+                    float arg1Val = GetConstantSingle(arg1VN);
+                    res           = FloatingPointUtils::minimum(arg0Val, arg1Val);
+                    break;
+                }
+
                 case NI_System_Math_Pow:
                 {
                     assert(typ == TypeOfVN(arg1VN));
@@ -5787,6 +5819,14 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
 
             case NI_System_Math_FMod:
                 vnf = VNF_FMod;
+                break;
+
+            case NI_System_Math_Max:
+                vnf = VNF_Max;
+                break;
+
+            case NI_System_Math_Min:
+                vnf = VNF_Min;
                 break;
 
             case NI_System_Math_Pow:
