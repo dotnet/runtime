@@ -5504,7 +5504,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // within the object so GC will be able to correctly track and update them.
 
     bool groupArrayRefWithElemOffset = false;
-#ifdef TARGET_ARMARCH
+#ifdef TARGET_ARM64
     groupArrayRefWithElemOffset = true;
     // TODO: in some cases even on ARM we better use 1) shape because if "index" is invariant and "arrRef" is not
     // we at least will be able to hoist/CSE "index + elemOffset" in some cases.
