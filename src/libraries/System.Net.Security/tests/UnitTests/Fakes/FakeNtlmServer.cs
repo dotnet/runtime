@@ -38,6 +38,7 @@ namespace System.Net.Security
         // Negotiation results
         public bool IsAuthenticated { get; set; }
         public bool IsMICPresent { get; set; }
+        public string? ClientSpecifiedSpn { get; set; }
 
         private NetworkCredential _expectedCredential;
 
@@ -283,7 +284,12 @@ namespace System.Net.Security
 
                 if (id == AvId.Flags)
                 {
+                    NtlmAssert(length == 4);
                     avFlags = (AvFlags)BinaryPrimitives.ReadUInt32LittleEndian(avPairs.Slice(4, 4));
+                }
+                else if (id == AvId.TargetName)
+                {
+                    ClientSpecifiedSpn = Encoding.Unicode.GetString(avPairs.Slice(4, length));
                 }
 
                 avPairs = avPairs.Slice(length + 4);

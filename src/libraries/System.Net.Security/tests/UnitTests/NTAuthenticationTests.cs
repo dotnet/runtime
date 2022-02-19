@@ -83,6 +83,7 @@ namespace System.Net.Security.Tests
             Assert.True(fakeNtlmServer.IsAuthenticated);
             // NTLMSSP on Linux doesn't send the MIC
             Assert.True(fakeNtlmServer.IsMICPresent || OperatingSystem.IsLinux());
+            Assert.Equal("HTTP/foo", fakeNtlmServer.ClientSpecifiedSpn);
         }
 
         [ConditionalFact(nameof(IsNtlmInstalled))]
