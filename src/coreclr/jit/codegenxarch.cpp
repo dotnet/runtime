@@ -9315,6 +9315,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
+#ifdef TARGET_AMD64
+
     const bool isFunclet                = compiler->funCurrentFunc()->funKind != FuncKind::FUNC_ROOT;
     const bool doesSupersetOfNormalPops = compiler->opts.IsOSR() && !isFunclet;
 
@@ -9339,15 +9341,16 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         // Tier0 frame pointer will be restored separately.
         //
         genPopCalleeSavedRegistersFromMask(tier0CalleeSaves & ~RBM_FPBASE);
+        return;
     }
-    else
-    {
-        // Registers saved by a normal prolog
-        //
-        regMaskTP      rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
-        const unsigned popCount  = genPopCalleeSavedRegistersFromMask(rsPopRegs);
-        noway_assert(compiler->compCalleeRegsPushed == popCount);
-    }
+
+#endif // TARGET_AMD64
+
+    // Registers saved by a normal prolog
+    //
+    regMaskTP      rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+    const unsigned popCount  = genPopCalleeSavedRegistersFromMask(rsPopRegs);
+    noway_assert(compiler->compCalleeRegsPushed == popCount);
 }
 
 //------------------------------------------------------------------------
