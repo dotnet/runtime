@@ -229,14 +229,8 @@ typedef struct MonoCompileArch {
 } MonoCompileArch;
 
 #if SIZEOF_REGISTER == 4
-#define MONO_ARCH_EMULATE_FCONV_TO_I8 1
-#define MONO_ARCH_EMULATE_LCONV_TO_R8 1
-#define MONO_ARCH_EMULATE_LCONV_TO_R4 1
-#define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 #define MONO_ARCH_EMULATE_FREM 1
 #endif
-
-#define MONO_ARCH_EMULATE_FCONV_TO_U8 1
 
 /*
  * mips backend misses some instructions that enable emitting of optimal
