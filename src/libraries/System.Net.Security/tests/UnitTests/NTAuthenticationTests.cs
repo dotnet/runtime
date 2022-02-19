@@ -14,6 +14,58 @@ namespace System.Net.Security.Tests
     {
         private static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
 
+        [Fact]
+        public void ProtocolExampleTest()
+        {
+            // Mirrors the NTLMv2 example in the NTLM specification:
+            NetworkCredential credential = new NetworkCredential("User", "Password", "Domain");
+            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(credential);
+            fakeNtlmServer.SendTimestamp = false;
+
+            // NEGOTIATE_MESSAGE
+            // Flags:
+            //   NTLMSSP_NEGOTIATE_KEY_EXCH
+            //   NTLMSSP_NEGOTIATE_56
+            //   NTLMSSP_NEGOTIATE_128
+            //   NTLMSSP_NEGOTIATE_VERSION
+            //   NTLMSSP_NEGOTIATE_TARGET_INFO
+            //   NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY
+            //   NTLMSSP_TARGET_TYPE_SERVER
+            //   NTLMSSP_NEGOTIATE_ALWAYS_SIGN
+            //   NTLMSSP_NEGOTIATE_NTLM
+            //   NTLMSSP_NEGOTIATE_SEAL
+            //   NTLMSSP_NEGOTIATE_SIGN
+            //   NTLMSSP_NEGOTIATE_OEM
+            //   NTLMSSP_NEGOTIATE_UNICODE
+            // Domain: (empty) (should be "Domain" but the fake server doesn't check)
+            // Workstation: (empty) (should be "COMPUTER" but the fake server doesn't check)
+            // Version: 6.1.7600 / 15
+            byte[] negotiateBlob = Convert.FromHexString("4e544c4d535350000100000033828ae2000000000000000000000000000000000601b01d0000000f");
+            byte[]? challengeBlob = fakeNtlmServer.GetOutgoingBlob(negotiateBlob);
+
+            // CHALLENGE_MESSAGE from 4.2.4.3 Messages
+            byte[] expectedChallengeBlob = Convert.FromHexString(
+                "4e544c4d53535000020000000c000c003800000033828ae20123456789abcdef" +
+                "00000000000000002400240044000000060070170000000f5300650072007600" +
+                "6500720002000c0044006f006d00610069006e0001000c005300650072007600" +
+                "6500720000000000");
+            Assert.Equal(expectedChallengeBlob, challengeBlob);
+
+            // AUTHENTICATE_MESSAGE from 4.2.4.3 Messages
+            byte[] authenticateBlob = Convert.FromHexString(
+                "4e544c4d5353500003000000180018006c00000054005400840000000c000c00" +
+                "480000000800080054000000100010005c00000010001000d8000000358288e2" +
+                "0501280a0000000f44006f006d00610069006e00550073006500720043004f00" +
+                "4d005000550054004500520086c35097ac9cec102554764a57cccc19aaaaaaaa" +
+                "aaaaaaaa68cd0ab851e51c96aabc927bebef6a1c010100000000000000000000" +
+                "00000000aaaaaaaaaaaaaaaa0000000002000c0044006f006d00610069006e00" +
+                "01000c005300650072007600650072000000000000000000c5dad2544fc97990" +
+                "94ce1ce90bc9d03e");
+            byte[]? empty = fakeNtlmServer.GetOutgoingBlob(authenticateBlob);
+            Assert.Null(empty);
+            Assert.False(fakeNtlmServer.IsMICPresent);
+        }
+
         [ConditionalFact(nameof(IsNtlmInstalled))]
         public void BasicNtlmTest()
         {

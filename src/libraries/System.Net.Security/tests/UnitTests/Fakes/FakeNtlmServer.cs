@@ -12,6 +12,18 @@ using Xunit;
 
 namespace System.Net.Security
 {
+    // Implementation of subset of the NTLM specification
+    // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-nlmp/b38c36ed-2804-4868-a9ff-8dd3182128e4
+    //
+    // Server-side implementation of the NTLMv2 exchange is implemented with
+    // basic verification of the messages passed by the client against a
+    // specified set of authentication credentials.
+    //
+    // This is not indended as a production-quality code for implementing the
+    // NTLM authentication. It's merely to serve as a validation of challenges
+    // and responses for unit test purposes. The validation checks the
+    // structure of the messages, their integrity and use of specified
+    // features (eg. MIC).
     internal class FakeNtlmServer
     {
         public FakeNtlmServer(NetworkCredential expectedCredential)
@@ -19,19 +31,27 @@ namespace System.Net.Security
             _expectedCredential = expectedCredential;
         }
 
+        // Behavior modifiers
+        public bool SendTimestamp { get; set; } = true;
+        public byte[] Version { get; set; } = new byte[] { 0x06, 0x00, 0x70, 0x17, 0x00, 0x00, 0x00, 0x0f }; // 6.0.6000 / 15
+
+        // Negotiation results
         public bool IsMICPresent { get; set; }
 
         private NetworkCredential _expectedCredential;
+
+        // Saved Negotiate and Challenge messages for MIC calculation
         private byte[]? _negotiateMessage;
         private byte[]? _challengeMessage;
-        private MessageType _expectedMessageType = MessageType.Negotiate;
-        private Flags _requestedFlags =
-            Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.TargetName | Flags.NegotiateAlwaysSign |
-            Flags.NegotiateVersion | Flags.NegotiateKeyExchange | Flags.Negotiate128 | Flags.NegotiateTargetInfo | Flags.NegotiateSign;
-        private Flags _requiredFlags =
-            Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.TargetName | Flags.NegotiateAlwaysSign;
 
-        private byte[] _serverChallenge = new byte[] { 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc };
+        private MessageType _expectedMessageType = MessageType.Negotiate;
+
+        // Minimal set of required negotiation flags
+        private const Flags _requiredFlags =
+            Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.NegotiateAlwaysSign;
+
+        // Fixed server challenge (same value as in Protocol Examples section of the specification)
+        private byte[] _serverChallenge = new byte[] { 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef };
 
         private static ReadOnlySpan<byte> NtlmHeader => new byte[] {
             (byte)'N', (byte)'T', (byte)'L', (byte)'M',
@@ -49,7 +69,7 @@ namespace System.Net.Security
         {
             NegotiateUnicode = 0x00000001,
             NegotiateOEM = 0x00000002,
-            TargetName = 0x00000004,
+            RequestTargetName = 0x00000004,
             NegotiateSign = 0x00000010,
             NegotiateSeal = 0x00000020,
             NegotiateDatagram = 0x00000040,
@@ -130,11 +150,14 @@ namespace System.Net.Security
                     NtlmAssert(incomingBlob.Length >= 32);
                     Flags flags = (Flags)BinaryPrimitives.ReadUInt32LittleEndian(incomingBlob.AsSpan(12, 4));
                     NtlmAssert((flags & _requiredFlags) == _requiredFlags);
-                    string domain = Encoding.Unicode.GetString(GetField(incomingBlob, 16));
-                    NtlmAssert(domain == _expectedCredential.Domain);
+                    if (flags.HasFlag(Flags.NegotiateDomainSupplied))
+                    {
+                        string domain = Encoding.ASCII.GetString(GetField(incomingBlob, 16));
+                        NtlmAssert(domain == _expectedCredential.Domain);
+                    }
                     _expectedMessageType = MessageType.Authenticate;
                     _negotiateMessage = incomingBlob;
-                    return _challengeMessage = GenerateChallenge();
+                    return _challengeMessage = GenerateChallenge(flags);
 
                 case MessageType.Authenticate:
                     // Validate the authentication!
@@ -157,28 +180,37 @@ namespace System.Net.Security
             return size + 4;
         }
 
-        private byte[] GenerateChallenge()
+        private byte[] GenerateChallenge(Flags flags)
         {
             byte[] buffer = new byte[1000];
+            byte[] targetName = Encoding.Unicode.GetBytes("Server");
+            int payloadOffset = 56;
 
             NtlmHeader.CopyTo(buffer.AsSpan(0, 8));
             BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(8), (uint)MessageType.Challenge);
-            // 8 bytes of TargetNameField
-            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(20), (uint)_requestedFlags);
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(12), (ushort)targetName.Length);
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(14), (ushort)targetName.Length);
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(16), (ushort)payloadOffset);
+            targetName.CopyTo(buffer.AsSpan(payloadOffset, targetName.Length));
+            payloadOffset += targetName.Length;
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(20), (uint)flags);
             _serverChallenge.CopyTo(buffer.AsSpan(24, 8));
             // 8 bytes reserved
-            // 8 bytes of TargetInfoFields
-            // TODO: Version
+            // 8 bytes of TargetInfoFields (written below)
+            Version.CopyTo(buffer.AsSpan(48, 8));
 
-            int targetInfoOffset = 56;
+            int targetInfoOffset = payloadOffset;
             int targetInfoCurrentOffset = targetInfoOffset;
-            targetInfoCurrentOffset += WriteAvIdString(buffer.AsSpan(targetInfoCurrentOffset), AvId.NbComputerName, "SHIBBOLETH");
             targetInfoCurrentOffset += WriteAvIdString(buffer.AsSpan(targetInfoCurrentOffset), AvId.NbDomainName, _expectedCredential.Domain);
+            targetInfoCurrentOffset += WriteAvIdString(buffer.AsSpan(targetInfoCurrentOffset), AvId.NbComputerName, "Server");
 
-            BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(targetInfoCurrentOffset), (ushort)AvId.Timestamp);
-            BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(targetInfoCurrentOffset + 2), (ushort)8);
-            BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(targetInfoCurrentOffset + 4), DateTime.UtcNow.ToFileTimeUtc());
-            targetInfoCurrentOffset += 12;
+            if (SendTimestamp)
+            {
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(targetInfoCurrentOffset), (ushort)AvId.Timestamp);
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(targetInfoCurrentOffset + 2), (ushort)8);
+                BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(targetInfoCurrentOffset + 4), DateTime.UtcNow.ToFileTimeUtc());
+                targetInfoCurrentOffset += 12;
+            }
 
             // TODO: DNS machine, domain, forest?
             // EOL
@@ -265,7 +297,7 @@ namespace System.Net.Security
                 sessionBaseKey.CopyTo(exportedSessionKey);
             }
 
-            // Calculate and verify message integrity
+            // Calculate and verify message integrity if enabled
             if (avFlags.HasFlag(AvFlags.MICPresent))
             {
                 IsMICPresent = true;
