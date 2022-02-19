@@ -22,7 +22,7 @@ using Xunit;
 
 [assembly: System.Tests.GenericAttribute<System.Type>]
 [module: System.Tests.GenericAttribute<bool>]
-[module:Debuggable(true,false)]
+[module: Debuggable(true, false)]
 namespace System.Tests
 {
     public class AttributeIsDefinedTests
@@ -220,6 +220,108 @@ namespace System.Tests
         {
             Assert.True(typeof(ExampleWithAttribute).GetCustomAttributes(typeof(INameable), inherit: false)[0] is NameableAttribute);
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForAssembly()
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            GenericAttributesTestHelper<Type>(t => Attribute.GetCustomAttributes(assembly, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForModule()
+        {
+            Module module = typeof(HasGenericAttribute).Module;
+            GenericAttributesTestHelper<bool>(t => Attribute.GetCustomAttributes(module, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForType()
+        {
+            GenericAttributesTestHelper<string>(t => Attribute.GetCustomAttributes(typeof(HasGenericAttribute), t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForField()
+        {
+            FieldInfo field = typeof(HasGenericAttribute).GetField(nameof(HasGenericAttribute.Field), BindingFlags.NonPublic | BindingFlags.Instance);
+            GenericAttributesTestHelper<TimeSpan>(t => Attribute.GetCustomAttributes(field, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForConstructor()
+        {
+            ConstructorInfo method = typeof(HasGenericAttribute).GetConstructor(Type.EmptyTypes);
+            GenericAttributesTestHelper<Guid>(t => Attribute.GetCustomAttributes(method, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForMethod()
+        {
+            MethodInfo method = typeof(HasGenericAttribute).GetMethod(nameof(HasGenericAttribute.Method));
+            GenericAttributesTestHelper<long>(t => Attribute.GetCustomAttributes(method, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForParameter()
+        {
+            ParameterInfo parameter = typeof(HasGenericAttribute).GetMethod(nameof(HasGenericAttribute.Method)).GetParameters()[0];
+            GenericAttributesTestHelper<ulong>(t => Attribute.GetCustomAttributes(parameter, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForProperty()
+        {
+            PropertyInfo property = typeof(HasGenericAttribute).GetProperty(nameof(HasGenericAttribute.Property));
+            GenericAttributesTestHelper<List<object>>(t => Attribute.GetCustomAttributes(property, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForEvent()
+        {
+            EventInfo @event = typeof(HasGenericAttribute).GetEvent(nameof(HasGenericAttribute.Event));
+            GenericAttributesTestHelper<DateTime?>(t => Attribute.GetCustomAttributes(@event, t));
+        }
+
+        private static void GenericAttributesTestHelper<TGenericParameter>(Func<Type, Attribute[]> getCustomAttributes)
+        {
+            Attribute[] openGenericAttributes = getCustomAttributes(typeof(GenericAttribute<>));
+            Assert.Empty(openGenericAttributes);
+
+            Attribute[] closedGenericAttributes = getCustomAttributes(typeof(GenericAttribute<TGenericParameter>));
+            Assert.Equal(1, closedGenericAttributes.Length);
+            Assert.Equal(typeof(GenericAttribute<TGenericParameter>[]), closedGenericAttributes.GetType());
+        }
+
+        [Fact]
+        public static void GetCustomAttributesBehaviorMemberInfoReturnsStringArray()
+        {
+            FieldInfo field = new CustomFieldInfo(new[] { "a" });
+            Assert.Throws<InvalidCastException>(() => Attribute.GetCustomAttributes(field));
+        }
+
+        [Fact]
+        public static void GetCustomAttributesBehaviorMemberInfoReturnsAttributeInObjectArray()
+        {
+            FieldInfo field = new CustomFieldInfo(new object[] { new TestAttribute(0) });
+            Assert.Throws<InvalidCastException>(() => Attribute.GetCustomAttributes(field));
+        }
+
+        [Fact]
+        public static void GetCustomAttributesBehaviorMemberInfoReturnsStringAndAttributeInObjectArray()
+        {
+            FieldInfo field = new CustomFieldInfo(new object[] { "a", new TestAttribute(0) });
+            Assert.Throws<InvalidCastException>(() => Attribute.GetCustomAttributes(field));
+        }
     }
 
     public static class GetCustomAttribute
@@ -228,7 +330,7 @@ namespace System.Tests
         [Fact]
         public static void customAttributeCount()
         {
-            List<CustomAttributeData> customAttributes =  typeof(GetCustomAttribute).Module.CustomAttributes.ToList();
+            List<CustomAttributeData> customAttributes = typeof(GetCustomAttribute).Module.CustomAttributes.ToList();
             // [System.Security.UnverifiableCodeAttribute()]
             // [TestAttributes.FooAttribute()]
             // [TestAttributes.ComplicatedAttribute((Int32)1, Stuff = 2)]
@@ -536,123 +638,6 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => (ArgumentUsageAttribute)Attribute.GetCustomAttribute(paramInfos[0], attributeType, false));
 
         }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
-        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForAssembly()
-        {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            GenericAttributesTestHelper<Type>(t => Attribute.GetCustomAttributes(assembly, t));
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
-        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForModule()
-        {
-            Module module = typeof(HasGenericAttribute).Module;
-            GenericAttributesTestHelper<bool>(t => Attribute.GetCustomAttributes(module, t));
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
-        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForType()
-        {
-            GenericAttributesTestHelper<string>(t => Attribute.GetCustomAttributes(typeof(HasGenericAttribute), t));
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
-        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForField()
-        {
-            FieldInfo field = typeof(HasGenericAttribute).GetField(nameof(HasGenericAttribute.Field), BindingFlags.NonPublic | BindingFlags.Instance);
-            GenericAttributesTestHelper<TimeSpan>(t => Attribute.GetCustomAttributes(field, t));
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
-        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForConstructor()
-        {
-            ConstructorInfo method = typeof(HasGenericAttribute).GetConstructor(Type.EmptyTypes);
-            GenericAttributesTestHelper<Guid>(t => Attribute.GetCustomAttributes(method, t));
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
-        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForMethod()
-        {
-            MethodInfo method = typeof(HasGenericAttribute).GetMethod(nameof(HasGenericAttribute.Method));
-            GenericAttributesTestHelper<long>(t => Attribute.GetCustomAttributes(method, t));
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
-        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForParameter()
-        {
-            ParameterInfo parameter = typeof(HasGenericAttribute).GetMethod(nameof(HasGenericAttribute.Method)).GetParameters()[0];
-            GenericAttributesTestHelper<ulong>(t => Attribute.GetCustomAttributes(parameter, t));
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
-        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForProperty()
-        {
-            PropertyInfo property = typeof(HasGenericAttribute).GetProperty(nameof(HasGenericAttribute.Property));
-            GenericAttributesTestHelper<List<object>>(t => Attribute.GetCustomAttributes(property, t));
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
-        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForEvent()
-        {
-            EventInfo @event = typeof(HasGenericAttribute).GetEvent(nameof(HasGenericAttribute.Event));
-            GenericAttributesTestHelper<DateTime?>(t => Attribute.GetCustomAttributes(@event, t));
-        }
-
-        private static void GenericAttributesTestHelper<TGenericParameter>(Func<Type, Attribute[]> getCustomAttributes)
-        {
-            Attribute[] openGenericAttributes = getCustomAttributes(typeof(GenericAttribute<>));
-            Assert.Empty(openGenericAttributes);
-
-            Attribute[] closedGenericAttributes = getCustomAttributes(typeof(GenericAttribute<TGenericParameter>));
-            Assert.Equal(1, closedGenericAttributes.Length);
-            Assert.Equal(typeof(GenericAttribute<TGenericParameter>[]), closedGenericAttributes.GetType());
-        }
-
-        [Fact]
-        public static void GetCustomAttributesBehaviorMemberInfoReturnsNull()
-        {
-            FieldInfo field = new CustomFieldInfo(null!);
-            if (PlatformDetection.IsMonoRuntime)
-            {
-                Assert.Throws<NullReferenceException>(() => Attribute.GetCustomAttributes(field));
-            }
-            else
-            {
-                Attribute[] attributes = Attribute.GetCustomAttributes(field);
-                Assert.Null(attributes);
-            }
-        }
-
-        [Fact]
-        public static void GetCustomAttributesBehaviorMemberInfoReturnsStringArray()
-        {
-            FieldInfo field = new CustomFieldInfo(new[] { "a" });
-            Assert.Throws<InvalidCastException>(() => Attribute.GetCustomAttributes(field));
-        }
-
-        [Fact]
-        public static void GetCustomAttributesBehaviorMemberInfoReturnsAttributeInObjectArray()
-        {
-            FieldInfo field = new CustomFieldInfo(new object[] { new TestAttribute(0) });
-            Assert.Throws<InvalidCastException>(() => Attribute.GetCustomAttributes(field));
-        }
-
-        [Fact]
-        public static void GetCustomAttributesBehaviorMemberInfoReturnsStringAndAttributeInObjectArray()
-        {
-            FieldInfo field = new CustomFieldInfo(new object[] { "a", new TestAttribute(0) });
-            Assert.Throws<InvalidCastException>(() => Attribute.GetCustomAttributes(field));
-        }
     }
     [AttributeUsage(AttributeTargets.All)]
     public class TestAttribute : Attribute
@@ -780,7 +765,7 @@ namespace System.Tests
     }
     public class BaseClass
     {
-        public virtual void TestMethod([ArgumentUsage("for test")]string[] strArray, params string[] strList)
+        public virtual void TestMethod([ArgumentUsage("for test")] string[] strArray, params string[] strList)
         {
         }
     }
@@ -936,7 +921,7 @@ namespace System.Tests
         string Name { get; }
     }
 
-    [AttributeUsage (AttributeTargets.All, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
     public class NameableAttribute : Attribute, INameable
     {
         string INameable.Name => "Nameable";
@@ -969,7 +954,7 @@ namespace System.Tests
         public int Property { get; set; }
 
         [GenericAttribute<DateTime?>]
-        public event Action Event; 
+        public event Action Event;
     }
 
     public class CustomFieldInfo : FieldInfo
