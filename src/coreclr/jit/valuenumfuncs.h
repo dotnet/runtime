@@ -102,6 +102,8 @@ ValueNumFuncDef(Sqrt, 1, false, false, false)
 ValueNumFuncDef(Tan, 1, false, false, false)
 ValueNumFuncDef(Tanh, 1, false, false, false)
 ValueNumFuncDef(Truncate, 1, false, false, false)
+ValueNumFuncDef(Min, 2, false, false, false)
+ValueNumFuncDef(Max, 2, false, false, false)
 
 ValueNumFuncDef(ManagedThreadId, 0, false, false, false)
 

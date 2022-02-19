@@ -690,6 +690,14 @@ public:
     static double infinite_double();
 
     static float infinite_float();
+
+    static double max_double(double a, double b);
+
+    static float max_float(float a, float b);
+
+    static double min_double(double a, double b);
+
+    static float min_float(float a, float b);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but

@@ -2211,6 +2211,26 @@ bool FloatingPointUtils::hasPreciseReciprocal(float x)
     return mantissa == 0 && exponent != 0 && exponent != 127;
 }
 
+double FloatingPointUtils::max_double(double a, double b)
+{
+    return a > b ? a : b;
+}
+
+float FloatingPointUtils::max_float(float a, float b)
+{
+    return a > b ? a : b;
+}
+
+double FloatingPointUtils::min_double(double a, double b)
+{
+    return a > b ? a : b;
+}
+
+float FloatingPointUtils::min_float(float a, float b)
+{
+    return a > b ? a : b;
+}
+
 namespace MagicDivide
 {
 template <int TableBase = 0, int TableSize, typename Magic>
