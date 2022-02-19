@@ -204,6 +204,10 @@ namespace Tracing.Tests.Common
             object threadSync = new object(); // for locking eventpipeSession access
             Func<int> optionalTraceValidationCallback = null;
             DiagnosticsClient client = new DiagnosticsClient(processId);
+#if DIAGNOSTICS_RUNTIME
+            if (OperatingSystem.IsAndroid())
+                client = new DiagnosticsClient(new IpcEndpointConfig("127.0.0.1:9000", IpcEndpointConfig.TransportType.TcpSocket, IpcEndpointConfig.PortType.Listen));
+#endif
             var readerTask = new Task(() =>
             {
                 Logger.logger.Log("Connecting to EventPipe...");
