@@ -197,7 +197,7 @@ namespace System.Net.Security
             // Loosely follow the flag manipulation in
             // 3.2.5.1.1 Server Receives a NEGOTIATE_MESSAGE from the Client
             flags &= ~(Flags.NegotiateLMKey | Flags.TargetTypeServer | Flags.TargetTypeDomain);
-            flags |= Flags.NegotiateNtlm | Flags.NegotiateAlwaysSign;
+            flags |= Flags.NegotiateNtlm | Flags.NegotiateAlwaysSign | Flags.NegotiateTargetInfo;
             // Specification says to set Flags.RequestTargetName but it's valid only in NEGOTIATE_MESSAGE?!
             flags |= TargetIsServer ? Flags.TargetTypeServer : Flags.TargetTypeDomain;
             if (PreferUnicode && flags.HasFlag(Flags.NegotiateUnicode))
