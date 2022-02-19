@@ -5367,7 +5367,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 #ifdef TARGET_ARM64
     // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
     if ((index != nullptr) && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
-        index->gtGetOp2()->IsCnsIntOrI() && (varTypeIsIntegral(targetType) || varTypeIsFloating(targetType)))
+        index->gtGetOp2()->IsCnsIntOrI() && (varTypeIsIntegralOrI(targetType) || varTypeIsFloating(targetType)))
     {
         // BFIZ node is a binary op where op1 is GT_CAST and op2 is GT_CNS_INT
         GenTreeCast* cast = index->gtGetOp1()->AsCast();
@@ -7066,16 +7066,18 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
     assert(ind->TypeGet() != TYP_STRUCT);
 
+    bool isWriteBarrier = comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind);
+
 #if defined(TARGET_ARM64)
     // Verify containment safety before creating an LEA that must be contained.
     //
-    const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
+    const bool isContainable = IsSafeToContainMem(ind, ind->Addr()) && !isWriteBarrier;
 #else
     const bool     isContainable         = true;
 #endif
     TryCreateAddrMode(ind->Addr(), isContainable, ind);
 
-    if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
+    if (!isWriteBarrier)
     {
         if (varTypeIsFloating(ind) && ind->Data()->IsCnsFltOrDbl())
         {
