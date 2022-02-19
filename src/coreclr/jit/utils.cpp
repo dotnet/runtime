@@ -2211,24 +2211,134 @@ bool FloatingPointUtils::hasPreciseReciprocal(float x)
     return mantissa == 0 && exponent != 0 && exponent != 127;
 }
 
-double FloatingPointUtils::max_double(double a, double b)
+//------------------------------------------------------------------------
+// isNegative_double: check double for negative sign
+//
+// Arguments:
+//    val - value to check for negative sign
+//
+// Return Value:
+//    True if 'val' is negative
+//
+
+bool FloatingPointUtils::isNegative_double(double val)
 {
-    return a > b ? a : b;
+    return *reinterpret_cast<INT64*>(&val) < 0;
 }
 
-float FloatingPointUtils::max_float(float a, float b)
+//------------------------------------------------------------------------
+// isNegative_float: check float for negative sign
+//
+// Arguments:
+//    val - value to check for negative sign
+//
+// Return Value:
+//    True if 'val' is negative
+//
+
+bool FloatingPointUtils::isNegative_float(float val)
 {
-    return a > b ? a : b;
+    return *reinterpret_cast<INT32*>(&val) < 0;
 }
 
-double FloatingPointUtils::min_double(double a, double b)
+//------------------------------------------------------------------------
+// max_double: This matches the IEEE 754:2019 `maximum` function
+//    It propagates NaN inputs back to the caller and
+//    otherwise returns the larger of the inputs. It
+//    treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    val1 - left operand
+//    val2 - right operand
+//
+// Return Value:
+//    Either val1 or val2
+//
+
+double FloatingPointUtils::max_double(double val1, double val2)
 {
-    return a > b ? a : b;
+    if (val1 != val2)
+    {
+        if (!isnan(val1))
+        {
+            return val2 < val1 ? val1 : val2;
+        }
+        return val1;
+    }
+    return isNegative_double(val2) ? val1 : val2;
 }
 
-float FloatingPointUtils::min_float(float a, float b)
+//------------------------------------------------------------------------
+// max_double: This matches the IEEE 754:2019 `maximum` function
+//    It propagates NaN inputs back to the caller and
+//    otherwise returns the larger of the inputs. It
+//    treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    val1 - left operand
+//    val2 - right operand
+//
+// Return Value:
+//    Either val1 or val2
+//
+
+float FloatingPointUtils::max_float(float val1, float val2)
 {
-    return a > b ? a : b;
+    if (val1 != val2)
+    {
+        if (!isnan(val1))
+        {
+            return val2 < val1 ? val1 : val2;
+        }
+        return val1;
+    }
+    return isNegative_float(val2) ? val1 : val2;
+}
+
+//------------------------------------------------------------------------
+// max_double: This matches the IEEE 754:2019 `minimum` function
+//    It propagates NaN inputs back to the caller and
+//    otherwise returns the larger of the inputs. It
+//    treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    val1 - left operand
+//    val2 - right operand
+//
+// Return Value:
+//    Either val1 or val2
+//
+
+double FloatingPointUtils::min_double(double val1, double val2)
+{
+    if (val1 != val2 && !isnan(val1))
+    {
+        return val1 < val2 ? val1 : val2;
+    }
+    return isNegative_double(val1) ? val1 : val2;
+}
+
+//------------------------------------------------------------------------
+// max_double: This matches the IEEE 754:2019 `minimum` function
+//    It propagates NaN inputs back to the caller and
+//    otherwise returns the larger of the inputs. It
+//    treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    val1 - left operand
+//    val2 - right operand
+//
+// Return Value:
+//    Either val1 or val2
+//
+
+float FloatingPointUtils::min_float(float val1, float val2)
+{
+    if (val1 != val2 && !isnan(val1))
+    {
+        return val1 < val2 ? val1 : val2;
+    }
+    return isNegative_float(val1) ? val1 : val2;
 }
 
 namespace MagicDivide
