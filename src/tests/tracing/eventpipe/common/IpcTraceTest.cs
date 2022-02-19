@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tools.RuntimeClient;
+using Microsoft.Diagnostics.NETCore.Client;
 using System.Runtime.InteropServices;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -91,16 +91,6 @@ namespace Tracing.Tests.Common
         public void SentinelEvent() { WriteEvent(1, "SentinelEvent"); }
     }
 
-    public static class SessionConfigurationExtensions
-    {
-        public static SessionConfiguration InjectSentinel(this SessionConfiguration sessionConfiguration)
-        {
-            var newProviderList = new List<Provider>(sessionConfiguration.Providers);
-            newProviderList.Add(new Provider("SentinelEventSource"));
-            return new SessionConfiguration(sessionConfiguration.CircularBufferSizeInMB, sessionConfiguration.Format, newProviderList.AsReadOnly());
-        }
-    }
-
     public class IpcTraceTest
     {
         // This Action is executed while the trace is being collected.
@@ -112,7 +102,6 @@ namespace Tracing.Tests.Common
         private Dictionary<string, ExpectedEventCount> _expectedEventCounts;
         private Dictionary<string, int> _actualEventCounts = new Dictionary<string, int>();
         private int _droppedEvents = 0;
-        private SessionConfiguration _sessionConfiguration;
 
         // A function to be called with the EventPipeEventSource _before_
         // the call to `source.Process()`.  The function should return another
@@ -120,21 +109,34 @@ namespace Tracing.Tests.Common
         // Example in situ: providervalidation.cs
         private Func<EventPipeEventSource, Func<int>> _optionalTraceValidator;
 
+        /// <summary>
+        /// This is list of the EventPipe providers to turn on for the test execution
+        /// </summary>
+        private List<EventPipeProvider> _testProviders;
+
+        /// <summary>
+        /// This represents the current EventPipeSession
+        /// </summary>
+        private EventPipeSession _eventPipeSession;
+
+        /// <summary>
+        /// This is the list of EventPipe providers for the sentinel EventSource that indicates that the process is ready
+        /// </summary>
+        private List<EventPipeProvider> _sentinelProviders = new List<EventPipeProvider>()
+        {
+            new EventPipeProvider("SentinelEventSource", EventLevel.Verbose, -1)
+        };
+
         IpcTraceTest(
             Dictionary<string, ExpectedEventCount> expectedEventCounts,
             Action eventGeneratingAction,
-            SessionConfiguration? sessionConfiguration = null,
+            List<EventPipeProvider> providers,
+            int circularBufferMB,
             Func<EventPipeEventSource, Func<int>> optionalTraceValidator = null)
         {
             _eventGeneratingAction = eventGeneratingAction;
             _expectedEventCounts = expectedEventCounts;
-            _sessionConfiguration = sessionConfiguration?.InjectSentinel() ?? new SessionConfiguration(
-                circularBufferSizeMB: 1000,
-                format: EventPipeSerializationFormat.NetTrace,
-                providers: new List<Provider> { 
-                    new Provider("Microsoft-Windows-DotNETRuntime"),
-                    new Provider("SentinelEventSource")
-                });
+            _testProviders = providers;
             _optionalTraceValidator = optionalTraceValidator;
         }
 
@@ -144,12 +146,7 @@ namespace Tracing.Tests.Common
             Logger.logger.Log(message);
             Logger.logger.Log("Configuration:");
             Logger.logger.Log("{");
-            Logger.logger.Log($"\tbufferSize: {_sessionConfiguration.CircularBufferSizeInMB},");
             Logger.logger.Log("\tproviders: [");
-            foreach (var provider in _sessionConfiguration.Providers)
-            {
-                Logger.logger.Log($"\t\t{provider.ToString()},");
-            }
             Logger.logger.Log("\t]");
             Logger.logger.Log("}\n");
             Logger.logger.Log("Expected:");
@@ -204,26 +201,24 @@ namespace Tracing.Tests.Common
             sentinelTask.Start();
 
             int processId = Process.GetCurrentProcess().Id;
-            object threadSync = new object(); // for locking eventpipeSessionId access
-            ulong eventpipeSessionId = 0;
+            object threadSync = new object(); // for locking eventpipeSession access
             Func<int> optionalTraceValidationCallback = null;
+            DiagnosticsClient client = new DiagnosticsClient(processId);
             var readerTask = new Task(() =>
             {
                 Logger.logger.Log("Connecting to EventPipe...");
-                using (var eventPipeStream = new StreamProxy(EventPipeClient.CollectTracing(processId, _sessionConfiguration, out var sessionId)))
+                try
                 {
-                    if (sessionId == 0)
-                    {
-                        Logger.logger.Log("Failed to connect to EventPipe!");
-                        throw new ApplicationException("Failed to connect to EventPipe");
-                    }
-                    Logger.logger.Log($"Connected to EventPipe with sessionID '0x{sessionId:x}'");
-
-                    lock (threadSync)
-                    {
-                        eventpipeSessionId = sessionId;
-                    }
-
+                    _eventPipeSession = client.StartEventPipeSession(_testProviders.Concat(_sentinelProviders));
+                }
+                catch (DiagnosticsClientException ex)
+                {
+                    Logger.logger.Log("Failed to connect to EventPipe!");
+                    Logger.logger.Log(ex.ToString());
+                    throw new ApplicationException("Failed to connect to EventPipe");
+                }
+                using (var eventPipeStream = new StreamProxy(_eventPipeSession.EventStream))
+                {
                     Logger.logger.Log("Creating EventPipeEventSource...");
                     using (EventPipeEventSource source = new EventPipeEventSource(eventPipeStream))
                     {
@@ -299,9 +294,9 @@ namespace Tracing.Tests.Common
             var stopTask = Task.Run(() => 
             {
                 Logger.logger.Log("Sending StopTracing command...");
-                lock (threadSync) // eventpipeSessionId
+                lock (threadSync) // eventpipeSession
                 {
-                    EventPipeClient.StopTracing(processId, eventpipeSessionId);
+                    _eventPipeSession.Stop();
                 }
                 Logger.logger.Log("Finished StopTracing command");
             });
@@ -393,11 +388,12 @@ namespace Tracing.Tests.Common
         public static int RunAndValidateEventCounts(
             Dictionary<string, ExpectedEventCount> expectedEventCounts,
             Action eventGeneratingAction,
-            SessionConfiguration? sessionConfiguration = null,
+            List<EventPipeProvider> providers,
+            int circularBufferMB=1024,
             Func<EventPipeEventSource, Func<int>> optionalTraceValidator = null)
         {
             Logger.logger.Log("==TEST STARTING==");
-            var test = new IpcTraceTest(expectedEventCounts, eventGeneratingAction, sessionConfiguration, optionalTraceValidator);
+            var test = new IpcTraceTest(expectedEventCounts, eventGeneratingAction, providers, circularBufferMB, optionalTraceValidator);
             try
             {
                 var ret = test.Validate();
