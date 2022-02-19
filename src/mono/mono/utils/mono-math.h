@@ -101,11 +101,52 @@ mono_round_to_even (double x)
 }
 
 static inline gboolean
-mono_try_trunc_i64 (double val, gint64 *out)
+mono_try_trunc_i1 (double val, gint8 *out)
 {
-	const double two63  = 2147483648.0 * 4294967296.0;
-	// 0x402 is epsilon used to get us to the next value
-	if (val > (-two63 - 0x402) && val < two63) {
+	if (val > -129.0 && val < 128.0) {
+		// -129.0 and +128.0 are exactly representable
+		// Note that this expression also works properly for val = NaN case
+		*out = (gint8)val;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static inline gboolean
+mono_try_trunc_i2 (double val, gint16 *out)
+{
+	if (val > -32769.0 && val < +32768.0) {
+		// -32769.0 and +32768.0 are exactly representable
+		// Note that this expression also works properly for val = NaN case
+		*out = (gint16)val;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static inline gboolean
+mono_try_trunc_i4 (double val, gint32 *out)
+{
+	if (val > -2147483649.0 && val < +2147483648.0) {
+		// -2147483649.0 and +2147483648.0 are exactly representable
+		// Note that this expression also works properly for val = NaN case
+		*out = (gint32)val;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static inline gboolean
+mono_try_trunc_i8 (double val, gint64 *out)
+{
+	if (val > -9223372036854777856.0 && val < +9223372036854775808.0) {
+		// +9223372036854775808.0 is exactly representable
+		//
+		// -9223372036854777809.0 however, is not and rounds to -9223372036854777808.0
+		// we use -9223372036854777856.0 instead which is the next representable vue smaller
+		// than -9223372036854777808.0
+		//
+		// Note that this expression also works properly for val = NaN case
 		*out = (gint64)val;
 		return TRUE;
 	}
@@ -113,10 +154,47 @@ mono_try_trunc_i64 (double val, gint64 *out)
 }
 
 static inline gboolean
-mono_try_trunc_u64 (double val, guint64 *out)
+mono_try_trunc_u1 (double val, guint8 *out)
 {
-	const double two64  = 4294967296.0 * 4294967296.0;
-	if (val > -1.0 && val < two64) {
+	if (val > -1.0 && val < +256.0) {
+		// -1.0 and +256.0 are exactly representable
+		// Note that the above condition also works properly for val = NaN case
+		*out = (guint8)val;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static inline gboolean
+mono_try_trunc_u2 (double val, guint16 *out)
+{
+	if (val > -1.0 && val < +65536.0) {
+		// -1.0 and +65536.0 are exactly representable
+		// Note that the above condition also works properly for val = NaN case
+		*out = (guint16)val;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static inline gboolean
+mono_try_trunc_u4 (double val, guint32 *out)
+{
+	if (val > -1.0 && val < +4294967296.0) {
+		// -1.0 and +4294967296.0 are exactly representable
+		// Note that the above condition also works properly for val = NaN case
+		*out = (guint32)val;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static inline gboolean
+mono_try_trunc_u8 (double val, guint64 *out)
+{
+	if (val > -1.0 && val < +18446744073709551616.0) {
+		// -1.0 and +18446744073709551616.0 are exactly representable
+		// Note that the above condition also works properly for val = NaN case
 		*out = (guint64)val;
 		return TRUE;
 	}

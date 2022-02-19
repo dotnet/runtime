@@ -5474,18 +5474,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I1_R4)
-			LOCAL_VAR (ip [1], gint32) = (gint8) (gint32) LOCAL_VAR (ip [2], float);
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_i1 (LOCAL_VAR (ip [2], float));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I1_R8)
-			/* without gint32 cast, C compiler is allowed to use undefined
-			 * behaviour if data.f is bigger than >255. See conv.fpint section
-			 * in C standard:
-			 * > The conversion truncates; that is, the fractional  part
-			 * > is discarded.  The behavior is undefined if the truncated
-			 * > value cannot be represented in the destination type.
-			 * */
-			LOCAL_VAR (ip [1], gint32) = (gint8) (gint32) LOCAL_VAR (ip [2], double);
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_i1 (LOCAL_VAR (ip [2], double));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U1_I4)
@@ -5497,11 +5490,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U1_R4)
-			LOCAL_VAR (ip [1], gint32) = (guint8) (guint32) LOCAL_VAR (ip [2], float);
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_u1 (LOCAL_VAR (ip [2], float));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U1_R8)
-			LOCAL_VAR (ip [1], gint32) = (guint8) (guint32) LOCAL_VAR (ip [2], double);
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_u1 (LOCAL_VAR (ip [2], double));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I2_I4)
@@ -5513,11 +5506,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I2_R4)
-			LOCAL_VAR (ip [1], gint32) = (gint16) (gint32) LOCAL_VAR (ip [2], float);
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_i2 (LOCAL_VAR (ip [2], float));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I2_R8)
-			LOCAL_VAR (ip [1], gint32) = (gint16) (gint32) LOCAL_VAR (ip [2], double);
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_i2 (LOCAL_VAR (ip [2], double));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U2_I4)
@@ -5529,35 +5522,27 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U2_R4)
-			LOCAL_VAR (ip [1], gint32) = (guint16) (guint32) LOCAL_VAR (ip [2], float);
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_u2 (LOCAL_VAR (ip [2], float));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U2_R8)
-			LOCAL_VAR (ip [1], gint32) = (guint16) (guint32) LOCAL_VAR (ip [2], double);
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_u2 (LOCAL_VAR (ip [2], double));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I4_R4)
-			LOCAL_VAR (ip [1], gint32) = (gint32) LOCAL_VAR (ip [2], float);
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_i4 (LOCAL_VAR (ip [2], float));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I4_R8)
-			LOCAL_VAR (ip [1], gint32) = (gint32) LOCAL_VAR (ip [2], double);
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_i4 (LOCAL_VAR (ip [2], double));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U4_R4)
-#ifdef MONO_ARCH_EMULATE_FCONV_TO_U4
-			LOCAL_VAR (ip [1], gint32) = mono_rconv_u4 (LOCAL_VAR (ip [2], float));
-#else
-			LOCAL_VAR (ip [1], gint32) = (guint32) LOCAL_VAR (ip [2], float);
-#endif
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_u4 (LOCAL_VAR (ip [2], float));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U4_R8)
-#ifdef MONO_ARCH_EMULATE_FCONV_TO_U4
 			LOCAL_VAR (ip [1], gint32) = mono_fconv_u4 (LOCAL_VAR (ip [2], double));
-#else
-			LOCAL_VAR (ip [1], gint32) = (guint32) LOCAL_VAR (ip [2], double);
-#endif
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I8_I4)
@@ -5569,51 +5554,43 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I8_R4)
-			LOCAL_VAR (ip [1], gint64) = (gint64) LOCAL_VAR (ip [2], float);
+			LOCAL_VAR (ip [1], gint64) = mono_fconv_i8 (LOCAL_VAR (ip [2], float));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I8_R8)
-			LOCAL_VAR (ip [1], gint64) = (gint64) LOCAL_VAR (ip [2], double);
+			LOCAL_VAR (ip [1], gint64) = mono_fconv_i8 (LOCAL_VAR (ip [2], double));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_R4_I4)
-			LOCAL_VAR (ip [1], float) = (float) LOCAL_VAR (ip [2], gint32);
+			LOCAL_VAR (ip [1], float) = mono_conv_to_r4 (LOCAL_VAR (ip [2], gint32));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_R4_I8)
-			LOCAL_VAR (ip [1], float) = (float) LOCAL_VAR (ip [2], gint64);
+			LOCAL_VAR (ip [1], float) = mono_lconv_to_r4 (LOCAL_VAR (ip [2], gint64));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_R4_R8)
-			LOCAL_VAR (ip [1], float) = (float) LOCAL_VAR (ip [2], double);
+			LOCAL_VAR (ip [1], float) = mono_fconv_r4 (LOCAL_VAR (ip [2], double));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_R8_I4)
-			LOCAL_VAR (ip [1], double) = (double) LOCAL_VAR (ip [2], gint32);
+			LOCAL_VAR (ip [1], double) = mono_conv_to_r8 (LOCAL_VAR (ip [2], gint32));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_R8_I8)
-			LOCAL_VAR (ip [1], double) = (double) LOCAL_VAR (ip [2], gint64);
+			LOCAL_VAR (ip [1], double) = mono_lconv_to_r8 (LOCAL_VAR (ip [2], gint64));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_R8_R4)
-			LOCAL_VAR (ip [1], double) = (double) LOCAL_VAR (ip [2], float);
+			LOCAL_VAR (ip [1], double) = LOCAL_VAR (ip [2], float);
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U8_R4)
-#ifdef MONO_ARCH_EMULATE_FCONV_TO_U8
-			LOCAL_VAR (ip [1], gint64) = mono_rconv_u8 (LOCAL_VAR (ip [2], float));
-#else
-			LOCAL_VAR (ip [1], gint64) = (guint64) LOCAL_VAR (ip [2], float);
-#endif
+			LOCAL_VAR (ip [1], gint64) = mono_fconv_u8 (LOCAL_VAR (ip [2], float));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U8_R8)
-#ifdef MONO_ARCH_EMULATE_FCONV_TO_U8
 			LOCAL_VAR (ip [1], gint64) = mono_fconv_u8 (LOCAL_VAR (ip [2], double));
-#else
-			LOCAL_VAR (ip [1], gint64) = (guint64) LOCAL_VAR (ip [2], double);
-#endif
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CPOBJ) {
@@ -6036,11 +6013,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_R_UN_I4)
-			LOCAL_VAR (ip [1], double) = (double)LOCAL_VAR (ip [2], guint32);
+			LOCAL_VAR (ip [1], double) = mono_conv_to_r8_un (LOCAL_VAR (ip [2], guint32));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_R_UN_I8)
-			LOCAL_VAR (ip [1], double) = (double)LOCAL_VAR (ip [2], guint64);
+			LOCAL_VAR (ip [1], double) = mono_lconv_to_r8_un (LOCAL_VAR (ip [2], guint64));
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_UNBOX) {
@@ -6295,28 +6272,28 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U8_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (!mono_try_trunc_u64 (val, (guint64*)(locals + ip [1])))
+			if (!mono_try_trunc_u8 (val, (guint64*)(locals + ip [1])))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U8_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (!mono_try_trunc_u64 (val, (guint64*)(locals + ip [1])))
+			if (!mono_try_trunc_u8 (val, (guint64*)(locals + ip [1])))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I8_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (!mono_try_trunc_i64 (val, (gint64*)(locals + ip [1])))
+			if (!mono_try_trunc_i8 (val, (gint64*)(locals + ip [1])))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I8_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (!mono_try_trunc_i64 (val, (gint64*)(locals + ip [1])))
+			if (!mono_try_trunc_i8 (val, (gint64*)(locals + ip [1])))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
@@ -6627,19 +6604,14 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			double val_r8 = (double)val;
-			if (val_r8 > ((double)G_MININT32 - 1) && val_r8 < ((double)G_MAXINT32 + 1))
-				LOCAL_VAR (ip [1], gint32) = (gint32) val;
-			else
+			if (!mono_try_trunc_i4 (val, (gint32*)(locals + ip [1])))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val > ((double)G_MININT32 - 1) && val < ((double)G_MAXINT32 + 1))
-				LOCAL_VAR (ip [1], gint32) = (gint32) val;
-			else
+			if (!mono_try_trunc_i4 (val, (gint32*)(locals + ip [1])))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
@@ -6662,19 +6634,14 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U4_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			double val_r8 = val;
-			if (val_r8 > -1.0 && val_r8 < ((double)G_MAXUINT32 + 1))
-				LOCAL_VAR (ip [1], gint32) = (guint32)val;
-			else
+			if (!mono_try_trunc_u4 (val, (guint32*)(locals + ip [1])))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U4_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val > -1.0 && val < ((double)G_MAXUINT32 + 1))
-				LOCAL_VAR (ip [1], gint32) = (guint32)val;
-			else
+			if (!mono_try_trunc_u4 (val, (guint32*)(locals + ip [1])))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
@@ -6713,19 +6680,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I2_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (val > (G_MININT16 - 1) && val < (G_MAXINT16 + 1))
-				LOCAL_VAR (ip [1], gint32) = (gint16) val;
-			else
+			gint16 res;
+			if (!mono_try_trunc_i2 (val, &res))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
+			LOCAL_VAR (ip [1], gint32) = res;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I2_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val > (G_MININT16 - 1) && val < (G_MAXINT16 + 1))
-				LOCAL_VAR (ip [1], gint32) = (gint16) val;
-			else
+			gint16 res;
+			if (!mono_try_trunc_i2 (val, &res))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
+			LOCAL_VAR (ip [1], gint32) = res;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -6747,19 +6714,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U2_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (val > -1.0f && val < (G_MAXUINT16 + 1))
-				LOCAL_VAR (ip [1], gint32) = (guint16) val;
-			else
+			guint16 res;
+			if (!mono_try_trunc_u2 (val, &res))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
+			LOCAL_VAR (ip [1], gint32) = res;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U2_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val > -1.0 && val < (G_MAXUINT16 + 1))
-				LOCAL_VAR (ip [1], gint32) = (guint16) val;
-			else
+			guint16 res;
+			if (!mono_try_trunc_u2 (val, &res))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
+			LOCAL_VAR (ip [1], gint32) = res;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -6797,19 +6764,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I1_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (val > (G_MININT8 - 1) && val < (G_MAXINT8 + 1))
-				LOCAL_VAR (ip [1], gint32) = (gint8) val;
-			else
+			gint8 res;
+			if (!mono_try_trunc_i1 (val, &res))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
+			LOCAL_VAR (ip [1], gint32) = res;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I1_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val > (G_MININT8 - 1) && val < (G_MAXINT8 + 1))
-				LOCAL_VAR (ip [1], gint32) = (gint8) val;
-			else
+			gint8 res;
+			if (!mono_try_trunc_i1 (val, &res))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
+			LOCAL_VAR (ip [1], gint32) = res;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -6831,19 +6798,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U1_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (val > -1.0f && val < (G_MAXUINT8 + 1))
-				LOCAL_VAR (ip [1], gint32) = (guint8)val;
-			else
+			guint8 res;
+			if (!mono_try_trunc_u1 (val, &res))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
+			LOCAL_VAR (ip [1], gint32) = res;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U1_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val > -1.0 && val < (G_MAXUINT8 + 1))
-				LOCAL_VAR (ip [1], gint32) = (guint8)val;
-			else
+			guint8 res;
+			if (!mono_try_trunc_u1 (val, &res))
 				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
+			LOCAL_VAR (ip [1], gint32) = res;
 			ip += 3;
 			MINT_IN_BREAK;
 		}

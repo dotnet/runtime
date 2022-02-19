@@ -76,37 +76,87 @@ ICALL_EXPORT gpointer mono_ldtoken_wrapper (MonoImage *image, int token, MonoGen
 
 ICALL_EXPORT gpointer mono_ldtoken_wrapper_generic_shared (MonoImage *image, int token, MonoMethod *method);
 
-ICALL_EXPORT guint64 mono_fconv_u8 (double v);
+ICALL_EXPORT float mono_conv_to_r4 (gint32 v);
 
-ICALL_EXPORT guint64 mono_rconv_u8 (float v);
+ICALL_EXPORT float mono_conv_to_r4_un (guint32 v);
+
+ICALL_EXPORT double mono_conv_to_r8 (gint32 v);
+
+ICALL_EXPORT double mono_conv_to_r8_un (guint32 v);
+
+ICALL_EXPORT gint8 mono_fconv_i1 (double v);
+
+ICALL_EXPORT gint16 mono_fconv_i2 (double v);
+
+ICALL_EXPORT gint32 mono_fconv_i4 (double v);
 
 ICALL_EXPORT gint64 mono_fconv_i8 (double v);
 
+ICALL_EXPORT float mono_fconv_r4 (double v);
+
+ICALL_EXPORT guint8 mono_fconv_u1 (double v);
+
+ICALL_EXPORT guint16 mono_fconv_u2 (double v);
+
 ICALL_EXPORT guint32 mono_fconv_u4 (double v);
 
-ICALL_EXPORT guint32 mono_rconv_u4 (float v);
+ICALL_EXPORT guint64 mono_fconv_u8 (double v);
+
+ICALL_EXPORT gint8 mono_fconv_ovf_i1 (double v);
+
+ICALL_EXPORT gint16 mono_fconv_ovf_i2 (double v);
+
+ICALL_EXPORT gint32 mono_fconv_ovf_i4 (double v);
 
 ICALL_EXPORT gint64 mono_fconv_ovf_i8 (double v);
 
+ICALL_EXPORT guint8 mono_fconv_ovf_u1 (double v);
+
+ICALL_EXPORT guint16 mono_fconv_ovf_u2 (double v);
+
+ICALL_EXPORT guint32 mono_fconv_ovf_u4 (double v);
+
 ICALL_EXPORT guint64 mono_fconv_ovf_u8 (double v);
+
+ICALL_EXPORT float mono_lconv_to_r4 (gint64 v);
+
+ICALL_EXPORT float mono_lconv_to_r4_un (guint64 v);
+
+ICALL_EXPORT double mono_lconv_to_r8 (gint64 v);
+
+ICALL_EXPORT double mono_lconv_to_r8_un (guint64 v);
+
+ICALL_EXPORT gint8 mono_rconv_i1 (float v);
+
+ICALL_EXPORT gint16 mono_rconv_i2 (float v);
+
+ICALL_EXPORT gint32 mono_rconv_i4 (float v);
 
 ICALL_EXPORT gint64 mono_rconv_i8 (float v);
 
+ICALL_EXPORT guint8 mono_rconv_u1 (float v);
+
+ICALL_EXPORT guint16 mono_rconv_u2 (float v);
+
+ICALL_EXPORT guint32 mono_rconv_u4 (float v);
+
+ICALL_EXPORT guint64 mono_rconv_u8 (float v);
+
+ICALL_EXPORT gint8 mono_rconv_ovf_i1 (float v);
+
+ICALL_EXPORT gint16 mono_rconv_ovf_i2 (float v);
+
+ICALL_EXPORT gint32 mono_rconv_ovf_i4 (float v);
+
 ICALL_EXPORT gint64 mono_rconv_ovf_i8 (float v);
 
+ICALL_EXPORT guint8 mono_rconv_ovf_u1 (float v);
+
+ICALL_EXPORT guint16 mono_rconv_ovf_u2 (float v);
+
+ICALL_EXPORT guint32 mono_rconv_ovf_u4 (float v);
+
 ICALL_EXPORT guint64 mono_rconv_ovf_u8 (float v);
-
-ICALL_EXPORT double mono_lconv_to_r8 (gint64 a);
-
-ICALL_EXPORT double mono_conv_to_r8 (gint32 a);
-
-ICALL_EXPORT double mono_conv_to_r4 (gint32 a);
-
-ICALL_EXPORT float mono_lconv_to_r4 (gint64 a);
-
-ICALL_EXPORT double mono_conv_to_r8_un (guint32 a);
-
-ICALL_EXPORT double mono_lconv_to_r8_un (guint64 a);
 
 ICALL_EXPORT gpointer mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointer *this_arg);
 
@@ -123,18 +173,6 @@ ICALL_EXPORT double mono_fadd (double a, double b);
 ICALL_EXPORT double mono_fmul (double a, double b);
 
 ICALL_EXPORT double mono_fneg (double a);
-
-ICALL_EXPORT double mono_fconv_r4 (double a);
-
-ICALL_EXPORT gint8 mono_fconv_i1 (double a);
-
-ICALL_EXPORT gint16 mono_fconv_i2 (double a);
-
-ICALL_EXPORT gint32 mono_fconv_i4 (double a);
-
-ICALL_EXPORT guint8 mono_fconv_u1 (double a);
-
-ICALL_EXPORT guint16 mono_fconv_u2 (double a);
 
 ICALL_EXPORT gboolean mono_fcmp_eq (double a, double b);
 

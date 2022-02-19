@@ -612,54 +612,6 @@ mono_fneg (double a)
 	return -a;
 }
 
-double
-mono_fconv_r4 (double a)
-{
-	return (float)a;
-}
-
-double
-mono_conv_to_r8 (int a)
-{
-	return (double)a;
-}
-
-double
-mono_conv_to_r4 (int a)
-{
-	return (double)(float)a;
-}
-
-gint8
-mono_fconv_i1 (double a)
-{
-	return (gint8)a;
-}
-
-gint16
-mono_fconv_i2 (double a)
-{
-	return (gint16)a;
-}
-
-gint32
-mono_fconv_i4 (double a)
-{
-	return (gint32)a;
-}
-
-guint8
-mono_fconv_u1 (double a)
-{
-	return (guint8)a;
-}
-
-guint16
-mono_fconv_u2 (double a)
-{
-	return (guint16)a;
-}
-
 gboolean
 mono_fcmp_eq (double a, double b)
 {
@@ -924,185 +876,435 @@ mono_ldtoken_wrapper_generic_shared (MonoImage *image, int token, MonoMethod *me
 	return mono_ldtoken_wrapper (image, token, generic_context);
 }
 
-#ifdef MONO_ARCH_EMULATE_FCONV_TO_U8
-guint64
-mono_fconv_u8 (double v)
+float
+mono_conv_to_r4 (gint32 v)
 {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-	const double two63 = 2147483648.0 * 4294967296.0;
-	if (v < two63) {
-		return (gint64)v;
-	} else {
-		return (gint64)(v - two63) + ((guint64)1 << 63);
-	}
-#else
-	if (mono_isinf (v) || mono_isnan (v))
-		return 0;
-	return (guint64)v;
-#endif
+	return (float)v;
 }
 
-guint64
-mono_rconv_u8 (float v)
+float
+mono_conv_to_r4_un (guint32 v)
 {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-	const float two63 = 2147483648.0 * 4294967296.0;
-	if (v < two63) {
-		return (gint64)v;
-	} else {
-		return (gint64)(v - two63) + ((guint64)1 << 63);
-	}
-#else
-	if (mono_isinf (v) || mono_isnan (v))
-		return 0;
-	return (guint64)v;
-#endif
+	return (double)v;
 }
-#endif
 
-#ifdef MONO_ARCH_EMULATE_FCONV_TO_I8
+double
+mono_conv_to_r8 (gint32 v)
+{
+	return (double)v;
+}
+
+double
+mono_conv_to_r8_un (guint32 v)
+{
+	return (double)v;
+}
+
+gint8
+mono_fconv_i1 (double v)
+{
+	if (mono_isnan (v)) {
+		// NAN should return 0
+		return 0;
+	}
+
+	if (v <= -129.0) {
+		// Too small should saturate to int8::min
+		return G_MININT8;
+	}
+
+	if (v >= +128.0) {
+		// Too large should saturate to int8::max
+		return G_MAXINT8;
+	}
+
+	return (gint8)v;
+}
+
+gint16
+mono_fconv_i2 (double v)
+{
+	if (mono_isnan (v)) {
+		// NAN should return 0
+		return 0;
+	}
+
+	if (v <= -32769.0) {
+		// Too small should saturate to int16::min
+		return G_MININT16;
+	}
+
+	if (v >= +32768.0) {
+		// Too large should saturate to int16::max
+		return G_MAXINT16;
+	}
+
+	return (gint16)v;
+}
+
+gint32
+mono_fconv_i4 (double v)
+{
+	if (mono_isnan (v)) {
+		// NAN should return 0
+		return 0;
+	}
+
+	if (v <= -2147483649.0) {
+		// Too small should saturate to int32::min
+		return G_MININT32;
+	}
+
+	if (v >= +2147483648.0) {
+		// Too large should saturate to int32::max
+		return G_MAXINT32;
+	}
+
+	return (gint32)v;
+}
+
 gint64
 mono_fconv_i8 (double v)
 {
+	if (mono_isnan (v)) {
+		// NAN should return 0
+		return 0;
+	}
+
+	if (v <= -9223372036854777856.0) {
+		// Too small should saturate to int64::min
+		return G_MININT64;
+	}
+
+	if (v >= +9223372036854775808.0) {
+		// Too large should saturate to int64::max
+		return G_MAXINT64;
+	}
+
 	return (gint64)v;
 }
-#endif
 
-#ifdef MONO_ARCH_EMULATE_FCONV_TO_U4
+float
+mono_fconv_r4 (double v)
+{
+	return (float)v;
+}
+
+guint8
+mono_fconv_u1 (double v)
+{
+	if (mono_isnan (v)) {
+		// NAN should return 0
+		return 0;
+	}
+
+	if (v <= -1.0) {
+		// Too small should saturate to uint8::min
+		return 0; // G_MINUINT8
+	}
+
+	if (v >= +256.0) {
+		// Too large should saturate to uint8::max
+		return G_MAXUINT8;
+	}
+
+	return (guint8)v;
+}
+
+guint16
+mono_fconv_u2 (double v)
+{
+	if (mono_isnan (v)) {
+		// NAN should return 0
+		return 0;
+	}
+
+	if (v <= -1.0) {
+		// Too small should saturate to uint16::min
+		return 0; // G_MINUINT16
+	}
+
+	if (v >= +65536.0) {
+		// Too large should saturate to uint16::max
+		return G_MAXUINT16;
+	}
+
+	return (guint16)v;
+}
+
 guint32
 mono_fconv_u4 (double v)
 {
-	/* MS.NET behaves like this for some reason */
-	if (mono_isinf (v) || mono_isnan (v))
+	if (mono_isnan (v)) {
+		// NAN should return 0
 		return 0;
+	}
+
+	if (v <= -1.0) {
+		// Too small should saturate to uint32::min
+		return 0; // G_MINUINT32
+	}
+
+	if (v >= +4294967296.0) {
+		// Too large should saturate to uint32::max
+		return G_MAXUINT32;
+	}
+
 	return (guint32)v;
 }
 
-guint32
-mono_rconv_u4 (float v)
+guint64
+mono_fconv_u8 (double v)
 {
-	if (mono_isinf (v) || mono_isnan (v))
+	if (mono_isnan (v)) {
+		// NAN should return 0
 		return 0;
-	return (guint32) v;
+	}
+
+	if (v <= -1.0) {
+		// Too small should saturate to uint64::min
+		return 0; // G_MINUINT64
+	}
+
+	if (v >= +18446744073709551616.0) {
+		// Too large vues should saturate to uint64::max
+		return G_MAXUINT64;
+	}
+
+	return (guint64)v;
 }
-#endif
+
+gint8
+mono_fconv_ovf_i1 (double v)
+{
+	gint8 r;
+	if (mono_try_trunc_i1(v, &r)) {
+		return r;
+	}
+
+	ERROR_DECL (error);
+	mono_error_set_overflow (error);
+	mono_error_set_pending_exception (error);
+	return 0;
+}
+
+gint16
+mono_fconv_ovf_i2 (double v)
+{
+	gint16 r;
+	if (mono_try_trunc_i2(v, &r)) {
+		return r;
+	}
+
+	ERROR_DECL (error);
+	mono_error_set_overflow (error);
+	mono_error_set_pending_exception (error);
+	return 0;
+}
+
+gint32
+mono_fconv_ovf_i4 (double v)
+{
+	gint32 r;
+	if (mono_try_trunc_i4(v, &r)) {
+		return r;
+	}
+
+	ERROR_DECL (error);
+	mono_error_set_overflow (error);
+	mono_error_set_pending_exception (error);
+	return 0;
+}
 
 gint64
 mono_fconv_ovf_i8 (double v)
 {
-	const gint64 res = (gint64)v;
-
-	if (mono_isnan (v) || mono_trunc (v) != res) {
-		ERROR_DECL (error);
-		mono_error_set_overflow (error);
-		mono_error_set_pending_exception (error);
-		return 0;
+	gint64 r;
+	if (mono_try_trunc_i8(v, &r)) {
+		return r;
 	}
-	return res;
+
+	ERROR_DECL (error);
+	mono_error_set_overflow (error);
+	mono_error_set_pending_exception (error);
+	return 0;
+}
+
+guint8
+mono_fconv_ovf_u1 (double v)
+{
+	guint8 r;
+	if (mono_try_trunc_u1(v, &r)) {
+		return r;
+	}
+
+	ERROR_DECL (error);
+	mono_error_set_overflow (error);
+	mono_error_set_pending_exception (error);
+	return 0;
+}
+
+guint16
+mono_fconv_ovf_u2 (double v)
+{
+	guint16 r;
+	if (mono_try_trunc_u2(v, &r)) {
+		return r;
+	}
+
+	ERROR_DECL (error);
+	mono_error_set_overflow (error);
+	mono_error_set_pending_exception (error);
+	return 0;
+}
+
+guint32
+mono_fconv_ovf_u4 (double v)
+{
+	guint32 r;
+	if (mono_try_trunc_u4(v, &r)) {
+		return r;
+	}
+
+	ERROR_DECL (error);
+	mono_error_set_overflow (error);
+	mono_error_set_pending_exception (error);
+	return 0;
 }
 
 guint64
 mono_fconv_ovf_u8 (double v)
 {
-	guint64 res;
+	guint64 r;
+	if (mono_try_trunc_u8(v, &r)) {
+		return r;
+	}
 
-/*
- * The soft-float implementation of some ARM devices have a buggy guin64 to double
- * conversion that it looses precision even when the integer if fully representable
- * as a double.
- *
- * This was found with 4294967295ull, converting to double and back looses one bit of precision.
- *
- * To work around this issue we test for value boundaries instead.
- */
-#if defined(__arm__) && defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
-	if (mono_isnan (v) || !(v >= -0.5 && v <= ULLONG_MAX+0.5)) {
-		ERROR_DECL (error);
-		mono_error_set_overflow (error);
-		mono_error_set_pending_exception (error);
-		return 0;
-	}
-	res = (guint64)v;
-#else
-	res = (guint64)v;
-	if (mono_isnan (v) || mono_trunc (v) != res) {
-		ERROR_DECL (error);
-		mono_error_set_overflow (error);
-		mono_error_set_pending_exception (error);
-		return 0;
-	}
-#endif
-	return res;
+	ERROR_DECL (error);
+	mono_error_set_overflow (error);
+	mono_error_set_pending_exception (error);
+	return 0;
 }
 
-#ifdef MONO_ARCH_EMULATE_FCONV_TO_I8
+float
+mono_lconv_to_r4 (gint64 v)
+{
+	return (float)v;
+}
+
+float
+mono_lconv_to_r4_un (guint64 v)
+{
+	return (float)v;
+}
+
+double
+mono_lconv_to_r8 (gint64 v)
+{
+	return (double)v;
+}
+
+double
+mono_lconv_to_r8_un (guint64 v)
+{
+	return (double)v;
+}
+
+gint8
+mono_rconv_i1 (float v)
+{
+	return mono_fconv_i1(v);
+}
+
+gint16
+mono_rconv_i2 (float v)
+{
+	return mono_fconv_i2(v);
+}
+
+gint32
+mono_rconv_i4 (float v)
+{
+	return mono_fconv_i4(v);
+}
+
 gint64
 mono_rconv_i8 (float v)
 {
-	return (gint64)v;
+	return mono_fconv_i8(v);
 }
-#endif
+
+guint8
+mono_rconv_u1 (float v)
+{
+	return mono_fconv_u1(v);
+}
+
+guint16
+mono_rconv_u2 (float v)
+{
+	return mono_fconv_u2(v);
+}
+
+guint32
+mono_rconv_u4 (float v)
+{
+	return mono_fconv_u4(v);
+}
+
+guint64
+mono_rconv_u8 (float v)
+{
+	return mono_fconv_u8(v);
+}
+
+gint8
+mono_rconv_ovf_i1 (float v)
+{
+	return mono_fconv_ovf_i1(v);
+}
+
+gint16
+mono_rconv_ovf_i2 (float v)
+{
+	return mono_fconv_ovf_i2(v);
+}
+
+gint32
+mono_rconv_ovf_i4 (float v)
+{
+	return mono_fconv_ovf_i4(v);
+}
 
 gint64
 mono_rconv_ovf_i8 (float v)
 {
-	const gint64 res = (gint64)v;
+	return mono_fconv_ovf_i8(v);
+}
 
-	if (mono_isnan (v) || mono_trunc (v) != res) {
-		ERROR_DECL (error);
-		mono_error_set_overflow (error);
-		mono_error_set_pending_exception (error);
-		return 0;
-	}
-	return res;
+guint8
+mono_rconv_ovf_u1 (float v)
+{
+	return mono_fconv_ovf_u1(v);
+}
+
+guint16
+mono_rconv_ovf_u2 (float v)
+{
+	return mono_fconv_ovf_u2(v);
+}
+
+guint32
+mono_rconv_ovf_u4 (float v)
+{
+	return mono_fconv_ovf_u4(v);
 }
 
 guint64
 mono_rconv_ovf_u8 (float v)
 {
-	guint64 res;
-
-	res = (guint64)v;
-	if (mono_isnan (v) || mono_trunc (v) != res) {
-		ERROR_DECL (error);
-		mono_error_set_overflow (error);
-		mono_error_set_pending_exception (error);
-		return 0;
-	}
-	return res;
+	return mono_fconv_ovf_u8(v);
 }
-
-#ifdef MONO_ARCH_EMULATE_LCONV_TO_R8
-double
-mono_lconv_to_r8 (gint64 a)
-{
-	return (double)a;
-}
-#endif
-
-#ifdef MONO_ARCH_EMULATE_LCONV_TO_R4
-float
-mono_lconv_to_r4 (gint64 a)
-{
-	return (float)a;
-}
-#endif
-
-#ifdef MONO_ARCH_EMULATE_CONV_R8_UN
-double
-mono_conv_to_r8_un (guint32 a)
-{
-	return (double)a;
-}
-#endif
-
-#ifdef MONO_ARCH_EMULATE_LCONV_TO_R8_UN
-double
-mono_lconv_to_r8_un (guint64 a)
-{
-	return (double)a;
-}
-#endif
 
 #ifdef MONO_ARCH_EMULATE_FREM
 // Wrapper to avoid taking address of overloaded function.

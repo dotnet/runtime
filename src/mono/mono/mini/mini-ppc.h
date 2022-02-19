@@ -107,15 +107,8 @@ typedef struct MonoCompileArch {
 /* 32 and 64 bit AIX use function descriptors */
 #define PPC_USES_FUNCTION_DESCRIPTOR
 #endif
-
-#define MONO_ARCH_EMULATE_FCONV_TO_I8 1
-#define MONO_ARCH_EMULATE_LCONV_TO_R8 1
-#define MONO_ARCH_EMULATE_LCONV_TO_R4 1
 #endif
 
-#define MONO_ARCH_EMULATE_FCONV_TO_U4 1
-#define MONO_ARCH_EMULATE_FCONV_TO_U8 1
-#define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 #define MONO_ARCH_EMULATE_FREM 1
 #define MONO_ARCH_GC_MAPS_SUPPORTED 1
 
