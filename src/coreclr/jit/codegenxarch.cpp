@@ -9116,7 +9116,7 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     //
     PatchpointInfo* const patchpointInfo             = compiler->info.compPatchpointInfo;
     regMaskTP const       tier0CalleeSaves           = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
-    regMaskTP             tier0IntCalleeSaves        = tier0CalleeSaves & RBM_INT_CALLEE_SAVED;
+    regMaskTP             tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
     int const             tier0IntCalleeSaveUsedSize = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
 
     JITDUMP("--OSR--- tier0 has already saved ");
@@ -9183,7 +9183,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
     // x86/x64 doesn't support push of xmm/ymm regs, therefore consider only integer registers for pushing onto stack
     // here. Space for float registers to be preserved is stack allocated and saved as part of prolog sequence and not
     // here.
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -9196,9 +9196,9 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
     //
     PatchpointInfo* const patchpointInfo              = compiler->info.compPatchpointInfo;
     regMaskTP const       tier0CalleeSaves            = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
-    regMaskTP             tier0IntCalleeSaves         = tier0CalleeSaves & RBM_INT_CALLEE_SAVED;
+    regMaskTP             tier0IntCalleeSaves         = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
     unsigned const        tier0IntCalleeSaveUsedSize  = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
-    regMaskTP const       osrIntCalleeSaves           = rsPushRegs & RBM_INT_CALLEE_SAVED;
+    regMaskTP const       osrIntCalleeSaves           = rsPushRegs & RBM_OSR_INT_CALLEE_SAVED;
     regMaskTP             osrAdditionalIntCalleeSaves = osrIntCalleeSaves & ~tier0IntCalleeSaves;
 
     JITDUMP("---OSR--- int callee saves are ");
@@ -9318,8 +9318,6 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     const bool isFunclet                = compiler->funCurrentFunc()->funKind != FuncKind::FUNC_ROOT;
     const bool doesSupersetOfNormalPops = compiler->opts.IsOSR() && !isFunclet;
 
-    regMaskTP rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
-
     // OSR methods must restore all registers saved by either the OSR or
     // the Tier0 method. First restore any callee save not saved by
     // Tier0, then the callee saves done by Tier0.
@@ -9328,8 +9326,9 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     //
     if (doesSupersetOfNormalPops)
     {
+        regMaskTP rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
         regMaskTP tier0CalleeSaves =
-            ((regMaskTP)compiler->info.compPatchpointInfo->CalleeSaveRegisters()) & RBM_INT_CALLEE_SAVED;
+            ((regMaskTP)compiler->info.compPatchpointInfo->CalleeSaveRegisters()) & RBM_OSR_INT_CALLEE_SAVED;
         regMaskTP additionalCalleeSaves = rsPopRegs & ~tier0CalleeSaves;
 
         // Registers saved by the OSR prolog.
@@ -9345,7 +9344,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     {
         // Registers saved by a normal prolog
         //
-        const unsigned popCount = genPopCalleeSavedRegistersFromMask(rsPopRegs);
+        regMaskTP      rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+        const unsigned popCount  = genPopCalleeSavedRegistersFromMask(rsPopRegs);
         noway_assert(compiler->compCalleeRegsPushed == popCount);
     }
 }
@@ -9528,16 +9528,17 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             // so does not account for the Tier0 push of FP, so we add in an extra stack slot to get the
             // offset to the top of the Tier0 callee saves area.
             //
-            PatchpointInfo* const patchpointInfo             = compiler->info.compPatchpointInfo;
-            unsigned const        tier0FrameSize             = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
-            regMaskTP const       tier0CalleeSaves           = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
-            regMaskTP             tier0IntCalleeSaves        = tier0CalleeSaves & RBM_INT_CALLEE_SAVED;
-            regMaskTP const       osrIntCalleeSaves          = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
-            regMaskTP             allIntCalleeSaves          = osrIntCalleeSaves | tier0IntCalleeSaves;
-            unsigned const        tier0IntCalleeSaveUsedSize = genCountBits(allIntCalleeSaves) * REGSIZE_BYTES;
-            unsigned const        osrCalleeSaveSize          = compiler->compCalleeRegsPushed * REGSIZE_BYTES;
-            unsigned const        osrFramePointerSize        = isFramePointerUsed() ? REGSIZE_BYTES : 0;
-            unsigned const        osrAdjust =
+            PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
+
+            regMaskTP const tier0CalleeSaves           = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
+            regMaskTP const tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
+            regMaskTP const osrIntCalleeSaves          = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+            regMaskTP const allIntCalleeSaves          = osrIntCalleeSaves | tier0IntCalleeSaves;
+            unsigned const  tier0FrameSize             = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
+            unsigned const  tier0IntCalleeSaveUsedSize = genCountBits(allIntCalleeSaves) * REGSIZE_BYTES;
+            unsigned const  osrCalleeSaveSize          = compiler->compCalleeRegsPushed * REGSIZE_BYTES;
+            unsigned const  osrFramePointerSize        = isFramePointerUsed() ? REGSIZE_BYTES : 0;
+            unsigned const  osrAdjust =
                 tier0FrameSize - tier0IntCalleeSaveUsedSize + osrCalleeSaveSize + osrFramePointerSize;
 
             JITDUMP("OSR epilog adjust factors: tier0 frame %u, tier0 callee saves -%u, osr callee saves %u, osr "

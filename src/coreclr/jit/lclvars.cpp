@@ -6098,7 +6098,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     if (doesMethodHavePatchpoints())
     {
         const unsigned regsPushed    = compCalleeRegsPushed + (codeGen->isFramePointerUsed() ? 1 : 0);
-        const unsigned extraSlots    = genCountBits(RBM_INT_CALLEE_SAVED) - regsPushed;
+        const unsigned extraSlots    = genCountBits(RBM_OSR_INT_CALLEE_SAVED) - regsPushed;
         const unsigned extraSlotSize = extraSlots * REGSIZE_BYTES;
 
         JITDUMP("\nMethod has patchpoints and has %u callee saves.\n"
