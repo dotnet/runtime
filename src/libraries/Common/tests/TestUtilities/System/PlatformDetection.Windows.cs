@@ -154,7 +154,7 @@ namespace System
             out int pdwReturnedProductType
         );
 
-        [GeneratedDllImport("kernel32.dll", ExactSpelling = true)]
+        [GeneratedDllImport("kernel32.dll")]
         private static partial int GetCurrentApplicationUserModelId(ref uint applicationUserModelIdLength, byte[] applicationUserModelId);
 
         private static volatile Version s_windowsVersionObject;
