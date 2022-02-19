@@ -24,6 +24,8 @@ namespace System.Net.Security.Tests
             NetworkCredential credential = new NetworkCredential("User", "Password", "Domain");
             FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(credential);
             fakeNtlmServer.SendTimestamp = false;
+            fakeNtlmServer.TargetIsServer = true;
+            fakeNtlmServer.PreferUnicode = false;
 
             // NEGOTIATE_MESSAGE
             // Flags:

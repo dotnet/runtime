@@ -34,6 +34,8 @@ namespace System.Net.Security
         // Behavior modifiers
         public bool SendTimestamp { get; set; } = true;
         public byte[] Version { get; set; } = new byte[] { 0x06, 0x00, 0x70, 0x17, 0x00, 0x00, 0x00, 0x0f }; // 6.0.6000 / 15
+        public bool TargetIsServer { get; set; } = false;
+        public bool PreferUnicode { get; set; } = true;
 
         // Negotiation results
         public bool IsAuthenticated { get; set; }
@@ -50,7 +52,7 @@ namespace System.Net.Security
 
         // Minimal set of required negotiation flags
         private const Flags _requiredFlags =
-            Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.NegotiateAlwaysSign;
+            Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateAlwaysSign;
 
         // Fixed server challenge (same value as in Protocol Examples section of the specification)
         private byte[] _serverChallenge = new byte[] { 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef };
@@ -91,6 +93,16 @@ namespace System.Net.Security
             Negotiate128 = 0x20000000,
             NegotiateKeyExchange = 0x40000000,
             Negotiate56 = 0x80000000,
+
+            AllSupported =
+                NegotiateUnicode | NegotiateOEM | RequestTargetName |
+                NegotiateSign | NegotiateSeal | NegotiateDatagram |
+                /* NegotiateLMKey | */ NegotiateNtlm | /* NegotiateAnonymous | */
+                /* NegotiateDomainSupplied | NegotiateWorkstationSupplied | */
+                NegotiateAlwaysSign | TargetTypeDomain | TargetTypeServer |
+                NegotiateNtlm2 | /* RequestIdenityToken | RequestNonNtSessionKey | */
+                NegotiateTargetInfo | NegotiateVersion | Negotiate128 |
+                NegotiateKeyExchange | Negotiate56,
         }
 
         private enum AvId
@@ -145,6 +157,7 @@ namespace System.Net.Security
                     Assert.True(incomingBlob.Length >= 32);
                     Flags flags = (Flags)BinaryPrimitives.ReadUInt32LittleEndian(incomingBlob.AsSpan(12, 4));
                     Assert.Equal(_requiredFlags, (flags & _requiredFlags));
+                    Assert.True((flags & (Flags.NegotiateOEM | Flags.NegotiateUnicode)) != 0);
                     if (flags.HasFlag(Flags.NegotiateDomainSupplied))
                     {
                         string domain = Encoding.ASCII.GetString(GetField(incomingBlob, 16));
@@ -178,8 +191,21 @@ namespace System.Net.Security
         private byte[] GenerateChallenge(Flags flags)
         {
             byte[] buffer = new byte[1000];
-            byte[] targetName = Encoding.Unicode.GetBytes("Server");
+            byte[] targetName = Encoding.Unicode.GetBytes(TargetIsServer ? "Server" : _expectedCredential.Domain);
             int payloadOffset = 56;
+
+            // Loosely follow the flag manipulation in
+            // 3.2.5.1.1 Server Receives a NEGOTIATE_MESSAGE from the Client
+            flags &= ~(Flags.NegotiateLMKey | Flags.TargetTypeServer | Flags.TargetTypeDomain);
+            flags |= Flags.NegotiateNtlm | Flags.NegotiateAlwaysSign;
+            // Specification says to set Flags.RequestTargetName but it's valid only in NEGOTIATE_MESSAGE?!
+            flags |= TargetIsServer ? Flags.TargetTypeServer : Flags.TargetTypeDomain;
+            if (PreferUnicode && flags.HasFlag(Flags.NegotiateUnicode))
+            {
+                flags &= ~Flags.NegotiateOEM;
+            }
+            // Remove any unsupported flags here
+            flags &= Flags.AllSupported;
 
             NtlmHeader.CopyTo(buffer.AsSpan(0, 8));
             BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(8), (uint)MessageType.Challenge);
@@ -235,17 +261,22 @@ namespace System.Net.Security
         {
             ReadOnlySpan<byte> lmChallengeResponse = GetField(incomingBlob, 12);
             ReadOnlySpan<byte> ntChallengeResponse = GetField(incomingBlob, 20);
-            string domainName = Encoding.Unicode.GetString(GetField(incomingBlob, 28));
-            string userName = Encoding.Unicode.GetString(GetField(incomingBlob, 36));
-            string workstation = Encoding.Unicode.GetString(GetField(incomingBlob, 44));
             ReadOnlySpan<byte> encryptedRandomSessionKey = GetField(incomingBlob, 52);
             ReadOnlySpan<byte> mic = incomingBlob.AsSpan(72, 16);
 
-            Assert.Equal(_expectedCredential.UserName, userName);
-            Assert.Equal(_expectedCredential.Domain, domainName);
-
             Flags flags = (Flags)BinaryPrimitives.ReadUInt32LittleEndian(incomingBlob.AsSpan(60));
             Assert.Equal(_requiredFlags, (flags & _requiredFlags));
+
+            // Only one encoding can be selected by the client
+            Assert.True((flags & (Flags.NegotiateOEM | Flags.NegotiateUnicode)) != 0);
+            Assert.True((flags & (Flags.NegotiateOEM | Flags.NegotiateUnicode)) != (Flags.NegotiateOEM | Flags.NegotiateUnicode));
+            Encoding encoding = flags.HasFlag(Flags.NegotiateUnicode) ? Encoding.Unicode : Encoding.ASCII;
+
+            string domainName = encoding.GetString(GetField(incomingBlob, 28));
+            string userName = encoding.GetString(GetField(incomingBlob, 36));
+            string workstation = encoding.GetString(GetField(incomingBlob, 44));
+            Assert.Equal(_expectedCredential.UserName, userName);
+            Assert.Equal(_expectedCredential.Domain, domainName);
 
             byte[] ntlm2hash = MakeNtlm2Hash();
             Span<byte> sessionBaseKey = stackalloc byte[16];
