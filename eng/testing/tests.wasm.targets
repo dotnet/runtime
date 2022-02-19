@@ -15,6 +15,7 @@
     <_ShellCommandSeparator Condition="'$(OS)' != 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <WasmNativeStrip>false</WasmNativeStrip>
     <_WasmMainJSFileName Condition="'$(WasmMainJSPath)' != ''">$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
+    <_WasmStrictVersionMatch Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</_WasmStrictVersionMatch>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -161,6 +162,7 @@
       <_WasmPropertyNames Include="WasmNativeStrip" />
       <_WasmPropertyNames Include="WasmEnableES6" />
       <_WasmPropertyNames Include="_WasmDevel" />
+      <_WasmPropertyNames Include="_WasmStrictVersionMatch" />
 
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
