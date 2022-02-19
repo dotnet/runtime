@@ -326,29 +326,36 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_INTRINSIC:
         {
-            NamedIntrinsic ni = tree->AsIntrinsic()->gtIntrinsicName;
-
-            if ((ni == NI_System_Math_Max) || (ni == NI_System_Math_Min))
+            switch (tree->AsIntrinsic()->gtIntrinsicName)
             {
-                srcCount = BuildBinaryUses(tree->AsOp());
-                assert(dstCount == 1);
-                BuildDef(tree);
-                break;
+                case NI_System_Math_Max:
+                case NI_System_Math_Min:
+                    assert(varTypeIsFloating(tree->gtGetOp1()));
+                    assert(varTypeIsFloating(tree->gtGetOp2()));
+                    assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
+
+                    srcCount = BuildBinaryUses(tree->AsOp());
+                    assert(dstCount == 1);
+                    BuildDef(tree);
+                    break;
+
+                case NI_System_Math_Ceiling:
+                case NI_System_Math_Floor:
+                case NI_System_Math_Truncate:
+                case NI_System_Math_Round:
+                case NI_System_Math_Sqrt:
+                    assert(varTypeIsFloating(tree->gtGetOp1()));
+                    assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
+
+                    BuildUse(tree->gtGetOp1());
+                    srcCount = 1;
+                    assert(dstCount == 1);
+                    BuildDef(tree);
+                    break;
+
+                default:
+                    unreached();
             }
-
-            noway_assert((ni == NI_System_Math_Abs) || (ni == NI_System_Math_Ceiling) || (ni == NI_System_Math_Floor) ||
-                         (ni == NI_System_Math_Truncate) || (ni == NI_System_Math_Round) ||
-                         (ni == NI_System_Math_Sqrt));
-
-            // Both operand and its result must be of the same floating point type.
-            GenTree* op1 = tree->gtGetOp1();
-            assert(varTypeIsFloating(op1));
-            assert(op1->TypeGet() == tree->TypeGet());
-
-            BuildUse(op1);
-            srcCount = 1;
-            assert(dstCount == 1);
-            BuildDef(tree);
         }
         break;
 

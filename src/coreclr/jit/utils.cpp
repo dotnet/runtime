@@ -2211,28 +2211,68 @@ bool FloatingPointUtils::hasPreciseReciprocal(float x)
     return mantissa == 0 && exponent != 0 && exponent != 127;
 }
 
-static bool isNegative(float val)
+//------------------------------------------------------------------------
+// isNegative: Determines whether the specified value is negative
+//
+// Arguments:
+//    val - value to check
+//
+// Return Value:
+//    True if val is negative
+//
+
+bool FloatingPointUtils::isNegative(float val)
 {
     return *reinterpret_cast<INT32*>(&val) < 0;
 }
 
-static bool isNegative(double val)
+//------------------------------------------------------------------------
+// isNegative: Determines whether the specified value is negative
+//
+// Arguments:
+//    val - value to check
+//
+// Return Value:
+//    True if val is negative
+//
+
+bool FloatingPointUtils::isNegative(double val)
 {
     return *reinterpret_cast<INT64*>(&val) < 0;
 }
 
-static bool isNaN(float val)
-{
-    return val != val;
-}
+//------------------------------------------------------------------------
+// isNaN: Determines whether the specified value is NaN
+//
+// Arguments:
+//    val - value to check for NaN
+//
+// Return Value:
+//    True if val is NaN
+//
 
-static bool isNaN(double val)
+bool FloatingPointUtils::isNaN(float val)
 {
     return val != val;
 }
 
 //------------------------------------------------------------------------
-// max_double: This matches the IEEE 754:2019 `maximum` function
+// isNaN: Determines whether the specified value is NaN
+//
+// Arguments:
+//    val - value to check for NaN
+//
+// Return Value:
+//    True if val is NaN
+//
+
+bool FloatingPointUtils::isNaN(double val)
+{
+    return val != val;
+}
+
+//------------------------------------------------------------------------
+// maximum: This matches the IEEE 754:2019 `maximum` function
 //    It propagates NaN inputs back to the caller and
 //    otherwise returns the larger of the inputs. It
 //    treats +0 as larger than -0 as per the specification.
@@ -2245,7 +2285,7 @@ static bool isNaN(double val)
 //    Either val1 or val2
 //
 
-double FloatingPointUtils::max_double(double val1, double val2)
+double FloatingPointUtils::maximum(double val1, double val2)
 {
     if (val1 != val2)
     {
@@ -2259,7 +2299,7 @@ double FloatingPointUtils::max_double(double val1, double val2)
 }
 
 //------------------------------------------------------------------------
-// max_double: This matches the IEEE 754:2019 `maximum` function
+// maximum: This matches the IEEE 754:2019 `maximum` function
 //    It propagates NaN inputs back to the caller and
 //    otherwise returns the larger of the inputs. It
 //    treats +0 as larger than -0 as per the specification.
@@ -2272,7 +2312,7 @@ double FloatingPointUtils::max_double(double val1, double val2)
 //    Either val1 or val2
 //
 
-float FloatingPointUtils::max_float(float val1, float val2)
+float FloatingPointUtils::maximum(float val1, float val2)
 {
     if (val1 != val2)
     {
@@ -2286,7 +2326,7 @@ float FloatingPointUtils::max_float(float val1, float val2)
 }
 
 //------------------------------------------------------------------------
-// max_double: This matches the IEEE 754:2019 `minimum` function
+// minimum: This matches the IEEE 754:2019 `minimum` function
 //    It propagates NaN inputs back to the caller and
 //    otherwise returns the larger of the inputs. It
 //    treats +0 as larger than -0 as per the specification.
@@ -2299,7 +2339,7 @@ float FloatingPointUtils::max_float(float val1, float val2)
 //    Either val1 or val2
 //
 
-double FloatingPointUtils::min_double(double val1, double val2)
+double FloatingPointUtils::minimum(double val1, double val2)
 {
     if (val1 != val2 && !isNaN(val1))
     {
@@ -2309,7 +2349,7 @@ double FloatingPointUtils::min_double(double val1, double val2)
 }
 
 //------------------------------------------------------------------------
-// max_double: This matches the IEEE 754:2019 `minimum` function
+// minimum: This matches the IEEE 754:2019 `minimum` function
 //    It propagates NaN inputs back to the caller and
 //    otherwise returns the larger of the inputs. It
 //    treats +0 as larger than -0 as per the specification.
@@ -2322,7 +2362,7 @@ double FloatingPointUtils::min_double(double val1, double val2)
 //    Either val1 or val2
 //
 
-float FloatingPointUtils::min_float(float val1, float val2)
+float FloatingPointUtils::minimum(float val1, float val2)
 {
     if (val1 != val2 && !isNaN(val1))
     {

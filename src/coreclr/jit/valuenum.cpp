@@ -5622,7 +5622,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::max_double(arg0Val, arg1Val);
+                    res            = FloatingPointUtils::maximum(arg0Val, arg1Val);
                     break;
                 }
 
@@ -5630,7 +5630,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::min_double(arg0Val, arg1Val);
+                    res            = FloatingPointUtils::minimum(arg0Val, arg1Val);
                     break;
                 }
 
@@ -5667,19 +5667,11 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_Pow:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = powf(arg0Val, arg1Val);
-                    break;
-                }
-
                 case NI_System_Math_Max:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::max_float(arg0Val, arg1Val);
+                    res           = FloatingPointUtils::maximum(arg0Val, arg1Val);
                     break;
                 }
 
@@ -5687,7 +5679,15 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::min_float(arg0Val, arg1Val);
+                    res           = FloatingPointUtils::minimum(arg0Val, arg1Val);
+                    break;
+                }
+
+                case NI_System_Math_Pow:
+                {
+                    assert(typ == TypeOfVN(arg1VN));
+                    float arg1Val = GetConstantSingle(arg1VN);
+                    res           = powf(arg0Val, arg1Val);
                     break;
                 }
 
@@ -5713,16 +5713,16 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 vnf = VNF_FMod;
                 break;
 
-            case NI_System_Math_Pow:
-                vnf = VNF_Pow;
-                break;
-
             case NI_System_Math_Max:
                 vnf = VNF_Max;
                 break;
 
             case NI_System_Math_Min:
                 vnf = VNF_Min;
+                break;
+
+            case NI_System_Math_Pow:
+                vnf = VNF_Pow;
                 break;
 
             default:

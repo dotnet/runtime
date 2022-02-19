@@ -1704,7 +1704,7 @@ public:
         return (DebugOperKind() & DBK_NOTLIR) == 0;
     }
 
-    bool        OperSupportsReverseOps() const;
+    bool OperSupportsReverseOpEvalOrder(Compiler* comp) const;
     static bool RequiresNonNullOp2(genTreeOps oper);
     bool IsValidCallArgument();
 #endif // DEBUG
@@ -7842,30 +7842,7 @@ inline GenTree* GenTree::gtGetOp1() const
     }
 }
 
-inline bool GenTree::OperSupportsReverseOps() const
-{
-    if (OperIs(GT_INTRINSIC))
-    {
-        NamedIntrinsic ni = AsIntrinsic()->gtIntrinsicName;
-        if ((ni == NI_System_Math_Max) || (ni == NI_System_Math_Min))
-        {
-            return true;
-        }
-    }
-    if (OperIsBinary() && !OperIs(GT_COMMA, GT_INTRINSIC, GT_BOUNDS_CHECK))
-    {
-        return (AsOp()->gtGetOp1() != nullptr) && (AsOp()->gtGetOp2() != nullptr);
-    }
-#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-    if (OperIsMultiOp())
-    {
-        return AsMultiOp()->GetOperandCount() == 2;
-    }
-#endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
-    return false;
-}
 #endif // DEBUG
-
 inline GenTree* GenTree::gtGetOp2() const
 {
     assert(OperIsBinary());

@@ -691,13 +691,21 @@ public:
 
     static float infinite_float();
 
-    static double max_double(double a, double b);
+    static bool isNegative(float val);
 
-    static float max_float(float a, float b);
+    static bool isNegative(double val);
 
-    static double min_double(double a, double b);
+    static bool isNaN(float val);
 
-    static float min_float(float a, float b);
+    static bool isNaN(double val);
+
+    static double maximum(double val1, double val2);
+
+    static float maximum(float val1, float val2);
+
+    static double minimum(double val1, double val2);
+
+    static float minimum(float val1, float val2);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but
