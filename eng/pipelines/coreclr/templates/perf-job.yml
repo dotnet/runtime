@@ -99,12 +99,24 @@ jobs:
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
     - powershell: |
         Write-Host "ENV; $env:mauiVersion"
+      displayName: Test variables
+      condition: always()
+    - powershell: |
         Write-Host "ENV2; $env:mauiVersion2"
-        Write-Host "DOC; $(mauiVersion)"
+      displayName: Test variables
+      condition: always()
+    - powershell: |
         Write-Host "DOC2; $(mauiVersion2)"
+      displayName: Test variables
+      condition: always()
+    - powershell: |
         Write-Host "BRACK; $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion'] ]"
+      displayName: Test variables
+      condition: always()
+    - powershell: |
         Write-Host "PAREN; $(dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion'])"
       displayName: Test variables
+      condition: always()
 
     # Optionally download live-built libraries
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
