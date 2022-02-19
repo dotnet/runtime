@@ -234,7 +234,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private void SendResponseInternal(MessageId id, Result result, CancellationToken token)
         {
             JObject o = result.ToJObject(id);
-            if (result.IsErr)
+            if (!result.IsOk)
                 logger.LogError($"sending error response for id: {id} -> {result}");
 
             Send(this.ide, o, token);

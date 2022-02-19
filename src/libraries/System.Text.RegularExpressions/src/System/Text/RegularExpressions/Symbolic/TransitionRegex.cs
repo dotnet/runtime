@@ -278,8 +278,13 @@ namespace System.Text.RegularExpressions.Symbolic
         public static TransitionRegex<S> Lookaround(SymbolicRegexNode<S> nullabilityTest, TransitionRegex<S> thencase, TransitionRegex<S> elsecase) =>
             (thencase == elsecase) ? thencase : Create(thencase._builder, TransitionRegexKind.Lookaround, default(S), thencase, elsecase, nullabilityTest);
 
-        public static TransitionRegex<S> Effect(TransitionRegex<S> child, DerivativeEffect effect) =>
-            Create(child._builder, TransitionRegexKind.Effect, default(S), child, null, null, effect);
+        public static TransitionRegex<S> Effect(TransitionRegex<S> child, DerivativeEffect effect)
+        {
+            if (child.IsNothing)
+                return child;
+
+            return Create(child._builder, TransitionRegexKind.Effect, default(S), child, null, null, effect);
+        }
 
         /// <summary>Intersection of transition regexes</summary>
         public static TransitionRegex<S> operator &(TransitionRegex<S> one, TransitionRegex<S> two) => Intersect(one, two);
@@ -568,6 +573,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>
         /// Enumerate the leaves reachable with a given minterm and context, and collect the effects on the path to each leaf.
+        /// Any transitions after the first unconditionally nullable one are ignored, as the backtracking engines would never
+        /// take a path corresponding to those transitions.
         /// </summary>
         /// <param name="minterm">the minterm of the next character</param>
         /// <param name="context">the current context</param>
@@ -585,6 +592,9 @@ namespace System.Text.RegularExpressions.Symbolic
                     case TransitionRegexKind.Leaf:
                         Debug.Assert(top._node is not null);
                         yield return (top._node, effects);
+                        // If the leaf is nullable lower priority transitions would never get used anyway, so stop here
+                        if (top._node.IsNullable)
+                            yield break;
                         break;
 
                     case TransitionRegexKind.Conditional:

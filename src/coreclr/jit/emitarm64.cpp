@@ -12964,7 +12964,7 @@ void emitter::emitDispIns(
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
-            if (ins == INS_fcmeq)
+            if (ins == INS_fcmeq || ins == INS_fcmge || ins == INS_fcmgt || ins == INS_fcmle || ins == INS_fcmlt)
             {
                 printf(", ");
                 emitDispImm(0, false);
@@ -12988,7 +12988,7 @@ void emitter::emitDispIns(
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
-            if (ins == INS_cmeq)
+            if (ins == INS_cmeq || ins == INS_cmge || ins == INS_cmgt || ins == INS_cmle || ins == INS_cmlt)
             {
                 printf(", ");
                 emitDispImm(0, false);
@@ -13129,7 +13129,8 @@ void emitter::emitDispIns(
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, false);
             }
-            if (fmt == IF_DV_2L && ins == INS_cmeq)
+            if (fmt == IF_DV_2L &&
+                (ins == INS_cmeq || ins == INS_cmge || ins == INS_cmgt || ins == INS_cmle || ins == INS_cmlt))
             {
                 printf(", ");
                 emitDispImm(0, false);

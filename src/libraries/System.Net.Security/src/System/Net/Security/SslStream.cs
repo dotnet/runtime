@@ -50,7 +50,6 @@ namespace System.Net.Security
         internal LocalCertSelectionCallback? _certSelectionDelegate;
         internal EncryptionPolicy _encryptionPolicy;
 
-        private readonly Stream _innerStream;
         private SecureChannel? _context;
 
         private ExceptionDispatchInfo? _exception;
@@ -221,8 +220,6 @@ namespace System.Net.Security
             _userCertificateSelectionCallback = userCertificateSelectionCallback;
             _encryptionPolicy = encryptionPolicy;
             _certSelectionDelegate = userCertificateSelectionCallback == null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
-
-            _innerStream = innerStream;
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
@@ -475,7 +472,7 @@ namespace System.Net.Security
 
             ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
 
-            return ProcessAuthenticationAsync(isAsync: true, isApm: false, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         private Task AuthenticateAsClientApm(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
@@ -485,7 +482,7 @@ namespace System.Net.Security
 
             ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
 
-            return ProcessAuthenticationAsync(isAsync: true, isApm: true, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate) =>
@@ -523,7 +520,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
-            return ProcessAuthenticationAsync(isAsync: true, isApm: false, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         private Task AuthenticateAsServerApm(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken = default)
@@ -531,13 +528,13 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
-            return ProcessAuthenticationAsync(isAsync: true, isApm: true, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         public Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionsCallback, object? state, CancellationToken cancellationToken = default)
         {
             ValidateCreateContext(new SslAuthenticationOptions(optionsCallback, state, _userCertificateValidationCallback));
-            return ProcessAuthenticationAsync(isAsync: true, isApm: false, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, cancellationToken);
         }
 
         public virtual Task ShutdownAsync()
@@ -802,7 +799,7 @@ namespace System.Net.Security
                 throw new InvalidOperationException(SR.net_ssl_certificate_exist);
             }
 
-            return RenegotiateAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken));
+            return RenegotiateAsync<AsyncReadWriteAdapter>(cancellationToken);
         }
 
         protected override void Dispose(bool disposing)
@@ -834,7 +831,7 @@ namespace System.Net.Security
             ThrowIfExceptionalOrNotAuthenticated();
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "ReadByte", "read"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
             // If there's any data in the buffer, take one byte, and we're done.
@@ -869,7 +866,7 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateBufferArguments(buffer, offset, count);
-            ValueTask<int> vt = ReadAsyncInternal(new SyncReadWriteAdapter(InnerStream), new Memory<byte>(buffer, offset, count));
+            ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), default(CancellationToken));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             return vt.GetAwaiter().GetResult();
         }
@@ -881,7 +878,7 @@ namespace System.Net.Security
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateBufferArguments(buffer, offset, count);
 
-            ValueTask vt = WriteAsyncInternal(new SyncReadWriteAdapter(InnerStream), new ReadOnlyMemory<byte>(buffer, offset, count));
+            ValueTask vt = WriteAsyncInternal<SyncReadWriteAdapter>(new ReadOnlyMemory<byte>(buffer, offset, count), default(CancellationToken));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             vt.GetAwaiter().GetResult();
         }
@@ -914,26 +911,26 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateBufferArguments(buffer, offset, count);
-            return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return WriteAsyncInternal<AsyncReadWriteAdapter>(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            return WriteAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), buffer);
+            return WriteAsyncInternal<AsyncReadWriteAdapter>(buffer, cancellationToken);
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateBufferArguments(buffer, offset, count);
-            return ReadAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), new Memory<byte>(buffer, offset, count)).AsTask();
+            return ReadAsyncInternal<AsyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            return ReadAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), buffer);
+            return ReadAsyncInternal<AsyncReadWriteAdapter>(buffer, cancellationToken);
         }
 
         private void ThrowIfExceptional()
