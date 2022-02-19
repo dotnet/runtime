@@ -5621,16 +5621,16 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 case NI_System_Math_Max:
                 {
                     assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::max_double(arg0Val, arg1Val);
+                    double arg1Val = GetConstantDouble(arg1VN);
+                    res            = FloatingPointUtils::max_double(arg0Val, arg1Val);
                     break;
                 }
 
                 case NI_System_Math_Min:
                 {
                     assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::min_double(arg0Val, arg1Val);
+                    double arg1Val = GetConstantDouble(arg1VN);
+                    res            = FloatingPointUtils::min_double(arg0Val, arg1Val);
                     break;
                 }
 
