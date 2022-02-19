@@ -8,14 +8,14 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
         internal static partial bool CryptMsgControl(
             SafeCryptMsgHandle hCryptMsg,
             int dwFlags,
             MsgControlType dwCtrlType,
             ref CMSG_CTRL_DECRYPT_PARA pvCtrlPara);
 
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
         internal static partial bool CryptMsgControl(
             SafeCryptMsgHandle hCryptMsg,
             int dwFlags,

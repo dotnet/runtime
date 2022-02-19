@@ -80,9 +80,51 @@ namespace Microsoft.Interop.Analyzers
                         methodSymbol,
                         dllImportAttr!,
                         generatedDllImportAttrType,
+                        entryPointSuffix: null,
                         cancelToken),
                     equivalenceKey: ConvertToGeneratedDllImportKey),
                 context.Diagnostics);
+
+            DllImportData dllImportData = methodSymbol.GetDllImportData()!;
+            if (!dllImportData.ExactSpelling)
+            {
+                // CharSet.Auto traditionally maps to either an A or W suffix
+                // depending on the default CharSet of the platform.
+                // We will offer both suffix options when CharSet.Auto is provided
+                // to enable developers to pick which variant they mean (since they could explicitly decide they want one or the other)
+                if (dllImportData.CharacterSet is CharSet.None or CharSet.Ansi or CharSet.Auto)
+                {
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            string.Format(Resources.ConvertToGeneratedDllImportWithSuffix, "A"),
+                            cancelToken => ConvertToGeneratedDllImport(
+                                context.Document,
+                                methodSyntax,
+                                methodSymbol,
+                                dllImportAttr!,
+                                generatedDllImportAttrType,
+                                entryPointSuffix: 'A',
+                                cancelToken),
+                            equivalenceKey: ConvertToGeneratedDllImportKey + "A"),
+                        context.Diagnostics);
+                }
+                if (dllImportData.CharacterSet is CharSet.Unicode or CharSet.Auto)
+                {
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            string.Format(Resources.ConvertToGeneratedDllImportWithSuffix, "W"),
+                            cancelToken => ConvertToGeneratedDllImport(
+                                context.Document,
+                                methodSyntax,
+                                methodSymbol,
+                                dllImportAttr!,
+                                generatedDllImportAttrType,
+                                entryPointSuffix: 'W',
+                                cancelToken),
+                            equivalenceKey: ConvertToGeneratedDllImportKey + "W"),
+                        context.Diagnostics);
+                }
+            }
         }
 
         private async Task<Document> ConvertToGeneratedDllImport(
@@ -91,6 +133,7 @@ namespace Microsoft.Interop.Analyzers
             IMethodSymbol methodSymbol,
             AttributeData dllImportAttr,
             INamedTypeSymbol generatedDllImportAttrType,
+            char? entryPointSuffix,
             CancellationToken cancellationToken)
         {
             DocumentEditor editor = await DocumentEditor.CreateAsync(doc, cancellationToken).ConfigureAwait(false);
@@ -105,6 +148,8 @@ namespace Microsoft.Interop.Analyzers
                 dllImportSyntax,
                 methodSymbol.GetDllImportData()!,
                 generatedDllImportAttrType,
+                methodSymbol.Name,
+                entryPointSuffix,
                 out SyntaxNode? unmanagedCallConvAttributeMaybe);
 
             // Add annotation about potential behavioural and compatibility changes
@@ -312,6 +357,8 @@ namespace Microsoft.Interop.Analyzers
             AttributeSyntax dllImportSyntax,
             DllImportData dllImportData,
             INamedTypeSymbol generatedDllImportAttrType,
+            string methodName,
+            char? entryPointSuffix,
             out SyntaxNode? unmanagedCallConvAttributeMaybe)
         {
             unmanagedCallConvAttributeMaybe = null;
@@ -322,6 +369,7 @@ namespace Microsoft.Interop.Analyzers
 
             // Update attribute arguments for GeneratedDllImport
             List<SyntaxNode> argumentsToRemove = new List<SyntaxNode>();
+            AttributeArgumentSyntax? entryPointAttributeArgument = null;
             foreach (SyntaxNode argument in generator.GetAttributeArguments(generatedDllImportSyntax))
             {
                 if (argument is not AttributeArgumentSyntax attrArg)
@@ -356,6 +404,36 @@ namespace Microsoft.Interop.Analyzers
                         argumentsToRemove.Add(argument);
                     }
                 }
+                else if (IsMatchingNamedArg(attrArg, nameof(DllImportAttribute.ExactSpelling)))
+                {
+                    argumentsToRemove.Add(argument);
+                }
+                else if (IsMatchingNamedArg(attrArg, nameof(DllImportAttribute.EntryPoint)))
+                {
+                    entryPointAttributeArgument = attrArg;
+                    if (!dllImportData.ExactSpelling && entryPointSuffix.HasValue)
+                    {
+                        if (entryPointAttributeArgument.Expression.IsKind(SyntaxKind.StringLiteralExpression))
+                        {
+                            string? entryPoint = (string?)((LiteralExpressionSyntax)entryPointAttributeArgument.Expression).Token.Value;
+                            if (entryPoint is not null)
+                            {
+                                entryPointAttributeArgument = entryPointAttributeArgument.WithExpression(
+                                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
+                                        SyntaxFactory.Literal(entryPoint + entryPointSuffix)));
+                            }
+                        }
+                        else
+                        {
+                            entryPointAttributeArgument = entryPointAttributeArgument.WithExpression(
+                                SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression,
+                                entryPointAttributeArgument.Expression,
+                                SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
+                                    SyntaxFactory.Literal(entryPointSuffix.ToString()))));
+                        }
+                    }
+                    argumentsToRemove.Add(attrArg);
+                }
                 else if (IsMatchingNamedArg(attrArg, nameof(DllImportAttribute.PreserveSig)))
                 {
                     // We transform the signature for PreserveSig, so we can remove the argument
@@ -363,7 +441,17 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
+            if (entryPointSuffix.HasValue && entryPointAttributeArgument is null)
+            {
+                entryPointAttributeArgument = (AttributeArgumentSyntax)generator.AttributeArgument("EntryPoint",
+                    generator.LiteralExpression(methodName + entryPointSuffix.Value));
+            }
+
             generatedDllImportSyntax = generator.RemoveNodes(generatedDllImportSyntax, argumentsToRemove);
+            if (entryPointAttributeArgument is not null)
+            {
+                generatedDllImportSyntax = generator.AddAttributeArguments(generatedDllImportSyntax, new[] { entryPointAttributeArgument });
+            }
             return SortDllImportAttributeArguments((AttributeSyntax)generatedDllImportSyntax, generator);
         }
 
