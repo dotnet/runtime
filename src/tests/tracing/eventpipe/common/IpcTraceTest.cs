@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
-using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.NETCore.Client;
-using System.Runtime.InteropServices;
-using System.Linq;
-using System.Text.RegularExpressions;
+using Microsoft.Diagnostics.Tracing;
 
 namespace Tracing.Tests.Common
 {
@@ -101,7 +101,6 @@ namespace Tracing.Tests.Common
         // and don't care about the number of events sent
         private Dictionary<string, ExpectedEventCount> _expectedEventCounts;
         private Dictionary<string, int> _actualEventCounts = new Dictionary<string, int>();
-        private int _droppedEvents = 0;
 
         // A function to be called with the EventPipeEventSource _before_
         // the call to `source.Process()`.  The function should return another
@@ -238,7 +237,6 @@ namespace Tracing.Tests.Common
                                         Logger.logger.Log("Saw sentinel event");
                                     sentinelEventReceived.Set();
                                 }
-
                                 else if (_actualEventCounts.TryGetValue(eventData.ProviderName, out _))
                                 {
                                     _actualEventCounts[eventData.ProviderName]++;
@@ -295,7 +293,7 @@ namespace Tracing.Tests.Common
             _eventGeneratingAction();
             Logger.logger.Log("Stopping event generating action");
 
-            var stopTask = Task.Run(() => 
+            var stopTask = Task.Run(() =>
             {
                 Logger.logger.Log("Sending StopTracing command...");
                 lock (threadSync) // eventpipeSession
@@ -337,7 +335,7 @@ namespace Tracing.Tests.Common
         }
 
         // Ensure that we have a clean environment for running the test.
-        // Specifically check that we don't have more than one match for 
+        // Specifically check that we don't have more than one match for
         // Diagnostic IPC sockets in the TempPath.  These can be left behind
         // by bugs, catastrophic test failures, etc. from previous testing.
         // The tmp directory is only cleared on reboot, so it is possible to
