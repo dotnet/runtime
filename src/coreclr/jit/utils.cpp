@@ -2253,7 +2253,8 @@ bool FloatingPointUtils::isNegative(double val)
 
 bool FloatingPointUtils::isNaN(float val)
 {
-    return val != val;
+    UINT32 bits = *reinterpret_cast<UINT32*>(&val)
+    return (bits & 0x7FFFFFFFU) > 0x7F800000U;
 }
 
 //------------------------------------------------------------------------
@@ -2268,7 +2269,8 @@ bool FloatingPointUtils::isNaN(float val)
 
 bool FloatingPointUtils::isNaN(double val)
 {
-    return val != val;
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val)
+    return (bits & 0x7FFFFFFFFFFFFFFFULL) > 0x7FF0000000000000ULL;
 }
 
 //------------------------------------------------------------------------
