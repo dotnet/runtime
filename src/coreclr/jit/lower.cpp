@@ -251,8 +251,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_CAST:
-            LowerCast(node);
-            break;
+            return LowerCast(node->AsCast());
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         case GT_BOUNDS_CHECK:

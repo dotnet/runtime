@@ -312,7 +312,7 @@ namespace FPBehaviorApp
                 failures++;
                 Console.WriteLine($"Managed.ConvertDoubleToUInt64(dblVal, t) != Native.ConvertDoubleToUInt64(dblVal, t) {t} {value} {dblVal} {Managed.ConvertDoubleToUInt64(dblVal, t)} != {Native.ConvertDoubleToUInt64(dblVal, t)}");
             }
-            
+
             if (t == ManagedConversionRule)
             {
                 if (Managed.ConvertDoubleToInt32(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR) != Managed.ConvertDoubleToInt32(dblVal, t))
@@ -332,7 +332,7 @@ namespace FPBehaviorApp
                     failures++;
                     Console.WriteLine($"ConvertDoubleToInt64 NativeCompilerBehavior(managed) {t} {value} {dblVal} {Managed.ConvertDoubleToInt64(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)} != {Managed.ConvertDoubleToInt64(dblVal, t)}");
                 }
-                
+
                 if (Managed.ConvertDoubleToUInt64(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR) != Managed.ConvertDoubleToUInt64(dblVal, t))
                 {
                     failures++;
@@ -373,30 +373,18 @@ namespace FPBehaviorApp
 
         static int Main(string[] args)
         {
-            switch (RuntimeInformation.ProcessArchitecture)
-            {
-                case Architecture.X86:
-                case Architecture.X64:
-                    Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64;
-                    break;
+            Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_SATURATING;
 
-                case Architecture.Arm:
-                    Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32;
-                    break;
-
-                case Architecture.Arm64:
-                    Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_SATURATING;
-                    break;
-            }
-            Console.WriteLine($"Expected managed float behavior is {Program.ManagedConversionRule} Execute with parameter to adjust");
             if (args.Length > 0)
             {
-                if (!Enum.TryParse(args[0], out ManagedConversionRule))
+                if (!Enum.TryParse(args[0], out Program.ManagedConversionRule))
                 {
                     Console.WriteLine($"Unable to parse {args[0]}");
                     return 1;
                 }
             }
+
+            Console.WriteLine($"Expected managed float behavior is {Program.ManagedConversionRule}");
             Console.WriteLine("Specific test cases");
 
             TestBitValue(0, 9223372036854777856.0);

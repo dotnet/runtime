@@ -32,22 +32,30 @@ namespace Internal.JitInterface
         CORINFO_HELP_LMOD,
         CORINFO_HELP_ULDIV,
         CORINFO_HELP_ULMOD,
-        CORINFO_HELP_LNG2DBL,               // Convert a signed int64 to a double
-        CORINFO_HELP_ULNG2DBL,              // Convert a unsigned int64 to a double
-        CORINFO_HELP_DBL2INT,
-        CORINFO_HELP_DBL2INT_OVF,
-        CORINFO_HELP_DBL2LNG,
-        CORINFO_HELP_DBL2LNG_OVF,
-        CORINFO_HELP_DBL2UINT,
-        CORINFO_HELP_DBL2UINT_OVF,
-        CORINFO_HELP_DBL2ULNG,
-        CORINFO_HELP_DBL2ULNG_OVF,
+        CORINFO_HELP_Int64ToDouble,
+        CORINFO_HELP_UInt64ToDouble,
+        CORINFO_HELP_DoubleToInt8,
+        CORINFO_HELP_DoubleToInt8_OVF,
+        CORINFO_HELP_DoubleToInt16,
+        CORINFO_HELP_DoubleToInt16_OVF,
+        CORINFO_HELP_DoubleToInt32,
+        CORINFO_HELP_DoubleToInt32_OVF,
+        CORINFO_HELP_DoubleToInt64,
+        CORINFO_HELP_DoubleToInt64_OVF,
+        CORINFO_HELP_DoubleToUInt8,
+        CORINFO_HELP_DoubleToUInt8_OVF,
+        CORINFO_HELP_DoubleToUInt16,
+        CORINFO_HELP_DoubleToUInt16_OVF,
+        CORINFO_HELP_DoubleToUInt32,
+        CORINFO_HELP_DoubleToUInt32_OVF,
+        CORINFO_HELP_DoubleToUInt64,
+        CORINFO_HELP_DoubleToUInt64_OVF,
         CORINFO_HELP_FLTREM,
         CORINFO_HELP_DBLREM,
         CORINFO_HELP_FLTROUND,
         CORINFO_HELP_DBLROUND,
 
-        /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide 
+        /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide
            which is the right helper to use to allocate an object of a given type. */
 
         CORINFO_HELP_NEWFAST,
@@ -81,7 +89,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_CHKCASTARRAY,
         CORINFO_HELP_CHKCASTCLASS,
         CORINFO_HELP_CHKCASTANY,
-        CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases 
+        CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases
                                            // has been taken care of by the inlined check
 
         CORINFO_HELP_BOX,
@@ -120,7 +128,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_MON_EXIT_STATIC,
 
         CORINFO_HELP_GETCLASSFROMMETHODPARAM, // Given a generics method handle, returns a class handle
-        CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor 
+        CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor
                                               // in its ManagedClassObject
 
         /* GC support */
@@ -166,7 +174,7 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_GETSTATICFIELDADDR_TLS,        // Helper for PE TLS fields
 
-        // There are a variety of specialized helpers for accessing static fields. The JIT should use 
+        // There are a variety of specialized helpers for accessing static fields. The JIT should use
         // ICorClassInfo::getSharedStaticsOrCCtorHelper to determine which helper to use
 
         // Helpers for regular statics
@@ -275,7 +283,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
         CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
 
-        CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument    
+        CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument
         CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS, // Transition to cooperative mode and track transitions in reverse P/Invoke prolog.
         CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,  // Transition to preemptive mode in reverse P/Invoke epilog, frame is the first argument
         CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.

@@ -133,7 +133,7 @@ public class MapFile
         // GlobalVarName2
         //   Example: @JIT_WriteBarrier@
         //       (or) _JIT_FltRem@
-        //       (or) _JIT_Dbl2Lng@
+        //       (or) _JIT_DoubleToInt64@
         //       (or) _JIT_LLsh@
         Reg_MapAddress +
         Reg_ExWhiteSpaces +
