@@ -2259,7 +2259,7 @@ double FloatingPointUtils::max_double(double val1, double val2)
 {
     if (val1 != val2)
     {
-        if (!isnan(val1))
+        if (!_isnan(val1))
         {
             return val2 < val1 ? val1 : val2;
         }
@@ -2286,7 +2286,7 @@ float FloatingPointUtils::max_float(float val1, float val2)
 {
     if (val1 != val2)
     {
-        if (!isnan(val1))
+        if (!_isnanf(val1))
         {
             return val2 < val1 ? val1 : val2;
         }
@@ -2311,7 +2311,7 @@ float FloatingPointUtils::max_float(float val1, float val2)
 
 double FloatingPointUtils::min_double(double val1, double val2)
 {
-    if (val1 != val2 && !isnan(val1))
+    if (val1 != val2 && !_isnan(val1))
     {
         return val1 < val2 ? val1 : val2;
     }
@@ -2334,7 +2334,7 @@ double FloatingPointUtils::min_double(double val1, double val2)
 
 float FloatingPointUtils::min_float(float val1, float val2)
 {
-    if (val1 != val2 && !isnan(val1))
+    if (val1 != val2 && !_isnanf(val1))
     {
         return val1 < val2 ? val1 : val2;
     }
