@@ -11,15 +11,12 @@
 #ifdef DEFINE_ID_OPS
 //////////////////////////////////////////////////////////////////////////////
 
-#undef DEFINE_ID_OPS
 enum ID_OPS
 {
     ID_OP_NONE, // no additional arguments
-    ID_OP_SCNS, // small const  operand (21-bits or less, no reloc)
-    ID_OP_JMP,  // local jump
-    ID_OP_CALL, // method call
-    ID_OP_SPEC, // special handling required
 };
+
+#undef DEFINE_ID_OPS
 
 //////////////////////////////////////////////////////////////////////////////
 #else // !DEFINE_ID_OPS
@@ -37,13 +34,6 @@ enum ID_OPS
 //////////////////////////////////////////////////////////////////////////////
 
 IF_DEF(NONE, IS_NONE, NONE) //
-
-
-//IF_DEF(LABEL, IS_NONE, JMP)    // label
-//IF_DEF(LARGEJMP, IS_NONE, JMP) // large conditional branch pseudo-op (cond branch + uncond branch)
-//IF_DEF(LARGEADR, IS_NONE, JMP) // large address pseudo-op (adrp + add)
-//IF_DEF(LARGELDC, IS_NONE, JMP) // large constant pseudo-op (adrp + ldr)
-
 
 IF_DEF(OPCODE, IS_NONE, NONE)
 IF_DEF(OPCODES_16, IS_NONE, NONE)

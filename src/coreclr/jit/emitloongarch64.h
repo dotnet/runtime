@@ -78,140 +78,10 @@ bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src
 bool IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
 
-/************************************************************************
-*
-* This union is used to to encode/decode the special LOONGARCH64 immediate values
-* that is listed as imm(N,r,s) and referred to as 'bitmask immediate'
-*/
-
-union bitMaskImm {
-    struct
-    {
-        unsigned immS : 6; // bits 0..5
-        unsigned immR : 6; // bits 6..11
-        unsigned immN : 1; // bits 12
-    };
-    unsigned immNRS; // concat N:R:S forming a 13-bit unsigned immediate
-};
-
-/************************************************************************
-*
-*  Convert between a 64-bit immediate and its 'bitmask immediate'
-*   representation imm(i16,hw)
-*/
-
-// static emitter::bitMaskImm emitEncodeBitMaskImm(INT64 imm, emitAttr size);
-
-// static INT64 emitDecodeBitMaskImm(const emitter::bitMaskImm bmImm, emitAttr size);
-
-/************************************************************************
-*
-* This union is used to to encode/decode the special LOONGARCH64 immediate values
-* that is listed as imm(i16,hw) and referred to as 'halfword immediate'
-*/
-
-union halfwordImm {
-    struct
-    {
-        unsigned immVal : 16; // bits  0..15
-        unsigned immHW : 2;   // bits 16..17
-    };
-    unsigned immHWVal; // concat HW:Val forming a 18-bit unsigned immediate
-};
-
-/************************************************************************
-*
-*  Convert between a 64-bit immediate and its 'halfword immediate'
-*   representation imm(i16,hw)
-*/
-
-// static emitter::halfwordImm emitEncodeHalfwordImm(INT64 imm, emitAttr size);
-
-// static INT64 emitDecodeHalfwordImm(const emitter::halfwordImm hwImm, emitAttr size);
-
-/************************************************************************
-*
-* This union is used to encode/decode the special LOONGARCH64 immediate values
-* that is listed as imm(i16,by) and referred to as 'byteShifted immediate'
-*/
-
-union byteShiftedImm {
-    struct
-    {
-        unsigned immVal : 8;  // bits  0..7
-        unsigned immBY : 2;   // bits  8..9
-        unsigned immOnes : 1; // bit   10
-    };
-    unsigned immBSVal; // concat Ones:BY:Val forming a 10-bit unsigned immediate
-};
-
-/************************************************************************
-*
-*  Convert between a 16/32-bit immediate and its 'byteShifted immediate'
-*   representation imm(i8,by)
-*/
-
-// static emitter::byteShiftedImm emitEncodeByteShiftedImm(INT64 imm, emitAttr size, bool allow_MSL);
-
-// static INT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size);
-
-/************************************************************************
-*
-* This union is used to to encode/decode the special LOONGARCH64 immediate values
-* that are use for FMOV immediate and referred to as 'float 8-bit immediate'
-*/
-
-union floatImm8 {
-    struct
-    {
-        unsigned immMant : 4; // bits 0..3
-        unsigned immExp : 3;  // bits 4..6
-        unsigned immSign : 1; // bits 7
-    };
-    unsigned immFPIVal; // concat Sign:Exp:Mant forming an 8-bit unsigned immediate
-};
-
-/************************************************************************
-*
-*  Convert between a double and its 'float 8-bit immediate' representation
-*/
-
-// static emitter::floatImm8 emitEncodeFloatImm8(double immDbl);
-
-// static double emitDecodeFloatImm8(const emitter::floatImm8 fpImm);
-
-/************************************************************************
-*
-*  This union is used to to encode/decode the cond, nzcv and imm5 values for
-*   instructions that use them in the small constant immediate field
-*/
-
-union condFlagsImm {
-    struct
-    {
-        // insCond   cond : 4;  // bits  0..3
-        // insCflags flags : 4; // bits  4..7
-        unsigned imm5 : 5; // bits  8..12
-    };
-    unsigned immCFVal; // concat imm5:flags:cond forming an 13-bit unsigned immediate
-};
-
-// Returns true if 'reg' represents an integer register.
-static bool isIntegerRegister(regNumber reg)
-{
-    return (reg >= REG_INT_FIRST) && (reg <= REG_INT_LAST);
-}
-
 // Returns true if 'value' is a legal signed immediate 12 bit encoding.
 static bool isValidSimm12(ssize_t value)
 {
     return -(((int)1) << 11) <= value && value < (((int)1) << 11);
-};
-
-// Returns true if 'value' is a legal signed immediate 16 bit encoding.
-static bool isValidSimm16(ssize_t value)
-{
-    return -(((int)1) << 15) <= value && value < (((int)1) << 15);
 };
 
 // Returns true if 'value' is a legal signed immediate 20 bit encoding.
@@ -311,17 +181,12 @@ void emitIns_R_R_I_I(
 
 void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4);
 
-// void emitIns_BARR(instruction ins, insBarrier barrier);
-
 void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs);
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
 void emitIns_S_S_R_R(
     instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);
-
-// void emitIns_R_R_S(
-//    instruction ins, emitAttr attr, regNumber ireg, regNumber ireg2, int sa);
 
 void emitIns_R_R_S_S(
     instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);
@@ -402,12 +267,6 @@ void emitIns_Call(EmitCallType          callType,
                   bool             isJump = false);
 
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
-// BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
-// BYTE* emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id);
-// BYTE* emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id);
-// BYTE* emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg);
-// BYTE* emitOutputShortConstant(
-//    BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg, emitAttr opSize);
 
 unsigned get_curTotalCodeSize(); // bytes of code
 

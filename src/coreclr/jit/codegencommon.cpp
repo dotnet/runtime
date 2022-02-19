@@ -2999,20 +2999,20 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     //
     struct regArgElem
     {
-        unsigned  varNum;  // index into compiler->lvaTable[] for this register argument
+        unsigned varNum; // index into compiler->lvaTable[] for this register argument
 #if defined(UNIX_AMD64_ABI)
-        var_types type;    // the Jit type of this regArgTab entry
-#endif // defined(UNIX_AMD64_ABI)
-        unsigned  trashBy; // index into this regArgTab[] table of the register that will be copied to this register.
-                           // That is, for regArgTab[x].trashBy = y, argument register number 'y' will be copied to
-                           // argument register number 'x'. Only used when circular = true.
-        char slot;         // 0 means the register is not used for a register argument
-                           // 1 means the first part of a register argument
-                           // 2, 3 or 4  means the second,third or fourth part of a multireg argument
-        bool stackArg;     // true if the argument gets homed to the stack
-        bool writeThru;    // true if the argument gets homed to both stack and register
-        bool processed;    // true after we've processed the argument (and it is in its final location)
-        bool circular;     // true if this register participates in a circular dependency loop.
+        var_types type;   // the Jit type of this regArgTab entry
+#endif                    // defined(UNIX_AMD64_ABI)
+        unsigned trashBy; // index into this regArgTab[] table of the register that will be copied to this register.
+                          // That is, for regArgTab[x].trashBy = y, argument register number 'y' will be copied to
+                          // argument register number 'x'. Only used when circular = true.
+        char slot;        // 0 means the register is not used for a register argument
+                          // 1 means the first part of a register argument
+                          // 2, 3 or 4  means the second,third or fourth part of a multireg argument
+        bool stackArg;    // true if the argument gets homed to the stack
+        bool writeThru;   // true if the argument gets homed to both stack and register
+        bool processed;   // true after we've processed the argument (and it is in its final location)
+        bool circular;    // true if this register participates in a circular dependency loop.
 
 #ifdef UNIX_AMD64_ABI
 
@@ -3815,10 +3815,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             else
 #endif // TARGET_XARCH
             {
-                var_types destMemType    = varDscDest->TypeGet();
+                var_types destMemType = varDscDest->TypeGet();
 
 #ifdef TARGET_ARM
-                bool      cycleAllDouble = true; // assume the best
+                bool cycleAllDouble = true; // assume the best
 
                 unsigned iter = begReg;
                 do

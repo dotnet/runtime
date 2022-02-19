@@ -48,6 +48,7 @@ JMP_SMALL(le    , gt    , ble    )  // LE
 
 #elif defined(TARGET_LOONGARCH64)
 
+// TODO-LOONGARCH64: adding other condition branches.
 JMP_SMALL(jmp   , jmp   , b      )
 JMP_SMALL(eq    , ne    , beq    )  // EQ
 JMP_SMALL(ne    , eq    , bne    )  // NE

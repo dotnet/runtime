@@ -2648,7 +2648,6 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
 
     inst_JCC(condition, compiler->compCurBB->bbJumpDest);
 }
-#endif // !TARGET_LOONGARCH64
 
 //------------------------------------------------------------------------
 // genCodeForJcc: Generate code for a GT_JCC node.
@@ -2706,3 +2705,4 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     inst_SETCC(setcc->gtCondition, setcc->TypeGet(), setcc->GetRegNum());
     genProduceReg(setcc);
 }
+#endif // !TARGET_LOONGARCH64

@@ -758,11 +758,8 @@ protected:
 #elif defined(TARGET_ARM64)
 // For Arm64, we have used 17 bits from the second DWORD.
 #define ID_EXTRA_BITFIELD_BITS (17)
-#elif defined(TARGET_XARCH)
-// For xarch, we have used 14 bits from the second DWORD.
-#define ID_EXTRA_BITFIELD_BITS (14)
-#elif defined(TARGET_LOONGARCH64)
-                                   // For Loongarch64, we have used 14 bits from the second DWORD.
+#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
+// For xarch and LoongArch64, we have used 14 bits from the second DWORD.
 #define ID_EXTRA_BITFIELD_BITS (14)
 #else
 #error Unsupported or unset target architecture
@@ -1052,7 +1049,7 @@ protected:
         }
 
 #elif defined(TARGET_LOONGARCH64)
-        unsigned idCodeSize() const
+        unsigned    idCodeSize() const
         {
             return _idCodeSize; //_idInsCount;
         }
