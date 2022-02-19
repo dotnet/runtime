@@ -159,14 +159,13 @@ jobs:
           artifactFileName: 'AndroidMonoarm64.tar.gz'
           artifactName: 'AndroidMonoarm64'
           displayName: 'Mono Android HelloWorld'
-      #### Commented out to mitigate https://github.com/dotnet/performance/issues/2254 on main
-      #- template: /eng/pipelines/common/download-artifact-step.yml
-      #  parameters:
-      #    unpackFolder: $(Build.SourcesDirectory)
-      #    cleanUnpackFolder: false
-      #    artifactFileName: 'MauiAndroidApp.tar.gz'
-      #    artifactName: 'MauiAndroidApp'
-      #    displayName: 'Maui Android App'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiAndroidApp.tar.gz'
+          artifactName: 'MauiAndroidApp'
+          displayName: 'Maui Android App'
 
     # Download iOSMono tests and MauiiOS/MacCatalyst
     - ${{ if eq(parameters.runtimeType, 'iOSMono') }}:

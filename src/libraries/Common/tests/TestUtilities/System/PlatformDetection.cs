@@ -60,6 +60,18 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
+        private static Lazy<bool> s_isCheckedRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Checked"));
+        private static Lazy<bool> s_isReleaseRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Release"));
+        private static Lazy<bool> s_isDebugRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Debug"));
+
+        public static bool IsCheckedRuntime => s_isCheckedRuntime.Value;
+        public static bool IsReleaseRuntime => s_isReleaseRuntime.Value;
+        public static bool IsDebugRuntime => s_isDebugRuntime.Value;
+
+        // For use as needed on tests that time out when run on a Debug runtime.
+        // Not relevant for timeouts on external activities, such as network timeouts.
+        public static int SlowRuntimeTimeoutModifier = (PlatformDetection.IsDebugRuntime ? 5 : 1);
+
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
 
 #if NETCOREAPP
@@ -68,7 +80,7 @@ namespace System
 #else
         public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 #endif
-        
+
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
         public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
@@ -80,15 +92,17 @@ namespace System
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
         public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
+        public static bool IsNodeJS => IsEnvironmentVariableTrue("IsNodeJS");
+        public static bool IsNotNodeJS => !IsNodeJS;
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
 
         public static bool IsUsingLimitedCultures => !IsNotMobile;
         public static bool IsNotUsingLimitedCultures => IsNotMobile;
 
-        public static bool IsLinqExpressionsBuiltWithIsInterpretingOnly => s_LinqExpressionsBuiltWithIsInterpretingOnly.Value;
+        public static bool IsLinqExpressionsBuiltWithIsInterpretingOnly => s_linqExpressionsBuiltWithIsInterpretingOnly.Value;
         public static bool IsNotLinqExpressionsBuiltWithIsInterpretingOnly => !IsLinqExpressionsBuiltWithIsInterpretingOnly;
-        private static readonly Lazy<bool> s_LinqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
+        private static readonly Lazy<bool> s_linqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
         private static bool GetLinqExpressionsBuiltWithIsInterpretingOnly()
         {
             return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
@@ -203,7 +217,7 @@ namespace System
                 {
                     return true;
                 }
-                
+
                 return OpenSslVersion.Major == 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
             }
 
@@ -512,6 +526,14 @@ namespace System
 
             var val = Environment.GetEnvironmentVariable(variableName);
             return (val != null && val == "true");
+        }
+
+        private static bool AssemblyConfigurationEquals(string configuration)
+        {
+            AssemblyConfigurationAttribute assemblyConfigurationAttribute = typeof(string).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>();
+
+            return assemblyConfigurationAttribute != null &&
+                string.Equals(assemblyConfigurationAttribute.Configuration, configuration, StringComparison.InvariantCulture);
         }
     }
 }

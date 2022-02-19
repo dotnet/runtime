@@ -36,6 +36,36 @@ namespace System.Security.Cryptography
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
         }
 
+        internal static bool TryHashData(
+            HashAlgorithmName hashAlgorithm,
+            ReadOnlySpan<byte> source,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            if (hashAlgorithm == HashAlgorithmName.SHA256)
+            {
+                return SHA256.TryHashData(source, destination, out bytesWritten);
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA1)
+            {
+                return SHA1.TryHashData(source, destination, out bytesWritten);
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA512)
+            {
+                return SHA512.TryHashData(source, destination, out bytesWritten);
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA384)
+            {
+                return SHA384.TryHashData(source, destination, out bytesWritten);
+            }
+            else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
+            {
+                return MD5.TryHashData(source, destination, out bytesWritten);
+            }
+
+            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+        }
+
         internal static byte[] HashData(HashAlgorithmName hashAlgorithm, Stream source)
         {
             if (hashAlgorithm == HashAlgorithmName.SHA256)

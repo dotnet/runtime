@@ -735,15 +735,6 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
     }
 
-    if (m_ConstArgFeedsIsKnownConst || (m_ArgFeedsIsKnownConst && m_IsPrejitRoot))
-    {
-        // if we use RuntimeHelpers.IsKnownConstant we most likely expect our function to be always inlined
-        // at least in the case of constant arguments. In IsPrejitRoot we don't have callsite info so let's
-        // assume we have a constant here in order to avoid "baked" noinline
-        multiplier += 20;
-        JITDUMP("\nConstant argument feeds RuntimeHelpers.IsKnownConstant.  Multiplier increased to %g.", multiplier);
-    }
-
     if (m_ConstantArgFeedsConstantTest > 0)
     {
         multiplier += 3.0;

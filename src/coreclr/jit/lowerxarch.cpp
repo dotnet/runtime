@@ -600,31 +600,41 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     // TODO-X86-CQ: The helper call either is not supported on x86 or required more work
     // (I don't know which).
 
-    if (size <= CPBLK_UNROLL_LIMIT && !layout->HasGCPtr())
+    if (!layout->HasGCPtr())
     {
 #ifdef TARGET_X86
         if (size < XMM_REGSIZE_BYTES)
         {
+            // Codegen for "Kind::Push" will always load bytes in TARGET_POINTER_SIZE
+            // chunks. As such, the correctness of this code depends on the fact that
+            // morph will copy any "mis-sized" (too small) non-local OBJs into a temp,
+            // thus preventing any possible out-of-bounds memory reads.
+            assert(((layout->GetSize() % TARGET_POINTER_SIZE) == 0) || src->OperIsLocalRead() ||
+                   (src->OperIsIndir() && src->AsIndir()->Addr()->IsLocalAddrExpr()));
             putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
         }
         else
 #endif // TARGET_X86
+            if (size <= CPBLK_UNROLL_LIMIT)
         {
             putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
         }
+        else
+        {
+            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::RepInstr;
+        }
     }
-#ifdef TARGET_X86
-    else if (layout->HasGCPtr())
+    else // There are GC pointers.
     {
+#ifdef TARGET_X86
         // On x86, we must use `push` to store GC references to the stack in order for the emitter to properly update
         // the function's GC info. These `putargstk` nodes will generate a sequence of `push` instructions.
         putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
+#else  // !TARGET_X86
+        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::PartialRepInstr;
+#endif // !TARGET_X86
     }
-#endif // TARGET_X86
-    else
-    {
-        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::RepInstr;
-    }
+
     // Always mark the OBJ and ADDR as contained trees by the putarg_stk. The codegen will deal with this tree.
     MakeSrcContained(putArgStk, src);
     if (haveLocalAddr)
