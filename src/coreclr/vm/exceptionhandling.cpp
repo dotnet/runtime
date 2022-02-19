@@ -3278,7 +3278,6 @@ DWORD_PTR ExceptionTracker::CallHandler(
     MethodDesc*            pMD,
     EHFuncletType          funcletType,
     PCONTEXT               pContextRecord)
-    )
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
