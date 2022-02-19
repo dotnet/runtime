@@ -1,0 +1,261 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Buffers.Binary;
+using System.Text;
+using System.Net;
+using System.Security.Cryptography;
+using System.Net.Security;
+using Xunit;
+
+namespace System.Net.Security
+{
+    internal class FakeNtlmServer
+    {
+        public FakeNtlmServer(NetworkCredential expectedCredential)
+        {
+            _expectedCredential = expectedCredential;
+        }
+
+        private NetworkCredential _expectedCredential;
+        private byte[]? _negotiateMessage;
+        private byte[]? _challengeMessage;
+        private MessageType _expectedMessageType = MessageType.Negotiate;
+        private Flags _requestedFlags =
+            Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.TargetName | Flags.NegotiateAlwaysSign |
+            Flags.NegotiateVersion | Flags.NegotiateKeyExchange | Flags.Negotiate128 | Flags.NegotiateTargetInfo | Flags.NegotiateSign;
+        private Flags _requiredFlags =
+            Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.TargetName | Flags.NegotiateAlwaysSign;
+
+        private byte[] _serverChallenge = new byte[] { 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc };
+
+        private static ReadOnlySpan<byte> NtlmHeader => new byte[] {
+            (byte)'N', (byte)'T', (byte)'L', (byte)'M',
+            (byte)'S', (byte)'S', (byte)'P', 0 };
+
+        private enum MessageType : uint
+        {
+            Negotiate = 1,
+            Challenge = 2,
+            Authenticate = 3,
+        }
+
+        [Flags]
+        private enum Flags : uint
+        {
+            NegotiateUnicode = 0x00000001,
+            NegotiateOEM = 0x00000002,
+            TargetName = 0x00000004,
+            NegotiateSign = 0x00000010,
+            NegotiateSeal = 0x00000020,
+            NegotiateDatagram = 0x00000040,
+            NegotiateLMKey = 0x00000080,
+            NegotiateNtlm = 0x00000200,
+            NegotiateAnonymous = 0x00000800,
+            NegotiateDomainSupplied = 0x00001000,
+            NegotiateWorkstationSupplied = 0x00002000,
+            NegotiateAlwaysSign = 0x00008000,
+            TargetTypeDomain = 0x00010000,
+            TargetTypeServer = 0x00020000,
+            NegotiateNtlm2 = 0x00080000,
+            RequestIdenityToken = 0x00100000,
+            RequestNonNtSessionKey = 0x00400000,
+            NegotiateTargetInfo = 0x00800000,
+            NegotiateVersion = 0x02000000,
+            Negotiate128 = 0x20000000,
+            NegotiateKeyExchange = 0x40000000,
+            Negotiate56 = 0x80000000,
+        }
+
+        private enum AvId
+        {
+            EOL,
+            NbComputerName,
+            NbDomainName,
+            DnsComputerName,
+            DnsDomainName,
+            DnsTreeName,
+            Flags,
+            Timestamp,
+            SingleHost,
+            TargetName,
+            ChannelBindings,
+        }
+
+        private static void NtlmAssert(
+            [DoesNotReturnIf(false)] bool expression,
+            [CallerArgumentExpression("expression")] string? expressionText = default)
+        {
+            Assert.True(expression, expressionText);
+        }
+
+        private static ReadOnlySpan<byte> GetField(ReadOnlySpan<byte> payload, int fieldOffset)
+        {
+            uint offset = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(fieldOffset + 4));
+            ushort length = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(fieldOffset));
+
+            if (length == 0 || offset + length > payload.Length)
+            {
+                return ReadOnlySpan<byte>.Empty;
+            }
+
+            return payload.Slice((int)offset, length);
+        }
+
+        public byte[]? GetOutgoingBlob(byte[]? incomingBlob)
+        {
+            // Ensure the message is long enough
+            NtlmAssert(incomingBlob.Length >= 12);
+            NtlmAssert(incomingBlob.AsSpan(0, 8).SequenceEqual(NtlmHeader));
+
+            var messageType = (MessageType)BinaryPrimitives.ReadUInt32LittleEndian(incomingBlob.AsSpan(8, 4));
+            NtlmAssert(messageType == _expectedMessageType);
+
+            switch (messageType)
+            {
+                case MessageType.Negotiate:
+                    // We don't negotiate, we just verify
+                    NtlmAssert(incomingBlob.Length >= 32);
+                    Flags flags = (Flags)BinaryPrimitives.ReadUInt32LittleEndian(incomingBlob.AsSpan(12, 4));
+                    NtlmAssert((flags & _requiredFlags) == _requiredFlags);
+                    string domain = Encoding.Unicode.GetString(GetField(incomingBlob, 16));
+                    NtlmAssert(domain == _expectedCredential.Domain);
+                    _expectedMessageType = MessageType.Authenticate;
+                    _negotiateMessage = incomingBlob;
+                    return _challengeMessage = GenerateChallenge();
+
+                case MessageType.Authenticate:
+                    // Validate the authentication!
+                    ValidateAuthentication(incomingBlob);
+                    _expectedMessageType = 0;
+                    return null;
+
+                default:
+                    Assert.Fail($"Incorrect message type {messageType}");
+                    return null;
+            }
+        }
+
+        private static int WriteAvIdString(Span<byte> buffer, AvId avId, string value)
+        {
+            int size = Encoding.Unicode.GetByteCount(value);
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer, (ushort)avId);
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(2), (ushort)size);
+            Encoding.Unicode.GetBytes(value, buffer.Slice(4));
+            return size + 4;
+        }
+
+        private byte[] GenerateChallenge()
+        {
+            byte[] buffer = new byte[1000];
+
+            NtlmHeader.CopyTo(buffer.AsSpan(0, 8));
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(8), (uint)MessageType.Challenge);
+            // 8 bytes of TargetNameField
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(20), (uint)_requestedFlags);
+            _serverChallenge.CopyTo(buffer.AsSpan(24, 8));
+            // 8 bytes reserved
+            // 8 bytes of TargetInfoFields
+            // TODO: Version
+
+            int targetInfoOffset = 56;
+            int targetInfoCurrentOffset = targetInfoOffset;
+            targetInfoCurrentOffset += WriteAvIdString(buffer.AsSpan(targetInfoCurrentOffset), AvId.NbComputerName, "SHIBBOLETH");
+            targetInfoCurrentOffset += WriteAvIdString(buffer.AsSpan(targetInfoCurrentOffset), AvId.NbDomainName, _expectedCredential.Domain);
+
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(targetInfoCurrentOffset), (ushort)AvId.Timestamp);
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(targetInfoCurrentOffset + 2), (ushort)8);
+            BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(targetInfoCurrentOffset + 4), DateTime.UtcNow.ToFileTimeUtc());
+            targetInfoCurrentOffset += 12;
+
+            // TODO: DNS machine, domain, forest?
+            // EOL
+            targetInfoCurrentOffset += 4;
+            int targetInfoSize = targetInfoCurrentOffset - targetInfoOffset;
+
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(40), (ushort)targetInfoSize);
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(42), (ushort)targetInfoSize);
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(44), (uint)targetInfoOffset);
+
+            return buffer.AsSpan(0, targetInfoCurrentOffset).ToArray();
+        }
+
+        private byte[] MakeNtlm2Hash()
+        {
+            byte[] pwHash = new byte[16];
+            byte[] pwBytes = Encoding.Unicode.GetBytes(_expectedCredential.Password);
+            MD4.HashData(pwBytes, pwHash);
+            using (IncrementalHash hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, pwHash))
+            {
+                hmac.AppendData(Encoding.Unicode.GetBytes(_expectedCredential.UserName.ToUpper() + _expectedCredential.Domain));
+                return hmac.GetHashAndReset();
+            }
+        }
+
+        private void ValidateAuthentication(byte[] incomingBlob)
+        {
+            ReadOnlySpan<byte> lmChallengeResponse = GetField(incomingBlob, 12);
+            ReadOnlySpan<byte> ntChallengeResponse = GetField(incomingBlob, 20);
+            string domainName = Encoding.Unicode.GetString(GetField(incomingBlob, 28));
+            string userName = Encoding.Unicode.GetString(GetField(incomingBlob, 36));
+            string workstation = Encoding.Unicode.GetString(GetField(incomingBlob, 44));
+            ReadOnlySpan<byte> encryptedRandomSessionKey = GetField(incomingBlob, 52);
+            ReadOnlySpan<byte> mic = incomingBlob.AsSpan(72, 16);
+
+            NtlmAssert(userName == _expectedCredential.UserName);
+            NtlmAssert(domainName == _expectedCredential.Domain);
+
+            Flags flags = (Flags)BinaryPrimitives.ReadUInt32LittleEndian(incomingBlob.AsSpan(60));
+            NtlmAssert((flags & _requiredFlags) == _requiredFlags);
+
+            byte[] ntlm2hash = MakeNtlm2Hash();
+            Span<byte> sessionBaseKey = stackalloc byte[16];
+            using (IncrementalHash hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, ntlm2hash))
+            {
+                hmac.AppendData(_serverChallenge);
+                hmac.AppendData(ntChallengeResponse.Slice(16));
+                // If this matches then the password matched
+                bool passwordHashMatched = hmac.GetHashAndReset().AsSpan().SequenceEqual(ntChallengeResponse.Slice(0, 16));
+                NtlmAssert(passwordHashMatched);
+                // Compute sessionBaseKey
+                hmac.AppendData(ntChallengeResponse.Slice(0, 16));
+                hmac.GetHashAndReset(sessionBaseKey);
+            }
+
+            // TODO: Verify the rest (eg. target info, MIC flags)
+
+            // Decrypt exportedSessionKey with sessionBaseKey
+            Span<byte> exportedSessionKey = stackalloc byte[16];
+            if (flags.HasFlag(Flags.NegotiateKeyExchange) &&
+                (flags.HasFlag(Flags.NegotiateSeal) || flags.HasFlag(Flags.NegotiateSign)))
+            {
+                using (RC4 rc4 = new RC4(sessionBaseKey))
+                {
+                    rc4.Transform(encryptedRandomSessionKey, exportedSessionKey);
+                }
+            }
+            else
+            {
+                sessionBaseKey.CopyTo(exportedSessionKey);
+            }
+
+            // Calculate and verify message integrity
+            NtlmAssert(_negotiateMessage != null);
+            NtlmAssert(_challengeMessage != null);
+            Span<byte> calculatedMic = stackalloc byte[16];
+            using (var hmacMic = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, exportedSessionKey))
+            {
+                hmacMic.AppendData(_negotiateMessage);
+                hmacMic.AppendData(_challengeMessage);
+                // Authenticate message with the MIC erased
+                hmacMic.AppendData(incomingBlob.AsSpan(0, 72));
+                hmacMic.AppendData(new byte[16]);
+                hmacMic.AppendData(incomingBlob.AsSpan(72 + 16));
+                hmacMic.GetHashAndReset(calculatedMic);
+            }
+            NtlmAssert(calculatedMic.SequenceEqual(mic));
+        }
+    }
+}
