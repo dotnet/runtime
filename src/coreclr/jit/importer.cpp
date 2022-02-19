@@ -4494,7 +4494,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Log10:
 #ifdef TARGET_ARM64
             // ARM64 has fmax/fmin which are IEEE754:2019 minimum/maximum compatible
-            // TODO: Enable this for XARCH when one of the arguments is a constant
+            // TODO-XARCH-CQ: Enable this for XARCH when one of the arguments is a constant
             // so we can then emit maxss/minss and avoid NaN/-0.0 handling
             case NI_System_Math_Max:
             case NI_System_Math_Min:
