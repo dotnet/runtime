@@ -116,13 +116,6 @@ namespace System.Net.Security
             UntrustedSPN = 4,
         }
 
-        private static void NtlmAssert(
-            [DoesNotReturnIf(false)] bool expression,
-            [CallerArgumentExpression("expression")] string? expressionText = default)
-        {
-            Assert.True(expression, expressionText);
-        }
-
         private static ReadOnlySpan<byte> GetField(ReadOnlySpan<byte> payload, int fieldOffset)
         {
             uint offset = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(fieldOffset + 4));
@@ -139,23 +132,23 @@ namespace System.Net.Security
         public byte[]? GetOutgoingBlob(byte[]? incomingBlob)
         {
             // Ensure the message is long enough
-            NtlmAssert(incomingBlob.Length >= 12);
-            NtlmAssert(incomingBlob.AsSpan(0, 8).SequenceEqual(NtlmHeader));
+            Assert.True(incomingBlob.Length >= 12);
+            Assert.Equal(NtlmHeader.ToArray(), incomingBlob.AsSpan(0, 8).ToArray());
 
             var messageType = (MessageType)BinaryPrimitives.ReadUInt32LittleEndian(incomingBlob.AsSpan(8, 4));
-            NtlmAssert(messageType == _expectedMessageType);
+            Assert.Equal(_expectedMessageType, messageType);
 
             switch (messageType)
             {
                 case MessageType.Negotiate:
                     // We don't negotiate, we just verify
-                    NtlmAssert(incomingBlob.Length >= 32);
+                    Assert.True(incomingBlob.Length >= 32);
                     Flags flags = (Flags)BinaryPrimitives.ReadUInt32LittleEndian(incomingBlob.AsSpan(12, 4));
-                    NtlmAssert((flags & _requiredFlags) == _requiredFlags);
+                    Assert.Equal(_requiredFlags, (flags & _requiredFlags));
                     if (flags.HasFlag(Flags.NegotiateDomainSupplied))
                     {
                         string domain = Encoding.ASCII.GetString(GetField(incomingBlob, 16));
-                        NtlmAssert(domain == _expectedCredential.Domain);
+                        Assert.Equal(_expectedCredential.Domain, domain);
                     }
                     _expectedMessageType = MessageType.Authenticate;
                     _negotiateMessage = incomingBlob;
@@ -248,11 +241,11 @@ namespace System.Net.Security
             ReadOnlySpan<byte> encryptedRandomSessionKey = GetField(incomingBlob, 52);
             ReadOnlySpan<byte> mic = incomingBlob.AsSpan(72, 16);
 
-            NtlmAssert(userName == _expectedCredential.UserName);
-            NtlmAssert(domainName == _expectedCredential.Domain);
+            Assert.Equal(_expectedCredential.UserName, userName);
+            Assert.Equal(_expectedCredential.Domain, domainName);
 
             Flags flags = (Flags)BinaryPrimitives.ReadUInt32LittleEndian(incomingBlob.AsSpan(60));
-            NtlmAssert((flags & _requiredFlags) == _requiredFlags);
+            Assert.Equal(_requiredFlags, (flags & _requiredFlags));
 
             byte[] ntlm2hash = MakeNtlm2Hash();
             Span<byte> sessionBaseKey = stackalloc byte[16];
@@ -279,12 +272,12 @@ namespace System.Net.Security
             while (avPairs[0] != (byte)AvId.EOL)
             {
                 AvId id = (AvId)avPairs[0];
-                NtlmAssert(avPairs[1] == 0);
+                Assert.Equal(0, avPairs[1]);
                 ushort length = BinaryPrimitives.ReadUInt16LittleEndian(avPairs.Slice(2, 2));
 
                 if (id == AvId.Flags)
                 {
-                    NtlmAssert(length == 4);
+                    Assert.Equal(4, length);
                     avFlags = (AvFlags)BinaryPrimitives.ReadUInt32LittleEndian(avPairs.Slice(4, 4));
                 }
                 else if (id == AvId.TargetName)
@@ -315,9 +308,9 @@ namespace System.Net.Security
             {
                 IsMICPresent = true;
 
-                NtlmAssert(_negotiateMessage != null);
-                NtlmAssert(_challengeMessage != null);
-                Span<byte> calculatedMic = stackalloc byte[16];
+                Assert.NotNull(_negotiateMessage);
+                Assert.NotNull(_challengeMessage);
+                byte[] calculatedMic = new byte[16];
                 using (var hmacMic = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, exportedSessionKey))
                 {
                     hmacMic.AppendData(_negotiateMessage);
@@ -328,7 +321,7 @@ namespace System.Net.Security
                     hmacMic.AppendData(incomingBlob.AsSpan(72 + 16));
                     hmacMic.GetHashAndReset(calculatedMic);
                 }
-                NtlmAssert(calculatedMic.SequenceEqual(mic));
+                Assert.Equal(mic.ToArray(), calculatedMic);
             }
         }
     }
