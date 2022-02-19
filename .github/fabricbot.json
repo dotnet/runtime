@@ -5399,7 +5399,7 @@
         {
           "name": "addReply",
           "parameters": {
-            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of the experimental [issue cleanup initiative](https://github.com/dotnet/runtime/issues/60288) we are currently trialing in a limited number of areas. Please share any feedback you might have in the linked issue."
+            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of the experimental [issue cleanup initiative](https://github.com/dotnet/runtime/issues/60288) we are currently trialing. Please share any feedback you might have in the linked issue."
           }
         },
         {
