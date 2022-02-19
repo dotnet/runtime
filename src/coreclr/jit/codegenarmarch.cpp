@@ -669,7 +669,7 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
     assert(varTypeIsFloating(srcNode));
     assert(srcNode->TypeGet() == treeNode->TypeGet());
 
-    // Right now only Abs/Ceiling/Floor/Truncate/Round/Sqrt/Max/Min are treated as math intrinsics.
+    // Only a subset of functions are treated as math intrinsics.
     //
     switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
