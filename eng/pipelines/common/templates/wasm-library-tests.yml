@@ -28,6 +28,8 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
+      - name: allWasmContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
@@ -41,6 +43,7 @@ jobs:
         or(
           eq(variables['alwaysRunVar'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
