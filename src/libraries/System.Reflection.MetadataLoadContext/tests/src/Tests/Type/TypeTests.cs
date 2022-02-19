@@ -488,6 +488,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnMono("System.TypeLoadException : Could not find type 'System.MonoFNPtrFakeClass'")]
         public static void FunctionPointerTypeIsPublic()
         {
             Assert.True(typeof(delegate*<string, int>).Project().IsPublic);
