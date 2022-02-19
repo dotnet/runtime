@@ -14,8 +14,11 @@ namespace System.Net.Security.Tests
     {
         private static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
 
+        private static NetworkCredential s_testCredentialRight = new NetworkCredential("rightusername", "rightpassword");
+        private static NetworkCredential s_testCredentialWrong = new NetworkCredential("rightusername", "wrongpassword");
+
         [Fact]
-        public void ProtocolExampleTest()
+        public void NtlmProtocolExampleTest()
         {
             // Mirrors the NTLMv2 example in the NTLM specification:
             NetworkCredential credential = new NetworkCredential("User", "Password", "Domain");
@@ -63,19 +66,40 @@ namespace System.Net.Security.Tests
                 "94ce1ce90bc9d03e");
             byte[]? empty = fakeNtlmServer.GetOutgoingBlob(authenticateBlob);
             Assert.Null(empty);
+            Assert.True(fakeNtlmServer.IsAuthenticated);
             Assert.False(fakeNtlmServer.IsMICPresent);
         }
 
         [ConditionalFact(nameof(IsNtlmInstalled))]
-        public void BasicNtlmTest()
+        public void NtlmCorrectExchangeTest()
         {
-            NetworkCredential credential = new NetworkCredential("rightusername", "rightpassword");
-
-            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(credential);
+            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
             NTAuthentication ntAuth = new NTAuthentication(
-                isServer: false, "NTLM", credential, "HTTP/foo",
+                isServer: false, "NTLM", s_testCredentialRight, "HTTP/foo",
                 ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity, null);
 
+            DoNtlmExchange(fakeNtlmServer, ntAuth);
+
+            Assert.True(fakeNtlmServer.IsAuthenticated);
+            // NTLMSSP on Linux doesn't send the MIC
+            Assert.True(fakeNtlmServer.IsMICPresent || OperatingSystem.IsLinux());
+        }
+
+        [ConditionalFact(nameof(IsNtlmInstalled))]
+        public void NtlmIncorrectExchangeTest()
+        {
+            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
+            NTAuthentication ntAuth = new NTAuthentication(
+                isServer: false, "NTLM", s_testCredentialWrong, "HTTP/foo",
+                ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity, null);
+
+            DoNtlmExchange(fakeNtlmServer, ntAuth);
+
+            Assert.False(fakeNtlmServer.IsAuthenticated);
+        }
+
+        private void DoNtlmExchange(FakeNtlmServer fakeNtlmServer, NTAuthentication ntAuth)
+        {
             byte[]? negotiateBlob = ntAuth.GetOutgoingBlob(null, throwOnError: false);
             Assert.NotNull(negotiateBlob);
             byte[]? challengeBlob = fakeNtlmServer.GetOutgoingBlob(negotiateBlob);
@@ -84,9 +108,6 @@ namespace System.Net.Security.Tests
             Assert.NotNull(authenticateBlob);
             byte[]? empty = fakeNtlmServer.GetOutgoingBlob(authenticateBlob);
             Assert.Null(empty);
-
-            // NTLMSSP on Linux doesn't send the MIC
-            Assert.True(fakeNtlmServer.IsMICPresent || OperatingSystem.IsLinux());
         }
     }
 }

@@ -36,6 +36,7 @@ namespace System.Net.Security
         public byte[] Version { get; set; } = new byte[] { 0x06, 0x00, 0x70, 0x17, 0x00, 0x00, 0x00, 0x0f }; // 6.0.6000 / 15
 
         // Negotiation results
+        public bool IsAuthenticated { get; set; }
         public bool IsMICPresent { get; set; }
 
         private NetworkCredential _expectedCredential;
@@ -259,8 +260,14 @@ namespace System.Net.Security
                 hmac.AppendData(_serverChallenge);
                 hmac.AppendData(ntChallengeResponse.Slice(16));
                 // If this matches then the password matched
-                bool passwordHashMatched = hmac.GetHashAndReset().AsSpan().SequenceEqual(ntChallengeResponse.Slice(0, 16));
-                NtlmAssert(passwordHashMatched);
+                IsAuthenticated = hmac.GetHashAndReset().AsSpan().SequenceEqual(ntChallengeResponse.Slice(0, 16));
+
+                if (!IsAuthenticated)
+                {
+                    // Bail out
+                    return;
+                }
+
                 // Compute sessionBaseKey
                 hmac.AppendData(ntChallengeResponse.Slice(0, 16));
                 hmac.GetHashAndReset(sessionBaseKey);
