@@ -57,20 +57,14 @@ namespace System.Drawing
             return LoadFromStream(stream, false);
         }
 
-        internal static Image LoadFromStream(Stream stream, bool keepAlive)
+        internal static Image LoadFromStream(Stream stream!!, bool keepAlive)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             Image img = CreateImageObject(InitializeFromStream(stream));
             return img;
         }
 
-        private protected static IntPtr InitializeFromStream(Stream stream)
+        private protected static IntPtr InitializeFromStream(Stream stream!!)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             // Unix, with libgdiplus
             // We use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus.  So, we wrap the stream
@@ -159,11 +153,8 @@ namespace System.Drawing
             Save(filename, encoder, null);
         }
 
-        public void Save(string filename, ImageCodecInfo encoder, EncoderParameters? encoderParams)
+        public void Save(string filename!!, ImageCodecInfo encoder, EncoderParameters? encoderParams)
         {
-            if (filename == null)
-                throw new ArgumentNullException(nameof(filename));
-
             ThrowIfDirectoryDoesntExist(filename);
 
             int st;
@@ -291,12 +282,8 @@ namespace System.Drawing
             }
         }
 
-        internal void storeGDIPalette(ColorPalette palette)
+        internal void storeGDIPalette(ColorPalette palette!!)
         {
-            if (palette == null)
-            {
-                throw new ArgumentNullException(nameof(palette));
-            }
             IntPtr palette_data = palette.ConvertToMemory();
             if (palette_data == IntPtr.Zero)
             {

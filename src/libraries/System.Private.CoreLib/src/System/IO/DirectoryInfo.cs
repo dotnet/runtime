@@ -26,9 +26,9 @@ namespace System.IO
             Init(originalPath, fullPath, fileName, isNormalized);
         }
 
-        private void Init(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
+        private void Init(string originalPath!!, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
-            OriginalPath = originalPath ?? throw new ArgumentNullException(nameof(originalPath));
+            OriginalPath = originalPath;
 
             fullPath = fullPath ?? originalPath;
             fullPath = isNormalized ? fullPath : Path.GetFullPath(fullPath);
@@ -56,10 +56,8 @@ namespace System.IO
             }
         }
 
-        public DirectoryInfo CreateSubdirectory(string path)
+        public DirectoryInfo CreateSubdirectory(string path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
             if (Path.IsPathRooted(path))
@@ -166,13 +164,11 @@ namespace System.IO
 
         private IEnumerable<FileSystemInfo> InternalEnumerateInfos(
             string path,
-            string searchPattern,
+            string searchPattern!!,
             SearchTarget searchTarget,
             EnumerationOptions options)
         {
             Debug.Assert(path != null);
-            if (searchPattern == null)
-                throw new ArgumentNullException(nameof(searchPattern));
 
             _isNormalized &= FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
 

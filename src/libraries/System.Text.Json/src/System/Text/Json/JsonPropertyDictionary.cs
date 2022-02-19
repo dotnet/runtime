@@ -83,13 +83,8 @@ namespace System.Text.Json
             _propertyDictionary?.Clear();
         }
 
-        public bool ContainsKey(string propertyName)
+        public bool ContainsKey(string propertyName!!)
         {
-            if (propertyName == null)
-            {
-                throw new ArgumentNullException(nameof(propertyName));
-            }
-
             return ContainsProperty(propertyName);
         }
 
@@ -159,13 +154,8 @@ namespace System.Text.Json
 
         public ICollection<T?> Values => GetValueCollection();
 
-        public bool TryGetValue(string propertyName, out T? value)
+        public bool TryGetValue(string propertyName!!, out T? value)
         {
-            if (propertyName == null)
-            {
-                throw new ArgumentNullException(nameof(propertyName));
-            }
-
             if (_propertyDictionary != null)
             {
                 return _propertyDictionary.TryGetValue(propertyName, out value);

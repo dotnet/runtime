@@ -38,7 +38,6 @@ namespace System.Text.Json.SourceGeneration.Tests
                     // This test uses reflection to:
                     // - Access JsonSerializerOptions.s_defaultSimpleConverters
                     // - Access JsonSerializerOptions.s_defaultFactoryConverters
-                    // - Access JsonSerializerOptions._typeInfoCreationFunc
                     //
                     // If any of them changes, this test will need to be kept in sync.
 
@@ -47,7 +46,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                     AssertFieldNull("s_defaultFactoryConverters", optionsInstance: null);
 
                     // Confirm type info dynamic creator not set.
-                    AssertFieldNull("_typeInfoCreationFunc", MetadataContext.Default.Options);
+                    AssertFieldNull("s_typeInfoCreationFunc", optionsInstance: null);
 
                     static void AssertFieldNull(string fieldName, JsonSerializerOptions? optionsInstance)
                     {

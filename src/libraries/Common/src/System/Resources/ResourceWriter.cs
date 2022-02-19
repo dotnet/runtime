@@ -43,14 +43,11 @@ namespace System.Resources
 
         public
 #if RESOURCES_EXTENSIONS
-        PreserializedResourceWriter(string fileName)
+        PreserializedResourceWriter(string fileName!!)
 #else
-        ResourceWriter(string fileName)
+        ResourceWriter(string fileName!!)
 #endif
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-
             _output = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
             _resourceList = new SortedDictionary<string, object?>(FastResourceComparer.Default);
             _caseInsensitiveDups = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
@@ -58,13 +55,11 @@ namespace System.Resources
 
         public
 #if RESOURCES_EXTENSIONS
-        PreserializedResourceWriter(Stream stream)
+        PreserializedResourceWriter(Stream stream!!)
 #else
-        ResourceWriter(Stream stream)
+        ResourceWriter(Stream stream!!)
 #endif
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
             if (!stream.CanWrite)
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
 
@@ -76,11 +71,8 @@ namespace System.Resources
         // Adds a string resource to the list of resources to be written to a file.
         // They aren't written until Generate() is called.
         //
-        public void AddResource(string name, string? value)
+        public void AddResource(string name!!, string? value)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             if (_resourceList == null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
 
@@ -92,11 +84,8 @@ namespace System.Resources
         // Adds a resource of type Object to the list of resources to be
         // written to a file.  They aren't written until Generate() is called.
         //
-        public void AddResource(string name, object? value)
+        public void AddResource(string name!!, object? value)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             if (_resourceList == null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
 
@@ -117,11 +106,8 @@ namespace System.Resources
         // written to a file.  They aren't written until Generate() is called.
         // closeAfterWrite parameter indicates whether to close the stream when done.
         //
-        public void AddResource(string name, Stream? value, bool closeAfterWrite = false)
+        public void AddResource(string name!!, Stream? value, bool closeAfterWrite = false)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             if (_resourceList == null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
 
@@ -153,11 +139,8 @@ namespace System.Resources
         // Adds a named byte array as a resource to the list of resources to
         // be written to a file. They aren't written until Generate() is called.
         //
-        public void AddResource(string name, byte[]? value)
+        public void AddResource(string name!!, byte[]? value)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             if (_resourceList == null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
 

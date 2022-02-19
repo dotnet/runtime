@@ -15,172 +15,6 @@ namespace DllImportGenerator.UnitTests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class ManualTypeMarshallingAnalyzerTests
     {
-        public static IEnumerable<object[]> NonBlittableTypeMarkedBlittable_ReportsDiagnostic_TestData {
-            get
-            {
-                yield return new object[]
-                {
-                    @"
-using System.Runtime.InteropServices;
-
-[{|#0:BlittableType|}]
-struct S
-{
-    public bool field;
-}
-"
-                };
-                yield return new object[]
-                {
-                    @"
-using System.Runtime.InteropServices;
-
-[{|#0:BlittableType|}]
-struct S
-{
-    public char field;
-}
-"
-                };
-                yield return new object[]
-                {
-
-@"
-using System.Runtime.InteropServices;
-
-[{|#0:BlittableType|}]
-struct S
-{
-    public string field;
-}
-"
-                };
-            }
-        }
-
-        [MemberData(nameof(NonBlittableTypeMarkedBlittable_ReportsDiagnostic_TestData))]
-        [ConditionalTheory]
-        public async Task NonBlittableTypeMarkedBlittable_ReportsDiagnostic(string source)
-        {
-            var diagnostic = VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("S");
-            await VerifyCS.VerifyAnalyzerAsync(source, diagnostic);
-        }
-
-        [ConditionalFact]
-        public async Task BlittablePrimitiveFields_MarkedBlittable_NoDiagnostic()
-        {
-
-            string source = @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct S
-{
-    public int field;
-}
-";
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
-        [ConditionalFact]
-        public async Task BlittableEnumFields_MarkedBlittable_NoDiagnostic()
-        {
-
-            string source = @"
-using System.Runtime.InteropServices;
-
-enum E { Zero, One, Two }
-
-[BlittableType]
-struct S
-{
-    public E field;
-}
-";
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
-        [ConditionalFact]
-        public async Task BlittableStructFields_MarkedBlittable_NoDiagnostic()
-        {
-            string source = @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct S
-{
-    public T field;
-}
-
-[BlittableType]
-struct T
-{
-    public int field;
-}
-";
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
-        [ConditionalFact]
-        public async Task NonBlittableFields_MarkedBlittable_ReportDiagnosticOnFieldTypeDefinition()
-        {
-            string source = @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct S
-{
-    public T field;
-}
-
-[{|#0:BlittableType|}]
-struct T
-{
-    public bool field;
-}
-";
-            var diagnostic = VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("T");
-            await VerifyCS.VerifyAnalyzerAsync(source, diagnostic);
-        }
-
-        [ConditionalFact]
-        public async Task NonUnmanagedTypeMarkedBlittable_ReportsDiagnosticOnStructType()
-        {
-            string source = @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct S
-{
-    public T field;
-}
-
-[{|#0:BlittableType|}]
-struct T
-{
-    public string field;
-}
-";
-            await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("T"));
-        }
-
-        [ConditionalFact]
-        public async Task BlittableTypeWithNonBlittableStaticField_DoesNotReportDiagnostic()
-        {
-            string source = @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct S
-{
-    public static string Static;
-    public int instance;
-}
-";
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
         [ConditionalFact]
         public async Task NullNativeType_ReportsDiagnostic()
         {
@@ -280,7 +114,6 @@ struct S
     public string s;
 }
 
-[BlittableType]
 struct Native
 {
     private IntPtr value;
@@ -309,7 +142,6 @@ struct S
     public string s;
 }
 
-[BlittableType]
 struct Native
 {
     private IntPtr value;
@@ -399,9 +231,9 @@ using System.Runtime.InteropServices;
 [NativeMarshalling(typeof(Native))]
 class S
 {
-    public char c;
+    public string s;
 
-    public ref char {|#0:GetPinnableReference|}() => ref c;
+    public ref string {|#0:GetPinnableReference|}() => ref s;
 }
 
 unsafe struct Native
@@ -658,7 +490,6 @@ class S
     public byte c;
 }
 
-[BlittableType]
 unsafe struct Native
 {
     private byte value;
@@ -688,7 +519,6 @@ class S
     public byte c;
 }
 
-[BlittableType]
 unsafe struct Native
 {
     private byte value;
@@ -707,21 +537,6 @@ unsafe struct Native
         }
 
         [ConditionalFact]
-        public async Task BlittableValueTypeWithNoFields_DoesNotReportDiagnostic()
-        {
-            string source = @"
-using System;
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct S
-{
-}";
-
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
-        [ConditionalFact]
         public async Task NativeTypeWithNoMarshallingMethods_ReportsDiagnostic()
         {
             string source = @"
@@ -734,7 +549,6 @@ class S
     public byte c;
 }
 
-[BlittableType]
 struct {|#0:Native|}
 {
 }";
@@ -947,7 +761,6 @@ class S
     public byte c;
 }
 
-[BlittableType]
 struct Native
 {
     public Native(S s) {}
@@ -969,7 +782,6 @@ class S
     public byte c;
 }
 
-[BlittableType]
 struct Native
 {
     public S ToManaged() => new S();
@@ -991,7 +803,6 @@ class S
     public byte c;
 }
 
-[BlittableType]
 struct {|#0:Native|}
 {
     public Native(S s, Span<byte> buffer) {}
@@ -1091,7 +902,6 @@ struct S
     public string s;
 }
 
-[BlittableType]
 struct Native
 {
     private IntPtr value;
@@ -1405,201 +1215,6 @@ struct Native<T>
         }
 
         [ConditionalFact]
-        public async Task ValueTypeContainingPointers_DoesNotReportDiagnostic()
-        {
-            var source = @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-unsafe struct S
-{
-    private int* intPtr;
-    private bool* boolPtr;
-}";
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
-        [ConditionalFact]
-        public async Task BlittableValueTypeContainingPointerToSelf_DoesNotReportDiagnostic()
-        {
-
-            var source = @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-unsafe struct S
-{
-    private int fld;
-    private S* ptr;
-}";
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
-        [ConditionalFact]
-        public async Task NonBlittableValueTypeContainingPointerToSelf_ReportsDiagnostic()
-        {
-            var source = @"
-using System.Runtime.InteropServices;
-
-[{|#0:BlittableType|}]
-unsafe struct S
-{
-    private bool fld;
-    private S* ptr;
-}";
-            await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("S"));
-        }
-
-        [ConditionalFact]
-        public async Task BlittableTypeContainingFunctionPointer_DoesNotReportDiagnostic()
-        {
-            var source = @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-unsafe struct S
-{
-    private delegate*<int> ptr;
-}";
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
-        [ConditionalFact]
-        public async Task BlittableGenericTypeInBlittableType_DoesNotReportDiagnostic()
-        {
-            var source = @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct G<T>
-{
-    T fld;
-}
-
-[BlittableType]
-unsafe struct S
-{
-    private G<int> field;
-}";
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
-        [ConditionalFact]
-        public async Task NonBlittableGenericTypeInBlittableType_ReportsDiagnostic()
-        {
-            var source = @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct G<T>
-{
-    T fld;
-}
-
-[{|#0:BlittableType|}]
-unsafe struct S
-{
-    private G<string> field;
-}";
-            await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("S"));
-        }
-
-        [ConditionalFact]
-        public async Task BlittableGenericTypeTypeParameterReferenceType_ReportsDiagnostic()
-        {
-            var source = @"
-using System.Runtime.InteropServices;
-
-[{|#0:BlittableType|}]
-struct G<T> where T : class
-{
-    T fld;
-}";
-            await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("G<T>"));
-        }
-
-        [ConditionalFact]
-        public async Task BlittableGenericTypeContainingGenericType_DoesNotReportDiagnostic()
-        {
-            var source = @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct G<T>
-{
-    T fld;
-}
-
-[BlittableType]
-struct F<T>
-{
-    G<T> fld;
-}
-";
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
-        [ConditionalFact]
-        public async Task BlittableNestedGenericType_DoesNotReportDiagnostic()
-        {
-            var source = @"
-using System.Runtime.InteropServices;
-
-struct C<T>
-{
-    [BlittableType]
-    public struct G
-    {
-        T fld;
-    }
-}
-
-[BlittableType]
-struct S
-{
-    C<int>.G g;
-}
-";
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
-        [ConditionalFact]
-        public async Task BlittableNestedGenericTypeWithReferenceTypeGenericParameter_DoesNotReportDiagnostic()
-        {
-            var source = @"
-using System.Runtime.InteropServices;
-
-struct C<T> where T : class
-{
-    [{|#0:BlittableType|}]
-    struct G
-    {
-        T fld;
-    }
-}
-";
-            await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("C<T>.G"));
-        }
-
-        [ConditionalFact]
-        public async Task BlittableGenericTypeWithReferenceTypeParameterNotUsedInFieldType_DoesNotReportDiagnostic()
-        {
-            var source = @"
-using System.Runtime.InteropServices;
-
-[BlittableType]
-struct G<T, U> where U : class
-{
-    T fld;
-}";
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
-        [ConditionalFact]
         public async Task NativeTypeWithStackallocConstructorWithoutBufferSize_ReportsDiagnostic()
         {
             string source = @"
@@ -1612,7 +1227,6 @@ class S
     public byte c;
 }
 
-[BlittableType]
 struct Native
 {
     public Native(S s) {}

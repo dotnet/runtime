@@ -32,15 +32,12 @@ internal static partial class Interop
             out IPMulticastRequest optionValue,
             ref int optionLength);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittale structs.
-        internal static extern SocketError getsockopt(
-            [In] SafeSocketHandle socketHandle,
-            [In] SocketOptionLevel optionLevel,
-            [In] SocketOptionName optionName,
-            [Out] out IPv6MulticastRequest optionValue,
-            [In, Out] ref int optionLength);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static partial SocketError getsockopt(
+            SafeSocketHandle socketHandle,
+            SocketOptionLevel optionLevel,
+            SocketOptionName optionName,
+            out IPv6MulticastRequest optionValue,
+            ref int optionLength);
     }
 }

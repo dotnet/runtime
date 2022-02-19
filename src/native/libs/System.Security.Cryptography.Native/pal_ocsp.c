@@ -15,16 +15,20 @@ void CryptoNative_OcspRequestDestroy(OCSP_REQUEST* request)
 
 int32_t CryptoNative_GetOcspRequestDerSize(OCSP_REQUEST* req)
 {
+    ERR_clear_error();
     return i2d_OCSP_REQUEST(req, NULL);
 }
 
 int32_t CryptoNative_EncodeOcspRequest(OCSP_REQUEST* req, uint8_t* buf)
 {
+    ERR_clear_error();
     return i2d_OCSP_REQUEST(req, &buf);
 }
 
 OCSP_RESPONSE* CryptoNative_DecodeOcspResponse(const uint8_t* buf, int32_t len)
 {
+    ERR_clear_error();
+
     if (buf == NULL || len == 0)
     {
         return NULL;

@@ -19,100 +19,101 @@ parameters:
 
 
 steps:
-  - task: DownloadPipelineArtifact@2
-    displayName: Download runtime packages
-    inputs:
-      artifact: 'IntermediateArtifacts'
-      path: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
-      patterns: |
-        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-!(*.symbols).nupkg
-        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-!(*.symbols).nupkg
-        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-!(*.symbols).nupkg
-        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-!(*.symbols).nupkg
+  # Uncomment to reenable package replacement
+  #- task: DownloadPipelineArtifact@2
+  #  displayName: Download runtime packages
+  #  inputs:
+  #    artifact: 'IntermediateArtifacts'
+  #    path: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+  #    patterns: |
+  #      IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-!(*.symbols).nupkg
+  #      IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-!(*.symbols).nupkg
+  #      IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-!(*.symbols).nupkg
+  #      IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-!(*.symbols).nupkg
         
-      # Other artifacts to include once they are being built
-      # EX. IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
+  #    # Other artifacts to include once they are being built
+  #    # EX. IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
 
-  - task: CopyFiles@2
-    displayName: Flatten packages
-    inputs:
-      sourceFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
-      contents: '*/Shipping/*.nupkg'
-      cleanTargetFolder: false
-      targetFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
-      flattenFolders: true
+  #- task: CopyFiles@2
+  #  displayName: Flatten packages
+  #  inputs:
+  #    sourceFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+  #    contents: '*/Shipping/*.nupkg'
+  #    cleanTargetFolder: false
+  #    targetFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+  #    flattenFolders: true
   
-  - script: |
-      for file in *.nupkg
-        do     
-          mv -v "$file" "${file%.nupkg}.zip" 
-        done
-    displayName: Change nupkgs to zips
-    workingDirectory: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+  #- script: |
+  #    for file in *.nupkg
+  #      do     
+  #        mv -v "$file" "${file%.nupkg}.zip" 
+  #      done
+  #  displayName: Change nupkgs to zips
+  #  workingDirectory: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
     
 
-  #Unzip the nuget packages to make the actual runtimes accessible
-  - task: ExtractFiles@1
-    displayName: Extract android-arm runtime
-    inputs:
-        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm.*.zip
-        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm
-        overwriteExistingFiles: true
-        cleanDestinationFolder: false
-  - task: ExtractFiles@1
-    displayName: Extract android-arm64 runtime
-    inputs:
-        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm64.*.zip
-        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm64
-        overwriteExistingFiles: true
-        cleanDestinationFolder: false
-  - task: ExtractFiles@1
-    displayName: Extract android-x86 runtime
-    inputs:
-        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x86.*.zip
-        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x86
-        overwriteExistingFiles: true
-        cleanDestinationFolder: false
-  - task: ExtractFiles@1
-    displayName: Extract android-x64 runtime
-    inputs:
-        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64.*.zip
-        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64
-        overwriteExistingFiles: true
-        cleanDestinationFolder: false
-  - task: ExtractFiles@1
-    displayName: Extract ios-arm runtime
-    inputs:
-        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm.*.zip
-        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm
-        overwriteExistingFiles: true
-        cleanDestinationFolder: false
-  - task: ExtractFiles@1
-    displayName: Extract ios-arm64 runtime
-    inputs:
-        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm64.*.zip
-        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm64
-        overwriteExistingFiles: true
-        cleanDestinationFolder: false
-  - task: ExtractFiles@1
-    displayName: Extract maccatalyst-x64 runtime
-    inputs:
-        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64.*.zip
-        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64
-        overwriteExistingFiles: true
-        cleanDestinationFolder: false
-  - task: ExtractFiles@1
-    displayName: Extract iossimulator-x64 runtime
-    inputs:
-        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64.*.zip
-        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64
-        overwriteExistingFiles: true
-        cleanDestinationFolder: false
+  ##Unzip the nuget packages to make the actual runtimes accessible
+  #- task: ExtractFiles@1
+  #  displayName: Extract android-arm runtime
+  #  inputs:
+  #      archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm.*.zip
+  #      destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm
+  #      overwriteExistingFiles: true
+  #      cleanDestinationFolder: false
+  #- task: ExtractFiles@1
+  #  displayName: Extract android-arm64 runtime
+  #  inputs:
+  #      archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm64.*.zip
+  #      destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm64
+  #      overwriteExistingFiles: true
+  #      cleanDestinationFolder: false
+  #- task: ExtractFiles@1
+  #  displayName: Extract android-x86 runtime
+  #  inputs:
+  #      archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x86.*.zip
+  #      destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x86
+  #      overwriteExistingFiles: true
+  #      cleanDestinationFolder: false
+  #- task: ExtractFiles@1
+  #  displayName: Extract android-x64 runtime
+  #  inputs:
+  #      archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64.*.zip
+  #      destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64
+  #      overwriteExistingFiles: true
+  #      cleanDestinationFolder: false
+  #- task: ExtractFiles@1
+  #  displayName: Extract ios-arm runtime
+  #  inputs:
+  #      archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm.*.zip
+  #      destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm
+  #      overwriteExistingFiles: true
+  #      cleanDestinationFolder: false
+  #- task: ExtractFiles@1
+  #  displayName: Extract ios-arm64 runtime
+  #  inputs:
+  #      archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm64.*.zip
+  #      destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm64
+  #      overwriteExistingFiles: true
+  #      cleanDestinationFolder: false
+  #- task: ExtractFiles@1
+  #  displayName: Extract maccatalyst-x64 runtime
+  #  inputs:
+  #      archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64.*.zip
+  #      destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64
+  #      overwriteExistingFiles: true
+  #      cleanDestinationFolder: false
+  #- task: ExtractFiles@1
+  #  displayName: Extract iossimulator-x64 runtime
+  #  inputs:
+  #      archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64.*.zip
+  #      destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64
+  #      overwriteExistingFiles: true
+  #      cleanDestinationFolder: false
 
   - script: |
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
-      ./dotnet-install.sh --channel 6.0.2xx --quality signed --install-dir .
+      ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir .
       ./dotnet --info
       ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --source https://aka.ms/dotnet6/nuget/index.json --source https://api.nuget.org/v3/index.json
     displayName: Install MAUI workload
@@ -149,18 +150,21 @@ steps:
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiAndroid binlog'
+    condition: always()
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
       artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiiOS binlog'
+    condition: always()
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiiOS.binlog
       artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiMacCatalyst binlog'
+    condition: always()
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog
       artifactName:  ${{ parameters.artifactName }}

@@ -58,7 +58,7 @@
 #include <mono/mini/debugger-agent-external.h>
 
 #include "mini.h"
-#include "jit.h"
+#include <mono/mini/jit.h>
 #include "aot-compiler.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"

@@ -14,7 +14,7 @@
 
 #include "strenc.h"
 #include "strenc-internals.h"
-#include "mono-error.h"
+#include <mono/utils/mono-error.h>
 #include "mono-error-internals.h"
 
 static const char trailingBytesForUTF8[256] = {

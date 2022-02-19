@@ -119,11 +119,8 @@ namespace System.IO
         }
 
         // Writes this MemoryStream to another stream.
-        public override unsafe void WriteTo(Stream stream)
+        public override unsafe void WriteTo(Stream stream!!)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
-
             byte[] buffer = ToArray();
 
             stream.Write(buffer, 0, buffer.Length);
@@ -138,12 +135,8 @@ namespace System.IO
         }
 
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        public override Task CopyToAsync(Stream destination!!, int bufferSize, CancellationToken cancellationToken)
         {
-            // The parameter checks must be in sync with the base version:
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 

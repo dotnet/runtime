@@ -103,14 +103,9 @@ namespace System.IO.MemoryMappedFiles
             return CreateFromFile(path, mode, mapName, capacity, MemoryMappedFileAccess.ReadWrite);
         }
 
-        public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string? mapName, long capacity,
+        public static MemoryMappedFile CreateFromFile(string path!!, FileMode mode, string? mapName, long capacity,
                                                                         MemoryMappedFileAccess access)
         {
-            if (path == null)
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
-
             if (mapName != null && mapName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_MapNameEmptyString);
@@ -189,15 +184,10 @@ namespace System.IO.MemoryMappedFiles
             return new MemoryMappedFile(handle, fileHandle, false);
         }
 
-        public static MemoryMappedFile CreateFromFile(FileStream fileStream, string? mapName, long capacity,
+        public static MemoryMappedFile CreateFromFile(FileStream fileStream!!, string? mapName, long capacity,
                                                         MemoryMappedFileAccess access,
                                                         HandleInheritability inheritability, bool leaveOpen)
         {
-            if (fileStream == null)
-            {
-                throw new ArgumentNullException(nameof(fileStream), SR.ArgumentNull_FileStream);
-            }
-
             if (mapName != null && mapName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_MapNameEmptyString);

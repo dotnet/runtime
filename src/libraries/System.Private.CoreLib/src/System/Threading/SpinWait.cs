@@ -310,10 +310,7 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(
                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SpinWait_SpinUntil_TimeoutWrong);
             }
-            if (condition == null)
-            {
-                throw new ArgumentNullException(nameof(condition), SR.SpinWait_SpinUntil_ArgumentNull);
-            }
+            ArgumentNullException.ThrowIfNull(condition);
             uint startTime = 0;
             if (millisecondsTimeout != 0 && millisecondsTimeout != Timeout.Infinite)
             {

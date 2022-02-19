@@ -6993,13 +6993,6 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
         shiftAmount = insOptsLSL(opt) ? scale : 0;
     }
 
-    // If target reg is ZR - it means we're doing an implicit nullcheck
-    // where target type was ignored and set to TYP_INT.
-    if ((reg1 == REG_ZR) && (shiftAmount > 0))
-    {
-        shiftAmount = scale;
-    }
-
     assert((shiftAmount == scale) || (shiftAmount == 0));
 
     reg2 = encodingSPtoZR(reg2);
@@ -12971,7 +12964,7 @@ void emitter::emitDispIns(
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
-            if (ins == INS_fcmeq)
+            if (ins == INS_fcmeq || ins == INS_fcmge || ins == INS_fcmgt || ins == INS_fcmle || ins == INS_fcmlt)
             {
                 printf(", ");
                 emitDispImm(0, false);
@@ -12995,7 +12988,7 @@ void emitter::emitDispIns(
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
-            if (ins == INS_cmeq)
+            if (ins == INS_cmeq || ins == INS_cmge || ins == INS_cmgt || ins == INS_cmle || ins == INS_cmlt)
             {
                 printf(", ");
                 emitDispImm(0, false);
@@ -13136,7 +13129,8 @@ void emitter::emitDispIns(
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, false);
             }
-            if (fmt == IF_DV_2L && ins == INS_cmeq)
+            if (fmt == IF_DV_2L &&
+                (ins == INS_cmeq || ins == INS_cmge || ins == INS_cmgt || ins == INS_cmle || ins == INS_cmlt))
             {
                 printf(", ");
                 emitDispImm(0, false);

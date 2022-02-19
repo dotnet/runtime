@@ -4931,6 +4931,7 @@ namespace System
         public static int Compare<T>(T? n1, T? n2) where T : struct { throw null; }
         public static bool Equals<T>(T? n1, T? n2) where T : struct { throw null; }
         public static System.Type? GetUnderlyingType(System.Type nullableType) { throw null; }
+        public static ref readonly T GetValueRefOrDefaultRef<T>(in T? nullable) where T : struct { throw null; }
     }
     public partial struct Nullable<T> where T : struct
     {
