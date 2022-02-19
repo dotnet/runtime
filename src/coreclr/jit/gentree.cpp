@@ -14821,13 +14821,13 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                             case TYP_FLOAT:
                             case TYP_DOUBLE:
-                                if (tree->IsUnsigned() && (lval1 < 0))
+                                if (tree->IsUnsigned())
                                 {
-                                    d1 = FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1);
+                                    d1 = FloatingPointUtils::convertUInt64ToDouble((uint64_t)lval1);
                                 }
                                 else
                                 {
-                                    d1 = (double)lval1;
+                                    d1 = FloatingPointUtils::convertInt64ToDouble((int64_t)lval1);
                                 }
 
                                 if (tree->CastToType() == TYP_FLOAT)
@@ -14886,31 +14886,31 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                         switch (tree->CastToType())
                         {
                             case TYP_BYTE:
-                                i1 = INT32(INT8(d1));
-                                goto CNS_INT;
-
-                            case TYP_SHORT:
-                                i1 = INT32(INT16(d1));
-                                goto CNS_INT;
-
-                            case TYP_USHORT:
-                                i1 = INT32(UINT16(d1));
+                                i1 = FloatingPointUtils::convertDoubleToInt8(d1);
                                 goto CNS_INT;
 
                             case TYP_UBYTE:
-                                i1 = INT32(UINT8(d1));
+                                i1 = FloatingPointUtils::convertDoubleToUInt8(d1);
+                                goto CNS_INT;
+
+                            case TYP_SHORT:
+                                i1 = FloatingPointUtils::convertDoubleToInt16(d1);
+                                goto CNS_INT;
+
+                            case TYP_USHORT:
+                                i1 = FloatingPointUtils::convertDoubleToUInt16(d1);
                                 goto CNS_INT;
 
                             case TYP_INT:
-                                i1 = INT32(d1);
+                                i1 = FloatingPointUtils::convertDoubleToInt32(d1);
                                 goto CNS_INT;
 
                             case TYP_UINT:
-                                i1 = forceCastToUInt32(d1);
+                                i1 = FloatingPointUtils::convertDoubleToUInt32(d1);
                                 goto CNS_INT;
 
                             case TYP_LONG:
-                                lval1 = INT64(d1);
+                                lval1 = FloatingPointUtils::convertDoubleToInt64(d1);
                                 goto CNS_LONG;
 
                             case TYP_ULONG:
@@ -21538,6 +21538,228 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+}
+
+GenTree* Compiler::gtNewSimdCvtToDoubleNode(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert((simdBaseType == TYP_LONG) || (simdBaseType == TYP_ULONG));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    unreached();
+#elif defined(TARGET_ARM64)
+    intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToDoubleScalar : NI_AdvSimd_Arm64_ConvertToDouble;
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+}
+
+GenTree* Compiler::gtNewSimdCvtToInt32Node(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(simdBaseType == TYP_FLOAT);
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSIMD(type, simdBaseJitType);
+
+    GenTree* dup1;
+    GenTree* dup2;
+    GenTree* tmp;
+    GenTree* msk;
+
+    // First we need to clear any NaN values to 0. We do that by comparing the value against
+    // itself which will give all bits set for non-NaN and zero for NaN. We then and that
+    // with the original input which will clear NaN values to zero.
+
+    op1 = impCloneExpr(op1, &dup1, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                       nullptr DEBUGARG("Clone op1 for vector convert to int32"));
+    op1 = impCloneExpr(op1, &dup2, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                       nullptr DEBUGARG("Clone op1 for vector convert to int32"));
+
+    tmp = gtNewSimdCmpOpNode(GT_EQ, type, op1, dup1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    op1 = gtNewSimdBinOpNode(GT_AND, type, tmp, dup2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+    // Next we need to clamp the value to the saturation values. For the lower bound, this is trivial
+    // as we can just take the maximum of the input and the lower bound since the lower bound is a
+    // power of two and exactly representable. For the upper bound, however, it's not exactly representable
+    // and so we'd end up having to take the minimum of the input and the next smallest representable value
+    // this would be problematic since we'd clamp to 2147483520, rather than 2147483647.
+    //
+    // So, instead, we need to compare against the upper bound to create a mask, do the truncation, and
+    // blend in the correct results. This will take an extra instruction but will give us a correct result.
+
+    tmp = gtNewDconNode(-2147483648.0f, TYP_FLOAT);
+    tmp = gtNewSimdCreateBroadcastNode(type, tmp, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    op1 = gtNewSimdMaxNode(type, op1, tmp, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+    op1 = impCloneExpr(op1, &dup1, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                       nullptr DEBUGARG("Clone op1 for vector convert to int32"));
+
+    tmp = gtNewDconNode(+2147483648.0f, TYP_FLOAT);
+    tmp = gtNewSimdCreateBroadcastNode(type, tmp, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    msk = gtNewSimdCmpOpNode(GT_GE, type, dup1, tmp, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+    intrinsic =
+        (simdSize == 32) ? NI_AVX_ConvertToVector256Int32WithTruncation : NI_SSE2_ConvertToVector128Int32WithTruncation;
+
+    op1 = gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+    tmp = gtNewIconNode(2147483647);
+    tmp = gtNewSimdCreateBroadcastNode(type, tmp, CORINFO_TYPE_INT, simdSize, isSimdAsHWIntrinsic);
+
+    // TODO-XARCH-CQ: Ideally gtNewSimdCndSelNode would handle this itself, but until that happens manually
+    // preference BlendVariable since we know that its "all bits set" or "no bits set" per element.
+
+    if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    {
+        // The operand order here is "right, left, condition" and the condition is greater than or equal to
+        // the upper bound so, left needs to be the saturated value and right should be the truncated value.
+        return gtNewSimdHWIntrinsicNode(type, op1, tmp, msk, NI_SSE41_BlendVariable, CORINFO_TYPE_INT, simdSize,
+                                        isSimdAsHWIntrinsic);
+    }
+    else
+    {
+        // The operand order here is "condition, left, right" and the condition is greater than or equal to
+        // the upper bound so, left needs to be the saturated value and right should be the truncated value.
+        return gtNewSimdCndSelNode(type, msk, tmp, op1, CORINFO_TYPE_INT, simdSize, isSimdAsHWIntrinsic);
+    }
+#elif defined(TARGET_ARM64)
+    intrinsic = NI_AdvSimd_ConvertToInt32RoundToZero;
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+}
+
+GenTree* Compiler::gtNewSimdCvtToInt64Node(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(simdBaseType == TYP_DOUBLE);
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    unreached();
+#elif defined(TARGET_ARM64)
+    intrinsic =
+        (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar : NI_AdvSimd_Arm64_ConvertToInt64RoundToZero;
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+}
+
+GenTree* Compiler::gtNewSimdCvtToSingleNode(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    assert(simdBaseType == TYP_INT);
+    intrinsic = (simdSize == 32) ? NI_AVX_ConvertToVector256Single : NI_SSE2_ConvertToVector128Single;
+#elif defined(TARGET_ARM64)
+    intrinsic = NI_AdvSimd_ConvertToSingle;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+}
+
+GenTree* Compiler::gtNewSimdCvtToUInt32Node(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(simdBaseType == TYP_FLOAT);
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    unreached();
+#elif defined(TARGET_ARM64)
+    intrinsic = NI_AdvSimd_ConvertToUInt32RoundToZero;
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+}
+
+GenTree* Compiler::gtNewSimdCvtToUInt64Node(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(simdBaseType == TYP_DOUBLE);
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    unreached();
+#elif defined(TARGET_ARM64)
+    intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar
+                                : NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero;
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
 }
 
 GenTree* Compiler::gtNewSimdDotProdNode(var_types   type,

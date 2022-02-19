@@ -214,76 +214,161 @@ namespace Internal.Runtime.CompilerHelpers
         }
 #endif // TARGET_64BIT
 
-        [RuntimeExport("Dbl2IntOvf")]
-        public static int Dbl2IntOvf(double val)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static sbyte PlatformDoubleToInt8(double val)
         {
-            const double two31 = 2147483648.0;
-
-            // Note that this expression also works properly for val = NaN case
-            if (val > -two31 - 1 && val < two31)
-                return unchecked((int)val);
-
-            return ThrowIntOvf();
+            return (sbyte)val;
         }
 
-        [RuntimeExport("Dbl2UIntOvf")]
-        public static uint Dbl2UIntOvf(double val)
+        [RuntimeExport("DoubleToInt8Ovf")]
+        public static sbyte DoubleToInt8Ovf(double val)
         {
-            // Note that this expression also works properly for val = NaN case
-            if (val > -1.0 && val < 4294967296.0)
-                return unchecked((uint)val);
+            if (val > -129.0 && val < 128.0)
+            {
+                // -129.0 and +128.0 are exactly representable
+                // Note that the above condition also works properly for val = NaN case
+                return PlatformDoubleToInt8(val);
+            }
 
-            return ThrowUIntOvf();
+            return ThrowInt8OverflowException();
         }
 
-        [RuntimeExport("Dbl2LngOvf")]
-        public static long Dbl2LngOvf(double val)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static byte PlatformDoubleToUInt8(double val)
         {
-            const double two63 = 2147483648.0 * 4294967296.0;
-
-            // Note that this expression also works properly for val = NaN case
-            // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
-            if (val > -two63 - 0x402 && val < two63)
-                return unchecked((long)val);
-
-            return ThrowLngOvf();
+            return (byte)val;
         }
 
-        [RuntimeExport("Dbl2ULngOvf")]
-        public static ulong Dbl2ULngOvf(double val)
+        [RuntimeExport("DoubleToUInt8Ovf")]
+        public static byte DoubleToUInt8Ovf(double val)
         {
-            const double two64 = 2.0 * 2147483648.0 * 4294967296.0;
+            if (val > -1.0 && val < +256.0)
+            {
+                // -1.0 and +256.0 are exactly representable
+                // Note that the above condition also works properly for val = NaN case
+                return PlatformDoubleToUInt8(val);
+            }
 
-            // Note that this expression also works properly for val = NaN case
-            if (val > -1.0 && val < two64)
-                return unchecked((ulong)val);
-
-            return ThrowULngOvf();
+            return ThrowUInt8OverflowException();
         }
 
-        [RuntimeExport("Flt2IntOvf")]
-        public static int Flt2IntOvf(float val)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static short PlatformDoubleToInt16(double val)
         {
-            const double two31 = 2147483648.0;
-
-            // Note that this expression also works properly for val = NaN case
-            if (val > -two31 - 1 && val < two31)
-                return ((int)val);
-
-            return ThrowIntOvf();
+            return (short)val;
         }
 
-        [RuntimeExport("Flt2LngOvf")]
-        public static long Flt2LngOvf(float val)
+        [RuntimeExport("DoubleToInt16Ovf")]
+        public static short DoubleToInt16Ovf(double val)
         {
-            const double two63 = 2147483648.0 * 4294967296.0;
+            if (val > -32769.0 && val < +32768.0)
+            {
+                // -32769.0 and +32768.0 are exactly representable
+                // Note that the above condition also works properly for val = NaN case
+                return PlatformDoubleToInt16(val);
+            }
 
-            // Note that this expression also works properly for val = NaN case
-            // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
-            if (val > -two63 - 0x402 && val < two63)
-                return ((long)val);
+            return ThrowInt16OverflowException();
+        }
 
-            return ThrowIntOvf();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ushort PlatformDoubleToUInt16(double val)
+        {
+            return (ushort)val;
+        }
+
+        [RuntimeExport("DoubleToUInt16Ovf")]
+        public static ushort DoubleToUInt16Ovf(double val)
+        {
+            if (val > -1.0 && val < +65536.0)
+            {
+                // -1.0 and +65536.0 are exactly representable
+                // Note that the above condition also works properly for val = NaN case
+                return PlatformDoubleToUInt16(val);
+            }
+
+            return ThrowUInt16OverflowException();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int PlatformDoubleToInt32(double val)
+        {
+            return (int)val;
+        }
+
+        [RuntimeExport("DoubleToInt32Ovf")]
+        public static int DoubleToInt32Ovf(double val)
+        {
+            if (val > -2147483649.0 && val < +2147483648.0)
+            {
+                // -2147483649.0 and +2147483648.0 are exactly representable
+                // Note that the above condition also works properly for val = NaN case
+                return PlatformDoubleToInt32(val);
+            }
+
+            return ThrowInt32OverflowException();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint PlatformDoubleToUInt32(double val)
+        {
+            return (uint)val;
+        }
+
+        [RuntimeExport("DoubleToUInt32Ovf")]
+        public static uint DoubleToUInt32Ovf(double val)
+        {
+            if (val > -1.0 && val < +4294967296.0)
+            {
+                // -1.0 and +4294967296.0 are exactly representable
+                // Note that the above condition also works properly for val = NaN case
+                return PlatformDoubleToUInt32(val);
+            }
+
+            return ThrowUInt32OverflowException();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static long PlatformDoubleToInt64(double val)
+        {
+            return (long)val;
+        }
+
+        [RuntimeExport("DoubleToInt64Ovf")]
+        public static long DoubleToInt64Ovf(double val)
+        {
+            if (val > -9223372036854777856.0 && val < +9223372036854775808.0)
+            {
+                // +9223372036854775808.0 is exactly representable
+                //
+                // -9223372036854777809.0 however, is not and rounds to -9223372036854777808.0
+                // we use -9223372036854777856.0 instead which is the next representable value smaller
+                // than -9223372036854777808.0
+                //
+                // Note that this expression also works properly for val = NaN case
+                return PlatformDoubleToInt64(val);
+            }
+
+            return ThrowInt64OverflowException();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong PlatformDoubleToUInt64(double val)
+        {
+            return (ulong)val;
+        }
+
+        [RuntimeExport("DoubleToUInt64Ovf")]
+        public static ulong DoubleToUInt64Ovf(double val)
+        {
+            if (val > -1.0 && val < +18446744073709551616.0)
+            {
+                // -1.0 and +18446744073709551616.0 are exactly representable
+                // Note that the above condition also works properly for val = NaN case
+                return PlatformDoubleToUInt64(val);
+            }
+
+            return ThrowUInt64OverflowException();
         }
 
 #if TARGET_ARM
@@ -344,25 +429,49 @@ namespace Internal.Runtime.CompilerHelpers
         //
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ThrowIntOvf()
+        private static sbyte ThrowInt8OverflowException()
         {
             throw new OverflowException();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static uint ThrowUIntOvf()
+        private static byte ThrowUInt8OverflowException()
         {
             throw new OverflowException();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long ThrowLngOvf()
+        private static short ThrowInt16OverflowException()
         {
             throw new OverflowException();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static ulong ThrowULngOvf()
+        private static ushort ThrowUInt16OverflowException()
+        {
+            throw new OverflowException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int ThrowInt32OverflowException()
+        {
+            throw new OverflowException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static uint ThrowUInt32OverflowException()
+        {
+            throw new OverflowException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static long ThrowInt64OverflowException()
+        {
+            throw new OverflowException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ulong ThrowUInt64OverflowException()
         {
             throw new OverflowException();
         }

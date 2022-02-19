@@ -934,11 +934,11 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_LRSZ:
                     id = ReadyToRunHelper.LRsz;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_LNG2DBL:
-                    id = ReadyToRunHelper.Lng2Dbl;
+                case CorInfoHelpFunc.CORINFO_HELP_Int64ToDouble:
+                    id = ReadyToRunHelper.Int64ToDouble;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_ULNG2DBL:
-                    id = ReadyToRunHelper.ULng2Dbl;
+                case CorInfoHelpFunc.CORINFO_HELP_UInt64ToDouble:
+                    id = ReadyToRunHelper.UInt64ToDouble;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_DIV:
@@ -954,29 +954,53 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.UMod;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT:
-                    id = ReadyToRunHelper.Dbl2Int;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToInt32:
+                    id = ReadyToRunHelper.DoubleToInt32;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT_OVF:
-                    id = ReadyToRunHelper.Dbl2IntOvf;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToInt32_OVF:
+                    id = ReadyToRunHelper.DoubleToInt32Ovf;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG:
-                    id = ReadyToRunHelper.Dbl2Lng;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToInt64:
+                    id = ReadyToRunHelper.DoubleToInt64;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG_OVF:
-                    id = ReadyToRunHelper.Dbl2LngOvf;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToInt64_OVF:
+                    id = ReadyToRunHelper.DoubleToInt64Ovf;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT:
-                    id = ReadyToRunHelper.Dbl2UInt;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToUInt32:
+                    id = ReadyToRunHelper.DoubleToUInt32;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT_OVF:
-                    id = ReadyToRunHelper.Dbl2UIntOvf;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToUInt32_OVF:
+                    id = ReadyToRunHelper.DoubleToUInt32Ovf;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG:
-                    id = ReadyToRunHelper.Dbl2ULng;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToUInt64:
+                    id = ReadyToRunHelper.DoubleToUInt64;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG_OVF:
-                    id = ReadyToRunHelper.Dbl2ULngOvf;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToUInt64_OVF:
+                    id = ReadyToRunHelper.DoubleToUInt64Ovf;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToInt8:
+                    id = ReadyToRunHelper.DoubleToInt8;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToInt8_OVF:
+                    id = ReadyToRunHelper.DoubleToInt8Ovf;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToInt16:
+                    id = ReadyToRunHelper.DoubleToInt16;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToInt16_OVF:
+                    id = ReadyToRunHelper.DoubleToInt16Ovf;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToUInt8:
+                    id = ReadyToRunHelper.DoubleToUInt8;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToUInt8_OVF:
+                    id = ReadyToRunHelper.DoubleToUInt8Ovf;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToUInt16:
+                    id = ReadyToRunHelper.DoubleToUInt16;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DoubleToUInt16_OVF:
+                    id = ReadyToRunHelper.DoubleToUInt16Ovf;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_FLTREM:

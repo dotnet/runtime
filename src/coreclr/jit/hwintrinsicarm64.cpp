@@ -579,12 +579,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ConvertToDouble:
         {
             assert(sig->numArgs == 1);
-            assert((simdBaseType == TYP_LONG) || (simdBaseType == TYP_ULONG));
 
-            intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToDoubleScalar : NI_AdvSimd_Arm64_ConvertToDouble;
+            op1 = impSIMDPopStack(retType);
 
-            op1     = impSIMDPopStack(retType);
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            retNode =
+                gtNewSimdCvtToDoubleNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -592,11 +591,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ConvertToInt32:
         {
             assert(sig->numArgs == 1);
-            assert(simdBaseType == TYP_FLOAT);
 
             op1 = impSIMDPopStack(retType);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToInt32RoundToZero, simdBaseJitType, simdSize);
+
+            retNode = gtNewSimdCvtToInt32Node(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -604,13 +602,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ConvertToInt64:
         {
             assert(sig->numArgs == 1);
-            assert(simdBaseType == TYP_DOUBLE);
 
-            intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar
-                                        : NI_AdvSimd_Arm64_ConvertToInt64RoundToZero;
+            op1 = impSIMDPopStack(retType);
 
-            op1     = impSIMDPopStack(retType);
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            retNode = gtNewSimdCvtToInt64Node(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -618,10 +613,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ConvertToSingle:
         {
             assert(sig->numArgs == 1);
-            assert((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT));
 
-            op1     = impSIMDPopStack(retType);
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToSingle, simdBaseJitType, simdSize);
+            op1 = impSIMDPopStack(retType);
+
+            retNode =
+                gtNewSimdCvtToSingleNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -629,11 +625,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ConvertToUInt32:
         {
             assert(sig->numArgs == 1);
-            assert(simdBaseType == TYP_FLOAT);
 
-            op1     = impSIMDPopStack(retType);
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_ConvertToUInt32RoundToZero, simdBaseJitType,
-                                               simdSize);
+            op1 = impSIMDPopStack(retType);
+
+            retNode =
+                gtNewSimdCvtToUInt32Node(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -641,13 +637,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ConvertToUInt64:
         {
             assert(sig->numArgs == 1);
-            assert(simdBaseType == TYP_DOUBLE);
 
-            intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar
-                                        : NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero;
+            op1 = impSIMDPopStack(retType);
 
-            op1     = impSIMDPopStack(retType);
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            retNode =
+                gtNewSimdCvtToUInt64Node(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 

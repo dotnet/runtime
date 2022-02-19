@@ -1246,12 +1246,16 @@ void HelperCallProperties::init()
             case CORINFO_HELP_LRSH:
             case CORINFO_HELP_LRSZ:
             case CORINFO_HELP_LMUL:
-            case CORINFO_HELP_LNG2DBL:
-            case CORINFO_HELP_ULNG2DBL:
-            case CORINFO_HELP_DBL2INT:
-            case CORINFO_HELP_DBL2LNG:
-            case CORINFO_HELP_DBL2UINT:
-            case CORINFO_HELP_DBL2ULNG:
+            case CORINFO_HELP_Int64ToDouble:
+            case CORINFO_HELP_UInt64ToDouble:
+            case CORINFO_HELP_DoubleToInt8:
+            case CORINFO_HELP_DoubleToInt16:
+            case CORINFO_HELP_DoubleToInt32:
+            case CORINFO_HELP_DoubleToInt64:
+            case CORINFO_HELP_DoubleToUInt8:
+            case CORINFO_HELP_DoubleToUInt16:
+            case CORINFO_HELP_DoubleToUInt32:
+            case CORINFO_HELP_DoubleToUInt64:
             case CORINFO_HELP_FLTREM:
             case CORINFO_HELP_DBLREM:
             case CORINFO_HELP_FLTROUND:
@@ -1283,10 +1287,14 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_LMUL_OVF:
             case CORINFO_HELP_ULMUL_OVF:
-            case CORINFO_HELP_DBL2INT_OVF:
-            case CORINFO_HELP_DBL2LNG_OVF:
-            case CORINFO_HELP_DBL2UINT_OVF:
-            case CORINFO_HELP_DBL2ULNG_OVF:
+            case CORINFO_HELP_DoubleToInt8_OVF:
+            case CORINFO_HELP_DoubleToInt16_OVF:
+            case CORINFO_HELP_DoubleToInt32_OVF:
+            case CORINFO_HELP_DoubleToInt64_OVF:
+            case CORINFO_HELP_DoubleToUInt8_OVF:
+            case CORINFO_HELP_DoubleToUInt16_OVF:
+            case CORINFO_HELP_DoubleToUInt32_OVF:
+            case CORINFO_HELP_DoubleToUInt64_OVF:
 
                 isPure = true;
                 break;
@@ -1937,79 +1945,278 @@ unsigned CountDigits(double num, unsigned base /* = 10 */)
 
 #endif // DEBUG
 
-double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal)
+double FloatingPointUtils::convertInt64ToDouble(int64_t val)
 {
-    __int64 s64 = uIntVal;
-    double  d;
-    if (s64 < 0)
-    {
-#if defined(TARGET_XARCH)
-        // RyuJIT codegen and clang (or gcc) may produce different results for casting uint64 to
-        // double, and the clang result is more accurate. For example,
-        //    1) (double)0x84595161401484A0UL --> 43e08b2a2c280290  (RyuJIT codegen or VC++)
-        //    2) (double)0x84595161401484A0UL --> 43e08b2a2c280291  (clang or gcc)
-        // If the folding optimization below is implemented by simple casting of (double)uint64_val
-        // and it is compiled by clang, casting result can be inconsistent, depending on whether
-        // the folding optimization is triggered or the codegen generates instructions for casting. //
-        // The current solution is to force the same math as the codegen does, so that casting
-        // result is always consistent.
+    // ** NOTE **
+    // This should be kept in sync with CORINFO_HELP_Int64ToDouble
+    // This should be kept in sync with RhpInt64ToDouble
+    // ** NOTE **
 
-        // d = (double)(int64_t)uint64 + 0x1p64
-        uint64_t adjHex = 0x43F0000000000000UL;
-        d               = (double)s64 + *(double*)&adjHex;
-#else
-        d = (double)uIntVal;
-#endif
-    }
-    else
-    {
-        d = (double)uIntVal;
-    }
-    return d;
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return (double)val;
 }
 
-float FloatingPointUtils::convertUInt64ToFloat(unsigned __int64 u64)
+double FloatingPointUtils::convertUInt64ToDouble(uint64_t val)
 {
-    double d = convertUInt64ToDouble(u64);
-    return (float)d;
+    // ** NOTE **
+    // This should be kept in sync with CORINFO_HELP_UInt64ToDouble
+    // This should be kept in sync with RhpUInt64ToDouble
+    // ** NOTE **
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return (double)val;
 }
 
-unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
+int8_t FloatingPointUtils::convertDoubleToInt8(double val)
 {
-    unsigned __int64 u64;
-    if (d >= 0.0)
+    // ** NOTE **
+    // This should be kept in sync with CORINFO_HELP_DoubleToInt8
+    // This should be kept in sync with RhpDoubleToInt8
+    // ** NOTE **
+
+    if (_isnan(val))
     {
-        // Work around a C++ issue where it doesn't properly convert large positive doubles
-        const double two63 = 2147483648.0 * 4294967296.0;
-        if (d < two63)
-        {
-            u64 = UINT64(d);
-        }
-        else
-        {
-            // subtract 0x8000000000000000, do the convert then add it back again
-            u64 = INT64(d - two63) + I64(0x8000000000000000);
-        }
-        return u64;
+        // NAN should return 0
+        return 0;
     }
 
-#ifdef TARGET_XARCH
+    if (val <= -129.0)
+    {
+        // Too small should saturate to INT8_MIN
+        return INT8_MIN;
+    }
 
-    // While the Ecma spec does not specifically call this out,
-    // the case of conversion from negative double to unsigned integer is
-    // effectively an overflow and therefore the result is unspecified.
-    // With MSVC for x86/x64, such a conversion results in the bit-equivalent
-    // unsigned value of the conversion to integer. Other compilers convert
-    // negative doubles to zero when the target is unsigned.
-    // To make the behavior consistent across OS's on TARGET_XARCH,
-    // this double cast is needed to conform MSVC behavior.
+    if (val >= +256.0)
+    {
+        // Too large should saturate to INT8_MAX
+        return INT8_MAX;
+    }
 
-    u64 = UINT64(INT64(d));
-#else
-    u64   = UINT64(d);
-#endif // TARGET_XARCH
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
 
-    return u64;
+    return INT8(val);
+}
+
+int16_t FloatingPointUtils::convertDoubleToInt16(double val)
+{
+    // ** NOTE **
+    // This should be kept in sync with CORINFO_HELP_DoubleToInt16
+    // This should be kept in sync with RhpDoubleToInt16
+    // ** NOTE **
+
+    if (_isnan(val))
+    {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -32769.0)
+    {
+        // Too small should saturate to INT16_MIN
+        return INT16_MIN;
+    }
+
+    if (val >= +32768.0)
+    {
+        // Too large should saturate to INT16_MAX
+        return INT16_MAX;
+    }
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return INT16(val);
+}
+
+int32_t FloatingPointUtils::convertDoubleToInt32(double val)
+{
+    // ** NOTE **
+    // This should be kept in sync with CORINFO_HELP_DoubleToInt32
+    // This should be kept in sync with RhpDoubleToInt32
+    // ** NOTE **
+
+    if (_isnan(val))
+    {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -2147483649.0)
+    {
+        // Too small should saturate to INT32_MIN
+        return INT32_MIN;
+    }
+
+    if (val >= +2147483648.0)
+    {
+        // Too large should saturate to INT32_MAX
+        return INT32_MAX;
+    }
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return INT32(val);
+}
+
+int64_t FloatingPointUtils::convertDoubleToInt64(double val)
+{
+    // ** NOTE **
+    // This should be kept in sync with CORINFO_HELP_DoubleToInt64
+    // This should be kept in sync with RhpDoubleToInt64
+    // ** NOTE **
+
+    if (_isnan(val))
+    {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -9223372036854777856.0)
+    {
+        // Too small should saturate to INT64_MIN
+        return INT64_MIN;
+    }
+
+    if (val >= +9223372036854775808.0)
+    {
+        // Too large should saturate to INT64_MAX
+        return INT64_MAX;
+    }
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return INT64(val);
+}
+
+uint8_t FloatingPointUtils::convertDoubleToUInt8(double val)
+{
+    // ** NOTE **
+    // This should be kept in sync with CORINFO_HELP_DoubleToUInt8
+    // This should be kept in sync with RhpDoubleToUInt8
+    // ** NOTE **
+
+    if (_isnan(val))
+    {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -1.0)
+    {
+        // Too small should saturate to UINT8_MIN
+        return UINT8_MIN;
+    }
+
+    if (val >= +256.0)
+    {
+        // Too large should saturate to UINT8_MAX
+        return UINT8_MAX;
+    }
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return UINT8(val);
+}
+
+uint16_t FloatingPointUtils::convertDoubleToUInt16(double val)
+{
+    // ** NOTE **
+    // This should be kept in sync with CORINFO_HELP_DoubleToUInt16
+    // This should be kept in sync with RhpDoubleToUInt16
+    // ** NOTE **
+
+    if (_isnan(val))
+    {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -1.0)
+    {
+        // Too small should saturate to UINT16_MIN
+        return UINT16_MIN;
+    }
+
+    if (val >= +65536.0)
+    {
+        // Too large should saturate to UINT16_MAX
+        return UINT16_MAX;
+    }
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return UINT16(val);
+}
+
+uint32_t FloatingPointUtils::convertDoubleToUInt32(double val)
+{
+    // ** NOTE **
+    // This should be kept in sync with CORINFO_HELP_DoubleToUInt32
+    // This should be kept in sync with RhpDoubleToUInt32
+    // ** NOTE **
+
+    if (_isnan(val))
+    {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -1.0)
+    {
+        // Too small should saturate to UINT32_MIN
+        return UINT32_MIN;
+    }
+
+    if (val >= +4294967296.0)
+    {
+        // Too large should saturate to UINT32_MAX
+        return UINT32_MAX;
+    }
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return UINT32(val);
+}
+
+uint64_t FloatingPointUtils::convertDoubleToUInt64(double val)
+{
+    // ** NOTE **
+    // This should be kept in sync with CORINFO_HELP_DoubleToUInt64
+    // This should be kept in sync with RhpDoubleToUInt64
+    // ** NOTE **
+
+    if (_isnan(val))
+    {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -1.0)
+    {
+        // Too small should saturate to UINT64_MIN
+        return UINT64_MIN;
+    }
+
+    if (val >= +18446744073709551616.0)
+    {
+        // Too large values should saturate to UINT64_MAX
+        return UINT64_MAX;
+    }
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return UINT64(val);
 }
 
 // Rounds a double-precision floating-point value to the nearest integer,

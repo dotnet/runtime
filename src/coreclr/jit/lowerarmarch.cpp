@@ -754,29 +754,191 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //    don't expect to see them here.
 //    i) GT_CAST(float/double, int type with overflow detection)
 //
-void Lowering::LowerCast(GenTree* tree)
+GenTree* Lowering::LowerCast(GenTreeCast* tree)
 {
-    assert(tree->OperGet() == GT_CAST);
-
     JITDUMP("LowerCast for: ");
     DISPNODE(tree);
     JITDUMP("\n");
 
-    GenTree*  op1     = tree->AsOp()->gtOp1;
-    var_types dstType = tree->CastToType();
-    var_types srcType = genActualType(op1->TypeGet());
+    GenTree*  castOp       = tree->CastOp();
+    var_types castToType   = tree->CastToType();
+    var_types castFromType = tree->CastFromType();
+    var_types tmpType      = TYP_UNDEF;
 
-    if (varTypeIsFloating(srcType))
+    // force the castFromType to unsigned if GT_UNSIGNED flag is set
+    if (tree->IsUnsigned())
     {
-        noway_assert(!tree->gtOverflow());
-        assert(!varTypeIsSmall(dstType)); // fgMorphCast creates intermediate casts when converting from float to small
-                                          // int.
+        castFromType = varTypeToUnsigned(castFromType);
     }
 
-    assert(!varTypeIsSmall(srcType));
+    // We should never see the following casts for as they are expected to be converted into helper calls by front-end.
+    //   castFromType = float/double               castToType = overflow detecting cast
+    //       Reason: must be converted to a helper call
+    if (varTypeIsFloating(castFromType))
+    {
+        noway_assert(!tree->gtOverflow());
+    }
+
+    // Case of src is a small type and dst is a floating point type.
+    if (varTypeIsSmall(castFromType) && varTypeIsFloating(castToType))
+    {
+        // These conversions can never be overflow detecting ones.
+        noway_assert(!tree->gtOverflow());
+        tmpType = TYP_INT;
+    }
+#if defined(FEATURE_SIMD) && defined(FEATURE_HW_INTRINSICS)
+    // case of src is a floating point type and dst is a small type.
+    else if (varTypeIsFloating(castFromType) && varTypeIsSmall(castToType))
+    {
+        // We are casting to a small type and need to saturate the result, so generate effectively
+        //     fmov        s1, wzr
+        //     fmax        s0, s1, s0
+        //     mov         w8, #1
+        //     fmov        s1, w8
+        //     fmin        s0, s1, s0
+        //
+        // Where, s0 = castOp
+        // Where, #0 = +255.0 -or- +65535.0
+        //
+        // -or, for signed values
+        //     mov         w8, #0
+        //     fmov        s1, w8
+        //     fmax        s0, s1, s0
+        //     mov         w8, #1
+        //     fmov        s1, w8
+        //     fmin        s0, s1, s0
+        //
+        // Where, s0 = castOp
+        // Where, #0 = -128.0 -or- -32768.0
+        // Where, #1 = +127.0 -or- +32767.0
+
+        CorInfoType    simdBaseJitType;
+        NamedIntrinsic simdMaxIntrinId;
+        NamedIntrinsic simdMinIntrinId;
+
+        if (castFromType == TYP_DOUBLE)
+        {
+            simdBaseJitType = CORINFO_TYPE_DOUBLE;
+        }
+        else
+        {
+            assert(castFromType == TYP_FLOAT);
+            simdBaseJitType = CORINFO_TYPE_FLOAT;
+        }
+
+        simdMaxIntrinId = NI_AdvSimd_Arm64_MaxScalar;
+        simdMinIntrinId = NI_AdvSimd_Arm64_MinScalar;
+
+        // We max ourselves against the lower bound
+        GenTree* lowerBound;
+
+        if (varTypeIsUnsigned(castToType))
+        {
+            lowerBound = comp->gtNewZeroConNode(TYP_SIMD16);
+            BlockRange().InsertAfter(castOp, lowerBound);
+            LowerNode(lowerBound);
+        }
+        else
+        {
+            GenTree* lowerBoundCns;
+
+            if (castToType == TYP_BYTE)
+            {
+                lowerBoundCns = comp->gtNewDconNode(-128.0, castFromType);
+            }
+            else
+            {
+                assert(castToType == TYP_SHORT);
+                lowerBoundCns = comp->gtNewDconNode(-32768.0, castFromType);
+            }
+
+            BlockRange().InsertAfter(castOp, lowerBoundCns);
+
+            lowerBound = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, lowerBoundCns, NI_Vector128_CreateScalarUnsafe,
+                                                        simdBaseJitType, 16);
+            BlockRange().InsertAfter(lowerBoundCns, lowerBound);
+            LowerNode(lowerBound);
+        }
+
+        GenTree* simdMax =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, castOp, lowerBound, simdMaxIntrinId, simdBaseJitType, 16);
+        BlockRange().InsertAfter(lowerBound, simdMax);
+        LowerNode(simdMax);
+
+        // We min ourselves against the upper boun
+        GenTree* upperBound;
+        GenTree* upperBoundCns;
+
+        switch (castToType)
+        {
+            case TYP_BYTE:
+            {
+                upperBoundCns = comp->gtNewDconNode(+127.0, castFromType);
+                break;
+            }
+
+            case TYP_UBYTE:
+            {
+                upperBoundCns = comp->gtNewDconNode(+255.0, castFromType);
+                break;
+            }
+
+            case TYP_SHORT:
+            {
+                upperBoundCns = comp->gtNewDconNode(+32767.0, castFromType);
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                upperBoundCns = comp->gtNewDconNode(+65535.0, castFromType);
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        BlockRange().InsertAfter(simdMax, upperBoundCns);
+
+        upperBound = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, upperBoundCns, NI_Vector128_CreateScalarUnsafe,
+                                                    simdBaseJitType, 16);
+        BlockRange().InsertAfter(upperBoundCns, upperBound);
+        LowerNode(upperBound);
+
+        GenTree* simdMin =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, simdMax, upperBound, simdMinIntrinId, simdBaseJitType, 16);
+        BlockRange().InsertAfter(upperBound, simdMin);
+        LowerNode(simdMin);
+
+        // Replace the castOp with the properly saturated TYP_INT value
+        castOp = comp->gtNewSimdHWIntrinsicNode(castFromType, simdMin, NI_Vector128_ToScalar, simdBaseJitType, 16);
+        BlockRange().InsertAfter(simdMin, castOp);
+        LowerNode(castOp);
+
+        tree->CastOp()     = castOp;
+        tree->CastToType() = TYP_INT;
+    }
+#else // !FEATURE_SIMD || !FEATURE_HW_INTRINSICS
+    assert(!varTypeIsFloating(castFromType) || !varTypeIsSmall(castToType));
+#endif // FEATURE_SIMD && FEATURE_HW_INTRINSICS
+
+    if (tmpType != TYP_UNDEF)
+    {
+        GenTree* tmp = comp->gtNewCastNode(tmpType, castOp, tree->IsUnsigned(), tmpType);
+        tmp->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
+        tree->gtFlags &= ~GTF_UNSIGNED;
+        tree->AsOp()->gtOp1 = tmp;
+        BlockRange().InsertAfter(castOp, tmp);
+        ContainCheckCast(tmp->AsCast());
+    }
 
     // Now determine if we have operands that should be contained.
-    ContainCheckCast(tree->AsCast());
+    ContainCheckCast(tree);
+
+    return tree->gtNext;
 }
 
 //------------------------------------------------------------------------

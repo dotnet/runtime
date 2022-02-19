@@ -96,7 +96,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     size_t                 numArgs     = node->GetOperandCount();
 
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
-    assert(compiler->compIsaSupportedDebugOnly(isa));
+    // However, specially allow any "baseline" SIMD ISAs however as it greatly simplifies some patterns we
+    // want to introduce in lowering, since it allows us to reuse all the existing logic for various opts
+    assert(compiler->compIsaSupportedDebugOnly(isa) || compiler->IsBaselineSimdIsa(isa));
 
     int ival = HWIntrinsicInfo::lookupIval(intrinsicId, compiler->compOpportunisticallyDependsOn(InstructionSet_AVX));
 
@@ -879,7 +881,6 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
     regNumber      targetReg   = node->GetRegNum();
     var_types      baseType    = node->GetSimdBaseType();
 
-    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_SSE));
     assert((baseType >= TYP_BYTE) && (baseType <= TYP_DOUBLE));
 
     GenTree* op1 = (node->GetOperandCount() >= 1) ? node->Op(1) : nullptr;

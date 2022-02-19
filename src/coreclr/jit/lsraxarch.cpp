@@ -2641,7 +2641,14 @@ int LinearScan::BuildCast(GenTreeCast* cast)
         // rather require it to be different from operand's reg.
         buildInternalIntRegisterDefForNode(cast);
     }
-#endif
+#if !defined(FEATURE_SIMD) || !defined(FEATURE_HW_INTRINSICS)
+    else if ((srcType == TYP_ULONG) && varTypeIsFloating(castType))
+    {
+        // We need a temporary register that's different from the operand
+        buildInternalIntRegisterDefForNode(cast);
+    }
+#endif // !FEATURE_SIMD || !FEATURE_HW_INTRINSICS
+#endif // TARGET_X86
 
     int srcCount = BuildCastUses(cast, candidates);
     buildInternalRegisterUses();

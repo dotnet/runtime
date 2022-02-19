@@ -3750,21 +3750,25 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                             assert(typ == TYP_FLOAT);
                             if (srcIsUnsigned)
                             {
-                                return VNForFloatCon(FloatingPointUtils::convertUInt64ToFloat(UINT64(arg0Val)));
+                                double d = FloatingPointUtils::convertUInt64ToDouble(UINT64(arg0Val));
+                                return VNForFloatCon(forceCastToFloat(d));
                             }
                             else
                             {
-                                return VNForFloatCon(float(arg0Val));
+                                double d = FloatingPointUtils::convertInt64ToDouble(arg0Val);
+                                return VNForFloatCon(forceCastToFloat(d));
                             }
                         case TYP_DOUBLE:
                             assert(typ == TYP_DOUBLE);
                             if (srcIsUnsigned)
                             {
-                                return VNForDoubleCon(FloatingPointUtils::convertUInt64ToDouble(UINT64(arg0Val)));
+                                double d = FloatingPointUtils::convertUInt64ToDouble(UINT64(arg0Val));
+                                return VNForDoubleCon(d);
                             }
                             else
                             {
-                                return VNForDoubleCon(double(arg0Val));
+                                double d = FloatingPointUtils::convertInt64ToDouble(arg0Val);
+                                return VNForDoubleCon(d);
                             }
                         default:
                             unreached();
@@ -11654,81 +11658,6 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     }
 }
 
-void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
-{
-    CorInfoHelpFunc helpFunc         = eeGetHelperNum(call->gtCallMethHnd);
-    var_types       castToType       = TYP_UNDEF;
-    var_types       castFromType     = TYP_UNDEF;
-    bool            srcIsUnsigned    = false;
-    bool            hasOverflowCheck = false;
-
-    switch (helpFunc)
-    {
-        case CORINFO_HELP_LNG2DBL:
-            castToType   = TYP_DOUBLE;
-            castFromType = TYP_LONG;
-            break;
-
-        case CORINFO_HELP_ULNG2DBL:
-            castToType    = TYP_DOUBLE;
-            castFromType  = TYP_LONG;
-            srcIsUnsigned = true;
-            break;
-
-        case CORINFO_HELP_DBL2INT:
-            castToType   = TYP_INT;
-            castFromType = TYP_DOUBLE;
-            break;
-
-        case CORINFO_HELP_DBL2INT_OVF:
-            castToType       = TYP_INT;
-            castFromType     = TYP_DOUBLE;
-            hasOverflowCheck = true;
-            break;
-
-        case CORINFO_HELP_DBL2LNG:
-            castToType   = TYP_LONG;
-            castFromType = TYP_DOUBLE;
-            break;
-
-        case CORINFO_HELP_DBL2LNG_OVF:
-            castToType       = TYP_LONG;
-            castFromType     = TYP_DOUBLE;
-            hasOverflowCheck = true;
-            break;
-
-        case CORINFO_HELP_DBL2UINT:
-            castToType   = TYP_UINT;
-            castFromType = TYP_DOUBLE;
-            break;
-
-        case CORINFO_HELP_DBL2UINT_OVF:
-            castToType       = TYP_UINT;
-            castFromType     = TYP_DOUBLE;
-            hasOverflowCheck = true;
-            break;
-
-        case CORINFO_HELP_DBL2ULNG:
-            castToType   = TYP_ULONG;
-            castFromType = TYP_DOUBLE;
-            break;
-
-        case CORINFO_HELP_DBL2ULNG_OVF:
-            castToType       = TYP_ULONG;
-            castFromType     = TYP_DOUBLE;
-            hasOverflowCheck = true;
-            break;
-
-        default:
-            unreached();
-    }
-
-    ValueNumPair argVNP  = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair;
-    ValueNumPair castVNP = vnStore->VNPairForCast(argVNP, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
-
-    call->SetVNs(castVNP);
-}
-
 VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 {
     assert(s_helperCallProperties.IsPure(helpFunc) || s_helperCallProperties.IsAllocator(helpFunc));
@@ -11791,6 +11720,62 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_DBLROUND:
             vnf = VNF_DblRound;
             break; // Is this the right thing?
+
+        case CORINFO_HELP_Int64ToDouble:
+            vnf = VNF_Int64ToDouble;
+            break;
+        case CORINFO_HELP_UInt64ToDouble:
+            vnf = VNF_UInt64ToDouble;
+            break;
+
+        case CORINFO_HELP_DoubleToInt8:
+            vnf = VNF_DoubleToInt8;
+            break;
+        case CORINFO_HELP_DoubleToInt8_OVF:
+            vnf = VNF_DoubleToInt8Ovf;
+            break;
+        case CORINFO_HELP_DoubleToInt16:
+            vnf = VNF_DoubleToInt16;
+            break;
+        case CORINFO_HELP_DoubleToInt16_OVF:
+            vnf = VNF_DoubleToInt16Ovf;
+            break;
+        case CORINFO_HELP_DoubleToInt32:
+            vnf = VNF_DoubleToInt32;
+            break;
+        case CORINFO_HELP_DoubleToInt32_OVF:
+            vnf = VNF_DoubleToInt32Ovf;
+            break;
+        case CORINFO_HELP_DoubleToInt64:
+            vnf = VNF_DoubleToInt64;
+            break;
+        case CORINFO_HELP_DoubleToInt64_OVF:
+            vnf = VNF_DoubleToInt64Ovf;
+            break;
+        case CORINFO_HELP_DoubleToUInt8:
+            vnf = VNF_DoubleToUInt8;
+            break;
+        case CORINFO_HELP_DoubleToUInt8_OVF:
+            vnf = VNF_DoubleToUInt8Ovf;
+            break;
+        case CORINFO_HELP_DoubleToUInt16:
+            vnf = VNF_DoubleToUInt16;
+            break;
+        case CORINFO_HELP_DoubleToUInt16_OVF:
+            vnf = VNF_DoubleToUInt16Ovf;
+            break;
+        case CORINFO_HELP_DoubleToUInt32:
+            vnf = VNF_DoubleToUInt32;
+            break;
+        case CORINFO_HELP_DoubleToUInt32_OVF:
+            vnf = VNF_DoubleToUInt32Ovf;
+            break;
+        case CORINFO_HELP_DoubleToUInt64:
+            vnf = VNF_DoubleToUInt64;
+            break;
+        case CORINFO_HELP_DoubleToUInt64_OVF:
+            vnf = VNF_DoubleToUInt64Ovf;
+            break;
 
         // These allocation operations probably require some augmentation -- perhaps allocSiteId,
         // something about array length...
@@ -11994,25 +11979,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 {
     CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
-
-    switch (helpFunc)
-    {
-        case CORINFO_HELP_LNG2DBL:
-        case CORINFO_HELP_ULNG2DBL:
-        case CORINFO_HELP_DBL2INT:
-        case CORINFO_HELP_DBL2INT_OVF:
-        case CORINFO_HELP_DBL2LNG:
-        case CORINFO_HELP_DBL2LNG_OVF:
-        case CORINFO_HELP_DBL2UINT:
-        case CORINFO_HELP_DBL2UINT_OVF:
-        case CORINFO_HELP_DBL2ULNG:
-        case CORINFO_HELP_DBL2ULNG_OVF:
-            fgValueNumberCastHelper(call);
-            return false;
-
-        default:
-            break;
-    }
 
     bool pure        = s_helperCallProperties.IsPure(helpFunc);
     bool isAlloc     = s_helperCallProperties.IsAllocator(helpFunc);

@@ -7167,11 +7167,6 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     var_types srcType = op1->TypeGet();
     assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
-#if !defined(TARGET_64BIT)
-    // We expect morph to replace long to float/double casts with helper calls
-    noway_assert(!varTypeIsLong(srcType));
-#endif // !defined(TARGET_64BIT)
-
     // Since xarch emitter doesn't handle reporting gc-info correctly while casting away gc-ness we
     // ensure srcType of a cast is non gc-type.  Codegen should never see BYREF as source type except
     // for GT_LCL_VAR_ADDR and GT_LCL_FLD_ADDR that represent stack addresses and can be considered
@@ -7200,10 +7195,18 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
     noway_assert((srcSize == EA_ATTR(genTypeSize(TYP_INT))) || (srcSize == EA_ATTR(genTypeSize(TYP_LONG))));
 
-    // Also we don't expect to see uint32 -> float/double and uint64 -> float conversions
-    // here since they should have been lowered appropriately.
+#if defined(TARGET_X86)
+    // x86 doesn't expect to see int64/uint32/uint64 -> float/double here since they should have been
+    // replaced with helper calls by the front end.
+    noway_assert(!varTypeIsLong(srcType));
     noway_assert(srcType != TYP_UINT);
-    noway_assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT));
+#endif // TARGET_X86
+
+#if defined(TARGET_AMD64)
+    // x64 shouldn't see a uint64 -> float/double as it should have been lowered to an alternative
+    // sequence -or- converted to a helper call by the front end.
+    noway_assert(srcType != TYP_ULONG);
+#endif // TARGET_AMD64
 
     // To convert int to a float/double, cvtsi2ss/sd SSE2 instruction is used
     // which does a partial write to lower 4/8 bytes of xmm register keeping the other
@@ -7219,46 +7222,27 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 
     // Note that here we need to specify srcType that will determine
     // the size of source reg/mem operand and rex.w prefix.
-    instruction ins = ins_FloatConv(dstType, TYP_INT, emitTypeSize(srcType));
-    GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
+    var_types fromType = srcType;
 
-    // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
-    // will interpret ULONG value as LONG.  Hence we need to adjust the
-    // result if sign-bit of srcType is set.
-    if (srcType == TYP_ULONG)
+#if defined(TARGET_AMD64)
+    if (fromType == TYP_UINT)
     {
-        // The instruction sequence below is less accurate than what clang
-        // and gcc generate. However, we keep the current sequence for backward compatibility.
-        // If we change the instructions below, FloatingPointUtils::convertUInt64ToDobule
-        // should be also updated for consistent conversion result.
-        assert(dstType == TYP_DOUBLE);
+        // There isn't an instruction that directly allows conversion from TYP_UINT
+        // so we convert from TYP_LONG instead.
+
+        fromType = TYP_LONG;
+
+        // We require the value to come from a register so the upper bits here
+        // will be zero and we can know we'll get a correct result.
         assert(op1->isUsedFromReg());
-
-        // Set the flags without modifying op1.
-        // test op1Reg, op1Reg
-        inst_RV_RV(INS_test, op1->GetRegNum(), op1->GetRegNum(), srcType);
-
-        // No need to adjust result if op1 >= 0 i.e. positive
-        // Jge label
-        BasicBlock* label = genCreateTempLabel();
-        inst_JMP(EJ_jge, label);
-
-        // Adjust the result
-        // result = result + 0x43f00000 00000000
-        // addsd resultReg,  0x43f00000 00000000
-        CORINFO_FIELD_HANDLE* cns = &u8ToDblBitmask;
-        if (*cns == nullptr)
-        {
-            double d;
-            static_assert_no_msg(sizeof(double) == sizeof(__int64));
-            *((__int64*)&d) = 0x43f0000000000000LL;
-
-            *cns = GetEmitter()->emitFltOrDblConst(d, EA_8BYTE);
-        }
-        GetEmitter()->emitIns_R_C(INS_addsd, EA_8BYTE, treeNode->GetRegNum(), *cns, 0);
-
-        genDefineTempLabel(label);
     }
+#endif // TARGET_AMD64
+
+    assert(!varTypeIsUnsigned(fromType));
+
+    emitAttr    attr = emitTypeSize(fromType);
+    instruction ins  = ins_FloatConv(dstType, fromType, attr);
+    GetEmitter()->emitInsBinary(ins, attr, treeNode, op1);
 
     genProduceReg(treeNode);
 }
@@ -7276,8 +7260,6 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 //    Cast is a non-overflow conversion.
 //    The treeNode must have an assigned register.
 //    SrcType=float/double and DstType= int32/uint32/int64/uint64
-//
-// TODO-XArch-CQ: (Low-pri) - generate in-line code when DstType = uint64
 //
 void CodeGen::genFloatToIntCast(GenTree* treeNode)
 {
@@ -7297,9 +7279,9 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     }
 #endif
 
+    var_types srcType = treeNode->CastFromType();
     var_types dstType = treeNode->CastToType();
-    var_types srcType = op1->TypeGet();
-    assert(varTypeIsFloating(srcType) && !varTypeIsFloating(dstType));
+    assert(varTypeIsFloating(srcType) && varTypeIsIntegral(dstType));
 
     // We should never be seeing dstType whose size is neither sizeof(TYP_INT) nor sizeof(TYP_LONG).
     // For conversions to byte/sbyte/int16/uint16 from float/double, we would expect the
@@ -7309,17 +7291,23 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     emitAttr dstSize = EA_ATTR(genTypeSize(dstType));
     noway_assert((dstSize == EA_ATTR(genTypeSize(TYP_INT))) || (dstSize == EA_ATTR(genTypeSize(TYP_LONG))));
 
-    // We shouldn't be seeing uint64 here as it should have been converted
-    // into a helper call by either front-end or lowering phase.
-    noway_assert(!varTypeIsUnsigned(dstType) || (dstSize != EA_ATTR(genTypeSize(TYP_LONG))));
+#if defined(TARGET_X86)
+    // x86 shouldn't see casts to int64/uint32/uint64 as they should have been convered into
+    // helper calls by the front-end.
 
-    // If the dstType is TYP_UINT, we have 32-bits to encode the
-    // float number. Any of 33rd or above bits can be the sign bit.
-    // To achieve it we pretend as if we are converting it to a long.
-    if (varTypeIsUnsigned(dstType) && (dstSize == EA_ATTR(genTypeSize(TYP_INT))))
+    noway_assert(dstType != TYP_UINT);
+    noway_assert(!varTypeIsLong(dstType));
+#else
+    // x64 shouldn't see casts to uint64 as they should have been lowered into an alternative sequence
+    noway_assert(dstType != TYP_ULONG);
+
+    // If the dstType is TYP_UINT, we can convert to TYP_LONG and implicitly take
+    // the lower 32-bits as the result.
+    if ((dstType == TYP_UINT) && (dstSize == EA_ATTR(genTypeSize(TYP_INT))))
     {
         dstType = TYP_LONG;
     }
+#endif // TARGET_X86
 
     // Note that we need to specify dstType here so that it will determine
     // the size of destination integer register and also the rex.w prefix.

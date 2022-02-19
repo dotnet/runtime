@@ -755,10 +755,9 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  * GT_CAST(uint16, float/double)   =   GT_CAST(GT_CAST(uint16, int32), float/double)
  *
  * SSE2 conversion instructions operate on signed integers. casts from Uint32/Uint64
- * are morphed as follows by front-end and hence should not be seen here.
+ * are morphed as follows by front-end and hence should not be seen here for 32-bit.
  * GT_CAST(uint32, float/double)   =   GT_CAST(GT_CAST(uint32, long), float/double)
  * GT_CAST(uint64, float)          =   GT_CAST(GT_CAST(uint64, double), float)
- *
  *
  * Similarly casts from float/double to a smaller int type are transformed as follows:
  * GT_CAST(float/double, byte)     =   GT_CAST(GT_CAST(float/double, int32), byte)
@@ -770,74 +769,469 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  * integer.  The above transformations help us to leverage those instructions.
  *
  * Note that for the following conversions we still depend on helper calls and
- * don't expect to see them here.
+ * don't expect to see them here for 32-bit.
  *  i) GT_CAST(float/double, uint64)
  * ii) GT_CAST(float/double, int type with overflow detection)
  *
- * TODO-XArch-CQ: (Low-pri): Jit64 generates in-line code of 8 instructions for (i) above.
- * There are hardly any occurrences of this conversion operation in platform
- * assemblies or in CQ perf benchmarks (1 occurrence in corelib, microsoft.jscript,
- * 1 occurrence in Roslyn and no occurrences in system, system.core, system.numerics
- * system.windows.forms, scimark, fractals, bio mums). If we ever find evidence that
- * doing this optimization is a win, should consider generating in-lined code.
  */
-void Lowering::LowerCast(GenTree* tree)
+GenTree* Lowering::LowerCast(GenTreeCast* tree)
 {
-    assert(tree->OperGet() == GT_CAST);
+    GenTree*  castOp       = tree->CastOp();
+    var_types castToType   = tree->CastToType();
+    var_types castFromType = tree->CastFromType();
+    var_types tmpType      = TYP_UNDEF;
 
-    GenTree*  castOp     = tree->AsCast()->CastOp();
-    var_types castToType = tree->CastToType();
-    var_types srcType    = castOp->TypeGet();
-    var_types tmpType    = TYP_UNDEF;
-
-    // force the srcType to unsigned if GT_UNSIGNED flag is set
-    if (tree->gtFlags & GTF_UNSIGNED)
+    // force the castFromType to unsigned if GT_UNSIGNED flag is set
+    if (tree->IsUnsigned())
     {
-        srcType = varTypeToUnsigned(srcType);
+        castFromType = varTypeToUnsigned(castFromType);
     }
 
-    // We should never see the following casts as they are expected to be lowered
-    // appropriately or converted into helper calls by front-end.
-    //   srcType = float/double                    castToType = * and overflow detecting cast
+    // We should never see the following casts for as they are expected to be converted into helper calls by front-end.
+    //   castFromType = float/double               castToType = overflow detecting cast
     //       Reason: must be converted to a helper call
-    //   srcType = float/double,                   castToType = ulong
+    //
+    // The same goes for these on 32-bit specifically.
+    //   castFromType = float/double,              castToType = int64/uint32/uint64
     //       Reason: must be converted to a helper call
-    //   srcType = uint                            castToType = float/double
-    //       Reason: uint -> float/double = uint -> long -> float/double
-    //   srcType = ulong                           castToType = float
-    //       Reason: ulong -> float = ulong -> double -> float
-    if (varTypeIsFloating(srcType))
+    //   castFromType = int64/uint32/uint64        castToType = float/double
+    //       Reason: must be converted to a helper call
+    if (varTypeIsFloating(castFromType))
     {
         noway_assert(!tree->gtOverflow());
-        noway_assert(castToType != TYP_ULONG);
+#if defined(TARGET_X86)
+        noway_assert(!varTypeIsLong(castToType));
+        noway_assert(castToType != TYP_UINT);
+#endif // TARGET_X86
     }
-    else if (srcType == TYP_UINT)
+#if defined(TARGET_X86)
+    else if (tree->IsUnsigned() || (castFromType == TYP_LONG))
     {
         noway_assert(!varTypeIsFloating(castToType));
     }
-    else if (srcType == TYP_ULONG)
-    {
-        noway_assert(castToType != TYP_FLOAT);
-    }
+#endif // TARGET_X86
 
     // Case of src is a small type and dst is a floating point type.
-    if (varTypeIsSmall(srcType) && varTypeIsFloating(castToType))
+    if (varTypeIsSmall(castFromType) && varTypeIsFloating(castToType))
     {
         // These conversions can never be overflow detecting ones.
         noway_assert(!tree->gtOverflow());
         tmpType = TYP_INT;
     }
-    // case of src is a floating point type and dst is a small type.
-    else if (varTypeIsFloating(srcType) && varTypeIsSmall(castToType))
+#if defined(FEATURE_SIMD) && defined(FEATURE_HW_INTRINSICS)
+    // case of src is a floating point type and dst is a small type or unsigned.
+    else if (varTypeIsFloating(castFromType) && (varTypeIsSmall(castToType) || varTypeIsUnsigned(castToType)))
     {
-        tmpType = TYP_INT;
+        // We are casting to a type where we need to saturate the result, so generate effectively
+        //     vmovsd      xmm0, qword ptr [rdx]
+        //     xorps       xmm1, xmm1, xmm1
+        //     vmaxss      xmm0, xmm1, xmm0
+        //     vmovss      xmm1, dword ptr [reloc @RWD00]
+        //     vminss      xmm0, xmm1, xmm0
+        //
+        // Where, rdx = castOp
+        // Where, reloc @RWD00 = +255.0 -or- +65535.0
+        //
+        // -or, for signed values
+        //     vmovsd      xmm0, qword ptr [rdx]
+        //     vmovss      xmm1, dword ptr [reloc @RWD00]
+        //     vmaxss      xmm0, xmm1, xmm0
+        //     vmovss      xmm1, dword ptr [reloc @RWD04]
+        //     vminss      xmm0, xmm1, xmm0
+        //
+        // Where, rdx = castOp
+        // Where, reloc @RWD00 = -128.0 -or- -32768.0
+        // Where, reloc @RWD04 = +127.0 -or- +32767.0
+
+        // ** NOTE **
+        // vmaxsd, vmaxss, vminsd, and vminss all have special behavior for NaN
+        // In particular, if either input is NaN, the second parameter is returned
+        //
+        // This means we require the second parameter to be the user input, rather
+        // than it being the lower or upper bounds to ensure NaN still becomes 0
+        // ** NOTE **
+
+        CorInfoType    simdBaseJitType;
+        NamedIntrinsic simdMaxIntrinId;
+        NamedIntrinsic simdMinIntrinId;
+
+        if (castFromType == TYP_DOUBLE)
+        {
+            simdBaseJitType = CORINFO_TYPE_DOUBLE;
+
+            simdMaxIntrinId = NI_SSE2_MaxScalar;
+            simdMinIntrinId = NI_SSE2_MinScalar;
+        }
+        else
+        {
+            assert(castFromType == TYP_FLOAT);
+            simdBaseJitType = CORINFO_TYPE_FLOAT;
+
+            simdMaxIntrinId = NI_SSE_MaxScalar;
+            simdMinIntrinId = NI_SSE_MinScalar;
+        }
+
+        // We max ourselves against the lower bound
+        GenTree* lowerBound;
+
+        if (varTypeIsUnsigned(castToType))
+        {
+            lowerBound = comp->gtNewZeroConNode(TYP_SIMD16);
+            BlockRange().InsertAfter(castOp, lowerBound);
+            LowerNode(lowerBound);
+        }
+        else
+        {
+            GenTree* lowerBoundCns;
+
+            if (castToType == TYP_BYTE)
+            {
+                lowerBoundCns = comp->gtNewDconNode(-128.0, castFromType);
+            }
+            else
+            {
+                assert(castToType == TYP_SHORT);
+                lowerBoundCns = comp->gtNewDconNode(-32768.0, castFromType);
+            }
+
+            BlockRange().InsertAfter(castOp, lowerBoundCns);
+
+            lowerBound = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, lowerBoundCns, NI_Vector128_CreateScalarUnsafe,
+                                                        simdBaseJitType, 16);
+            BlockRange().InsertAfter(lowerBoundCns, lowerBound);
+            LowerNode(lowerBound);
+        }
+
+        GenTree* simdMax =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, lowerBound, castOp, simdMaxIntrinId, simdBaseJitType, 16);
+        BlockRange().InsertAfter(lowerBound, simdMax);
+        LowerNode(simdMax);
+
+        // We min ourselves against the upper boun
+        GenTree* upperBound;
+        GenTree* upperBoundCns;
+
+        switch (castToType)
+        {
+            case TYP_BYTE:
+            {
+                upperBoundCns = comp->gtNewDconNode(+127.0, castFromType);
+                break;
+            }
+
+            case TYP_UBYTE:
+            {
+                upperBoundCns = comp->gtNewDconNode(+255.0, castFromType);
+                break;
+            }
+
+            case TYP_SHORT:
+            {
+                upperBoundCns = comp->gtNewDconNode(+32767.0, castFromType);
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                upperBoundCns = comp->gtNewDconNode(+65535.0, castFromType);
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                upperBoundCns = comp->gtNewDconNode(+4294967295.0, castFromType);
+                break;
+            }
+
+            case TYP_ULONG:
+            {
+                upperBoundCns = comp->gtNewDconNode(+18446744073709551615.0, castFromType);
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        BlockRange().InsertAfter(simdMax, upperBoundCns);
+
+        upperBound = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, upperBoundCns, NI_Vector128_CreateScalarUnsafe,
+                                                    simdBaseJitType, 16);
+        BlockRange().InsertAfter(upperBoundCns, upperBound);
+        LowerNode(upperBound);
+
+        GenTree* simdMin =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, upperBound, simdMax, simdMinIntrinId, simdBaseJitType, 16);
+        BlockRange().InsertAfter(upperBound, simdMin);
+        LowerNode(simdMin);
+
+        // Replace the castOp with the properly saturated TYP_INT value
+        castOp = comp->gtNewSimdHWIntrinsicNode(castFromType, simdMin, NI_Vector128_ToScalar, simdBaseJitType, 16);
+        BlockRange().InsertAfter(simdMin, castOp);
+        LowerNode(castOp);
+
+        tree->CastOp() = castOp;
+
+        if (varTypeIsSmall(castToType))
+        {
+            tree->CastToType() = TYP_INT;
+        }
     }
+#else // !FEATURE_SIMD || !FEATURE_HW_INTRINSICS
+    assert(!varTypeIsFloating(castFromType) || !varTypeIsSmall(castToType));
+#endif // FEATURE_SIMD && FEATURE_HW_INTRINSICS
+
+#if defined(TARGET_AMD64)
+    if ((varTypeIsFloating(castFromType) && (castToType == TYP_ULONG)) ||
+        ((castFromType == TYP_FLOAT) && (castToType == TYP_UINT)))
+    {
+        // This is based on the codegen by Clang/LLVM, Apache-2.0 WITH LLVM-exception
+
+        // We are generating a tree that will effectively be the following assembly
+        //     vmovss      xmm0, qword ptr [rdx]
+        //     vcvttss2si  eax,  xmm0
+        //     mov         rd8,  eax
+        //     sar         rd8,  31
+        //     vsubss      xmm0, xmm0, qword ptr [reloc @RWD00]
+        //     vcvttss2si  rd9,  xmm0
+        //     and         rd9,  r8
+        //     or          rd9,  rax
+        //
+        // Where, rdx = castOp
+        // Where, reloc @RWD00 = 2147483648.0
+        //
+        // -or-
+        //
+        //     vmovsd      xmm0, qword ptr [rdx]
+        //     vcvttsd2si  rax,  xmm0
+        //     mov         r8,   rax
+        //     sar         r8,   63
+        //     vsubsd      xmm0, xmm0, qword ptr [reloc @RWD00]
+        //     vcvttsd2si  r9,   xmm0
+        //     and         r9,   r8
+        //     or          r9,   rax
+        //
+        // Where, rdx = castOp
+        // Where, reloc @RWD00 = 9223372036854775808.0
+
+        var_types signedType;
+        int       shiftCnsVal;
+        double    magicCnsVal;
+
+        if (castToType == TYP_UINT)
+        {
+            signedType  = TYP_INT;
+            shiftCnsVal = 31;
+            magicCnsVal = 2147483648.0;
+        }
+        else
+        {
+            assert(castToType == TYP_ULONG);
+
+            signedType  = TYP_LONG;
+            shiftCnsVal = 63;
+            magicCnsVal = 9223372036854775808.0;
+        }
+
+        // We clone the input as we'll need it twice
+
+        LIR::Use castOpUse(BlockRange(), &tree->gtOp1, tree);
+        ReplaceWithLclVar(castOpUse);
+        castOp = tree->gtOp1;
+
+        GenTree* castOpDup = comp->gtClone(castOp);
+        BlockRange().InsertAfter(castOp, castOpDup);
+
+        // We first cast to the signed type, TYP_INT or TYP_LONG
+
+        GenTree* firstCast = comp->gtNewCastNode(signedType, castOp, /* unsigned */ false, signedType);
+        BlockRange().InsertAfter(castOpDup, firstCast);
+        LowerNode(firstCast);
+
+        // We insert an arithmetic right shift by 31 or 63 to propagate the sign
+
+        GenTree* shiftCns = comp->gtNewIconNode(shiftCnsVal, TYP_INT);
+        BlockRange().InsertAfter(firstCast, shiftCns);
+
+        GenTree* propagateSign = comp->gtNewOperNode(GT_RSH, signedType, firstCast, shiftCns);
+        BlockRange().InsertAfter(shiftCns, propagateSign);
+        LowerNode(propagateSign);
+
+        // We clone the firstCast result and replace it with a local, doing it here so we have a valid use
+
+        LIR::Use firstCastUse(BlockRange(), &propagateSign->AsOp()->gtOp1, propagateSign);
+        ReplaceWithLclVar(firstCastUse);
+        firstCast = propagateSign->AsOp()->gtOp1;
+
+        GenTree* firstCastDup = comp->gtClone(firstCast);
+        BlockRange().InsertAfter(firstCast, firstCastDup);
+
+        // We subtract a "magic number" from the original input
+
+        GenTree* magicCns = comp->gtNewDconNode(magicCnsVal, castFromType);
+        BlockRange().InsertAfter(propagateSign, magicCns);
+        LowerNode(magicCns);
+
+        GenTree* subtract = comp->gtNewOperNode(GT_SUB, castFromType, castOpDup, magicCns);
+        BlockRange().InsertAfter(magicCns, subtract);
+        LowerNode(subtract);
+
+        // We cast the result of that to the signed type, TYP_INT or TYP_LONG
+
+        GenTree* secondCast = comp->gtNewCastNode(signedType, subtract, /* unsigned */ false, signedType);
+        BlockRange().InsertAfter(subtract, secondCast);
+        LowerNode(secondCast);
+
+        // We AND the result with the propagatedSign
+
+        GenTree* masked = comp->gtNewOperNode(GT_AND, signedType, secondCast, propagateSign);
+        BlockRange().InsertAfter(secondCast, masked);
+        LowerNode(masked);
+
+        // We or that with the firstCast result for the final result
+
+        GenTree* result = comp->gtNewOperNode(GT_OR, signedType, firstCastDup, masked);
+        BlockRange().InsertAfter(masked, result);
+        LowerNode(result);
+
+        // Finally we replace the original tree's use and remove it
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(tree, &use))
+        {
+            use.ReplaceWith(result);
+        }
+
+        BlockRange().Remove(tree);
+        return result->gtNext;
+    }
+#if defined(FEATURE_SIMD) && defined(FEATURE_HW_INTRINSICS)
+    else if ((castFromType == TYP_ULONG) && varTypeIsFloating(castToType))
+    {
+        // This is based on the codegen by Clang/LLVM, Apache-2.0 WITH LLVM-exception
+
+        // We are generating a tree that will effectively be the following assembly
+        //     vmovd      xmm0, qword ptr [rdx]
+        //     vpunpckldq xmm0, xmm0, xmmword ptr [reloc @RWD00]
+        //     vsubpd     xmm0, xmm0, xmmword ptr [reloc @RWD16]
+        //     vpermilpd  xmm1, xmm0, 1
+        //     vaddsd     xmm0, xmm0, xmm1
+        //
+        // Where, rdx = castOp
+        // Where, reloc @RWD00 = { 0x4330000, 0x4530000, 0x00000000, 0x00000000 }
+        // Where, reloc @RWD16 = { 0x4330000000000000, 0x4530000000000000 }
+        //
+        // Where, vpermilpd = "vpshufd xmm1, xmm0, 78" on downlevel hardware
+
+        assert(castToType == TYP_DOUBLE);
+
+        // We move the value into a SIMD register
+
+        GenTree* simd =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, castOp, NI_Vector128_CreateScalarUnsafe, CORINFO_TYPE_ULONG, 16);
+        BlockRange().InsertAfter(castOp, simd);
+        LowerNode(simd);
+
+        // We generate a magic constant that represents the upper 32-bits of 2^52 and 2^84 for each half
+
+        simd16_t vecCns1 = {};
+
+        vecCns1.i32[0] = 0x43300000;
+        vecCns1.i32[1] = 0x45300000;
+
+        GenTreeVecCon* vecCon1 = comp->gtNewVconNode(TYP_SIMD16);
+
+        vecCon1->gtSimd16Val = vecCns1;
+        BlockRange().InsertAfter(simd, vecCon1);
+        LowerNode(vecCon1);
+
+        // We then unpack the original input with the magic constant to create two doubles, each with a 32-bit mantissa
+
+        GenTree* unpack =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, simd, vecCon1, NI_SSE2_UnpackLow, CORINFO_TYPE_INT, 16);
+        BlockRange().InsertAfter(vecCon1, unpack);
+        LowerNode(unpack);
+
+        // We generate a magic constant that represents 2^52 and 2^84, respectively
+
+        simd16_t vecCns2 = {};
+
+        vecCns2.i64[0] = 0x4330000000000000;
+        vecCns2.i64[1] = 0x4530000000000000;
+
+        GenTreeVecCon* vecCon2 = comp->gtNewVconNode(TYP_SIMD16);
+
+        vecCon2->gtSimd16Val = vecCns2;
+        BlockRange().InsertAfter(unpack, vecCon2);
+        LowerNode(vecCon2);
+
+        // We subtract 2^52 and 2^84, respectively; from each half of the result
+
+        GenTree* subtract =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, unpack, vecCon2, NI_SSE2_Subtract, CORINFO_TYPE_DOUBLE, 16);
+        BlockRange().InsertAfter(vecCon2, subtract);
+        LowerNode(subtract);
+
+        // We swap the upper and lower doubles
+
+        int            shufCnsVal       = 0b01001110;
+        NamedIntrinsic shuffleIntrinsic = NI_SSE2_Shuffle;
+        CorInfoType    shuffleType      = CORINFO_TYPE_INT;
+
+        if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+        {
+            shufCnsVal       = 1;
+            shuffleIntrinsic = NI_AVX_Permute;
+            shuffleType      = CORINFO_TYPE_DOUBLE;
+        }
+
+        GenTree* shufCns = comp->gtNewIconNode(shufCnsVal, TYP_INT);
+        BlockRange().InsertAfter(subtract, shufCns);
+
+        GenTreeHWIntrinsic* shuffle =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, subtract, shufCns, shuffleIntrinsic, shuffleType, 16);
+        BlockRange().InsertAfter(shufCns, shuffle);
+        LowerNode(shuffle);
+
+        // We clone the subtract result and replace it with a local, doing it here so we have a valid use
+
+        LIR::Use subtractUse(BlockRange(), &shuffle->Op(1), shuffle);
+        ReplaceWithLclVar(subtractUse);
+        subtract = shuffle->Op(1);
+
+        GenTree* subtractDup = comp->gtClone(subtract);
+        BlockRange().InsertAfter(subtract, subtractDup);
+
+        // We add the shuffle and the subtract result together, giving the result
+
+        GenTree* result = comp->gtNewOperNode(GT_ADD, TYP_DOUBLE, subtractDup, shuffle);
+        BlockRange().InsertAfter(shuffle, result);
+        LowerNode(result);
+
+        // Finally we replace the original tree's use and remove it
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(tree, &use))
+        {
+            use.ReplaceWith(result);
+        }
+
+        BlockRange().Remove(tree);
+        return result->gtNext;
+    }
+#else  // !FEATURE_SIMD || !FEATURE_HW_INTRINSICS
+    // We don't expect to see uint64 -> float/double as it should have been converted
+    // to a helper call by the front-end
+    noway_assert((castFromType != TYP_ULONG) || !varTypeIsFloating(castToType));
+#endif // FEATURE_SIMD && FEATURE_HW_INTRINSICS
+#endif // TARGET_AMD64
 
     if (tmpType != TYP_UNDEF)
     {
         GenTree* tmp = comp->gtNewCastNode(tmpType, castOp, tree->IsUnsigned(), tmpType);
         tmp->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-
         tree->gtFlags &= ~GTF_UNSIGNED;
         tree->AsOp()->gtOp1 = tmp;
         BlockRange().InsertAfter(castOp, tmp);
@@ -845,7 +1239,9 @@ void Lowering::LowerCast(GenTree* tree)
     }
 
     // Now determine if we have operands that should be contained.
-    ContainCheckCast(tree->AsCast());
+    ContainCheckCast(tree);
+
+    return tree->gtNext;
 }
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -5746,8 +6142,21 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
             }
 #endif // DEBUG
 
-            // U8 -> R8 conversion requires that the operand be in a register.
-            if (srcType != TYP_ULONG)
+#if defined(TARGET_X86)
+            // x86 doesn't expect to see int64/uint32/uint64 -> float/double here since they should have been
+            // replaced with helper calls by the front end.
+            noway_assert(!varTypeIsLong(srcType));
+            noway_assert(srcType != TYP_UINT);
+#endif // TARGET_X86
+
+#if defined(TARGET_AMD64)
+            // x64 shouldn't see a uint64 -> float/double as it should have been lowered to an alternative
+            // sequence -or- converted to a helper call by the front end.
+            noway_assert(srcType != TYP_ULONG);
+
+            // U4 -> R4/R8 conversion requires that the operand be in a register as this forces
+            // a zero extension and ensures the upper bits are zero so we can emit: cvtsi2sd xmm0, rax
+            if (srcType != TYP_UINT)
             {
                 if (castOp->IsCnsNonZeroFltOrDbl())
                 {
@@ -5758,6 +6167,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
                     srcIsContainable = true;
                 }
             }
+#endif // TARGET_AMD64
         }
         else if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(castOp) && varTypeIsIntegral(castToType))
         {

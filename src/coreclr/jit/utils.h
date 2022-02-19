@@ -691,11 +691,18 @@ unsigned CountDigits(double num, unsigned base = 10);
 class FloatingPointUtils
 {
 public:
-    static double convertUInt64ToDouble(unsigned __int64 u64);
+    static double convertInt64ToDouble(int64_t val);
+    static double convertUInt64ToDouble(uint64_t val);
 
-    static float convertUInt64ToFloat(unsigned __int64 u64);
+    static int8_t convertDoubleToInt8(double val);
+    static int16_t convertDoubleToInt16(double val);
+    static int32_t convertDoubleToInt32(double val);
+    static int64_t convertDoubleToInt64(double val);
 
-    static unsigned __int64 convertDoubleToUInt64(double d);
+    static uint8_t convertDoubleToUInt8(double val);
+    static uint16_t convertDoubleToUInt16(double val);
+    static uint32_t convertDoubleToUInt32(double val);
+    static uint64_t convertDoubleToUInt64(double val);
 
     static double round(double x);
 

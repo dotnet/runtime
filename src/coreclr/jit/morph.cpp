@@ -303,12 +303,12 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // This goes through helper and hence src needs to be converted to double.
             && tree->gtOverflow()
 #elif defined(TARGET_AMD64)
-            // Amd64: src = float, dst = uint64 or overflow conversion.
+            // Amd64: src = float, dst = overflow conversion.
             // This goes through helper and hence src needs to be converted to double.
-            && (tree->gtOverflow() || (dstType == TYP_ULONG))
+            && tree->gtOverflow()
 #elif defined(TARGET_ARM)
-            // Arm: src = float, dst = int64/uint64 or overflow conversion.
-            && (tree->gtOverflow() || varTypeIsLong(dstType))
+            // Arm: src = float, dst = int8/int16/int64/uint8/uint16/uint64 or overflow conversion.
+            && (tree->gtOverflow() || varTypeIsLong(dstType) || varTypeIsSmall(dstType))
 #else
             // x86: src = float, dst = uint32/int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType) || (dstType == TYP_UINT))
@@ -318,67 +318,86 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
         }
 
-        // Do we need to do it in two steps R -> I -> smallType?
-        if (dstSize < genTypeSize(TYP_INT))
+        if (!tree->gtOverflow())
         {
-            oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
-            oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-            tree->AsCast()->CastOp() = oper;
-            // We must not mistreat the original cast, which was from a floating point type,
-            // as from an unsigned type, since we now have a TYP_INT node for the source and
-            // CAST_OVF(BYTE <- INT) != CAST_OVF(BYTE <- UINT).
-            assert(!tree->IsUnsigned());
+            switch (dstType)
+            {
+#if defined(FEATURE_SIMD) && defined(FEATURE_HW_INTRINSICS)
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                    // When SIMD && HW_INTRINSICS are avaialble we support int8, int16, uint8, and uint16 conversions
+                    // via lowering
+                    return nullptr;
+#else  // !FEATURE_SIMD || !FEATURE_HW_INTRINSICS
+                case TYP_BYTE:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToInt8, oper);
+
+                case TYP_UBYTE:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToUInt8, oper);
+
+                case TYP_SHORT:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToInt16, oper);
+
+                case TYP_USHORT:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToUInt16, oper);
+#endif // FEATURE_SIMD && FEATURE_HW_INTRINSICS
+
+                case TYP_INT:
+                    // AMD64, ARM, ARM64, and x86 support int32 conversions directly
+                    return nullptr;
+
+#if defined(TARGET_X86)
+                case TYP_UINT:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToUInt32, oper);
+#else  // TARGET_ARM || TARGET_ARM64 || TARGET_AMD64
+                case TYP_UINT:
+                    // ARM and ARM64 support uint32 conversions directly
+                    // AMD64 supports uint32 conversions via lowering
+                    return nullptr;
+#endif // TARGET_ARM || TARGET_AMD64
+
+#if defined(TARGET_64BIT)
+                case TYP_LONG:
+                case TYP_ULONG:
+                    // ARM64 supports int64 and uint64 conversions directly
+                    // AMD64 supports int64 and uint64 conversions via lowering
+                    return nullptr;
+#else
+                case TYP_LONG:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToInt64, oper);
+
+                case TYP_ULONG:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToUInt64, oper);
+#endif // !TARGET_64BIT
+
+                default:
+                    unreached();
+            }
         }
         else
         {
-            if (!tree->gtOverflow())
+            switch (dstType)
             {
-// ARM64 and LoongArch64 optimize all non-overflow checking conversions
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-                return nullptr;
-#else
-                switch (dstType)
-                {
-                    case TYP_INT:
-                        return nullptr;
-
-                    case TYP_UINT:
-#if defined(TARGET_ARM) || defined(TARGET_AMD64)
-                        return nullptr;
-#else  // TARGET_X86
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
-#endif // TARGET_X86
-
-                    case TYP_LONG:
-#ifdef TARGET_AMD64
-                        // SSE2 has instructions to convert a float/double directly to a long
-                        return nullptr;
-#else  // !TARGET_AMD64
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
-#endif // !TARGET_AMD64
-
-                    case TYP_ULONG:
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG, oper);
-                    default:
-                        unreached();
-                }
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64
-            }
-            else
-            {
-                switch (dstType)
-                {
-                    case TYP_INT:
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT_OVF, oper);
-                    case TYP_UINT:
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT_OVF, oper);
-                    case TYP_LONG:
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG_OVF, oper);
-                    case TYP_ULONG:
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG_OVF, oper);
-                    default:
-                        unreached();
-                }
+                case TYP_BYTE:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToInt8_OVF, oper);
+                case TYP_UBYTE:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToUInt8_OVF, oper);
+                case TYP_SHORT:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToInt16_OVF, oper);
+                case TYP_USHORT:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToUInt16_OVF, oper);
+                case TYP_INT:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToInt32_OVF, oper);
+                case TYP_UINT:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToUInt32_OVF, oper);
+                case TYP_LONG:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToInt64_OVF, oper);
+                case TYP_ULONG:
+                    return fgMorphCastIntoHelper(tree, CORINFO_HELP_DoubleToUInt64_OVF, oper);
+                default:
+                    unreached();
             }
         }
     }
@@ -395,15 +414,22 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     }
 #endif //! TARGET_64BIT
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_AMD64)
     // AArch, unlike x86/amd64, has instructions that can cast directly from
     // all integers (except for longs on AArch32 of course) to floats.
+    //
+    // AMD64, however, has efficient alternatives that can directly handle
+    // the cases that it doesn't support (uint and ulong). For u64->f32
+    // we want to keep the behavior as `u64->f64->f32` however, as its simpler
+    //
     // Because there is no IL instruction conv.r4.un, uint/ulong -> float
     // casts are always imported as CAST(float <- CAST(double <- uint/ulong)).
     // We can eliminate the redundant intermediate cast as an optimization.
     else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
-#ifdef TARGET_ARM
-             && !varTypeIsLong(oper->AsCast()->CastOp())
+#if defined(TARGET_ARM)
+             && !varTypeIsLong(oper->AsCast()->CastFromType())
+#elif defined(TARGET_AMD64)
+             && (!varTypeIsLong(oper->AsCast()->CastFromType()) || !oper->AsCast()->IsUnsigned())
 #endif
                  )
     {
@@ -412,7 +438,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 
         return fgMorphTree(oper);
     }
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_AMD64
 
 #ifdef TARGET_ARM
     // converts long/ulong --> float/double casts into helper calls.
@@ -432,49 +458,10 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             return fgMorphTree(tree);
         }
         if (tree->gtFlags & GTF_UNSIGNED)
-            return fgMorphCastIntoHelper(tree, CORINFO_HELP_ULNG2DBL, oper);
-        return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+            return fgMorphCastIntoHelper(tree, CORINFO_HELP_UInt64ToDouble, oper);
+        return fgMorphCastIntoHelper(tree, CORINFO_HELP_Int64ToDouble, oper);
     }
 #endif // TARGET_ARM
-
-#ifdef TARGET_AMD64
-    // Do we have to do two step U4/8 -> R4/8 ?
-    // Codegen supports the following conversion as one-step operation
-    // a) Long -> R4/R8
-    // b) U8 -> R8
-    //
-    // The following conversions are performed as two-step operations using above.
-    // U4 -> R4/8 = U4-> Long -> R4/8
-    // U8 -> R4   = U8 -> R8 -> R4
-    else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
-    {
-        srcType = varTypeToUnsigned(srcType);
-
-        if (srcType == TYP_ULONG)
-        {
-            if (dstType == TYP_FLOAT)
-            {
-                // Codegen can handle U8 -> R8 conversion.
-                // U8 -> R4 =  U8 -> R8 -> R4
-                // - change the dsttype to double
-                // - insert a cast from double to float
-                // - recurse into the resulting tree
-                tree->CastToType() = TYP_DOUBLE;
-                tree->gtType       = TYP_DOUBLE;
-                tree               = gtNewCastNode(TYP_FLOAT, tree, false, TYP_FLOAT);
-
-                return fgMorphTree(tree);
-            }
-        }
-        else if (srcType == TYP_UINT)
-        {
-            oper = gtNewCastNode(TYP_LONG, oper, true, TYP_LONG);
-            oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-            tree->ClearUnsigned();
-            tree->CastOp() = oper;
-        }
-    }
-#endif // TARGET_AMD64
 
 #ifdef TARGET_X86
     // Do we have to do two step U4/8 -> R4/8 ?
@@ -484,19 +471,19 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 
         if (srcType == TYP_ULONG)
         {
-            return fgMorphCastIntoHelper(tree, CORINFO_HELP_ULNG2DBL, oper);
+            return fgMorphCastIntoHelper(tree, CORINFO_HELP_UInt64ToDouble, oper);
         }
         else if (srcType == TYP_UINT)
         {
             oper = gtNewCastNode(TYP_LONG, oper, true, TYP_LONG);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
             tree->gtFlags &= ~GTF_UNSIGNED;
-            return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+            return fgMorphCastIntoHelper(tree, CORINFO_HELP_Int64ToDouble, oper);
         }
     }
-    else if (((tree->gtFlags & GTF_UNSIGNED) == 0) && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
+    else if (!tree->IsUnsigned() && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
     {
-        oper = fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+        oper = fgMorphCastIntoHelper(tree, CORINFO_HELP_Int64ToDouble, oper);
 
         // Since we don't have a Jit Helper that converts to a TYP_FLOAT
         // we just use the one that converts to a TYP_DOUBLE
@@ -520,7 +507,14 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             return oper;
         }
     }
-#endif // TARGET_X86
+#elif defined(TARGET_AMD64) && (!defined(FEATURE_SIMD) || !defined(FEATURE_HW_INTRINSICS))
+    else if (tree->IsUnsigned() && (varTypeToUnsigned(srcType) == TYP_ULONG) && varTypeIsFloating(dstType))
+    {
+        // For x64, if SIMD or HW_INTRINSICS are disabled, we just want to have uint64 -> float/double
+        // to fallback to the helper call.
+        return fgMorphCastIntoHelper(tree, CORINFO_HELP_UInt64ToDouble, oper);
+    }
+#endif
     else if (varTypeIsGC(srcType) != varTypeIsGC(dstType))
     {
         // We are casting away GC information.  we would like to just

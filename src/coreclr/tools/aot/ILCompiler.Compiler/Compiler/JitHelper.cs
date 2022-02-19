@@ -136,37 +136,63 @@ namespace ILCompiler
                     mangledName = "RhTypeCast_AreTypesEquivalent";
                     break;
 
-                case ReadyToRunHelper.Lng2Dbl:
-                    mangledName = "RhpLng2Dbl";
+                case ReadyToRunHelper.Int64ToDouble:
+                    mangledName = "RhpInt64ToDouble";
                     break;
-                case ReadyToRunHelper.ULng2Dbl:
-                    mangledName = "RhpULng2Dbl";
-                    break;
-
-                case ReadyToRunHelper.Dbl2Lng:
-                    mangledName = "RhpDbl2Lng";
-                    break;
-                case ReadyToRunHelper.Dbl2ULng:
-                    mangledName = "RhpDbl2ULng";
-                    break;
-                case ReadyToRunHelper.Dbl2Int:
-                    mangledName = "RhpDbl2Int";
-                    break;
-                case ReadyToRunHelper.Dbl2UInt:
-                    mangledName = "RhpDbl2UInt";
+                case ReadyToRunHelper.UInt64ToDouble:
+                    mangledName = "RhpUInt64ToDouble";
                     break;
 
-                case ReadyToRunHelper.Dbl2IntOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2IntOvf");
+                case ReadyToRunHelper.DoubleToInt32:
+                    mangledName = "RhpDoubleToInt32";
                     break;
-                case ReadyToRunHelper.Dbl2UIntOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2UIntOvf");
+                case ReadyToRunHelper.DoubleToInt64:
+                    mangledName = "RhpDoubleToInt64";
                     break;
-                case ReadyToRunHelper.Dbl2LngOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2LngOvf");
+                case ReadyToRunHelper.DoubleToUInt32:
+                    mangledName = "RhpDoubleToUInt32";
                     break;
-                case ReadyToRunHelper.Dbl2ULngOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2ULngOvf");
+                case ReadyToRunHelper.DoubleToUInt64:
+                    mangledName = "RhpDoubleToUInt64";
+                    break;
+
+                case ReadyToRunHelper.DoubleToInt8:
+                    mangledName = "RhpDoubleToInt8";
+                    break;
+                case ReadyToRunHelper.DoubleToInt16:
+                    mangledName = "RhpDoubleToInt16";
+                    break;
+                case ReadyToRunHelper.DoubleToUInt8:
+                    mangledName = "RhpDoubleToUInt8";
+                    break;
+                case ReadyToRunHelper.DoubleToUInt16:
+                    mangledName = "RhpDoubleToUInt16";
+                    break;
+
+                case ReadyToRunHelper.DoubleToInt32Ovf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "DoubleToInt32Ovf");
+                    break;
+                case ReadyToRunHelper.DoubleToInt64Ovf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "DoubleToInt64Ovf");
+                    break;
+                case ReadyToRunHelper.DoubleToUInt32Ovf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "DoubleToUInt32Ovf");
+                    break;
+                case ReadyToRunHelper.DoubleToUInt64Ovf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "DoubleToUInt64Ovf");
+                    break;
+
+                case ReadyToRunHelper.DoubleToInt8Ovf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "DoubleToInt8Ovf");
+                    break;
+                case ReadyToRunHelper.DoubleToInt16Ovf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "DoubleToInt32Ovf");
+                    break;
+                case ReadyToRunHelper.DoubleToUInt8Ovf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "DoubleToUInt8Ovf");
+                    break;
+                case ReadyToRunHelper.DoubleToUInt16Ovf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "DoubleToUInt16Ovf");
                     break;
 
                 case ReadyToRunHelper.DblRem:

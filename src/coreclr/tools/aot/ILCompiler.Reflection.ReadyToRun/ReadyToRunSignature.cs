@@ -1847,12 +1847,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("LRSZ");
                     break;
 
-                case ReadyToRunHelper.Lng2Dbl:
-                    builder.Append("LNG2DBL");
+                case ReadyToRunHelper.Int64ToDouble:
+                    builder.Append("INT64TODOUBLE");
                     break;
 
-                case ReadyToRunHelper.ULng2Dbl:
-                    builder.Append("ULNG2DBL");
+                case ReadyToRunHelper.UInt64ToDouble:
+                    builder.Append("UINT64TODOUBLE");
                     break;
 
                 // 32-bit division helpers
@@ -1873,36 +1873,68 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 // Floating point conversions
-                case ReadyToRunHelper.Dbl2Int:
-                    builder.Append("DBL2INT");
+                case ReadyToRunHelper.DoubleToInt32:
+                    builder.Append("DOUBLETOINT32");
                     break;
 
-                case ReadyToRunHelper.Dbl2IntOvf:
-                    builder.Append("DBL2INTOVF");
+                case ReadyToRunHelper.DoubleToInt32Ovf:
+                    builder.Append("DOUBLETOINT32OVF");
                     break;
 
-                case ReadyToRunHelper.Dbl2Lng:
-                    builder.Append("DBL2LNG");
+                case ReadyToRunHelper.DoubleToInt64:
+                    builder.Append("DOUBLETOINT64");
                     break;
 
-                case ReadyToRunHelper.Dbl2LngOvf:
-                    builder.Append("DBL2LNGOVF");
+                case ReadyToRunHelper.DoubleToInt64Ovf:
+                    builder.Append("DOUBLETOINT64OVF");
                     break;
 
-                case ReadyToRunHelper.Dbl2UInt:
-                    builder.Append("DBL2UINT");
+                case ReadyToRunHelper.DoubleToUInt32:
+                    builder.Append("DOUBLETOUINT32");
                     break;
 
-                case ReadyToRunHelper.Dbl2UIntOvf:
-                    builder.Append("DBL2UINTOVF");
+                case ReadyToRunHelper.DoubleToUInt32Ovf:
+                    builder.Append("DOUBLETOUINT32OVF");
                     break;
 
-                case ReadyToRunHelper.Dbl2ULng:
-                    builder.Append("DBL2ULNG");
+                case ReadyToRunHelper.DoubleToUInt64:
+                    builder.Append("DOUBLETOUINT64");
                     break;
 
-                case ReadyToRunHelper.Dbl2ULngOvf:
-                    builder.Append("DBL2ULNGOVF");
+                case ReadyToRunHelper.DoubleToUInt64Ovf:
+                    builder.Append("DOUBLETOUINT64OVF");
+                    break;
+
+                case ReadyToRunHelper.DoubleToInt8:
+                    builder.Append("DOUBLETOINT8");
+                    break;
+
+                case ReadyToRunHelper.DoubleToInt8Ovf:
+                    builder.Append("DOUBLETOINT8OVF");
+                    break;
+
+                case ReadyToRunHelper.DoubleToInt16:
+                    builder.Append("DOUBLETOINT16");
+                    break;
+
+                case ReadyToRunHelper.DoubleToInt16Ovf:
+                    builder.Append("DOUBLETOINT16OVF");
+                    break;
+
+                case ReadyToRunHelper.DoubleToUInt8:
+                    builder.Append("DOUBLETOUINT8");
+                    break;
+
+                case ReadyToRunHelper.DoubleToUInt8Ovf:
+                    builder.Append("DOUBLETOUINT8OVF");
+                    break;
+
+                case ReadyToRunHelper.DoubleToUInt16:
+                    builder.Append("DOUBLETOUINT16");
+                    break;
+
+                case ReadyToRunHelper.DoubleToUInt16Ovf:
+                    builder.Append("DOUBLETOUINT16OVF");
                     break;
 
                 // Floating point ops

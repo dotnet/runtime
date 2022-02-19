@@ -8262,6 +8262,138 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Try and fold the introduced cast
                         op1 = gtFoldExprConst(op1);
                     }
+
+#if defined(TARGET_XARCH)
+                    if (!ovfl && op1->OperIs(GT_CAST) && varTypeIsFloating(op1->AsCast()->CastOp()) &&
+                        varTypeIsIntegral(lclTyp))
+                    {
+                        // We are going to transform the conversion into effectively:
+                        //   var result = platform_cast(value);
+                        //   return (result != sentinel) ? result : saturating_cast(value);
+
+                        var_types castFromType = op1->AsCast()->CastFromType();
+                        var_types castToType   = op1->AsCast()->CastToType();
+
+                        GenTree* value;
+                        GenTree* valueDup;
+                        GenTree* platformResult;
+                        GenTree* platformResultDup;
+                        GenTree* saturatedResult;
+                        GenTree* sentinel;
+                        GenTree* comparison;
+                        GenTree* qmark;
+                        GenTree* colon;
+
+                        // The result of the cast is currently op1, the value as op1 of that
+                        platformResult = op1;
+                        value          = op1->AsCast()->CastOp();
+
+                        // We need the input value twice, once for the platform and once for the saturating cast
+                        value =
+                            impCloneExpr(value, &valueDup, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                         nullptr DEBUGARG("Clone value for the saturated fp2int conversion fallback"));
+                        platformResult->AsCast()->CastOp() = value;
+
+                        // We also need the platform result twice, once for the comparison and once for the qmark colon
+                        platformResult =
+                            impCloneExpr(platformResult, &platformResultDup, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                         nullptr DEBUGARG("Clone result for the saturated fp2int conversion fallback"));
+
+                        // We need to check slightly different sentinels depending on if the conversion is from double
+                        // or float
+                        if (type == TYP_LONG)
+                        {
+                            sentinel = gtNewLconNode(INT64(0x8000000000000000));
+                        }
+                        else
+                        {
+                            assert(type == TYP_INT);
+                            sentinel = gtNewIconNode(INT32(0x80000000), TYP_INT);
+                        }
+
+                        comparison = gtNewOperNode(GT_EQ, TYP_INT, platformResult, sentinel);
+
+                        // Get the saturated result via a call to the appropriate helper function
+                        unsigned helper;
+
+                        switch (castToType)
+                        {
+                            case TYP_BYTE:
+                            {
+                                helper = CORINFO_HELP_DoubleToInt8;
+                                break;
+                            }
+
+                            case TYP_UBYTE:
+                            {
+                                helper = CORINFO_HELP_DoubleToUInt8;
+                                break;
+                            }
+
+                            case TYP_SHORT:
+                            {
+                                helper = CORINFO_HELP_DoubleToInt16;
+                                break;
+                            }
+
+                            case TYP_USHORT:
+                            {
+                                helper = CORINFO_HELP_DoubleToUInt16;
+                                break;
+                            }
+
+                            case TYP_INT:
+                            {
+                                helper = CORINFO_HELP_DoubleToInt32;
+                                break;
+                            }
+
+                            case TYP_UINT:
+                            {
+                                helper = CORINFO_HELP_DoubleToUInt32;
+                                break;
+                            }
+
+                            case TYP_LONG:
+                            {
+                                helper = CORINFO_HELP_DoubleToInt64;
+                                break;
+                            }
+
+                            case TYP_ULONG:
+                            {
+                                helper = CORINFO_HELP_DoubleToUInt64;
+                                break;
+                            }
+
+                            default:
+                            {
+                                unreached();
+                            }
+                        }
+
+                        if (castFromType == TYP_FLOAT)
+                        {
+                            // We only provide helpers for double to integer conversions so cast the value to double
+                            valueDup = gtNewCastNode(TYP_DOUBLE, valueDup, false, TYP_DOUBLE);
+                        }
+
+                        saturatedResult = gtNewHelperCallNode(helper, type, valueDup);
+
+                        // Construct the qmark given the two possible results and the relevant condition
+                        colon = new (this, GT_COLON) GenTreeColon(type, saturatedResult, platformResultDup);
+                        qmark = gtNewQmarkNode(type, comparison, colon->AsColon());
+
+                        // Ensure that the qmark is in a local to ensure it meets the "top level" requirements
+                        unsigned temp = lvaGrabTemp(true DEBUGARG("QMARK required to be top level: fp2int conversion"));
+
+                        impAssignTempGen(temp, qmark, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr,
+                                         impCurStmtDI);
+                        var_types tempType = genActualType(lvaTable[temp].TypeGet());
+
+                        op1 = gtNewLclvNode(temp, tempType);
+                    }
+#endif // TARGET_XARCH
                 }
 
                 impPushOnStack(op1, tiRetVal);

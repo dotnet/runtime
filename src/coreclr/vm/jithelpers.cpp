@@ -485,29 +485,6 @@ HCIMPLEND
 
 #include <optsmallperfcritical.h>
 
-/*********************************************************************/
-//
-HCIMPL1_V(double, JIT_ULng2Dbl, UINT64 val)
-{
-    FCALL_CONTRACT;
-
-    double conv = (double) ((INT64) val);
-    if (conv < 0)
-        conv += (4294967296.0 * 4294967296.0);  // add 2^64
-    _ASSERTE(conv >= 0);
-    return(conv);
-}
-HCIMPLEND
-
-/*********************************************************************/
-// needed for ARM and RyuJIT-x86
-HCIMPL1_V(double, JIT_Lng2Dbl, INT64 val)
-{
-    FCALL_CONTRACT;
-    return double(val);
-}
-HCIMPLEND
-
 //--------------------------------------------------------------------------
 template <class ftype>
 ftype modftype(ftype value, ftype *iptr);
@@ -540,7 +517,6 @@ ftype BankersRound(ftype value)
                      value);
 }
 
-
 /*********************************************************************/
 // round double to nearest int (as double)
 HCIMPL1_V(double, JIT_DoubleRound, double val)
@@ -560,117 +536,495 @@ HCIMPL1_V(float, JIT_FloatRound, float val)
 HCIMPLEND
 
 /*********************************************************************/
-// Call fast Dbl2Lng conversion - used by functions below
-FORCEINLINE INT64 FastDbl2Lng(double val)
+
+FORCEINLINE double PlatformInt64ToDouble(INT64 val)
 {
-#ifdef TARGET_X86
     FCALL_CONTRACT;
-    return HCCALL1_V(JIT_Dbl2Lng, val);
-#else
-    FCALL_CONTRACT;
-    return((__int64) val);
-#endif
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return double(val);
 }
 
-/*********************************************************************/
-HCIMPL1_V(UINT32, JIT_Dbl2UIntOvf, double val)
+HCIMPL1_V(double, JIT_Int64ToDouble, INT64 val)
 {
     FCALL_CONTRACT;
 
-        // Note that this expression also works properly for val = NaN case
-    if (val > -1.0 && val < 4294967296.0)
-        return((UINT32)FastDbl2Lng(val));
+    // ** NOTE **
+    // This should be kept in sync with FloatingPointUtils::convertInt64ToDouble
+    // This should be kept in sync with RhpInt64ToDouble
+    // ** NOTE **
+
+    return PlatformInt64ToDouble(val);
+}
+HCIMPLEND
+
+/*********************************************************************/
+
+FORCEINLINE double PlatformUInt64ToDouble(UINT64 val)
+{
+    FCALL_CONTRACT;
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return double(val);
+}
+
+HCIMPL1_V(double, JIT_UInt64ToDouble, UINT64 val)
+{
+    FCALL_CONTRACT;
+
+    // ** NOTE **
+    // This should be kept in sync with FloatingPointUtils::convertUInt64ToDouble
+    // This should be kept in sync with RhpUInt64ToDouble
+    // ** NOTE **
+
+    return PlatformUInt64ToDouble(val);
+}
+HCIMPLEND
+
+/*********************************************************************/
+
+FORCEINLINE INT8 PlatformDoubleToInt8(double val)
+{
+    FCALL_CONTRACT;
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return INT8(val);
+}
+
+HCIMPL1_V(INT8, JIT_DoubleToInt8, double val)
+{
+    FCALL_CONTRACT;
+
+    // ** NOTE **
+    // This should be kept in sync with FloatingPointUtils::convertDoubleToInt8
+    // This should be kept in sync with RhpDoubleToInt8
+    // ** NOTE **
+
+    if (_isnan(val)) {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -129.0) {
+        // Too small should saturate to INT8_MIN
+        return INT8_MIN;
+    }
+
+    if (val >= +128.0) {
+        // Too large should saturate to INT8_MAX
+        return INT8_MAX;
+    }
+
+    return PlatformDoubleToInt8(val);
+}
+HCIMPLEND
+
+HCIMPL1_V(int, JIT_DoubleToInt8Ovf, double val)
+{
+    FCALL_CONTRACT;
+
+    if (val > -129.0 && val < 128.0) {
+        // -129.0 and +128.0 are exactly representable
+        // Note that the above condition also works properly for val = NaN case
+        return PlatformDoubleToInt8(val);
+    }
 
     FCThrow(kOverflowException);
 }
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
+
+FORCEINLINE INT16 PlatformDoubleToInt16(double val)
 {
     FCALL_CONTRACT;
 
-    const double two63  = 2147483648.0 * 4294967296.0;
-    UINT64 ret;
-    if (val < two63) {
-        ret = FastDbl2Lng(val);
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return INT16(val);
+}
+
+HCIMPL1_V(INT16, JIT_DoubleToInt16, double val)
+{
+    FCALL_CONTRACT;
+
+    // ** NOTE **
+    // This should be kept in sync with FloatingPointUtils::convertDoubleToInt16
+    // This should be kept in sync with RhpDoubleToInt16
+    // ** NOTE **
+
+    if (_isnan(val)) {
+        // NAN should return 0
+        return 0;
     }
-    else {
-        // subtract 0x8000000000000000, do the convert then add it back again
-        ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
+
+    if (val <= -32769.0) {
+        // Too small should saturate to INT16_MIN
+        return INT16_MIN;
     }
-    return ret;
+
+    if (val >= +32768.0) {
+        // Too large should saturate to INT16_MAX
+        return INT16_MAX;
+    }
+
+    return PlatformDoubleToInt16(val);
 }
 HCIMPLEND
 
-/*********************************************************************/
-HCIMPL1_V(UINT64, JIT_Dbl2ULngOvf, double val)
+HCIMPL1_V(int, JIT_DoubleToInt16Ovf, double val)
 {
     FCALL_CONTRACT;
 
-    const double two64  = 4294967296.0 * 4294967296.0;
-        // Note that this expression also works properly for val = NaN case
-    if (val > -1.0 && val < two64) {
-        const double two63  = 2147483648.0 * 4294967296.0;
-        UINT64 ret;
-        if (val < two63) {
-            ret = FastDbl2Lng(val);
-        }
-        else {
-            // subtract 0x8000000000000000, do the convert then add it back again
-            ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
-        }
-#ifdef _DEBUG
-        // since no overflow can occur, the value always has to be within 1
-        double roundTripVal = HCCALL1_V(JIT_ULng2Dbl, ret);
-        _ASSERTE(val - 1.0 <= roundTripVal && roundTripVal <= val + 1.0);
-#endif // _DEBUG
-        return ret;
+    if (val > -32769.0 && val < +32768.0) {
+        // -32769.0 and +32768.0 are exactly representable
+        // Note that the above condition also works properly for val = NaN case
+        return PlatformDoubleToInt16(val);
     }
 
     FCThrow(kOverflowException);
 }
 HCIMPLEND
 
+/*********************************************************************/
+
+FORCEINLINE INT32 PlatformDoubleToInt32(double val)
+{
+    FCALL_CONTRACT;
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return INT32(val);
+}
+
+HCIMPL1_V(INT32, JIT_DoubleToInt32, double val)
+{
+    FCALL_CONTRACT;
+
+    // ** NOTE **
+    // This should be kept in sync with FloatingPointUtils::convertDoubleToInt32
+    // This should be kept in sync with RhpDoubleToInt32
+    // ** NOTE **
+
+    if (_isnan(val)) {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -2147483649.0) {
+        // Too small should saturate to INT32_MIN
+        return INT32_MIN;
+    }
+
+    if (val >= +2147483648.0) {
+        // Too large should saturate to INT32_MAX
+        return INT32_MAX;
+    }
+
+    return PlatformDoubleToInt32(val);
+}
+HCIMPLEND
+
+HCIMPL1_V(INT32, JIT_DoubleToInt32Ovf, double val)
+{
+    FCALL_CONTRACT;
+
+    if (val > -2147483649.0 && val < +2147483648.0) {
+        // -2147483649.0 and +2147483648.0 are exactly representable
+        // Note that the above condition also works properly for val = NaN case
+        return PlatformDoubleToInt32(val);
+    }
+
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+/*********************************************************************/
+
+FORCEINLINE INT64 PlatformDoubleToInt64(double val)
+{
+    FCALL_CONTRACT;
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return INT64(val);
+}
+
+HCIMPL1_V(INT64, JIT_DoubleToInt64, double val)
+{
+    FCALL_CONTRACT;
+
+    // ** NOTE **
+    // This should be kept in sync with FloatingPointUtils::convertDoubleToInt64
+    // This should be kept in sync with RhpDoubleToInt64
+    // ** NOTE **
+
+    if (_isnan(val)) {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -9223372036854777856.0) {
+        // Too small should saturate to INT64_MIN
+        return INT64_MIN;
+    }
+
+    if (val >= +9223372036854775808.0) {
+        // Too large should saturate to INT64_MAX
+        return INT64_MAX;
+    }
+
+    return PlatformDoubleToInt64(val);
+}
+HCIMPLEND
+
+HCIMPL1_V(INT64, JIT_DoubleToInt64Ovf, double val)
+{
+    FCALL_CONTRACT;
+
+    if (val > -9223372036854777856.0 && val < +9223372036854775808.0) {
+        // +9223372036854775808.0 is exactly representable
+        //
+        // -9223372036854777809.0 however, is not and rounds to -9223372036854777808.0
+        // we use -9223372036854777856.0 instead which is the next representable value smaller
+        // than -9223372036854777808.0
+        //
+        // Note that this expression also works properly for val = NaN case
+        return PlatformDoubleToInt64(val);
+    }
+
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+/*********************************************************************/
+
+FORCEINLINE UINT8 PlatformDoubleToUInt8(double val)
+{
+    FCALL_CONTRACT;
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return UINT8(val);
+}
+
+HCIMPL1_V(UINT8, JIT_DoubleToUInt8, double val)
+{
+    FCALL_CONTRACT;
+
+    // ** NOTE **
+    // This should be kept in sync with FloatingPointUtils::convertDoubleToUInt8
+    // This should be kept in sync with RhpDoubleToUInt8
+    // ** NOTE **
+
+    if (_isnan(val)) {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -1.0) {
+        // Too small should saturate to UINT8_MIN
+        return UINT8_MIN;
+    }
+
+    if (val >= +256.0) {
+        // Too large should saturate to UINT8_MAX
+        return UINT8_MAX;
+    }
+
+    return PlatformDoubleToUInt8(val);
+}
+HCIMPLEND
+
+HCIMPL1_V(UINT8, JIT_DoubleToUInt8Ovf, double val)
+{
+    FCALL_CONTRACT;
+
+    if (val > -1.0 && val < +256.0) {
+        // -1.0 and +256.0 are exactly representable
+        // Note that the above condition also works properly for val = NaN case
+        return PlatformDoubleToUInt8(val);
+    }
+
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+/*********************************************************************/
+
+FORCEINLINE UINT16 PlatformDoubleToUInt16(double val)
+{
+    FCALL_CONTRACT;
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return UINT16(val);
+}
+
+HCIMPL1_V(UINT16, JIT_DoubleToUInt16, double val)
+{
+    FCALL_CONTRACT;
+
+    // ** NOTE **
+    // This should be kept in sync with FloatingPointUtils::convertDoubleToUInt16
+    // This should be kept in sync with RhpDoubleToUInt16
+    // ** NOTE **
+
+    if (_isnan(val)) {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -1.0) {
+        // Too small should saturate to UINT16_MIN
+        return UINT16_MIN;
+    }
+
+    if (val >= +65536.0) {
+        // Too large should saturate to UINT16_MAX
+        return UINT16_MAX;
+    }
+
+    return PlatformDoubleToUInt16(val);
+}
+HCIMPLEND
+
+HCIMPL1_V(UINT16, JIT_DoubleToUInt16Ovf, double val)
+{
+    FCALL_CONTRACT;
+
+    if (val > -1.0 && val < +65536.0) {
+        // -1.0 and +65536.0 are exactly representable
+        // Note that the above condition also works properly for val = NaN case
+        return PlatformDoubleToUInt16(val);
+    }
+
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+/*********************************************************************/
+
+FORCEINLINE UINT32 PlatformDoubleToUInt32(double val)
+{
+    FCALL_CONTRACT;
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return UINT32(val);
+}
+
+HCIMPL1_V(UINT32, JIT_DoubleToUInt32, double val)
+{
+    FCALL_CONTRACT;
+
+    // ** NOTE **
+    // This should be kept in sync with FloatingPointUtils::convertDoubleToUInt32
+    // This should be kept in sync with RhpDoubleToUInt32
+    // ** NOTE **
+
+    if (_isnan(val)) {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -1.0) {
+        // Too small should saturate to UINT32_MIN
+        return UINT32_MIN;
+    }
+
+    if (val >= +4294967296.0) {
+        // Too large should saturate to UINT32_MAX
+        return UINT32_MAX;
+    }
+
+    return PlatformDoubleToUInt32(val);
+}
+HCIMPLEND
+
+HCIMPL1_V(UINT32, JIT_DoubleToUInt32Ovf, double val)
+{
+    FCALL_CONTRACT;
+
+    if (val > -1.0 && val < +4294967296.0) {
+        // -1.0 and +4294967296.0 are exactly representable
+        // Note that the above condition also works properly for val = NaN case
+        return PlatformDoubleToUInt32(val);
+    }
+
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+/*********************************************************************/
+
+FORCEINLINE UINT64 PlatformDoubleToUInt64(double val)
+{
+    FCALL_CONTRACT;
+
+    // Previous versions of compilers have had incorrect implementations here, however
+    // all currently supported compiler implementations are believed to be correct.
+
+    return UINT64(val);
+}
+
+HCIMPL1_V(UINT64, JIT_DoubleToUInt64, double val)
+{
+    FCALL_CONTRACT;
+
+    // ** NOTE **
+    // This should be kept in sync with FloatingPointUtils::convertDoubleToUInt64
+    // This should be kept in sync with RhpDoubleToUInt64
+    // ** NOTE **
+
+    if (_isnan(val)) {
+        // NAN should return 0
+        return 0;
+    }
+
+    if (val <= -1.0) {
+        // Too small should saturate to UINT64_MIN
+        return UINT64_MIN;
+    }
+
+    if (val >= +18446744073709551616.0) {
+        // Too large values should saturate to UINT64_MAX
+        return UINT64_MAX;
+    }
+
+    return PlatformDoubleToUInt64(val);
+}
+HCIMPLEND
+
+HCIMPL1_V(UINT64, JIT_DoubleToUInt64Ovf, double val)
+{
+    FCALL_CONTRACT;
+
+    if (val > -1.0 && val < +18446744073709551616.0) {
+        // -1.0 and +18446744073709551616.0 are exactly representable
+        // Note that the above condition also works properly for val = NaN case
+        return PlatformDoubleToUInt64(val);
+    }
+
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+/*********************************************************************/
 
 #if !defined(TARGET_X86) || defined(TARGET_UNIX)
-
-HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
-{
-    FCALL_CONTRACT;
-
-    return((INT64)val);
-}
-HCIMPLEND
-
-HCIMPL1_V(int, JIT_Dbl2IntOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two31 = 2147483648.0;
-
-        // Note that this expression also works properly for val = NaN case
-    if (val > -two31 - 1 && val < two31)
-        return((INT32)val);
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two63  = 2147483648.0 * 4294967296.0;
-
-    // Note that this expression also works properly for val = NaN case
-    // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
-    if (val > -two63 - 0x402 && val < two63)
-        return((INT64)val);
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
 
 HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
 {

@@ -347,8 +347,8 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_LLsh                      = 0xC7,
     READYTORUN_HELPER_LRsh                      = 0xC8,
     READYTORUN_HELPER_LRsz                      = 0xC9,
-    READYTORUN_HELPER_Lng2Dbl                   = 0xCA,
-    READYTORUN_HELPER_ULng2Dbl                  = 0xCB,
+    READYTORUN_HELPER_Int64ToDouble             = 0xCA,
+    READYTORUN_HELPER_UInt64ToDouble            = 0xCB,
 
     // 32-bit division helpers
     READYTORUN_HELPER_Div                       = 0xCC,
@@ -357,14 +357,22 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_UMod                      = 0xCF,
 
     // Floating point conversions
-    READYTORUN_HELPER_Dbl2Int                   = 0xD0,
-    READYTORUN_HELPER_Dbl2IntOvf                = 0xD1,
-    READYTORUN_HELPER_Dbl2Lng                   = 0xD2,
-    READYTORUN_HELPER_Dbl2LngOvf                = 0xD3,
-    READYTORUN_HELPER_Dbl2UInt                  = 0xD4,
-    READYTORUN_HELPER_Dbl2UIntOvf               = 0xD5,
-    READYTORUN_HELPER_Dbl2ULng                  = 0xD6,
-    READYTORUN_HELPER_Dbl2ULngOvf               = 0xD7,
+    READYTORUN_HELPER_DoubleToInt32             = 0xD0,
+    READYTORUN_HELPER_DoubleToInt32Ovf          = 0xD1,
+    READYTORUN_HELPER_DoubleToInt64             = 0xD2,
+    READYTORUN_HELPER_DoubleToInt64Ovf          = 0xD3,
+    READYTORUN_HELPER_DoubleToUInt32            = 0xD4,
+    READYTORUN_HELPER_DoubleToUInt32Ovf         = 0xD5,
+    READYTORUN_HELPER_DoubleToUInt64            = 0xD6,
+    READYTORUN_HELPER_DoubleToUInt64Ovf         = 0xD7,
+    READYTORUN_HELPER_DoubleToInt8              = 0xD8,
+    READYTORUN_HELPER_DoubleToInt8Ovf           = 0xD9,
+    READYTORUN_HELPER_DoubleToInt16             = 0xDA,
+    READYTORUN_HELPER_DoubleToInt16Ovf          = 0xDB,
+    READYTORUN_HELPER_DoubleToUInt8             = 0xDC,
+    READYTORUN_HELPER_DoubleToUInt8Ovf          = 0xDD,
+    READYTORUN_HELPER_DoubleToUInt16            = 0xDE,
+    READYTORUN_HELPER_DoubleToUInt16Ovf         = 0xDF,
 
     // Floating point ops
     READYTORUN_HELPER_DblRem                    = 0xE0,

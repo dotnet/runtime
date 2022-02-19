@@ -268,8 +268,8 @@ namespace Internal.ReadyToRunConstants
         LLsh                        = 0xC7,
         LRsh                        = 0xC8,
         LRsz                        = 0xC9,
-        Lng2Dbl                     = 0xCA,
-        ULng2Dbl                    = 0xCB,
+        Int64ToDouble               = 0xCA,
+        UInt64ToDouble              = 0xCB,
 
         // 32-bit division helpers
         Div                         = 0xCC,
@@ -278,14 +278,22 @@ namespace Internal.ReadyToRunConstants
         UMod                        = 0xCF,
 
         // Floating point conversions
-        Dbl2Int                     = 0xD0,
-        Dbl2IntOvf                  = 0xD1,
-        Dbl2Lng                     = 0xD2,
-        Dbl2LngOvf                  = 0xD3,
-        Dbl2UInt                    = 0xD4,
-        Dbl2UIntOvf                 = 0xD5,
-        Dbl2ULng                    = 0xD6,
-        Dbl2ULngOvf                 = 0xD7,
+        DoubleToInt32               = 0xD0,
+        DoubleToInt32Ovf            = 0xD1,
+        DoubleToInt64               = 0xD2,
+        DoubleToInt64Ovf            = 0xD3,
+        DoubleToUInt32              = 0xD4,
+        DoubleToUInt32Ovf           = 0xD5,
+        DoubleToUInt64              = 0xD6,
+        DoubleToUInt64Ovf           = 0xD7,
+        DoubleToInt8                = 0xD8,
+        DoubleToInt8Ovf             = 0xD9,
+        DoubleToInt16               = 0xDA,
+        DoubleToInt16Ovf            = 0xDB,
+        DoubleToUInt8               = 0xDC,
+        DoubleToUInt8Ovf            = 0xDD,
+        DoubleToUInt16              = 0xDE,
+        DoubleToUInt16Ovf           = 0xDF,
 
         // Floating point ops
         DblRem                      = 0xE0,
