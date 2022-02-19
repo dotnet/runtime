@@ -691,10 +691,6 @@ public:
 
     static float infinite_float();
 
-    static bool isNegative_double(double a);
-
-    static bool isNegative_float(float a);
-
     static double max_double(double a, double b);
 
     static float max_float(float a, float b);

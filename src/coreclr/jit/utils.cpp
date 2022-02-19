@@ -2211,34 +2211,24 @@ bool FloatingPointUtils::hasPreciseReciprocal(float x)
     return mantissa == 0 && exponent != 0 && exponent != 127;
 }
 
-//------------------------------------------------------------------------
-// isNegative_double: check double for negative sign
-//
-// Arguments:
-//    val - value to check for negative sign
-//
-// Return Value:
-//    True if 'val' is negative
-//
+static bool isNegative(float val)
+{
+    return *reinterpret_cast<INT32*>(&val) < 0;
+}
 
-bool FloatingPointUtils::isNegative_double(double val)
+static bool isNegative(double val)
 {
     return *reinterpret_cast<INT64*>(&val) < 0;
 }
 
-//------------------------------------------------------------------------
-// isNegative_float: check float for negative sign
-//
-// Arguments:
-//    val - value to check for negative sign
-//
-// Return Value:
-//    True if 'val' is negative
-//
-
-bool FloatingPointUtils::isNegative_float(float val)
+static bool isNaN(float val)
 {
-    return *reinterpret_cast<INT32*>(&val) < 0;
+    return val != val;
+}
+
+static bool isNaN(double val)
+{
+    return val != val;
 }
 
 //------------------------------------------------------------------------
@@ -2259,13 +2249,13 @@ double FloatingPointUtils::max_double(double val1, double val2)
 {
     if (val1 != val2)
     {
-        if (!_isnan(val1))
+        if (!isNaN(val1))
         {
             return val2 < val1 ? val1 : val2;
         }
         return val1;
     }
-    return isNegative_double(val2) ? val1 : val2;
+    return isNegative(val2) ? val1 : val2;
 }
 
 //------------------------------------------------------------------------
@@ -2286,13 +2276,13 @@ float FloatingPointUtils::max_float(float val1, float val2)
 {
     if (val1 != val2)
     {
-        if (!_isnanf(val1))
+        if (!isNaN(val1))
         {
             return val2 < val1 ? val1 : val2;
         }
         return val1;
     }
-    return isNegative_float(val2) ? val1 : val2;
+    return isNegative(val2) ? val1 : val2;
 }
 
 //------------------------------------------------------------------------
@@ -2311,11 +2301,11 @@ float FloatingPointUtils::max_float(float val1, float val2)
 
 double FloatingPointUtils::min_double(double val1, double val2)
 {
-    if (val1 != val2 && !_isnan(val1))
+    if (val1 != val2 && !isNaN(val1))
     {
         return val1 < val2 ? val1 : val2;
     }
-    return isNegative_double(val1) ? val1 : val2;
+    return isNegative(val1) ? val1 : val2;
 }
 
 //------------------------------------------------------------------------
@@ -2334,11 +2324,11 @@ double FloatingPointUtils::min_double(double val1, double val2)
 
 float FloatingPointUtils::min_float(float val1, float val2)
 {
-    if (val1 != val2 && !_isnanf(val1))
+    if (val1 != val2 && !isNaN(val1))
     {
         return val1 < val2 ? val1 : val2;
     }
-    return isNegative_float(val1) ? val1 : val2;
+    return isNegative(val1) ? val1 : val2;
 }
 
 namespace MagicDivide
