@@ -339,6 +339,7 @@ int LinearScan::BuildNode(GenTree* tree)
                     BuildDef(tree);
                     break;
 
+                case NI_System_Math_Abs:
                 case NI_System_Math_Ceiling:
                 case NI_System_Math_Floor:
                 case NI_System_Math_Truncate:
