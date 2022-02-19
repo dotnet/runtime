@@ -30,6 +30,9 @@ namespace System.Net.Security.Tests
             Assert.NotNull(authenticateBlob);
             byte[]? empty = fakeNtlmServer.GetOutgoingBlob(authenticateBlob);
             Assert.Null(empty);
+
+            // NTLMSSP on Linux doesn't send the MIC
+            Assert.True(fakeNtlmServer.IsMICPresent || OperatingSystem.IsLinux());
         }
     }
 }

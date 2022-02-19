@@ -19,6 +19,8 @@ namespace System.Net.Security
             _expectedCredential = expectedCredential;
         }
 
+        public bool IsMICPresent { get; set; }
+
         private NetworkCredential _expectedCredential;
         private byte[]? _negotiateMessage;
         private byte[]? _challengeMessage;
@@ -82,6 +84,14 @@ namespace System.Net.Security
             SingleHost,
             TargetName,
             ChannelBindings,
+        }
+
+        [Flags]
+        private enum AvFlags : uint
+        {
+            ConstrainedAuthentication = 1,
+            MICPresent = 2,
+            UntrustedSPN = 4,
         }
 
         private static void NtlmAssert(
@@ -224,7 +234,21 @@ namespace System.Net.Security
                 hmac.GetHashAndReset(sessionBaseKey);
             }
 
-            // TODO: Verify the rest (eg. target info, MIC flags)
+            ReadOnlySpan<byte> avPairs = ntChallengeResponse.Slice(16 + 28);
+            AvFlags avFlags = 0;
+            while (avPairs[0] != (byte)AvId.EOL)
+            {
+                AvId id = (AvId)avPairs[0];
+                NtlmAssert(avPairs[1] == 0);
+                ushort length = BinaryPrimitives.ReadUInt16LittleEndian(avPairs.Slice(2, 2));
+
+                if (id == AvId.Flags)
+                {
+                    avFlags = (AvFlags)BinaryPrimitives.ReadUInt32LittleEndian(avPairs.Slice(4, 4));
+                }
+
+                avPairs = avPairs.Slice(length + 4);
+            }
 
             // Decrypt exportedSessionKey with sessionBaseKey
             Span<byte> exportedSessionKey = stackalloc byte[16];
@@ -242,20 +266,25 @@ namespace System.Net.Security
             }
 
             // Calculate and verify message integrity
-            NtlmAssert(_negotiateMessage != null);
-            NtlmAssert(_challengeMessage != null);
-            Span<byte> calculatedMic = stackalloc byte[16];
-            using (var hmacMic = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, exportedSessionKey))
+            if (avFlags.HasFlag(AvFlags.MICPresent))
             {
-                hmacMic.AppendData(_negotiateMessage);
-                hmacMic.AppendData(_challengeMessage);
-                // Authenticate message with the MIC erased
-                hmacMic.AppendData(incomingBlob.AsSpan(0, 72));
-                hmacMic.AppendData(new byte[16]);
-                hmacMic.AppendData(incomingBlob.AsSpan(72 + 16));
-                hmacMic.GetHashAndReset(calculatedMic);
+                IsMICPresent = true;
+
+                NtlmAssert(_negotiateMessage != null);
+                NtlmAssert(_challengeMessage != null);
+                Span<byte> calculatedMic = stackalloc byte[16];
+                using (var hmacMic = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, exportedSessionKey))
+                {
+                    hmacMic.AppendData(_negotiateMessage);
+                    hmacMic.AppendData(_challengeMessage);
+                    // Authenticate message with the MIC erased
+                    hmacMic.AppendData(incomingBlob.AsSpan(0, 72));
+                    hmacMic.AppendData(new byte[16]);
+                    hmacMic.AppendData(incomingBlob.AsSpan(72 + 16));
+                    hmacMic.GetHashAndReset(calculatedMic);
+                }
+                NtlmAssert(calculatedMic.SequenceEqual(mic));
             }
-            NtlmAssert(calculatedMic.SequenceEqual(mic));
         }
     }
 }
