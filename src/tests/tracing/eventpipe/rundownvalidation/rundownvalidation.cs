@@ -10,7 +10,11 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
+#if (UPDATED_NETCORE_CLIENT == true)
 using Microsoft.Diagnostics.NETCore.Client;
+#else
+using Microsoft.Diagnostics.Tools.RuntimeClient;
+#endif
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 
 namespace Tracing.Tests.RundownValidation
@@ -23,13 +27,22 @@ namespace Tracing.Tests.RundownValidation
             // This test validates that the rundown events are present
             // and that the rundown contains the necessary events to get
             // symbols in a nettrace file.
-
+#if (UPDATED_NETCORE_CLIENT == true)
             var providers = new List<EventPipeProvider>()
             {
                 new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Verbose)
             };
 
             return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesRundownContainMethodEvents);
+#else
+            var providers = new List<Provider>()
+            {
+                new Provider("Microsoft-DotNETCore-SampleProfiler")
+            };
+
+            var configuration = new SessionConfiguration(circularBufferSizeMB: 1024, format: EventPipeSerializationFormat.NetTrace,  providers: providers);
+            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, configuration, _DoesRundownContainMethodEvents);
+#endif
         }
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
