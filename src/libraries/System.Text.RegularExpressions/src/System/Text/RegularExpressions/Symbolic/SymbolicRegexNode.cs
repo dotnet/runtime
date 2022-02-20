@@ -1990,7 +1990,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         Debug.Assert(_left is not null);
                         SymbolicRegexNode<S> body = _left.IgnoreOrOrderAndLazyness();
-                        return body == _left && !IsLazy?
+                        return body == _left && !IsLazy ?
                             this :
                             CreateLoop(_builder, body, _lower, _upper, isLazy: false);
                     }
