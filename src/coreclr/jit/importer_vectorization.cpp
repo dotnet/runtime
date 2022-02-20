@@ -157,7 +157,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
     GenTree* zero = gtNewSimdHWIntrinsicNode(simdType, niZero, baseType, simdSize);
 
     GenTree* offset1  = gtNewIconNode(dataOffset, TYP_I_IMPL);
-    GenTree* offset2  = gtNewIconNode(dataOffset + len * 2 - simdSize, TYP_I_IMPL);
+    GenTree* offset2  = gtNewIconNode(dataOffset + len * sizeof(USHORT) - simdSize, TYP_I_IMPL);
     GenTree* dataPtr1 = gtNewOperNode(GT_ADD, TYP_BYREF, data, offset1);
     GenTree* dataPtr2 = gtNewOperNode(GT_ADD, TYP_BYREF, gtClone(data), offset2);
 
@@ -168,13 +168,13 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
     //
     //   vmovdqu  xmm0, xmmword ptr [rcx+12]
     //   vpxor    xmm0, xmm0, xmmword ptr[reloc @RWD00]
-    //   vmovdqu  xmm1, xmmword ptr [rcx + 20]
+    //   vmovdqu  xmm1, xmmword ptr [rcx+20]
     //   vpxor    xmm1, xmm1, xmmword ptr[reloc @RWD16]
     //
     // While we should re-order them to be:
     //
     //   vmovdqu  xmm0, xmmword ptr [rcx+12]
-    //   vmovdqu  xmm1, xmmword ptr [rcx + 20]
+    //   vmovdqu  xmm1, xmmword ptr [rcx+20]
     //   vpxor    xmm0, xmm0, xmmword ptr[reloc @RWD00]
     //   vpxor    xmm1, xmm1, xmmword ptr[reloc @RWD16]
     //
