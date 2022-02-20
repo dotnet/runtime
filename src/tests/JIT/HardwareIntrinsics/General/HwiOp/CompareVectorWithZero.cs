@@ -31,6 +31,16 @@ public class CompareVectorWithZero
         Test(Vector128.Create(0, 0, 0, 0, 0, 0, 0, -1));
         Test(Vector64.Create(0, 0, 0, 0, 0, 0, 0, 1));
         Test(Vector64.Create(0, 0, 0, 0, 0, 0, 0, -1));
+
+        Test(Vector128.Create(0, 0, 0, 0, 0, 0, 1, 0));
+        Test(Vector128.Create(0, 0, 0, 0, 0, 0, 1, 0));
+        Test(Vector64.Create(0, 0, 0, 0, 0, 0, -1, 0));
+        Test(Vector64.Create(0, 0, 0, 0, 0, 0, -1, 0));
+
+        Test(Vector128.Create(0, 0, 0, 1, 0, 0, 0, 1));
+        Test(Vector128.Create(0, 0, 0, -1, 0, 0, 0, -1));
+        Test(Vector64.Create(0, 0, 0, 1, 0, 0, 0, 1));
+        Test(Vector64.Create(0, 0, 0, -1, 0, 0, 0, -1));
         return 100;
     }
 
@@ -46,11 +56,11 @@ public class CompareVectorWithZero
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test<T>(Vector128<T> v) where T : unmanaged =>
-        AssertTrue(v == Vector128<T>.Zero == 
-                   v == Vector128.Create((byte)ToVar(0)));
+        AssertTrue((v == Vector128<T>.Zero) == 
+                   (v == Vector128.Create(ToVar(default(T)))));
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test<T>(Vector64<T> v) where T : unmanaged =>
-        AssertTrue(v == Vector64<T>.Zero == 
-                   v == Vector64.Create((byte)ToVar(0)));
+        AssertTrue((v == Vector64<T>.Zero) == 
+                   (v == Vector64.Create(ToVar(default(T)))));
 }
