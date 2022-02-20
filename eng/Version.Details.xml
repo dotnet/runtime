@@ -230,10 +230,6 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>6e05d78deba320a54ef10a265c6025bbb686efe6</Sha>
     </Dependency>
-    <Dependency Name="System.Runtime.CompilerServices.Unsafe" Version="7.0.0-preview.2.22113.2">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6e05d78deba320a54ef10a265c6025bbb686efe6</Sha>
-    </Dependency>
     <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22115.2">
       <Uri>https://github.com/dotnet/linker</Uri>
       <Sha>6e11d057a88b3fb403bfbb90317518c94e3e84a7</Sha>
