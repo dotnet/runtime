@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GetEnvironmentVariableW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GetEnvironmentVariableW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial uint GetEnvironmentVariable(string lpName, ref char lpBuffer, uint nSize);
     }
 }
