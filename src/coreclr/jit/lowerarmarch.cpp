@@ -881,12 +881,12 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     if (!varTypeIsFloating(simdBaseType) && ((op2ni == NI_Vector64_get_Zero) || (op2ni == NI_Vector128_get_Zero)))
     {
         GenTree* cmp =
-            comp->gtNewSimdHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_MaxAcross, CORINFO_TYPE_BYTE, simdSize);
+            comp->gtNewSimdHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_MaxAcross, CORINFO_TYPE_USHORT, simdSize);
         BlockRange().InsertBefore(node, cmp);
         LowerNode(cmp);
         BlockRange().Remove(op2);
 
-        GenTree* val = comp->gtNewSimdHWIntrinsicNode(TYP_INT, cmp, NI_Vector128_ToScalar, CORINFO_TYPE_BYTE, simdSize);
+        GenTree* val = comp->gtNewSimdHWIntrinsicNode(TYP_INT, cmp, NI_Vector128_ToScalar, CORINFO_TYPE_USHORT, simdSize);
         BlockRange().InsertAfter(cmp, val);
         LowerNode(val);
 
