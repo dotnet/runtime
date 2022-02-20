@@ -5807,11 +5807,10 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_ARM
 
+    const bool isRoot = (compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
+
 #ifdef TARGET_AMD64
-    const bool isRoot       = (compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
     const bool isOSRx64Root = isRoot && compiler->opts.IsOSR();
-#else
-    const bool isOSRx64Root = false;
 #endif // TARGET_AMD64
 
     tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
@@ -5836,16 +5835,23 @@ void CodeGen::genFnProlog()
         }
     }
 
+#if defined(TARGET_AMD64)
     // For x64 OSR root frames, we can't use any as of yet unsaved
     // callee save as initReg, as we defer saving these until later in
     // the prolog, and we don't have normal arg regs.
-    //
-    // Just use RAX as it typically has the most compact encoding.
-    //
     if (isOSRx64Root)
     {
         initReg = REG_SCRATCH; // REG_EAX
     }
+#elif defined(TARGET_ARM64)
+    // For arm64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    //
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_IP1;
+    }
+#endif
 
     noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
 
