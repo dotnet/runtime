@@ -56,6 +56,11 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = STRING_LENGTH(gss_ntlm_o
                                               .elements = gss_ntlm_oid_value};
 #endif
 
+static char gss_ntlmssp_require_mic_oid_value[] =
+    "\x2b\x06\x01\x04\x01\xb7\x7d\x85\x0f\x01\x02"; // Binary representation of SPNEGO Require MIC OID of gss-ntlmssp
+static gss_OID_desc gss_ntlmssp_require_mic_OID_desc = {.length = STRING_LENGTH(gss_ntlmssp_require_mic_oid_value),
+                                                        .elements = gss_ntlmssp_require_mic_oid_value};
+
 #if defined(GSS_SHIM)
 
 #define FOR_ALL_GSS_FUNCTIONS \
@@ -69,9 +74,11 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = STRING_LENGTH(gss_ntlm_o
     PER_FUNCTION_BLOCK(gss_indicate_mechs) \
     PER_FUNCTION_BLOCK(gss_init_sec_context) \
     PER_FUNCTION_BLOCK(gss_inquire_context) \
+    PER_FUNCTION_BLOCK(gss_inquire_sec_context_by_oid) \
     PER_FUNCTION_BLOCK(gss_mech_krb5) \
     PER_FUNCTION_BLOCK(gss_oid_equal) \
     PER_FUNCTION_BLOCK(gss_release_buffer) \
+    PER_FUNCTION_BLOCK(gss_release_buffer_set) \
     PER_FUNCTION_BLOCK(gss_release_cred) \
     PER_FUNCTION_BLOCK(gss_release_name) \
     PER_FUNCTION_BLOCK(gss_release_oid_set) \
@@ -108,8 +115,10 @@ static void* volatile s_gssLib = NULL;
 #define gss_indicate_mechs(...)             gss_indicate_mechs_ptr(__VA_ARGS__)
 #define gss_init_sec_context(...)           gss_init_sec_context_ptr(__VA_ARGS__)
 #define gss_inquire_context(...)            gss_inquire_context_ptr(__VA_ARGS__)
+#define gss_inquire_sec_context_by_oid(...) gss_inquire_sec_context_by_oid_ptr(__VA_ARGS__)
 #define gss_oid_equal(...)                  gss_oid_equal_ptr(__VA_ARGS__)
 #define gss_release_buffer(...)             gss_release_buffer_ptr(__VA_ARGS__)
+#define gss_release_buffer_set(...)         gss_release_buffer_set_ptr(__VA_ARGS__)
 #define gss_release_cred(...)               gss_release_cred_ptr(__VA_ARGS__)
 #define gss_release_name(...)               gss_release_name_ptr(__VA_ARGS__)
 #define gss_release_oid_set(...)            gss_release_oid_set_ptr(__VA_ARGS__)
@@ -373,6 +382,7 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
     GssBuffer inputToken = {.length = inputLength, .value = inputBytes};
     GssBuffer gssBuffer = {.length = 0, .value = NULL};
     gss_OID_desc* outmech;
+    int contextHandleWasNull = *contextHandle == NULL;
 
     struct gss_channel_bindings_struct gssCbt;
     if (cbt != NULL)
@@ -397,6 +407,26 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
                                                 NULL);
 
     *isNtlmUsed = (isNtlm || majorStatus != GSS_S_COMPLETE || gss_oid_equal(outmech, krbMech) == 0) ? 1 : 0;
+
+    if (*isNtlmUsed && majorStatus == GSS_S_CONTINUE_NEEDED && contextHandleWasNull)
+    {
+        // Opportunistically try to enable the MIC for the gss-ntlmssp provider
+        // through a private option. Ignore errors since NTLM can be implemented
+        // by a different provider.
+        uint32_t tempMajorStatus;
+        uint32_t tempMinorStatus;
+        gss_buffer_set_t tempSet = GSS_C_NO_BUFFER_SET;
+
+        tempMajorStatus = gss_inquire_sec_context_by_oid(&tempMinorStatus,
+                                                         *contextHandle,
+                                                         &gss_ntlmssp_require_mic_OID_desc,
+                                                         &tempSet);
+
+        if (tempSet != GSS_C_NO_BUFFER_SET)
+        {
+            tempMajorStatus = gss_release_buffer_set(&tempMinorStatus, &tempSet);
+        }
+    }
 
     NetSecurityNative_MoveBuffer(&gssBuffer, outBuffer);
     return majorStatus;
