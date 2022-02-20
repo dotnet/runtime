@@ -868,7 +868,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
 
-    // Optimize comparison against a all-zero integer vector via UMAX, basically:
+    // Optimize comparison against Vector64/128<>.Zero via UMAX:
     //
     //   bool eq = v == Vector128<integer>.Zero
     //
