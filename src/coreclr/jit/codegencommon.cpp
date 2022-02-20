@@ -5811,6 +5811,8 @@ void CodeGen::genFnProlog()
 
 #ifdef TARGET_AMD64
     const bool isOSRx64Root = isRoot && compiler->opts.IsOSR();
+#else
+    const bool isOSRx64Root = false;
 #endif // TARGET_AMD64
 
     tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
