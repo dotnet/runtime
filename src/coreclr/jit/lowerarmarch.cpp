@@ -898,51 +898,78 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
         }
     }
 
-    GenTree* cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, cmpIntrinsic, simdBaseJitType, simdSize);
-    BlockRange().InsertBefore(node, cmp);
-    LowerNode(cmp);
+    GenTree*       val   = nullptr;
+    NamedIntrinsic op2ni = op2->AsHWIntrinsic()->GetHWIntrinsicId();
 
-    if ((simdBaseType == TYP_FLOAT) && (simdSize == 12))
+    // Optimize comparison against a all-zero integer vector via UMAX, basically:
+    //
+    //   bool eq = v == Vector128<integer>.Zero
+    //
+    // to:
+    //
+    //   bool eq = AdvSimd.Arm64.MaxAcross(v.AsByte()).ToScalar() == 0;
+    //
+    // Assume morph made get_Zero rhs if it was lhs
+    if (!varTypeIsFloating(simdBaseType) && (op2ni == NI_Vector64_get_Zero) || (op2ni == NI_Vector128_get_Zero))
     {
-        // For TYP_SIMD12 we don't want the upper bits to participate in the comparison. So, we will insert all ones
-        // into those bits of the result, "as if" the upper bits are equal. Then if all lower bits are equal, we get the
-        // expected all-ones result, and will get the expected 0's only where there are non-matching bits.
+        GenTree* cmp =
+            comp->gtNewSimdHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_MaxAcross, CORINFO_TYPE_UBYTE, simdSize);
+        BlockRange().InsertBefore(node, cmp);
+        LowerNode(cmp);
+        BlockRange().Remove(op2);
 
-        GenTree* idxCns = comp->gtNewIconNode(3, TYP_INT);
-        BlockRange().InsertAfter(cmp, idxCns);
+        val = comp->gtNewSimdHWIntrinsicNode(TYP_INT, cmp, NI_Vector128_ToScalar, CORINFO_TYPE_UBYTE, simdSize);
+        BlockRange().InsertAfter(cmp, val);
+        LowerNode(val);
+    }
+    else
+    {
+        GenTree* cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, cmpIntrinsic, simdBaseJitType, simdSize);
+        BlockRange().InsertBefore(node, cmp);
+        LowerNode(cmp);
 
-        GenTree* insCns = comp->gtNewIconNode(-1, TYP_INT);
-        BlockRange().InsertAfter(idxCns, insCns);
+        if ((simdBaseType == TYP_FLOAT) && (simdSize == 12))
+        {
+            // For TYP_SIMD12 we don't want the upper bits to participate in the comparison. So, we will insert all ones
+            // into those bits of the result, "as if" the upper bits are equal. Then if all lower bits are equal, we get
+            // the
+            // expected all-ones result, and will get the expected 0's only where there are non-matching bits.
 
-        GenTree* tmp = comp->gtNewSimdHWIntrinsicNode(simdType, cmp, idxCns, insCns, NI_AdvSimd_Insert,
-                                                      CORINFO_TYPE_INT, simdSize);
-        BlockRange().InsertAfter(insCns, tmp);
-        LowerNode(tmp);
+            GenTree* idxCns = comp->gtNewIconNode(3, TYP_INT);
+            BlockRange().InsertAfter(cmp, idxCns);
 
-        cmp = tmp;
+            GenTree* insCns = comp->gtNewIconNode(-1, TYP_INT);
+            BlockRange().InsertAfter(idxCns, insCns);
+
+            GenTree* tmp = comp->gtNewSimdHWIntrinsicNode(simdType, cmp, idxCns, insCns, NI_AdvSimd_Insert,
+                                                          CORINFO_TYPE_INT, simdSize);
+            BlockRange().InsertAfter(insCns, tmp);
+            LowerNode(tmp);
+
+            cmp = tmp;
+        }
+
+        GenTree* msk =
+            comp->gtNewSimdHWIntrinsicNode(simdType, cmp, NI_AdvSimd_Arm64_MinAcross, CORINFO_TYPE_UBYTE, simdSize);
+        BlockRange().InsertAfter(cmp, msk);
+        LowerNode(msk);
+
+        GenTree* zroCns = comp->gtNewIconNode(0, TYP_INT);
+        BlockRange().InsertAfter(msk, zroCns);
+
+        val = comp->gtNewSimdHWIntrinsicNode(TYP_UBYTE, msk, zroCns, NI_AdvSimd_Extract, CORINFO_TYPE_UBYTE, simdSize);
+        BlockRange().InsertAfter(zroCns, val);
+        LowerNode(val);
     }
 
-    GenTree* msk =
-        comp->gtNewSimdHWIntrinsicNode(simdType, cmp, NI_AdvSimd_Arm64_MinAcross, CORINFO_TYPE_UBYTE, simdSize);
-    BlockRange().InsertAfter(cmp, msk);
-    LowerNode(msk);
-
-    GenTree* zroCns = comp->gtNewIconNode(0, TYP_INT);
-    BlockRange().InsertAfter(msk, zroCns);
-
-    GenTree* val =
-        comp->gtNewSimdHWIntrinsicNode(TYP_UBYTE, msk, zroCns, NI_AdvSimd_Extract, CORINFO_TYPE_UBYTE, simdSize);
-    BlockRange().InsertAfter(zroCns, val);
-    LowerNode(val);
-
-    zroCns = comp->gtNewIconNode(0, TYP_INT);
-    BlockRange().InsertAfter(val, zroCns);
+    GenTree* cmpZroCns = comp->gtNewIconNode(0, TYP_INT);
+    BlockRange().InsertAfter(val, cmpZroCns);
 
     node->ChangeOper(cmpOp);
 
     node->gtType        = TYP_INT;
     node->AsOp()->gtOp1 = val;
-    node->AsOp()->gtOp2 = zroCns;
+    node->AsOp()->gtOp2 = cmpZroCns;
 
     // The CompareEqual will set (condition is true) or clear (condition is false) all bits of the respective element
     // The MinAcross then ensures we get either all bits set (all conditions are true) or clear (any condition is false)
