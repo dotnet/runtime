@@ -8,6 +8,7 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <!-- EnC tests on targets without a remote executor need the environment variable set before launching the test -->
     <WasmXHarnessMonoArgs>--setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug</WasmXHarnessMonoArgs>
+    <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ApplyUpdateTest.cs" />
