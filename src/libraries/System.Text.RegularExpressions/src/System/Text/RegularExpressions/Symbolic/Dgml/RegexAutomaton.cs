@@ -17,7 +17,7 @@ namespace System.Text.RegularExpressions.Symbolic.DGML
         private readonly HashSet<int> _stateSet = new();
         private readonly List<Move<(SymbolicRegexNode<T>?, T)>> _moves = new();
         private readonly SymbolicRegexBuilder<T> _builder;
-        private SymbolicNFA<T>? _nfa;
+        private readonly SymbolicNFA<T>? _nfa;
 
         internal RegexAutomaton(SymbolicRegexMatcher<T> srm, int bound, bool addDotStar, bool inReverse, bool asNFA)
         {

@@ -53,7 +53,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// that's the union of all of those.  The matching engine switches dynamically from Brzozowski to Antimirov once
         /// it trips over this threshold in the size of the state graph, which may be produced lazily.
         /// </remarks>
-        private const int AntimirovThreshold = 10_000;
+        internal const int AntimirovThreshold = 10_000;
 
         /// <summary>Wiggle room around the exact size of the state graph before we switch to Antimirov.</summary>
         /// <remarks>
@@ -279,28 +279,19 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         internal PerThreadData CreatePerThreadData() => new PerThreadData(_capsize);
 
-        /// <summary>Interface for transitions used by the <see cref="Delta"/> method.</summary>
-        private interface ITransition
-        {
-#pragma warning disable CA2252 // This API requires opting into preview features
-            /// <summary>Find the next state given the current state and next character.</summary>
-            static abstract DfaMatchingState<TSetType> TakeTransition(SymbolicRegexMatcher<TSetType> matcher, DfaMatchingState<TSetType> currentState, int mintermId, TSetType minterm);
-#pragma warning restore CA2252
-        }
-
         /// <summary>Compute the target state for the source state and input[i] character.</summary>
         /// <param name="input">input span</param>
         /// <param name="i">The index into <paramref name="input"/> at which the target character lives.</param>
-        /// <param name="sourceState">The source state</param>
+        /// <param name="state">passed in as the source state and upon return is set to the new target state</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private DfaMatchingState<TSetType> Delta<TTransition>(ReadOnlySpan<char> input, int i, DfaMatchingState<TSetType> sourceState) where TTransition : struct, ITransition
+        private void Delta(ReadOnlySpan<char> input, int i, ref CurrentState<TSetType> state)
         {
             TSetType[]? minterms = _builder._minterms;
             Debug.Assert(minterms is not null);
 
             int c = input[i];
 
-            int mintermId = c == '\n' && i == input.Length - 1 && sourceState.StartsWithLineAnchor ?
+            int mintermId = c == '\n' && i == input.Length - 1 && state.StartsWithLineAnchor ?
                 minterms.Length : // mintermId = minterms.Length represents \Z (last \n)
                 _partitions.GetMintermID(c);
 
@@ -308,7 +299,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 minterms[mintermId] :
                 _builder._solver.False; // minterm=False represents \Z
 
-            return TTransition.TakeTransition(this, sourceState, mintermId, minterm);
+            CurrentState<TSetType>.TakeTransition(ref state, mintermId, minterm);
         }
 
         /// <summary>
@@ -385,84 +376,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     CaptureStarts = (int[])other.CaptureStarts.Clone();
                     CaptureEnds = (int[])other.CaptureEnds.Clone();
                 }
-            }
-        }
-
-        /// <summary>Transition for Brzozowski-style derivatives (i.e. a DFA).</summary>
-        private readonly struct BrzozowskiTransition : ITransition
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static DfaMatchingState<TSetType> TakeTransition(
-                SymbolicRegexMatcher<TSetType> matcher, DfaMatchingState<TSetType> currentState, int mintermId, TSetType minterm)
-            {
-                SymbolicRegexBuilder<TSetType> builder = matcher._builder;
-                Debug.Assert(builder._delta is not null);
-
-                int offset = (currentState.Id << builder._mintermsCount) | mintermId;
-                return Volatile.Read(ref builder._delta[offset]) ?? matcher.CreateNewTransition(currentState, minterm, offset);
-            }
-        }
-
-        /// <summary>Transition for Antimirov-style derivatives (i.e. an NFA).</summary>
-        private readonly struct AntimirovTransition : ITransition
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static DfaMatchingState<TSetType> TakeTransition(
-                SymbolicRegexMatcher<TSetType> matcher, DfaMatchingState<TSetType> currentStates, int mintermId, TSetType minterm)
-            {
-                if (currentStates.Node.Kind != SymbolicRegexNodeKind.Or)
-                {
-                    // If the state isn't an or (a disjunction), then we're in only a single state, and can use Brzozowski.
-                    return BrzozowskiTransition.TakeTransition(matcher, currentStates, mintermId, minterm);
-                }
-
-                SymbolicRegexBuilder<TSetType> builder = matcher._builder;
-                Debug.Assert(builder._delta is not null);
-
-                SymbolicRegexNode<TSetType> union = builder._nothing;
-                uint kind = 0;
-
-                // Produce the new list of states from the current list, considering transitions from members one at a time.
-                Debug.Assert(currentStates.Node._alts is not null);
-                foreach (SymbolicRegexNode<TSetType> oneState in currentStates.Node._alts)
-                {
-                    DfaMatchingState<TSetType> nextStates = builder.CreateState(oneState, currentStates.PrevCharKind, capturing: false);
-
-                    int offset = (nextStates.Id << builder._mintermsCount) | mintermId;
-                    DfaMatchingState<TSetType> p = Volatile.Read(ref builder._delta[offset]) ?? matcher.CreateNewTransition(nextStates, minterm, offset);
-
-                    // Observe that if p.Node is an Or it will be flattened.
-                    union = builder.Or(union, p.Node);
-
-                    // kind is just the kind of the partition.
-                    kind = p.PrevCharKind;
-                }
-
-                return builder.CreateState(union, kind, capturing: false, antimirov: true);
-            }
-        }
-
-        /// <summary>Critical region for defining a new transition</summary>
-        private DfaMatchingState<TSetType> CreateNewTransition(DfaMatchingState<TSetType> state, TSetType minterm, int offset)
-        {
-            Debug.Assert(_builder._delta is not null);
-            lock (this)
-            {
-                // check if meanwhile delta[offset] has become defined possibly by another thread
-                DfaMatchingState<TSetType> p = _builder._delta[offset];
-                if (p is null)
-                {
-                    // this is the only place in code where the Next method is called in the matcher
-                    _builder._delta[offset] = p = state.Next(minterm);
-
-                    // switch to antimirov mode if the maximum bound has been reached
-                    if (p.Id == AntimirovThreshold)
-                    {
-                        _builder._antimirov = true;
-                    }
-                }
-
-                return p;
             }
         }
 
@@ -594,10 +507,12 @@ namespace System.Text.RegularExpressions.Symbolic
         private int FindEndPosition(ReadOnlySpan<char> input, int i)
         {
             int i_end = input.Length;
+            // reset to Brzozowski mode
+            _builder._antimirov = false;
 
             // Pick the correct start state based on previous character kind.
             uint prevCharKind = GetCharKind(input, i - 1);
-            DfaMatchingState<TSetType> state = _initialStates[prevCharKind];
+            CurrentState<TSetType> state = new CurrentState<TSetType>(_initialStates[prevCharKind]);
 
             if (state.IsNullable(GetCharKind(input, i)))
             {
@@ -608,9 +523,7 @@ namespace System.Text.RegularExpressions.Symbolic
             while (i < input.Length)
             {
                 int j = Math.Min(input.Length, i + AntimirovThresholdLeeway);
-                bool done = _builder._antimirov ?
-                    FindEndPositionDeltas<AntimirovTransition>(input, ref i, j, ref state, ref i_end) :
-                    FindEndPositionDeltas<BrzozowskiTransition>(input, ref i, j, ref state, ref i_end);
+                bool done = FindEndPositionDeltas(input, ref i, j, ref state, ref i_end);
 
                 if (done)
                 {
@@ -624,11 +537,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Inner loop for FindEndPosition parameterized by an ITransition type.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool FindEndPositionDeltas<TTransition>(ReadOnlySpan<char> input, ref int i, int j, ref DfaMatchingState<TSetType> q, ref int i_end) where TTransition : struct, ITransition
+        private bool FindEndPositionDeltas(ReadOnlySpan<char> input, ref int i, int j, ref CurrentState<TSetType> q, ref int i_end)
         {
             do
             {
-                q = Delta<TTransition>(input, i, q);
+                Delta(input, i, ref q);
 
                 if (q.IsNullable(GetCharKind(input, i + 1)))
                 {
@@ -660,6 +573,9 @@ namespace System.Text.RegularExpressions.Symbolic
             int i_end = input.Length;
             Registers endRegisters = default(Registers);
             DfaMatchingState<TSetType>? endState = null;
+
+            // Reset to Brzozowski mode
+            _builder._antimirov = false;
 
             // Pick the correct start state based on previous character kind.
             uint prevCharKind = GetCharKind(input, i - 1);
@@ -779,7 +695,10 @@ namespace System.Text.RegularExpressions.Symbolic
             // Fetch the correct start state for the reverse pattern.
             // This depends on previous character --- which, because going backwards, is character number i+1.
             uint prevKind = GetCharKind(input, i + 1);
-            DfaMatchingState<TSetType> q = _reverseInitialStates[prevKind];
+            // reset to Brzozowski mode
+            _builder._antimirov = false;
+
+            CurrentState<TSetType> q = new CurrentState<TSetType>(_reverseInitialStates[prevKind]);
 
             if (i == -1)
             {
@@ -799,9 +718,7 @@ namespace System.Text.RegularExpressions.Symbolic
             while (i >= match_start_boundary)
             {
                 int j = Math.Max(match_start_boundary, i - AntimirovThresholdLeeway);
-                bool done = _builder._antimirov ?
-                    FindStartPositionDeltas<AntimirovTransition>(input, ref i, j, ref q, ref last_start) :
-                    FindStartPositionDeltas<BrzozowskiTransition>(input, ref i, j, ref q, ref last_start);
+                bool done = FindStartPositionDeltas(input, ref i, j, ref q, ref last_start);
 
                 if (done)
                 {
@@ -815,11 +732,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         // Inner loop for FindStartPosition parameterized by an ITransition type.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool FindStartPositionDeltas<TTransition>(ReadOnlySpan<char> input, ref int i, int j, ref DfaMatchingState<TSetType> q, ref int last_start) where TTransition : struct, ITransition
+        private bool FindStartPositionDeltas(ReadOnlySpan<char> input, ref int i, int j, ref CurrentState<TSetType> q, ref int last_start)
         {
             do
             {
-                q = Delta<TTransition>(input, i, q);
+                Delta(input, i, ref q);
 
                 // Reached a deadend state, thus the earliest match start point must have occurred already.
                 if (q.IsNothing)
@@ -851,7 +768,8 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             // Get the correct start state of the dot-star pattern, which in general depends on the previous character kind in the input.
             uint prevCharKindId = GetCharKind(input, i - 1);
-            DfaMatchingState<TSetType> q = _dotstarredInitialStates[prevCharKindId];
+
+            CurrentState<TSetType> q = new CurrentState<TSetType>(_dotstarredInitialStates[prevCharKindId]);
             initialStateIndex = i;
 
             if (q.IsNothing)
@@ -895,7 +813,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         // the start state must be updated
                         // to reflect the kind of the previous character
                         // when anchors are not used, q will remain the same state
-                        q = _dotstarredInitialStates[GetCharKind(input, i - 1)];
+                        q = new CurrentState<TSetType>(_dotstarredInitialStates[GetCharKind(input, i - 1)]);
                         if (q.IsNothing)
                         {
                             return NoMatchExists;
@@ -905,9 +823,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 int result;
                 int j = Math.Min(input.Length, i + AntimirovThresholdLeeway);
-                bool done = _builder._antimirov ?
-                    FindFinalStatePositionDeltas<AntimirovTransition>(input, j, ref i, ref q, ref matchLength, out result) :
-                    FindFinalStatePositionDeltas<BrzozowskiTransition>(input, j, ref i, ref q, ref matchLength, out result);
+                bool done = FindFinalStatePositionDeltas(input, j, ref i, ref q, ref matchLength, out result);
 
                 if (done)
                 {
@@ -926,12 +842,12 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Inner loop for FindFinalStatePosition parameterized by an ITransition type.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool FindFinalStatePositionDeltas<TTransition>(ReadOnlySpan<char> input, int j, ref int i, ref DfaMatchingState<TSetType> q, ref int matchLength, out int result) where TTransition : struct, ITransition
+        private bool FindFinalStatePositionDeltas(ReadOnlySpan<char> input, int j, ref int i, ref CurrentState<TSetType> q, ref int watchdog, out int result)
         {
             do
             {
                 // Make the transition based on input[i].
-                q = Delta<TTransition>(input, i, q);
+                Delta(input, i, ref q);
 
                 if (q.IsNullable(GetCharKind(input, i + 1)))
                 {
