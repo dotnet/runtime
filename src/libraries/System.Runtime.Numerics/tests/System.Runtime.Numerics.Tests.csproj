@@ -2,6 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+     <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BigInteger\absolutevalue.cs" />
