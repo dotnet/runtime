@@ -8,7 +8,11 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+#if UPDATED_NETCORE_CLIENT
 using Microsoft.Diagnostics.NETCore.Client;
+#else
+using Microsoft.Diagnostics.Tools.RuntimeClient;
+#endif
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
@@ -23,6 +27,7 @@ public unsafe class DebugInfoTest
         var keywords =
             ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.JittedMethodILToNativeMap;
 
+#if UPDATED_NETCORE_CLIENT
         var dotnetRuntimeProvider = new List<EventPipeProvider>
         {
             new EventPipeProvider("Microsoft-Windows-DotNETRuntime", eventLevel: EventLevel.Verbose, keywords: (long)keywords)
@@ -35,6 +40,21 @@ public unsafe class DebugInfoTest
                 dotnetRuntimeProvider,
                 1024,
                 ValidateMappings);
+#else
+        var dotnetRuntimeProvider = new List<Provider>
+        {
+            new Provider("Microsoft-Windows-DotNETRuntime", eventLevel: EventLevel.Verbose, keywords: (ulong)keywords)
+        };
+
+        var config = new SessionConfiguration(1024, EventPipeSerializationFormat.NetTrace, dotnetRuntimeProvider);
+
+        return
+            IpcTraceTest.RunAndValidateEventCounts(
+                new Dictionary<string, ExpectedEventCount>(),
+                JitMethods,
+                config,
+                ValidateMappings);
+#endif
     }
 
     private static void JitMethods()
