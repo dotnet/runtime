@@ -5515,6 +5515,23 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
+#if defined(TARGET_ARM64)
+    // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
+    // in the tier0 frame that impact FP and SP on entry to the OSR method.
+    //
+    // x64 handles this differently; the phantom prolog unwind is emitted in
+    // genOSRRecordTier0CalleeSavedRegistersAndFrame.
+    //
+    if (compiler->opts.IsOSR())
+    {
+        PatchpointInfo* patchpointInfo = compiler->info.compPatchpointInfo;
+        const int       tier0FrameSize = patchpointInfo->TotalFrameSize();
+
+        // SP is tier0 method's SP.
+        compiler->unwindAllocStack(tier0FrameSize);
+    }
+#endif // defined(TARGET_ARM64)
+
 #ifdef DEBUG
 
     if (compiler->compJitHaltMethod())
