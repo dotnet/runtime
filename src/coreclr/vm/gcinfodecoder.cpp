@@ -1757,15 +1757,6 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
 {
     _ASSERTE(regNum >= 1 && regNum <= 31);
 
-    if (regNum == 22)
-    {
-        return (OBJECTREF*) &pRD->pCurrentContext->Fp;
-    }
-    else if (regNum == 1)
-    {
-        return (OBJECTREF*) &pRD->pCurrentContext->Ra;
-    }
-
     // The fields of CONTEXT are in the same order as
     // the processor encoding numbers.
 

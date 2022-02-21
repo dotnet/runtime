@@ -6792,7 +6792,7 @@ AdjustContextForJITHelpers(
 
         Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         // We had an AV in the writebarrier that needs to be treated
         // as originating in managed code. At this point, the stack (growing
         // from left->right) looks like this:
@@ -6816,11 +6816,7 @@ AdjustContextForJITHelpers(
        // Now we save the address back into the context so that it gets used
        // as the faulting address.
        SetIP(pContext, ControlPCPostAdjustment);
-#elif defined(TARGET_LOONGARCH64)
-       //TODO: should confirm for LOONGARCH64.
-       PCODE ControlPCPostAdjustment = GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET;
-       SetIP(pContext, ControlPCPostAdjustment);
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
         // Unwind the frame chain - On Win64, this is required since we may handle the managed fault and to do so,
         // we will replace the exception context with the managed context and "continue execution" there. Thus, we do not

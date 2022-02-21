@@ -539,9 +539,7 @@ void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDI
     UPDATEREG(S6);
     UPDATEREG(S7);
     UPDATEREG(S8);
-    //UPDATEREG(Tp); //should delete all related!
     UPDATEREG(Fp);
-    //UPDATEREG(Ra);
 
 #else
     PORTABILITY_ASSERT("ExceptionTracker::UpdateNonvolatileRegisters");
@@ -669,7 +667,7 @@ UINT_PTR ExceptionTracker::CallCatchHandler(CONTEXT* pContextRecord, bool* pfAbo
     if (!fIntercepted)
     {
         _ASSERTE(m_uCatchToCallPC != 0 && m_pClauseForCatchToken != NULL);
-        uResumePC = CallHandler(m_uCatchToCallPC, sfStackFp, &m_ClauseForCatch, pMD, Catch X86_ARG(pContextRecord) ARM_ARG(pContextRecord) ARM64_ARG(pContextRecord) LOONGARCH64_ARG(pContextRecord));
+        uResumePC = CallHandler(m_uCatchToCallPC, sfStackFp, &m_ClauseForCatch, pMD, Catch X86_ARG(pContextRecord) ARM_ARG(pContextRecord) ARM64_ARG(pContextRecord));
     }
     else
     {
@@ -2949,7 +2947,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                 {
                                     // CallHandler expects to be in COOP mode.
                                     GCX_COOP();
-                                    dwResult = CallHandler(dwFilterStartPC, sf, &EHClause, pMD, Filter X86_ARG(pContext) ARM_ARG(pContext) ARM64_ARG(pContext) LOONGARCH64_ARG(pContext));
+                                    dwResult = CallHandler(dwFilterStartPC, sf, &EHClause, pMD, Filter X86_ARG(pContext) ARM_ARG(pContext) ARM64_ARG(pContext));
                                 }
                             }
                             EX_CATCH
@@ -3192,7 +3190,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                 // Since we also forbid GC during second pass, disable it now since
                                 // invocation of managed code can result in a GC.
                                 ENDFORBIDGC();
-                                dwStatus = CallHandler(dwHandlerStartPC, sf, &EHClause, pMD, FaultFinally X86_ARG(pcfThisFrame->GetRegisterSet()->pCurrentContext) ARM_ARG(pcfThisFrame->GetRegisterSet()->pCurrentContext) ARM64_ARG(pcfThisFrame->GetRegisterSet()->pCurrentContext)  LOONGARCH64_ARG(pcfThisFrame->GetRegisterSet()->pCurrentContext));
+                                dwStatus = CallHandler(dwHandlerStartPC, sf, &EHClause, pMD, FaultFinally X86_ARG(pcfThisFrame->GetRegisterSet()->pCurrentContext) ARM_ARG(pcfThisFrame->GetRegisterSet()->pCurrentContext) ARM64_ARG(pcfThisFrame->GetRegisterSet()->pCurrentContext));
 
                                 // Once we return from a funclet, forbid GC again (refer to comment before start of the loop for details)
                                 BEGINFORBIDGC();
@@ -3299,7 +3297,6 @@ DWORD_PTR ExceptionTracker::CallHandler(
     X86_ARG(PCONTEXT pContextRecord)
     ARM_ARG(PCONTEXT pContextRecord)
     ARM64_ARG(PCONTEXT pContextRecord)
-    LOONGARCH64_ARG(PCONTEXT pContextRecord)
     )
 {
     STATIC_CONTRACT_THROWS;
@@ -5554,7 +5551,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
     pDispatcherContext->ContextRecord->ContextFlags |= CONTEXT_ARM64;
 #endif // TARGET_ARM
 
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
     INDEBUG(pDispatcherContext->FunctionEntry = (PT_RUNTIME_FUNCTION)INVALID_POINTER_CD);
     INDEBUG(pDispatcherContext->ImageBase     = INVALID_POINTER_CD);
