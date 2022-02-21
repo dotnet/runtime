@@ -41,7 +41,14 @@
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
 
-    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit/bin:$PATH" />
+    <!-- Fix symbolic links that are broken already on build machine and also in the correlation payload -->
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export HELIX_NODEJS_VERSION=%24(ls $HELIX_CORRELATION_PAYLOAD/build/emsdk/node)" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export HELIX_NODEJS_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/$HELIX_NODEJS_VERSION" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export PATH=$HELIX_NODEJS_PATH/bin:$PATH" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="rm $HELIX_NODEJS_PATH/bin/npm" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="rm $HELIX_NODEJS_PATH/bin/npx" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="ln -s ../lib/node_modules/npm/bin/npm-cli.js $HELIX_NODEJS_PATH/bin/npm" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="ln -s ../lib/node_modules/npm/bin/npx-cli.js $HELIX_NODEJS_PATH/bin/npx" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
@@ -56,7 +63,8 @@
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chromedriver_win32%3B%PATH%" />
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chrome-win%3B%PATH%" />
 
-    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\node\14.15.5_64bit\bin%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="for /f %%i in ('dir %HELIX_CORRELATION_PAYLOAD%\build\emsdk\node /b') do set HELIX_NODEJS_VERSION=%%i" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\node\%HELIX_NODEJS_VERSION%\bin%3B%PATH%" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -91,8 +99,8 @@
   <Target Name="PrepareForBuildHelixWorkItems_Wasm">
     <PropertyGroup>
       <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
-      <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(AspNetCoreAppCurrent)-$(Configuration)'))</TestEchoMiddleware>
-      <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(AspNetCoreAppCurrent)-$(Configuration)'))</RemoteLoopMiddleware>
+      <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</TestEchoMiddleware>
+      <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</RemoteLoopMiddleware>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true'">EMSDK-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
@@ -137,7 +145,7 @@
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)node"          Destination="build/emsdk/node" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser'">
+    <ItemGroup Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJS'">
       <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" Condition="Exists('$(TestEchoMiddleware)')" />
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" Condition="Exists('$(RemoteLoopMiddleware)')" />
     </ItemGroup>
@@ -156,7 +164,6 @@
       <_WasmWorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" Condition="'$(Scenario)' == 'BuildWasmApps'" />
 
       <_WasmWorkItem Include="$(TestArchiveTestsRoot)**/Wasm.Debugger.Tests.zip"               Condition="'$(IsWasmDebuggerTests)' == 'true'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"                          Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -165,6 +172,19 @@
     </PropertyGroup>
 
     <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
+    
+    <ItemGroup Condition="'$(IsRunningLibraryTests)' == 'true'">
+      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"                          Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip"                      Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip"                      Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)nodejsonly/**/*.zip"                           Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" />
+
+      <HelixWorkItem Include="@(_WasmWorkItem -> '$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
 
     <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
       <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Extension)')">

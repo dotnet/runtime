@@ -240,6 +240,9 @@
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
   #define RBM_INIT_PINVOKE_FRAME_TRASH (RBM_CALLEE_TRASH | RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH)
 
+  #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH)
+  #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_R0
+
   #define REG_FPBASE               REG_R11
   #define RBM_FPBASE               RBM_R11
   #define STR_FPBASE               "r11"

@@ -136,11 +136,8 @@ namespace System.Drawing.Imaging
         // (when using MS GDI+ and IStream we must ensure the stream stays alive for all the life of the Image)
         internal Metafile(IntPtr ptr, Stream stream) => SetNativeImage(ptr);
 
-        public Metafile(Stream stream)
+        public Metafile(Stream stream!!)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             // With libgdiplus we use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
             GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, seekToOrigin: false);

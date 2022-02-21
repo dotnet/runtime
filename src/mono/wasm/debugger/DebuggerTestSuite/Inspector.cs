@@ -78,6 +78,12 @@ namespace DebuggerTests
             }
         }
 
+        public void ClearWaiterFor(string what)
+        {
+            if (notifications.ContainsKey(what))
+                notifications.Remove(what);
+        }
+
         void NotifyOf(string what, JObject args)
         {
             if (notifications.TryGetValue(what, out TaskCompletionSource<JObject>? tcs))
@@ -99,6 +105,18 @@ namespace DebuggerTests
         public void On(string evtName, Func<JObject, CancellationToken, Task> cb)
         {
             eventListeners[evtName] = cb;
+        }
+
+        public Task<JObject> WaitForEvent(string evtName)
+        {
+            var eventReceived = new TaskCompletionSource<JObject>();
+            On(evtName, async (args, token) =>
+            {
+                eventReceived.SetResult(args);
+                await Task.CompletedTask;
+            });
+
+            return eventReceived.Task.WaitAsync(Token);
         }
 
         void FailAllWaiters(Exception? exception = null)
@@ -246,7 +264,7 @@ namespace DebuggerTests
                     }
 
                     Result res = completedTask.Result;
-                    if (res.IsErr)
+                    if (!res.IsOk)
                         throw new ArgumentException($"Command {cmd_name} failed with: {res.Error}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}");
 
                     init_cmds.RemoveAt(cmdIdx);

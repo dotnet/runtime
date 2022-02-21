@@ -16,10 +16,10 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         protected internal override bool SupportsNullValueOnDeserialize => false;
 
-        public StringSerializerWrapper(JsonSerializerContext defaultContext, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator)
+        public StringSerializerWrapper(JsonSerializerContext defaultContext!!, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator!!)
         {
-            _defaultContext = defaultContext ?? throw new ArgumentNullException(nameof(defaultContext));
-            _customContextCreator = customContextCreator ?? throw new ArgumentNullException(nameof(defaultContext));
+            _defaultContext = defaultContext;
+            _customContextCreator = customContextCreator;
         }
 
         protected internal override Task<string> SerializeWrapper(object value, Type type, JsonSerializerOptions? options = null)
@@ -125,10 +125,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         private readonly JsonSerializerContext _defaultContext;
         private readonly Func<JsonSerializerOptions, JsonSerializerContext> _customContextCreator;
 
-        public StreamSerializerWrapper(JsonSerializerContext defaultContext, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator)
+        public StreamSerializerWrapper(JsonSerializerContext defaultContext!!, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator!!)
         {
-            _defaultContext = defaultContext ?? throw new ArgumentNullException(nameof(defaultContext));
-            _customContextCreator = customContextCreator ?? throw new ArgumentNullException(nameof(defaultContext));
+            _defaultContext = defaultContext;
+            _customContextCreator = customContextCreator;
         }
 
         protected internal override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions? options = null)

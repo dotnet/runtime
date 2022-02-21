@@ -582,13 +582,8 @@ namespace System
         /// <summary>
         /// Converts the value of the dateTime object from sourceTimeZone to destinationTimeZone
         /// </summary>
-        public static DateTimeOffset ConvertTime(DateTimeOffset dateTimeOffset, TimeZoneInfo destinationTimeZone)
+        public static DateTimeOffset ConvertTime(DateTimeOffset dateTimeOffset, TimeZoneInfo destinationTimeZone!!)
         {
-            if (destinationTimeZone == null)
-            {
-                throw new ArgumentNullException(nameof(destinationTimeZone));
-            }
-
             // calculate the destination time zone offset
             DateTime utcDateTime = dateTimeOffset.UtcDateTime;
             TimeSpan destinationOffset = GetUtcOffsetFromUtc(utcDateTime, destinationTimeZone);
@@ -605,13 +600,8 @@ namespace System
         /// <summary>
         /// Converts the value of the dateTime object from sourceTimeZone to destinationTimeZone
         /// </summary>
-        public static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo destinationTimeZone)
+        public static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo destinationTimeZone!!)
         {
-            if (destinationTimeZone == null)
-            {
-                throw new ArgumentNullException(nameof(destinationTimeZone));
-            }
-
             // Special case to give a way clearing the cache without exposing ClearCachedData()
             if (dateTime.Ticks == 0)
             {
@@ -634,18 +624,8 @@ namespace System
         internal static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags) =>
             ConvertTime(dateTime, sourceTimeZone, destinationTimeZone, flags, s_cachedData);
 
-        private static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags, CachedData cachedData)
+        private static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone!!, TimeZoneInfo destinationTimeZone!!, TimeZoneInfoOptions flags, CachedData cachedData)
         {
-            if (sourceTimeZone == null)
-            {
-                throw new ArgumentNullException(nameof(sourceTimeZone));
-            }
-
-            if (destinationTimeZone == null)
-            {
-                throw new ArgumentNullException(nameof(destinationTimeZone));
-            }
-
             DateTimeKind sourceKind = cachedData.GetCorrespondingKind(sourceTimeZone);
             if (((flags & TimeZoneInfoOptions.NoThrowOnInvalidTime) == 0) && (dateTime.Kind != DateTimeKind.Unspecified) && (dateTime.Kind != sourceKind))
             {
@@ -757,12 +737,8 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as TimeZoneInfo);
 
-        public static TimeZoneInfo FromSerializedString(string source)
+        public static TimeZoneInfo FromSerializedString(string source!!)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
             if (source.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidSerializedString, source), nameof(source));
@@ -819,13 +795,8 @@ namespace System
         /// <summary>
         /// Value equality on the "adjustmentRules" array
         /// </summary>
-        public bool HasSameRules(TimeZoneInfo other)
+        public bool HasSameRules(TimeZoneInfo other!!)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
-
             // check the utcOffset and supportsDaylightSavingTime members
             if (_baseUtcOffset != other._baseUtcOffset ||
                 _supportsDaylightSavingTime != other._supportsDaylightSavingTime)
@@ -1019,13 +990,8 @@ namespace System
             }
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             info.AddValue("Id", _id); // Do not rename (binary serialization)
             info.AddValue("DisplayName", _displayName); // Do not rename (binary serialization)
             info.AddValue("StandardName", _standardDisplayName); // Do not rename (binary serialization)
@@ -1035,13 +1001,8 @@ namespace System
             info.AddValue("SupportsDaylightSavingTime", _supportsDaylightSavingTime); // Do not rename (binary serialization)
         }
 
-        private TimeZoneInfo(SerializationInfo info, StreamingContext context)
+        private TimeZoneInfo(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             _id = (string)info.GetValue("Id", typeof(string))!; // Do not rename (binary serialization)
             _displayName = (string?)info.GetValue("DisplayName", typeof(string)); // Do not rename (binary serialization)
             _standardDisplayName = (string?)info.GetValue("StandardName", typeof(string)); // Do not rename (binary serialization)
@@ -2023,15 +1984,7 @@ namespace System
         /// </summary>
         private static void ValidateTimeZoneInfo(string id, TimeSpan baseUtcOffset, AdjustmentRule[]? adjustmentRules, out bool adjustmentRulesSupportDst)
         {
-            if (id == null)
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            if (id.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidId, id), nameof(id));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(id);
 
             if (UtcOffsetOutOfRange(baseUtcOffset))
             {

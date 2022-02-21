@@ -150,7 +150,6 @@ namespace ILCompiler.DependencyAnalysis
                         }
                         else
                         {
-                            ISymbolNode targetMethodNode = target.GetTargetNode(factory);
                             encoder.EmitLEAQ(encoder.TargetRegister.Arg2, target.GetTargetNode(factory));
                         }
 

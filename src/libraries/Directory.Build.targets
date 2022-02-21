@@ -1,4 +1,4 @@
-<Project InitialTargets="UpdateProjectReferencesWithAttributes">
+<Project>
   <PropertyGroup>
     <!-- Override strong name key to default to Open for test projects,
          Tests which wish to control this should set TestStrongNameKeyId. -->
@@ -118,13 +118,16 @@
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets" Condition="'$(EnableRunSettingsSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)slngen.targets" />
+  <Import Project="$(RepositoryEngineeringDir)slngen.targets" Condition="'$(IsSlnGen)' == 'true'" />
 
-  <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.targets" Condition="'$(UseTargetFrameworkSDK)' != 'false'"  />
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)AvoidRestoreCycleOnSelfReference.targets" Condition="'$(AvoidRestoreCycleOnSelfReference)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true'" />
 
+  <ItemGroup Condition="'$(UseTargetFrameworkPackage)' != 'false'">
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="$(MicrosoftDotNetBuildTasksTargetFrameworkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+  
   <ItemGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssembly)' == 'true' or '$(IsPartialFacadeAssembly)' == 'true'">
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetApiCompatVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
     <PackageReference Include="Microsoft.DotNet.GenAPI" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetGenApiVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
@@ -151,24 +154,6 @@
   </Target>
 
   <Import Project="$(RepositoryEngineeringDir)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
-
-  <Target Name="UpdateProjectReferencesWithAttributes" Condition="'@(ProjectReference)' != ''">
-    <ItemGroup>
-      <ProjectReference Condition="'%(Filename)' == 'System.Private.CoreLib'">
-        <!-- Don't flow TargetFramework and Platform to use same inputs and outputs as the CoreLib's build as part of the runtime. -->
-        <UndefineProperties>$(UndefineProperties);TargetFramework;Platform</UndefineProperties>
-        <SetConfiguration Condition="'$(RuntimeFlavor)' == 'CoreCLR' and
-                                     '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
-        <SetConfiguration Condition="'$(RuntimeFlavor)' == 'Mono' and
-                                     '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</SetConfiguration>
-        <Private>false</Private>
-      </ProjectReference>
-    </ItemGroup>
-    <!-- Disable TargetArchitectureMismatch warning when we reference CoreLib which is platform specific. -->
-    <PropertyGroup Condition="@(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))">
-      <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
-    </PropertyGroup>
-  </Target>
 
   <!--
     Do not clean binplace assets in the ref targeting pack to avoid incremental build failures

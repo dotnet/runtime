@@ -223,6 +223,15 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Automatically converting a P/Invoke with &apos;PreserveSig&apos; set to &apos;false&apos; to a source-generated P/Invoke may produce invalid code.
+        /// </summary>
+        internal static string ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode {
+            get {
+                return ResourceManager.GetString("ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos;.
         /// </summary>
         internal static string ConvertToGeneratedDllImport {
@@ -264,6 +273,15 @@ namespace Microsoft.Interop {
         internal static string ConvertToGeneratedDllImportWarning {
             get {
                 return ResourceManager.GetString("ConvertToGeneratedDllImportWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos; with &apos;{0}&apos; suffix.
+        /// </summary>
+        internal static string ConvertToGeneratedDllImportWithSuffix {
+            get {
+                return ResourceManager.GetString("ConvertToGeneratedDllImportWithSuffix", resourceCulture);
             }
         }
         
@@ -507,6 +525,15 @@ namespace Microsoft.Interop {
         internal static string RefValuePropertyUnsupportedMessage {
             get {
                 return ResourceManager.GetString("RefValuePropertyUnsupportedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to .
+        /// </summary>
+        internal static string RuntimeMarshallingMustBeDisabled {
+            get {
+                return ResourceManager.GetString("RuntimeMarshallingMustBeDisabled", resourceCulture);
             }
         }
         

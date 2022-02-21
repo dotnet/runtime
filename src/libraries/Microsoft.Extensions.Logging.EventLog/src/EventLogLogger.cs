@@ -27,10 +27,10 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// <param name="name">The name of the logger.</param>
         /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
         /// <param name="externalScopeProvider">The <see cref="IExternalScopeProvider"/>.</param>
-        public EventLogLogger(string name, EventLogSettings settings, IExternalScopeProvider externalScopeProvider)
+        public EventLogLogger(string name!!, EventLogSettings settings!!, IExternalScopeProvider externalScopeProvider)
         {
-            _name = name ?? throw new ArgumentNullException(nameof(name));
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _name = name;
+            _settings = settings;
 
             _externalScopeProvider = externalScopeProvider;
             EventLog = settings.EventLog;

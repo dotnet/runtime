@@ -559,17 +559,8 @@ namespace System
             /// <param name="format">The format string.</param>
             /// <param name="args">The arguments to the format string.</param>
             /// <returns>The formatted string.</returns>
-            public static string Evaluate(string format, params FormatParam[] args)
+            public static string Evaluate(string format!!, params FormatParam[] args!!)
             {
-                if (format == null)
-                {
-                    throw new ArgumentNullException(nameof(format));
-                }
-                if (args == null)
-                {
-                    throw new ArgumentNullException(nameof(args));
-                }
-
                 // Initialize the stack to use for processing.
                 Stack<FormatParam>? stack = t_cachedStack;
                 if (stack == null)

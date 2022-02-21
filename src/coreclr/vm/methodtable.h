@@ -255,25 +255,6 @@ struct GenericsStaticsInfo
 };  // struct GenericsStaticsInfo
 typedef DPTR(GenericsStaticsInfo) PTR_GenericsStaticsInfo;
 
-
-// CrossModuleGenericsStaticsInfo is used in NGen images for statics of cross-module
-// generic instantiations. CrossModuleGenericsStaticsInfo is optional member of
-// MethodTableWriteableData.
-struct CrossModuleGenericsStaticsInfo
-{
-    // Module this method table statics are attached to.
-    //
-    // The statics has to be attached to module referenced from the generic instantiation
-    // in domain-neutral code. We need to guarantee that the module for the statics
-    // has a valid local represenation in an appdomain.
-    //
-    PTR_Module          m_pModuleForStatics;
-
-    // Method table ID for statics
-    SIZE_T              m_DynamicTypeID;
-};  // struct CrossModuleGenericsStaticsInfo
-typedef DPTR(CrossModuleGenericsStaticsInfo) PTR_CrossModuleGenericsStaticsInfo;
-
 //
 // This struct consolidates the writeable parts of the MethodTable
 // so that we can layout a read-only MethodTable with a pointer
@@ -337,8 +318,6 @@ struct MethodTableWriteableData
 
 #endif
 
-    // Optional CrossModuleGenericsStaticsInfo may be here.
-
 public:
 #ifdef _DEBUG
     inline BOOL IsParentMethodTablePointerValid() const
@@ -393,15 +372,6 @@ public:
         m_dwFlags &= ~(MethodTableWriteableData::enum_flag_HasApproxParent);
 
     }
-
-    inline CrossModuleGenericsStaticsInfo * GetCrossModuleGenericsStaticsInfo()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        SIZE_T size = sizeof(MethodTableWriteableData);
-        return PTR_CrossModuleGenericsStaticsInfo(dac_cast<TADDR>(this) + size);
-    }
-
 };  // struct MethodTableWriteableData
 
 typedef DPTR(MethodTableWriteableData) PTR_MethodTableWriteableData;
@@ -1672,18 +1642,6 @@ public:
     PTR_FieldDesc GetFieldDescByIndex(DWORD fieldIndex);
 
     DWORD GetIndexForFieldDesc(FieldDesc *pField);
-
-    inline bool RequiresFatDispatchTokens()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return !!GetFlag(enum_flag_RequiresDispatchTokenFat);
-    }
-
-    inline void SetRequiresFatDispatchTokens()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetFlag(enum_flag_RequiresDispatchTokenFat);
-    }
 
     inline bool HasPreciseInitCctors()
     {
@@ -3503,7 +3461,7 @@ private:
 
         enum_flag_IsIntrinsicType           = 0x0100,
 
-        enum_flag_RequiresDispatchTokenFat  = 0x0200,
+        // unused                           = 0x0200,
 
         enum_flag_HasCctor                  = 0x0400,
         enum_flag_HasVirtualStaticMethods   = 0x0800,

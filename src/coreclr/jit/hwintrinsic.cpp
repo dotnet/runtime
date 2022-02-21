@@ -770,14 +770,23 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         unsigned int sizeBytes;
         simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
-        retType         = getSIMDTypeForSize(sizeBytes);
-        assert(sizeBytes != 0);
 
-        // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
-        // rather than deferring the decision after getting the simdBaseJitType of arg.
-        if (!isSupportedBaseType(intrinsic, simdBaseJitType))
+        if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
-            return nullptr;
+            assert(sizeBytes == 0);
+        }
+        else
+        {
+            assert(sizeBytes != 0);
+
+            // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
+            // rather than deferring the decision after getting the simdBaseJitType of arg.
+            if (!isSupportedBaseType(intrinsic, simdBaseJitType))
+            {
+                return nullptr;
+            }
+
+            retType = getSIMDTypeForSize(sizeBytes);
         }
     }
 
@@ -1188,7 +1197,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             // This operation contains an implicit indirection
-            //   it could point into the gloabal heap or
+            //   it could point into the global heap or
             //   it could throw a null reference exception.
             //
             retNode->gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);

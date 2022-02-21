@@ -286,7 +286,7 @@ namespace System.Runtime
 
         ~MemoryFailPoint()
         {
-            Dispose(false);
+            Disposing();
         }
 
         // Applications must call Dispose, which conceptually "releases" the
@@ -298,11 +298,11 @@ namespace System.Runtime
         // memory, apps will help their performance greatly by calling Dispose.
         public void Dispose()
         {
-            Dispose(true);
+            Disposing();
             GC.SuppressFinalize(this);
         }
 
-        private void Dispose(bool disposing)
+        private void Disposing()
         {
             // This is just bookkeeping to ensure multiple threads can really
             // get enough memory, and this does not actually reserve memory

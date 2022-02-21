@@ -27,36 +27,21 @@ namespace System.Diagnostics.Tracing
         private readonly Type dataType;
         private readonly Func<object?, PropertyValue> propertyValueFactory;
 
-        internal TraceLoggingTypeInfo(Type dataType)
+        internal TraceLoggingTypeInfo(Type dataType!!)
         {
-            if (dataType == null)
-            {
-                throw new ArgumentNullException(nameof(dataType));
-            }
-
             this.name = dataType.Name;
             this.dataType = dataType;
             this.propertyValueFactory = PropertyValue.GetFactory(dataType);
         }
 
         internal TraceLoggingTypeInfo(
-            Type dataType,
-            string name,
+            Type dataType!!,
+            string name!!,
             EventLevel level,
             EventOpcode opcode,
             EventKeywords keywords,
             EventTags tags)
         {
-            if (dataType == null)
-            {
-                throw new ArgumentNullException(nameof(dataType));
-            }
-
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             Statics.CheckName(name);
 
             this.name = name;

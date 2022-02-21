@@ -63,13 +63,8 @@ namespace System.Reflection
         /// <param name="parameterInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the parameterInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        public NullabilityInfo Create(ParameterInfo parameterInfo)
+        public NullabilityInfo Create(ParameterInfo parameterInfo!!)
         {
-            if (parameterInfo is null)
-            {
-                throw new ArgumentNullException(nameof(parameterInfo));
-            }
-
             EnsureIsSupported();
 
             IList<CustomAttributeData> attributes = parameterInfo.GetCustomAttributesData();
@@ -179,13 +174,8 @@ namespace System.Reflection
         /// <param name="propertyInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the propertyInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        public NullabilityInfo Create(PropertyInfo propertyInfo)
+        public NullabilityInfo Create(PropertyInfo propertyInfo!!)
         {
-            if (propertyInfo is null)
-            {
-                throw new ArgumentNullException(nameof(propertyInfo));
-            }
-
             EnsureIsSupported();
 
             MethodInfo? getter = propertyInfo.GetGetMethod(true);
@@ -235,13 +225,8 @@ namespace System.Reflection
         /// <param name="eventInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the eventInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        public NullabilityInfo Create(EventInfo eventInfo)
+        public NullabilityInfo Create(EventInfo eventInfo!!)
         {
-            if (eventInfo is null)
-            {
-                throw new ArgumentNullException(nameof(eventInfo));
-            }
-
             EnsureIsSupported();
 
             return GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, CreateParser(eventInfo.GetCustomAttributesData()));
@@ -255,13 +240,8 @@ namespace System.Reflection
         /// <param name="fieldInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the fieldInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        public NullabilityInfo Create(FieldInfo fieldInfo)
+        public NullabilityInfo Create(FieldInfo fieldInfo!!)
         {
-            if (fieldInfo is null)
-            {
-                throw new ArgumentNullException(nameof(fieldInfo));
-            }
-
             EnsureIsSupported();
 
             IList<CustomAttributeData> attributes = fieldInfo.GetCustomAttributesData();

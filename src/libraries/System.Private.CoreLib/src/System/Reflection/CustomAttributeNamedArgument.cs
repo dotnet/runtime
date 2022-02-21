@@ -13,11 +13,8 @@ namespace System.Reflection
         private readonly MemberInfo _memberInfo;
         private readonly CustomAttributeTypedArgument _value;
 
-        public CustomAttributeNamedArgument(MemberInfo memberInfo, object? value)
+        public CustomAttributeNamedArgument(MemberInfo memberInfo!!, object? value)
         {
-            if (memberInfo is null)
-                throw new ArgumentNullException(nameof(memberInfo));
-
             Type type = memberInfo switch
             {
                 FieldInfo field => field.FieldType,
@@ -29,9 +26,9 @@ namespace System.Reflection
             _value = new CustomAttributeTypedArgument(type, value);
         }
 
-        public CustomAttributeNamedArgument(MemberInfo memberInfo, CustomAttributeTypedArgument typedArgument)
+        public CustomAttributeNamedArgument(MemberInfo memberInfo!!, CustomAttributeTypedArgument typedArgument)
         {
-            _memberInfo = memberInfo ?? throw new ArgumentNullException(nameof(memberInfo));
+            _memberInfo = memberInfo;
             _value = typedArgument;
         }
 

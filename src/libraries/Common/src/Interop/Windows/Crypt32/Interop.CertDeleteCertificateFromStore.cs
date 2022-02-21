@@ -8,7 +8,7 @@ internal static partial class Interop
     internal static partial class Crypt32
     {
         // Note: CertDeleteCertificateFromStore always calls CertFreeCertificateContext on pCertContext, even if an error is encountered.
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
         internal static unsafe partial bool CertDeleteCertificateFromStore(CERT_CONTEXT* pCertContext);
     }
 }

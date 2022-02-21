@@ -11,8 +11,8 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         private readonly IOptionsFactory<TOptions> _factory;
-        private volatile object _syncObj;
-        private volatile TOptions _value;
+        private volatile object? _syncObj;
+        private volatile TOptions? _value;
 
         public UnnamedOptionsManager(IOptionsFactory<TOptions> factory) => _factory = factory;
 
