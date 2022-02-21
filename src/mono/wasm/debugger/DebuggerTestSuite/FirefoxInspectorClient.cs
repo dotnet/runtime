@@ -19,6 +19,7 @@ class FirefoxInspectorClient : InspectorClient
     TcpClient proxyConnection;
     internal string BreakpointActorId {get; set;}
     internal string ConsoleActorId {get; set;}
+    internal string ThreadActorId {get; set;}
     public FirefoxInspectorClient(ILogger logger) : base(logger) 
     {
     }
@@ -72,7 +73,7 @@ class FirefoxInspectorClient : InspectorClient
             var watcherId = res.Value["result"]["value"]["actor"].Value<string>();
             res = await SendCommand("watchResources", JObject.FromObject(new { type = "watchResources", resourceTypes = new JArray("console-message"), to = watcherId}), token);            
             res = await SendCommand("watchTargets", JObject.FromObject(new { type = "watchTargets", targetType = "frame", to = watcherId}), token);
-            toCmd = res.Value["result"]["value"]["target"]["threadActor"].Value<string>();
+            ThreadActorId = res.Value["result"]["value"]["target"]["threadActor"].Value<string>();
             ConsoleActorId = res.Value["result"]["value"]["target"]["consoleActor"].Value<string>();
             await SendCommand("attach", JObject.FromObject(new 
                 { 
@@ -90,7 +91,7 @@ class FirefoxInspectorClient : InspectorClient
                             breakpoints = new JArray(),
                             eventBreakpoints = new JArray()
                         }),
-                    to = toCmd
+                    to = ThreadActorId
                 }), token);
             res = await SendCommand("getBreakpointListActor", JObject.FromObject(new { type = "getBreakpointListActor", to = watcherId}), token);
             BreakpointActorId = res.Value["result"]["value"]["breakpointList"]["actor"].Value<string>();
