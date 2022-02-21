@@ -14,8 +14,23 @@ namespace System.Net.NetworkInformation
     // Linux implementation of NetworkChange
     public partial class NetworkChange
     {
-        private static volatile Socket? s_socket;
-        // Lock controlling access to delegate subscriptions, socket initialization, availability-changed state and timer.
+        private static Socket? s_socket;
+
+        private static Socket? Socket
+        {
+            get
+            {
+                Debug.Assert(Monitor.IsEntered(s_gate));
+                return s_socket;
+            }
+            set
+            {
+                Debug.Assert(Monitor.IsEntered(s_gate));
+                s_socket = value;
+            }
+        }
+
+        // Lock controlling access to delegate subscriptions, socket, availability-changed state and timer.
         private static readonly object s_gate = new object();
 
         // The "leniency" window for NetworkAvailabilityChanged socket events.
@@ -36,7 +51,7 @@ namespace System.Net.NetworkInformation
                 {
                     lock (s_gate)
                     {
-                        if (s_socket == null)
+                        if (Socket == null)
                         {
                             CreateSocket();
                         }
@@ -53,8 +68,8 @@ namespace System.Net.NetworkInformation
                     {
                         if (s_addressChangedSubscribers.Count == 0 && s_availabilityChangedSubscribers.Count == 0)
                         {
-                            Debug.Assert(s_socket == null,
-                                "s_socket is not null, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
+                            Debug.Assert(Socket == null,
+                                "Socket is not null, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
                             return;
                         }
 
@@ -76,7 +91,7 @@ namespace System.Net.NetworkInformation
                 {
                     lock (s_gate)
                     {
-                        if (s_socket == null)
+                        if (Socket == null)
                         {
                             CreateSocket();
                         }
@@ -115,8 +130,8 @@ namespace System.Net.NetworkInformation
                     {
                         if (s_addressChangedSubscribers.Count == 0 && s_availabilityChangedSubscribers.Count == 0)
                         {
-                            Debug.Assert(s_socket == null,
-                                "s_socket is not null, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
+                            Debug.Assert(Socket == null,
+                                "Socket is not null, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
                             return;
                         }
 
@@ -142,7 +157,8 @@ namespace System.Net.NetworkInformation
 
         private static unsafe void CreateSocket()
         {
-            Debug.Assert(s_socket == null, "s_socket is not null, must close existing socket before opening another.");
+            Debug.Assert(Monitor.IsEntered(s_gate));
+            Debug.Assert(Socket == null, "Socket is not null, must close existing socket before opening another.");
             IntPtr newSocket;
             Interop.Error result = Interop.Sys.CreateNetworkChangeListenerSocket(&newSocket);
             if (result != Interop.Error.SUCCESS)
@@ -151,19 +167,20 @@ namespace System.Net.NetworkInformation
                 throw new NetworkInformationException(message);
             }
 
-            s_socket = new Socket(new SafeSocketHandle(newSocket, ownsHandle: true));
+            Socket = new Socket(new SafeSocketHandle(newSocket, ownsHandle: true));
 
             // Don't capture ExecutionContext.
             ThreadPool.UnsafeQueueUserWorkItem(
                 static socket => ReadEventsAsync(socket),
-                s_socket, preferLocal: false);
+                Socket, preferLocal: false);
         }
 
         private static void CloseSocket()
         {
-            Debug.Assert(s_socket != null, "s_socket was null when CloseSocket was called.");
-            s_socket.Dispose();
-            s_socket = null;
+            Debug.Assert(Monitor.IsEntered(s_gate));
+            Debug.Assert(Socket != null, "Socket was null when CloseSocket was called.");
+            Socket.Dispose();
+            Socket = null;
         }
 
         private static async void ReadEventsAsync(Socket socket)
@@ -208,7 +225,7 @@ namespace System.Net.NetworkInformation
                 {
                     // It's safe to compare raw handle values because ProcessEvents gets
                     // called from ReadEvents which holds a reference on the SafeHandle.
-                    if (s_socket != null && socket == s_socket.Handle)
+                    if (Socket != null && socket == Socket.Handle)
                     {
                         OnSocketEvent(kind);
                     }
