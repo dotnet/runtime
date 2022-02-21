@@ -4045,13 +4045,14 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         case IAT_PVALUE:
         {
-            GenTree*       addrNode;
+            GenTree*       addrNode = nullptr;
             fgArgTabEntry* indirCellArg;
             if (call->HasIndirectionCellArg(&indirCellArg))
             {
-                addrNode = CreateMultiUseForIndirectionCellAddress(indirCellArg);
+                addrNode = CreateMultiUseForIndirectionCellAddressIfProfitable(call, indirCellArg);
             }
-            else
+
+            if (addrNode == nullptr)
             {
                 addrNode = AddrGen(addr);
 #ifdef DEBUG
@@ -5102,15 +5103,18 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         // This is ensured by VM.
         noway_assert(call->IsVirtualStubRelativeIndir());
 
-        GenTree*       addr = nullptr;
+        GenTree* addr = nullptr;
+
         fgArgTabEntry* entry;
         if (call->HasIndirectionCellArg(&entry))
         {
-            addr = CreateMultiUseForIndirectionCellAddress(entry);
+            addr = CreateMultiUseForIndirectionCellAddressIfProfitable(call, entry);
         }
-        else
+
+        if (addr == nullptr)
         {
-            // If we don't pass stub address as an arg then just create the constant tree here.
+            // If we do not want to load it from the already passed arg then
+            // just create the constant tree here.
             assert(call->gtStubCallStubAddr != nullptr);
             addr = AddrGen(call->gtStubCallStubAddr);
 #ifdef DEBUG
@@ -5136,28 +5140,43 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// CreateMultiUseForIndirectionCellAddress: Create another use of the
-// indirection cell address passed as the specified argument.
+// CreateMultiUseForIndirectionCellAddressIfProfitable: Create another use of the
+// indirection cell address passed as the specified argument, if profitable.
 //
 // Arguments:
 //    indirCellArg - the arg table entry for the indirection cell
 //
-// Returns: A new tree that represents another use.
+// Returns: A new tree that represents another use, or null if we determined
+// that it is better to create a clone of the indirection cell.
 //
 // Remarks:
-//   For calls with indirection cell arguments it is beneficial to save these in
-//   a local and load the call target from that local, even if the indirection
-//   cell argument is a constant. This is because the arg will require placement
-//   in a register anyway, and we can load the call target after this has been
-//   done. This function creates such a temp when necessary and returns another
-//   use of it.
+//   For calls with indirection cell arguments it is usually beneficial to save
+//   these in a local and load the call target from that local, even if the
+//   indirection cell argument is a constant. This is because the arg will
+//   require placement in a register anyway, and we can load the call target
+//   after this has been done. This function creates such a temp when necessary
+//   and returns another use of it.
 //
-GenTree* Lowering::CreateMultiUseForIndirectionCellAddress(fgArgTabEntry* indirCellArg)
+GenTree* Lowering::CreateMultiUseForIndirectionCellAddressIfProfitable(GenTreeCall* call, fgArgTabEntry* indirCellArg)
 {
     assert(indirCellArg->isIndirectionCellArg());
 
     // Indirection cell is always in a register so is always a late arg.
     assert(indirCellArg->isLateArg());
+
+#ifdef TARGET_XARCH
+    // On xarch with CFG enabled the validator kills the register that takes
+    // the indir cell. Since indirecting off of a constant is so cheap it is
+    // better not to apply this optimization on xarch in that case (where we
+    // will end up shuffling registers around to accommodate the kill).
+    if (comp->opts.IsCFGEnabled() && (call->GetCFGCallKind() == CFGCallKind::ValidateAndCall))
+    {
+        if ((RBM_VALIDATE_INDIRECT_CALL_TRASH & genRegMask(indirCellArg->GetRegNum())) != 0)
+        {
+            return nullptr;
+        }
+    }
+#endif
 
     // We will create an indir off of this arg. To avoid reloading the cell
     // address we copy it into a local. We do this here instead of morph
