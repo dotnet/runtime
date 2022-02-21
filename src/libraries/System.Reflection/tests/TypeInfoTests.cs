@@ -1173,7 +1173,7 @@ namespace System.Reflection.Tests
             Assert.True(pointerType.IsPointer);
         }
 
-        public static IEnumerable<object[]> TypeDescTypesIsPublic_TestData()
+        public static IEnumerable<object[]> ByRefPonterTypes_IsPublicIsVisible_TestData()
         {
             yield return new object[] { typeof(int).MakeByRefType(), true, true };
             yield return new object[] { typeof(int).MakePointerType(), true, true };
@@ -1183,16 +1183,14 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakePointerType(), true, false };
             yield return new object[] { typeof(List<TI_BaseClass.InternalNestedClass>), true, false };
             yield return new object[] { typeof(TI_BaseClass.InternalNestedClass), false, false };
-            yield return new object[] { typeof(TI_BaseClass.InternalNestedGenericClass<string>), false, false };
-            yield return new object[] { typeof(TI_BaseClass.InternalNestedGenericClass<>).MakeGenericType(typeof(string)), false, false };
             yield return new object[] { typeof(TI_BaseClass).MakeByRefType(), true, true };
             yield return new object[] { typeof(TI_BaseClass).MakePointerType(), true, true };
             yield return new object[] { typeof(List<TI_BaseClass>), true, true };
         }
 
         [Theory]
-        [MemberData(nameof(TypeDescTypesIsPublic_TestData))]
-        public void TypeDescTypesIsPublic(Type type, bool isPublic, bool isVisible)
+        [MemberData(nameof(ByRefPonterTypes_IsPublicIsVisible_TestData))]
+        public void ByRefPonterTypesTypes_IsPublicIsVisible(Type type, bool isPublic, bool isVisible)
         {
             Assert.Equal(isPublic, type.IsPublic);
             Assert.Equal(!isPublic, type.IsNestedAssembly);
@@ -1878,7 +1876,6 @@ namespace System.Reflection.Tests
         public class PublicNestedClass2 { }
         private class PrivateNestedClass { } // Private, so not inherited
         internal class InternalNestedClass { } // Internal members are not inherited
-        internal class InternalNestedGenericClass<T>{ }
         protected class ProtectedNestedClass { }
 
         public string StringProperty1 { get { return ""; } set { } }

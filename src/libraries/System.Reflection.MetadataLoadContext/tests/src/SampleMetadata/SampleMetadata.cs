@@ -554,9 +554,8 @@ namespace SampleMetadata
         public int Yes;
     }
 
-    public class PubilcClass
+    public class PublicClass
     {
         internal class InternalNestedClass { }
-        internal class InternalNestedGenericClass<T> { }
     }
 }
