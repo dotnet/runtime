@@ -8,6 +8,7 @@ using System.Threading;
 using Xunit;
 using Xunit.Sdk;
 using Xunit.Abstractions;
+using System.Linq;
 
 namespace System.IO.Tests
 {
@@ -39,7 +40,7 @@ namespace System.IO.Tests
             FileSystemEventHandler changeHandler = (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Changed, e.ChangeType);
-                VerifyExpectedPath(expectedPaths, e);
+                VerifyExpectedPaths(expectedPaths, e);
                 eventOccurred.Set();
             };
 
@@ -47,19 +48,15 @@ namespace System.IO.Tests
             return (eventOccurred, changeHandler);
         }
 
-        private static void VerifyExpectedPath(string[] expectedPaths, FileSystemEventArgs e, ITestOutputHelper output = null)
+        private static void VerifyExpectedPaths(string[] expectedPaths, FileSystemEventArgs e)
         {
-            if (expectedPaths != null)
+            string fullPath = Path.GetFullPath(e.FullPath);
+            if (expectedPaths is not null && !expectedPaths.Contains(fullPath))
             {
-                try
-                {
-                    Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                }
-                catch (Exception ex)
-                {
-                    output?.WriteLine(ex.ToString());
-                    throw;
-                }
+                // Assert.Contains does not print a full content of collection which makes it hard to diagnose issues like #65601
+                throw new XunitException($"Expected path(s): {Environment.NewLine}"
+                    + string.Join(Environment.NewLine, expectedPaths)
+                    + $"{Environment.NewLine}Actual path: {fullPath}");
             }
         }
 
@@ -80,7 +77,7 @@ namespace System.IO.Tests
                 }
 
                 Assert.Equal(WatcherChangeTypes.Created, e.ChangeType);
-                VerifyExpectedPath(expectedPaths, e, _output);
+                VerifyExpectedPaths(expectedPaths, e);
 
                 eventOccurred.Set();
             };
@@ -104,7 +101,7 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Deleted, e.ChangeType);
                 }
 
-                VerifyExpectedPath(expectedPaths, e, _output);
+                VerifyExpectedPaths(expectedPaths, e);
 
                 eventOccurred.Set();
             };
@@ -129,7 +126,7 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Renamed, e.ChangeType);
                 }
 
-                VerifyExpectedPath(expectedPaths, e, _output);
+                VerifyExpectedPaths(expectedPaths, e);
 
                 eventOccurred.Set();
             };
