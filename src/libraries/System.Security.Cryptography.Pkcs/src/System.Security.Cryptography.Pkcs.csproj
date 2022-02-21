@@ -58,10 +58,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="Internal\Cryptography\PkcsHelpers.cs" />
     <Compile Include="Internal\Cryptography\PkcsPal.cs" />
     <Compile Include="Internal\Cryptography\RecipientInfoPal.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
-             Link="Internal\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Helpers.cs"
+             Link="Common\System\Security\Cryptography\Helpers.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml</Link>
     </AsnXml>
@@ -305,8 +305,8 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
 
     <!-- Common types (platform: Windows) -->
-    <Compile Include="$(CommonPath)Internal\Cryptography\Windows\CryptoThrowHelper.cs"
-             Link="Common\Internal\Cryptography\Windows\CryptoThrowHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
+             Link="Common\System\Security\Cryptography\CryptoThrowHelper.Windows.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
   </ItemGroup>
