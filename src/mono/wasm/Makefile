@@ -43,10 +43,6 @@ EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
 provision-wasm: .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION)
 	@echo "----------------------------------------------------------"
 	@echo "Installed emsdk into EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk"
-	@if [ $(wildcard /.dockerenv) != "" ]; then\
-        echo 'export NO_SANDBOX_IN_CONTAINER="--no-sandbox"' >> ~/.bashrc;\
-		exec bash;\
-    fi
 
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm

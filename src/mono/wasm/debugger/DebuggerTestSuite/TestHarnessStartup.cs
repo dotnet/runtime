@@ -181,7 +181,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var client = new HttpClient();
                         var psi = new ProcessStartInfo();
 
-                        psi.Arguments = $"--headless --disable-gpu --lang=en-US --incognito {Environment.GetEnvironmentVariable("NO_SANDBOX_IN_CONTAINER")} --remote-debugging-port={devToolsUrl.Port} http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}";
+                        string noSandboxForContainers = File.Exists("/.dockerenv") ? "--no-sandbox" : "";
+                        psi.Arguments = $"--headless --disable-gpu --lang=en-US --incognito {noSandboxForContainers} --remote-debugging-port={devToolsUrl.Port} http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}";
+                        psi.UseShellExecute = false;
                         psi.UseShellExecute = false;
                         psi.FileName = options.ChromePath;
                         psi.RedirectStandardError = true;
