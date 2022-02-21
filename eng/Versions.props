@@ -22,24 +22,6 @@
     <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
   </PropertyGroup>
-  <!--
-    Servicing build settings for Setup/Installer packages. Instructions:
-
-    * To enable a package build for the current patch release, set PatchVersion to match the current
-      patch version of that package. ("major.minor.patch".) This is normally the same as
-      PatchVersion above, but not always. Notably, NETStandard has its own patch version.
-    * When the PatchVersion property above is incremented at the beginning of the next servicing
-      release, all packages listed below automatically stop building because the property no longer
-      matches the metadata. (Do not delete the items!)
-
-    If the PatchVersion below is never changed from '0', the package will build in the 'main'
-    branch, and during a forked RTM release ("X.Y.0"). It will stop building for "X.Y.1" unless
-    manually enabled by updating the metadata.
-  -->
-  <ItemGroup>
-    <!-- Targeting packs are only patched in extreme cases. -->
-    <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="0" />
-  </ItemGroup>
   <PropertyGroup>
     <!-- For source generator support we need to target multiple versions of Rolsyn in order to be able to run on older versions of Roslyn -->
     <MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11>3.11.0</MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11>
@@ -65,7 +47,7 @@
     <MicrosoftDotNetXUnitExtensionsVersion>7.0.0-beta.22114.7</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.22114.7</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetBuildTasksArchivesVersion>7.0.0-beta.22114.7</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksInstallersVersion>7.0.0-beta.22114.7</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetBuildTasksInstallersVersion>7.0.0-beta.22117.1</MicrosoftDotNetBuildTasksInstallersVersion>
     <MicrosoftDotNetBuildTasksPackagingVersion>7.0.0-beta.22114.7</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetBuildTasksTargetFrameworkVersion>7.0.0-beta.22114.7</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
     <MicrosoftDotNetBuildTasksTemplatingVersion>7.0.0-beta.22114.7</MicrosoftDotNetBuildTasksTemplatingVersion>
@@ -125,7 +107,7 @@
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemServiceModelPrimitivesVersion>4.9.0</SystemServiceModelPrimitivesVersion>
     <SystemTextJsonVersion>7.0.0-preview.2.22113.2</SystemTextJsonVersion>
-    <SystemRuntimeCompilerServicesUnsafeVersion>7.0.0-preview.2.22113.2</SystemRuntimeCompilerServicesUnsafeVersion>
+    <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
     <runtimenativeSystemIOPortsVersion>7.0.0-preview.2.22113.2</runtimenativeSystemIOPortsVersion>

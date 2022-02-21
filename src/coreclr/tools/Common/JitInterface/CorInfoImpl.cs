@@ -3899,6 +3899,10 @@ namespace Internal.JitInterface
 
         private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
         {
+            InstructionSet_ARM64 asArm64 = (InstructionSet_ARM64)instructionSet;
+            InstructionSet_X64 asX64 = (InstructionSet_X64)instructionSet;
+            InstructionSet_X86 asX86 = (InstructionSet_X86)instructionSet;
+
             if (supportEnabled)
             {
                 _actualInstructionSetSupported.AddInstructionSet(instructionSet);
@@ -3909,6 +3913,10 @@ namespace Internal.JitInterface
                 // set is not a reason to not support usage of it.
                 if (!isMethodDefinedInCoreLib())
                 {
+                    // If a vector instruction set is marked as attempted to be used, but is also explicitly unsupported
+                    // then we need to mark as explicitly unsupported the implied instruction set associated with the vector set. 
+                    instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
+
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
             }

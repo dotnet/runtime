@@ -4,9 +4,8 @@
 using System;
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Security.Cryptography;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     //
     // Common infrastructure for AsymmetricAlgorithm-derived classes that layer on OpenSSL.
