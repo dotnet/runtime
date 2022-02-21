@@ -383,7 +383,7 @@ stages:
       - Linux_x64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
-        signBinaries: ${{ variables.isOfficialBuild }}
+        signBinaries: false
         testGroup: innerloop
         pgoType: 'PGO'
 
