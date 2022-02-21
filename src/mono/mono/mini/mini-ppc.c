@@ -1963,7 +1963,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_DELETE_INS (bb, ins);
 					continue;
 				}
-			} else if (inst->inst_imm > 0) {
+			} else if (ins->inst_imm > 0) {
 				int power2 = mono_is_power_of_two (ins->inst_imm);
 				if (power2 > 0) {
 					ins->opcode = OP_SHL_IMM;
@@ -5755,7 +5755,7 @@ host_mgreg_t*
 mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
 {
 	if (reg == ppc_r1)
-		return (host_mgreg_t)(gsize)&MONO_CONTEXT_GET_SP (ctx);
+		return (host_mgreg_t)(gsize)MONO_CONTEXT_GET_SP (ctx);
 
 	return &ctx->regs [reg];
 }
