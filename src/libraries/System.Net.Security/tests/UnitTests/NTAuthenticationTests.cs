@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Net.Security;
 using System.Text;
@@ -16,6 +18,7 @@ namespace System.Net.Security.Tests
 
         private static NetworkCredential s_testCredentialRight = new NetworkCredential("rightusername", "rightpassword");
         private static NetworkCredential s_testCredentialWrong = new NetworkCredential("rightusername", "wrongpassword");
+        private static byte[] s_Hello = new byte[] { (byte)'H', (byte)'e', (byte)'l', (byte)'l', (byte)'o' };
 
         [Fact]
         public void NtlmProtocolExampleTest()
@@ -102,6 +105,31 @@ namespace System.Net.Security.Tests
             DoNtlmExchange(fakeNtlmServer, ntAuth);
 
             Assert.False(fakeNtlmServer.IsAuthenticated);
+        }
+
+        [ConditionalFact(nameof(IsNtlmInstalled))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX)]
+        public void NtlmMakeSignatureTest()
+        {
+            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
+            NTAuthentication ntAuth = new NTAuthentication(
+                isServer: false, "NTLM", s_testCredentialRight, "HTTP/foo",
+                ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity | ContextFlagsPal.Confidentiality, null);
+
+            DoNtlmExchange(fakeNtlmServer, ntAuth);
+
+            Assert.True(fakeNtlmServer.IsAuthenticated);
+
+            byte[]? output = null;
+            int len = ntAuth.MakeSignature(s_Hello, 0, s_Hello.Length, ref output);
+            Assert.NotNull(output);
+            Assert.Equal(16 + s_Hello.Length, len);
+            // Unseal the content and check it
+            byte[] temp = new byte[s_Hello.Length];
+            fakeNtlmServer.Unseal(output.AsSpan(16), temp);
+            Assert.Equal(s_Hello, temp);
+            // Check the signature
+            fakeNtlmServer.VerifyMIC(temp, output.AsSpan(0, 16), sequenceNumber: 0);
         }
 
         private void DoNtlmExchange(FakeNtlmServer fakeNtlmServer, NTAuthentication ntAuth)
