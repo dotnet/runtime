@@ -51,7 +51,7 @@
     </PropertyGroup>
 
     <!-- Ad-hoc code-signing for crossgen2 binaries for macOS-arm64 -->
-    <Exec Condition="$([MSBuild]::IsOSPlatform('OSX')) and '$(_hostArch)' == 'arm64'"
+    <Exec Condition="'$(Configuration)' == 'Checked' and $([MSBuild]::IsOSPlatform('OSX')) and '$(_hostArch)' == 'arm64'"
           Command="codesign -f -s - %(CrossGen2DllFiles.Identity)" />
   </Target>
 
