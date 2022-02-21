@@ -8,7 +8,7 @@ using NTSTATUS = Interop.BCrypt.NTSTATUS;
 using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
 using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     //
     // Provides hash services via the native provider (CNG).
