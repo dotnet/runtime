@@ -128,7 +128,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
         var bp1_req = JObject.FromObject(new { 
                 type = "setBreakpoint",
                 location = JObject.FromObject(new { 
-                   line,
+                   line = line + 1,
                    column, 
                    sourceUrl = dicFileToUrl[url_key]
                 }),
@@ -164,17 +164,20 @@ public class DebuggerTestFirefox : DebuggerTestBase
     {
         if (location == null) //probably trying to check startLocation endLocation or functionLocation which are not available on Firefox
             return;
-        var loc_str = $"{ scripts[location["actor"].Value<string>()] }" +
-            $"#{ location["line"].Value<int>() }" +
-            $"#{ location["column"].Value<int>() }";
+        int column_from_stack = -1;
+        if (column != -1)
+            column_from_stack = location["column"].Value<int>();
 
-        var expected_loc_str = $"{script_loc}#{line}#{column}";
+        var loc_str = $"{ scripts[location["actor"].Value<string>()] }" +
+            $"#{ location["line"].Value<int>()}" +
+            $"#{ column_from_stack }";
+
+        var expected_loc_str = $"{script_loc}#{line+1}#{column}";
         Assert.Equal(expected_loc_str, loc_str);
     }
 
     internal async Task<JObject> ConvertFirefoxToDefaultFormat(JArray frames, JObject wait_res)
     {
-        //Console.WriteLine(wait_res);
         var callFrames = new JArray();
         foreach (var frame in frames)
         {
@@ -216,7 +219,13 @@ public class DebuggerTestFirefox : DebuggerTestBase
     internal override async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE)
     {
-
+        switch (method)
+        {
+            case "Debugger.resume":
+                return await StepAndCheck(StepKind.Resume, script_loc, line, column, function_name, wait_for_event_fn, locals_fn);
+            case "Debugger.stepInto":
+                return await StepAndCheck(StepKind.Into, script_loc, line, column, function_name, wait_for_event_fn, locals_fn);                
+        }
         var res = await cli.SendCommand(method, args, token);
         if (!res.IsOk)
         {
@@ -242,9 +251,11 @@ public class DebuggerTestFirefox : DebuggerTestBase
         if (script_loc != null && line >= 0)
             CheckLocation(script_loc, line, column, scripts, top_frame["where"]);
 
+        
+        wait_res = await ConvertFirefoxToDefaultFormat(frames.Value["result"]?["value"]?["frames"] as JArray, wait_res);
+
         if (wait_for_event_fn != null)
         {
-            wait_res = await ConvertFirefoxToDefaultFormat(frames.Value["result"]?["value"]?["frames"] as JArray, wait_res);
             await wait_for_event_fn(wait_res);
         }
 
@@ -263,4 +274,132 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
         return wait_res;
     }
+
+    /* @fn_args is for use with `Runtime.callFunctionOn` only */
+    internal override async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
+    {
+        if (id.StartsWith("dotnet:scope:"))
+        {
+            JArray ret = new ();
+            var o = JObject.FromObject(new
+            {
+                to = id,
+                type = "getEnvironment"
+            });
+            var frame_props = await cli.SendCommand("getEnvironment", o, token);
+            foreach (var variable in frame_props.Value["result"]["value"]["bindings"]["variables"].Value<JObject>())
+            {
+                string name = variable.Key;
+                JToken value = variable.Value;
+                JObject variableValue = null;
+                if (value?["type"] == null || value["type"].Value<string>() == "object")
+                {
+                    if (value["value"]["type"].Value<string>() == "null")
+                    {
+                        variableValue = JObject.FromObject(new
+                                {
+                                    type = "object",
+                                    subtype = "null",
+                                    className = value["value"]["class"].Value<string>()
+                                });
+                    }
+                    else
+                    {
+                        variableValue = JObject.FromObject(new
+                                {
+                                    type = value["value"]["type"],
+                                    value = (string)null,
+                                    description = value["value"]["class"].Value<string>(),
+                                    className = value["value"]["class"].Value<string>(),
+                                    objectId = value["value"]["actor"].Value<string>(),
+                                });
+                    }
+                }
+                else
+                {
+                    variableValue = JObject.FromObject(new
+                            {
+                                type = value["type"],
+                                value = value["value"],
+                                description = value["value"].Value<string>()
+                            });
+                }
+
+                var varToAdd = JObject.FromObject(new
+                {
+                    name,
+                    writable = value["writable"] != null ? value["writable"] : false,
+                    value = variableValue
+                });
+                ret.Add(varToAdd);
+            }
+            return ret;
+        }
+        return null;
+    }
+
+    internal override async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
+    Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, int times = 1)
+    {
+        JObject resumeLimit = null;
+        
+        if (kind != StepKind.Resume)
+        {
+            resumeLimit = JObject.FromObject(new
+            {
+                type = kind == StepKind.Over ? "next" : kind == StepKind.Out ? "finish" : "step"
+            });
+        }
+        var o = JObject.FromObject(new
+        {
+            to = client.ThreadActorId,
+            type = "resume",
+            resumeLimit
+        });
+
+        for (int i = 0; i < times - 1; i++)
+        {
+            await SendCommandAndCheck(o, "resume", null, -1, -1, null);
+        }
+
+        // Check for method/line etc only at the last step
+        return await SendCommandAndCheck(
+            o, "resume", script_loc, line, column, function_name,
+            wait_for_event_fn: wait_for_event_fn,
+            locals_fn: locals_fn);
+    }
+
+    internal override async Task<Result> SetBreakpointInMethod(string assembly, string type, string method, int lineOffset = 0, int col = 0, string condition = "")
+    {
+        var req = JObject.FromObject(new { assemblyName = assembly, type = "DotnetDebugger.getMethodLocation", typeName = type, methodName = method, lineOffset = lineOffset, to = "internal" });
+
+        // Protocol extension
+        var res = await cli.SendCommand("DotnetDebugger.getMethodLocation", req, token);
+        Assert.True(res.IsOk);
+        var m_url = res.Value["result"]["value"]["url"].Value<string>();
+        var m_line = res.Value["result"]["value"]["line"].Value<int>();
+        var m_column = res.Value["result"]["value"]["column"].Value<int>();
+
+
+        var bp1_req = JObject.FromObject(new { 
+                type = "setBreakpoint",
+                location = JObject.FromObject(new { 
+                   line = m_line + lineOffset + 1,
+                   column = col, 
+                   sourceUrl = m_url
+                }),
+                to = client.BreakpointActorId
+            });
+        var bp1_res = await cli.SendCommand("setBreakpoint", bp1_req, token);
+        Assert.True(bp1_res.IsOk);
+        var arr = new JArray(JObject.FromObject(new { 
+                lineNumber = m_line + lineOffset,
+                columnNumber = -1
+            }));
+
+        bp1_res.Value["locations"] = arr;
+        //Console.WriteLine(bp1_res);
+        return bp1_res;
+    }
+
 }

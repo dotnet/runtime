@@ -515,7 +515,7 @@ namespace DebuggerTests
             return res;
         }
 
-        internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
+        internal virtual async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, int times = 1)
         {
             string method = (kind == StepKind.Resume ? "Debugger.resume" : $"Debugger.step{kind}");
@@ -877,7 +877,7 @@ namespace DebuggerTests
         }
 
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
-        internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
+        internal virtual async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
         {
             if (UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
             {
@@ -936,7 +936,7 @@ namespace DebuggerTests
                     }
                 }
             }
-
+            Console.WriteLine(locals);
             return locals;
         }
 
@@ -1087,7 +1087,7 @@ namespace DebuggerTests
             return exc_res;
         }
 
-        internal async Task<Result> SetBreakpointInMethod(string assembly, string type, string method, int lineOffset = 0, int col = 0, string condition = "")
+        internal virtual async Task<Result> SetBreakpointInMethod(string assembly, string type, string method, int lineOffset = 0, int col = 0, string condition = "")
         {
             var req = JObject.FromObject(new { assemblyName = assembly, typeName = type, methodName = method, lineOffset = lineOffset });
 
@@ -1108,7 +1108,6 @@ namespace DebuggerTests
 
             res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
             Assert.True(res.IsOk);
-
             return res;
         }
 
