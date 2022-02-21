@@ -876,15 +876,26 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     //
     //   bool eq = AdvSimd.Arm64.MaxAcross(v.AsByte()).ToScalar() == 0;
     //
-    // Assume morph made get_Zero rhs if it was lhs
-    NamedIntrinsic op2ni = op2->OperIsHWIntrinsic() ? op2->AsHWIntrinsic()->GetHWIntrinsicId() : NI_Illegal;
-    if (!varTypeIsFloating(simdBaseType) && ((op2ni == NI_Vector64_get_Zero) || (op2ni == NI_Vector128_get_Zero)))
+    GenTree* op     = nullptr;
+    GenTree* opZero = nullptr;
+    if (op1->IsVectorZero())
+    {
+        op     = op2;
+        opZero = op1;
+    }
+    else if (op2->IsVectorZero())
+    {
+        op     = op1;
+        opZero = op2;
+    }
+
+    if (!varTypeIsFloating(simdBaseType) && (op != nullptr))
     {
         GenTree* cmp =
-            comp->gtNewSimdHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_MaxAcross, CORINFO_TYPE_UBYTE, simdSize);
+            comp->gtNewSimdHWIntrinsicNode(simdType, op, NI_AdvSimd_Arm64_MaxAcross, CORINFO_TYPE_UBYTE, simdSize);
         BlockRange().InsertBefore(node, cmp);
         LowerNode(cmp);
-        BlockRange().Remove(op2);
+        BlockRange().Remove(opZero);
 
         GenTree* val = comp->gtNewSimdHWIntrinsicNode(TYP_INT, cmp, NI_Vector128_ToScalar, CORINFO_TYPE_UINT, simdSize);
         BlockRange().InsertAfter(cmp, val);

@@ -14,6 +14,13 @@ public class CompareVectorWithZero
         Test(Vector128.Create(-0.0f));
         Test(Vector128.Create(0.0));
         Test(Vector128.Create(-0.0));
+        
+        TestReversed(Vector128.Create(0));
+        TestReversed(Vector128.Create(0.0f));
+        TestReversed(Vector128.Create(-0.0f));
+        TestReversed(Vector128.Create(0.0));
+        TestReversed(Vector128.Create(-0.0));
+
         Test(Vector128.Create(-10));
         Test(Vector128.Create(10));
         Test(Vector128.Create((sbyte)-10));
@@ -41,6 +48,11 @@ public class CompareVectorWithZero
         Test(Vector128.Create(0, 0, 0, -1, 0, 0, 0, -1));
         Test(Vector64.Create(0, 0, 0, 1, 0, 0, 0, 1));
         Test(Vector64.Create(0, 0, 0, -1, 0, 0, 0, -1));
+
+        TestReversed(Vector128.Create(0, 0, 0, 1, 0, 0, 0, 1));
+        TestReversed(Vector128.Create(0, 0, 0, -1, 0, 0, 0, -1));
+        TestReversed(Vector64.Create(0, 0, 0, 1, 0, 0, 0, 1));
+        TestReversed(Vector64.Create(0, 0, 0, -1, 0, 0, 0, -1));
         return 100;
     }
 
@@ -62,5 +74,15 @@ public class CompareVectorWithZero
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test<T>(Vector64<T> v) where T : unmanaged =>
         AssertTrue((v == Vector64<T>.Zero) == 
+                   (v == Vector64.Create(ToVar(default(T)))));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void TestReversed<T>(Vector128<T> v) where T : unmanaged =>
+        AssertTrue((Vector128<T>.Zero == v) == 
+                   (v == Vector128.Create(ToVar(default(T)))));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void TestReversed<T>(Vector64<T> v) where T : unmanaged =>
+        AssertTrue((Vector64<T>.Zero == v) == 
                    (v == Vector64.Create(ToVar(default(T)))));
 }
