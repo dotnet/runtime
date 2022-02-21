@@ -1,7 +1,12 @@
-import sys, json, os, shutil
+import json
+import os
+import shutil
+import sys
+
 
 def glob(path):
     return [os.path.join(path, filename) for filename in os.listdir(path)]
+
 
 def remove(*paths):
     for path in paths:
@@ -14,8 +19,9 @@ def remove(*paths):
         except OSError as error:
             print(error)
 
+
 def rewrite_package_json(path):
-    package = open(path,"rb+")
+    package = open(path, "rb+")
     settings = json.load(package)
     settings["devDependencies"] = {}
     package.seek(0)
@@ -23,41 +29,47 @@ def rewrite_package_json(path):
     json.dump(settings, package, indent=4)
     package.close()
 
+
 emsdk_path = sys.argv[1]
 emscripten_path = os.path.join(emsdk_path, "upstream", "emscripten")
 node_root = os.path.join(emsdk_path, "node")
 node_paths = glob(node_root)
-upgrade = False
+upgrade = True
 
-npm = os.path.join(node_paths[0], "bin", "npm")
-if not os.path.exists(npm):
-    npm = "npm"
+# Add the local node bin directory to the path so that
+# npm can find it when doing the updating or pruning
+os.environ["PATH"] += os.pathsep + os.path.join(node_paths[0], "bin")
 
 def update_npm(path):
     try:
         os.chdir(os.path.join(path, "lib"))
-        os.system(npm + " install npm@latest")
+        os.system("npm install npm@latest")
+        os.system("npm install npm@latest")
         prune()
     except OSError as error:
         print("npm update failed")
         print(error)
 
+
 def remove_npm(path):
     os.chdir(path)
     remove("bin/npx", "bin/npm", "include", "lib", "share")
 
+
 def prune():
     try:
-        os.system(npm + " prune --production")
+        os.system("npm prune --production")
     except OSError as error:
         print("npm prune failed")
         print(error)
 
+
 os.chdir(emscripten_path)
 rewrite_package_json("package.json")
-prune()
 
-remove("tests",
+
+remove(
+    "tests",
     "node_modules/google-closure-compiler",
     "node_modules/google-closure-compiler-java",
     "node_modules/google-closure-compiler-osx",
@@ -67,7 +79,10 @@ remove("tests",
     "third_party/jni",
     "third_party/ply",
     "third_party/uglify-js",
-    "third_party/websockify")
+    "third_party/websockify",
+)
+
+prune()
 
 for path in node_paths:
     if upgrade:

@@ -136,6 +136,9 @@ namespace DllImportGenerator.UnitTests
         {
             yield return new object[] { CodeSnippets.RecursiveImplicitlyBlittableStruct, 0, 1 };
             yield return new object[] { CodeSnippets.MutuallyRecursiveImplicitlyBlittableStruct, 0, 2 };
+            yield return new object[] { CodeSnippets.PartialPropertyName, 1, 2 };
+            yield return new object[] { CodeSnippets.InvalidConstantForModuleName, 1, 1 };
+            yield return new object[] { CodeSnippets.IncorrectAttributeFieldType, 1, 1 };
         }
 
         [ConditionalTheory]

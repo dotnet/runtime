@@ -435,10 +435,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static MonoBinaryReader From(Result result)
         {
             byte[] newBytes = Array.Empty<byte>();
-            if (!result.IsErr) {
+            if (result.IsOk) {
                 newBytes = Convert.FromBase64String(result.Value?["result"]?["value"]?["value"]?.Value<string>());
             }
-            return new MonoBinaryReader(new MemoryStream(newBytes), result.IsErr);
+            return new MonoBinaryReader(new MemoryStream(newBytes), !result.IsOk);
         }
 
         public override string ReadString()

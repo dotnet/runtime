@@ -34,7 +34,7 @@ namespace System.Text.Json
         /// For objects, it is either the actual (real) JsonPropertyInfo or the <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/> for the class.
         /// For collections, it is the <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/> for the class and current element.
         /// </remarks>
-        public JsonPropertyInfo? DeclaredJsonPropertyInfo;
+        public JsonPropertyInfo? JsonPropertyInfo;
 
         /// <summary>
         /// Used when processing extension data dictionaries.
@@ -90,7 +90,7 @@ namespace System.Text.Json
 
         public void EndProperty()
         {
-            DeclaredJsonPropertyInfo = null!;
+            JsonPropertyInfo = null!;
             JsonPropertyNameAsString = null;
             PolymorphicJsonPropertyInfo = null;
             PropertyState = StackFramePropertyState.None;
@@ -102,7 +102,7 @@ namespace System.Text.Json
         /// </summary>
         public JsonPropertyInfo GetPolymorphicJsonPropertyInfo()
         {
-            return PolymorphicJsonPropertyInfo ?? DeclaredJsonPropertyInfo!;
+            return PolymorphicJsonPropertyInfo ?? JsonPropertyInfo!;
         }
 
         /// <summary>
