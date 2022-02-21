@@ -53,9 +53,11 @@ namespace ILVerify
         private EcmaModule ResolveAssemblyOrNetmodule(string simpleName, string verificationName, IAssemblyDesc containingAssembly, bool throwIfNotFound)
         {
             PEReader peReader = _resolver.Resolve(simpleName);
-            if (peReader == null && throwIfNotFound)
+            if (peReader == null)
             {
-                throw new VerifierException("Assembly or module not found: " + simpleName);
+                if (throwIfNotFound)
+                    throw new VerifierException("Assembly or module not found: " + simpleName);
+                return null;
             }
             var module = GetModule(peReader, containingAssembly);
             VerifyModuleName(verificationName, module);

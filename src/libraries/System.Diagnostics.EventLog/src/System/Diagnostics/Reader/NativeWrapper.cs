@@ -862,7 +862,7 @@ namespace System.Diagnostics.Eventing.Reader
         public static IList<object> EvtRenderBufferWithContextUserOrValues(EventLogHandle contextHandle, EventLogHandle eventHandle)
         {
             IntPtr buffer = IntPtr.Zero;
-            IntPtr pointer = IntPtr.Zero;
+            IntPtr pointer;
             int bufferNeeded;
             int propCount;
             UnsafeNativeMethods.EvtRenderFlags flag = UnsafeNativeMethods.EvtRenderFlags.EvtRenderEventValues;

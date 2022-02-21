@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Net.Http.Headers
@@ -27,11 +26,6 @@ namespace System.Net.Http.Headers
             set { _parent.SetOrRemoveParsedValue(KnownHeaders.CacheControl.Descriptor, value); }
         }
 
-        public HttpHeaderValueCollection<string> Connection
-        {
-            get { return ConnectionCore; }
-        }
-
         public bool? ConnectionClose
         {
             get
@@ -46,30 +40,23 @@ namespace System.Net.Http.Headers
                 if (value == true)
                 {
                     _connectionCloseSet = true;
-                    ConnectionCore.SetSpecialValue();
+                    if (!_parent.ContainsParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose))
+                    {
+                        _parent.AddParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose);
+                    }
                 }
                 else
                 {
                     _connectionCloseSet = value != null;
-                    ConnectionCore.RemoveSpecialValue();
+                    // We intentionally ignore the return value. It's OK if "close" wasn't in the store.
+                    _parent.RemoveParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose);
                 }
             }
         }
 
         internal static bool? GetConnectionClose(HttpHeaders parent, HttpGeneralHeaders? headers)
         {
-            // If we've already initialized the connection header value collection
-            // and it contains the special value, or if we haven't and the headers contain
-            // the parsed special value, return true.  We don't just access ConnectionCore,
-            // as doing so will unnecessarily initialize the collection even if it's not needed.
-            if (headers?._connection != null)
-            {
-                if (headers._connection.IsSpecialValueSet)
-                {
-                    return true;
-                }
-            }
-            else if (parent.ContainsParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose))
+            if (parent.ContainsParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose))
             {
                 return true;
             }
@@ -86,50 +73,15 @@ namespace System.Net.Http.Headers
             set { _parent.SetOrRemoveParsedValue(KnownHeaders.Date.Descriptor, value); }
         }
 
-        public HttpHeaderValueCollection<NameValueHeaderValue> Pragma
-        {
-            get
-            {
-                if (_pragma == null)
-                {
-                    _pragma = new HttpHeaderValueCollection<NameValueHeaderValue>(KnownHeaders.Pragma.Descriptor, _parent);
-                }
-                return _pragma;
-            }
-        }
+        public HttpHeaderValueCollection<NameValueHeaderValue> Pragma =>
+            _pragma ??= new HttpHeaderValueCollection<NameValueHeaderValue>(KnownHeaders.Pragma.Descriptor, _parent);
 
-        public HttpHeaderValueCollection<string> Trailer
-        {
-            get
-            {
-                if (_trailer == null)
-                {
-                    _trailer = new HttpHeaderValueCollection<string>(KnownHeaders.Trailer.Descriptor,
-                        _parent, HeaderUtilities.TokenValidator);
-                }
-                return _trailer;
-            }
-        }
-
-        public HttpHeaderValueCollection<TransferCodingHeaderValue> TransferEncoding
-        {
-            get { return TransferEncodingCore; }
-        }
+        public HttpHeaderValueCollection<string> Trailer =>
+            _trailer ??= new HttpHeaderValueCollection<string>(KnownHeaders.Trailer.Descriptor, _parent);
 
         internal static bool? GetTransferEncodingChunked(HttpHeaders parent, HttpGeneralHeaders? headers)
         {
-            // If we've already initialized the transfer encoding header value collection
-            // and it contains the special value, or if we haven't and the headers contain
-            // the parsed special value, return true.  We don't just access TransferEncodingCore,
-            // as doing so will unnecessarily initialize the collection even if it's not needed.
-            if (headers?._transferEncoding != null)
-            {
-                if (headers._transferEncoding.IsSpecialValueSet)
-                {
-                    return true;
-                }
-            }
-            else if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
+            if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
             {
                 return true;
             }
@@ -154,77 +106,34 @@ namespace System.Net.Http.Headers
                 if (value == true)
                 {
                     _transferEncodingChunkedSet = true;
-                    TransferEncodingCore.SetSpecialValue();
+                    if (!_parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
+                    {
+                        _parent.AddParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked);
+                    }
                 }
                 else
                 {
                     _transferEncodingChunkedSet = value != null;
-                    TransferEncodingCore.RemoveSpecialValue();
+                    // We intentionally ignore the return value. It's OK if "chunked" wasn't in the store.
+                    _parent.RemoveParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked);
                 }
             }
         }
 
-        public HttpHeaderValueCollection<ProductHeaderValue> Upgrade
-        {
-            get
-            {
-                if (_upgrade == null)
-                {
-                    _upgrade = new HttpHeaderValueCollection<ProductHeaderValue>(KnownHeaders.Upgrade.Descriptor, _parent);
-                }
-                return _upgrade;
-            }
-        }
+        public HttpHeaderValueCollection<ProductHeaderValue> Upgrade =>
+            _upgrade ??= new HttpHeaderValueCollection<ProductHeaderValue>(KnownHeaders.Upgrade.Descriptor, _parent);
 
-        public HttpHeaderValueCollection<ViaHeaderValue> Via
-        {
-            get
-            {
-                if (_via == null)
-                {
-                    _via = new HttpHeaderValueCollection<ViaHeaderValue>(KnownHeaders.Via.Descriptor, _parent);
-                }
-                return _via;
-            }
-        }
+        public HttpHeaderValueCollection<ViaHeaderValue> Via =>
+            _via ??= new HttpHeaderValueCollection<ViaHeaderValue>(KnownHeaders.Via.Descriptor, _parent);
 
-        public HttpHeaderValueCollection<WarningHeaderValue> Warning
-        {
-            get
-            {
-                if (_warning == null)
-                {
-                    _warning = new HttpHeaderValueCollection<WarningHeaderValue>(KnownHeaders.Warning.Descriptor, _parent);
-                }
-                return _warning;
-            }
-        }
+        public HttpHeaderValueCollection<WarningHeaderValue> Warning =>
+            _warning ??= new HttpHeaderValueCollection<WarningHeaderValue>(KnownHeaders.Warning.Descriptor, _parent);
 
-        private HttpHeaderValueCollection<string> ConnectionCore
-        {
-            get
-            {
-                if (_connection == null)
-                {
-                    _connection = new HttpHeaderValueCollection<string>(KnownHeaders.Connection.Descriptor,
-                        _parent, HeaderUtilities.ConnectionClose, HeaderUtilities.TokenValidator);
-                }
-                return _connection;
-            }
-        }
+        public HttpHeaderValueCollection<string> Connection =>
+            _connection ??= new HttpHeaderValueCollection<string>(KnownHeaders.Connection.Descriptor, _parent);
 
-        private HttpHeaderValueCollection<TransferCodingHeaderValue> TransferEncodingCore
-        {
-            get
-            {
-                if (_transferEncoding == null)
-                {
-                    _transferEncoding = new HttpHeaderValueCollection<TransferCodingHeaderValue>(
-                        KnownHeaders.TransferEncoding.Descriptor, _parent, HeaderUtilities.TransferEncodingChunked);
-                }
-                return _transferEncoding;
-            }
-        }
+        public HttpHeaderValueCollection<TransferCodingHeaderValue> TransferEncoding =>
+            _transferEncoding ??= new HttpHeaderValueCollection<TransferCodingHeaderValue>(KnownHeaders.TransferEncoding.Descriptor, _parent);
 
         internal HttpGeneralHeaders(HttpHeaders parent)
         {

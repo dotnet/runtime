@@ -206,117 +206,6 @@ exit:
     return hr;
 }
 
-#ifndef FEATURE_CORESYSTEM
-//-----------------------------------------------------------------------------
-// get the sid of a given process id using WTSEnumerateProcesses
-// @todo: Make this function fail when WTSEnumerateProcesses is not available
-// Or is it always available on all of our platform?
-//
-// Caller remember to call delete on *ppSid
-//-----------------------------------------------------------------------------
-HRESULT GetSidFromProcessEXWorker(DWORD dwProcessId, PSID *ppSid)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(ppSid));
-    }
-    CONTRACTL_END;
-
-    HRESULT            hr = S_OK;
-    PWTS_PROCESS_INFOW rgProcessInfo = NULL;
-    DWORD              dwNumProcesses;
-    DWORD              iProc;
-    DWORD              cbSid;
-    PSID               pSid = NULL;
-
-    LOG((LF_CORDB, LL_INFO10000,
-         "SecurityUtil::GetSidFromProcessEx: 0x%08x\n",
-         dwProcessId));
-
-
-    *ppSid = NULL;
-    if (!WTSEnumerateProcessesW(WTS_CURRENT_SERVER_HANDLE,   // use local server
-                                0,              // Reserved must be zero
-                                1,              // version must be 1
-                                &rgProcessInfo, // Receives pointer to process list
-                                &dwNumProcesses))
-    {
-        hr = HRESULT_FROM_GetLastError();
-        goto exit;
-    }
-
-    for (iProc = 0; iProc < dwNumProcesses; iProc++)
-    {
-
-        if (rgProcessInfo[iProc].ProcessId == dwProcessId)
-        {
-            if (rgProcessInfo[iProc].pUserSid == NULL)
-            {
-                LOG((LF_CORDB, LL_INFO10000,
-                     "SecurityUtil::GetSidFromProcessEx is not able to retrieve SID\n"));
-
-                // if there is no Sid for the user, don't call GetLengthSid.
-                // It will crash! It is ok to return E_FAIL as caller will ignore it.
-                hr = E_FAIL;
-                goto exit;
-            }
-            cbSid = GetLengthSid(rgProcessInfo[iProc].pUserSid);
-            pSid = new (nothrow) BYTE[cbSid];
-            if (pSid == NULL)
-            {
-                hr = E_OUTOFMEMORY;
-            }
-            else
-            {
-                if (!CopySid(cbSid, pSid, rgProcessInfo[iProc].pUserSid))
-                {
-                    hr = HRESULT_FROM_GetLastError();
-                }
-                else
-                {
-                    // We are done. Go to exit
-                    hr = S_OK;
-                }
-            }
-
-            // we already find a match. Even if we fail from memory allocation of CopySid, still
-            // goto exit.
-            goto exit;
-        }
-    }
-
-    // Walk the whole list and cannot find the matching PID
-    // Find a better error code.
-    hr = E_FAIL;
-
-exit:
-
-    if (rgProcessInfo)
-    {
-        WTSFreeMemory(rgProcessInfo);
-    }
-
-    if (FAILED(hr) && pSid)
-    {
-        delete [] (reinterpret_cast<BYTE*>(pSid));
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        _ASSERTE(pSid);
-        *ppSid = pSid;
-    }
-    LOG((LF_CORDB, LL_INFO10000,
-         "SecurityUtil::GetSidFromProcessEx return hr : 0x%08x\n",
-         hr));
-
-
-    return hr;
-}
-#endif // !FEATURE_CORESYSTEM
-
 //-----------------------------------------------------------------------------
 // The functions below initialize this SidBuffer instance with a Sid from
 // the token of the specified process.  The first pair use the OWNER sid from
@@ -361,12 +250,6 @@ HRESULT SidBuffer::InitFromProcessNoThrow(DWORD pid)
 
     _ASSERTE(m_pBuffer == NULL);
     HRESULT hr = GetSidFromProcessWorker(pid, kOwnerSid, (PSID *) &m_pBuffer);
-#ifndef FEATURE_CORESYSTEM
-    if (FAILED(hr))
-    {
-        hr = GetSidFromProcessEXWorker(pid, (PSID *) &m_pBuffer);
-    }
-#endif // !FEATURE_CORESYSTEM
     if (FAILED(hr))
     {
         return hr;
@@ -526,12 +409,6 @@ HRESULT SidBuffer::InitFromProcessUserNoThrow(DWORD pid)
 
     _ASSERTE(m_pBuffer == NULL);
     HRESULT hr = GetSidFromProcessWorker(pid, kUserSid, (PSID *) &m_pBuffer);
-#ifndef FEATURE_CORESYSTEM
-    if (FAILED(hr))
-    {
-        hr = GetSidFromProcessEXWorker(pid, (PSID *) &m_pBuffer);
-    }
-#endif // !FEATURE_CORESYSTEM
     if (FAILED(hr))
     {
         return hr;

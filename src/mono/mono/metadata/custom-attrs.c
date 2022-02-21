@@ -25,6 +25,7 @@
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/icall-decl.h"
+#include "mono/metadata/metadata-update.h"
 #include "mono/utils/checked-build.h"
 
 #define CHECK_ADD4_OVERFLOW_UN(a, b) ((guint32)(0xFFFFFFFFU) - (guint32)(b) < (guint32)(a))
@@ -150,6 +151,8 @@ free_param_data (MonoMethodSignature *sig, void **params) {
  */
 static guint32
 find_field_index (MonoClass *klass, MonoClassField *field) {
+	if (G_UNLIKELY (m_field_is_from_update (field)))
+		return mono_metadata_update_get_field_idx (field);
 	int fcount = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
 	int index = field - klass_fields;
@@ -1626,8 +1629,6 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 	error_init (error);
 
 	ca = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
-	/* FIXME: metadata-update */
-	int rows = table_info_get_rows (ca);
 
 	i = mono_metadata_custom_attrs_from_index (image, idx);
 	if (!i)
@@ -1635,9 +1636,17 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 	i --;
 	// initial size chosen arbitrarily, but default is 16 which is rather small
 	attr_array = g_array_sized_new (TRUE, TRUE, sizeof (guint32), 128);
-	while (i < rows) {
-		if (mono_metadata_decode_row_col (ca, i, MONO_CUSTOM_ATTR_PARENT) != idx)
-			break;
+	while (!mono_metadata_table_bounds_check (image, MONO_TABLE_CUSTOMATTRIBUTE, i + 1)) {
+		if (mono_metadata_decode_row_col (ca, i, MONO_CUSTOM_ATTR_PARENT) != idx) {
+			if (G_LIKELY (!image->has_updates)) {
+				break;
+			} else {
+				// if there are updates, the new custom attributes are not sorted,
+				// so we have to go until the end.
+				++i;
+				continue;
+			}
+		}
 		attr_array = g_array_append_val (attr_array, i);
 		++i;
 	}
@@ -2132,7 +2141,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 	} else if (strcmp ("RuntimeFieldInfo", klass_name) == 0) {
 		MonoReflectionFieldHandle rfield = MONO_HANDLE_CAST (MonoReflectionField, obj);
 		MonoClassField *field = MONO_HANDLE_GETVAL (rfield, field);
-		cinfo = mono_custom_attrs_from_field_checked (field->parent, field, error);
+		cinfo = mono_custom_attrs_from_field_checked (m_field_get_parent (field), field, error);
 		goto_if_nok (error, leave);
 	} else if ((strcmp ("RuntimeMethodInfo", klass_name) == 0) || (strcmp ("RuntimeConstructorInfo", klass_name) == 0)) {
 		MonoReflectionMethodHandle rmethod = MONO_HANDLE_CAST (MonoReflectionMethod, obj);

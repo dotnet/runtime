@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Text.RegularExpressions
 {
     // Callback class
@@ -14,7 +16,7 @@ namespace System.Text.RegularExpressions
         /// Replaces all occurrences of the pattern with the <paramref name="replacement"/> pattern, starting at
         /// the first character in the input string.
         /// </summary>
-        public static string Replace(string input, string pattern, string replacement) =>
+        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, string replacement) =>
             RegexCache.GetOrAdd(pattern).Replace(input, replacement);
 
         /// <summary>
@@ -22,10 +24,10 @@ namespace System.Text.RegularExpressions
         /// the <paramref name="pattern "/>with the <paramref name="replacement "/>
         /// pattern, starting at the first character in the input string.
         /// </summary>
-        public static string Replace(string input, string pattern, string replacement, RegexOptions options) =>
+        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, string replacement, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Replace(input, replacement);
 
-        public static string Replace(string input, string pattern, string replacement, RegexOptions options, TimeSpan matchTimeout) =>
+        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, string replacement, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).Replace(input, replacement);
 
         /// <summary>
@@ -85,17 +87,17 @@ namespace System.Text.RegularExpressions
         /// Replaces all occurrences of the <paramref name="pattern"/> with the recent
         /// replacement pattern.
         /// </summary>
-        public static string Replace(string input, string pattern, MatchEvaluator evaluator) =>
+        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, MatchEvaluator evaluator) =>
             RegexCache.GetOrAdd(pattern).Replace(input, evaluator);
 
         /// <summary>
         /// Replaces all occurrences of the <paramref name="pattern"/> with the recent
         /// replacement pattern, starting at the first character.
         /// </summary>
-        public static string Replace(string input, string pattern, MatchEvaluator evaluator, RegexOptions options) =>
+        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, MatchEvaluator evaluator, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Replace(input, evaluator);
 
-        public static string Replace(string input, string pattern, MatchEvaluator evaluator, RegexOptions options, TimeSpan matchTimeout) =>
+        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, MatchEvaluator evaluator, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).Replace(input, evaluator);
 
         /// <summary>

@@ -98,11 +98,11 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Delete(Directory.GetCurrentDirectory()));
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void DeletingSymLinkDoesntDeleteTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
+            var linkPath = GetRandomLinkPath();
 
             Directory.CreateDirectory(path);
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
@@ -291,7 +291,7 @@ namespace System.IO.Tests
             Assert.True(testDir.Exists);
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void RecursiveDeletingDoesntFollowLinks()
         {
             var target = GetTestFilePath();

@@ -15,7 +15,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module stress2.exe
 // MVID: {5A1483AA-BABB-44FA-9E05-6A081C8BFE56}
 .namespace JitTest
 {

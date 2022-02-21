@@ -5,13 +5,11 @@ Codespaces allows you to develop in a Docker container running in the cloud. You
 
 dotnet/runtime runs a nightly GitHub Action to build the latest code in the repo. This allows you to immediately start developing and testing after creating a codespace without having to build the whole repo. When the machine is created, it will have built the repo using the code as of 6 AM UTC that morning.
 
-**NOTE**: In order to use a prebuilt codespace, when you create your machine be sure to select an **`8 core`** machine.
-
 1. From https://github.com/dotnet/runtime, drop-down the `Code` button and select the `Codespaces` tab.
 
 ![New codespace button](https://docs.github.com/assets/images/help/codespaces/new-codespace-button.png)
 
-2. Select `8-core` for the Machine type. This will ensure you get a "pre built" image.
+2. Select the Machine type. For dotnet/runtime, it is recommended to select at least a `4-core` machine. You can also verify that a "Prebuild" is ready.
 
 ![Codespace machine size](./codespace-machine-size.png)
 

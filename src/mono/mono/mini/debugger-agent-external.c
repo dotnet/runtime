@@ -49,7 +49,7 @@ mono_debugger_agent_parse_options (char *options)
 }
 
 DebuggerTransport *
-mono_debugger_agent_get_transports (int *ntrans) 
+mono_debugger_agent_get_transports (int *ntrans)
 {
 	*ntrans = ntransports;
 	return transports;

@@ -21,7 +21,7 @@ void*
 mono_property_bag_get (MonoPropertyBag *bag, int tag)
 {
 	MonoPropertyBagItem *item;
-	
+
 	for (item = bag->head; item && item->tag <= tag; item = item->next) {
 		if (item->tag == tag)
 			return item;

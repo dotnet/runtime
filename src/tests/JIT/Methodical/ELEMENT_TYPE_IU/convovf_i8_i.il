@@ -9,7 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'test'
+.assembly 'convovf_i8_i'
 { }
 .assembly extern xunit.core {}
 .class private auto ansi Test_convovf_i8_i extends [mscorlib]System.Object

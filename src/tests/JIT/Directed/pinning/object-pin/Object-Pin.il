@@ -6,7 +6,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly objectpin
+.assembly 'Object-Pin'
 {
 }
 

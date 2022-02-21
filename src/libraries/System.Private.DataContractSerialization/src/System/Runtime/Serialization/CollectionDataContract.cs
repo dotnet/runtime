@@ -916,7 +916,7 @@ namespace System.Runtime.Serialization
                 Debug.Assert(Kind != CollectionKind.Array, "GetCollectionElementType should not be called on Arrays");
                 Debug.Assert(GetEnumeratorMethod != null, "GetEnumeratorMethod should be non-null for non-Arrays");
 
-                Type? enumeratorType = null;
+                Type? enumeratorType;
                 if (Kind == CollectionKind.GenericDictionary)
                 {
                     Type[] keyValueTypes = ItemType.GetGenericArguments();
@@ -1012,8 +1012,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static bool IsCollection(Type type)
         {
-            Type? itemType;
-            return IsCollection(type, out itemType);
+            return IsCollection(type, out _);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -1025,8 +1024,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static bool IsCollection(Type type, bool constructorRequired)
         {
-            Type? itemType;
-            return IsCollectionHelper(type, out itemType, constructorRequired);
+            return IsCollectionHelper(type, out _, constructorRequired);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -1037,21 +1035,18 @@ namespace System.Runtime.Serialization
                 itemType = type.GetElementType()!;
                 return true;
             }
-            DataContract? dataContract;
-            return IsCollectionOrTryCreate(type, false /*tryCreate*/, out dataContract, out itemType, constructorRequired);
+            return IsCollectionOrTryCreate(type, tryCreate: false, out _, out itemType, constructorRequired);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static bool TryCreate(Type type, [NotNullWhen(true)] out DataContract? dataContract)
         {
-            Type itemType;
-            return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract!, out itemType, true /*constructorRequired*/);
+            return IsCollectionOrTryCreate(type, tryCreate: true, out dataContract!, out _, constructorRequired: true);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static bool CreateGetOnlyCollectionDataContract(Type type, [NotNullWhen(true)] out DataContract? dataContract)
         {
-            Type itemType;
             if (type.IsArray)
             {
                 dataContract = new CollectionDataContract(type);
@@ -1059,7 +1054,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract!, out itemType, false /*constructorRequired*/);
+                return IsCollectionOrTryCreate(type, tryCreate: true, out dataContract!, out _, constructorRequired: false);
             }
         }
 
@@ -1069,7 +1064,6 @@ namespace System.Runtime.Serialization
             dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
             if (dataContract == null)
             {
-                Type itemType;
                 if (type.IsArray)
                 {
                     dataContract = new CollectionDataContract(type);
@@ -1077,7 +1071,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract!, out itemType, false /*constructorRequired*/);
+                    return IsCollectionOrTryCreate(type, tryCreate: true, out dataContract!, out _, constructorRequired: false);
                 }
             }
             else

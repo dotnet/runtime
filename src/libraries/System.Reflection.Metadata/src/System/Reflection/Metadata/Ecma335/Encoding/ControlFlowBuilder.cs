@@ -85,7 +85,10 @@ namespace System.Reflection.Metadata.Ecma335
             _labels = ImmutableArray.CreateBuilder<int>();
         }
 
-        internal void Clear()
+        /// <summary>
+        /// Clears the object's internal state, allowing the same instance to be reused.
+        /// </summary>
+        public void Clear()
         {
             _branches.Clear();
             _labels.Clear();

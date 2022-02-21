@@ -27,11 +27,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // assertIsContainableHWIntrinsicOp: Asserts that op is containable by node
 //
 // Arguments:
-//    lowering - The lowering phase from the compiler
-//    node     - The HWIntrinsic node that has the contained node
-//    op       - The op that is contained
+//    lowering       - The lowering phase from the compiler
+//    containingNode - The HWIntrinsic node that has the contained node
+//    containedNode  - The node that is contained
 //
-static void assertIsContainableHWIntrinsicOp(Lowering* lowering, GenTreeHWIntrinsic* node, GenTree* op)
+static void assertIsContainableHWIntrinsicOp(Lowering*           lowering,
+                                             GenTreeHWIntrinsic* containingNode,
+                                             GenTree*            containedNode)
 {
 #if DEBUG
     // The Lowering::IsContainableHWIntrinsicOp call is not quite right, since it follows pre-register allocation
@@ -39,14 +41,25 @@ static void assertIsContainableHWIntrinsicOp(Lowering* lowering, GenTreeHWIntrin
     //
     // We use isContainable to track the special HWIntrinsic node containment rules (for things like LoadAligned and
     // LoadUnaligned) and we use the supportsRegOptional check to support general-purpose loads (both from stack
-    // spillage
-    // and for isUsedFromMemory contained nodes, in the case where the register allocator decided to not allocate a
-    // register
-    // in the first place).
+    // spillage and for isUsedFromMemory contained nodes, in the case where the register allocator decided to not
+    // allocate a register in the first place).
+
+    GenTree* node = containedNode;
+
+    // Now that we are doing full memory containment safety checks, we can't properly check nodes that are not
+    // linked into an evaluation tree, like the special nodes we create in genHWIntrinsic.
+    // So, just say those are ok.
+    //
+    if (node->gtNext == nullptr)
+    {
+        return;
+    }
 
     bool supportsRegOptional = false;
-    bool isContainable       = lowering->IsContainableHWIntrinsicOp(node, op, &supportsRegOptional);
+    bool isContainable       = lowering->TryGetContainableHWIntrinsicOp(containingNode, &node, &supportsRegOptional);
+
     assert(isContainable || supportsRegOptional);
+    assert(node == containedNode);
 #endif // DEBUG
 }
 
@@ -82,6 +95,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
     HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     size_t                 numArgs     = node->GetOperandCount();
+
+    // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
+    assert(compiler->compIsaSupportedDebugOnly(isa));
 
     int ival = HWIntrinsicInfo::lookupIval(intrinsicId, compiler->compOpportunisticallyDependsOn(InstructionSet_AVX));
 
@@ -521,6 +537,14 @@ void CodeGen::genHWIntrinsic_R_RM(
                     break;
                 }
 
+                case GT_CNS_DBL:
+                {
+                    GenTreeDblCon*       cns = rmOp->AsDblCon();
+                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(cns->gtDconVal, emitTypeSize(cns));
+                    emit->emitIns_R_C(ins, attr, reg, hnd, 0);
+                    return;
+                }
+
                 default:
                 {
                     unreached();
@@ -737,6 +761,14 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
                     break;
                 }
 
+                case GT_CNS_DBL:
+                {
+                    GenTreeDblCon*       cns = op2->AsDblCon();
+                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(cns->gtDconVal, emitTypeSize(cns));
+                    emit->emitIns_SIMD_R_R_C_I(ins, simdSize, targetReg, op1Reg, hnd, 0, ival);
+                    return;
+                }
+
                 default:
                     unreached();
                     break;
@@ -886,6 +918,14 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins,
                     break;
                 }
 
+                case GT_CNS_DBL:
+                {
+                    GenTreeDblCon*       cns = op2->AsDblCon();
+                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(cns->gtDconVal, emitTypeSize(cns));
+                    emit->emitIns_SIMD_R_R_C_R(ins, simdSize, targetReg, op1Reg, op3Reg, hnd, 0);
+                    return;
+                }
+
                 default:
                     unreached();
                     break;
@@ -1012,6 +1052,14 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
                     break;
                 }
 
+                case GT_CNS_DBL:
+                {
+                    GenTreeDblCon*       cns = op3->AsDblCon();
+                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(cns->gtDconVal, emitTypeSize(cns));
+                    emit->emitIns_SIMD_R_R_R_C(ins, attr, targetReg, op1Reg, op2Reg, hnd, 0);
+                    return;
+                }
+
                 default:
                     unreached();
                     break;
@@ -1047,7 +1095,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
 // Note:
 //    This function can be used for all imm-intrinsics (whether full-range or not),
 //    The compiler front-end (i.e. importer) is responsible to insert a range-check IR
-//    (GT_HW_INTRINSIC_CHK) for imm8 argument, so this function does not need to do range-check.
+//    (GT_BOUNDS_CHECK) for imm8 argument, so this function does not need to do range-check.
 //
 template <typename HWIntrinsicSwitchCaseBody>
 void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsic,
@@ -2034,9 +2082,9 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     var_types      baseType    = node->GetSimdBaseType();
     emitAttr       attr        = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
-    instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType); // 213 form
-    instruction    _132form    = (instruction)(ins - 1);
-    instruction    _231form    = (instruction)(ins + 1);
+    instruction    _213form    = HWIntrinsicInfo::lookupIns(intrinsicId, baseType); // 213 form
+    instruction    _132form    = (instruction)(_213form - 1);
+    instruction    _231form    = (instruction)(_213form + 1);
     GenTree*       op1         = node->Op(1);
     GenTree*       op2         = node->Op(2);
     GenTree*       op3         = node->Op(3);
@@ -2058,49 +2106,37 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
     assert(!copiesUpperBits || !op1->isContained());
 
+    // We need to keep this in sync with lsraxarch.cpp
+    // Ideally we'd actually swap the operands in lsra and simplify codegen
+    // but its a bit more complicated to do so for many operands as well
+    // as being complicated to tell codegen how to pick the right instruction
+
+    instruction ins = INS_invalid;
+
     if (op1->isContained() || op1->isUsedFromSpillTemp())
     {
+        // targetReg == op3NodeReg or targetReg == ?
+        // op3 = ([op1] * op2) + op3
+        // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
+        ins = _231form;
+        std::swap(emitOp1, emitOp3);
+
         if (targetReg == op2NodeReg)
         {
-            std::swap(emitOp1, emitOp2);
             // op2 = ([op1] * op2) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
             ins = _132form;
-            std::swap(emitOp2, emitOp3);
-        }
-        else
-        {
-            // targetReg == op3NodeReg or targetReg == ?
-            // op3 = ([op1] * op2) + op3
-            // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
-            ins = _231form;
-            std::swap(emitOp1, emitOp3);
+            std::swap(emitOp1, emitOp2);
         }
     }
-    else if (op2->isContained() || op2->isUsedFromSpillTemp())
-    {
-        if (!copiesUpperBits && (targetReg == op3NodeReg))
-        {
-            // op3 = (op1 * [op2]) + op3
-            // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
-            ins = _231form;
-            std::swap(emitOp1, emitOp3);
-        }
-        else
-        {
-            // targetReg == op1NodeReg or targetReg == ?
-            // op1 = (op1 * [op2]) + op3
-            // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
-            ins = _132form;
-        }
-        std::swap(emitOp2, emitOp3);
-    }
-    else
+    else if (op3->isContained() || op3->isUsedFromSpillTemp())
     {
         // targetReg could be op1NodeReg, op2NodeReg, or not equal to any op
         // op1 = (op1 * op2) + [op3] or op2 = (op1 * op2) + [op3]
         // ? = (op1 * op2) + [op3] or ? = (op1 * op2) + op3
         // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+        ins = _213form;
+
         if (!copiesUpperBits && (targetReg == op2NodeReg))
         {
             // op2 = (op1 * op2) + [op3]
@@ -2108,7 +2144,44 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             std::swap(emitOp1, emitOp2);
         }
     }
+    else if (op2->isContained() || op2->isUsedFromSpillTemp())
+    {
+        // targetReg == op1NodeReg or targetReg == ?
+        // op1 = (op1 * [op2]) + op3
+        // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+        ins = _132form;
+        std::swap(emitOp2, emitOp3);
 
+        if (!copiesUpperBits && (targetReg == op3NodeReg))
+        {
+            // op3 = (op1 * [op2]) + op3
+            // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
+            ins = _231form;
+            std::swap(emitOp1, emitOp2);
+        }
+    }
+    else
+    {
+        // When we don't have a contained operand we still want to
+        // preference based on the target register if possible.
+
+        if (targetReg == op2NodeReg)
+        {
+            ins = _213form;
+            std::swap(emitOp1, emitOp2);
+        }
+        else if (targetReg == op3NodeReg)
+        {
+            ins = _231form;
+            std::swap(emitOp1, emitOp3);
+        }
+        else
+        {
+            ins = _213form;
+        }
+    }
+
+    assert(ins != INS_invalid);
     genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3);
     genProduceReg(node);
 }

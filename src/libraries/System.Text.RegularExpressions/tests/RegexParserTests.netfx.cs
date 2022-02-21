@@ -16,7 +16,7 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         /// <param name="error">The expected parse error</param>
         /// <param name="action">The action to invoke.</param>
-        static partial void Throws(RegexParseError error, int offset, Action action)
+        static partial void Throws(string pattern, RegexOptions options, RegexParseError error, int offset, Action action)
         {
             try
             {

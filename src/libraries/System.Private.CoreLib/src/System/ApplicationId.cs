@@ -12,10 +12,9 @@ namespace System
 
         public ApplicationId(byte[] publicKeyToken, string name, Version version, string? processorArchitecture, string? culture)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0) throw new ArgumentException(SR.Argument_EmptyApplicationName);
-            if (version == null) throw new ArgumentNullException(nameof(version));
-            if (publicKeyToken == null) throw new ArgumentNullException(nameof(publicKeyToken));
+            ArgumentException.ThrowIfNullOrEmpty(name);
+            ArgumentNullException.ThrowIfNull(version);
+            ArgumentNullException.ThrowIfNull(publicKeyToken);
 
             _publicKeyToken = (byte[])publicKeyToken.Clone();
             Name = name;

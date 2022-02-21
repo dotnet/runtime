@@ -72,6 +72,7 @@ if /i "%1" == "gcstresslevel"                           (set COMPlus_GCStress=%2
 
 if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 if /i "%1" == "tieringtest"                             (set TieringTest=1&shift&goto Arg_Loop)
+if /i "%1" == "runnativeaottests"                       (set RunNativeAot=1&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -149,6 +150,10 @@ if defined RunInUnloadableContext (
 
 if defined TieringTest (
     set __RuntestPyArgs=%__RuntestPyArgs% --tiering_test
+)
+
+if defined RunNativeAot (
+    set __RuntestPyArgs=%__RuntestPyArgs% --run_nativeaot_tests
 )
 
 REM Find python and set it to the variable PYTHON

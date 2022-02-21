@@ -15,11 +15,10 @@
 {
   .ver 0:0:0:0
 }
-.assembly ovfldiv1
+.assembly 'test'
 {
   .ver 0:0:0:0
 }
-.module ovfldiv1_il_r.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000

@@ -363,19 +363,21 @@ class EEClassLayoutInfo
     private:
         enum {
             // TRUE if the GC layout of the class is bit-for-bit identical
-            // to its unmanaged counterpart (i.e. no internal reference fields,
-            // no ansi-unicode char conversions required, etc.) Used to
-            // optimize marshaling.
-            e_BLITTABLE                 = 0x01,
-            // Post V1.0 addition: Is this type also sequential in managed memory?
-            e_MANAGED_SEQUENTIAL        = 0x02,
+            // to its unmanaged counterpart with the runtime marshalling system
+            // (i.e. no internal reference fields, no ansi-unicode char conversions required, etc.)
+            // Used to optimize marshaling.
+            e_BLITTABLE                       = 0x01,
+            // Is this type also sequential in managed memory?
+            e_MANAGED_SEQUENTIAL              = 0x02,
             // When a sequential/explicit type has no fields, it is conceptually
             // zero-sized, but actually is 1 byte in length. This holds onto this
             // fact and allows us to revert the 1 byte of padding when another
             // explicit type inherits from this type.
-            e_ZERO_SIZED                =   0x04,
+            e_ZERO_SIZED                      = 0x04,
             // The size of the struct is explicitly specified in the meta-data.
-            e_HAS_EXPLICIT_SIZE         = 0x08
+            e_HAS_EXPLICIT_SIZE               = 0x08,
+            // The type recursively has a field that is LayoutKind.Auto and not an enum.
+            e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT = 0x10
         };
 
         BYTE        m_bFlags;
@@ -419,6 +421,12 @@ class EEClassLayoutInfo
             return (m_bFlags & e_HAS_EXPLICIT_SIZE) == e_HAS_EXPLICIT_SIZE;
         }
 
+        BOOL HasAutoLayoutField() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_bFlags & e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT) == e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT;
+        }
+
         BYTE GetPackingSize() const
         {
             LIMITED_METHOD_CONTRACT;
@@ -452,6 +460,13 @@ class EEClassLayoutInfo
             LIMITED_METHOD_CONTRACT;
             m_bFlags = hasExplicitSize ? (m_bFlags | e_HAS_EXPLICIT_SIZE)
                                        : (m_bFlags & ~e_HAS_EXPLICIT_SIZE);
+        }
+
+        void SetHasAutoLayoutField(BOOL hasAutoLayoutField)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = hasAutoLayoutField ? (m_bFlags | e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT)
+                                       : (m_bFlags & ~e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT);
         }
 };
 
@@ -573,6 +588,9 @@ class EEClassOptionalFields
     // Size of data the eightBytes
     unsigned int m_eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
 #endif // UNIX_AMD64_ABI
+
+    // Required alignment for this fields of this type (only set in auto-layout structures when different from pointer alignment)
+    BYTE m_requiredFieldAlignment;
 
     // Set default values for optional fields.
     inline void Init();
@@ -1195,6 +1213,16 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= VMFLAG_PREFER_ALIGN8;
     }
+    inline BOOL HasCustomFieldAlignment()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_VMFlags & VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT);
+    }
+    inline void SetHasCustomFieldAlignment()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT;
+    }
 #ifdef _DEBUG
     inline void SetDestroyed()
     {
@@ -1382,6 +1410,8 @@ public:
 
     BOOL HasExplicitSize();
 
+    BOOL IsAutoLayoutOrHasAutoLayoutField();
+
     static void GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL *pfThrowOnUnmappableChar);
 
     /*
@@ -1478,6 +1508,13 @@ public:
 #else // !FEATURE_HFA
     bool CheckForHFA();
 #endif // FEATURE_HFA
+
+    inline int GetOverriddenFieldAlignmentRequirement()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(HasOptionalFields());
+        return GetOptionalFields()->m_requiredFieldAlignment;
+    }
 
 #ifdef FEATURE_COMINTEROP
     inline TypeHandle GetCoClassForInterface()
@@ -1672,7 +1709,7 @@ public:
         // unused                              = 0x00010000,
         VMFLAG_NO_GUID                         = 0x00020000,
         VMFLAG_HASNONPUBLICFIELDS              = 0x00040000,
-        // unused                              = 0x00080000,
+        VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT      = 0x00080000,
         VMFLAG_CONTAINS_STACK_PTR              = 0x00100000,
         VMFLAG_PREFER_ALIGN8                   = 0x00200000, // Would like to have 8-byte alignment
         VMFLAG_ONLY_ABSTRACT_METHODS           = 0x00400000, // Type only contains abstract methods
@@ -2060,6 +2097,13 @@ inline BOOL EEClass::HasExplicitSize()
 {
     LIMITED_METHOD_CONTRACT;
     return HasLayout() && GetLayoutInfo()->HasExplicitSize();
+}
+
+inline BOOL EEClass::IsAutoLayoutOrHasAutoLayoutField()
+{
+    LIMITED_METHOD_CONTRACT;
+    // If this type is not auto
+    return !HasLayout() || GetLayoutInfo()->HasAutoLayoutField();
 }
 
 //==========================================================================

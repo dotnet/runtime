@@ -150,8 +150,8 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// All other WriteValue methods are implemented by XmlWriter to delegate to WriteValue(object) or WriteValue(string), so
-        /// only these two methods need to be implemented.
+        /// All other WriteValue methods are implemented by XmlWriter to delegate to WriteValue(object), so
+        /// only this method needs to be implemented.
         /// </summary>
         public override void WriteValue(object value)
         {
@@ -159,11 +159,6 @@ namespace System.Xml.Xsl.Runtime
             Debug.Assert(_arrAttrs != null && _numEntries != 0);
             EnsureAttributeCache();
             _arrAttrs[_numEntries++].Init((XmlAtomicValue)value);
-        }
-
-        public override void WriteValue(string value)
-        {
-            WriteValue(value);
         }
 
         /// <summary>
@@ -195,6 +190,11 @@ namespace System.Xml.Xsl.Runtime
             Debug.Fail("Should never be called on XmlAttributeCache.");
         }
         public override void WriteEntityRef(string name)
+        {
+            Debug.Fail("Should never be called on XmlAttributeCache.");
+        }
+
+        public override void WriteValue(string value)
         {
             Debug.Fail("Should never be called on XmlAttributeCache.");
         }

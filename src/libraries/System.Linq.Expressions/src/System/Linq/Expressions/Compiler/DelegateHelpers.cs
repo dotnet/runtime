@@ -109,7 +109,7 @@ namespace System.Linq.Expressions.Compiler
 
         private static Type MakeNewCustomDelegate(Type[] types)
         {
-            if (LambdaExpression.CanCompileToIL)
+            if (RuntimeFeature.IsDynamicCodeSupported)
             {
                 Type returnType = types[types.Length - 1];
                 Type[] parameters = types.RemoveLast();

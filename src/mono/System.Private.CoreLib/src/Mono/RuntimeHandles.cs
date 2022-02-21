@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace Mono
 {
-    internal unsafe struct RuntimeClassHandle
+    internal unsafe struct RuntimeClassHandle : IEquatable<RuntimeClassHandle>
     {
         private readonly RuntimeStructs.MonoClass* value;
 
@@ -125,7 +125,7 @@ namespace Mono
         }
     }
 
-    internal struct RuntimeEventHandle
+    internal struct RuntimeEventHandle : IEquatable<RuntimeEventHandle>
     {
         private readonly IntPtr value;
 
@@ -165,7 +165,7 @@ namespace Mono
         }
     }
 
-    internal struct RuntimePropertyHandle
+    internal struct RuntimePropertyHandle : IEquatable<RuntimePropertyHandle>
     {
         private readonly IntPtr value;
 

@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class zlib
+    internal static partial class ZLib
     {
         [GeneratedDllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_DeflateInit2_")]
         internal static unsafe partial ZLibNative.ErrorCode DeflateInit2_(

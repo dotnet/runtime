@@ -158,7 +158,6 @@ namespace System.Diagnostics.Tracing
             bool MultiDequeues,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            int multiDequeuesInt = Convert.ToInt32(MultiDequeues); // bool maps to "win:Boolean", a 4-byte boolean
             LogThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
         }
 

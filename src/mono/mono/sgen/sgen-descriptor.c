@@ -213,7 +213,7 @@ mono_gc_get_bitmap_for_descr (SgenDescriptor descr, int *numbits)
 	gsize *bitmap;
 
 	switch (d & DESC_TYPE_MASK) {
-	case DESC_TYPE_RUN_LENGTH: {		
+	case DESC_TYPE_RUN_LENGTH: {
 		int first_set = (d >> 16) & 0xff;
 		int num_set = (d >> 24) & 0xff;
 		int i;
@@ -295,7 +295,7 @@ mono_gc_make_root_descr_all_refs (int numbits)
 
 	gc_bitmap = (gsize *)g_malloc0 (ALIGN_TO (ALIGN_TO (numbits, 8) + 1, sizeof (gsize)));
 	memset (gc_bitmap, 0xff, num_bytes);
-	if (numbits < ((sizeof (*gc_bitmap) * 8) - ROOT_DESC_TYPE_SHIFT)) 
+	if (numbits < ((sizeof (*gc_bitmap) * 8) - ROOT_DESC_TYPE_SHIFT))
 		gc_bitmap[0] = GUINT64_TO_LE(gc_bitmap[0]);
 	else if (numbits && num_bytes % (sizeof (*gc_bitmap)))
 		gc_bitmap[num_bytes / 8] = GUINT64_TO_LE(gc_bitmap [num_bytes / 8]);

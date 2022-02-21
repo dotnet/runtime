@@ -17,12 +17,15 @@ namespace System.Diagnostics
     {
         private static readonly object s_createProcessLock = new object();
 
+        private string? _processName;
+
         /// <summary>
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             if (processName == null)
@@ -93,6 +96,7 @@ namespace System.Diagnostics
         /// <summary>Terminates the associated process immediately.</summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public void Kill()
         {
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, throwIfExited: false))
@@ -125,6 +129,7 @@ namespace System.Diagnostics
             _haveMainWindow = false;
             _mainWindowTitle = null;
             _haveResponding = false;
+            _processName = null;
         }
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>
@@ -887,5 +892,35 @@ namespace System.Diagnostics
         }
 
         private static string GetErrorMessage(int error) => Interop.Kernel32.GetMessage(error);
+
+        /// <summary>Gets the friendly name of the process.</summary>
+        public string ProcessName
+        {
+            get
+            {
+                if (_processName == null)
+                {
+                    EnsureState(State.HaveNonExitedId);
+                    // If we already have the name via a populated ProcessInfo
+                    // then use that one.
+                    if (_processInfo?.ProcessName != null)
+                    {
+                        _processName = _processInfo!.ProcessName;
+                    }
+                    else
+                    {
+                        // If we don't have a populated ProcessInfo, then get and cache the process name.
+                        _processName = ProcessManager.GetProcessName(_processId, _machineName);
+
+                        if (_processName == null)
+                        {
+                            throw new InvalidOperationException(SR.NoProcessInfo);
+                        }
+                    }
+                }
+
+                return _processName;
+            }
+        }
     }
 }

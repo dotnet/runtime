@@ -10,7 +10,6 @@
 .assembly extern mscorlib {}
 
 .assembly b452707 {}
-.module b452707.exe
 
 .class private sequential ansi sealed beforefieldinit MyS
        extends [mscorlib]System.ValueType

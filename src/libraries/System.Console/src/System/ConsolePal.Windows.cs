@@ -93,9 +93,8 @@ namespace System
             // stdin, stdout and stderr, but they may not be readable or
             // writable.  Verify this by calling WriteFile in the
             // appropriate modes. This must handle console-less Windows apps.
-            int bytesWritten;
             byte junkByte = 0x41;
-            int r = Interop.Kernel32.WriteFile(outErrHandle, &junkByte, 0, out bytesWritten, IntPtr.Zero);
+            int r = Interop.Kernel32.WriteFile(outErrHandle, &junkByte, 0, out _, IntPtr.Zero);
             return r != 0; // In Win32 apps w/ no console, bResult should be 0 for failure.
         }
 
@@ -273,11 +272,9 @@ namespace System
                 if (_cachedInputRecord.eventType == Interop.KEY_EVENT)
                     return true;
 
-                Interop.InputRecord ir = default;
-                int numEventsRead = 0;
                 while (true)
                 {
-                    bool r = Interop.Kernel32.PeekConsoleInput(InputHandle, out ir, 1, out numEventsRead);
+                    bool r = Interop.Kernel32.PeekConsoleInput(InputHandle, out Interop.InputRecord ir, 1, out int numEventsRead);
                     if (!r)
                     {
                         int errorCode = Marshal.GetLastPInvokeError();
@@ -292,7 +289,7 @@ namespace System
                     // Skip non key-down && mod key events.
                     if (!IsKeyDownEvent(ir) || IsModKey(ir))
                     {
-                        r = Interop.Kernel32.ReadConsoleInput(InputHandle, out ir, 1, out numEventsRead);
+                        r = Interop.Kernel32.ReadConsoleInput(InputHandle, out _, 1, out _);
 
                         if (!r)
                             throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
@@ -310,7 +307,6 @@ namespace System
         public static ConsoleKeyInfo ReadKey(bool intercept)
         {
             Interop.InputRecord ir;
-            int numEventsRead = -1;
             bool r;
 
             lock (s_readKeySyncObject)
@@ -334,7 +330,7 @@ namespace System
 
                     while (true)
                     {
-                        r = Interop.Kernel32.ReadConsoleInput(InputHandle, out ir, 1, out numEventsRead);
+                        r = Interop.Kernel32.ReadConsoleInput(InputHandle, out ir, 1, out int numEventsRead);
                         if (!r || numEventsRead == 0)
                         {
                             // This will fail when stdin is redirected from a file or pipe.
@@ -411,8 +407,7 @@ namespace System
                 if (handle == InvalidHandleValue)
                     throw new IOException(SR.IO_NoConsole);
 
-                int mode = 0;
-                if (!Interop.Kernel32.GetConsoleMode(handle, out mode))
+                if (!Interop.Kernel32.GetConsoleMode(handle, out int mode))
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
                 return (mode & Interop.Kernel32.ENABLE_PROCESSED_INPUT) == 0;
@@ -423,8 +418,7 @@ namespace System
                 if (handle == InvalidHandleValue)
                     throw new IOException(SR.IO_NoConsole);
 
-                int mode = 0;
-                if (!Interop.Kernel32.GetConsoleMode(handle, out mode))
+                if (!Interop.Kernel32.GetConsoleMode(handle, out int mode))
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
                 if (value)
@@ -767,17 +761,15 @@ namespace System
 
             // fill the entire screen with blanks
 
-            int numCellsWritten = 0;
             success = Interop.Kernel32.FillConsoleOutputCharacter(hConsole, ' ',
-                conSize, coordScreen, out numCellsWritten);
+                conSize, coordScreen, out _);
             if (!success)
                 throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
             // now set the buffer's attributes accordingly
 
-            numCellsWritten = 0;
             success = Interop.Kernel32.FillConsoleOutputAttribute(hConsole, csbi.wAttributes,
-                conSize, coordScreen, out numCellsWritten);
+                conSize, coordScreen, out _);
             if (!success)
                 throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
@@ -1042,8 +1034,7 @@ namespace System
 
         private static Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO GetBufferInfo()
         {
-            bool unused;
-            return GetBufferInfo(true, out unused);
+            return GetBufferInfo(true, out _);
         }
 
         // For apps that don't have a console (like Windows apps), they might

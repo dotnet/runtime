@@ -970,8 +970,8 @@ namespace System.Xml.Serialization
                 xmlQualifiedName = new XmlQualifiedName(mapping.TypeName, mapping.Namespace);
             }
 
-            string? stringValue = null;
-            bool hasValidStringValue = false;
+            string? stringValue;
+            bool hasValidStringValue;
             if (mapping is EnumMapping enumMapping)
             {
                 stringValue = WriteEnumMethod(enumMapping, o);

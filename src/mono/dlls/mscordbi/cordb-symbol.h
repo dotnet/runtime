@@ -248,7 +248,7 @@ public:
       mdTypeDef *ptd);          // [OUT] Put the TypeDef token here.
 
   HRESULT STDMETHODCALLTYPE GetScopeProps( // S_OK or error.
-      __out_ecount_part_opt(cchName, *pchName)
+      _Out_writes_to_opt_(cchName, *pchName)
           LPWSTR szName, // [OUT] Put the name here.
       ULONG cchName,     // [IN] Size of name buffer in wide chars.
       ULONG *pchName,    // [OUT] Put size of name (wide chars) here.
@@ -259,7 +259,7 @@ public:
 
   HRESULT STDMETHODCALLTYPE GetTypeDefProps( // S_OK or error.
       mdTypeDef td,        // [IN] TypeDef token for inquiry.
-      __out_ecount_part_opt(cchTypeDef, *pchTypeDef)
+      _Out_writes_to_opt_(cchTypeDef, *pchTypeDef)
           LPWSTR szTypeDef,   // [OUT] Put name here.
       ULONG cchTypeDef,       // [IN] size of name buffer in wide chars.
       ULONG *pchTypeDef,      // [OUT] put size of name (wide chars) here.
@@ -275,7 +275,7 @@ public:
       mdTypeRef tr,                // [IN] TypeRef token.
       mdToken *ptkResolutionScope, // [OUT] Resolution scope, ModuleRef or
                                    // AssemblyRef.
-      __out_ecount_part_opt(cchName, *pchName)
+      _Out_writes_to_opt_(cchName, *pchName)
           LPWSTR szName, // [OUT] Name of the TypeRef.
       ULONG cchName,     // [IN] Size of buffer.
       ULONG *pchName);   // [OUT] Size of Name.
@@ -389,7 +389,7 @@ public:
   HRESULT STDMETHODCALLTYPE GetMethodProps(
       mdMethodDef mb,    // The method for which to get props.
       mdTypeDef *pClass, // Put method's class here.
-      __out_ecount_part_opt(cchMethod, *pchMethod)
+      _Out_writes_to_opt_(cchMethod, *pchMethod)
           LPWSTR szMethod,         // Put method's name here.
       ULONG cchMethod,             // Size of szMethod buffer in wide chars.
       ULONG *pchMethod,            // Put actual size here
@@ -402,7 +402,7 @@ public:
   HRESULT STDMETHODCALLTYPE GetMemberRefProps( // S_OK or error.
       mdMemberRef mr,        // [IN] given memberref
       mdToken *ptk,          // [OUT] Put classref or classdef here.
-      __out_ecount_part_opt(cchMember, *pchMember)
+      _Out_writes_to_opt_(cchMember, *pchMember)
           LPWSTR szMember,         // [OUT] buffer to fill for member's name
       ULONG cchMember,             // [IN] the count of char of szMember
       ULONG *pchMember,            // [OUT] actual count of char in member name
@@ -482,7 +482,7 @@ public:
 
   HRESULT STDMETHODCALLTYPE GetModuleRefProps( // S_OK or error.
       mdModuleRef mur,       // [IN] moduleref token.
-      __out_ecount_part_opt(cchName, *pchName)
+      _Out_writes_to_opt_(cchName, *pchName)
           LPWSTR szName, // [OUT] buffer to fill with the moduleref name.
       ULONG cchName,     // [IN] size of szName in wide characters.
       ULONG *pchName);   // [OUT] actual count of characters in the name.
@@ -511,7 +511,7 @@ public:
 
   HRESULT STDMETHODCALLTYPE GetUserString( // S_OK or error.
       mdString stk,      // [IN] String token.
-      __out_ecount_part_opt(cchString, *pchString)
+      _Out_writes_to_opt_(cchString, *pchString)
           LPWSTR szString, // [OUT] Copy of string.
       ULONG cchString,     // [IN] Max chars of room in szString.
       ULONG *pchString);   // [OUT] How many chars in actual string.
@@ -519,7 +519,7 @@ public:
   HRESULT STDMETHODCALLTYPE GetPinvokeMap(      // S_OK or error.
       mdToken tk,             // [IN] FieldDef or MethodDef.
       DWORD *pdwMappingFlags, // [OUT] Flags used for mapping.
-      __out_ecount_part_opt(cchImportName, *pchImportName)
+      _Out_writes_to_opt_(cchImportName, *pchImportName)
           LPWSTR szImportName,    // [OUT] Import name.
       ULONG cchImportName,        // [IN] Size of the name buffer.
       ULONG *pchImportName,       // [OUT] Actual number of characters stored.
@@ -573,7 +573,7 @@ public:
   HRESULT STDMETHODCALLTYPE GetMemberProps(
       mdToken mb,        // The member for which to get props.
       mdTypeDef *pClass, // Put member's class here.
-      __out_ecount_part_opt(cchMember, *pchMember)
+      _Out_writes_to_opt_(cchMember, *pchMember)
           LPWSTR szMember,         // Put member's name here.
       ULONG cchMember,             // Size of szMember buffer in wide chars.
       ULONG *pchMember,            // Put actual size here
@@ -591,7 +591,7 @@ public:
   HRESULT STDMETHODCALLTYPE GetFieldProps(
       mdFieldDef mb,     // The field for which to get props.
       mdTypeDef *pClass, // Put field's class here.
-      __out_ecount_part_opt(cchField, *pchField)
+      _Out_writes_to_opt_(cchField, *pchField)
           LPWSTR szField,          // Put field's name here.
       ULONG cchField,              // Size of szField buffer in wide chars.
       ULONG *pchField,             // Put actual size here
@@ -630,7 +630,7 @@ public:
       mdParamDef tk,      // [IN]The Parameter.
       mdMethodDef *pmd,   // [OUT] Parent Method token.
       ULONG *pulSequence, // [OUT] Parameter sequence.
-      __out_ecount_part_opt(cchName, *pchName)
+      _Out_writes_to_opt_(cchName, *pchName)
           LPWSTR szName,       // [OUT] Put name here.
       ULONG cchName,           // [OUT] Size of name buffer.
       ULONG *pchName,          // [OUT] Put actual size of name here.

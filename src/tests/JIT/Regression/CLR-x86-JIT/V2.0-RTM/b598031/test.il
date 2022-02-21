@@ -10,7 +10,6 @@
 }
 .assembly test {}
 .assembly extern xunit.core {}
-.module test.exe
 
 .class private auto ansi beforefieldinit Program
        extends [mscorlib]System.Object

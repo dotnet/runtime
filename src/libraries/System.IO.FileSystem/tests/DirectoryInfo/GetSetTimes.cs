@@ -7,7 +7,9 @@ namespace System.IO.Tests
 {
     public class DirectoryInfo_GetSetTimes : InfoGetSetTimes<DirectoryInfo>
     {
-        protected override DirectoryInfo GetExistingItem() => Directory.CreateDirectory(GetTestFilePath());
+        protected override bool CanBeReadOnly => false;
+
+        protected override DirectoryInfo GetExistingItem(bool _) => Directory.CreateDirectory(GetTestFilePath());
 
         protected override DirectoryInfo GetMissingItem() => new DirectoryInfo(GetTestFilePath());
 

@@ -1,0 +1,12 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">	
+  <xs:attribute name="testatr" default="b bad">
+         <xs:simpleType>
+            <xs:restriction base="xs:NMTOKENS">
+               <xs:enumeration value="a"/>
+               <xs:enumeration value="b"/>
+               <xs:enumeration value="c"/>
+               <xs:enumeration value="d"/>
+            </xs:restriction>
+         </xs:simpleType>
+      </xs:attribute>
+</xs:schema>

@@ -16,7 +16,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module NaN.exe
 
 
 .file alignment 512

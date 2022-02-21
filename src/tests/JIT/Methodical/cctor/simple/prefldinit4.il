@@ -12,7 +12,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly precise4
+.assembly 'prefldinit4'
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -21,44 +21,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module precise4.exe
-// MVID: {623817A9-BEA6-4892-A378-D2135E123200}
-.imagebase 0x00400000
-.subsystem 0x00000003
-.file alignment 512
-.corflags 0x00000001
-// Image base: 0x076c0000
-//
-// ============== CLASS STRUCTURE DECLARATION ==================
-//
-.class private auto ansi beforefieldinit measure
-       extends [mscorlib]System.Object
-{
-} // end of class measure
-
-.class private auto ansi test
-       extends [mscorlib]System.Object
-{
-} // end of class test
-
-.class private auto ansi beforefieldinit Driver
-       extends [mscorlib]System.Object
-{
-} // end of class Driver
-
-
-// =============================================================
-
-
-// =============== GLOBAL FIELDS AND METHODS ===================
-
-
-// =============================================================
-
-
-// =============== CLASS MEMBERS DECLARATION ===================
-//   note that class flags, 'extends' and 'implements' clauses
-//          are provided here for information only
 
 .class private auto ansi beforefieldinit measure
        extends [mscorlib]System.Object
@@ -86,7 +48,7 @@
 
 } // end of class measure
 
-.class private auto ansi beforefieldinit test
+.class private auto ansi test
        extends [mscorlib]System.Object
 {
   .field public static unsigned int8 b

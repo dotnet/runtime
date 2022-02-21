@@ -13,11 +13,11 @@
 
 _FUNC_PROLOGUE
 errno_t __cdecl _FUNC_NAME(
-    __in_z const _CHAR *_Path,
-    __out_ecount_z_opt(_DriveSize) _CHAR *_Drive, __in size_t _DriveSize,
-    __out_ecount_z_opt(_DirSize) _CHAR *_Dir, __in size_t _DirSize,
-    __out_ecount_z_opt(_FilenameSize) _CHAR *_Filename, __in size_t _FilenameSize,
-    __out_ecount_z_opt(_ExtSize) _CHAR *_Ext, __in size_t _ExtSize
+    _In_z_ const _CHAR *_Path,
+    _Out_writes_opt_z_(_DriveSize) _CHAR *_Drive, _In_ size_t _DriveSize,
+    _Out_writes_opt_z_(_DirSize) _CHAR *_Dir, _In_ size_t _DirSize,
+    _Out_writes_opt_z_(_FilenameSize) _CHAR *_Filename, _In_ size_t _FilenameSize,
+    _Out_writes_opt_z_(_ExtSize) _CHAR *_Ext, _In_ size_t _ExtSize
 )
 {
     const _CHAR *tmp;

@@ -11,11 +11,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly bug // // as "bug"
+.assembly 'volatile' // // as "bug"
 {
 }
 .assembly extern xunit.core {}
-.module bug.exe
 // MVID: {A29CDE84-6701-43B3-B56A-DE8480CE7421}
 .namespace JitTest
 {

@@ -14,7 +14,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'try-catch01'
+.assembly 'try-filter-struct02'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -24,7 +24,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module 'try-catch01.exe'
 // MVID: {76712D77-A992-40B1-9AD0-E58BD9DA334B}
 .imagebase 0x00400000
 .subsystem 0x00000003

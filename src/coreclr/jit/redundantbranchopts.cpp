@@ -132,7 +132,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
             assert(domJumpTree->OperIs(GT_JTRUE));
             GenTree* const domCmpTree = domJumpTree->AsOp()->gtGetOp1();
 
-            if (domCmpTree->OperKind() & GTK_RELOP)
+            if (domCmpTree->OperIsCompare())
             {
                 // We can use liberal VNs here, as bounds checks are not yet
                 // manifest explicitly as relops.
@@ -1027,7 +1027,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
-            if (gtHasRef(prevTreeRHS, definedLocals[i], /*def only*/ false))
+            if (gtHasRef(prevTreeRHS, definedLocals[i]))
             {
                 JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
                 interferes = true;

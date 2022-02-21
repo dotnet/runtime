@@ -240,7 +240,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(4, func());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ClassData(typeof(CompilationTypes))]
         public void CatchFromExternallyThrownString(bool useInterpreter)
         {
@@ -1402,7 +1402,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void CatchesMustReturnVoidWithVoidBody()
         {
-            Assert.Throws<ArgumentException>(null, () =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
                 Expression.TryCatch(
                     Expression.Empty(),
                     Expression.Catch(typeof(InvocationExpression), Expression.Constant("hello")),

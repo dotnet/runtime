@@ -17,7 +17,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'lcs_ulong.exe'
 // MVID: {4FECC02C-D871-4196-A531-897C5458F477}
 .namespace JitTest
 {

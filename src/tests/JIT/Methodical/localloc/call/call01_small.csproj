@@ -12,6 +12,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="call01.cs" />
-    <ProjectReference Include="..\..\..\jit64\localloc\common\common.ilproj" />
+    <ProjectReference Include="..\..\..\common\localloc_common.ilproj" />
   </ItemGroup>
 </Project>

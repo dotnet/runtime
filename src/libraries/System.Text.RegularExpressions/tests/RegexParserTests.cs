@@ -714,16 +714,38 @@ namespace System.Text.RegularExpressions.Tests
             if (error != null)
             {
                 Assert.InRange(offset, 0, int.MaxValue);
-                Throws(error.Value, offset, () => new Regex(pattern, options));
+                Throws(pattern, options, error.Value, offset, () => new Regex(pattern, options));
                 return;
             }
 
             Assert.Equal(-1, offset);
+            LogActual(pattern, options, RegexParseError.Unknown, -1);
 
             // Nothing to assert here without having access to internals.
             new Regex(pattern, options); // Does not throw
 
             ParsePatternFragments(pattern, options);
+        }
+
+        private static void LogActual(string pattern, RegexOptions options, RegexParseError error, int offset)
+        {   
+            // To conveniently add new interesting patterns to these tests, add them to the code in the format:
+            //
+            // [InlineData("SOMEREGEX1", RegexOptions.None, null)]
+            // [InlineData("SOMEREGEX2", RegexOptions.None, null)]
+            // ...
+            //
+            // then uncomment the lines below, and the correct baseline will be written to the file, eg
+            //
+            // [InlineData(@"SOMEREGEX1", RegexOptions.None, RegexParseError.UnrecognizedEscape, 3)]
+            // [InlineData(@"SOMEREGEX2", RegexOptions.None, InsufficientClosingParentheses, 2)]
+            // ...
+            // 
+            //string s = (error == RegexParseError.Unknown) ?
+            //    @$"        [InlineData(@""{pattern}"", RegexOptions.{options.ToString()}, null)]" :
+            //    @$"        [InlineData(@""{pattern}"", RegexOptions.{options.ToString()}, RegexParseError.{error.ToString()}, {offset})]";
+
+            // File.AppendAllText(@"/tmp/out.cs", s + "\n");
         }
 
         private static void ParsePatternFragments(string pattern, RegexOptions options)
@@ -755,7 +777,7 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         /// <param name="error">The expected parse error</param>
         /// <param name="action">The action to invoke.</param>
-        static partial void Throws(RegexParseError error, int offset, Action action);
+        static partial void Throws(string pattern, RegexOptions options, RegexParseError error, int offset, Action action);
 
         /// <summary>
         /// Checks that action succeeds or throws either a RegexParseException or an ArgumentException depending on the

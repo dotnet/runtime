@@ -4,7 +4,6 @@
 
 
 // Metadata version: v2.0.50727
-.module extern kernel32
 .module extern libc
 
 .assembly extern mscorlib { }

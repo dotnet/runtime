@@ -237,8 +237,6 @@ class PEDecoder
     BOOL IsILOnly() const;
     CHECK CheckILOnly() const;
 
-    void LayoutILOnly(void *base, bool enableExecution) const;
-
     // Strong name & hashing support
 
     BOOL HasStrongNameSignature() const;
@@ -348,6 +346,7 @@ class PEDecoder
     IMAGE_SECTION_HEADER *OffsetToSection(COUNT_T fileOffset) const;
 
     void SetRelocated();
+    IMAGE_NT_HEADERS* FindNTHeaders() const;
 
   private:
 
@@ -364,7 +363,6 @@ class PEDecoder
 
     static PTR_IMAGE_SECTION_HEADER FindFirstSection(IMAGE_NT_HEADERS * pNTHeaders);
 
-    IMAGE_NT_HEADERS *FindNTHeaders() const;
     IMAGE_COR20_HEADER *FindCorHeader() const;
     READYTORUN_HEADER *FindReadyToRunHeader() const;
 

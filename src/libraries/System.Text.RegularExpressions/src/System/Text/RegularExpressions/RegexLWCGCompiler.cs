@@ -29,17 +29,15 @@ namespace System.Text.RegularExpressions
         /// <summary>Id number to use for the next compiled regex.</summary>
         private static int s_regexCount;
 
-        public RegexLWCGCompiler()
-        {
-        }
-
         /// <summary>The top-level driver. Initializes everything then calls the Generate* methods.</summary>
-        public RegexRunnerFactory FactoryInstanceFromCode(string pattern, RegexCode code, RegexOptions options, bool hasTimeout)
+        public RegexRunnerFactory? FactoryInstanceFromCode(string pattern, RegexCode code, RegexOptions options, bool hasTimeout)
         {
+            if (!code.Tree.Root.SupportsCompilation())
+            {
+                return null;
+            }
+
             _code = code;
-            _codes = code.Codes;
-            _strings = code.Strings;
-            _trackcount = code.TrackCount;
             _options = options;
             _hasTimeout = hasTimeout;
 
@@ -54,13 +52,13 @@ namespace System.Text.RegularExpressions
                 description = string.Concat("_", pattern.Length > DescriptionLimit ? pattern.AsSpan(0, DescriptionLimit) : pattern);
             }
 
-            DynamicMethod goMethod = DefineDynamicMethod($"Regex{regexNum}_Go{description}", null, typeof(CompiledRegexRunner));
-            GenerateGo();
-
             DynamicMethod findFirstCharMethod = DefineDynamicMethod($"Regex{regexNum}_FindFirstChar{description}", typeof(bool), typeof(CompiledRegexRunner));
-            GenerateFindFirstChar();
+            EmitFindFirstChar();
 
-            return new CompiledRegexRunnerFactory(goMethod, findFirstCharMethod, _trackcount);
+            DynamicMethod goMethod = DefineDynamicMethod($"Regex{regexNum}_Go{description}", null, typeof(CompiledRegexRunner));
+            EmitGo();
+
+            return new CompiledRegexRunnerFactory(goMethod, findFirstCharMethod, code.TrackCount);
         }
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>

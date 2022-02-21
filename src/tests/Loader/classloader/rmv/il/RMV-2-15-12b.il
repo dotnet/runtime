@@ -3,7 +3,7 @@
 
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
-.assembly 'RMV-2-15-12'{}
+.assembly 'RMV-2-15-12b'{}
 .assembly extern mscorlib {}
 
 .class Parent{

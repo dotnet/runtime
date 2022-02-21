@@ -17,7 +17,7 @@ namespace System.ComponentModel
     /// </summary>
     public class ComponentResourceManager : ResourceManager
     {
-        private Hashtable? _resourceSets;
+        private Dictionary<CultureInfo, SortedList<string, object?>?>? _resourceSets;
         private CultureInfo? _neutralResourcesCulture;
 
         public ComponentResourceManager()
@@ -63,16 +63,8 @@ namespace System.ComponentModel
         /// property the resource will be ignored.
         /// </summary>
         [RequiresUnreferencedCode("The Type of value cannot be statically discovered.")]
-        public virtual void ApplyResources(object value, string objectName, CultureInfo? culture)
+        public virtual void ApplyResources(object value!!, string objectName!!, CultureInfo? culture)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            if (objectName == null)
-            {
-                throw new ArgumentNullException(nameof(objectName));
-            }
             if (culture == null)
             {
                 culture = CultureInfo.CurrentUICulture;
@@ -93,16 +85,16 @@ namespace System.ComponentModel
 
             if (_resourceSets == null)
             {
-                _resourceSets = new Hashtable();
-                resources = FillResources(culture, out ResourceSet? dummy);
+                _resourceSets = new Dictionary<CultureInfo, SortedList<string, object?>?>();
+                resources = FillResources(culture, out _);
                 _resourceSets[culture] = resources;
             }
             else
             {
-                resources = (SortedList<string, object?>?)_resourceSets[culture];
+                resources = _resourceSets.GetValueOrDefault(culture, defaultValue: null);
                 if (resources == null || (resources.Comparer.Equals(StringComparer.OrdinalIgnoreCase) != IgnoreCase))
                 {
-                    resources = FillResources(culture, out ResourceSet? dummy);
+                    resources = FillResources(culture, out _);
                     _resourceSets[culture] = resources;
                 }
             }
@@ -165,7 +157,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    PropertyInfo? prop = null;
+                    PropertyInfo? prop;
 
                     try
                     {

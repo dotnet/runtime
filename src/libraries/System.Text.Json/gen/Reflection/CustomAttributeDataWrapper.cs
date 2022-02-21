@@ -15,7 +15,7 @@ namespace System.Text.Json.Reflection
             var namedArguments = new List<CustomAttributeNamedArgument>();
             foreach (KeyValuePair<string, TypedConstant> na in a.NamedArguments)
             {
-                var member = a.AttributeClass!.GetMembers(na.Key).First();
+                var member = a.AttributeClass.BaseTypes().SelectMany(t => t.GetMembers(na.Key)).First();
 
                 MemberInfo memberInfo = member is IPropertySymbol
                     ? new PropertyInfoWrapper((IPropertySymbol)member, metadataLoadContext)

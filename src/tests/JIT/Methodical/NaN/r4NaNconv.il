@@ -10,9 +10,8 @@
 .assembly extern mscorlib
 {
 }
-.assembly conv {}
+.assembly 'r4NaNconv' {}
 .assembly extern xunit.core {}
-.module conv.exe
 .class private auto ansi beforefieldinit ConvTest
        extends [mscorlib]System.Object
 {

@@ -114,9 +114,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 proc.BeginErrorReadLine();
                 proc.BeginOutputReadLine();
 
-                if (await Task.WhenAny(tcs.Task, Task.Delay(5000)) != tcs.Task)
+                if (await Task.WhenAny(tcs.Task, Task.Delay(20000)) != tcs.Task)
                 {
-                    Logger.LogError("Didnt get the con string after 5s.");
+                    Logger.LogError("Didnt get the con string after 20s.");
                     throw new Exception("node.js timedout");
                 }
                 var line = await tcs.Task;

@@ -47,7 +47,7 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #ifndef HOST_WIN32
 
 #ifdef HAVE_WORKING_SIGALTSTACK
-/* 
+/*
  * solaris doesn't have pthread_getattr_np () needed by the sigaltstack setup
  * code.
  */
@@ -96,8 +96,8 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define MONO_ARCH_INST_FIXED_MASK(desc) ((desc == 'y') ? (X86_BYTE_REGS) : 0)
 
 /* RDX is clobbered by the opcode implementation before accessing sreg2 */
-/* 
- * Originally this contained X86_EDX for div/rem opcodes, but that led to unsolvable 
+/*
+ * Originally this contained X86_EDX for div/rem opcodes, but that led to unsolvable
  * situations since there are only 3 usable registers for local register allocation.
  * Instead, we handle the sreg2==edx case in the opcodes.
  */
@@ -112,7 +112,7 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 /* must be at a power of 2 and >= 8 */
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
-/* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
+/* fixme: align to 16byte instead of 32byte (we align to 32byte to get
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
@@ -125,7 +125,7 @@ the monitor.enter call and must be already protected.*/
 #define MONO_ARCH_MONITOR_ENTER_ADJUSTMENT 4
 
 struct MonoLMF {
-	/* 
+	/*
 	 * If the lowest bit is set to 1, then this is a trampoline LMF frame.
 	 * If the second lowest bit is set to 1, then this is a MonoLMFExt structure, and
 	 * the other fields are not valid.
@@ -290,14 +290,14 @@ typedef enum {
 
 typedef struct {
 	gint16 offset;
-	gint8  reg;
+	guint8  reg;
 	ArgStorage storage;
 	int nslots;
 	gboolean is_pair;
 
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
-	gint8 pair_regs [2];
+	guint8 pair_regs [2];
 	guint8 pass_empty_struct : 1; // Set in scenarios when empty structs needs to be represented as argument.
 } ArgInfo;
 
@@ -350,5 +350,5 @@ mono_x86_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 CallInfo*
 mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig);
 
-#endif /* __MONO_MINI_X86_H__ */  
+#endif /* __MONO_MINI_X86_H__ */
 

@@ -18,7 +18,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             AssertExtensions.Throws<ArgumentNullException>("mapName", () => MemoryMappedFile.OpenExisting(null));
 
             // Empty is never a valid map name
-            AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.OpenExisting(string.Empty));
+            AssertExtensions.Throws<ArgumentException>("mapName", () => MemoryMappedFile.OpenExisting(string.Empty));
         }
 
         /// <summary>

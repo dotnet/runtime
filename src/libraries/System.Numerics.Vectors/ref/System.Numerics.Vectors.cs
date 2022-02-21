@@ -290,6 +290,42 @@ namespace System.Numerics
         public static System.Numerics.Vector<System.UInt32> Narrow(System.Numerics.Vector<System.UInt64> low, System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Negate<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<T> OnesComplement<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
+        public static System.Numerics.Vector<System.Byte> ShiftLeft(System.Numerics.Vector<System.Byte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int16> ShiftLeft(System.Numerics.Vector<System.Int16> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int32> ShiftLeft(System.Numerics.Vector<System.Int32> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int64> ShiftLeft(System.Numerics.Vector<System.Int64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<nint> ShiftLeft(System.Numerics.Vector<nint> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<nuint> ShiftLeft(System.Numerics.Vector<nuint> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.SByte> ShiftLeft(System.Numerics.Vector<System.SByte> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt16> ShiftLeft(System.Numerics.Vector<System.UInt16> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt32> ShiftLeft(System.Numerics.Vector<System.UInt32> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt64> ShiftLeft(System.Numerics.Vector<System.UInt64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int16> ShiftRightArithmetic(System.Numerics.Vector<System.Int16> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int32> ShiftRightArithmetic(System.Numerics.Vector<System.Int32> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int64> ShiftRightArithmetic(System.Numerics.Vector<System.Int64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<nint> ShiftRightArithmetic(System.Numerics.Vector<nint> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.SByte> ShiftRightArithmetic(System.Numerics.Vector<System.SByte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Byte> ShiftRightLogical(System.Numerics.Vector<System.Byte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int16> ShiftRightLogical(System.Numerics.Vector<System.Int16> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int32> ShiftRightLogical(System.Numerics.Vector<System.Int32> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int64> ShiftRightLogical(System.Numerics.Vector<System.Int64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<nint> ShiftRightLogical(System.Numerics.Vector<nint> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<nuint> ShiftRightLogical(System.Numerics.Vector<nuint> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.SByte> ShiftRightLogical(System.Numerics.Vector<System.SByte> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt16> ShiftRightLogical(System.Numerics.Vector<System.UInt16> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt32> ShiftRightLogical(System.Numerics.Vector<System.UInt32> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt64> ShiftRightLogical(System.Numerics.Vector<System.UInt64> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<T> SquareRoot<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<T> Subtract<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]

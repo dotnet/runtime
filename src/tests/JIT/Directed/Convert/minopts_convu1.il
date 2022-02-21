@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 
-.assembly ILGEN_0xb0847955 {}
+.assembly 'minopts_convu1' {}
 .assembly extern mscorlib{auto}
 
 .class ILGEN_0xb0847955 {

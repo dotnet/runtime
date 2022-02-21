@@ -698,7 +698,7 @@ ErrExit:
 // Get values from Sym.Module
 //*****************************************************************************
 STDMETHODIMP RegMeta::GetScopeProps(
-    __out_ecount_opt (cchName) LPWSTR szName, // Put name here
+    _Out_writes_opt_ (cchName) LPWSTR szName, // Put name here
     ULONG       cchName,                // Size in chars of name buffer
     ULONG       *pchName,               // Put actual length of name here
     GUID        *pmvid)                 // Put MVID here
@@ -824,7 +824,7 @@ ErrExit:
 HRESULT
 RegMeta::GetTypeDefProps(
     mdTypeDef td,                   // [IN] TypeDef token for inquiry.
-    __out_ecount_opt (cchTypeDef) LPWSTR szTypeDef, // [OUT] Put name here.
+    _Out_writes_opt_ (cchTypeDef) LPWSTR szTypeDef, // [OUT] Put name here.
     ULONG     cchTypeDef,           // [IN] size of name buffer in wide chars.
     ULONG    *pchTypeDef,           // [OUT] put size of name (wide chars) here.
     DWORD    *pdwTypeDefFlags,      // [OUT] Put flags here.
@@ -977,7 +977,7 @@ STDMETHODIMP
 RegMeta::GetTypeRefProps(
     mdTypeRef tr,                   // The class ref token.
     mdToken  *ptkResolutionScope,   // Resolution scope, ModuleRef or AssemblyRef.
-    __out_ecount_opt (cchTypeRef) LPWSTR szTypeRef, // Put the name here.
+    _Out_writes_opt_ (cchTypeRef) LPWSTR szTypeRef, // Put the name here.
     ULONG     cchTypeRef,           // Size of the name buffer, wide chars.
     ULONG    *pchTypeRef)           // Put actual size of name here.
 {

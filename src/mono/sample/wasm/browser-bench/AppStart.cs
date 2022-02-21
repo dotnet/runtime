@@ -47,19 +47,11 @@ namespace Sample
 
             public override int InitialSamples => 3;
 
-            async Task RunAsyncStep()
-            {
-                var function = Activator.CreateInstance(jsFunctionType, new object[] { new object[] { @"return App.StartAppUI();" } });
-                var task = (Task<object>)functionCall.Invoke(function, new object[] { });
-
-                await task;
-            }
-
             public override bool HasRunStepAsync => true;
 
             public override async Task RunStepAsync()
             {
-                var function = Activator.CreateInstance(jsFunctionType, new object[] { new object[] { @"return App.PageShow();" } });
+                var function = Activator.CreateInstance(jsFunctionType, new object[] { new object[] { @"return mainApp.PageShow();" } });
                 await (Task<object>)functionCall.Invoke(function, null);
             }
         }
@@ -70,8 +62,8 @@ namespace Sample
             public override int InitialSamples => 3;
             public override bool HasRunStepAsync => true;
 
-            static object jsUIReachedManagedFunction = Activator.CreateInstance(jsFunctionType, new object[] { new object[] { @"return App.ReachedManaged();" } });
-            static object jsReached = Activator.CreateInstance(jsFunctionType, new object[] { new object[] { @"return App.reached();" } });
+            static object jsUIReachedManagedFunction = Activator.CreateInstance(jsFunctionType, new object[] { new object[] { @"return mainApp.ReachedManaged();" } });
+            static object jsReached = Activator.CreateInstance(jsFunctionType, new object[] { new object[] { @"return frameApp.reached();" } });
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             public static void Reached()

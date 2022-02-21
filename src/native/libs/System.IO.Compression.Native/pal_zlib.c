@@ -5,9 +5,11 @@
 #include <stdlib.h>
 #include "pal_zlib.h"
 
-#ifdef  _WIN32
-    #define c_static_assert(e) static_assert((e),"")
-    #include "zlib/zlib.h"
+#ifdef INTERNAL_ZLIB
+    #ifdef  _WIN32
+        #define c_static_assert(e) static_assert((e),"")
+    #endif
+    #include <external/zlib/zlib.h>
 #else
     #include "pal_utilities.h"
     #include <zlib.h>

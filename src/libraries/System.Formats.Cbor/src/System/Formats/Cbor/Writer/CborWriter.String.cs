@@ -22,13 +22,8 @@ namespace System.Formats.Cbor
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
         /// The written data is not accepted under the current conformance mode.</exception>
-        public void WriteByteString(byte[] value)
+        public void WriteByteString(byte[] value!!)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             WriteByteString(value.AsSpan());
         }
 
@@ -106,13 +101,8 @@ namespace System.Formats.Cbor
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
         /// The written data is not accepted under the current conformance mode.</exception>
-        public void WriteTextString(string value)
+        public void WriteTextString(string value!!)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             WriteTextString(value.AsSpan());
         }
 
@@ -131,7 +121,7 @@ namespace System.Formats.Cbor
             int length;
             try
             {
-                length = utf8Encoding.GetByteCount(value);
+                length = CborHelpers.GetByteCount(utf8Encoding, value);
             }
             catch (EncoderFallbackException e)
             {
@@ -150,7 +140,7 @@ namespace System.Formats.Cbor
                 _currentIndefiniteLengthStringRanges.Add((_offset, value.Length));
             }
 
-            utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset, length));
+            CborHelpers.GetBytes(utf8Encoding, value, _buffer.AsSpan(_offset, length));
             _offset += length;
             AdvanceDataItemCounters();
         }

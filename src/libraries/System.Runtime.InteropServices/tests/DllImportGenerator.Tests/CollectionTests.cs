@@ -195,7 +195,6 @@ namespace DllImportGenerator.IntegrationTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60624", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsArm64Process))]
         public void CollectionWithSimpleNonBlittableTypeMarshalling(bool result)
         {
             var boolValues = new List<BoolStruct>

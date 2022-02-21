@@ -5,10 +5,10 @@
 
 // Include System.IO.Compression.Native headers
 #include "pal_zlib.h"
-#include "brotli/include/brotli/decode.h"
-#include "brotli/include/brotli/encode.h"
-#include "brotli/include/brotli/port.h"
-#include "brotli/include/brotli/types.h"
+#include <external/brotli/include/brotli/decode.h>
+#include <external/brotli/include/brotli/encode.h>
+#include <external/brotli/include/brotli/port.h>
+#include <external/brotli/include/brotli/types.h>
 
 static const Entry s_compressionNative[] =
 {

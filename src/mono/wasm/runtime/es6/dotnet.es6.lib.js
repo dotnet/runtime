@@ -7,44 +7,56 @@
 const DotnetSupportLib = {
     $DOTNET: {},
     // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
+    // Emscripten uses require function for nodeJS even in ES6 module. We need https://nodejs.org/api/module.html#modulecreaterequirefilename
+    // We use dynamic import because there is no "module" module in the browser. 
+    // This is async init of it, note it would become available only after first tick.
+    // Also fix of scriptDirectory would be delayed
+    // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
+    // We also replace implementation of readAsync and fetch
     $DOTNET__postset: `
-    let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch};
-    let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-        { isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile }, 
-        { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
-        __dotnet_replacements);
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
+if (ENVIRONMENT_IS_NODE) {
+    __dotnet_replacements.requirePromise = import('module').then(mod => {
+        const require = mod.createRequire(import.meta.url);
+        const path = require('path');
+        const url = require('url');
+        __dotnet_replacements.require = require;
+        __dirname = scriptDirectory = path.dirname(url.fileURLToPath(import.meta.url)) + '/';
+        return require;
+    });
+    getBinaryPromise = async () => {
+        if (!wasmBinary) {
+            try {
+                if (typeof fetch === 'function' && !isFileURI(wasmBinaryFile)) {
+                    const response = await fetch(wasmBinaryFile, { credentials: 'same-origin' });
+                    if (!response['ok']) {
+                        throw "failed to load wasm binary file at '" + wasmBinaryFile + "'";
+                    }
+                    return response['arrayBuffer']();
+                }
+                else if (readAsync) {
+                    return await new Promise(function (resolve, reject) {
+                        readAsync(wasmBinaryFile, function (response) { resolve(new Uint8Array(/** @type{!ArrayBuffer} */(response))) }, reject)
+                    });
+                }
     
-    // here we replace things which are not exposed in another way
-    __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory; 
-    readAsync = __dotnet_replacements.readAsync;
-    var fetch = __dotnet_replacements.fetch;
-
-    // here we replace things which are broken on NodeJS for ES6
-    if (ENVIRONMENT_IS_NODE) {
-        getBinaryPromise = async () => {
-            if (!wasmBinary) {
-                try {
-                    if (typeof fetch === 'function' && !isFileURI(wasmBinaryFile)) {
-                        const response = await fetch(wasmBinaryFile, { credentials: 'same-origin' });
-                        if (!response['ok']) {
-                            throw "failed to load wasm binary file at '" + wasmBinaryFile + "'";
-                        }
-                        return response['arrayBuffer']();
-                    }
-                    else if (readAsync) {
-                        return await new Promise(function (resolve, reject) {
-                            readAsync(wasmBinaryFile, function (response) { resolve(new Uint8Array(/** @type{!ArrayBuffer} */(response))) }, reject)
-                        });
-                    }
-        
-                }
-                catch (err) {
-                    return getBinary(wasmBinaryFile);
-                }
             }
-            return getBinary(wasmBinaryFile);
+            catch (err) {
+                return getBinary(wasmBinaryFile);
+            }
         }
-    }`,
+        return getBinary(wasmBinaryFile);
+    }
+}
+let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
+    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise }, 
+    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
+    __dotnet_replacements);
+readAsync = __dotnet_replacements.readAsync;
+var fetch = __dotnet_replacements.fetch;
+require = __dotnet_replacements.requireOut;
+var noExitRuntime = __dotnet_replacements.noExitRuntime;
+`,
 };
 
 // the methods would be visible to EMCC linker

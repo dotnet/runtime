@@ -4,9 +4,6 @@
 // File: stubhelpers.cpp
 //
 
-//
-
-
 #include "common.h"
 
 #include "mlinfo.h"
@@ -504,7 +501,7 @@ FCIMPL1(void*, StubHelpers::GetNDirectTarget, NDirectMethodDesc* pNMD)
 }
 FCIMPLEND
 
-FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT_PTR *ppStubArg)
+FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 {
     PCODE pEntryPoint = NULL;
 
@@ -527,19 +524,9 @@ FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT
     // See code:GenericPInvokeCalliHelper
     // The lowest bit is used to distinguish between MD and target on 64-bit.
     target = (target << 1) | 1;
+#endif // HOST_64BIT
 
-    // On 64-bit we pass the real target to the stub-for-host through this out argument,
-    // see IL code gen in NDirectStubLinker::DoNDirect for details.
-    *ppStubArg = target;
-
-#elif defined(TARGET_ARM)
-    // @ARMTODO: Nothing to do for ARM yet since we don't support the hosted path.
-#endif // HOST_64BIT, TARGET_ARM
-
-    if (pEntryPoint == NULL)
-    {
-        pEntryPoint = orefThis->GetMethodPtrAux();
-    }
+    pEntryPoint = orefThis->GetMethodPtrAux();
 
 #ifdef _DEBUG
     END_PRESERVE_LAST_ERROR;
@@ -979,17 +966,6 @@ FCIMPL2(void, StubHelpers::LogPinnedArgument, MethodDesc *target, Object *pinned
     }
 }
 FCIMPLEND
-
-#ifdef TARGET_64BIT
-FCIMPL0(void*, StubHelpers::GetStubContextAddr)
-{
-    FCALL_CONTRACT;
-
-    FCUnique(0xa1);
-    UNREACHABLE_MSG("This is a JIT intrinsic!");
-}
-FCIMPLEND
-#endif // TARGET_64BIT
 
 FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
 {

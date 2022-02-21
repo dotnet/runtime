@@ -9,8 +9,13 @@ if (typeof createDotnetRuntime === "function") {
     Object.assign(Module, extension);
     createDotnetRuntime = Module;
 }
+else if (typeof createDotnetRuntime === "object") {
+    Module = { ready: Module.ready, __undefinedConfig: Object.keys(createDotnetRuntime).length === 1 };
+    Object.assign(Module, createDotnetRuntime);
+    createDotnetRuntime = Module;
+}
 else {
     throw new Error("MONO_WASM: Can't use moduleFactory callback of createDotnetRuntime function.")
 }
-let require = (name) => { return Module.imports.require(name) };
-var __dirname = '';
+var require = require || undefined;
+var __dirname = __dirname || '';

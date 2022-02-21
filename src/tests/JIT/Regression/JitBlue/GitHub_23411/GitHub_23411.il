@@ -8,7 +8,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module GitHub_23411.exe
 
 .class public auto ansi beforefieldinit GitHub_23411
 	extends [System.Runtime]System.Object

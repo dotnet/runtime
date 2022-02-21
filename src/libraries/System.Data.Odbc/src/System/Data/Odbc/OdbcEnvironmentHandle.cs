@@ -14,7 +14,7 @@ namespace System.Data.Odbc
 
             //Set the expected driver manager version
             //
-            retcode = Interop.Odbc.SQLSetEnvAttr(
+            Interop.Odbc.SQLSetEnvAttr(
                 this,
                 ODBC32.SQL_ATTR.ODBC_VERSION,
                 ODBC32.SQL_OV_ODBC3,

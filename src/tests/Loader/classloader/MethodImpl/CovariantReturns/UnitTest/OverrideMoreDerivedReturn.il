@@ -5,7 +5,7 @@
 .assembly extern xunit.core {}
 .assembly extern System.Runtime { }
 .assembly extern mscorlib { }
-.assembly ReOverrideMoreDerivedReturn { }
+.assembly 'OverrideMoreDerivedReturn' { }
 
 // ========================================================================================
 // Types that will be used as return types on the various methods

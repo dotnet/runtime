@@ -9,7 +9,7 @@ import { EmscriptenModule, VoidPtr } from "./types/emscripten";
 // this files has all public exports from the dotnet.js module
 // -----------------------------------------------------------
 
-declare function createDotnetRuntime(moduleFactory: (api: DotnetPublicAPI) => DotnetModuleConfig): Promise<DotnetPublicAPI>;
+declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: DotnetPublicAPI) => DotnetModuleConfig)): Promise<DotnetPublicAPI>;
 declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;
 
 // Here, declare things that go in the global namespace, or augment existing declarations in the global namespace

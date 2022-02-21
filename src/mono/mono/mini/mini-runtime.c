@@ -126,7 +126,7 @@ gboolean mono_use_llvm = FALSE;
 
 gboolean mono_use_fast_math = FALSE;
 
-// Lists of allowlisted and blocklisted CPU features 
+// Lists of allowlisted and blocklisted CPU features
 MonoCPUFeatures mono_cpu_features_enabled = (MonoCPUFeatures)0;
 
 #ifdef DISABLE_SIMD
@@ -1076,7 +1076,8 @@ mono_print_ji (const MonoJumpInfo *ji)
 	}
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHODCONST:
-	case MONO_PATCH_INFO_METHOD_FTNDESC: {
+	case MONO_PATCH_INFO_METHOD_FTNDESC:
+	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY: {
 		char *s = mono_method_get_full_name (ji->data.method);
 		printf ("[%s %s]", type, s);
 		g_free (s);
@@ -1216,6 +1217,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:
 	case MONO_PATCH_INFO_METHOD_FTNDESC:
+	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY:
 	case MONO_PATCH_INFO_IMAGE:
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_ICALL_ADDR_CALL:
@@ -1417,6 +1419,11 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		return_val_if_nok (error, NULL);
 		break;
 	}
+	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY: {
+		target = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (patch_info->data.method, FALSE, error);
+		mono_error_assert_ok (error);
+		break;
+	}
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
 		gpointer code_slot;
 
@@ -1499,7 +1506,7 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {
-		MonoVTable *vtable = mono_class_vtable_checked (patch_info->data.field->parent, error);
+		MonoVTable *vtable = mono_class_vtable_checked (m_field_get_parent (patch_info->data.field), error);
 		mono_error_assert_ok (error);
 
 		if (mono_class_field_is_special_static (patch_info->data.field)) {
@@ -2014,7 +2021,7 @@ mono_enable_jit_dump (void)
 {
 	if (perf_dump_pid == 0)
 		perf_dump_pid = getpid();
-	
+
 	if (!perf_dump_file) {
 		char name [64];
 		FileHeader header;
@@ -2022,18 +2029,18 @@ mono_enable_jit_dump (void)
 
 		mono_os_mutex_init (&perf_dump_mutex);
 		mono_os_mutex_lock (&perf_dump_mutex);
-		
+
 		g_snprintf (name, sizeof (name), "/tmp/jit-%d.dump", perf_dump_pid);
 		unlink (name);
 		perf_dump_file = fopen (name, "w");
-		
+
 		add_file_header_info (&header);
 		if (perf_dump_file) {
 			fwrite (&header, sizeof (header), 1, perf_dump_file);
 			//This informs perf of the presence of the jitdump file and support for the feature.
 			perf_dump_mmap_addr = mmap (NULL, sizeof (header), PROT_READ | PROT_EXEC, MAP_PRIVATE, fileno (perf_dump_file), 0);
 		}
-		
+
 		mono_os_mutex_unlock (&perf_dump_mutex);
 	}
 }
@@ -2055,12 +2062,12 @@ void
 mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 {
 	static uint64_t code_index;
-	
+
 	if (perf_dump_file) {
 		JitCodeLoadRecord record;
 		size_t nameLen = strlen (jinfo->d.method->name);
 		memset (&record, 0, sizeof (record));
-		
+
 		add_basic_JitCodeLoadRecord_info (&record);
 		record.header.total_size = sizeof (record) + nameLen + 1 + jinfo->code_size;
 		record.vma = (guint64)jinfo->code_start;
@@ -2068,13 +2075,13 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 		record.code_size = (guint64)jinfo->code_size;
 
 		mono_os_mutex_lock (&perf_dump_mutex);
-		
+
 		record.code_index = ++code_index;
-		
+
 		// TODO: write debugInfo and unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
-		
+
 		record.header.timestamp = mono_clock_get_time_ns (clock_id);
-		
+
 		fwrite (&record, sizeof (record), 1, perf_dump_file);
 		fwrite (jinfo->d.method->name, nameLen + 1, 1, perf_dump_file);
 		fwrite (code, jinfo->code_size, 1, perf_dump_file);
@@ -2805,7 +2812,7 @@ mono_jit_free_method (MonoMethod *method)
 
 	mono_debug_remove_method (method, NULL);
 	mono_lldb_remove_method (method, ji);
-	
+
 	//seq_points are always on get_default_jit_mm
 	jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
@@ -3278,7 +3285,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 static MonoObject*
 mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
-	MonoMethod *invoke, *callee;
+	MonoMethod *callee;
 	MonoObject *(*runtime_invoke) (MonoObject *this_obj, void **params, MonoObject **exc, void* compiled_method);
 	RuntimeInvokeInfo *info, *info2;
 	MonoJitInfo *ji = NULL;
@@ -3321,7 +3328,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 				MonoMethod *wrapper;
 
 				wrapper = mono_marshal_get_array_accessor_wrapper (method);
-				invoke = mono_marshal_get_runtime_invoke (wrapper, FALSE);
+				mono_marshal_get_runtime_invoke (wrapper, FALSE);
 				callee = wrapper;
 			} else {
 				callee = NULL;
@@ -3397,8 +3404,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	static RuntimeInvokeDynamicFunction dyn_runtime_invoke = NULL;
 	if (info->dyn_call_info) {
 		if (!dyn_runtime_invoke) {
-			invoke = mono_marshal_get_runtime_invoke_dynamic ();
-			RuntimeInvokeDynamicFunction invoke_func = (RuntimeInvokeDynamicFunction)mono_jit_compile_method_jit_only (invoke, error);
+			MonoMethod *dynamic_invoke = mono_marshal_get_runtime_invoke_dynamic ();
+			RuntimeInvokeDynamicFunction invoke_func = (RuntimeInvokeDynamicFunction)mono_jit_compile_method_jit_only (dynamic_invoke, error);
 			mono_memory_barrier ();
 			dyn_runtime_invoke = invoke_func;
 			if (!dyn_runtime_invoke && mono_use_interpreter) {
@@ -4395,7 +4402,7 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
 	mono_components_init ();
-	
+
 	mono_component_debugger ()->parse_options (mono_debugger_agent_get_sdb_options ());
 
 	mono_os_mutex_init_recursive (&jit_mutex);
@@ -4515,7 +4522,7 @@ mini_init (const char *filename, const char *runtime_version)
 	if (default_opt & MONO_OPT_AOT)
 		mono_aot_init ();
 
-	mono_component_debugger ()->init (&mono_defaults);
+	mono_component_debugger ()->init ();
 
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
 	mono_set_generic_sharing_supported (TRUE);
@@ -4722,6 +4729,7 @@ register_icalls (void)
 #if !defined(MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS) || defined(MONO_ARCH_EMULATE_LONG_MUL_OVF_OPTS)
 	register_opcode_emulation (OP_LMUL_OVF_UN, __emul_lmul_ovf_un, mono_icall_sig_long_long_long, mono_llmult_ovf_un, FALSE);
 	register_opcode_emulation (OP_LMUL_OVF, __emul_lmul_ovf, mono_icall_sig_long_long_long, mono_llmult_ovf, FALSE);
+	register_opcode_emulation (OP_LMUL_OVF_UN_OOM, __emul_lmul_ovf_un_oom, mono_icall_sig_long_long_long, mono_llmult_ovf_un_oom, FALSE);
 #endif
 
 #ifndef MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
@@ -4744,6 +4752,7 @@ register_icalls (void)
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_EMULATE_MUL_OVF)
 	register_opcode_emulation (OP_IMUL_OVF, __emul_op_imul_ovf, mono_icall_sig_int32_int32_int32, mono_imul_ovf, FALSE);
 	register_opcode_emulation (OP_IMUL_OVF_UN, __emul_op_imul_ovf_un, mono_icall_sig_int32_int32_int32, mono_imul_ovf_un, FALSE);
+	register_opcode_emulation (OP_IMUL_OVF_UN_OOM, __emul_op_imul_ovf_un_oom, mono_icall_sig_int32_int32_int32, mono_imul_ovf_un_oom, FALSE);
 #endif
 
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
@@ -4751,11 +4760,11 @@ register_icalls (void)
 #endif
 
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_U8
-	register_opcode_emulation (OP_FCONV_TO_U8, __emul_fconv_to_u8, mono_icall_sig_ulong_double, mono_fconv_u8_2, FALSE);
+	register_opcode_emulation (OP_FCONV_TO_U8, __emul_fconv_to_u8, mono_icall_sig_ulong_double, mono_fconv_u8, FALSE);
 	register_opcode_emulation (OP_RCONV_TO_U8, __emul_rconv_to_u8, mono_icall_sig_ulong_float, mono_rconv_u8, FALSE);
 #endif
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_U4
-	register_opcode_emulation (OP_FCONV_TO_U4, __emul_fconv_to_u4, mono_icall_sig_uint32_double, mono_fconv_u4_2, FALSE);
+	register_opcode_emulation (OP_FCONV_TO_U4, __emul_fconv_to_u4, mono_icall_sig_uint32_double, mono_fconv_u4, FALSE);
 	register_opcode_emulation (OP_RCONV_TO_U4, __emul_rconv_to_u4, mono_icall_sig_uint32_float, mono_rconv_u4, FALSE);
 #endif
 	register_opcode_emulation (OP_FCONV_TO_OVF_I8, __emul_fconv_to_ovf_i8, mono_icall_sig_long_double, mono_fconv_ovf_i8, FALSE);
@@ -4833,13 +4842,6 @@ register_icalls (void)
 	register_icall (mono_class_interface_match, mono_icall_sig_uint32_ptr_int32, TRUE);
 #endif
 
-	// FIXME Elsewhere these are registered with no_wrapper = FALSE
-#if SIZEOF_REGISTER == 4
-	register_opcode_emulation (OP_FCONV_TO_U, __emul_fconv_to_u, mono_icall_sig_uint32_double, mono_fconv_u4, TRUE);
-#else
-	register_opcode_emulation (OP_FCONV_TO_U, __emul_fconv_to_u, mono_icall_sig_ulong_double, mono_fconv_u8, TRUE);
-#endif
-
 	/* other jit icalls */
 	register_icall (ves_icall_mono_delegate_ctor, mono_icall_sig_void_object_object_ptr, FALSE);
 	register_icall (ves_icall_mono_delegate_ctor_interp, mono_icall_sig_void_object_object_ptr, FALSE);
@@ -4892,6 +4894,7 @@ register_icalls (void)
 	register_icall (mini_llvm_init_method, mono_icall_sig_void_ptr_ptr_ptr_ptr, TRUE);
 	register_icall_no_wrapper (mini_llvmonly_resolve_iface_call_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
+	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt_fast, mono_icall_sig_ptr_object_int);
 	register_icall_no_wrapper (mini_llvmonly_resolve_generic_virtual_call, mono_icall_sig_ptr_ptr_int_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_generic_virtual_iface_call, mono_icall_sig_ptr_ptr_int_ptr);
 	/* This needs a wrapper so it can have a preserveall cconv */
@@ -4901,7 +4904,7 @@ register_icalls (void)
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
 	register_icall (mini_llvmonly_throw_aot_failed_exception, mono_icall_sig_void_ptr, TRUE);
 	register_icall (mini_llvmonly_pop_lmf, mono_icall_sig_void_ptr, TRUE);
-	register_icall (mini_llvmonly_get_interp_entry, mono_icall_sig_ptr_ptr, TRUE);
+	register_icall (mini_llvmonly_interp_entry_gsharedvt, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 
 	register_icall (mono_get_assembly_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_get_method_object, mono_icall_sig_object_ptr, TRUE);
@@ -4911,6 +4914,7 @@ register_icalls (void)
 	register_icall (mono_throw_platform_not_supported, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_invalid_program, mono_icall_sig_void_ptr, FALSE);
 	register_icall_no_wrapper (mono_dummy_jit_icall, mono_icall_sig_void);
+	//register_icall_no_wrapper (mono_dummy_jit_icall_val, mono_icall_sig_void_ptr);
 
 	register_icall_with_wrapper (mono_monitor_enter_internal, mono_icall_sig_int32_obj);
 	register_icall_with_wrapper (mono_monitor_enter_v4_internal, mono_icall_sig_void_obj_ptr);
@@ -4964,7 +4968,7 @@ mono_runtime_print_stats (void)
 
 		g_print ("\nInitialized classes:    %" G_GINT32_FORMAT "\n", mono_stats.generic_class_count);
 		g_print ("Inflated types:         %" G_GINT32_FORMAT "\n", mono_stats.inflated_type_count);
-		g_print ("Generics virtual invokes: %ld\n", mono_jit_stats.generic_virtual_invocations);
+		g_print ("Generics virtual invokes: %" G_GINT32_FORMAT "\n", mono_jit_stats.generic_virtual_invocations);
 
 		g_print ("Sharable generic methods: %" G_GINT32_FORMAT "\n", mono_stats.generics_sharable_methods);
 		g_print ("Unsharable generic methods: %" G_GINT32_FORMAT "\n", mono_stats.generics_unsharable_methods);

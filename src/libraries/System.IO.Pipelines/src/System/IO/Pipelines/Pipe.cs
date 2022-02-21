@@ -1082,7 +1082,7 @@ namespace System.IO.Pipelines
                 }
 
                 // We filled the segment
-                _writingHead.End += writable;
+                _writingHead.End += _writingHeadBytesBuffered;
                 _writingHeadBytesBuffered = 0;
 
                 // This is optimized to use pooled memory. That's why we pass 0 instead of

@@ -95,7 +95,7 @@ mono_alc_create_individual (MonoGCHandle this_gchandle, gboolean collectible, Mo
 static void
 mono_alc_cleanup_assemblies (MonoAssemblyLoadContext *alc)
 {
-	// The minimum refcount on assemblies is 2: one for the domain and one for the ALC. 
+	// The minimum refcount on assemblies is 2: one for the domain and one for the ALC.
 	// The domain refcount might be less than optimal on netcore, but its removal is too likely to cause issues for now.
 	GSList *tmp;
 
@@ -425,7 +425,7 @@ mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
 		return default_alc;
 
 	MONO_STATIC_POINTER_INIT (MonoClassField, resolve)
-	
+
 		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
 		g_assert (alc_class);
 		resolve = mono_class_get_field_from_name_full (alc_class, "_nativeAssemblyLoadContext", NULL);
@@ -436,7 +436,7 @@ mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
 
 	MonoAssemblyLoadContext *alc = NULL;
 	mono_field_get_value_internal (mono_gchandle_get_target_internal (alc_gchandle), resolve, &alc);
-	return alc;	
+	return alc;
 }
 
 MonoGCHandle

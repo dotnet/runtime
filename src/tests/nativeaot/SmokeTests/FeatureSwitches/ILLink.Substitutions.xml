@@ -1,0 +1,7 @@
+<linker>
+  <type fullname="Program">
+    <method signature="System.Boolean IsEnabled()" body="stub" />
+    <method signature="System.Int32 GetIntConstant()" body="stub" value="42" />
+    <field name="s_isEnabled" value="false" />
+  </type>
+</linker>

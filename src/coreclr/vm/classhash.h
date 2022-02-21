@@ -86,7 +86,7 @@ public:
     class ConstructKeyCallback
     {
         public:
-            virtual void UseKeys(__in_ecount(2) LPUTF8 *Key) = 0;
+            virtual void UseKeys(_In_reads_(2) LPUTF8 *Key) = 0;
     };
 
     static PTR_VOID CompressClassDef(mdToken cl /* either a TypeDef or ExportedType*/);

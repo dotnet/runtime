@@ -23,7 +23,7 @@
            42 87 88 29 )                                     // B..)
   .ver 1:1:3300:0
 }
-.assembly Negative001
+.assembly 'param01'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -33,7 +33,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Negative001.exe
 // MVID: {9BF036B6-DE42-44EE-B1DF-CC4A10E1400C}
 .imagebase 0x00400000
 .subsystem 0x00000003

@@ -56,6 +56,7 @@ export declare interface EmscriptenModule {
     preInit?: (() => any)[];
     preRun?: (() => any)[];
     postRun?: (() => any)[];
+    onAbort?: { (error: any): void };
     onRuntimeInitialized?: () => any;
     instantiateWasm: (imports: any, successCallback: Function) => any;
 }

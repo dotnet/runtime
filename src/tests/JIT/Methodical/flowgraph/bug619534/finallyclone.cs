@@ -16,7 +16,7 @@ class ApplicationException : Exception { }
 
 public class TestClass
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         //this should return true;
         return Test() ? 100 : 101;

@@ -84,8 +84,8 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries_zipped/$(osGroup).$(archType).$(buildConfigUpper)'
-          artifactFileName: 'libraries_test_assets_${{ parameters.osGroup }}_x64_Release$(archiveExtension)'
-          artifactName: ${{ format('libraries_test_assets_{0}_x64_Release', parameters.osGroup) }}
+          artifactFileName: 'libraries_test_assets_${{ parameters.osGroup }}_$(archType)_Release$(archiveExtension)'
+          artifactName: ${{ format('libraries_test_assets_{0}_$(archType)_Release', parameters.osGroup) }}
           displayName: 'generic libraries test artifacts'
 
     # Unzip individual test projects

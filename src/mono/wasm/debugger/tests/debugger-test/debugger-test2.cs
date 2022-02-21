@@ -118,6 +118,7 @@ public class TestChild : TestParent
 {
     public int i = 50;
     public int GetI => i;
+    public DateTime GetD => new DateTime(2020, 7, 6, 5, 4, 3);
     public TestChild()
     {
         Console.WriteLine("Hi");

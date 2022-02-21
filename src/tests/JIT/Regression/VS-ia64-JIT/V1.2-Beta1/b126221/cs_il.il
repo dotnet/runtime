@@ -7,7 +7,7 @@
 .assembly extern legacy library mscorlib
 {
 }
-.assembly legacy library cs_test_01
+.assembly legacy library 'cs_il'
 {
 
 
@@ -15,7 +15,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module cs_test_01.exe
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .file alignment 0x00000200

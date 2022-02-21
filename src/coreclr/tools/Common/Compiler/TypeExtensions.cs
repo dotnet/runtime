@@ -28,22 +28,7 @@ namespace ILCompiler
         /// </summary>
         public static DefType GetClosestDefType(this TypeDesc type)
         {
-            if (type.IsArray)
-            {
-                if (!type.IsArrayTypeWithoutGenericInterfaces())
-                {
-                    MetadataType arrayShadowType = type.Context.SystemModule.GetType("System", "Array`1", throwIfNotFound: false);
-                    if (arrayShadowType != null)
-                    {
-                        return arrayShadowType.MakeInstantiatedType(((ArrayType)type).ElementType);
-                    }
-                }
-
-                return type.Context.GetWellKnownType(WellKnownType.Array);
-            }
-
-            Debug.Assert(type is DefType);
-            return (DefType)type;
+            return ((CompilerTypeSystemContext)type.Context).GetClosestDefType(type);
         }
 
         /// <summary>

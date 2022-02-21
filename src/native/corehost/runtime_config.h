@@ -7,7 +7,7 @@
 #include <list>
 
 #include "pal.h"
-#include "rapidjson/fwd.h"
+#include <external/rapidjson/fwd.h>
 #include "fx_reference.h"
 
 class runtime_config_t

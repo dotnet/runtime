@@ -27,7 +27,7 @@ STDMETHODIMP RegMeta::GetAssemblyProps(       // S_OK or error.
     const void  **ppbPublicKey,         // [OUT] Pointer to the public key.
     ULONG       *pcbPublicKey,          // [OUT] Count of bytes in the public key.
     ULONG       *pulHashAlgId,          // [OUT] Hash Algorithm.
-    __out_ecount_part_opt(cchName, *pchName) LPWSTR szName, // [OUT] Buffer to fill with name.
+    _Out_writes_to_opt_(cchName, *pchName) LPWSTR szName, // [OUT] Buffer to fill with name.
     ULONG       cchName,                // [IN] Size of buffer in wide chars.
     ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
     ASSEMBLYMETADATA *pMetaData,         // [OUT] Assembly MetaData.
@@ -97,7 +97,7 @@ STDMETHODIMP RegMeta::GetAssemblyRefProps(    // S_OK or error.
     mdAssemblyRef mdar,                 // [IN] The AssemblyRef for which to get the properties.
     const void  **ppbPublicKeyOrToken,  // [OUT] Pointer to the public key or token.
     ULONG       *pcbPublicKeyOrToken,   // [OUT] Count of bytes in the public key or token.
-    __out_ecount_part_opt(cchName, *pchName) LPWSTR szName, // [OUT] Buffer to fill with name.
+    _Out_writes_to_opt_(cchName, *pchName) LPWSTR szName, // [OUT] Buffer to fill with name.
     ULONG       cchName,                // [IN] Size of buffer in wide chars.
     ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
     ASSEMBLYMETADATA *pMetaData,        // [OUT] Assembly MetaData.
@@ -159,7 +159,7 @@ ErrExit:
 //*******************************************************************************
 STDMETHODIMP RegMeta::GetFileProps(     // S_OK or error.
     mdFile      mdf,                    // [IN] The File for which to get the properties.
-    __out_ecount_part_opt(cchName, *pchName) LPWSTR szName, // [OUT] Buffer to fill with name.
+    _Out_writes_to_opt_(cchName, *pchName) LPWSTR szName, // [OUT] Buffer to fill with name.
     ULONG        cchName,               // [IN] Size of buffer in wide chars.
     ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
     const void **ppbHashValue,          // [OUT] Pointer to the Hash Value Blob.
@@ -206,7 +206,7 @@ ErrExit:
 //*******************************************************************************
 STDMETHODIMP RegMeta::GetExportedTypeProps(   // S_OK or error.
     mdExportedType   mdct,              // [IN] The ExportedType for which to get the properties.
-    __out_ecount_part_opt(cchName, *pchName) LPWSTR      szName, // [OUT] Buffer to fill with name.
+    _Out_writes_to_opt_(cchName, *pchName) LPWSTR      szName, // [OUT] Buffer to fill with name.
     ULONG       cchName,                // [IN] Size of buffer in wide chars.
     ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
     mdToken     *ptkImplementation,     // [OUT] mdFile or mdAssemblyRef that provides the ExportedType.
@@ -284,7 +284,7 @@ ErrExit:
 //*******************************************************************************
 STDMETHODIMP RegMeta::GetManifestResourceProps(   // S_OK or error.
     mdManifestResource  mdmr,           // [IN] The ManifestResource for which to get the properties.
-    __out_ecount_part_opt(cchName, *pchName)LPWSTR      szName,  // [OUT] Buffer to fill with name.
+    _Out_writes_to_opt_(cchName, *pchName)LPWSTR      szName,  // [OUT] Buffer to fill with name.
     ULONG       cchName,                // [IN] Size of buffer in wide chars.
     ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
     mdToken     *ptkImplementation,     // [OUT] mdFile or mdAssemblyRef that provides the ExportedType.

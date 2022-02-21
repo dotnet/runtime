@@ -100,13 +100,13 @@ namespace System.Net.Security.Tests
             var uniqueInvalidHellos = new HashSet<string>();
             foreach (byte[] invalidClientHello in InvalidClientHello())
             {
-                for (int i = 0; i < invalidClientHello.Length - 1; i++)
+                for (int i = 0; i < invalidClientHello.Length; i++)
                 {
                     uniqueInvalidHellos.Add(Convert.ToBase64String(invalidClientHello.Take(i).ToArray()));
                 }
             }
 
-            for (int i = 0; i < s_validClientHello.Length - 1; i++)
+            for (int i = 0; i < s_validClientHello.Length; i++)
             {
                 uniqueInvalidHellos.Add(Convert.ToBase64String(s_validClientHello.Take(i).ToArray()));
             }

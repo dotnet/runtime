@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.module extern user32.dll
 .module extern kernel32
 .assembly extern System.Console { auto }
 .assembly extern System.Threading.Thread { auto }
 .assembly extern mscorlib { auto }
 
-.assembly cs1
+.assembly 'b426654'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .hash algorithm 0x00008004

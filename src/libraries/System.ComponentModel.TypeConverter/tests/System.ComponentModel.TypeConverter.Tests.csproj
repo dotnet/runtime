@@ -21,6 +21,7 @@
     <Compile Include="NestedContainerTests.cs" />
     <Compile Include="PasswordPropertyTextAttributeTests.cs" />
     <Compile Include="MarshalByValueComponentTests.cs" />
+    <Compile Include="ReflectTypeDescriptionProviderTests.cs" />
     <Compile Include="ToolboxItemAttributeTests.cs" />
     <Compile Include="ToolboxItemFilterAttributeTests.cs" />
     <Compile Include="WarningExceptionTests.cs" />

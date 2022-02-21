@@ -837,8 +837,10 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        public async Task Http2GetAsync_MissingTrailer_TrailingHeadersAccepted()
+        [InlineData(false)]
+        [InlineData(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        public async Task Http2GetAsync_MissingTrailer_TrailingHeadersAccepted(bool responseHasContentLength)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
@@ -850,7 +852,14 @@ namespace System.Net.Http.Functional.Tests
                 int streamId = await connection.ReadRequestHeaderAsync();
 
                 // Response header.
-                await connection.SendDefaultResponseHeadersAsync(streamId);
+                if (responseHasContentLength)
+                {
+                    await connection.SendResponseHeadersAsync(streamId, endStream: false, headers: new[] { new HttpHeaderData("Content-Length", DataBytes.Length.ToString()) });
+                }
+                else
+                {
+                    await connection.SendDefaultResponseHeadersAsync(streamId);
+                }
 
                 // Response data, missing Trailers.
                 await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
@@ -888,8 +897,10 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        public async Task Http2GetAsyncResponseHeadersReadOption_TrailingHeaders_Available()
+        [InlineData(false)]
+        [InlineData(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        public async Task Http2GetAsyncResponseHeadersReadOption_TrailingHeaders_Available(bool responseHasContentLength)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
@@ -901,7 +912,14 @@ namespace System.Net.Http.Functional.Tests
                 int streamId = await connection.ReadRequestHeaderAsync();
 
                 // Response header.
-                await connection.SendDefaultResponseHeadersAsync(streamId);
+                if (responseHasContentLength)
+                {
+                    await connection.SendResponseHeadersAsync(streamId, endStream: false, headers: new[] { new HttpHeaderData("Content-Length", DataBytes.Length.ToString()) });
+                }
+                else
+                {
+                    await connection.SendDefaultResponseHeadersAsync(streamId);
+                }
 
                 // Response data, missing Trailers.
                 await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
@@ -1026,12 +1044,12 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
     }
 
-    [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Http11_Cancellation_Test : SocketsHttpHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Http11_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void ConnectTimeout_Default()
         {
             using (var handler = new SocketsHttpHandler())
@@ -1044,6 +1062,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(0)]
         [InlineData(-2)]
         [InlineData(int.MaxValue + 1L)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void ConnectTimeout_InvalidValues(long ms)
         {
             using (var handler = new SocketsHttpHandler())
@@ -1057,6 +1076,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1)]
         [InlineData(int.MaxValue - 1)]
         [InlineData(int.MaxValue)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void ConnectTimeout_ValidValues_Roundtrip(long ms)
         {
             using (var handler = new SocketsHttpHandler())
@@ -1067,6 +1087,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void ConnectTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
@@ -1080,6 +1101,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void Expect100ContinueTimeout_Default()
         {
             using (var handler = new SocketsHttpHandler())
@@ -1091,6 +1113,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(-2)]
         [InlineData(int.MaxValue + 1L)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void Expect100ContinueTimeout_InvalidValues(long ms)
         {
             using (var handler = new SocketsHttpHandler())
@@ -1104,6 +1127,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1)]
         [InlineData(int.MaxValue - 1)]
         [InlineData(int.MaxValue)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void Expect100ContinueTimeout_ValidValues_Roundtrip(long ms)
         {
             using (var handler = new SocketsHttpHandler())
@@ -1114,6 +1138,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
         public void Expect100ContinueTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
@@ -2236,9 +2261,9 @@ namespace System.Net.Http.Functional.Tests
 
                 await Task.WhenAll(handleRequestTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
-                Assert.Equal(handleRequestTasks[0].Result.Count, MaxConcurrentStreams);
-                Assert.Equal(handleRequestTasks[1].Result.Count, MaxConcurrentStreams);
-                Assert.Equal(handleRequestTasks[2].Result.Count, MaxConcurrentStreams);
+                Assert.Equal(MaxConcurrentStreams, handleRequestTasks[0].Result.Count);
+                Assert.Equal(MaxConcurrentStreams, handleRequestTasks[1].Result.Count);
+                Assert.Equal(MaxConcurrentStreams, handleRequestTasks[2].Result.Count);
 
                 await connection0.ShutdownIgnoringErrorsAsync(handleRequestTasks[0].Result.LastStreamId).ConfigureAwait(false);
                 await connection2.ShutdownIgnoringErrorsAsync(handleRequestTasks[2].Result.LastStreamId).ConfigureAwait(false);
@@ -2259,9 +2284,9 @@ namespace System.Net.Http.Functional.Tests
 
                 await Task.WhenAll(finalHandleTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
-                Assert.Equal(finalHandleTasks[0].Result.Count, MaxConcurrentStreams);
-                Assert.Equal(finalHandleTasks[1].Result.Count, MaxConcurrentStreams);
-                Assert.Equal(finalHandleTasks[2].Result.Count, MaxConcurrentStreams);
+                Assert.Equal(MaxConcurrentStreams, finalHandleTasks[0].Result.Count);
+                Assert.Equal(MaxConcurrentStreams, finalHandleTasks[1].Result.Count);
+                Assert.Equal(MaxConcurrentStreams, finalHandleTasks[2].Result.Count);
 
                 await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
@@ -3360,5 +3385,71 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_RequestValidationTest_Sync : SocketsHttpHandler_RequestValidationTest
     {
         protected override bool TestAsync => false;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public abstract class SocketsHttpHandler_RequestContentLengthMismatchTest : HttpClientHandlerTestBase
+    {
+        public SocketsHttpHandler_RequestContentLengthMismatchTest(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(0, 1)]
+        [InlineData(1, 0)]
+        [InlineData(1, 2)]
+        [InlineData(2, 1)]
+        public async Task ContentLength_DoesNotMatchRequestContentLength_Throws(int contentLength, int bytesSent)
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using var client = CreateHttpClient();
+
+                var content = new ByteArrayContent(new byte[bytesSent]);
+                content.Headers.ContentLength = contentLength;
+
+                Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.PostAsync(uri, content));
+                Assert.Contains("Content-Length", ex.Message);
+
+                if (UseVersion.Major == 1)
+                {
+                    await client.GetStringAsync(uri).WaitAsync(TestHelper.PassingTestTimeout);
+                }
+            },
+            async server =>
+            {
+                try
+                {
+                    await server.HandleRequestAsync();
+                }
+                catch { }
+
+                // On HTTP/1.x, an exception being thrown while sending the request content will result in the connection being closed.
+                // This test is ensuring that a subsequent request can succeed on a new connection.
+                if (UseVersion.Major == 1)
+                {
+                    await server.HandleRequestAsync().WaitAsync(TestHelper.PassingTestTimeout);
+                }
+            });
+        }
+    }
+
+    public sealed class SocketsHttpHandler_RequestContentLengthMismatchTest_Http11 : SocketsHttpHandler_RequestContentLengthMismatchTest
+    {
+        public SocketsHttpHandler_RequestContentLengthMismatchTest_Http11(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version11;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    public sealed class SocketsHttpHandler_RequestContentLengthMismatchTest_Http2 : SocketsHttpHandler_RequestContentLengthMismatchTest
+    {
+        public SocketsHttpHandler_RequestContentLengthMismatchTest_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+    }
+
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    public sealed class SocketsHttpHandler_RequestContentLengthMismatchTest_Http3 : SocketsHttpHandler_RequestContentLengthMismatchTest
+    {
+        public SocketsHttpHandler_RequestContentLengthMismatchTest_Http3(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
+        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 }

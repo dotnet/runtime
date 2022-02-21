@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.assembly ILGEN_0xb8816d7d {}
+.assembly 'cpblkInt32' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 

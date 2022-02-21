@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);VEX_INTRINSICS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--instructionset:avx2" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sysctl -a
+
+        sysctl -a | grep machdep.cpu.leaf7_features | grep AVX2 >/dev/null
+        if [ $? -ne 0 ]; then
+          echo No support for AVX2, test not applicable.
+          exit 0
+        fi
+    fi
+    if [[ "$OSTYPE" == "linux"* ]]; then
+        if ! grep -q '^flags.*avx2' /proc/cpuinfo 2>/dev/null; then
+          echo No support for AVX2, test not applicable.
+          exit 0
+        fi
+    fi
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

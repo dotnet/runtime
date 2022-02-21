@@ -290,8 +290,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(keyComparer, nameof(keyComparer));
                 Requires.NotNull(valueComparer, nameof(valueComparer));
 
-                bool dummy;
-                return this.SetOrAdd(key, value, keyComparer, valueComparer, false, out dummy, out mutated);
+                return this.SetOrAdd(key, value, keyComparer, valueComparer, false, out _, out mutated);
             }
 
             /// <summary>
@@ -761,8 +760,7 @@ namespace System.Collections.Immutable
                                 successor = successor._left;
                             }
 
-                            bool dummyMutated;
-                            var newRight = _right.Remove(successor._key, keyComparer, out dummyMutated);
+                            var newRight = _right.Remove(successor._key, keyComparer, out _);
                             result = successor.Mutate(left: _left, right: newRight);
                         }
                     }

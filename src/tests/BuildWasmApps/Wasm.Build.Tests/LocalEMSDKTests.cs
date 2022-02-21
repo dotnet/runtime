@@ -30,9 +30,10 @@ namespace Wasm.Build.Tests
             buildArgs = ExpandBuildArgs(buildArgs);
 
             (_, string buildOutput) = BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
                         id: id,
-                        expectSuccess: false);
+                        new BuildProjectOptions(
+                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                            ExpectSuccess: false));
 
             Assert.Matches(errorPattern, buildOutput);
         }
@@ -52,9 +53,10 @@ namespace Wasm.Build.Tests
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
             (_, string buildOutput) = BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
                         id: id,
-                        expectSuccess: false);
+                        new BuildProjectOptions(
+                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                            ExpectSuccess: false));
 
             Assert.Matches(errorPattern, buildOutput);
         }

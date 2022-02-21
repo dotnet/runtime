@@ -346,7 +346,7 @@ namespace System.IO.Tests
                 stream.Write(data2);
             }
 
-            using (var stream = new BufferedStream(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None, bufferSize: 0)))
+            using (var stream = new BufferedStream(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None, bufferSize: 0, FileOptions.DeleteOnClose)))
             {
                 stream.Seek(position1, SeekOrigin.Begin);
                 Assert.Equal(buffer.Length, stream.Read(buffer));

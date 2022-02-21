@@ -258,13 +258,15 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest != null);
 
-            if (headers.HeaderStore != null)
+            if (headers.GetEntriesArray() is HeaderEntry[] entries)
             {
-                foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
+                for (int i = 0; i < headers.Count; i++)
                 {
-                    if (header.Key.KnownHeader != null)
+                    HeaderEntry header = entries[i];
+
+                    if (header.Key.KnownHeader is KnownHeader knownHeader)
                     {
-                        await WriteBytesAsync(header.Key.KnownHeader.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
+                        await WriteBytesAsync(knownHeader.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
                     }
                     else
                     {
@@ -280,7 +282,7 @@ namespace System.Net.Http
 
                         await WriteStringAsync(_headerValues[0], async, valueEncoding).ConfigureAwait(false);
 
-                        if (cookiesFromContainer != null && header.Key.KnownHeader == KnownHeaders.Cookie)
+                        if (cookiesFromContainer != null && header.Key.Equals(KnownHeaders.Cookie))
                         {
                             await WriteTwoBytesAsync((byte)';', (byte)' ', async).ConfigureAwait(false);
                             await WriteStringAsync(cookiesFromContainer, async, valueEncoding).ConfigureAwait(false);
@@ -298,10 +300,10 @@ namespace System.Net.Http
                                 separator = parser.Separator!;
                             }
 
-                            for (int i = 1; i < headerValuesCount; i++)
+                            for (int j = 1; j < headerValuesCount; j++)
                             {
                                 await WriteAsciiStringAsync(separator, async).ConfigureAwait(false);
-                                await WriteStringAsync(_headerValues[i], async, valueEncoding).ConfigureAwait(false);
+                                await WriteStringAsync(_headerValues[j], async, valueEncoding).ConfigureAwait(false);
                             }
                         }
                     }
@@ -860,10 +862,11 @@ namespace System.Net.Http
 
         private HttpContentWriteStream CreateRequestContentStream(HttpRequestMessage request)
         {
+            Debug.Assert(request.Content is not null);
             bool requestTransferEncodingChunked = request.HasHeaders && request.Headers.TransferEncodingChunked == true;
             HttpContentWriteStream requestContentStream = requestTransferEncodingChunked ? (HttpContentWriteStream)
                 new ChunkedEncodingWriteStream(this) :
-                new ContentLengthWriteStream(this);
+                new ContentLengthWriteStream(this, request.Content.Headers.ContentLength.GetValueOrDefault());
             return requestContentStream;
         }
 
@@ -1053,7 +1056,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(line.Slice(0, pos))));
             }
 
-            if (isFromTrailer && descriptor.KnownHeader != null && (descriptor.KnownHeader.HeaderType & HttpHeaderType.NonTrailing) == HttpHeaderType.NonTrailing)
+            if (isFromTrailer && (descriptor.HeaderType & HttpHeaderType.NonTrailing) == HttpHeaderType.NonTrailing)
             {
                 // Disallowed trailer fields.
                 // A recipient MUST ignore fields that are forbidden to be sent in a trailer.

@@ -11,7 +11,6 @@
 .assembly try3
 {
 }
-.module try3.exe
 .class private sealed VT
        extends [mscorlib]System.ValueType
 {

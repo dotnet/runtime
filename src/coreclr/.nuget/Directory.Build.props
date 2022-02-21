@@ -28,9 +28,6 @@
     transport packages to flow dependencies anymore -->
     <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">false</CreatePackedPackage>
 
-    <!-- indicates that lib prefix is not added to library names for Unix-like operating systems -->
-    <SkipLibraryPrefixFromUnix>true</SkipLibraryPrefixFromUnix>
-
     <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">windows;OSX;Android;Linux;FreeBSD;NetBSD;illumos;Solaris</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
 

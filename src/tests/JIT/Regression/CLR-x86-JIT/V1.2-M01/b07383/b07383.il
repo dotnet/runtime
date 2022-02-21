@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0xfe8f9a4a {}
+.assembly 'b07383' {}
 .assembly extern xunit.core {}
 .class ILGEN_0xfe8f9a4a {
 .field static	unsigned int8 field_0x8

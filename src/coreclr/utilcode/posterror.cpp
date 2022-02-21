@@ -54,7 +54,7 @@ void SetResourceCultureCallbacks(
 //*****************************************************************************
 STDAPI UtilLoadStringRC(
     UINT iResourceID,
-    __out_ecount(iMax) LPWSTR szBuffer,
+    _Out_writes_(iMax) LPWSTR szBuffer,
     int iMax,
     int bQuiet
 )
@@ -63,7 +63,7 @@ STDAPI UtilLoadStringRC(
     return UtilLoadResourceString(bQuiet? CCompRC::Optional : CCompRC::Required,iResourceID, szBuffer, iMax);
 }
 
-HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax)
+HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax)
 {
     CONTRACTL
     {
@@ -98,7 +98,7 @@ HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResour
 // Format a Runtime Error message.
 //*****************************************************************************
 HRESULT __cdecl FormatRuntimeErrorVa(
-    __inout_ecount(cchMsg) WCHAR       *rcMsg,                 // Buffer into which to format.
+    _Inout_updates_(cchMsg) WCHAR       *rcMsg,                 // Buffer into which to format.
     ULONG       cchMsg,                 // Size of buffer, characters.
     HRESULT     hrRpt,                  // The HR to report.
     va_list     marker)                 // Optional args.
@@ -158,7 +158,7 @@ HRESULT __cdecl FormatRuntimeErrorVa(
 // Format a Runtime Error message, varargs.
 //*****************************************************************************
 HRESULT __cdecl FormatRuntimeError(
-    __out_ecount(cchMsg) WCHAR       *rcMsg,                 // Buffer into which to format.
+    _Out_writes_(cchMsg) WCHAR       *rcMsg,                 // Buffer into which to format.
     ULONG       cchMsg,                 // Size of buffer, characters.
     HRESULT     hrRpt,                  // The HR to report.
     ...)                                // Optional args.

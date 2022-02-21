@@ -16,7 +16,7 @@ where MyClosedDel is:
 
 */
 .assembly extern mscorlib {}
-.assembly Generated0 {}
+.assembly 'dev10_720779' {}
 
 
 

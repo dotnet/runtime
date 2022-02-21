@@ -123,6 +123,7 @@ namespace System.Reflection
             }
         }
 
+#if !CORERT
         private protected void ValidateInvokeTarget(object? target)
         {
             // Confirm member invocation has an instance and is of the correct type
@@ -191,5 +192,6 @@ namespace System.Reflection
             private object? _arg3;
 #pragma warning restore CA1823, CS0169, IDE0051
         }
+#endif
     }
 }

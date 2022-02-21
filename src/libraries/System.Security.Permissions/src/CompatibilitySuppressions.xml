@@ -21,76 +21,6 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Xaml.Permissions.XamlLoadPermission</Target>
-    <Left>ref/net5.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Policy.Evidence</Target>
-    <Left>ref/net5.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Policy.EvidenceBase</Target>
-    <Left>ref/net5.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Xaml.Permissions.XamlLoadPermission</Target>
-    <Left>ref/netcoreapp3.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Policy.Evidence</Target>
-    <Left>ref/netcoreapp3.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Policy.EvidenceBase</Target>
-    <Left>ref/netcoreapp3.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Policy.Evidence</Target>
-    <Left>ref/netstandard2.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Policy.EvidenceBase</Target>
-    <Left>ref/netstandard2.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Xaml.Permissions.XamlLoadPermission</Target>
-    <Left>lib/net5.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Policy.Evidence</Target>
-    <Left>lib/net5.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Policy.EvidenceBase</Target>
     <Left>lib/net5.0/System.Security.Permissions.dll</Left>
     <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
@@ -98,35 +28,7 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Xaml.Permissions.XamlLoadPermission</Target>
-    <Left>lib/netcoreapp3.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Policy.Evidence</Target>
-    <Left>lib/netcoreapp3.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Policy.EvidenceBase</Target>
-    <Left>lib/netcoreapp3.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Policy.Evidence</Target>
-    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Policy.EvidenceBase</Target>
-    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Left>lib/netcoreapp3.1/System.Security.Permissions.dll</Left>
     <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>

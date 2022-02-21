@@ -6,18 +6,20 @@
 
 const DotnetSupportLib = {
     $DOTNET: {},
-    // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
+    // these lines will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
+    // we replace implementation of readAsync and fetch
+    // replacement of require is there for consistency with ES6 code
     $DOTNET__postset: `
-    let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch};
-    let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-        { isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile }, 
-        { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
-        __dotnet_replacements);
-    
-    // here we replace things which are not exposed in another way
-    __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory; 
-    readAsync = __dotnet_replacements.readAsync;
-    var fetch = __dotnet_replacements.fetch;`,
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
+let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
+    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)}, 
+    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
+    __dotnet_replacements);
+readAsync = __dotnet_replacements.readAsync;
+var fetch = __dotnet_replacements.fetch;
+require = __dotnet_replacements.requireOut;
+var noExitRuntime = __dotnet_replacements.noExitRuntime;
+`,
 };
 
 // the methods would be visible to EMCC linker

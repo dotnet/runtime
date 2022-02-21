@@ -16,6 +16,8 @@ using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using ILCompiler.Reflection.ReadyToRun;
+
 namespace ILCompiler
 {
     internal class Program
@@ -401,6 +403,12 @@ namespace ILCompiler
                     try
                     {
                         var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
+                        if ((module.PEReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == (CorFlags)0
+                            && module.PEReader.TryGetReadyToRunHeader(out int _))
+                        {
+                            Console.WriteLine(SR.IgnoringCompositeImage, inputFile.Value);
+                            continue;
+                        }
                         _allInputFilePaths.Add(inputFile.Key, inputFile.Value);
                         inputFilePaths.Add(inputFile.Key, inputFile.Value);
                         _referenceableModules.Add(module);
@@ -722,13 +730,11 @@ namespace ILCompiler
 
                     builder
                         .UseIbcTuning(_commandLineOptions.Tuning)
-                        .UseResilience(_commandLineOptions.Resilient)
                         .UseMapFile(_commandLineOptions.Map)
                         .UseMapCsvFile(_commandLineOptions.MapCsv)
                         .UsePdbFile(_commandLineOptions.Pdb, _commandLineOptions.PdbPath)
                         .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath, _commandLineOptions.PerfMapFormatVersion)
                         .UseProfileFile(jsonProfile != null)
-                        .UseParallelism(_commandLineOptions.Parallelism)
                         .UseProfileData(profileDataManager)
                         .FileLayoutAlgorithms(_methodLayout, _fileLayout)
                         .UseCompositeImageSettings(compositeImageSettings)
@@ -740,6 +746,8 @@ namespace ILCompiler
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)
+                        .UseParallelism(_commandLineOptions.Parallelism)
+                        .UseResilience(_commandLineOptions.Resilient)
                         .UseDependencyTracking(trackingLevel)
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);

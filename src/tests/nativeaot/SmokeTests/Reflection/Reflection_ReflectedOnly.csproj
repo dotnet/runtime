@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Look for MULTIMODULE_BUILD #define for the more specific incompatible parts -->
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Reflection.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--reflectedonly" />
+  </ItemGroup>
+</Project>

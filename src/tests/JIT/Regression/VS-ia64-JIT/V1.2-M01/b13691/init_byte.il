@@ -26,7 +26,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module init_byte.exe
 // MVID: {FDCD7B4C-5230-4304-82F7-A3D10057533E}
 .imagebase 0x00400000
 .file alignment 0x00001000

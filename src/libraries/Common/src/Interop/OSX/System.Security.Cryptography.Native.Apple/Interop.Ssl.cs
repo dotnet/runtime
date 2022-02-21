@@ -46,6 +46,7 @@ internal static partial class Interop
             WouldBlock,
             ServerAuthCompleted,
             ClientAuthCompleted,
+            ClientCertRequested,
         }
 
         internal enum PAL_TlsIo
@@ -95,6 +96,12 @@ internal static partial class Interop
 
         [GeneratedDllImport(Interop.Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SslSetBreakOnClientAuth(
+            SafeSslHandle sslHandle,
+            int setBreak,
+            out int pOSStatus);
+
+        [GeneratedDllImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetBreakOnCertRequested(
             SafeSslHandle sslHandle,
             int setBreak,
             out int pOSStatus);
@@ -263,6 +270,25 @@ internal static partial class Interop
             }
 
             Debug.Fail($"AppleCryptoNative_SslSetBreakOnClientAuth returned {result}");
+            throw new SslException();
+        }
+
+        internal static void SslBreakOnCertRequested(SafeSslHandle sslHandle, bool setBreak)
+        {
+            int osStatus;
+            int result = AppleCryptoNative_SslSetBreakOnCertRequested(sslHandle, setBreak ? 1 : 0, out osStatus);
+
+            if (result == 1)
+            {
+                return;
+            }
+
+            if (result == 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            Debug.Fail($"AppleCryptoNative_SslSetBreakOnCertRequested returned {result}");
             throw new SslException();
         }
 

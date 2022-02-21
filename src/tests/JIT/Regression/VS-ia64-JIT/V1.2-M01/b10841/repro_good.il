@@ -14,7 +14,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly main
+.assembly 'repro_good'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -25,7 +25,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module main.exe
 // MVID: {8652F29E-ADDD-4F29-9B4B-0D71E9CFC6D1}
 .imagebase 0x00400000
 .subsystem 0x00000003

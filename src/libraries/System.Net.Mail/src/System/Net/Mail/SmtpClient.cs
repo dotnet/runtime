@@ -168,15 +168,7 @@ namespace System.Net.Mail
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
 
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                if (value.Length == 0)
-                {
-                    throw new ArgumentException(SR.net_emptystringset, nameof(value));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(value);
 
                 value = value.Trim();
 
@@ -416,12 +408,12 @@ namespace System.Net.Mail
         public void Send(string from, string recipients, string? subject, string? body)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            //validation happends in MailMessage constructor
+            //validation happens in MailMessage constructor
             MailMessage mailMessage = new MailMessage(from, recipients, subject, body);
             Send(mailMessage);
         }
 
-        public void Send(MailMessage message)
+        public void Send(MailMessage message!!)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -436,11 +428,6 @@ namespace System.Net.Mail
             if (InCall)
             {
                 throw new InvalidOperationException(SR.net_inasync);
-            }
-
-            if (message == null)
-            {
-                throw new ArgumentNullException(nameof(message));
             }
 
             if (DeliveryMethod == SmtpDeliveryMethod.Network)
@@ -502,7 +489,7 @@ namespace System.Net.Mail
                             throw new SmtpException(SR.SmtpPickupDirectoryDoesnotSupportSsl);
                         }
 
-                        allowUnicode = IsUnicodeSupported(); // Determend by the DeliveryFormat paramiter
+                        allowUnicode = IsUnicodeSupported(); // Determined by the DeliveryFormat parameter
                         ValidateUnicodeRequirement(message, recipients, allowUnicode);
                         writer = GetFileMailWriter(pickupDirectory);
                         break;
@@ -510,7 +497,7 @@ namespace System.Net.Mail
                     case SmtpDeliveryMethod.Network:
                     default:
                         GetConnection();
-                        // Detected durring GetConnection(), restrictable using the DeliveryFormat paramiter
+                        // Detected during GetConnection(), restrictable using the DeliveryFormat parameter
                         allowUnicode = IsUnicodeSupported();
                         ValidateUnicodeRequirement(message, recipients, allowUnicode);
                         writer = _transport.SendMail(message.Sender ?? message.From, recipients,
@@ -571,7 +558,6 @@ namespace System.Net.Mail
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-
             try
             {
                 if (InCall)
@@ -579,10 +565,7 @@ namespace System.Net.Mail
                     throw new InvalidOperationException(SR.net_inasync);
                 }
 
-                if (message == null)
-                {
-                    throw new ArgumentNullException(nameof(message));
-                }
+                ArgumentNullException.ThrowIfNull(message);
 
                 if (DeliveryMethod == SmtpDeliveryMethod.Network)
                     CheckHostAndPort();
@@ -922,7 +905,7 @@ namespace System.Net.Mail
             try
             {
                 _writer = _transport.EndSendMail(result);
-                // If some recipients failed but not others, send the e-mail anyways, but then return the
+                // If some recipients failed but not others, send the e-mail anyway, but then return the
                 // "Non-fatal" exception reporting the failures.  The sync code path does it this way.
                 // Fatal exceptions would have thrown above at transport.EndSendMail(...)
                 SendMailAsyncResult sendResult = (SendMailAsyncResult)result;
@@ -964,7 +947,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    // Detected durring Begin/EndGetConnection, restrictable using DeliveryFormat
+                    // Detected during Begin/EndGetConnection, restrictable using DeliveryFormat
                     bool allowUnicode = IsUnicodeSupported();
                     ValidateUnicodeRequirement(_message!, _recipients!, allowUnicode);
                     _transport.BeginSendMail(_message!.Sender ?? _message.From!, _recipients!,

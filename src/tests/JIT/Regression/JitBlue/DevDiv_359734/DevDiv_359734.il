@@ -13,7 +13,7 @@
 // The fix was to bump lclVar ref counts after remorphing but before attempting to remove the expression.
 
 .assembly extern mscorlib{}
-.assembly ILGEN_MODULE{}
+.assembly 'DevDiv_359734'{}
 .assembly extern xunit.core {}
 .class ILGEN_CLASS
 {

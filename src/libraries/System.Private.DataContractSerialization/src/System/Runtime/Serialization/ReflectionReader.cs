@@ -87,7 +87,7 @@ namespace System.Runtime.Serialization
                 }
 
                 bool isReadOnlyCollection = true;
-                resultCollection = ReadCollectionItems(xmlReader, context, collectionItemName, collectionItemNamespace, collectionContract, resultCollection, isReadOnlyCollection);
+                ReadCollectionItems(xmlReader, context, collectionItemName, collectionItemNamespace, collectionContract, resultCollection, isReadOnlyCollection);
             }
         }
 
@@ -103,7 +103,7 @@ namespace System.Runtime.Serialization
             bool isArray = (collectionContract.Kind == CollectionKind.Array);
 
             int arraySize = context.GetArraySize();
-            object? resultArray = null;
+            object? resultArray;
             if (isArray && ReflectionTryReadPrimitiveArray(xmlReader, context, collectionItemName, collectionItemNamespace, collectionContract.UnderlyingType, collectionContract.ItemType, arraySize, out resultArray))
             {
                 return resultArray;
@@ -242,7 +242,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected object? ReflectionReadValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, Type type, string name, string ns, PrimitiveDataContract? primitiveContractForOriginalType = null)
         {
-            object? value = null;
+            object? value;
             int nullables = 0;
             while (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
             {

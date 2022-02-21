@@ -2239,7 +2239,7 @@ namespace System.Xml
         {
             Debug.Assert(_coreReaderNameTable.Get(localName) != null);
             Debug.Assert(_coreReaderNameTable.Get(ns) != null);
-            AttributePSVIInfo? attInfo = null;
+            AttributePSVIInfo? attInfo;
 
             for (int i = 0; i < _coreReaderAttributeCount; i++)
             {
@@ -2284,7 +2284,7 @@ namespace System.Xml
         {
             Debug.Assert(_coreReaderNameTable.Get(attrLocalName) != null);
             Debug.Assert(_coreReaderNameTable.Get(ns) != null);
-            ValidatingReaderNodeData? defaultNode = null;
+            ValidatingReaderNodeData? defaultNode;
 
             for (int i = 0; i < _defaultAttributes.Count; i++)
             {
@@ -2449,7 +2449,7 @@ namespace System.Xml
         private object? InternalReadElementContentAsObject(out XmlSchemaType? xmlType, bool unwrapTypedValue, out string? originalString)
         {
             Debug.Assert(this.NodeType == XmlNodeType.Element);
-            object? typedValue = null;
+            object? typedValue;
             xmlType = null;
 
             // If its an empty element, can have default/fixed value

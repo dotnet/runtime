@@ -15,7 +15,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'catchfault.exe'
 // MVID: {FCE369B5-E876-4E32-B744-1740582FF3B2}
 .namespace JitTest
 {

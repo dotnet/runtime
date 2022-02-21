@@ -63,37 +63,77 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #else
 # error Could not locate <elf.h>
 #endif
+#if defined(ELFCLASS32)
+# define UNW_ELFCLASS32 ELFCLASS32
+#else
+# define UNW_ELFCLASS32 1
+#endif
+#if defined(ELFCLASS64)
+# define UNW_ELFCLASS64 ELFCLASS64
+#else
+# define UNW_ELFCLASS64 2
+#endif
 
 #if defined(HAVE_ENDIAN_H)
 # include <endian.h>
 #elif defined(HAVE_SYS_ENDIAN_H)
 # include <sys/endian.h>
-# if defined(_LITTLE_ENDIAN) && !defined(__LITTLE_ENDIAN)
-#   define __LITTLE_ENDIAN _LITTLE_ENDIAN
-# endif
-# if defined(_BIG_ENDIAN) && !defined(__BIG_ENDIAN)
-#   define __BIG_ENDIAN _BIG_ENDIAN
-# endif
-# if defined(_BYTE_ORDER) && !defined(__BYTE_ORDER)
-#   define __BYTE_ORDER _BYTE_ORDER
-# endif
+#elif defined(HAVE_SYS_PARAM_H)
+# include <sys/param.h>
+#endif
+
+#if defined(__LITTLE_ENDIAN)
+# define UNW_LITTLE_ENDIAN __LITTLE_ENDIAN
+#elif defined(_LITTLE_ENDIAN)
+# define UNW_LITTLE_ENDIAN _LITTLE_ENDIAN
+#elif defined(LITTLE_ENDIAN)
+# define UNW_LITTLE_ENDIAN LITTLE_ENDIAN
 #else
-# define __LITTLE_ENDIAN        1234
-# define __BIG_ENDIAN           4321
+# define UNW_LITTLE_ENDIAN 1234
+#endif
+
+#if defined(__BIG_ENDIAN)
+# define UNW_BIG_ENDIAN __BIG_ENDIAN
+#elif defined(_BIG_ENDIAN)
+# define UNW_BIG_ENDIAN _BIG_ENDIAN
+#elif defined(BIG_ENDIAN)
+# define UNW_BIG_ENDIAN BIG_ENDIAN
+#else
+# define UNW_BIG_ENDIAN 4321
+#endif
+
+#if defined(__BYTE_ORDER)
+# define UNW_BYTE_ORDER __BYTE_ORDER
+#elif defined(_BYTE_ORDER)
+# define UNW_BYTE_ORDER _BYTE_ORDER
+#elif defined(BIG_ENDIAN)
+# define UNW_BYTE_ORDER BYTE_ORDER
+#else
 # if defined(__hpux)
-#   define __BYTE_ORDER __BIG_ENDIAN
-# elif defined(__QNX__)
-#   if defined(__BIGENDIAN__)
-#     define __BYTE_ORDER __BIG_ENDIAN
-#   elif defined(__LITTLEENDIAN__)
-#     define __BYTE_ORDER __LITTLE_ENDIAN
-#   else
-#     error Host has unknown byte-order.
-#   endif
+#  define UNW_BYTE_ORDER UNW_BIG_ENDIAN
 # else
-#   error Host has unknown byte-order.
+#  error Target has unknown byte ordering.
 # endif
 #endif
+
+static inline int
+byte_order_is_valid(int byte_order)
+{
+    return byte_order != UNW_BIG_ENDIAN
+        && byte_order != UNW_LITTLE_ENDIAN;
+}
+
+static inline int
+byte_order_is_big_endian(int byte_order)
+{
+    return byte_order == UNW_BIG_ENDIAN;
+}
+
+static inline int
+target_is_big_endian()
+{
+    return byte_order_is_big_endian(UNW_BYTE_ORDER);
+}
 
 #if defined(HAVE__BUILTIN_UNREACHABLE)
 # define unreachable() __builtin_unreachable()

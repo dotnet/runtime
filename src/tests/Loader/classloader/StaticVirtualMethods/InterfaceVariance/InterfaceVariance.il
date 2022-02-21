@@ -6,7 +6,7 @@
 .assembly extern mscorlib {}
 .assembly extern System.Runtime {}
 .assembly extern TypeHierarchyCommonCs {}
-.assembly TypeHierarchyTest {}
+.assembly 'InterfaceVariance' {}
 
 .class interface public abstract auto ansi InterfaceScenario1`1<- T>
 {

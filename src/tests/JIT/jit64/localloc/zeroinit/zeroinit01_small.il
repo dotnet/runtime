@@ -10,7 +10,7 @@
 
 // Test zero initialization of localloc
 .assembly extern mscorlib{}
-.assembly zeroinit01{}
+.assembly 'zeroinit01_small'{}
 
 .class private auto ansi beforefieldinit T
        extends [mscorlib]System.Object

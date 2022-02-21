@@ -10,7 +10,7 @@ using System.Diagnostics;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal sealed class CallSiteRuntimeResolver : CallSiteVisitor<RuntimeResolverContext, object>
+    internal sealed class CallSiteRuntimeResolver : CallSiteVisitor<RuntimeResolverContext, object?>
     {
         public static CallSiteRuntimeResolver Instance { get; } = new();
 
@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
         }
 
-        public object Resolve(ServiceCallSite callSite, ServiceProviderEngineScope scope)
+        public object? Resolve(ServiceCallSite callSite, ServiceProviderEngineScope scope)
         {
             // Fast path to avoid virtual calls if we already have the cached value in the root scope
             if (scope.IsRootScope && callSite.Value is object cached)
@@ -32,21 +32,21 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             });
         }
 
-        protected override object VisitDisposeCache(ServiceCallSite transientCallSite, RuntimeResolverContext context)
+        protected override object? VisitDisposeCache(ServiceCallSite transientCallSite, RuntimeResolverContext context)
         {
             return context.Scope.CaptureDisposable(VisitCallSiteMain(transientCallSite, context));
         }
 
         protected override object VisitConstructor(ConstructorCallSite constructorCallSite, RuntimeResolverContext context)
         {
-            object[] parameterValues;
+            object?[] parameterValues;
             if (constructorCallSite.ParameterCallSites.Length == 0)
             {
                 parameterValues = Array.Empty<object>();
             }
             else
             {
-                parameterValues = new object[constructorCallSite.ParameterCallSites.Length];
+                parameterValues = new object?[constructorCallSite.ParameterCallSites.Length];
                 for (int index = 0; index < parameterValues.Length; index++)
                 {
                     parameterValues[index] = VisitCallSite(constructorCallSite.ParameterCallSites[index], context);
@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 #endif
         }
 
-        protected override object VisitRootCache(ServiceCallSite callSite, RuntimeResolverContext context)
+        protected override object? VisitRootCache(ServiceCallSite callSite, RuntimeResolverContext context)
         {
             if (callSite.Value is object value)
             {
@@ -83,12 +83,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             lock (callSite)
             {
                 // Lock the callsite and check if another thread already cached the value
-                if (callSite.Value is object resolved)
+                if (callSite.Value is object callSiteValue)
                 {
-                    return resolved;
+                    return callSiteValue;
                 }
 
-                resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
+                object? resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
                 {
                     Scope = serviceProviderEngine,
                     AcquiredLocks = context.AcquiredLocks | lockType
@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
-        protected override object VisitScopeCache(ServiceCallSite callSite, RuntimeResolverContext context)
+        protected override object? VisitScopeCache(ServiceCallSite callSite, RuntimeResolverContext context)
         {
             // Check if we are in the situation where scoped service was promoted to singleton
             // and we need to lock the root
@@ -108,11 +108,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 VisitCache(callSite, context, context.Scope, RuntimeResolverLock.Scope);
         }
 
-        private object VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
+        private object? VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
         {
             bool lockTaken = false;
             object sync = serviceProviderEngine.Sync;
-            Dictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
+            Dictionary<ServiceCacheKey, object?> resolvedServices = serviceProviderEngine.ResolvedServices;
             // Taking locks only once allows us to fork resolution process
             // on another thread without causing the deadlock because we
             // always know that we are going to wait the other thread to finish before
@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 // Note: This method has already taken lock by the caller for resolution and access synchronization.
                 // For scoped: takes a dictionary as both a resolution lock and a dictionary access lock.
-                if (resolvedServices.TryGetValue(callSite.Cache.Key, out object resolved))
+                if (resolvedServices.TryGetValue(callSite.Cache.Key, out object? resolved))
                 {
                     return resolved;
                 }
@@ -149,7 +149,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
-        protected override object VisitConstant(ConstantCallSite constantCallSite, RuntimeResolverContext context)
+        protected override object? VisitConstant(ConstantCallSite constantCallSite, RuntimeResolverContext context)
         {
             return constantCallSite.DefaultValue;
         }
@@ -167,7 +167,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             for (int index = 0; index < enumerableCallSite.ServiceCallSites.Length; index++)
             {
-                object value = VisitCallSite(enumerableCallSite.ServiceCallSites[index], context);
+                object? value = VisitCallSite(enumerableCallSite.ServiceCallSites[index], context);
                 array.SetValue(value, index);
             }
             return array;

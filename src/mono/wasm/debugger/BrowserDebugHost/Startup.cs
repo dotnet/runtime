@@ -139,7 +139,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     Dictionary<string, string>[] tabs = await ProxyGetJsonAsync<Dictionary<string, string>[]>(GetEndpoint(context));
                     Dictionary<string, string>[] alteredTabs = tabs.Select(t => mapFunc(t, context, devToolsHost)).ToArray();
                     context.Response.ContentType = "application/json";
-                    await context.Response.WriteAsync(JsonSerializer.Serialize(alteredTabs));
+                    string text = JsonSerializer.Serialize(alteredTabs);
+                    context.Response.ContentLength = text.Length;
+                    await context.Response.WriteAsync(text);
                 }
 
                 async Task ConnectProxy(HttpContext context)
@@ -160,7 +162,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     try
                     {
                         using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
-                            builder.AddSimpleConsole(options => options.SingleLine = true)
+                            builder.AddSimpleConsole(options =>
+                                    {
+                                        options.SingleLine = true;
+                                        options.TimestampFormat = "[HH:mm:ss] ";
+                                    })
                                    .AddFilter(null, LogLevel.Information)
                         );
 

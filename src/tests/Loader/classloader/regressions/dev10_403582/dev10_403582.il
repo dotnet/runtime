@@ -18,7 +18,7 @@
 {
   .ver 0:0:0:0
 }
-.assembly ddb187632
+.assembly 'dev10_403582'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
@@ -26,7 +26,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module ddb187632.exe
 // MVID: {B6CD7E92-EDE7-4493-B78F-D3F743C68390}
 .imagebase 0x00400000
 .file alignment 0x00000200

@@ -6,7 +6,7 @@
     <PublishDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(IsFunctionalTest)' == 'true'">$(AppBundleRoot)runonly\$(AssemblyName)</PublishDir>
     <BundleDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PublishDir)', 'AppBundle'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    
+
     <PublishingTestsRun>true</PublishingTestsRun>
     <BundleTestAppTargets>BundleTestAndroidApp</BundleTestAppTargets>
     <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
@@ -36,7 +36,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <AdditionalXHarnessArguments>$(Configuration)</AdditionalXHarnessArguments>
     <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">$(AdditionalXHarnessArguments) --expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
   </PropertyGroup>
 
@@ -55,9 +54,9 @@
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true'" TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
   <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
 
-  <Import Project="$(MSBuildThisFileDirectory)tests.ioslike.targets" 
+  <Import Project="$(MSBuildThisFileDirectory)tests.ioslike.targets"
           Condition="'$(TargetsAppleMobile)' == 'true'" />
-  <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets" 
+  <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets"
           Condition="'$(TargetOS)' == 'Browser'" />
 
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
@@ -184,7 +183,7 @@
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Claims'" />
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Permissions'" />
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Transactions.Local'" />
-      
+
       <!-- Even though we are trimming the test runner assembly, we want it to be treated
            as a root -->
       <TrimmerRootAssembly
@@ -199,7 +198,8 @@
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
-          AfterTargets="ComputeResolvedFilesToPublishList">
+          AfterTargets="ComputeResolvedFilesToPublishList"
+          Condition="'$(TestFramework)' == 'xunit'">
     <ItemGroup>
       <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'Android'" />
       <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" />

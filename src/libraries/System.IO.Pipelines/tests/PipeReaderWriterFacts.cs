@@ -228,8 +228,6 @@ namespace System.IO.Pipelines.Tests
             invalidOperationException = await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Reader.ReadAsync());
             Assert.Equal("Writer exception", invalidOperationException.Message);
             Assert.Contains(nameof(ThrowTestException), invalidOperationException.StackTrace);
-
-            Assert.Single(Regex.Matches(invalidOperationException.StackTrace, "Pipe.GetReadResult"));
         }
 
         [Fact]

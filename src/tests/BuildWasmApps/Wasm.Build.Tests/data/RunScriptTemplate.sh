@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 
-EXECUTION_DIR=$(dirname $0)
+# SetCommands defined in eng\testing\tests.wasm.targets
+[[SetCommands]]
+[[SetCommandsEcho]]
 
-cd $EXECUTION_DIR
+EXECUTION_DIR=$(dirname $0)
+if [[ -n "$3" ]]; then
+	SCENARIO=$3
+fi
 
 if [[ -z "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
 	XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
@@ -17,6 +22,47 @@ if [[ -n "$XHARNESS_CLI_PATH" ]]; then
 else
 	HARNESS_RUNNER="dotnet xharness"
 fi
+
+if [[ -z "$XHARNESS_COMMAND" ]]; then
+	if [[ "$SCENARIO" == "WasmTestOnBrowser" || "$SCENARIO" == "wasmtestonbrowser" ]]; then
+		XHARNESS_COMMAND="test-browser"
+	else
+		XHARNESS_COMMAND="test"
+	fi
+fi
+
+if [[ "$XHARNESS_COMMAND" == "test" ]]; then
+	if [[ -z "$JS_ENGINE" ]]; then
+		if [[ "$SCENARIO" == "WasmTestOnNodeJs" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
+			JS_ENGINE="--engine=NodeJS"
+		else
+			JS_ENGINE="--engine=V8"
+		fi
+	fi
+
+	if [[ -z "$MAIN_JS" ]]; then
+		MAIN_JS="--js-file=test-main.js"
+	fi
+
+	if [[ -z "$JS_ENGINE_ARGS" ]]; then
+		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
+	fi
+fi
+
+if [[ -z "$XHARNESS_ARGS" ]]; then
+	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
+fi
+
+echo EXECUTION_DIR=$EXECUTION_DIR
+echo SCENARIO=$SCENARIO
+echo XHARNESS_OUT=$XHARNESS_OUT
+echo XHARNESS_CLI_PATH=$XHARNESS_CLI_PATH
+echo HARNESS_RUNNER=$HARNESS_RUNNER
+echo XHARNESS_COMMAND=$XHARNESS_COMMAND
+echo MAIN_JS=$MAIN_JS
+echo JS_ENGINE=$JS_ENGINE
+echo JS_ENGINE_ARGS=$JS_ENGINE_ARGS
+echo XHARNESS_ARGS=$XHARNESS_ARGS
 
 function set_env_vars()
 {
@@ -36,9 +82,21 @@ function set_env_vars()
 
 export TEST_LOG_PATH=${XHARNESS_OUT}/logs
 
-[[RunCommands]]
+pushd $EXECUTION_DIR
 
+# ========================= BEGIN Test Execution ============================= 
+echo ----- start $(date) ===============  To repro directly: ===================================================== 
+echo pushd $EXECUTION_DIR
+# RunCommands defined in eng\testing\tests.wasm.targets
+[[RunCommandsEcho]]
+echo popd
+echo ===========================================================================================================
+pushd $EXECUTION_DIR
+# RunCommands defined in eng\testing\tests.wasm.targets
+[[RunCommands]]
 _exitCode=$?
+popd
+echo ----- end $(date) ----- exit code $_exitCode ----------------------------------------------------------
 
 echo "XHarness artifacts: $XHARNESS_OUT"
 

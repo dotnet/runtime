@@ -10,6 +10,7 @@
 
     <!-- Excluding xunit.core/build as it enables deps file generation. -->
     <PackageReference Include="xunit" Version="$(XUnitVersion)" ExcludeAssets="build" />
+    <PackageReference Include="xunit.analyzers" Version="$(XUnitAnalyzersVersion)" ExcludeAssets="build" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
   </ItemGroup>
 

@@ -41,9 +41,6 @@ namespace System.Text.RegularExpressions
         private const short SpaceConst = 100;
         private const short NotSpaceConst = -100;
 
-        private const char ZeroWidthJoiner = '\u200D';
-        private const char ZeroWidthNonJoiner = '\u200C';
-
         private const string InternalRegexIgnoreCase = "__InternalRegexIgnoreCase__";
         private const string Space = "\x64";
         private const string NotSpace = "\uFF9C";
@@ -719,9 +716,8 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         public static int GetSetChars(string set, Span<char> chars)
         {
-            // If the set is negated, it's likely to contain a large number of characters,
-            // so we don't even try.  We also get the characters by enumerating the set
-            // portion, so we validate that it's set up to enable that, e.g. no categories.
+            // We get the characters by enumerating the set portion, so we validate that it's
+            // set up to enable that, e.g. no categories.
             if (!CanEasilyEnumerateSetContents(set))
             {
                 return 0;
@@ -975,25 +971,24 @@ namespace System.Text.RegularExpressions
             ch == '_' || // underscore
             ch == '\u0130'; // latin capital letter I with dot above
 
+        /// <summary>16 bytes, representing the chars 0 through 127, with a 1 for a bit where that char is a word char.</summary>
+        private static ReadOnlySpan<byte> WordCharAsciiLookup => new byte[]
+        {
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
+            0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
+        };
+
+        /// <summary>Determines whether a character is considered a word character for the purposes of testing the \w set.</summary>
         public static bool IsWordChar(char ch)
         {
-            // According to UTS#18 Unicode Regular Expressions (http://www.unicode.org/reports/tr18/)
-            // RL 1.4 Simple Word Boundaries  The class of <word_character> includes all Alphabetic
-            // values from the Unicode character database, from UnicodeData.txt [UData], plus the U+200C
-            // ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER.
-
-            // 16 bytes, representing the chars 0 through 127, with a 1 for a bit where that char is a word char
-            static ReadOnlySpan<byte> AsciiLookup() => new byte[]
-            {
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
-                0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
-            };
+            // This is the same as IsBoundaryWordChar, except that IsBoundaryWordChar also
+            // returns true for \u200c and \u200d.
 
             // Fast lookup in our lookup table for ASCII characters.  This is purely an optimization, and has the
             // behavior as if we fell through to the switch below (which was actually used to produce the lookup table).
-            ReadOnlySpan<byte> asciiLookup = AsciiLookup();
+            ReadOnlySpan<byte> asciiLookup = WordCharAsciiLookup;
             int chDiv8 = ch >> 3;
-            if ((uint)chDiv8 < asciiLookup.Length)
+            if ((uint)chDiv8 < (uint)asciiLookup.Length)
             {
                 return (asciiLookup[chDiv8] & (1 << (ch & 0x7))) != 0;
             }
@@ -1012,8 +1007,52 @@ namespace System.Text.RegularExpressions
                     return true;
 
                 default:
-                    return ch == ZeroWidthJoiner || ch == ZeroWidthNonJoiner;
+                    return false;
             }
+        }
+
+        /// <summary>Determines whether a character is considered a word character for the purposes of testing a word character boundary.</summary>
+        public static bool IsBoundaryWordChar(char ch)
+        {
+            // According to UTS#18 Unicode Regular Expressions (http://www.unicode.org/reports/tr18/)
+            // RL 1.4 Simple Word Boundaries  The class of <word_character> includes all Alphabetic
+            // values from the Unicode character database, from UnicodeData.txt [UData], plus the U+200C
+            // ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER.
+
+            // Fast lookup in our lookup table for ASCII characters.  This is purely an optimization, and has the
+            // behavior as if we fell through to the switch below (which was actually used to produce the lookup table).
+            ReadOnlySpan<byte> asciiLookup = WordCharAsciiLookup;
+            int chDiv8 = ch >> 3;
+            if ((uint)chDiv8 < (uint)asciiLookup.Length)
+            {
+                return (asciiLookup[chDiv8] & (1 << (ch & 0x7))) != 0;
+            }
+
+            // For non-ASCII, fall back to checking the Unicode category.
+            switch (CharUnicodeInfo.GetUnicodeCategory(ch))
+            {
+                case UnicodeCategory.UppercaseLetter:
+                case UnicodeCategory.LowercaseLetter:
+                case UnicodeCategory.TitlecaseLetter:
+                case UnicodeCategory.ModifierLetter:
+                case UnicodeCategory.OtherLetter:
+                case UnicodeCategory.NonSpacingMark:
+                case UnicodeCategory.DecimalDigitNumber:
+                case UnicodeCategory.ConnectorPunctuation:
+                    return true;
+
+                default:
+                    const char ZeroWidthNonJoiner = '\u200C', ZeroWidthJoiner = '\u200D';
+                    return ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner;
+            }
+        }
+
+        /// <summary>Determines whether the 'a' and 'b' values differ by only a single bit, setting that bit in 'mask'.</summary>
+        /// <remarks>This isn't specific to RegexCharClass; it's just a convenient place to host it.</remarks>
+        public static bool DifferByOneBit(char a, char b, out int mask)
+        {
+            mask = a ^ b;
+            return mask != 0 && (mask & (mask - 1)) == 0;
         }
 
         /// <summary>Determines a character's membership in a character class (via the string representation of the class).</summary>
@@ -1776,7 +1815,7 @@ namespace System.Text.RegularExpressions
         /// Produces a human-readable description for a set string.
         /// </summary>
         [ExcludeFromCodeCoverage]
-        public static string SetDescription(string set)
+        public static string DescribeSet(string set)
         {
             int setLength = set[SetLengthIndex];
             int categoryLength = set[CategoryLengthIndex];
@@ -1802,7 +1841,7 @@ namespace System.Text.RegularExpressions
                     (char)(set[index + 1] - 1) :
                     LastChar;
 
-                desc.Append(CharDescription(ch1));
+                desc.Append(DescribeChar(ch1));
 
                 if (ch2 != ch1)
                 {
@@ -1811,7 +1850,7 @@ namespace System.Text.RegularExpressions
                         desc.Append('-');
                     }
 
-                    desc.Append(CharDescription(ch2));
+                    desc.Append(DescribeChar(ch2));
                 }
                 index += 2;
             }
@@ -1860,7 +1899,7 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
-                    desc.Append(CategoryDescription(ch1));
+                    desc.Append(DescribeCategory(ch1));
                 }
 
                 index++;
@@ -1868,7 +1907,7 @@ namespace System.Text.RegularExpressions
 
             if (set.Length > endPosition)
             {
-                desc.Append('-').Append(SetDescription(set.Substring(endPosition)));
+                desc.Append('-').Append(DescribeSet(set.Substring(endPosition)));
             }
 
             return desc.Append(']').ToString();
@@ -1876,7 +1915,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Produces a human-readable description for a single character.</summary>
         [ExcludeFromCodeCoverage]
-        public static string CharDescription(char ch) =>
+        public static string DescribeChar(char ch) =>
             ch switch
             {
                 '\a' => "\\a",
@@ -1892,25 +1931,16 @@ namespace System.Text.RegularExpressions
             };
 
         [ExcludeFromCodeCoverage]
-        private static string CategoryDescription(char ch)
-        {
-            if (ch == SpaceConst)
+        private static string DescribeCategory(char ch) =>
+            (short)ch switch
             {
-                return "\\s";
-            }
-
-            if ((short)ch == NotSpaceConst)
-            {
-                return "\\S";
-            }
-
-            if ((short)ch < 0)
-            {
-                return "\\P{" + CategoryIdToName[(-((short)ch) - 1)] + "}";
-            }
-
-            return "\\p{" + CategoryIdToName[(ch - 1)] + "}";
-        }
+                SpaceConst => @"\s",
+                NotSpaceConst => @"\S",
+                (short)(UnicodeCategory.DecimalDigitNumber + 1) => @"\d",
+                -(short)(UnicodeCategory.DecimalDigitNumber + 1) => @"\D",
+                < 0 => $"\\P{{{CategoryIdToName[-(short)ch - 1]}}}",
+                _ => $"\\p{{{CategoryIdToName[ch - 1]}}}",
+            };
 
         /// <summary>
         /// A first/last pair representing a single range of characters.
