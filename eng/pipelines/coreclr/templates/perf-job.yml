@@ -106,6 +106,10 @@ jobs:
       displayName: Test variables
       condition: always()
     - powershell: |
+        Write-Host "DOC1; $(mauiVersion)"
+      displayName: Test variables
+      condition: always()
+    - powershell: |
         Write-Host "DOC2; $(mauiVersion2)"
       displayName: Test variables
       condition: always()
