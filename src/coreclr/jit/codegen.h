@@ -327,6 +327,11 @@ protected:
     void genPushCalleeSavedRegisters();
 #endif
 
+#if defined(TARGET_AMD64)
+    void genOSRRecordTier0CalleeSavedRegistersAndFrame();
+    void genOSRSaveRemainingCalleeSavedRegisters();
+#endif // TARGET_AMD64
+
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
     void genPoisonFrame(regMaskTP bbRegLiveIn);
@@ -474,6 +479,10 @@ protected:
 #else // !defined(TARGET_ARM64)
 
     void genPopCalleeSavedRegisters(bool jmpEpilog = false);
+
+#if defined(TARGET_XARCH)
+    unsigned genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs);
+#endif // !defined(TARGET_XARCH)
 
 #endif // !defined(TARGET_ARM64)
 

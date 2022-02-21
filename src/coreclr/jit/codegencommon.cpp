@@ -5515,22 +5515,22 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-    // For OSR there is a "phantom prolog" to account for the actions taken
+#if defined(TARGET_ARM64)
+    // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
     // in the tier0 frame that impact FP and SP on entry to the OSR method.
+    //
+    // x64 handles this differently; the phantom prolog unwind is emitted in
+    // genOSRRecordTier0CalleeSavedRegistersAndFrame.
+    //
     if (compiler->opts.IsOSR())
     {
         PatchpointInfo* patchpointInfo = compiler->info.compPatchpointInfo;
         const int       tier0FrameSize = patchpointInfo->TotalFrameSize();
 
-#if defined(TARGET_AMD64)
-        // FP is tier0 method's FP.
-        compiler->unwindPush(REG_FPBASE);
-#endif
         // SP is tier0 method's SP.
         compiler->unwindAllocStack(tier0FrameSize);
     }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_ARM64)
 
 #ifdef DEBUG
 
@@ -5807,6 +5807,14 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_ARM
 
+    const bool isRoot = (compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
+
+#ifdef TARGET_AMD64
+    const bool isOSRx64Root = isRoot && compiler->opts.IsOSR();
+#else
+    const bool isOSRx64Root = false;
+#endif // TARGET_AMD64
+
     tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
 
     if (tempMask != RBM_NONE)
@@ -5828,6 +5836,24 @@ void CodeGen::genFnProlog()
             initReg  = genRegNumFromMask(tempMask);
         }
     }
+
+#if defined(TARGET_AMD64)
+    // For x64 OSR root frames, we can't use any as of yet unsaved
+    // callee save as initReg, as we defer saving these until later in
+    // the prolog, and we don't have normal arg regs.
+    if (isOSRx64Root)
+    {
+        initReg = REG_SCRATCH; // REG_EAX
+    }
+#elif defined(TARGET_ARM64)
+    // For arm64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    //
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_IP1;
+    }
+#endif
 
     noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
 
@@ -5863,11 +5889,49 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_ARM
 
+    unsigned extraFrameSize = 0;
+
 #ifdef TARGET_XARCH
+
+#ifdef TARGET_AMD64
+    if (isOSRx64Root)
+    {
+        // Account for the Tier0 callee saves
+        //
+        genOSRRecordTier0CalleeSavedRegistersAndFrame();
+
+        // We don't actually push any callee saves on the OSR frame,
+        // but we still reserve space, so account for this when
+        // allocating the local frame.
+        //
+        extraFrameSize = compiler->compCalleeRegsPushed * REGSIZE_BYTES;
+    }
+#endif // TARGET_ARM64
+
     if (doubleAlignOrFramePointerUsed())
     {
-        inst_RV(INS_push, REG_FPBASE, TYP_REF);
-        compiler->unwindPush(REG_FPBASE);
+        // OSR methods handle "saving" FP specially.
+        //
+        // For epilog and unwind, we restore the RBP saved by the
+        // Tier0 method. The save we do here is just to set up a
+        // proper RBP-based frame chain link.
+        //
+        if (isOSRx64Root && isFramePointerUsed())
+        {
+            GetEmitter()->emitIns_R_AR(INS_mov, EA_8BYTE, initReg, REG_FPBASE, 0);
+            inst_RV(INS_push, initReg, TYP_REF);
+            initRegZeroed = false;
+
+            // We account for the SP movement in unwind, but not for
+            // the "save" of RBP.
+            //
+            compiler->unwindAllocStack(REGSIZE_BYTES);
+        }
+        else
+        {
+            inst_RV(INS_push, REG_FPBASE, TYP_REF);
+            compiler->unwindPush(REG_FPBASE);
+        }
 #ifdef USING_SCOPE_INFO
         psiAdjustStackLevel(REGSIZE_BYTES);
 #endif               // USING_SCOPE_INFO
@@ -5890,7 +5954,10 @@ void CodeGen::genFnProlog()
 #ifdef TARGET_ARM64
     genPushCalleeSavedRegisters(initReg, &initRegZeroed);
 #else  // !TARGET_ARM64
-    genPushCalleeSavedRegisters();
+    if (!isOSRx64Root)
+    {
+        genPushCalleeSavedRegisters();
+    }
 #endif // !TARGET_ARM64
 
 #ifdef TARGET_ARM
@@ -5926,15 +5993,25 @@ void CodeGen::genFnProlog()
     regMaskTP maskStackAlloc = RBM_NONE;
 
 #ifdef TARGET_ARM
-    maskStackAlloc =
-        genStackAllocRegisterMask(compiler->compLclFrameSize, regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED);
+    maskStackAlloc = genStackAllocRegisterMask(compiler->compLclFrameSize + extraFrameSize,
+                                               regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED);
 #endif // TARGET_ARM
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genAllocLclFrame(compiler->compLclFrameSize, initReg, &initRegZeroed, intRegState.rsCalleeRegArgMaskLiveIn);
+        genAllocLclFrame(compiler->compLclFrameSize + extraFrameSize, initReg, &initRegZeroed,
+                         intRegState.rsCalleeRegArgMaskLiveIn);
     }
 #endif // !TARGET_ARM64
+
+#ifdef TARGET_AMD64
+    // For x64 OSR we have to finish saving int callee saves.
+    //
+    if (isOSRx64Root)
+    {
+        genOSRSaveRemainingCalleeSavedRegisters();
+    }
+#endif // TARGET_AMD64
 
 //-------------------------------------------------------------------------
 
