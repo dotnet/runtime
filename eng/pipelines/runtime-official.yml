@@ -382,6 +382,8 @@ stages:
       - windows_x86
       - Linux_x64
       jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        signBinaries: false
         testGroup: innerloop
         pgoType: 'PGO'
 
