@@ -3375,7 +3375,11 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
 #endif
 
     unsigned size = putArgNode->GetStackByteSize();
+#ifdef TARGET_X86
     assert((XMM_REGSIZE_BYTES <= size) && (size <= CPBLK_UNROLL_LIMIT));
+#else  // !TARGET_X86
+    assert(size <= CPBLK_UNROLL_LIMIT);
+#endif // !TARGET_X86
 
     if (src->AsOp()->gtOp1->isUsedFromReg())
     {
@@ -3399,7 +3403,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
 #ifdef TARGET_X86
     longTmpReg = xmmTmpReg;
 #else
-    longTmpReg             = intTmpReg;
+    longTmpReg = intTmpReg;
 #endif
 
     // Let's use SSE2 to be able to do 16 byte at a time with loads and stores.

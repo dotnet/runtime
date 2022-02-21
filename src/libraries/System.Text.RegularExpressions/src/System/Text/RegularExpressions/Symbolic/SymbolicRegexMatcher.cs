@@ -141,6 +141,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Number of capture groups.</summary>
         private readonly int _capsize;
 
+        /// <summary>Fixed-length of any match, if there is one.</summary>
+        private readonly int? _fixedMatchLength;
+
         /// <summary>This determines whether the matcher uses the special capturing NFA simulation mode.</summary>
         internal bool HasSubcaptures => _capsize > 1;
 
@@ -154,7 +157,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Constructs matcher for given symbolic regex.</summary>
-        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexCode code, CharSetSolver css, BDD[] minterms, TimeSpan matchTimeout, CultureInfo culture)
+        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexCode code, BDD[] minterms, TimeSpan matchTimeout, CultureInfo culture)
         {
             Debug.Assert(sr._builder._solver is BV64Algebra or BVAlgebra or CharSetSolver, $"Unsupported algebra: {sr._builder._solver}");
 
@@ -169,6 +172,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 _ => new MintermClassifier((CharSetSolver)(object)_builder._solver, minterms),
             };
             _capsize = code.CapSize;
+
+            if (code.Tree.MinRequiredLength == code.FindOptimizations.MaxPossibleLength)
+            {
+                _fixedMatchLength = code.Tree.MinRequiredLength;
+            }
 
             if (code.FindOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
                 code.FindOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
@@ -493,6 +501,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="perThreadData">Per thread data reused between calls.</param>
         public SymbolicMatch FindMatch(bool isMatch, ReadOnlySpan<char> input, int startat, PerThreadData perThreadData)
         {
+            // If we need to perform timeout checks, store the absolute timeout value.
             int timeoutOccursAt = 0;
             if (_checkTimeout)
             {
@@ -500,58 +509,80 @@ namespace System.Text.RegularExpressions.Symbolic
                 timeoutOccursAt = Environment.TickCount + (int)(_timeout + 0.5);
             }
 
+            // If we're starting at the end of the input, we don't need to do any work other than
+            // determine whether an empty match is valid, i.e. whether the pattern is "nullable"
+            // given the kinds of characters at and just before the end.
             if (startat == input.Length)
             {
-                // Covers the special-case of an empty match at the end of the input.
                 uint prevKind = GetCharKind(input, startat - 1);
                 uint nextKind = GetCharKind(input, startat);
-
-                bool emptyMatchExists = _pattern.IsNullableFor(CharKind.Context(prevKind, nextKind));
-                return emptyMatchExists ?
+                return _pattern.IsNullableFor(CharKind.Context(prevKind, nextKind)) ?
                     new SymbolicMatch(startat, 0) :
                     SymbolicMatch.NoMatch;
             }
 
-            // Find the first accepting state. Initial start position in the input is i == 0.
-            int i = startat;
+            // Phase 1:
+            // Determine whether there is a match by finding the first final state position.  This only tells
+            // us whether there is a match but needn't give us the longest possible match. This may return -1 as
+            // a legitimate value when the initial state is nullable and startat == 0. It returns NoMatchExists (-2)
+            // when there is no match.  As an example, consider the pattern a{5,10}b* run against an input
+            // of aaaaaaaaaaaaaaabbbc: phase 1 will find the position of the first b: aaaaaaaaaaaaaaab.
+            int i = FindFinalStatePosition(input, startat, timeoutOccursAt, out int matchStartLowBoundary, out int watchdog);
 
-            // May return -1 as a legitimate value when the initial state is nullable and startat == 0.
-            // Returns NoMatchExists when there is no match.
-            i = FindFinalStatePosition(input, i, timeoutOccursAt, out int i_q0_A1, out int watchdog);
-
+            // If there wasn't a match, we're done.
             if (i == NoMatchExists)
             {
                 return SymbolicMatch.NoMatch;
             }
 
+            // A match exists. If we don't need further details, because IsMatch was used (and thus we don't
+            // need the exact bounds of the match, captures, etc.), we're done.
             if (isMatch)
             {
-                // this means success -- the original call was IsMatch
                 return SymbolicMatch.QuickMatch;
             }
 
-            int i_start;
+            // Phase 2:
+            // Match backwards through the input matching against the reverse of the pattern, looking for the earliest
+            // start position.  That tells us the actual starting position of the match.  We can skip this phase if we
+            // recorded a fixed-length marker for the portion of the pattern that matched, as we can then jump that
+            // exact number of positions backwards.  Continuing the previous example, phase 2 will walk backwards from
+            // that first b until it finds the 6th a: aaaaaaaaaab.
+            int matchStart;
             if (watchdog >= 0)
             {
-                i_start = i - watchdog + 1;
+                matchStart = i - watchdog + 1;
             }
             else
             {
                 Debug.Assert(i >= startat - 1);
-                i_start = i < startat ?
+                matchStart = i < startat ?
                     startat :
-                    FindStartPosition(input, i, i_q0_A1); // Walk in reverse to locate the start position of the match
+                    FindStartPosition(input, i, matchStartLowBoundary);
             }
 
+            // Phase 3:
+            // Match again, this time from the computed start position, to find the latest end position.  That start
+            // and end then represent the bounds of the match.  If the pattern has subcaptures (captures other than
+            // the top-level capture for the whole match), we need to do more work to compute their exact bounds, so we
+            // take a faster path if captures aren't required.  Further, if captures aren't needed, and if any possible
+            // match of the whole pattern is a fixed length, we can skip this phase as well, just using that fixed-length
+            // to compute the ending position based on the starting position.  Continuing the previous example, phase 3
+            // will walk forwards from the 6th a until it finds the end of the match: aaaaaaaaaabbb.
             if (!HasSubcaptures)
             {
-                int i_end = FindEndPosition(input, i_start);
-                return new SymbolicMatch(i_start, i_end + 1 - i_start);
+                if (_fixedMatchLength.HasValue)
+                {
+                    return new SymbolicMatch(matchStart, _fixedMatchLength.GetValueOrDefault());
+                }
+
+                int matchEnd = FindEndPosition(input, matchStart);
+                return new SymbolicMatch(matchStart, matchEnd + 1 - matchStart);
             }
             else
             {
-                int i_end = FindEndPositionCapturing(input, i_start, out Registers endRegisters, perThreadData);
-                return new SymbolicMatch(i_start, i_end + 1 - i_start, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
+                int matchEnd = FindEndPositionCapturing(input, matchStart, out Registers endRegisters, perThreadData);
+                return new SymbolicMatch(matchStart, matchEnd + 1 - matchStart, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
             }
         }
 

@@ -193,7 +193,6 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"",
         CharSet = CharSet.Unicode,
         EntryPoint = ""UserDefinedEntryPoint"",
-        ExactSpelling = true,
         SetLastError = true)]
     public static partial void Method();
 }
@@ -215,16 +214,20 @@ partial class Test
     [GeneratedDllImport(nameof(Test),
         CharSet = (CharSet)2,
         EntryPoint = EntryPointName,
-        ExactSpelling = 0 != 1,
         SetLastError = IsFalse)]
     public static partial void Method1();
 
     [GeneratedDllImport(nameof(Test),
         CharSet = (CharSet)Two,
         EntryPoint = EntryPointName,
-        ExactSpelling = One != Two,
         SetLastError = !IsTrue)]
     public static partial void Method2();
+
+    [GeneratedDllImport(nameof(Test),
+        CharSet = (CharSet)2,
+        EntryPoint = EntryPointName,
+        SetLastError = 0 != 1)]
+    public static partial void Method3();
 }
 ";
 

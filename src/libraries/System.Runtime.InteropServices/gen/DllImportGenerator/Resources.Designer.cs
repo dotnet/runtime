@@ -277,6 +277,15 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos; with &apos;{0}&apos; suffix.
+        /// </summary>
+        internal static string ConvertToGeneratedDllImportWithSuffix {
+            get {
+                return ResourceManager.GetString("ConvertToGeneratedDllImportWithSuffix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The specified parameter needs to be marshalled from managed to native, but the native type &apos;{0}&apos; does not support it..
         /// </summary>
         internal static string CustomTypeMarshallingManagedToNativeUnsupported {
