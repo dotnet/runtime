@@ -170,7 +170,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     })
                 });
             }
-            else if (obj["result"] is JObject && obj["result"]["type"].Value<string>() == "object")
+            else if (obj["result"] is JObject && obj["result"]?["type"]?.Value<string>() == "object")
             {
                 if (obj["result"]["class"].Value<string>() == "Array")
                 {
@@ -396,6 +396,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public List<Frame> CallStack { get; set; }
 
+        public JObject CallStackObject { get; set; }
+
         public string[] LoadedFiles { get; set; }
         internal DebugStore store;
         internal MonoSDBHelper SdbAgent { get; init; }
@@ -431,6 +433,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             CallStack = null;
             SdbAgent.ClearCache();
             perScopeCaches.Clear();
+            CallStackObject = null;
         }
     }
 

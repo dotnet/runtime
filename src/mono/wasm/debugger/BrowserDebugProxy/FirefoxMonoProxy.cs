@@ -361,6 +361,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "_mono_wasm_fire_debugger_agent_message":
                                 {
                                     pausedOnWasm = true;
+                                    await OnReceiveDebuggerAgentEvent(sessionId, args, token);
                                     return false;
                                 }
                             default:
@@ -615,17 +616,26 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (pausedOnWasm)
                         {
-                                try
-                                {
-                                    return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
-                                }
-                                catch (Exception) //if the page is refreshed maybe it stops here.
-                                {
-                                    await SendResume(sessionId, token);
-                                    return true;
-                                }
+                            try
+                            {
+                                ExecutionContext ctx = GetContext(sessionId);
+                                SendEvent(sessionId, "", ctx.CallStackObject, token);
+                                return true;
+                            }
+                            catch (Exception) //if the page is refreshed maybe it stops here.
+                            {
+                                await SendResume(sessionId, token);
+                                return true;
+                            }
                         }
                         return false;
+                    }
+                case "DotnetDebugger.getMethodLocation":
+                    {
+                        var ret = await GetMethodLocation(sessionId, args, token);
+                        ret.Value["from"] = "internal";
+                        SendEvent(sessionId, "", ret.Value, token);
+                        return true;
                     }
                 default:
                     return false;
@@ -681,14 +691,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                         variableDesc.Add("value", variable["value"]["value"]);
                     else //{"type":"null"}
                     {
-                        variableDesc.Add("value", JObject.FromObject(new { type = "null"}));
+                        variableDesc.Add("value", JObject.FromObject(new {
+                            type = "null",
+                            @class = variable["value"]["className"]
+                        }));
                     }
                 }
                 variables.Add(variable["name"].Value<string>(), variableDesc);
             }
             return variables;
         }
-        private async Task SendResume(SessionId id, CancellationToken token)
+
+        protected override async Task SendResume(SessionId id, CancellationToken token)
         {
             await SendCommand(id, "", JObject.FromObject(new
             {
@@ -696,6 +710,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 type = "resume"
             }), token);
         }
+
         internal override Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token)
         {
             // {"to":"server1.conn0.child10/consoleActor2","type":"evaluateJSAsync","text":"console.log(\"oi thays \")","frameActor":"server1.conn0.child10/frame36"}
@@ -755,7 +770,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected override async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, JObject args, EventKind event_kind, CancellationToken token)
         {
-            var orig_callframes = await SendCommand(sessionId, "frames", args, token);
+            var framesArgs = JObject.FromObject(new
+            {
+                to = args["from"].Value<string>(),
+                type = "frames",
+                start = 0,
+                count =  1000
+            });
+            var orig_callframes = await SendCommand(sessionId, "frames", framesArgs, token);
 
             var callFrames = new List<object>();
             var frames = new List<Frame>();
@@ -770,7 +792,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var frame_id = retDebuggerCmdReader.ReadInt32();
                 var methodId = retDebuggerCmdReader.ReadInt32();
                 var il_pos = retDebuggerCmdReader.ReadInt32();
+                retDebuggerCmdReader.ReadByte();
                 var method = await context.SdbAgent.GetMethodInfo(methodId, token);
+
+                if (await ShouldSkipMethod(sessionId, context, event_kind, j, method, token))
+                    return true;
 
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);
                 if (location == null)
@@ -829,7 +855,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await SendResume(sessionId, token);
                 return true;
             }
-            SendEvent(sessionId, "", o, token);
+            context.CallStackObject = o;
             return true;
         }
         internal async Task<bool> OnGetBreakableLines(MessageId msg_id, string script_id, CancellationToken token)

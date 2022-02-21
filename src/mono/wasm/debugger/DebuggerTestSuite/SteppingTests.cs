@@ -9,9 +9,14 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class SteppingTests : DebuggerTestBase
+    public class SteppingTests :
+#if RUN_IN_CHROME
+    DebuggerTestBase
+#else
+    DebuggerTestFirefox
+#endif
     {
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task TrivalStepping()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -26,7 +31,7 @@ namespace DebuggerTests
                     Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
                     var top_frame = pause_location["callFrames"][0];
-                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 9, 4, scripts, top_frame["functionLocation"]);
                     return Task.CompletedTask;
                 }
             );
@@ -41,7 +46,7 @@ namespace DebuggerTests
             );
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task InspectLocalsDuringStepping()
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
@@ -256,7 +261,7 @@ namespace DebuggerTests
             );
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task InspectLocalsDuringSteppingIn()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 86, 8);
@@ -712,7 +717,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Out, source_file, 15, 4, "TestAsyncStepOut");
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task ResumeOutOfAsyncMethodToAsyncCallerWithBreakpoint()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -727,7 +732,7 @@ namespace DebuggerTests
             await SendCommandAndCheck(null, "Debugger.resume", source_file, 16, 8, "MoveNext");
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task StepOutOfNonAsyncMethod()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -741,7 +746,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Out, source_file, 29, 12, "SimpleMethod");
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task BreakOnAwaitThenStepOverToNextAwaitCall()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -755,7 +760,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, source_file, 54, 12, "MoveNext");
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task BreakOnAwaitThenStepOverToNextLine()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -770,7 +775,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, source_file, 47, 12, "MoveNext");
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task BreakOnAwaitThenResumeToNextBreakpoint()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -786,7 +791,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Resume, source_file, 48, 8, "MoveNext");
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task BreakOnAwaitThenResumeToNextBreakpointAfterSecondAwaitInSameMethod()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -872,7 +877,7 @@ namespace DebuggerTests
             Assert.True(t != pause_task, "Debugger unexpectedly paused");
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task SimpleStep_RegressionTest_49141()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 674, 0);
@@ -903,7 +908,7 @@ namespace DebuggerTests
             await EvaluateOnCallFrameAndCheck(id, ("this.Bar", TString("Same of something")));
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task StepOverWithMoreThanOneCommandInSameLine()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 693, 0);
@@ -920,7 +925,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 702, 4, "OtherBar");
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task StepOverWithMoreThanOneCommandInSameLineAsync()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 710, 0);
@@ -958,7 +963,7 @@ namespace DebuggerTests
             Assert.Equal(pause_location["callFrames"][0]["callFrameId"], "dotnet:scope:1");
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task DebuggerHiddenIgnoreStepInto()
         {
             var pause_location = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerHidden", 1);
