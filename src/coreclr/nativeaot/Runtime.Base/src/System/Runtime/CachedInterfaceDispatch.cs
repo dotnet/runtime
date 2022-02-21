@@ -6,7 +6,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 
 using Internal.Runtime;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime
 {

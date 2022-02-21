@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using ErrorCode = Interop.NCrypt.ErrorCode;
 using AsymmetricPaddingMode = Interop.NCrypt.AsymmetricPaddingMode;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     internal static partial class CngCommon
     {

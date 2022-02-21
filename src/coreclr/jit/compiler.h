@@ -5333,7 +5333,8 @@ public:
                            LclVarDsc*       varDsc,
                            VARSET_VALARG_TP life,
                            bool*            doAgain,
-                           bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
+                           bool*            pStmtInfoDirty,
+                           bool* pStoreRemoved DEBUGARG(bool* treeModf));
 
     void fgInterBlockLocalVarLiveness();
 
