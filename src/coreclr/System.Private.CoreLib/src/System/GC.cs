@@ -17,7 +17,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -304,10 +303,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _SuppressFinalize(object o);
 
-        public static void SuppressFinalize(object obj)
+        public static void SuppressFinalize(object obj!!)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
             _SuppressFinalize(obj);
         }
 
@@ -318,10 +315,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _ReRegisterForFinalize(object o);
 
-        public static void ReRegisterForFinalize(object obj)
+        public static void ReRegisterForFinalize(object obj!!)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
             _ReRegisterForFinalize(obj);
         }
 
@@ -614,10 +609,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(lowMemoryPercent));
             }
-            if (notification == null)
-            {
-                throw new ArgumentNullException(nameof(notification));
-            }
+            ArgumentNullException.ThrowIfNull(notification);
 
             lock (s_notifications)
             {
@@ -630,13 +622,8 @@ namespace System
             }
         }
 
-        internal static void UnregisterMemoryLoadChangeNotification(Action notification)
+        internal static void UnregisterMemoryLoadChangeNotification(Action notification!!)
         {
-            if (notification == null)
-            {
-                throw new ArgumentNullException(nameof(notification));
-            }
-
             lock (s_notifications)
             {
                 for (int i = 0; i < s_notifications.Count; ++i)

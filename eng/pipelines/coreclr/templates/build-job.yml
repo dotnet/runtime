@@ -112,7 +112,7 @@ jobs:
         value: true
     - name: officialBuildIdArg
       value: ''
-    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+    - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - name: officialBuildIdArg
         value: '/p:OfficialBuildId=$(Build.BuildNumber)'
     - name: enforcePgoArg

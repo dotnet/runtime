@@ -95,8 +95,10 @@ namespace System.IO
         public FileSystemWatcher(string path, string filter)
         {
             CheckPathValidity(path);
+            ArgumentNullException.ThrowIfNull(filter);
+
             _directory = path;
-            Filter = filter ?? throw new ArgumentNullException(nameof(filter));
+            Filter = filter;
         }
 
         /// <devdoc>
@@ -368,11 +370,8 @@ namespace System.IO
             }
         }
 
-        private static void CheckPathValidity(string path)
+        private static void CheckPathValidity(string path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             // Early check for directory parameter so that an exception can be thrown as early as possible.
             if (path.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidDirName, path), nameof(path));

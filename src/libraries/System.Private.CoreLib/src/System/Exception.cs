@@ -37,11 +37,8 @@ namespace System
             _innerException = innerException;
         }
 
-        protected Exception(SerializationInfo info, StreamingContext context)
+        protected Exception(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
             _message = info.GetString("Message"); // Do not rename (binary serialization)
             _data = (IDictionary?)(info.GetValueNoThrow("Data", typeof(IDictionary))); // Do not rename (binary serialization)
             _innerException = (Exception?)(info.GetValue("InnerException", typeof(Exception))); // Do not rename (binary serialization)
@@ -93,17 +90,9 @@ namespace System
             set => _source = value;
         }
 
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        public virtual void GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            if (_source == null)
-            {
-                _source = Source; // Set the Source information correctly before serialization
-            }
+            _source ??= Source; // Set the Source information correctly before serialization
 
             info.AddValue("ClassName", GetClassName(), typeof(string)); // Do not rename (binary serialization)
             info.AddValue("Message", _message, typeof(string)); // Do not rename (binary serialization)

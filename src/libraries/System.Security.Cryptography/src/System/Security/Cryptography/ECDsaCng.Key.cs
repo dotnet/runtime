@@ -25,8 +25,7 @@ namespace System.Security.Cryptography
 
             private set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (!IsEccAlgorithmGroup(value.AlgorithmGroup))
                     throw new ArgumentException(SR.Cryptography_ArgECDsaRequiresECDsaKey, nameof(value));

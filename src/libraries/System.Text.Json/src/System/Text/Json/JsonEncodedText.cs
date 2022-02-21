@@ -43,11 +43,8 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified value is too large or if it contains invalid UTF-16 characters.
         /// </exception>
-        public static JsonEncodedText Encode(string value, JavaScriptEncoder? encoder = null)
+        public static JsonEncodedText Encode(string value!!, JavaScriptEncoder? encoder = null)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             return Encode(value.AsSpan(), encoder);
         }
 

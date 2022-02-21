@@ -4,6 +4,13 @@
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(BuildTargetFramework)' == 'net48'">
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+    <!-- Filter out ProjectReferences which aren't compatible with the above TargetFramework. -->
+    <OmitIncompatibleProjectReferences>true</OmitIncompatibleProjectReferences>
+    <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
+  </PropertyGroup>
+
   <ItemGroup>
     <_allSrc Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
              Exclude="@(ProjectExclusions);
@@ -21,8 +28,7 @@
 
     <NonNetCoreAppProject Include="@(_allSrc)"
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj');
-                                   $(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj;
-                                   $(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+                                   $(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj" />
     <!-- During an official build, build the identity package only in the allconfigurations build, otherwise always. -->
     <NonNetCoreAppProject Include="$(MSBuildThisFileDirectory)*\pkg\runtime.native.*.proj" Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or '$(BuildAllConfigurations)' == 'true'" />
     <!-- During an official Build, build the rid specific package matching the OutputRid only outside of an allconfigurations build and only when targeting the CoreCLR runtime.
@@ -33,7 +39,7 @@
     <NetCoreAppProject Include="$(CoreLibProject);
                                 @(_allSrc)"
                        Exclude="@(NonNetCoreAppProject)" />
-    <ManualShimProject Include="shims\manual\*.csproj" />
+    <ManualShimProject Include="shims\manual\*.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
     <ApiCompatProject Include="shims\ApiCompat.proj"
                       Condition="'$(DotNetBuildFromSource)' != 'true' and
                                  ('$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == '') and

@@ -1731,9 +1731,10 @@ CORINFO_OS getClrVmOs();
 //                     is used to help understand problems we see with JIT loading that come in via Watson dumps. Since we don't throw
 //                     an exception immediately upon failure, we can lose information about what the failure was if we don't store this
 //                     information in a way that persists into a process dump.
+// targetOs          - Target OS for JIT
 //
 
-static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT ICorJitCompiler** ppICorJitCompiler, IN OUT JIT_LOAD_DATA* pJitLoadData)
+static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT ICorJitCompiler** ppICorJitCompiler, IN OUT JIT_LOAD_DATA* pJitLoadData, CORINFO_OS targetOs)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1823,7 +1824,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
                         pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_VERSION_CHECK;
 
                         // Specify to the JIT that it is working with the OS that we are compiled against
-                        pICorJitCompiler->setTargetOS(getClrVmOs());
+                        pICorJitCompiler->setTargetOS(targetOs);
 
                         // The JIT has loaded and passed the version identifier test, so publish the JIT interface to the caller.
                         *ppICorJitCompiler = pICorJitCompiler;
@@ -1907,7 +1908,7 @@ BOOL EEJitManager::LoadJIT()
 #endif
 
     g_JitLoadData.jld_id = JIT_LOAD_MAIN;
-    LoadAndInitializeJIT(ExecutionManager::GetJitName(), &m_JITCompiler, &newJitCompiler, &g_JitLoadData);
+    LoadAndInitializeJIT(ExecutionManager::GetJitName(), &m_JITCompiler, &newJitCompiler, &g_JitLoadData, getClrVmOs());
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
 #ifdef ALLOW_SXS_JIT
@@ -1938,26 +1939,47 @@ BOOL EEJitManager::LoadJIT()
             altJitName = MAKEDLLNAME_W(W("clrjit_win_x86_x86"));
 #elif defined(TARGET_AMD64)
             altJitName = MAKEDLLNAME_W(W("clrjit_win_x64_x64"));
-#elif defined(TARGET_ARM)
-            altJitName = MAKEDLLNAME_W(W("clrjit_win_arm_arm"));
-#elif defined(TARGET_ARM64)
-            altJitName = MAKEDLLNAME_W(W("clrjit_win_arm64_arm64"));
 #endif
 #else // TARGET_WINDOWS
 #ifdef TARGET_X86
             altJitName = MAKEDLLNAME_W(W("clrjit_unix_x86_x86"));
 #elif defined(TARGET_AMD64)
             altJitName = MAKEDLLNAME_W(W("clrjit_unix_x64_x64"));
-#elif defined(TARGET_ARM)
-            altJitName = MAKEDLLNAME_W(W("clrjit_unix_arm_arm"));
-#elif defined(TARGET_ARM64)
-            altJitName = MAKEDLLNAME_W(W("clrjit_unix_arm64_arm64"));
 #endif
 #endif // TARGET_WINDOWS
+
+#if defined(TARGET_ARM)
+            altJitName = MAKEDLLNAME_W(W("clrjit_universal_arm_arm"));
+#elif defined(TARGET_ARM64)
+            altJitName = MAKEDLLNAME_W(W("clrjit_universal_arm64_arm64"));
+#endif // TARGET_ARM
         }
 
+        CORINFO_OS targetOs = getClrVmOs();
+        LPWSTR altJitOsConfig;
+        IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AltJitOs, &altJitOsConfig));
+        if (altJitOsConfig != NULL)
+        {
+            // We have some inconsistency all over the place with osx vs macos, let's handle both here
+            if ((_wcsicmp(altJitOsConfig, W("macos")) == 0) || (_wcsicmp(altJitOsConfig, W("osx")) == 0))
+            {
+                targetOs = CORINFO_MACOS;
+            }
+            else if ((_wcsicmp(altJitOsConfig, W("linux")) == 0) || (_wcsicmp(altJitOsConfig, W("unix")) == 0))
+            {
+                targetOs = CORINFO_UNIX;
+            }
+            else if (_wcsicmp(altJitOsConfig, W("windows")) == 0)
+            {
+                targetOs = CORINFO_WINNT;
+            }
+            else
+            {
+                _ASSERTE(!"Unknown AltJitOS, it has to be either Windows, Linux or macOS");
+            }
+        }
         g_JitLoadData.jld_id = JIT_LOAD_ALTJIT;
-        LoadAndInitializeJIT(altJitName, &m_AltJITCompiler, &newAltJitCompiler, &g_JitLoadData);
+        LoadAndInitializeJIT(altJitName, &m_AltJITCompiler, &newAltJitCompiler, &g_JitLoadData, targetOs);
     }
 
 #endif // ALLOW_SXS_JIT

@@ -568,10 +568,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (Associated)
                 {
@@ -1297,13 +1294,8 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Process Start(string fileName, IEnumerable<string> arguments)
+        public static Process Start(string fileName!!, IEnumerable<string> arguments!!)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-            if (arguments == null)
-                throw new ArgumentNullException(nameof(arguments));
-
             var startInfo = new ProcessStartInfo(fileName);
             foreach (string argument in arguments)
             {
@@ -1324,12 +1316,9 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Process? Start(ProcessStartInfo startInfo)
+        public static Process? Start(ProcessStartInfo startInfo!!)
         {
             Process process = new Process();
-            if (startInfo == null)
-                throw new ArgumentNullException(nameof(startInfo));
-
             process.StartInfo = startInfo;
             return process.Start() ?
                 process :
