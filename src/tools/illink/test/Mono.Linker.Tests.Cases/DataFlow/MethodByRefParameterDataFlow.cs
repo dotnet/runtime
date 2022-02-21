@@ -19,6 +19,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestAssignStaticToAnnotatedRefParameter (ref typeWithMethods);
 			TestAssignParameterToAnnotatedRefParameter (ref typeWithMethods, typeof (TestType));
+
+			TestReadFromRefParameter ();
+			TestReadFromOutParameter_PassedTwice ();
+			TestReadFromRefParameter_MismatchOnOutput ();
+			TestReadFromRefParameter_MismatchOnOutput_PassedTwice ();
+			TestReadFromRefParameter_MismatchOnInput ();
+			TestReadFromRefParameter_MismatchOnInput_PassedTwice ();
+			Type nullType1 = null;
+			TestPassingRefParameter (ref nullType1);
+			Type nullType2 = null;
+			TestPassingRefParameter_Mismatch (ref nullType2);
+			Type nullType3 = null;
+			TestAssigningToRefParameter (nullType3, ref nullType3);
+			Type nullType4 = null;
+			TestAssigningToRefParameter_Mismatch (nullType4, ref nullType4);
 		}
 
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -57,6 +72,108 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[RequiresUnreferencedCode ("Message for --TestType.Requires--")]
 			public static void Requires () { }
 		}
+
+		static void TestReadFromRefParameter ()
+		{
+			Type typeWithMethods = null;
+			TryGetAnnotatedValue (ref typeWithMethods);
+			typeWithMethods.RequiresPublicMethods ();
+		}
+
+		static void TestReadFromOutParameter_PassedTwice ()
+		{
+			Type typeWithMethods = null;
+			TryGetAnnotatedValueFromValue (typeWithMethods, ref typeWithMethods);
+			typeWithMethods.RequiresPublicMethods ();
+		}
+
+		// https://github.com/dotnet/linker/issues/2632
+		// This test should generate a warning since there's mismatch on annotations
+		// [ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
+		static void TestReadFromRefParameter_MismatchOnOutput ()
+		{
+			Type typeWithMethods = null;
+			TryGetAnnotatedValue (ref typeWithMethods);
+			typeWithMethods.RequiresPublicFields ();
+		}
+
+		// https://github.com/dotnet/linker/issues/2632
+		// This test should generate a warning since there's mismatch on annotations
+		// [ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
+		static void TestReadFromRefParameter_MismatchOnOutput_PassedTwice ()
+		{
+			Type typeWithMethods = null;
+			TryGetAnnotatedValueFromValue (typeWithMethods, ref typeWithMethods);
+			typeWithMethods.RequiresPublicFields ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValue))]
+		// https://github.com/dotnet/linker/issues/2632
+		// This second warning should not be generated, the value of typeWithMethods should have PublicMethods
+		// after the call with out parameter.
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+		static void TestReadFromRefParameter_MismatchOnInput ()
+		{
+			Type typeWithMethods = GetTypeWithFields ();
+			TryGetAnnotatedValue (ref typeWithMethods);
+			typeWithMethods.RequiresPublicMethods ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValueFromValue))]
+		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValueFromValue))]
+		// https://github.com/dotnet/linker/issues/2632
+		// This third warning should not be generated, the value of typeWithMethods should have PublicMethods
+		// after the call with ref parameter.
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+		static void TestReadFromRefParameter_MismatchOnInput_PassedTwice ()
+		{
+			Type typeWithMethods = GetTypeWithFields ();
+			TryGetAnnotatedValueFromValue (typeWithMethods, ref typeWithMethods);
+			typeWithMethods.RequiresPublicMethods ();
+		}
+
+		static void TestPassingRefParameter ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] ref Type typeWithMethods)
+		{
+			TryGetAnnotatedValue (ref typeWithMethods);
+		}
+
+		[ExpectedWarning ("IL2067", "typeWithMethods", nameof (TryGetAnnotatedValue))]
+		static void TestPassingRefParameter_Mismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] ref Type typeWithMethods)
+		{
+			TryGetAnnotatedValue (ref typeWithMethods);
+		}
+
+		static void TestAssigningToRefParameter (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type inputTypeWithMethods,
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] ref Type outputTypeWithMethods)
+		{
+			outputTypeWithMethods = inputTypeWithMethods;
+		}
+
+		[ExpectedWarning ("IL2067", "inputTypeWithFields", "outputTypeWithMethods")]
+		static void TestAssigningToRefParameter_Mismatch (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type inputTypeWithFields,
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] ref Type outputTypeWithMethods)
+		{
+			outputTypeWithMethods = inputTypeWithFields;
+		}
+
+		static bool TryGetAnnotatedValue ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] ref Type typeWithMethods)
+		{
+			typeWithMethods = null;
+			return false;
+		}
+
+		static bool TryGetAnnotatedValueFromValue (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type inValue,
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] ref Type typeWithMethods)
+		{
+			typeWithMethods = inValue;
+			return false;
+		}
+
+		[return: DynamicallyAccessedMembersAttribute (DynamicallyAccessedMemberTypes.PublicFields)]
+		static Type GetTypeWithFields () => null;
 
 		class TestType
 		{
