@@ -8120,6 +8120,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             JITDUMP("Tree [%06u] assigned VN to the only field V%02u/%u of promoted struct V%02u: new uniq ",
                     dspTreeID(tree), lhsVarDsc->lvFieldLclStart, lclVarTree->GetSsaNum(), lhsLclNum);
             JITDUMPEXEC(vnPrint(newUniqueVN, 1));
+            JITDUMP("\n");
         }
         else if (lhsVarDsc->IsAddressExposed())
         {
