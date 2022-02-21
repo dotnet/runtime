@@ -231,6 +231,9 @@ jobs:
       runtimeFlavor: mono
       platforms:
         - Windows_x64
+      variables:
+        mauiVersion: dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion']
+        mauiVersion2: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: AndroidMono
@@ -239,9 +242,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfpixel4a'
         additionalSetupParameters: "-MauiVersion $env:mauiVersion"
-        variables:
-          mauiVersion: dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion']
-          mauiVersion2: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion'] ]
+        # $($env:mauiVersion)
 
   ## run mono iOS scenarios and maui iOS scenarios
   #- template: /eng/pipelines/common/platform-matrix.yml
