@@ -13,7 +13,7 @@ namespace System.Threading
 #if CORECLR
             // In coreclr_initialize, we call ICLRRuntimeHost4->Start() which, among other things,
             // starts a finalizer thread for Objective-C's NSAutoreleasePool interop on macOS.
-            // Althoguh AppContext.Setup() is done during CreateAppDomainWithManager() call which
+            // Although AppContext.Setup() is done during CreateAppDomainWithManager() call which
             // is made in coreclr_initialize right after the host has started, there is a chance of
             // race between the call to CreateAppDomainWithManager in coreclr_initialize and the
             // finalizer thread starting, that will call into the changed managed code.
