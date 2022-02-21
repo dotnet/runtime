@@ -820,7 +820,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_Sqrt: {
 #ifdef TARGET_ARM64
-        if ((arg0_type != MONO_TYPE_R4) && (arg0_type != MONO_TYPE_R8))
+		if ((arg0_type != MONO_TYPE_R4) && (arg0_type != MONO_TYPE_R8))
 			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, arg0_type, fsig, args);
 #else
