@@ -79,7 +79,7 @@ static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 5, 4, 6, 7, 8 };
 #define NUM_DWARF_REGS (X86_NREG + 1)
 #define DWARF_DATA_ALIGN (-4)
 #define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (X86_NREG))
-#elif defined (TARGET_POWERPC)
+#elif defined (TARGET_POWERPC) ||  defined (TARGET_POWERPC64)
 // http://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi-1.9.html
 static int map_hw_reg_to_dwarf_reg [ppc_lr + 1] = { 0, 1, 2, 3, 4, 5, 6, 7, 8,
 										  9, 10, 11, 12, 13, 14, 15, 16,
@@ -157,7 +157,7 @@ static int map_dwarf_reg_to_hw_reg [NUM_DWARF_REGS];
 static void
 init_hw_reg_map (void)
 {
-#ifdef TARGET_POWERPC
+#if defined(TARGET_POWERPC) ||  defined(TARGET_POWERPC64) 
 	map_hw_reg_to_dwarf_reg [ppc_lr] = DWARF_PC_REG;
 #endif
 	mono_memory_barrier ();

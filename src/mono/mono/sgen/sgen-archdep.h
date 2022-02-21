@@ -39,6 +39,10 @@
 
 #define REDZONE_SIZE	224
 
+#elif defined(TARGET_POWERPC64)
+
+#define REDZONE_SIZE    0
+
 #elif defined(TARGET_ARM)
 
 #define REDZONE_SIZE	0
@@ -58,6 +62,10 @@
 #elif defined(__s390x__)
 
 #define REDZONE_SIZE	0
+
+#elif defined(__ppc64__)
+
+#define REDZONE_SIZE    0
 
 #elif defined(__sparc__)
 
