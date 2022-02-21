@@ -39,15 +39,28 @@ namespace System.IO.Tests
             FileSystemEventHandler changeHandler = (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Changed, e.ChangeType);
-                if (expectedPaths != null)
-                {
-                    Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                }
+                VerifyExpectedPath(expectedPaths, e);
                 eventOccurred.Set();
             };
 
             watcher.Changed += changeHandler;
             return (eventOccurred, changeHandler);
+        }
+
+        private static void VerifyExpectedPath(string[] expectedPaths, FileSystemEventArgs e, ITestOutputHelper output = null)
+        {
+            if (expectedPaths != null)
+            {
+                try
+                {
+                    Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
+                }
+                catch (Exception ex)
+                {
+                    output?.WriteLine(ex.ToString());
+                    throw;
+                }
+            }
         }
 
         /// <summary>
@@ -67,18 +80,7 @@ namespace System.IO.Tests
                 }
 
                 Assert.Equal(WatcherChangeTypes.Created, e.ChangeType);
-                if (expectedPaths != null)
-                {
-                    try
-                    {
-                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine(ex.ToString());
-                        throw;
-                    }
-                }
+                VerifyExpectedPath(expectedPaths, e, _output);
 
                 eventOccurred.Set();
             };
@@ -102,18 +104,8 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Deleted, e.ChangeType);
                 }
 
-                if (expectedPaths != null)
-                {
-                    try
-                    {
-                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine(ex.ToString());
-                        throw;
-                    }
-                }
+                VerifyExpectedPath(expectedPaths, e, _output);
+
                 eventOccurred.Set();
             };
 
@@ -137,18 +129,8 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Renamed, e.ChangeType);
                 }
 
-                if (expectedPaths != null)
-                {
-                    try
-                    {
-                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine(ex.ToString());
-                        throw;
-                    }
-                }
+                VerifyExpectedPath(expectedPaths, e, _output);
+
                 eventOccurred.Set();
             };
 
