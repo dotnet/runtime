@@ -194,6 +194,7 @@ void SystemNative_Close();
 void SystemNative_FStat();
 void SystemNative_LSeek();
 void SystemNative_PRead();
+void SystemNative_CanGetHiddenFlag();
 
 #define PAL_O_RDONLY 0x0000
 #define PAL_O_WRONLY 0x0001
@@ -269,6 +270,7 @@ static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_ConvertErrorPalToPlatform", SystemNative_ConvertErrorPalToPlatform},
 	{"SystemNative_StrErrorR", SystemNative_StrErrorR},
 	{"SystemNative_PRead", SystemNative_PRead},
+	{"SystemNative_CanGetHiddenFlag", SystemNative_CanGetHiddenFlag},
 	{NULL, NULL}
 };
 
