@@ -2066,15 +2066,22 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_PUTARG_STK:
             case GT_IL_OFFSET:
             case GT_KEEPALIVE:
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
-#endif // FEATURE_HW_INTRINSICS
                 // Never remove these nodes, as they are always side-effecting.
                 //
                 // NOTE: the only side-effect of some of these nodes (GT_CMP, GT_SUB_HI) is a write to the flags
                 // register.
                 // Properly modeling this would allow these nodes to be removed.
                 break;
+
+#ifdef FEATURE_HW_INTRINSICS
+            case GT_HWINTRINSIC:
+                // Conservative: This only removes Vector.Zero nodes, but could be expanded.
+                if (node->IsVectorZero())
+                {
+                    fgTryRemoveNonLocal(node, &blockRange);
+                }
+                break;
+#endif // FEATURE_HW_INTRINSICS
 
             case GT_NOP:
             {

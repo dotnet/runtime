@@ -45,20 +45,21 @@ namespace DllImportGenerator.UnitTests.Verifiers
         }
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, string)"/>
-        public static async Task VerifyCodeFixAsync(string source, string fixedSource)
-            => await VerifyCodeFixAsync(source, DiagnosticResult.EmptyDiagnosticResults, fixedSource);
+        public static async Task VerifyCodeFixAsync(string source, string fixedSource, string? fixEquivalenceKey = null)
+            => await VerifyCodeFixAsync(source, DiagnosticResult.EmptyDiagnosticResults, fixedSource, fixEquivalenceKey);
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult, string)"/>
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult expected, string fixedSource)
-            => await VerifyCodeFixAsync(source, new[] { expected }, fixedSource);
+        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult expected, string fixedSource, string? fixEquivalenceKey = null)
+            => await VerifyCodeFixAsync(source, new[] { expected }, fixedSource, fixEquivalenceKey);
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult[], string)"/>
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource)
+        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource, string? fixEquivalenceKey = null)
         {
             var test = new Test
             {
                 TestCode = source,
                 FixedCode = fixedSource,
+                CodeActionEquivalenceKey = fixEquivalenceKey,
             };
 
             test.ExpectedDiagnostics.AddRange(expected);

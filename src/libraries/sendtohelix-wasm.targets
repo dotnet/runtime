@@ -42,8 +42,9 @@
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
 
     <!-- Fix symbolic links that are broken already on build machine and also in the correlation payload -->
-    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit/bin:$PATH" />
-    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export HELIX_NODEJS_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export HELIX_NODEJS_VERSION=%24(ls $HELIX_CORRELATION_PAYLOAD/build/emsdk/node)" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export HELIX_NODEJS_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/$HELIX_NODEJS_VERSION" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export PATH=$HELIX_NODEJS_PATH/bin:$PATH" />
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="rm $HELIX_NODEJS_PATH/bin/npm" />
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="rm $HELIX_NODEJS_PATH/bin/npx" />
     <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="ln -s ../lib/node_modules/npm/bin/npm-cli.js $HELIX_NODEJS_PATH/bin/npm" />
@@ -62,7 +63,8 @@
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chromedriver_win32%3B%PATH%" />
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chrome-win%3B%PATH%" />
 
-    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\node\14.15.5_64bit\bin%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="for /f %%i in ('dir %HELIX_CORRELATION_PAYLOAD%\build\emsdk\node /b') do set HELIX_NODEJS_VERSION=%%i" />
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\node\%HELIX_NODEJS_VERSION%\bin%3B%PATH%" />
   </ItemGroup>
 
   <PropertyGroup>
