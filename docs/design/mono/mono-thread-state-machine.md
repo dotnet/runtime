@@ -94,7 +94,7 @@ direction TB
     
     Running --> Async_Suspend_Requested : request_suspend
 
-    Async_Suspend_Requested --> Async_Suspended : finish_Async_Suspend
+    Async_Suspend_Requested --> Async_Suspended : finish_async_suspend
 
     Async_Suspended --> Running : resume
     Running --> Detached : detach
@@ -105,6 +105,42 @@ direction TB
 In preemptive suspend, there is no concept of GC Safe or GC Unsafe states, and no polling at all.  Instead, the suspend initiator performs a `request_suspend` transition (for example by calling `SuspendThread` on Windows, or by sending a signal on POSIX), and when the thread is no longer running user code, a `finish_Async_Suspend` transition is performed and the suspend initiator is notified.  (On systems with a syscall for thread suspension (Windows and Darwin) the suspend initiator performs the `finish_Async_Suspend` transition after the syscall returns.  On POSIX, the user thread's signal handler performs the transition before the thread blocks on the resume signal.)
 
 When the suspend initiator is ready to resume the stopped threads it performs a `resume` transition and performs the resume operation (signal on POSIX, syscall on Windows and Darwin).
+
+### Sequence diagrams
+
+Initiating a suspend (POSIX)
+
+```mermaid
+sequenceDiagram
+participant Initiator
+participant Thread
+participant Handler
+Note right of Thread: Running
+Initiator->>Thread: request_suspend
+Note right of Thread: Async_Suspend_Requested
+Thread-->>Initiator: "InitSuspendRunning"
+Initiator->>Thread: pthread_kill()
+Note over Initiator: "wait for pending operations"
+Thread->>Handler: signal
+Handler-->>Handler: finish_async_suspend
+Note right of Thread: Async_Suspended
+Handler-->>Initiator: notify initiator of suspend
+Note over Handler: sigsuspend()
+```
+
+Initiating a suspend (Windows)
+
+```mermaid
+sequenceDiagram
+participant Initiator
+participant Thread
+Note right of Thread: Running
+Initiator->>Thread: request_suspend
+Note right of Thread: Async_Suspend_Requested
+Initiator->>Thread: SuspendThread()
+Initiator->>Thread: finish_async_suspend
+Note right of Thread: Async_Suspended
+```
 
 ## Cooperative suspend
 
@@ -147,6 +183,7 @@ direction TB
         Blocking --> Blocking_Suspend_Requested : request_suspend
         Blocking_Suspend_Requested --> Blocking_Self_Suspended : done_Blocking
         Blocking_Suspend_Requested --> Blocking_Self_Suspended : abort_Blocking
+        Blocking_Suspend_Requested --> Blocking: resume
 
         Blocking_Self_Suspended --> [*] : resume
         Blocking --> [*] : detach
@@ -179,6 +216,64 @@ There is an additional transition `abort_Blocking` that a thread can perform if 
 If a thread performs an `abort_Blocking` and it was already in a `GC_Unsafe` state (`Running` or `Async_Suspend_Requested`), the state is unchanged and the thread is informed it was already in the desired state. Consequently when the thread is done with the embedding API call, it doesn't need to do anything.
 
 If a thread performs an `abort_Blocking` and it was in `GC_Safe`, it behaves like a `done_Blocking` transition, and either the thread moves to `Running`, or it will move to `Running` after it is resumed.  Consequently, when the thread is done with the embedding API call, it is obligated to do a `do_Blocking` transition to go back to `GC_Safe`.
+
+### Sequence diagrams
+
+Initiating a suspend, thread is GC Unsafe:
+
+```mermaid
+sequenceDiagram
+participant Initiator
+participant Thread
+Note right of Thread: Running
+loop Periodically
+  Thread-->>Thread: poll
+end
+Initiator->>Thread: request_suspend
+Note right of Thread: Async_Suspend_Requested
+Thread-->>Initiator: "InitSuspendRunning"
+Note over Initiator: "wait for pending operations"
+Thread-->>Thread: poll
+Note right of Thread: Self_Suspended
+Thread-->>Initiator: notify initiator of suspend
+```
+
+Initiating a suspend, thread is in GC Safe:
+
+```mermaid
+sequenceDiagram
+participant Initiator
+participant Thread
+Note right of Thread: Blocking
+Initiator->>Thread: request_suspend
+Note right of Thread: Blocking_Suspend_Requested
+Thread-->>Initiator: "InitSuspendBlocking"
+Note over Thread: continues executing"
+Note over Initiator: "treat thread as suspended"
+Thread-->>Thread: done_Blocking
+Note right of Thread: Blocking_Self_Suspended
+```
+
+Resuming a GC Safe thread before it self-suspends:
+
+```mermaid
+sequenceDiagram
+participant Initiator
+participant Thread
+Note right of Thread: Blocking_Suspend_Requested
+Initiator->>Thread: resume
+Note right of Thread: Blocking
+```
+
+Resuming a GC Safe thread aftrer it self-suspends:
+```mermaid
+sequenceDiagram
+participant Initiator
+participant Thread
+Note right of Thread: Blocking_Self_Suspended
+Initiator->>Thread: resume
+Note right of Thread: Running
+```
 
 ## Hybrid suspend
 
