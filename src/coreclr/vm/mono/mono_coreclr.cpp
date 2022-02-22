@@ -1523,7 +1523,7 @@ struct MonoInternalCallFrame
     bool didSetupFrame;
 };
 
-static_assert(sizeof(MonoInternalCallFrame) <= sizeof(MonoInternalCallFrameOpaque), "MonoInternalCallFrameOpaque needs to be larger");
+//static_assert(sizeof(MonoInternalCallFrame) <= sizeof(MonoInternalCallFrameOpaque), "MonoInternalCallFrameOpaque needs to be larger");
 
 // We currently need to wrap Unity icalls called from managed code mono_enter/exit_internal_call.
 // This has two reasons:
