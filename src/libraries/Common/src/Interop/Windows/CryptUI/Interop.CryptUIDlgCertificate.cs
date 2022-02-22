@@ -211,6 +211,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Interop.Libraries.CryptUI, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CryptUIDlgViewCertificateW(
             in CRYPTUI_VIEWCERTIFICATE_STRUCTW ViewInfo, IntPtr pfPropertiesChanged);
 

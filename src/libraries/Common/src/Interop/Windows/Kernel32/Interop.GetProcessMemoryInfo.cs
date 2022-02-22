@@ -24,6 +24,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.Kernel32, EntryPoint ="K32GetProcessMemoryInfo")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetProcessMemoryInfo(IntPtr Process, ref PROCESS_MEMORY_COUNTERS ppsmemCounters, uint cb);
     }
 }

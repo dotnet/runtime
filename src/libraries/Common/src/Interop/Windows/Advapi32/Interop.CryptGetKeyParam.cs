@@ -18,6 +18,7 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptGetKeyParam(
             SafeCapiKeyHandle hKey,
             CryptGetKeyParamFlags dwParam,

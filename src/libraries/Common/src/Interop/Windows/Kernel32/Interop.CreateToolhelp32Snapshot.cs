@@ -42,10 +42,12 @@ internal static partial class Interop
 
         // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32first
         [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "Process32FirstW", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool Process32First(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
 
         // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32next
         [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "Process32NextW", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool Process32Next(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
     }
 }
