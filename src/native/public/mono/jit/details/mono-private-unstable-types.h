@@ -1,6 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
+/**
+ *
+ * Private unstable APIs.
+ *
+ * WARNING: The declarations and behavior of functions in this header are NOT STABLE and can be modified or removed at
+ * any time.
+ *
+ */
 #ifndef _MONO_JIT_PRIVATE_UNSTABLE_TYPES_H
 #define _MONO_JIT_PRIVATE_UNSTABLE_TYPES_H
 
