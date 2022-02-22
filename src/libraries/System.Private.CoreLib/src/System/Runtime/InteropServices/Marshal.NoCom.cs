@@ -176,7 +176,10 @@ namespace System.Runtime.InteropServices
 #pragma warning disable IDE0060
         internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+             if (throwOnError)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+
+            return null;
         }
 #pragma warning restore IDE0060
 
