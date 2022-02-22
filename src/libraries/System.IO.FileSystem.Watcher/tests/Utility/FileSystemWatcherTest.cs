@@ -54,7 +54,7 @@ namespace System.IO.Tests
             if (expectedPaths is not null && !expectedPaths.Contains(fullPath))
             {
                 // Assert.Contains does not print a full content of collection which makes it hard to diagnose issues like #65601
-                throw new XunitException($"Expected path(s): {Environment.NewLine}"
+                throw new XunitException($"Expected path(s):{Environment.NewLine}"
                     + string.Join(Environment.NewLine, expectedPaths)
                     + $"{Environment.NewLine}Actual path: {fullPath}");
             }
