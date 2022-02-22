@@ -6,7 +6,6 @@ using System.Text.RegularExpressions;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.DotNet.Cli.Build.Framework;
-using TestUtils.Assertions;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {

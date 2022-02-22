@@ -3,7 +3,7 @@
 
 using FluentAssertions.Execution;
 
-namespace TestUtils.Assertions
+namespace Microsoft.DotNet.CoreSetup.Test
 {
     public static class AssertionScopeExtensions
     {
