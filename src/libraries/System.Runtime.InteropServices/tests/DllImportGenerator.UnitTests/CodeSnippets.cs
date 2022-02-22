@@ -593,7 +593,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     private int i;
@@ -612,6 +612,7 @@ struct S
     public bool b;
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     private int i;
@@ -631,7 +632,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(S), BufferSize = 1)]
 struct Native
 {
     private int i;
@@ -641,8 +642,6 @@ struct Native
     }
 
     public S ToManaged() => new S { b = i != 0 };
-
-    public const int BufferSize = 1;
 }
 ";
         public static string CustomStructMarshallingStackallocOnlyRefParameter = BasicParameterWithByRefModifier("ref", "S", DisableRuntimeMarshalling) + @"
@@ -652,7 +651,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(S), BufferSize = 1, RequiresStackBuffer = false)]
 struct Native
 {
     private int i;
@@ -662,9 +661,6 @@ struct Native
     }
 
     public S ToManaged() => new S { b = i != 0 };
-
-    public const int BufferSize = 1;
-    public const bool RequiresStackBuffer = false;
 }
 ";
         public static string CustomStructMarshallingOptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
@@ -674,7 +670,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(S), BufferSize = 1, RequiresStackBuffer = true)]
 struct Native
 {
     private int i;
@@ -688,9 +684,6 @@ struct Native
     }
 
     public S ToManaged() => new S { b = i != 0 };
-
-    public const int BufferSize = 1;
-    public const bool RequiresStackBuffer = true;
 }
 ";
 
@@ -701,7 +694,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(S), BufferSize = 1)]
 struct Native
 {
     public Native(S s, System.Span<byte> b)
@@ -712,8 +705,6 @@ struct Native
     public S ToManaged() => new S { b = Value != 0 };
 
     public int Value { get; set; }
-
-    public const int BufferSize = 1;
 }
 ";
         public static string CustomStructMarshallingValuePropertyParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
@@ -723,7 +714,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s)
@@ -745,7 +736,7 @@ class S
     public ref int GetPinnableReference() => ref i;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(S))]
 unsafe struct Native
 {
     private int* ptr;
@@ -777,7 +768,7 @@ class S
     public byte c;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(S), BufferSize = 1)]
 unsafe ref struct Native
 {
     private byte* ptr;
@@ -815,8 +806,6 @@ unsafe ref struct Native
             Marshal.FreeCoTaskMem((IntPtr)ptr);
         }
     }
-
-    public const int BufferSize = 1;
 }
 
 partial class Test
@@ -835,7 +824,7 @@ class S
     public byte c = 0;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(S))]
 unsafe struct Native
 {
     private S value;
@@ -886,7 +875,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     private int i;
@@ -905,7 +894,7 @@ struct S
     public bool b;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     private int i;
@@ -938,7 +927,7 @@ public struct IntStructWrapper
     public int Value;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(IntStructWrapper))]
 public struct IntStructWrapperNative
 {
     public IntStructWrapperNative(IntStructWrapper managed)
@@ -959,7 +948,7 @@ public struct IntStructWrapper
     public int Value;
 }
 
-[CustomTypeMarshaller]
+[CustomTypeMarshaller(typeof(IntStructWrapper))]
 public struct IntStructWrapperNative
 {
     private int value;
@@ -1085,7 +1074,7 @@ struct RecursiveStruct2
 [NativeMarshalling(typeof(Marshaller<>))]
 class TestCollection<T> {}
 
-[CustomTypeMarshaller(CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.SpanCollection)]
 ref struct Marshaller<T>
 {
     public Marshaller(TestCollection<T> managed, int nativeElementSize) : this() {}
@@ -1119,7 +1108,7 @@ partial class Test
             string nativeMarshallingAttribute = enableDefaultMarshalling ? "[NativeMarshalling(typeof(Marshaller<>))]" : string.Empty;
             return nativeMarshallingAttribute + @"class TestCollection<T> {}
 
-[CustomTypeMarshaller(CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.SpanCollection)]
 ref struct Marshaller<T>
 {
     public Marshaller(int nativeElementSize) : this() {}
@@ -1216,7 +1205,7 @@ partial class Test
 [NativeMarshalling(typeof(Marshaller<,>))]
 class TestCollection<T> {}
 
-[CustomTypeMarshaller(CustomTypeMarshallerKind.SpanCollection)]
+[CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.SpanCollection)]
 ref struct Marshaller<T, U>
 {
     public Marshaller(TestCollection<T> managed, int nativeElementSize) : this() {}
