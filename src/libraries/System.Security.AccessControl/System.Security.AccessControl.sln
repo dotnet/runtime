@@ -3,7 +3,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.AccessControl", "..\System.IO.FileSystem.AccessControl\src\System.IO.FileSystem.AccessControl.csproj", "{28ACBF6E-C0FF-46BE-B9C0-0FA1AE05C340}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{3F65599A-84CA-4742-85BE-6C9E1EDCBEA0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{3F65599A-84CA-4742-85BE-6C9E1EDCBEA0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{CDB32066-5BD2-46EB-AFF1-07554FBF6942}"
 EndProject
