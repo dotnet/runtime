@@ -232,8 +232,10 @@ jobs:
       platforms:
         - Windows_x64
       variables:
-        mauiVersion: TestValue1
-        mauiVersion2: TestValue2
+        - name: mauiVersion
+          value: TestValue1
+        - name: mauiVersion2
+          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion']
         #mauiVersion: dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion']
         #mauiVersion2: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
