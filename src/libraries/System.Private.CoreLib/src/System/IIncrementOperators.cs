@@ -17,6 +17,6 @@ namespace System
         // /// <param name="value">The value to increment.</param>
         // /// <returns>The result of incrementing <paramref name="value" />.</returns>
         // /// <exception cref="OverflowException">The result of incrementing <paramref name="value" /> is not representable by <typeparamref name="TSelf" />.</exception>
-        // static abstract checked TSelf operator ++(TSelf value);
+        // static abstract TSelf operator checked ++(TSelf value);
     }
 }

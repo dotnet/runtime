@@ -21,6 +21,6 @@ namespace System
         // /// <param name="right">The value which divides <paramref name="left" />.</param>
         // /// <returns>The quotient of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
         // /// <exception cref="OverflowException">The quotient of <paramref name="left" /> divided-by <paramref name="right" /> is not representable by <typeparamref name="TResult" />.</exception>
-        // static abstract checked TResult operator /(TSelf left, TOther right);
+        // static abstract TResult operator checked /(TSelf left, TOther right);
     }
 }
