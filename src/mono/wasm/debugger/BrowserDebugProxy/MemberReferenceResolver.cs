@@ -425,20 +425,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                         int sentToDebuggerParamsCnt = passedArgsCnt;
                         var methodParamsInfo = new List<ParameterInfo>();
                         var methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
-                        if (methodInfo != null) //null for e.g. ToList()
+                        if (methodInfo != null) //FIXME: #65670
                         {
                             methodParamsInfo = methodInfo.Info.ParametersInfo.ToList();
                             int methodParamsCnt = methodParamsInfo.Count;
                             if (passedArgsCnt > methodParamsCnt)
                                 throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}. Too many arguments passed.", "ArgumentError");
-                            int optionalParamsCnt = methodInfo.Info.OptionalParametersCnt;
-                            if (passedArgsCnt + optionalParamsCnt >= methodParamsCnt)
-                                sentToDebuggerParamsCnt = methodParamsCnt;
+                            sentToDebuggerParamsCnt = methodParamsCnt;
                         }
 
-                        commandParamsObjWriter.Write(sentToDebuggerParamsCnt + isTryingLinq);
+                        commandParamsObjWriter.Write(sentToDebuggerParamsCnt);
                         if (isTryingLinq == 1)
+                        {
+                            if (sentToDebuggerParamsCnt > 0)
+                                sentToDebuggerParamsCnt -= 1;
                             commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
+                        }
 
                         for (var i = 0; i < sentToDebuggerParamsCnt; i++)
                         {
@@ -482,6 +484,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return null;
             }
             catch (Exception ex)
+            //catch (Exception ex) when (ex is not ReturnAsErrorException)
             {
                 throw new Exception($"Unable to evaluate method '{methodName}'", ex);
             }

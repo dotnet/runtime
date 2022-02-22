@@ -337,7 +337,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         public TypeInfo TypeInfo { get; }
         public bool HasSequencePoints { get => !DebugInformation.SequencePointsBlob.IsNil; }
         public ParameterInfo[] ParametersInfo { get; private set; }
-        public int OptionalParametersCnt { get; private set; }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
         {
@@ -408,7 +407,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
             ParametersInfo = GetMethodParamsInfo();
-            OptionalParametersCnt = ParametersInfo.Count(p => p.Value != null);
         }
 
         public ParameterInfo[] GetMethodParamsInfo()
