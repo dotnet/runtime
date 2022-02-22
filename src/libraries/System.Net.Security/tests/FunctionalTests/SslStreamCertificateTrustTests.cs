@@ -64,12 +64,15 @@ namespace System.Net.Security.Tests
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
                 {
                     TargetHost = "localhost",
+                    // Force Tls 1.2 to avoid issues with certain OpenSSL versions and Tls 1.3
+                    // https://github.com/openssl/openssl/issues/7384
+                    EnabledSslProtocols = SslProtocols.Tls12,
                     RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
                     LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, issuers) =>
                     {
                         if (remoteCertificate == null)
                         {
-                            // ignore the first call, we should receive acceptable issuers in the next one
+                            // ignore the first call that is called before handshake
                             return null;
                         }
 
