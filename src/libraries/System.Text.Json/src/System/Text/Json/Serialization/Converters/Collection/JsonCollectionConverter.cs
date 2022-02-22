@@ -180,7 +180,7 @@ namespace System.Text.Json.Serialization
                         {
                             state.Current.PropertyState = StackFramePropertyState.ReadValue;
 
-                            if (!SingleValueReadWithReadAhead(elementConverter.ConverterStrategy, ref reader, ref state))
+                            if (!SingleValueReadWithReadAhead(elementConverter.RequiresReadAhead, ref reader, ref state))
                             {
                                 value = default;
                                 return false;
@@ -270,11 +270,7 @@ namespace System.Text.Json.Serialization
                     if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                     {
                         MetadataPropertyName metadata = JsonSerializer.WriteReferenceForCollection(this, value, ref state, writer);
-                        if (metadata == MetadataPropertyName.Ref)
-                        {
-                            return true;
-                        }
-
+                        Debug.Assert(metadata != MetadataPropertyName.Ref);
                         state.Current.MetadataPropertyName = metadata;
                     }
                     else
