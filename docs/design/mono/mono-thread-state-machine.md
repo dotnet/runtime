@@ -122,6 +122,7 @@ Note right of Thread: Async_Suspend_Requested
 Thread-->>Initiator: "InitSuspendRunning"
 Initiator->>Thread: pthread_kill()
 Note over Initiator: "wait for pending operations"
+Thread->>Handler: signal
 Handler->>Handler: finish_async_suspend
 Note right of Thread: Async_Suspended
 Handler-->>Initiator: notify initiator of suspend
