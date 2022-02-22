@@ -3756,6 +3756,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_RMUL:
 			x86_sse_mulss_reg_reg (code, ins->dreg, ins->sreg2);
 			break;
+		case OP_RDIV:
+			x86_sse_divss_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
 		case OP_RNEG: {
 			static float r4_0 = -0.0;
 
