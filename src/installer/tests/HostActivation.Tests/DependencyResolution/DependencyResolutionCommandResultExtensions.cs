@@ -6,6 +6,7 @@ using FluentAssertions.Execution;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using TestUtils.Assertions;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
