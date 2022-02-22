@@ -2,29 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text.RegularExpressions.Symbolic.Unicode;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>
     /// Provides functionality to build character sets, to perform boolean operations over character sets,
-    /// and to construct an SFA over character sets from a regex.
+    /// and to construct a symbolic finite automata (SFA) over character sets from a regex.
     /// Character sets are represented by bitvector sets.
     /// </summary>
     internal sealed class CharSetSolver : BDDAlgebra, ICharAlgebra<BDD>
     {
         /// <summary>BDDs for all ASCII characters for fast lookup.</summary>
         private readonly BDD[] _charPredTable = new BDD[128];
-        private readonly Unicode.IgnoreCaseTransformer _ignoreCase;
+        private readonly IgnoreCaseTransformer _ignoreCase;
         internal readonly BDD _nonAscii;
 
-        /// <summary>
-        /// Construct the solver.
-        /// </summary>
-        public CharSetSolver()
+        /// <summary>Initialize the solver.</summary>
+        /// <remarks>Consumers should use the singleton <see cref="Instance"/>.</remarks>
+        private CharSetSolver()
         {
             _nonAscii = CreateCharSetFromRange('\x80', '\uFFFF');
-            _ignoreCase = new Unicode.IgnoreCaseTransformer(this);
+            _ignoreCase = new IgnoreCaseTransformer(this); // do this last in ctor, as IgnoreCaseTransform's ctor uses `this`
         }
+
+        /// <summary>Singleton instance of <see cref="CharSetSolver"/>.</summary>
+        public static CharSetSolver Instance { get; } = new CharSetSolver();
 
         public BDD ApplyIgnoreCase(BDD set, string? culture = null) => _ignoreCase.Apply(set, culture);
 
@@ -39,7 +43,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             else
             {
-                //individual character BDDs are always fixed
+                // individual character BDDs are always fixed
                 BDD[] charPredTable = _charPredTable;
                 return c < charPredTable.Length ?
                     charPredTable[c] ??= CreateBDDFromChar(c) :
@@ -123,16 +127,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public CharSetSolver CharSetProvider => this;
 
-        public IEnumerable<char> GenerateAllCharacters(BDD bvSet, bool inReverseOrder = false)
-        {
-            foreach (uint c in GenerateAllElements(bvSet, inReverseOrder))
-            {
-                yield return (char)c;
-            }
-        }
-
-        public IEnumerable<char> GenerateAllCharacters(BDD set) => GenerateAllCharacters(set, false);
-
         /// <summary>Calculate the number of elements in the set.</summary>
         /// <param name="set">the given set</param>
         /// <returns>the cardinality of the set</returns>
@@ -163,40 +157,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public (uint, uint)[] ToRanges(BDD set) => ToRanges(set, 15);
 
-        private IEnumerable<uint> GenerateAllCharactersInOrder(BDD set)
-        {
-            foreach ((uint, uint) range in ToRanges(set))
-            {
-                for (uint i = range.Item1; i <= range.Item2; i++)
-                {
-                    yield return i;
-                }
-            }
-        }
-
-        private IEnumerable<uint> GenerateAllCharactersInReverseOrder(BDD set)
-        {
-            (uint, uint)[] ranges = ToRanges(set);
-            for (int j = ranges.Length - 1; j >= 0; j--)
-            {
-                for (uint i = ranges[j].Item2; i >= ranges[j].Item1; i--)
-                {
-                    yield return (char)i;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Generate all characters that are members of the set in alphabetical order, smallest first, provided that inReverseOrder is false.
-        /// </summary>
-        /// <param name="set">the given set</param>
-        /// <param name="inReverseOrder">if true the members are generated in reverse alphabetical order with the largest first, otherwise in alphabetical order</param>
-        /// <returns>enumeration of all characters in the set, the enumeration is empty if the set is empty</returns>
-        private IEnumerable<uint> GenerateAllElements(BDD set, bool inReverseOrder) =>
-            set == False ? Array.Empty<uint>() :
-            inReverseOrder ? GenerateAllCharactersInReverseOrder(set) :
-            GenerateAllCharactersInOrder(set);
-
         public BDD ConvertToCharSet(ICharAlgebra<BDD> _, BDD pred) => pred;
 
         public BDD[]? GetMinterms() => null;
@@ -210,19 +170,29 @@ namespace System.Text.RegularExpressions.Symbolic
             if (pred.IsFull)
                 return ".";
 
-            // try to optimize representation involving common direct use of \d \w and \s to avoid blowup of ranges
-            BDD digit = SymbolicRegexRunnerFactory.s_unicode.CategoryCondition(8);
-            if (pred == SymbolicRegexRunnerFactory.s_unicode.WordLetterCondition)
+            // try to optimize representation involving common direct use of \w, \s, and \d to avoid blowup of ranges
+            BDD w = UnicodeCategoryConditions.WordLetter;
+            if (pred == w)
                 return @"\w";
-            if (pred == SymbolicRegexRunnerFactory.s_unicode.WhiteSpaceCondition)
-                return @"\s";
-            if (pred == digit)
-                return @"\d";
-            if (pred == Not(SymbolicRegexRunnerFactory.s_unicode.WordLetterCondition))
+
+            BDD W = Not(w);
+            if (pred == W)
                 return @"\W";
-            if (pred == Not(SymbolicRegexRunnerFactory.s_unicode.WhiteSpaceCondition))
+
+            BDD s = UnicodeCategoryConditions.WhiteSpace;
+            if (pred == s)
+                return @"\s";
+
+            BDD S = Not(s);
+            if (pred == S)
                 return @"\S";
-            if (pred == Not(digit))
+
+            BDD d = UnicodeCategoryConditions.GetCategory(UnicodeCategory.DecimalDigitNumber);
+            if (pred == d)
+                return @"\d";
+
+            BDD D = Not(d);
+            if (pred == D)
                 return @"\D";
 
             (uint, uint)[] ranges = ToRanges(pred);
@@ -231,16 +201,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 return Escape((char)ranges[0].Item1);
 
             #region if too many ranges try to optimize the representation using \d \w etc.
-            if (SymbolicRegexRunnerFactory.s_unicode != null && ranges.Length > 10)
+            if (ranges.Length > 10)
             {
-                BDD w = SymbolicRegexRunnerFactory.s_unicode.WordLetterCondition;
-                BDD W = Not(w);
-                BDD d = SymbolicRegexRunnerFactory.s_unicode.CategoryCondition(8);
-                BDD D = Not(d);
                 BDD asciiDigit = CreateCharSetFromRange('0', '9');
                 BDD nonasciiDigit = And(d, Not(asciiDigit));
-                BDD s = SymbolicRegexRunnerFactory.s_unicode.WhiteSpaceCondition;
-                BDD S = Not(s);
                 BDD wD = And(w, D);
                 BDD SW = And(S, W);
                 //s, d, wD, SW are the 4 main large minterms

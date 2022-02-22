@@ -553,4 +553,9 @@ namespace SampleMetadata
     {
         public int Yes;
     }
+
+    public class PublicClass
+    {
+        internal class InternalNestedClass { }
+    }
 }

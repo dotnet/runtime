@@ -1,20 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
-using System.Text.RegularExpressions.Symbolic.Unicode;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary><see cref="RegexRunnerFactory"/> for symbolic regexes.</summary>
     internal sealed class SymbolicRegexRunnerFactory : RegexRunnerFactory
     {
-        /// <summary>The unicode component, including the BDD algebra.</summary>
-        internal static readonly UnicodeCategoryTheory<BDD> s_unicode = new UnicodeCategoryTheory<BDD>(new CharSetSolver());
-
-        /// <summary>The matching engine, for 64 or fewer minterms. A SymbolicRegexMatcher of ulong or VB</summary>
+        /// <summary>A SymbolicRegexMatcher of either ulong or BV depending on the number of minterms.</summary>
         internal readonly ISymbolicRegexMatcher _matcher;
 
         /// <summary>Initializes the factory.</summary>
@@ -28,9 +23,9 @@ namespace System.Text.RegularExpressions.Symbolic
                         (options & RegexOptions.RightToLeft) != 0 ? nameof(RegexOptions.RightToLeft) : nameof(RegexOptions.ECMAScript)));
             }
 
-            var converter = new RegexNodeToSymbolicConverter(s_unicode, culture, code.Caps);
-            var solver = (CharSetSolver)s_unicode._solver;
-            SymbolicRegexNode<BDD> root = converter.Convert(code.Tree.Root, topLevel: true);
+            var converter = new RegexNodeConverter(culture, code.Caps);
+            CharSetSolver solver = CharSetSolver.Instance;
+            SymbolicRegexNode<BDD> root = converter.ConvertToSymbolicRegexNode(code.Tree.Root, tryCreateFixedLengthMarker: true);
 
             BDD[] minterms = root.ComputeMinterms();
             if (minterms.Length > 64)
@@ -88,7 +83,7 @@ namespace System.Text.RegularExpressions.Symbolic
             internal Runner(SymbolicRegexMatcher<TSetType> matcher)
             {
                 _matcher = matcher;
-                _perThreadData = _matcher.CreatePerThreadData();
+                _perThreadData = matcher.CreatePerThreadData();
             }
 
             protected override void InitTrackCount() { } // nop, no backtracking
