@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -116,6 +117,7 @@ static int satellite_assembly_count;
 int32_t time(int32_t x) {
 	// libSystem.Native.a incorrectly defines this function as returning an int32, whereas it's an int64
 	// according to WASI SDK.
+	// TODO: Return a real time.
 	return 0;
 }
 
@@ -242,6 +244,22 @@ int32_t SystemNative_Write2(intptr_t fd, const void* buffer, int32_t bufferSize)
 	return SystemNative_Write((int)fd == -1 ? 1: fd, buffer, bufferSize);
 }
 
+int64_t SystemNative_GetTimestamp2()
+{
+	// libSystemNative's implementation of SystemNative_GetTimestamp causes the process to exit. It probably
+	// relies on calling into JS.
+	struct timeval time;
+    if (gettimeofday(&time, NULL) == 0)
+    {
+		// Ideally we'd have a nanosecond-level timer here, but microsecond-level will do
+		return (int64_t)(time.tv_sec) * 1000000000 + (time.tv_usec * 1000);
+    }
+	else
+	{
+		return 0;
+	}
+}
+
 static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_GetEnv", SystemNative_GetEnv },
 	{"SystemNative_GetEnviron", SystemNative_GetEnviron },
@@ -271,6 +289,7 @@ static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_StrErrorR", SystemNative_StrErrorR},
 	{"SystemNative_PRead", SystemNative_PRead},
 	{"SystemNative_CanGetHiddenFlag", SystemNative_CanGetHiddenFlag},
+	{"SystemNative_GetTimestamp", SystemNative_GetTimestamp2},
 	{NULL, NULL}
 };
 
