@@ -808,7 +808,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_xequal (cfg, klass, args [0], args [1]);
 	case SN_EqualsAny: {
 		MonoInst *cmp_eq = emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
-		MonoInst *zero = emit_xzero (cfg, klass);
+		MonoInst *zero = emit_xzero (cfg, args [0]->klass);
 		MonoInst *ins = emit_xequal (cfg, klass, cmp_eq, zero);
 		int sreg = ins->dreg;
 		int dreg = alloc_ireg (cfg);
