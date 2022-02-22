@@ -3430,6 +3430,7 @@ namespace Internal.JitInterface
         {
             // We could add some logging here, but for now it's unnecessary.
             // CompileMethod is going to fail with this CorJitResult anyway.
+            _numFrameInfos = 0;
         }
 
         private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
