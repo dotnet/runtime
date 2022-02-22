@@ -3,16 +3,11 @@
 
 using System.Runtime.Versioning;
 
-#if !FEATURE_GENERIC_MATH
-#error FEATURE_GENERIC_MATH is not defined
-#endif
-
 namespace System
 {
     /// <summary>Defines a mechanism for comparing two values to determine relative order.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="TOther">The type that will be compared with <typeparamref name="TSelf" />.</typeparam>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IComparisonOperators<TSelf, TOther>
         : IComparable,
           IComparable<TOther>,

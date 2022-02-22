@@ -3,10 +3,6 @@
 
 using System.Runtime.Versioning;
 
-#if !FEATURE_GENERIC_MATH
-#error FEATURE_GENERIC_MATH is not defined
-#endif
-
 namespace System
 {
     /// <summary>Defines a mechanism for computing the modulus or remainder of two values.</summary>
@@ -14,7 +10,6 @@ namespace System
     /// <typeparam name="TOther">The type that will divide <typeparamref name="TSelf" />.</typeparam>
     /// <typeparam name="TResult">The type that contains the modulus or remainder of <typeparamref name="TSelf" /> and <typeparamref name="TOther" />.</typeparam>
     /// <remarks>This type represents the <c>%</c> in C# which is often used to compute the remainder and may differ from an actual modulo operation depending on the type that implements the interface.</remarks>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IModulusOperators<TSelf, TOther, TResult>
         where TSelf : IModulusOperators<TSelf, TOther, TResult>
     {

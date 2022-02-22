@@ -3,17 +3,12 @@
 
 using System.Runtime.Versioning;
 
-#if !FEATURE_GENERIC_MATH
-#error FEATURE_GENERIC_MATH is not defined
-#endif
-
 namespace System
 {
     /// <summary>Defines a mechanism for computing the sum of two values.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="TOther">The type that will be added to <typeparamref name="TSelf" />.</typeparam>
     /// <typeparam name="TResult">The type that contains the sum of <typeparamref name="TSelf" /> and <typeparamref name="TOther" />.</typeparam>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IAdditionOperators<TSelf, TOther, TResult>
         where TSelf : IAdditionOperators<TSelf, TOther, TResult>
     {

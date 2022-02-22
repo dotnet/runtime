@@ -58,13 +58,16 @@ namespace System
     [Serializable]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly partial struct Decimal : ISpanFormattable, IComparable, IConvertible, IComparable<decimal>, IEquatable<decimal>, ISerializable, IDeserializationCallback
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IMinMaxValue<decimal>,
+    public readonly partial struct Decimal
+        : ISpanFormattable,
+          IComparable,
+          IConvertible,
+          IComparable<decimal>,
+          IEquatable<decimal>,
+          ISerializable,
+          IDeserializationCallback,
+          IMinMaxValue<decimal>,
           ISignedNumber<decimal>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
@@ -1074,16 +1077,13 @@ namespace System
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
 
-#if FEATURE_GENERIC_MATH
         //
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IAdditionOperators<decimal, decimal, decimal>.operator +(decimal left, decimal right)
             => checked(left + right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked decimal IAdditionOperators<decimal, decimal, decimal>.operator +(decimal left, decimal right)
         //     => checked(left + right);
 
@@ -1091,26 +1091,21 @@ namespace System
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IAdditiveIdentity<decimal, decimal>.AdditiveIdentity => 0.0m;
 
         //
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<decimal, decimal>.operator <(decimal left, decimal right)
             => left < right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<decimal, decimal>.operator <=(decimal left, decimal right)
             => left <= right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<decimal, decimal>.operator >(decimal left, decimal right)
             => left > right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<decimal, decimal>.operator >=(decimal left, decimal right)
             => left >= right;
 
@@ -1118,11 +1113,9 @@ namespace System
         // IDecrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IDecrementOperators<decimal>.operator --(decimal value)
             => --value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked decimal IDecrementOperators<decimal>.operator --(decimal value)
         //     => checked(--value);
 
@@ -1130,11 +1123,9 @@ namespace System
         // IDivisionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IDivisionOperators<decimal, decimal, decimal>.operator /(decimal left, decimal right)
             => left / right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked decimal IDivisionOperators<decimal, decimal, decimal>.operator /(decimal left, decimal right)
         //     => checked(left / right);
 
@@ -1142,11 +1133,9 @@ namespace System
         // IEqualityOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<decimal, decimal>.operator ==(decimal left, decimal right)
             => left == right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<decimal, decimal>.operator !=(decimal left, decimal right)
             => left != right;
 
@@ -1154,11 +1143,9 @@ namespace System
         // IIncrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IIncrementOperators<decimal>.operator ++(decimal value)
             => ++value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked decimal IIncrementOperators<decimal>.operator ++(decimal value)
         //     => checked(++value);
 
@@ -1166,21 +1153,17 @@ namespace System
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IMinMaxValue<decimal>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IMinMaxValue<decimal>.MaxValue => MaxValue;
 
         //
         // IModulusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IModulusOperators<decimal, decimal, decimal>.operator %(decimal left, decimal right)
             => left % right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked decimal IModulusOperators<decimal, decimal, decimal>.operator %(decimal left, decimal right)
         //     => checked(left % right);
 
@@ -1188,18 +1171,15 @@ namespace System
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IMultiplicativeIdentity<decimal, decimal>.MultiplicativeIdentity => 1.0m;
 
         //
         // IMultiplyOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IMultiplyOperators<decimal, decimal, decimal>.operator *(decimal left, decimal right)
             => left * right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked decimal IMultiplyOperators<decimal, decimal, decimal>.operator *(decimal left, decimal right)
         //     => checked(left * right);
 
@@ -1207,17 +1187,13 @@ namespace System
         // INumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal INumber<decimal>.One => 1.0m;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal INumber<decimal>.Zero => 0.0m;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal INumber<decimal>.Abs(decimal value)
             => Math.Abs(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static decimal INumber<decimal>.Create<TOther>(TOther value)
         {
@@ -1284,7 +1260,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static decimal INumber<decimal>.CreateSaturating<TOther>(TOther value)
         {
@@ -1351,7 +1326,6 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static decimal INumber<decimal>.CreateTruncating<TOther>(TOther value)
         {
@@ -1418,35 +1392,27 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal INumber<decimal>.Clamp(decimal value, decimal min, decimal max)
             => Math.Clamp(value, min, max);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static (decimal Quotient, decimal Remainder) INumber<decimal>.DivRem(decimal left, decimal right)
             => (left / right, left % right);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal INumber<decimal>.Max(decimal x, decimal y)
             => Math.Max(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal INumber<decimal>.Min(decimal x, decimal y)
             => Math.Min(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal INumber<decimal>.Parse(string s, NumberStyles style, IFormatProvider? provider)
             => Parse(s, style, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal INumber<decimal>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
             => Parse(s, style, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal INumber<decimal>.Sign(decimal value)
             => Math.Sign(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumber<decimal>.TryCreate<TOther>(TOther value, out decimal result)
         {
@@ -1528,11 +1494,9 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool INumber<decimal>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
             => TryParse(s, style, provider, out result);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool INumber<decimal>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out decimal result)
             => TryParse(s, style, provider, out result);
 
@@ -1540,11 +1504,9 @@ namespace System
         // IParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IParseable<decimal>.Parse(string s, IFormatProvider? provider)
             => Parse(s, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IParseable<decimal>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out decimal result)
             => TryParse(s, NumberStyles.Number, provider, out result);
 
@@ -1552,18 +1514,15 @@ namespace System
         // ISignedNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal ISignedNumber<decimal>.NegativeOne => -1;
 
         //
         // ISpanParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal ISpanParseable<decimal>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
             => Parse(s, NumberStyles.Number, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool ISpanParseable<decimal>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out decimal result)
             => TryParse(s, NumberStyles.Number, provider, out result);
 
@@ -1571,11 +1530,9 @@ namespace System
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal ISubtractionOperators<decimal, decimal, decimal>.operator -(decimal left, decimal right)
             => left - right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked decimal ISubtractionOperators<decimal, decimal, decimal>.operator -(decimal left, decimal right)
         //     => checked(left - right);
 
@@ -1583,11 +1540,9 @@ namespace System
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IUnaryNegationOperators<decimal, decimal>.operator -(decimal value)
             => -value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked decimal IUnaryNegationOperators<decimal, decimal>.operator -(decimal value)
         //     => checked(-value);
 
@@ -1595,13 +1550,10 @@ namespace System
         // IUnaryPlusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static decimal IUnaryPlusOperators<decimal, decimal>.operator +(decimal value)
             => +value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked decimal IUnaryPlusOperators<decimal, decimal>.operator +(decimal value)
         //     => checked(+value);
-#endif // FEATURE_GENERIC_MATH
     }
 }

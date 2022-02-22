@@ -3,16 +3,11 @@
 
 using System.Runtime.Versioning;
 
-#if !FEATURE_GENERIC_MATH
-#error FEATURE_GENERIC_MATH is not defined
-#endif
-
 namespace System
 {
     /// <summary>Defines a mechanism for shifting a value by another value.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="TResult">The type that contains the result of shifting <typeparamref name="TSelf" /> by <typeparamref name="TResult" />.</typeparam>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IShiftOperators<TSelf, TResult>
         where TSelf : IShiftOperators<TSelf, TResult>
     {

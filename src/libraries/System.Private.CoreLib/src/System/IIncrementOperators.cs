@@ -3,15 +3,10 @@
 
 using System.Runtime.Versioning;
 
-#if !FEATURE_GENERIC_MATH
-#error FEATURE_GENERIC_MATH is not defined
-#endif
-
 namespace System
 {
     /// <summary>Defines a mechanism for incrementing a given value.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IIncrementOperators<TSelf>
         where TSelf : IIncrementOperators<TSelf>
     {
