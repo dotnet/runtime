@@ -65,6 +65,7 @@ direction TB
         Blocking_Suspend_Requested --> Blocking_Self_Suspended : done_Blocking
         Blocking_Suspend_Requested --> Blocking_Self_Suspended : abort_Blocking
         Blocking_Suspend_Requested --> Blocking_Async_Suspended : finish_async_suspend
+        Blocking_Suspend_Requested --> Blocking: resume
         Blocking_Self_Suspended --> [*] : resume
         Blocking_Async_Suspended --> Blocking : resume
         Blocking_Async_Suspended --> Blocking_Suspend_Requested : pulse
@@ -265,7 +266,7 @@ Initiator->>Thread: resume
 Note right of Thread: Blocking
 ```
 
-Resuming a GC Safe thread aftrer it self-suspends:
+Resuming a GC Safe thread after it self-suspends:
 ```mermaid
 sequenceDiagram
 participant Initiator
@@ -344,6 +345,37 @@ User threads in `GC_Unsafe` periodically perform the `poll` transition, as in co
 User threads in `GC_Safe` states can suspend either by reaching a transition out of `GC_Safe` (ie they attempt a `done_Blocking` or `abort_Blocking` transition), or by beeing preemptively suspended by the suspend initiator.  As a result there are two possible suspended states: `Blocking_Self_Suspended` (tried to do a `done_Blocking`  or `abort_Blocking` transition) or `Blocking_Async_Suspended` (suspend initiator performed an `finish_async_suspend` transition).
 
 When resuming, if a thread was `Blocking_Self_Suspended` it finishes the `done_Blocking` or `abort_Blocking` transition and goes to a `GC_Unsafe` state.  If it was in `Blocking_Async_Suspended`, then it resumes still in `GC_Safe` and goes back to the `Blocking` state.
+
+### State diagrams
+
+Largely the same as preemptive or cooperative suspend.
+
+One difference is suspending threads in GC Safe is more complicated.  The thread could reach a transitiout out of GC Safe before the initiator has a chance to asynchronously suspend the thread.
+
+Suspending a GC Safe thread using `SuspendThread` on Windows is show below, the posix diagram is similar, except the signal handler performs the finish action and must decide whether the thread is already suspended or not:
+
+```mermaid
+sequenceDiagram
+participant Initiator
+participant Thread
+Note right of Thread: Blocking
+Initiator->>Thread: request_suspend
+Note right of Thread: Blocking_Suspend_Requested
+Thread-->>Initiator: "InitSuspendBlocking"
+Initiator->>Thread: "SuspendThread"
+alt "Thread running"
+    Initiator->>Thread: finish_async_suspend
+    Thread-->>Initiator: TRUE
+    Note right of Thread: Blocking_Async_Suspended
+    Note over Initiator: "thread is suspended"
+else "Thread self-suspended"
+    Thread->>Thread: done_blocking
+    Note right of Thread: Blocking_Self_Suspended
+    Initiator->>Thread: finish_async_suspend
+    Thread-->>Initiator: FALSE
+    Note over Initiator: "thread is suspended"
+end
+```
 
 ### Two phase suspension in hybrid suspend
 
