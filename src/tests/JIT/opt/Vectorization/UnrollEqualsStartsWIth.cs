@@ -6,11 +6,11 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-public class UnrollTests
+public class UnrollEqualsStartsWIth
 {
     public static int Main()
     {
-        var testTypes = typeof(UnrollTests).Assembly
+        var testTypes = typeof(UnrollEqualsStartsWIth).Assembly
             .GetTypes()
             .Where(t => t.Name.StartsWith("Tests_len"))
             .ToArray();
@@ -18,22 +18,20 @@ public class UnrollTests
         int testCount = 0;
         foreach (var testType in testTypes)
             testCount += RunTests(testType);
-
-        Console.WriteLine(testCount);
-        return testCount == 312048 ? 100 : 0;
+        return testCount == 91014 ? 100 : 0;
     }
 
     public static int RunTests(Type type)
     {
         // List of "reference" (unoptimized) tests
         var refImpl = type
-            .GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+            .GetMethods()
             .Where(m => m.Name.StartsWith("Test_ref_"))
             .ToArray();
 
         // List of actual tests
         var tstImpl = type
-            .GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+            .GetMethods()
             .Where(m => m.Name.StartsWith("Test_tst_"))
             .ToArray();
 
@@ -96,6 +94,7 @@ public class UnrollTests
             // Add more test input - uppercase, lowercase, replace some chars
             testDataList.Add(td.ToUpper());
             testDataList.Add(td.Replace('a', 'b'));
+            testDataList.Add(td.Replace('a', 'Ф'));
             testDataList.Add(td.ToLower());
         }
 
@@ -117,7 +116,7 @@ public class UnrollTests
     }
 
     // Invoke method and return its return value and exception if happened
-    public static(bool, Type) GetInvokeResult(MethodInfo mi, string str)
+    public static (bool, Type) GetInvokeResult(MethodInfo mi, string str)
     {
         bool eq = false;
         Type excType = null;
@@ -135,4 +134,16 @@ public class UnrollTests
         }
         return (eq, excType);
     }
+}
+
+public class Utils
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T Const<T>(T t) => t;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static T Var<T>(T t) => t;
+
+    public const MethodImplOptions Opt = MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization;
+    public const MethodImplOptions NoOpt = MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization;
 }

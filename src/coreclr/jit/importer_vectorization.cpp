@@ -357,25 +357,17 @@ GenTree* Compiler::impExpandHalfConstEquals(
         return nullptr;
     }
 
+    const genTreeOps cmpOp = startsWith ? GT_GE : GT_EQ;
+
     GenTree* elementsCount = gtNewIconNode(len);
     GenTree* lenCheckNode;
     if (len == 0)
     {
-        if (startsWith)
-        {
-            // Any string starts with "" - return true
-            // But we need to preserve a possible nullcheck
-            // We may use gtNewNullcheck here, but we'll have to propagate BBF_HAS_NULLCHECK
-            // through QMARKs (not supported currently), so let's just leave an access
-            // to Length
-            return gtNewOperNode(GT_COMMA, TYP_INT, lengthFld, gtNewTrue());
-        }
-
         // For zero length we don't need to compare content, the following expression is enough:
         //
         //   varData != null && lengthFld == 0
         //
-        lenCheckNode = gtNewOperNode(GT_EQ, TYP_INT, lengthFld, elementsCount);
+        lenCheckNode = gtNewOperNode(cmpOp, TYP_INT, lengthFld, elementsCount);
     }
     else
     {
@@ -400,9 +392,7 @@ GenTree* Compiler::impExpandHalfConstEquals(
         GenTreeColon* lenCheckColon = gtNewColonNode(TYP_INT, indirCmp, gtNewFalse());
 
         // For StartsWith we use GT_GE, e.g.: `x.Length >= 10`
-        lenCheckNode =
-            gtNewQmarkNode(TYP_INT, gtNewOperNode(startsWith ? GT_GE : GT_EQ, TYP_INT, lengthFld, elementsCount),
-                           lenCheckColon);
+        lenCheckNode = gtNewQmarkNode(TYP_INT, gtNewOperNode(cmpOp, TYP_INT, lengthFld, elementsCount), lenCheckColon);
     }
 
     GenTree* rootQmark;
