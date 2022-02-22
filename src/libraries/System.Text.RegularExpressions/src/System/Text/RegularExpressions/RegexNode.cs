@@ -14,6 +14,8 @@ namespace System.Text.RegularExpressions
     {
         /// <summary>empty bit from the node's options to store data on whether a node contains captures</summary>
         internal const RegexOptions HasCapturesFlag = (RegexOptions)(1 << 31);
+        /// <summary>Arbitrary number of repetitions of the same character when we'd prefer to represent that as a repeater of that character rather than a string.</summary>
+        internal const int MultiVsRepeaterLimit = 64;
 
         /// <summary>The node's children.</summary>
         /// <remarks>null if no children, a <see cref="RegexNode"/> if one child, or a <see cref="List{RegexNode}"/> if multiple children.</remarks>
@@ -155,14 +157,26 @@ namespace System.Text.RegularExpressions
 
                 case RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy:
                     // For lazy, we not only change the Type, we also lower the max number of iterations
-                    // to the minimum number of iterations, as they should end up matching as little as possible.
+                    // to the minimum number of iterations, creating a repeater, as they should end up
+                    // matching as little as possible.
                     Kind += RegexNodeKind.Oneloopatomic - RegexNodeKind.Onelazy;
                     N = M;
                     if (N == 0)
                     {
+                        // If moving the max to be the same as the min dropped it to 0, there's no
+                        // work to be done for this node, and we can make it Empty.
                         Kind = RegexNodeKind.Empty;
                         Str = null;
                         Ch = '\0';
+                    }
+                    else if (Kind == RegexNodeKind.Oneloopatomic && N is >= 2 and <= MultiVsRepeaterLimit)
+                    {
+                        // If this is now a One repeater with a small enough length,
+                        // make it a Multi instead, as they're better optimized down the line.
+                        Kind = RegexNodeKind.Multi;
+                        Str = new string(Ch, N);
+                        Ch = '\0';
+                        M = N = 0;
                     }
                     break;
 
@@ -1453,12 +1467,14 @@ namespace System.Text.RegularExpressions
                     return Child(0);
             }
 
-            // Coalesce adjacent characters/strings.
-            ReduceConcatenationWithAdjacentStrings();
-
             // Coalesce adjacent loops.  This helps to minimize work done by the interpreter, minimize code gen,
             // and also help to reduce catastrophic backtracking.
             ReduceConcatenationWithAdjacentLoops();
+
+            // Coalesce adjacent characters/strings.  This is done after the adjacent loop coalescing so that
+            // a One adjacent to both a Multi and a Loop prefers being folded into the Loop rather than into
+            // the Multi.  Doing so helps with auto-atomicity when it's later applied.
+            ReduceConcatenationWithAdjacentStrings();
 
             // If the concatenation is now empty, return an empty node, or if it's got a single child, return that child.
             // Otherwise, return this.
@@ -1555,6 +1571,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Combine adjacent loops.
         /// e.g. a*a*a* => a*
+        /// e.g. a+ab => a{2,}b
         /// </summary>
         private void ReduceConcatenationWithAdjacentLoops()
         {
@@ -1626,6 +1643,55 @@ namespace System.Text.RegularExpressions
                             }
                             break;
 
+                        // Coalescing a loop with a subsequent string
+                        case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy when nextNode.Kind == RegexNodeKind.Multi && currentNode.Ch == nextNode.Str![0]:
+                            {
+                                // Determine how many of the multi's characters can be combined.
+                                // We already checked for the first, so we know it's at least one.
+                                int matchingCharsInMulti = 1;
+                                while (matchingCharsInMulti < nextNode.Str.Length && currentNode.Ch == nextNode.Str[matchingCharsInMulti])
+                                {
+                                    matchingCharsInMulti++;
+                                }
+
+                                if (CanCombineCounts(currentNode.M, currentNode.N, matchingCharsInMulti, matchingCharsInMulti))
+                                {
+                                    // Update the loop's bounds to include those characters from the multi
+                                    currentNode.M += matchingCharsInMulti;
+                                    if (currentNode.N != int.MaxValue)
+                                    {
+                                        currentNode.N += matchingCharsInMulti;
+                                    }
+
+                                    // If it was the full multi, skip/remove the multi and continue processing this loop.
+                                    if (nextNode.Str.Length == matchingCharsInMulti)
+                                    {
+                                        next++;
+                                        continue;
+                                    }
+
+                                    // Otherwise, trim the characters from the multiple that were absorbed into the loop.
+                                    // If it now only has a single character, it becomes a One.
+                                    Debug.Assert(matchingCharsInMulti < nextNode.Str.Length);
+                                    if (nextNode.Str.Length - matchingCharsInMulti == 1)
+                                    {
+                                        nextNode.Kind = RegexNodeKind.One;
+                                        nextNode.Ch = nextNode.Str[nextNode.Str.Length - 1];
+                                        nextNode.Str = null;
+                                    }
+                                    else
+                                    {
+                                        nextNode.Str = nextNode.Str.Substring(matchingCharsInMulti);
+                                    }
+                                }
+                            }
+                            break;
+
+                        // NOTE: We could add support for coalescing a string with a subsequent loop, but the benefits of that
+                        // are limited. Pulling a subsequent string's prefix back into the loop helps with making the loop atomic,
+                        // but if the loop is after the string, pulling the suffix of the string forward into the loop may actually
+                        // be a deoptimization as those characters could end up matching more slowly as part of loop matching.
+
                         // Coalescing an individual item with a loop.
                         case RegexNodeKind.One when (nextNode.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy) && currentNode.Ch == nextNode.Ch:
                         case RegexNodeKind.Notone when (nextNode.Kind is RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy) && currentNode.Ch == nextNode.Ch:
@@ -1641,7 +1707,8 @@ namespace System.Text.RegularExpressions
                             break;
 
                         // Coalescing an individual item with another individual item.
-                        case RegexNodeKind.One or RegexNodeKind.Notone when nextNode.Kind == currentNode.Kind && currentNode.Ch == nextNode.Ch:
+                        // We don't coalesce adjacent One nodes into a Oneloop as we'd rather they be joined into a Multi.
+                        case RegexNodeKind.Notone when nextNode.Kind == currentNode.Kind && currentNode.Ch == nextNode.Ch:
                         case RegexNodeKind.Set when nextNode.Kind == RegexNodeKind.Set && currentNode.Str == nextNode.Str:
                             currentNode.MakeRep(RegexNodeKind.Oneloop, 2, 2);
                             next++;
@@ -2412,11 +2479,31 @@ namespace System.Text.RegularExpressions
 
         public RegexNode MakeQuantifier(bool lazy, int min, int max)
         {
-            if (min == 0 && max == 0)
-                return new RegexNode(RegexNodeKind.Empty, Options);
+            // Certain cases of repeaters (min == max) can be handled specially
+            if (min == max)
+            {
+                switch (max)
+                {
+                    case 0:
+                        // The node is repeated 0 times, so it's actually empty.
+                        return new RegexNode(RegexNodeKind.Empty, Options);
 
-            if (min == 1 && max == 1)
-                return this;
+                    case 1:
+                        // The node is repeated 1 time, so it's not actually a repeater.
+                        return this;
+
+                    case <= MultiVsRepeaterLimit when Kind == RegexNodeKind.One:
+                        // The same character is repeated a fixed number of times, so it's actually a multi.
+                        // While this could remain a repeater, multis are more readily optimized later in
+                        // processing. The counts used here in real-world expressions are invariably small (e.g. 4),
+                        // but we set an upper bound just to avoid creating really large strings.
+                        Debug.Assert(max >= 2);
+                        Kind = RegexNodeKind.Multi;
+                        Str = new string(Ch, max);
+                        Ch = '\0';
+                        return this;
+                }
+            }
 
             switch (Kind)
             {

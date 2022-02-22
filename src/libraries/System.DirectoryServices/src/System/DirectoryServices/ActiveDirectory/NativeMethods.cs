@@ -393,7 +393,7 @@ namespace System.DirectoryServices.ActiveDirectory
             PDNS_RECORD pRecordList,
             DNS_FREE_TYPE FreeType
             );*/
-        [GeneratedDllImport(global::Interop.Libraries.Dnsapi, CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Dnsapi)]
         internal static partial void DnsRecordListFree(
             IntPtr dnsResultList,
             bool dnsFreeType);

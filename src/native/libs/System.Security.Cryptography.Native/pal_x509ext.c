@@ -9,6 +9,7 @@
 X509_EXTENSION*
 CryptoNative_X509ExtensionCreateByObj(ASN1_OBJECT* obj, int32_t isCritical, ASN1_OCTET_STRING* data)
 {
+    ERR_clear_error();
     return X509_EXTENSION_create_by_OBJ(NULL, obj, isCritical, data);
 }
 
@@ -22,6 +23,7 @@ void CryptoNative_X509ExtensionDestroy(X509_EXTENSION* a)
 
 int32_t CryptoNative_X509V3ExtPrint(BIO* out, X509_EXTENSION* ext)
 {
+    ERR_clear_error();
     return X509V3_EXT_print(out, ext, X509V3_EXT_DEFAULT, /*indent*/ 0);
 }
 
@@ -40,6 +42,8 @@ int32_t CryptoNative_DecodeX509BasicConstraints2Extension(const uint8_t* encoded
     *hasPathLengthConstraint = false;
     *pathLengthConstraint = 0;
     int32_t result = false;
+
+    ERR_clear_error();
 
     BASIC_CONSTRAINTS* constraints = d2i_BASIC_CONSTRAINTS(NULL, &encoded, encodedLength);
     if (constraints)
@@ -70,6 +74,8 @@ int32_t CryptoNative_DecodeX509BasicConstraints2Extension(const uint8_t* encoded
 
 EXTENDED_KEY_USAGE* CryptoNative_DecodeExtendedKeyUsage(const uint8_t* buf, int32_t len)
 {
+    ERR_clear_error();
+
     if (!buf || !len)
     {
         return NULL;

@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.NativeFormat;
-using Internal.Runtime.CompilerServices;
 
 using Debug = System.Diagnostics.Debug;
 

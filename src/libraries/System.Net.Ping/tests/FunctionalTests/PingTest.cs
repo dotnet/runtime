@@ -43,10 +43,7 @@ namespace System.Net.NetworkInformation.Tests
             _output = output;
         }
 
-        private void PingResultValidator(PingReply pingReply, IPAddress localIpAddress)
-        {
-            PingResultValidator(pingReply, new IPAddress[] { localIpAddress }, _output);
-        }
+        private void PingResultValidator(PingReply pingReply, IPAddress localIpAddress) => PingResultValidator(pingReply, new IPAddress[] { localIpAddress }, _output);
 
         private void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses) => PingResultValidator(pingReply, localIpAddresses, null);
 
@@ -396,65 +393,61 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public void SendPingWithHostAndTimeoutAndBuffer()
         {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
+            IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
+            byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
 
             SendBatchPing(
                 (ping) => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer),
                 (pingReply) =>
                 {
-                    PingResultValidator(pingReply, localIpAddress);
+                    PingResultValidator(pingReply, localIpAddresses);
                     Assert.Equal(buffer, pingReply.Buffer);
                 });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer()
         {
-            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
+            IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
+            byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
 
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer),
                 (pingReply) =>
                 {
-                    PingResultValidator(pingReply, localIpAddress);
+                    PingResultValidator(pingReply, localIpAddresses);
                     Assert.Equal(buffer, pingReply.Buffer);
                 });
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public void SendPingWithHostAndTimeoutAndBufferAndPingOptions()
         {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
+            IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
+            byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
 
             SendBatchPing(
                 (ping) => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, new PingOptions()),
                 (pingReply) =>
                 {
-                    PingResultValidator(pingReply, localIpAddress);
+                    PingResultValidator(pingReply, localIpAddresses);
                     Assert.Equal(buffer, pingReply.Buffer);
                 });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions()
         {
-            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
+            IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
+            byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
 
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, new PingOptions()),
                 (pingReply) =>
                 {
-                    PingResultValidator(pingReply, localIpAddress);
+                    PingResultValidator(pingReply, localIpAddresses);
 
                     Assert.Equal(buffer, pingReply.Buffer);
                 });
@@ -651,7 +644,6 @@ namespace System.Net.NetworkInformation.Tests
         public async Task SendPingAsyncWithHostAndTtlAndFragmentPingOptions(bool fragment)
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
-
             byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
 
             PingOptions options = new PingOptions();

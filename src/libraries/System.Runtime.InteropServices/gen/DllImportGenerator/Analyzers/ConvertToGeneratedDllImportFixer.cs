@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -14,7 +15,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
-
+using Microsoft.CodeAnalysis.FindSymbols;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
 
 namespace Microsoft.Interop.Analyzers
@@ -79,9 +80,51 @@ namespace Microsoft.Interop.Analyzers
                         methodSymbol,
                         dllImportAttr!,
                         generatedDllImportAttrType,
+                        entryPointSuffix: null,
                         cancelToken),
                     equivalenceKey: ConvertToGeneratedDllImportKey),
                 context.Diagnostics);
+
+            DllImportData dllImportData = methodSymbol.GetDllImportData()!;
+            if (!dllImportData.ExactSpelling)
+            {
+                // CharSet.Auto traditionally maps to either an A or W suffix
+                // depending on the default CharSet of the platform.
+                // We will offer both suffix options when CharSet.Auto is provided
+                // to enable developers to pick which variant they mean (since they could explicitly decide they want one or the other)
+                if (dllImportData.CharacterSet is CharSet.None or CharSet.Ansi or CharSet.Auto)
+                {
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            string.Format(Resources.ConvertToGeneratedDllImportWithSuffix, "A"),
+                            cancelToken => ConvertToGeneratedDllImport(
+                                context.Document,
+                                methodSyntax,
+                                methodSymbol,
+                                dllImportAttr!,
+                                generatedDllImportAttrType,
+                                entryPointSuffix: 'A',
+                                cancelToken),
+                            equivalenceKey: ConvertToGeneratedDllImportKey + "A"),
+                        context.Diagnostics);
+                }
+                if (dllImportData.CharacterSet is CharSet.Unicode or CharSet.Auto)
+                {
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            string.Format(Resources.ConvertToGeneratedDllImportWithSuffix, "W"),
+                            cancelToken => ConvertToGeneratedDllImport(
+                                context.Document,
+                                methodSyntax,
+                                methodSymbol,
+                                dllImportAttr!,
+                                generatedDllImportAttrType,
+                                entryPointSuffix: 'W',
+                                cancelToken),
+                            equivalenceKey: ConvertToGeneratedDllImportKey + "W"),
+                        context.Diagnostics);
+                }
+            }
         }
 
         private async Task<Document> ConvertToGeneratedDllImport(
@@ -90,6 +133,7 @@ namespace Microsoft.Interop.Analyzers
             IMethodSymbol methodSymbol,
             AttributeData dllImportAttr,
             INamedTypeSymbol generatedDllImportAttrType,
+            char? entryPointSuffix,
             CancellationToken cancellationToken)
         {
             DocumentEditor editor = await DocumentEditor.CreateAsync(doc, cancellationToken).ConfigureAwait(false);
@@ -104,6 +148,8 @@ namespace Microsoft.Interop.Analyzers
                 dllImportSyntax,
                 methodSymbol.GetDllImportData()!,
                 generatedDllImportAttrType,
+                methodSymbol.Name,
+                entryPointSuffix,
                 out SyntaxNode? unmanagedCallConvAttributeMaybe);
 
             // Add annotation about potential behavioural and compatibility changes
@@ -112,6 +158,11 @@ namespace Microsoft.Interop.Analyzers
 
             // Replace DllImport with GeneratedDllImport
             SyntaxNode generatedDeclaration = generator.ReplaceNode(methodSyntax, dllImportSyntax, generatedDllImportSyntax);
+
+            if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
+            {
+                generatedDeclaration = await RemoveNoPreserveSigTransform(editor, generatedDeclaration, methodSymbol, cancellationToken).ConfigureAwait(false);
+            }
 
             if (unmanagedCallConvAttributeMaybe is not null)
             {
@@ -131,12 +182,183 @@ namespace Microsoft.Interop.Analyzers
             return editor.GetChangedDocument();
         }
 
+        private async Task<SyntaxNode> RemoveNoPreserveSigTransform(DocumentEditor editor, SyntaxNode generatedDeclaration, IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+        {
+            Document? document = editor.OriginalDocument;
+            IEnumerable<ReferencedSymbol>? referencedSymbols = await SymbolFinder.FindReferencesAsync(
+                methodSymbol, document.Project.Solution, cancellationToken).ConfigureAwait(false);
+
+            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+
+            // Sometimes we can't validate that we've fixed all callers, so we warn the user that this fix might produce invalid code.
+            bool shouldWarn = false;
+
+            List<(SyntaxNode invocation, Func<SyntaxNode, SyntaxGenerator, SyntaxNode> action)> invocations = new();
+
+            foreach (ReferencedSymbol? referencedSymbol in referencedSymbols)
+            {
+                foreach (ReferenceLocation location in referencedSymbol.Locations)
+                {
+                    if (!location.Document.Id.Equals(document.Id))
+                    {
+                        shouldWarn = true;
+                        continue;
+                    }
+                    // We limited the search scope to the single document,
+                    // so all reference should be in the same tree.
+                    SyntaxNode? referenceNode = root.FindNode(location.Location.SourceSpan);
+                    if (referenceNode is not IdentifierNameSyntax identifierNode)
+                    {
+                        // Unexpected scenario, skip and warn.
+                        shouldWarn = true;
+                        continue;
+                    }
+
+                    InvocationExpressionSyntax? invocation = identifierNode switch
+                    {
+                        { Parent: InvocationExpressionSyntax invocationInScope } => invocationInScope,
+                        { Parent: MemberAccessExpressionSyntax { Parent: InvocationExpressionSyntax invocationOnType } } => invocationOnType,
+                        _ => null!
+                    };
+
+                    if (invocation is null)
+                    {
+                        // We won't be able to fix non-invocation references,
+                        // e.g. creating a delegate.
+                        shouldWarn = true;
+                        continue;
+                    }
+
+                    if (methodSymbol.ReturnsVoid)
+                    {
+                        // There is no return value, so we don't need to add any arguments to the invocation.
+                        // We only need to wrap the invocation with a call to ThrowExceptionForHR
+                        invocations.Add((invocation, WrapInvocationWithHRExceptionThrow));
+                    }
+                    else if (invocation.Parent.IsKind(SyntaxKind.ExpressionStatement))
+                    {
+                        // The return value isn't used, so discard the new out parameter value
+                        invocations.Add((invocation,
+                           (node, generator) =>
+                           {
+                               return WrapInvocationWithHRExceptionThrow(
+                                   ((InvocationExpressionSyntax)node).AddArgumentListArguments(
+                                       SyntaxFactory.Argument(SyntaxFactory.IdentifierName(
+                                           SyntaxFactory.Identifier(
+                                               SyntaxFactory.TriviaList(),
+                                               SyntaxKind.UnderscoreToken,
+                                               "_",
+                                               "_",
+                                               SyntaxFactory.TriviaList())))
+                                           .WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.OutKeyword))),
+                                   generator);
+                           }
+                        ));
+                    }
+                    else if (invocation.Parent.IsKind(SyntaxKind.EqualsValueClause))
+                    {
+                        LocalDeclarationStatementSyntax declaration = invocation.FirstAncestorOrSelf<LocalDeclarationStatementSyntax>();
+                        if (declaration.IsKind(SyntaxKind.FieldDeclaration) || declaration.IsKind(SyntaxKind.EventFieldDeclaration))
+                        {
+                            // We can't fix initalizations without introducing or prepending to a static constructor
+                            // for what is an unlikely scenario.
+                            continue;
+                        }
+                        if (declaration.Declaration.Variables.Count != 1)
+                        {
+                            // We can't handle multiple variable initializations easily
+                            continue;
+                        }
+                        // The result was used to initialize a variable,
+                        // so initialize the variable inline
+                        invocations.Add((declaration,
+                           (node, generator) =>
+                           {
+                               var declaration = (LocalDeclarationStatementSyntax)node;
+                               var invocation = (InvocationExpressionSyntax)declaration.Declaration.Variables[0].Initializer.Value;
+                               return generator.ExpressionStatement(
+                                   WrapInvocationWithHRExceptionThrow(
+                                       invocation.AddArgumentListArguments(
+                                           SyntaxFactory.Argument(SyntaxFactory.DeclarationExpression(
+                                            declaration.Declaration.Type,
+                                            SyntaxFactory.SingleVariableDesignation(
+                                                declaration.Declaration.Variables[0].Identifier.WithoutTrivia())))
+                                               .WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.OutKeyword))),
+                                               generator));
+                           }
+                        ));
+                    }
+                    else if (invocation.Parent.IsKind(SyntaxKind.SimpleAssignmentExpression) && invocation.Parent.Parent.IsKind(SyntaxKind.ExpressionStatement))
+                    {
+                        invocations.Add((invocation.Parent,
+                           (node, generator) =>
+                           {
+                               var assignment = (AssignmentExpressionSyntax)node;
+                               var invocation = (InvocationExpressionSyntax)assignment.Right;
+                               return WrapInvocationWithHRExceptionThrow(
+                                   invocation.AddArgumentListArguments(
+                                       SyntaxFactory.Argument(generator.ClearTrivia(assignment.Left))
+                                           .WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.OutKeyword))),
+                                   generator);
+                           }
+                        ));
+                    }
+                    else
+                    {
+                        shouldWarn = true;
+                    }
+                }
+            }
+
+            foreach ((SyntaxNode node, Func<SyntaxNode, SyntaxGenerator, SyntaxNode> action) nodesWithReplaceAction in invocations)
+            {
+                editor.ReplaceNode(
+                    nodesWithReplaceAction.node, (node, generator) =>
+                    {
+                        return nodesWithReplaceAction.action(node, generator);
+                    });
+            }
+
+            SyntaxNode noPreserveSigDeclaration = editor.Generator.WithType(
+                generatedDeclaration,
+                editor.Generator.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Int32)));
+
+            if (!methodSymbol.ReturnsVoid)
+            {
+                noPreserveSigDeclaration = editor.Generator.AddParameters(
+                    noPreserveSigDeclaration,
+                    new[]
+                    {
+                        editor.Generator.ParameterDeclaration("@return", editor.Generator.GetType(generatedDeclaration), refKind: RefKind.Out)
+                    });
+            }
+
+            if (shouldWarn)
+            {
+                noPreserveSigDeclaration = noPreserveSigDeclaration.WithAdditionalAnnotations(WarningAnnotation.Create(Resources.ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode));
+            }
+            return noPreserveSigDeclaration;
+
+            SyntaxNode WrapInvocationWithHRExceptionThrow(SyntaxNode node, SyntaxGenerator generator)
+            {
+                return generator.InvocationExpression(
+                            generator.MemberAccessExpression(
+                                generator.NameExpression(
+                                    editor.SemanticModel.Compilation.GetTypeByMetadataName(
+                                        TypeNames.System_Runtime_InteropServices_Marshal)),
+                                "ThrowExceptionForHR"),
+                            node);
+            }
+        }
+
         private SyntaxNode GetGeneratedDllImportAttribute(
             DocumentEditor editor,
             SyntaxGenerator generator,
             AttributeSyntax dllImportSyntax,
             DllImportData dllImportData,
             INamedTypeSymbol generatedDllImportAttrType,
+            string methodName,
+            char? entryPointSuffix,
             out SyntaxNode? unmanagedCallConvAttributeMaybe)
         {
             unmanagedCallConvAttributeMaybe = null;
@@ -147,6 +369,7 @@ namespace Microsoft.Interop.Analyzers
 
             // Update attribute arguments for GeneratedDllImport
             List<SyntaxNode> argumentsToRemove = new List<SyntaxNode>();
+            AttributeArgumentSyntax? entryPointAttributeArgument = null;
             foreach (SyntaxNode argument in generator.GetAttributeArguments(generatedDllImportSyntax))
             {
                 if (argument is not AttributeArgumentSyntax attrArg)
@@ -181,9 +404,54 @@ namespace Microsoft.Interop.Analyzers
                         argumentsToRemove.Add(argument);
                     }
                 }
+                else if (IsMatchingNamedArg(attrArg, nameof(DllImportAttribute.ExactSpelling)))
+                {
+                    argumentsToRemove.Add(argument);
+                }
+                else if (IsMatchingNamedArg(attrArg, nameof(DllImportAttribute.EntryPoint)))
+                {
+                    entryPointAttributeArgument = attrArg;
+                    if (!dllImportData.ExactSpelling && entryPointSuffix.HasValue)
+                    {
+                        if (entryPointAttributeArgument.Expression.IsKind(SyntaxKind.StringLiteralExpression))
+                        {
+                            string? entryPoint = (string?)((LiteralExpressionSyntax)entryPointAttributeArgument.Expression).Token.Value;
+                            if (entryPoint is not null)
+                            {
+                                entryPointAttributeArgument = entryPointAttributeArgument.WithExpression(
+                                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
+                                        SyntaxFactory.Literal(entryPoint + entryPointSuffix)));
+                            }
+                        }
+                        else
+                        {
+                            entryPointAttributeArgument = entryPointAttributeArgument.WithExpression(
+                                SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression,
+                                entryPointAttributeArgument.Expression,
+                                SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
+                                    SyntaxFactory.Literal(entryPointSuffix.ToString()))));
+                        }
+                    }
+                    argumentsToRemove.Add(attrArg);
+                }
+                else if (IsMatchingNamedArg(attrArg, nameof(DllImportAttribute.PreserveSig)))
+                {
+                    // We transform the signature for PreserveSig, so we can remove the argument
+                    argumentsToRemove.Add(argument);
+                }
+            }
+
+            if (entryPointSuffix.HasValue && entryPointAttributeArgument is null)
+            {
+                entryPointAttributeArgument = (AttributeArgumentSyntax)generator.AttributeArgument("EntryPoint",
+                    generator.LiteralExpression(methodName + entryPointSuffix.Value));
             }
 
             generatedDllImportSyntax = generator.RemoveNodes(generatedDllImportSyntax, argumentsToRemove);
+            if (entryPointAttributeArgument is not null)
+            {
+                generatedDllImportSyntax = generator.AddAttributeArguments(generatedDllImportSyntax, new[] { entryPointAttributeArgument });
+            }
             return SortDllImportAttributeArguments((AttributeSyntax)generatedDllImportSyntax, generator);
         }
 

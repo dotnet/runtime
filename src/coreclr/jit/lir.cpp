@@ -1359,7 +1359,7 @@ public:
             }
 
             AliasSet::NodeInfo nodeInfo(compiler, node);
-            if (nodeInfo.IsLclVarRead() && !unusedDefs.Contains(node))
+            if (nodeInfo.IsLclVarRead() && node->IsValue() && !unusedDefs.Contains(node))
             {
                 jitstd::list<GenTree*>* reads;
                 if (!unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
@@ -1387,9 +1387,8 @@ public:
                         unsigned writeEnd   = writeStart + genTypeSize(node->TypeGet());
                         if ((readEnd > writeStart) && (writeEnd > readStart))
                         {
-                            JITDUMP(
-                                "Write to unaliased local overlaps outstanding read (write: %u..%u, read: %u..%u)\n",
-                                writeStart, writeEnd, readStart, readEnd);
+                            JITDUMP("Write to local overlaps outstanding read (write: %u..%u, read: %u..%u)\n",
+                                    writeStart, writeEnd, readStart, readEnd);
 
                             LIR::Use use;
                             bool     found = const_cast<LIR::Range*>(range)->TryGetUse(read, &use);

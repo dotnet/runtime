@@ -287,9 +287,9 @@ namespace System.Text.Json
             CancellationToken cancellationToken = default)
         {
             options ??= JsonSerializerOptions.Default;
-            if (!options.IsInitializedForReflectionSerializer)
+            if (!JsonSerializerOptions.IsInitializedForReflectionSerializer)
             {
-                options.InitializeForReflectionSerializer();
+                JsonSerializerOptions.InitializeForReflectionSerializer();
             }
 
             return CreateAsyncEnumerableDeserializer(utf8Json, options, cancellationToken);
@@ -334,7 +334,7 @@ namespace System.Text.Json
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Workaround for https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
         private static JsonTypeInfo CreateQueueJsonTypeInfo<TValue>(JsonConverter queueConverter, JsonSerializerOptions queueOptions) =>
-                new JsonTypeInfo(typeof(Queue<TValue>), queueConverter, typeof(Queue<TValue>), queueOptions);
+                new JsonTypeInfo(typeof(Queue<TValue>), queueConverter, queueOptions);
 
         internal static async ValueTask<TValue?> ReadAllAsync<TValue>(
             Stream utf8Json,

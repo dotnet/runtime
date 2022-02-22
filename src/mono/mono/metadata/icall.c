@@ -1803,7 +1803,7 @@ ves_icall_RuntimeTypeHandle_GetAttributes (MonoQCallTypeHandle type_handle)
 	MonoType *type = type_handle.type;
 
 	if (m_type_is_byref (type) || type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR)
-		return TYPE_ATTRIBUTE_NOT_PUBLIC;
+		return TYPE_ATTRIBUTE_PUBLIC;
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	return mono_class_get_flags (klass);

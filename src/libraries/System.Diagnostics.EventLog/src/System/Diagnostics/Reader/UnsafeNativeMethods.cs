@@ -553,7 +553,7 @@ namespace Microsoft.Win32
                             EventLogHandle session,
                             int flags);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial bool EvtNextChannelPath(
                             EventLogHandle channelEnum,
                             int channelPathBufferSize,
@@ -565,7 +565,7 @@ namespace Microsoft.Win32
                             EventLogHandle session,
                             int flags);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial bool EvtNextPublisherId(
                             EventLogHandle publisherEnum,
                             int publisherIdBufferSize,
@@ -647,7 +647,7 @@ namespace Microsoft.Win32
                                 string[] valuePaths,
                             EvtRenderContextFlags flags);
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial bool EvtRender(
                             EventLogHandle context,
                             EventLogHandle eventHandle,
@@ -717,7 +717,7 @@ namespace Microsoft.Win32
 #endif
         };
 
-        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial bool EvtFormatMessage(
                              EventLogHandle publisherMetadataHandle,
                              EventLogHandle eventHandle,
