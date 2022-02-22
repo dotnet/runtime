@@ -4492,13 +4492,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Log:
             case NI_System_Math_Log2:
             case NI_System_Math_Log10:
-#ifdef TARGET_ARM64
+#if defined TARGET_ARM64 || defined TARGET_XARCH
             // ARM64 has fmax/fmin which are IEEE754:2019 minimum/maximum compatible
             // TODO-XARCH-CQ: Enable this for XARCH when one of the arguments is a constant
             // so we can then emit maxss/minss and avoid NaN/-0.0 handling
             case NI_System_Math_Max:
             case NI_System_Math_Min:
 #endif
+
             case NI_System_Math_Pow:
             case NI_System_Math_Round:
             case NI_System_Math_Sin:
@@ -20541,6 +20542,8 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 
         case NI_System_Math_Abs:
         case NI_System_Math_Sqrt:
+        case NI_System_Math_Max:
+        case NI_System_Math_Min:
             return true;
 
         case NI_System_Math_Ceiling:

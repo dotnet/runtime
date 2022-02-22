@@ -7400,6 +7400,20 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
     // Handle intrinsics that can be implemented by target-specific instructions
     switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
+#ifdef TARGET_XARCH
+
+        case NI_System_Math_Max:
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_R(INS_maxss, emitActualTypeSize(treeNode), treeNode->GetRegNum(),
+                                        treeNode->gtGetOp1()->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
+            break;
+
+        case NI_System_Math_Min:
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_R(INS_minss, emitActualTypeSize(treeNode), treeNode->GetRegNum(),
+                                        treeNode->gtGetOp1()->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
+            break;
+#endif
         case NI_System_Math_Abs:
             genSSE2BitwiseOp(treeNode);
             break;

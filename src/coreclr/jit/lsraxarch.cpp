@@ -1804,9 +1804,21 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     assert(varTypeIsFloating(op1));
     assert(op1->TypeGet() == tree->TypeGet());
     RefPosition* internalFloatDef = nullptr;
-
+    int          srcCount;
     switch (tree->AsIntrinsic()->gtIntrinsicName)
     {
+#ifdef TARGET_XARCH
+        case NI_System_Math_Max:
+        case NI_System_Math_Min:
+            assert(varTypeIsFloating(tree->gtGetOp1()));
+            assert(varTypeIsFloating(tree->gtGetOp2()));
+            assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
+
+            srcCount = BuildBinaryUses(tree->AsOp());
+
+            BuildDef(tree);
+            return srcCount;
+#endif
         case NI_System_Math_Abs:
             // Abs(float x) = x & 0x7fffffff
             // Abs(double x) = x & 0x7ffffff ffffffff
@@ -1837,7 +1849,7 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             break;
     }
     assert(tree->gtGetOp2IfPresent() == nullptr);
-    int srcCount;
+
     if (op1->isContained())
     {
         srcCount = BuildOperandUses(op1);
