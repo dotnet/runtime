@@ -18,7 +18,7 @@ public class UnrollEqualsStartsWIth
         int testCount = 0;
         foreach (var testType in testTypes)
             testCount += RunTests(testType);
-        return testCount == 91014 ? 100 : 0;
+        return testCount == 113652 ? 100 : 0;
     }
 
     public static int RunTests(Type type)
