@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Optimize>True</Optimize>
+    <!--CLRTestPriority>1</CLRTestPriority--> <!-- run on CI as part of PR -->
+
+    <!-- the test is too big and may timeout -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnrollTests.cs" />
+    <Compile Include="UnrollTestsData.cs" />
+  </ItemGroup>
+</Project>

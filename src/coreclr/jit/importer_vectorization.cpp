@@ -164,7 +164,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(GenTree* data, WCHAR* cns, int l
     GenTree* vec1 = gtNewIndir(simdType, dataPtr1);
     GenTree* vec2 = gtNewIndir(simdType, dataPtr2);
 
-    // TODO-CQ: Spill vec1 and vec2 for better pipelining, currently we end up emitting:
+    // TODO-Unroll-CQ: Spill vec1 and vec2 for better pipelining, currently we end up emitting:
     //
     //   vmovdqu  xmm0, xmmword ptr [rcx+12]
     //   vpxor    xmm0, xmm0, xmmword ptr[reloc @RWD00]
@@ -279,7 +279,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int l
         GenTree* firstIndir  = impCreateCompareInd(this, data, TYP_INT, dataOffset, value1);
         GenTree* secondIndir = impCreateCompareInd(this, gtClone(data), TYP_INT, dataOffset + 2, value2);
 
-        // TODO: Consider merging two indirs via XOR instead of QMARK
+        // TODO-Unroll-CQ: Consider merging two indirs via XOR instead of QMARK
         // e.g. gtNewOperNode(GT_XOR, TYP_INT, firstIndir, secondIndir);
         // but it currently has CQ issues (redundant movs)
         GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtNewFalse());
@@ -309,7 +309,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(GenTree* data, WCHAR* cns, int l
     ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT64);
     GenTree* secondIndir = impCreateCompareInd(this, gtClone(data), TYP_LONG, offset, value2);
 
-    // TODO: Consider merging two indirs via XOR instead of QMARK
+    // TODO-Unroll-CQ: Consider merging two indirs via XOR instead of QMARK
     GenTreeColon* doubleIndirColon = gtNewColonNode(TYP_INT, secondIndir, gtNewFalse());
     return gtNewQmarkNode(TYP_INT, firstIndir, doubleIndirColon);
 #else // TARGET_64BIT
@@ -352,7 +352,7 @@ GenTree* Compiler::impExpandHalfConstEquals(
     if (fgBBcount > 20)
     {
         // We don't want to unroll too much and in big methods
-        // TODO: come up with some better heuristic/budget
+        // TODO-Unroll-CQ: come up with some better heuristic/budget
         JITDUMP("impExpandHalfConstEquals: method has too many BBs (>20) - not profitable to expand.\n");
         return nullptr;
     }
@@ -363,8 +363,12 @@ GenTree* Compiler::impExpandHalfConstEquals(
     {
         if (startsWith)
         {
-            // Any string starts with ""
-            return gtNewTrue();
+            // Any string starts with "" - return true
+            // But we need to preserve a possible nullcheck
+            // We may use gtNewNullcheck here, but we'll have to propagate BBF_HAS_NULLCHECK
+            // through QMARKs (not supported currently), so let's just leave an access
+            // to Length
+            return gtNewOperNode(GT_COMMA, TYP_INT, lengthFld, gtNewTrue());
         }
 
         // For zero length we don't need to compare content, the following expression is enough:
@@ -493,7 +497,7 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     {
         if (!impStackTop(0).val->IsIntegralConst(4)) // StringComparison.Ordinal
         {
-            // TODO: Unroll & vectorize OrdinalIgnoreCase
+            // TODO-Unroll-CQ: Unroll & vectorize OrdinalIgnoreCase
             return nullptr;
         }
         op1 = impStackTop(2).val;
@@ -565,7 +569,7 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     GenTree* varStrLcl         = gtNewLclvNode(varStrTmp, varStr->TypeGet());
 
     // Create a tree representing string's Length:
-    // TODO: Consider using ARR_LENGTH here, but we'll have to modify QMARK to propagate BBF_HAS_IDX_LEN
+    // TODO-Unroll-CQ: Consider using ARR_LENGTH here, but we'll have to modify QMARK to propagate BBF_HAS_IDX_LEN
     int      strLenOffset = OFFSETOF__CORINFO_String__stringLen;
     GenTree* lenOffset    = gtNewIconNode(strLenOffset, TYP_I_IMPL);
     GenTree* lenNode      = gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_BYREF, varStrLcl, lenOffset));
@@ -624,7 +628,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     {
         if (!impStackTop(0).val->IsIntegralConst(4)) // StringComparison.Ordinal
         {
-            // TODO: Unroll & vectorize OrdinalIgnoreCase
+            // TODO-Unroll-CQ: Unroll & vectorize OrdinalIgnoreCase
             return nullptr;
         }
         op1 = impStackTop(2).val;
