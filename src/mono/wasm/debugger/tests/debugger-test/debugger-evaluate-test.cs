@@ -856,6 +856,8 @@ namespace DebuggerTests
     {
         public class TestClass
         {
+            public IEnumerable<int> listToLinq = System.Linq.Enumerable.Range(1, 11);
+
             public bool GetBool(bool param = true) => param;
             public char GetChar(char param = 'T') => param;
             public char GetUnicodeChar(char param = 'ą') => param;

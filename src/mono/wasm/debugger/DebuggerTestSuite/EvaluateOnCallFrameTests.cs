@@ -505,7 +505,7 @@ namespace DebuggerTests
                 AssertEqual("Unable to evaluate method 'MyMethodWrong'", res.Error["message"]?.Value<string>(), "wrong error message");
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false );
-                AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
+                AssertEqual("Unable to evaluate method 'MyMethod'. Too many arguments passed.", res.Error["result"]["description"]?.Value<string>(), "wrong error message");
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
                 AssertEqual("Unable to evaluate method 'CallMethodWithParm'", res.Error["message"]?.Value<string>(), "wrong error message");
@@ -1092,7 +1092,19 @@ namespace DebuggerTests
                    );
                 
                 var (_, res) = await EvaluateOnCallFrame(id, "test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)", expect_ok: false );
-                AssertEqual("Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'", res.Error["message"]?.Value<string>(), "wrong error message");
+                AssertEqual("Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'. Too many arguments passed.", res.Error["result"]["description"]?.Value<string>(), "wrong error message");
+           });
+        
+        [Fact]
+        public async Task EvaluateMethodWithLinq() => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "Evaluate",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.DefaultParamMethods:Evaluate'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("test.listToLinq.ToList()", TObject("System.Collections.Generic.List<int>", description: "Count = 11"))
+                   );
            });
     }
 
