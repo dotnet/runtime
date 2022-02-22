@@ -197,6 +197,8 @@ void SystemNative_FStat();
 void SystemNative_LSeek();
 void SystemNative_PRead();
 void SystemNative_CanGetHiddenFlag();
+int32_t SystemNative_Access(const char* path, int32_t mode);
+void SystemNative_Malloc();
 
 #define PAL_O_RDONLY 0x0000
 #define PAL_O_WRONLY 0x0001
@@ -204,6 +206,7 @@ void SystemNative_CanGetHiddenFlag();
 #define PAL_O_ACCESS_MODE_MASK 0x000F
 
 int32_t SystemNative_Open2(const char* path, int flags, int mode) {
+	//printf ("In SystemNative_Open2 for %s\n", path);
 	// The implementation in libSystemNative tries to use PAL_O_CLOEXEC, which isn't supported here, so override it
 	if ((flags & PAL_O_ACCESS_MODE_MASK) == PAL_O_RDONLY) {
 		flags = O_RDONLY;
@@ -290,6 +293,8 @@ static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_PRead", SystemNative_PRead},
 	{"SystemNative_CanGetHiddenFlag", SystemNative_CanGetHiddenFlag},
 	{"SystemNative_GetTimestamp", SystemNative_GetTimestamp2},
+	{"SystemNative_Access", SystemNative_Access},
+	{"SystemNative_Malloc", SystemNative_Malloc},
 	{NULL, NULL}
 };
 
