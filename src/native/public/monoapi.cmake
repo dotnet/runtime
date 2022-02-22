@@ -10,6 +10,8 @@ set(utils_public_headers_base
     mono-dl-fallback.h
     mono-private-unstable.h
     mono-counters.h
+    )
+set(utils_public_headers_details_base
     details/mono-publib-types.h
     details/mono-publib-functions.h
     details/mono-logger-types.h
@@ -21,13 +23,12 @@ set(utils_public_headers_base
     details/mono-counters-types.h
     details/mono-counters-functions.h
     )
-addprefix(utils_public_headers ./mono/utils "${utils_public_headers_base}")
+addprefix(utils_public_headers mono/utils "${utils_public_headers_base}")
+addprefix(utils_public_headers_details mono/utils "${utils_public_headers_details_base}")
 
-target_sources(monoapi_utils INTERFACE ${utils_public_headers})
+target_sources(monoapi_utils INTERFACE ${utils_public_headers} ${utils_public_headers_details})
 
 target_include_directories(monoapi_utils INTERFACE .)
-
-set_target_properties(monoapi_utils PROPERTIES PUBLIC_HEADER "${utils_public_headers}")
 
 add_library(monoapi_metadata INTERFACE)
 
@@ -59,6 +60,8 @@ set(metadata_public_headers_base
 	threads.h
 	tokentype.h
 	verify.h
+	)
+set(metadata_public_headers_details_base
 	details/environment-functions.h
 	details/opcodes-types.h
 	details/opcodes-functions.h
@@ -97,29 +100,41 @@ set(metadata_public_headers_base
 	details/mono-private-unstable-types.h
 	details/mono-private-unstable-functions.h
 	)
-addprefix(metadata_public_headers ./mono/metadata/ "${metadata_public_headers_base}")
+addprefix(metadata_public_headers mono/metadata "${metadata_public_headers_base}")
+addprefix(metadata_public_headers_details mono/metadata "${metadata_public_headers_details_base}")
 
-set_target_properties(monoapi_metadata PROPERTIES PUBLIC_HEADER "${metadata_public_headers}")
+target_sources(monoapi_metadata INTERFACE ${metadata_public_headers} ${metadata_public_headers_details})
+
+target_include_directories(monoapi_metadata INTERFACE .)
 
 add_library(monoapi_jit INTERFACE)
 
 set(jit_public_headers_base
   jit.h
   mono-private-unstable.h
+  )
+set(jit_public_headers_details_base
   details/jit-types.h
   details/jit-functions.h
   details/mono-private-unstable-types.h
   details/mono-private-unstable-functions.h
   )
-addprefix(jit_public_headers ./mono/jit "${jit_public_headers_base}")
+addprefix(jit_public_headers mono/jit "${jit_public_headers_base}")
+addprefix(jit_public_headers_details mono/jit "${jit_public_headers_details_base}")
 
-set_target_properties(monoapi_jit PROPERTIES PUBLIC_HEADER "${jit_public_headers}")
+target_sources(monoapi_jit INTERFACE ${jit_public_headers} ${jit_public_headers_details})
+
+target_include_directories(monoapi_jit INTERFACE .)
+
 
 add_library(monoapi INTERFACE)
 target_link_libraries(monoapi INTERFACE monoapi_utils monoapi_metadata monoapi_jit)
 
 if(INSTALL_MONO_API)
-  install(DIRECTORY mono/utils/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/utils)
-  install(DIRECTORY mono/metadata/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/metadata)
-  install(DIRECTORY mono/jit/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
+  install(FILES ${utils_public_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/utils)
+  install(FILES ${utils_public_headers_details} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/utils/details)
+  install(FILES ${metadata_public_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/metadata)
+  install(FILES ${metadata_public_headers_details} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/metadata/details)
+  install(FILES ${jit_public_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
+  install(FILES ${jit_public_headers_details} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit/details)
 endif()
