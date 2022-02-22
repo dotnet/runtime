@@ -803,33 +803,6 @@ g_unichar_to_utf16 (gunichar c, gunichar2 *outbuf)
 	}
 }
 
-gunichar *
-g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
-{
-	gunichar *outbuf, *outptr;
-	char *inptr;
-	glong n, i;
-
-	g_return_val_if_fail (str != NULL, NULL);
-
-	n = g_utf8_strlen (str, len);
-
-	if (items_written)
-		*items_written = n;
-
-	outptr = outbuf = g_malloc ((n + 1) * sizeof (gunichar));
-	inptr = (char *) str;
-
-	for (i = 0; i < n; i++) {
-		*outptr++ = g_utf8_get_char (inptr);
-		inptr = g_utf8_next_char (inptr);
-	}
-
-	*outptr = 0;
-
-	return outbuf;
-}
-
 static gunichar2 *
 eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean replace_invalid_codepoints, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {

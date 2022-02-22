@@ -66,7 +66,6 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
 set(DISABLE_PERFCOUNTERS 1)
 
