@@ -684,6 +684,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 	switch (id) {
 	case SN_Abs: {
+		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+			return NULL;
 #ifdef TARGET_ARM64
 		switch (arg0_type) {
 			case MONO_TYPE_U1:
