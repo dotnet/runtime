@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+#set -x
 usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net6.0-Linux-Release-x64', used to name output directory.")
 usage_list+=("-staticLibLink: Optional argument to statically link any native library.")
 
@@ -174,4 +175,6 @@ setup_dirs
 check_prereqs
 
 # Build the corefx native components.
+echo "__BuildArch=$__BuildArch"
+echo "*************__CMakeArgs =$__CMakeArgs"
 build_native "$__TargetOS" "$__BuildArch" "$__nativeroot" "$__IntermediatesDir" "install" "$__CMakeArgs" "native libraries component"
