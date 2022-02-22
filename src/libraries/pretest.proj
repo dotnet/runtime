@@ -106,6 +106,7 @@
       <RuntimePackNativeFile Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)*.*">
         <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
         <IsNative>true</IsNative>
+        <DropFromSingleFile>true</DropFromSingleFile>
       </RuntimePackNativeFile>
       <!-- Clear the IsNative flag on System.Private.CoreLib given that it is present in native dir but it is actually managed -->
       <RuntimePackNativeFile IsNative=""
@@ -141,7 +142,8 @@
     <CreateFrameworkListFile Files="@(RuntimePackLibFile);@(RuntimePackNativeFile)"
                              TargetFile="$(MicrosoftNetCoreAppRuntimePackDir)data\RuntimeList.xml"
                              TargetFilePrefixes="ref/;runtimes/"
-                             RootAttributes="@(FrameworkListRootAttribute)" />
+                             RootAttributes="@(FrameworkListRootAttribute)"
+                             SingleFileHostIncludeFilenames="NONE" />
   </Target>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />

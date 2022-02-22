@@ -3,33 +3,15 @@
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
     <OutputPath Condition="'$(RunningPublish)' != 'true'">$(RuntimeBinDir)/crossgen2</OutputPath>
-    <!-- The default value for macOS is false -->
-    <UseAppHost>true</UseAppHost>
+    <RuntimeIdentifier Condition="'$(RunningPublish)' == 'true'">$(Crossgen2PackageRID)</RuntimeIdentifier>
     <AppHostRuntimeIdentifier>$(Crossgen2PackageRID)</AppHostRuntimeIdentifier>
+    <!-- Publish trimmed disabled due to failure in trimming S.P.C -->
+    <PublishTrimmed>false</PublishTrimmed>
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RunningPublish)' == 'true'">
-    <RuntimeIdentifier>$(Crossgen2PackageRID)</RuntimeIdentifier>
-  </PropertyGroup>
-
   <Import Project="crossgen2.props" />
-
-  <Target Name="RewriteRuntimePackDir"
-          Condition="'$(RunningPublish)' == 'true'"
-          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
-          BeforeTargets="ResolveRuntimePackAssets">
-      <Message Text="Using local runtime pack @(ResolvedRuntimePack)" Importance="high" />
-      <ItemGroup>
-        <!-- Remove AspNetCore runtime pack-->
-        <ResolvedRuntimePack Remove="Microsoft.AspNetCore.App.Runtime.linux-x64" />
-
-        <ResolvedRuntimePack Update="Microsoft.NETCore.App.Runtime.$(RuntimeIdentifier)">
-          <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackDir)</PackageDirectory>
-        </ResolvedRuntimePack>
-      </ItemGroup>
-  </Target>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="../../../../installer/pkg/sfx/Microsoft.NETCore.App/ReadyToRun.targets"
