@@ -182,6 +182,31 @@ typedef struct {
 	MonoCCW* ccw;
 } MonoCCWInterface;
 
+/*
+ * COM Callable Wrappers
+ *
+ * CCWs may be called on threads that aren't attached to the runtime, they can
+ * then run managed code or the method implementations may use coop handles.
+ * Use the macros below to setup the thread state.
+ *
+ * For managed methods, the runtime marshaling wrappers handle attaching and
+ * coop state switching.
+ */
+
+#define MONO_CCW_CALL_ENTER do {					\
+	gpointer dummy;							\
+	gpointer orig_domain = mono_threads_attach_coop (mono_domain_get (), &dummy); \
+	MONO_ENTER_GC_UNSAFE;						\
+	HANDLE_FUNCTION_ENTER ();					\
+	do {} while (0)
+
+#define MONO_CCW_CALL_EXIT				\
+	HANDLE_FUNCTION_RETURN ();			\
+	MONO_EXIT_GC_UNSAFE;				\
+	mono_threads_detach_coop (orig_domain, &dummy); \
+	} while (0)
+
+
 /* IUnknown */
 static int STDCALL cominterop_ccw_addref (MonoCCWInterface* ccwe);
 
@@ -2616,12 +2641,9 @@ static int STDCALL
 cominterop_ccw_addref (MonoCCWInterface* ccwe)
 {
 	int result;
-	gpointer dummy;
-	gpointer orig_domain = mono_threads_attach_coop (mono_domain_get (), &dummy);
-	MONO_ENTER_GC_UNSAFE;
+	MONO_CCW_CALL_ENTER;
 	result = cominterop_ccw_addref_impl (ccwe);
-	MONO_EXIT_GC_UNSAFE;
-	mono_threads_detach_coop (orig_domain, &dummy);
+	MONO_CCW_CALL_EXIT;
 	return result;
 }
 
@@ -2650,12 +2672,9 @@ static int STDCALL
 cominterop_ccw_release (MonoCCWInterface* ccwe)
 {
 	int result;
-	gpointer dummy;
-	gpointer orig_domain = mono_threads_attach_coop (mono_domain_get (), &dummy);
-	MONO_ENTER_GC_UNSAFE;
+	MONO_CCW_CALL_ENTER;
 	result = cominterop_ccw_release_impl (ccwe);
-	MONO_EXIT_GC_UNSAFE;
-	mono_threads_detach_coop (orig_domain, &dummy);
+	MONO_CCW_CALL_EXIT;
 	return result;
 }
 
@@ -2702,12 +2721,9 @@ static int STDCALL
 cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, const guint8* riid, gpointer* ppv)
 {
 	int result;
-	gpointer dummy;
-	gpointer orig_domain = mono_threads_attach_coop (mono_domain_get (), &dummy);
-	MONO_ENTER_GC_UNSAFE;
+	MONO_CCW_CALL_ENTER;
 	result = cominterop_ccw_queryinterface_impl (ccwe, riid, ppv);
-	MONO_EXIT_GC_UNSAFE;
-	mono_threads_detach_coop (orig_domain, &dummy);
+	MONO_CCW_CALL_EXIT;
 	return result;
 }
 
@@ -2825,12 +2841,9 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 											 guint32 lcid, gint32 *rgDispId)
 {
 	int result;
-	gpointer dummy;
-	gpointer orig_domain = mono_threads_attach_coop (mono_domain_get(), &dummy);
-	MONO_ENTER_GC_UNSAFE;
+	MONO_CCW_CALL_ENTER;
 	result = cominterop_ccw_get_ids_of_names_impl (ccwe, riid, rgszNames, cNames, lcid, rgDispId);
-	MONO_EXIT_GC_UNSAFE;
-	mono_threads_detach_coop (orig_domain, &dummy);
+	MONO_CCW_CALL_EXIT;
 	return result;
 }
 
