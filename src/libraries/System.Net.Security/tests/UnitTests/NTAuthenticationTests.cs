@@ -109,7 +109,7 @@ namespace System.Net.Security.Tests
 
         [ConditionalFact(nameof(IsNtlmInstalled))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX)]
-        public void NtlmMakeSignatureTest()
+        public void NtlmSignatureTest()
         {
             FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
             NTAuthentication ntAuth = new NTAuthentication(
@@ -120,6 +120,7 @@ namespace System.Net.Security.Tests
 
             Assert.True(fakeNtlmServer.IsAuthenticated);
 
+            // Test MakeSignature on client side and decoding it on server side
             byte[]? output = null;
             int len = ntAuth.MakeSignature(s_Hello, 0, s_Hello.Length, ref output);
             Assert.NotNull(output);
@@ -130,6 +131,15 @@ namespace System.Net.Security.Tests
             Assert.Equal(s_Hello, temp);
             // Check the signature
             fakeNtlmServer.VerifyMIC(temp, output.AsSpan(0, 16), sequenceNumber: 0);
+
+            // Test creating signature on server side and decoding it with VerifySignature on client side 
+            byte[] serverSignedMessage = new byte[16 + s_Hello.Length];
+            fakeNtlmServer.Seal(s_Hello, serverSignedMessage.AsSpan(16, s_Hello.Length));
+            fakeNtlmServer.GetMIC(s_Hello, serverSignedMessage.AsSpan(0, 16), sequenceNumber: 0);
+            len = ntAuth.VerifySignature(serverSignedMessage, 0, serverSignedMessage.Length);
+            Assert.Equal(s_Hello.Length, len);
+            // NOTE: VerifySignature doesn't return the content on Windows
+            // Assert.Equal(s_Hello, serverSignedMessage.AsSpan(0, len).ToArray());
         }
 
         private void DoNtlmExchange(FakeNtlmServer fakeNtlmServer, NTAuthentication ntAuth)

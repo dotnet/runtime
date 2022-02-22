@@ -417,9 +417,23 @@ namespace System.Net.Security
             Assert.True(signature.SequenceEqual(expectedSignature));
         }
 
+        public void GetMIC(ReadOnlySpan<byte> message, Span<byte> signature, uint sequenceNumber)
+        {
+            // Make sure the authentication finished
+            Assert.NotNull(_serverSeal);
+            Assert.NotNull(_serverSigningKey);
+
+            CalculateSignature(message, sequenceNumber, _serverSigningKey, _serverSeal, signature);
+        }
+
         public void Unseal(ReadOnlySpan<byte> sealedMessage, Span<byte> message)
         {
             _clientSeal.Transform(sealedMessage, message);
+        }
+
+        public void Seal(ReadOnlySpan<byte> message, Span<byte> sealedMessage)
+        {
+            _serverSeal.Transform(message, sealedMessage);
         }
     }
 }
