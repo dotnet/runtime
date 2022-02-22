@@ -126,8 +126,6 @@ struct sigcontext {
 #define MONO_ARCH_USE_SHARED_FP_SIMD_BANK 1
 #endif
 
-
-
 #if defined(__APPLE__)
 #define MONO_ARCH_SIGNAL_STACK_SIZE MINSIGSTKSZ
 #else

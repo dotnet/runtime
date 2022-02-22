@@ -7181,12 +7181,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 		case MONO_CEE_POP:
 			--sp;
-
-#ifdef TARGET_X86
-			if (sp [0]->type == STACK_R8)
-				/* we need to pop the value from the x86 FP stack */
-				MONO_EMIT_NEW_UNALU (cfg, OP_X86_FPOP, -1, sp [0]->dreg);
-#endif
 			break;
 		case MONO_CEE_JMP: {
 			MonoCallInst *call;
