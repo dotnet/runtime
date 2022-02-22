@@ -874,7 +874,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     //
     // to:
     //
-    //   bool eq = AdvSimd.Arm64.MaxAcross(v.AsByte()).ToScalar() == 0;
+    //   bool eq = AdvSimd.Arm64.MaxAcross(v.AsUInt16()).ToScalar() == 0;
     //
     GenTree* op     = nullptr;
     GenTree* opZero = nullptr;
@@ -891,8 +891,9 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
     if (!varTypeIsFloating(simdBaseType) && (op != nullptr))
     {
+        // Use USHORT variant as it has better latency/throughput on some CPUs than UBYTE
         GenTree* cmp =
-            comp->gtNewSimdHWIntrinsicNode(simdType, op, NI_AdvSimd_Arm64_MaxAcross, CORINFO_TYPE_UBYTE, simdSize);
+            comp->gtNewSimdHWIntrinsicNode(simdType, op, NI_AdvSimd_Arm64_MaxAcross, CORINFO_TYPE_USHORT, simdSize);
         BlockRange().InsertBefore(node, cmp);
         LowerNode(cmp);
         BlockRange().Remove(opZero);
@@ -901,13 +902,13 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
         BlockRange().InsertAfter(cmp, val);
         LowerNode(val);
 
-        GenTree* cmpZroCns = comp->gtNewIconNode(0, TYP_INT);
-        BlockRange().InsertAfter(val, cmpZroCns);
+        GenTree* cmpZeroCns = comp->gtNewIconNode(0, TYP_INT);
+        BlockRange().InsertAfter(val, cmpZeroCns);
 
         node->ChangeOper(cmpOp);
         node->gtType        = TYP_INT;
         node->AsOp()->gtOp1 = val;
-        node->AsOp()->gtOp2 = cmpZroCns;
+        node->AsOp()->gtOp2 = cmpZeroCns;
         LowerNodeCC(node, (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE);
         node->gtType = TYP_VOID;
         node->ClearUnusedValue();
