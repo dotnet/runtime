@@ -21,7 +21,15 @@
 
 #if defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS)
     #define USE_APPLE_DECOMPRESSION
-    #include <compression.h>
+    #include <compression.h> // compression_stream_init, compression_stream_process, compression_stream_destroy
+    #include <fcntl.h> // open
+    #include <inttypes.h> // PRIu64
+    #include <limits.h> // PATH_MAX
+    #include <sys/errno.h> // errno
+    #include <sys/mman.h> // mmap, munmap
+    #include <sys/stat.h> // fstat
+    #include <sysdir.h> // sysdir_start_search_path_enumeration, sysdir_get_next_search_path_enumeration
+    #include <unistd.h> // write
 #endif
 
 static int32_t isLoaded = 0;
@@ -53,7 +61,7 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
-static int32_t load_icu_data(void* pData);
+static int32_t load_icu_data(const void* pData);
 
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
 
@@ -62,9 +70,9 @@ EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
     return GlobalizationNative_GetICUDTName(culture);
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData);
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData);
 
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData)
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData)
 {
     return load_icu_data(pData);
 }
@@ -83,7 +91,7 @@ void mono_wasm_link_icu_shim(void)
 
 #endif
 
-static int32_t load_icu_data(void* pData)
+static int32_t load_icu_data(const void* pData)
 {
 
     UErrorCode status = 0;
@@ -108,65 +116,90 @@ static int32_t load_icu_data(void* pData)
 }
 
 #if defined(USE_APPLE_DECOMPRESSION)
-static char *
-apple_decompress(const char *src_buf, size_t src_len)
+static int
+apple_cache_directory(char path[static (PATH_MAX + 1)])
+{
+    char buf[PATH_MAX + 1];
+    sysdir_search_path_enumeration_state st = sysdir_start_search_path_enumeration(SYSDIR_DIRECTORY_CACHES, SYSDIR_DOMAIN_MASK_USER);
+    st = sysdir_get_next_search_path_enumeration(st, buf);
+    if (!st)
+    {
+        log_shim_error("apple_cache_directory: sysdir_get_next_search_path_enumeration did not yield a path");
+        return -1;
+    }
+    size_t path_len = strlen(buf);
+    size_t ret_len = path_len + 2 /* '/' + '\0' */;
+    const char *home = "";
+    size_t home_len = 0;
+    if (buf[0] == '~' && buf[1] == '/') {
+        home = getenv("HOME");
+        if (home == NULL)
+        {
+            log_shim_error("apple_cache_directory: cache directory begins with ~ but $HOME is not set");
+            return -1;
+        }
+        home_len = strlen(home);
+        ret_len += home_len + 1;
+    }
+    snprintf(path, PATH_MAX, "%s%s", home, &buf[1]);
+    return 0;
+}
+
+#define APPLE_DECOMPRESSION_BUF_SIZE 16384
+
+static int
+apple_decompress_to_fd(int dst_fd, size_t *dst_len, const char *src_buf, size_t src_len)
 {
     int cs_init = 0;
     compression_stream cs = { 0 };
-
-    // Why this magic number? This is the uncompressed size of the mobile
-    // icudt.dat as of 2022-02-05.
-    size_t dst_capacity = 2176304;
+    uint8_t buf[APPLE_DECOMPRESSION_BUF_SIZE];
     size_t dst_size = 0;
-    size_t alloc_bytes = sizeof(uint8_t) * dst_capacity;
-    uint8_t *dst_buf = malloc(alloc_bytes);
-    if (dst_buf == NULL)
-    {
-        log_shim_error("apple_decompress: Failed to allocate %zu bytes for the ICU data decompression buffer.", alloc_bytes);
-        goto error;
-    }
 
     compression_status status = compression_stream_init(&cs, COMPRESSION_STREAM_DECODE, COMPRESSION_LZFSE);
     if (status == COMPRESSION_STATUS_ERROR)
     {
-        log_shim_error("apple_decompress: Failed to initialize decompression stream.");
+        log_shim_error("apple_decompress_to_fd: Failed to initialize decompression stream.");
         goto error;
     }
     cs_init = 1;
     cs.src_ptr = (const uint8_t *) src_buf;
     cs.src_size = src_len;
-    cs.dst_ptr = dst_buf;
-    cs.dst_size = dst_capacity;
+    cs.dst_ptr = buf;
+    cs.dst_size = APPLE_DECOMPRESSION_BUF_SIZE;
 
     int flags = 0;
     while (status == COMPRESSION_STATUS_OK)
     {
-        size_t old_sz = cs.dst_size;
         status = compression_stream_process(&cs, flags);
         if (status == COMPRESSION_STATUS_ERROR)
         {
-            log_shim_error("apple_decompress: Error while decompressing.");
+            log_shim_error("apple_decompress_to_fd: Error while decompressing.");
             goto error;
         }
 
-        size_t delta = old_sz - cs.dst_size;
-        dst_size += delta;
-
-        if (cs.dst_size == 0)
-        {
-            size_t old_sz = dst_capacity;
-            size_t new_sz = (dst_capacity * 3) >> 1;
-            uint8_t *next_dst_buf = realloc(dst_buf, new_sz);
-            if (next_dst_buf == NULL)
+        size_t bytes_to_write = APPLE_DECOMPRESSION_BUF_SIZE - cs.dst_size;
+        uint8_t *write_cursor = buf;
+        dst_size += bytes_to_write;
+        while (bytes_to_write > 0) {
+            ssize_t bytes_written = write(dst_fd, write_cursor, bytes_to_write);
+            int last_error = errno;
+            if (bytes_written == -1)
             {
-                log_shim_error("apple_decompress: Failed to allocate %zu bytes when resizing decompression buffer.", new_sz);
+                if (last_error == EINTR) continue;
+                log_shim_error("apple_decompress_to_fd: Error during write().");
                 goto error;
             }
-            dst_buf = next_dst_buf;
-            dst_capacity = new_sz;
-            cs.dst_ptr = dst_buf + old_sz;
-            cs.dst_size = new_sz - old_sz;
+            else if (bytes_written == 0)
+            {
+                log_shim_error("apple_decompress_to_fd: write() returned 0.");
+                goto error;
+            }
+            bytes_to_write -= (size_t) bytes_written;
+            write_cursor += bytes_written;
         }
+
+        cs.dst_ptr = buf;
+        cs.dst_size = APPLE_DECOMPRESSION_BUF_SIZE;
 
         if (cs.src_size == 0)
         {
@@ -174,30 +207,161 @@ apple_decompress(const char *src_buf, size_t src_len)
         }
     }
     compression_stream_destroy(&cs);
-    return (char *) dst_buf;
+    if (dst_len != NULL)
+    {
+        *dst_len = dst_size;
+    }
+    return 1;
 
 error:
-    if (dst_buf != NULL)
-    {
-        free(dst_buf);
-    }
     if (cs_init)
     {
         compression_stream_destroy(&cs);
     }
+    return 0;
+}
+
+#define APPLE_TMPFILE_NAME_SIZE 128
+
+static const char *
+apple_mmap_icu_data(const char *path)
+{
+    int cache_fd = -1;
+    int dir_fd = -1;
+    int src_fd = open(path, O_RDONLY);
+    if (src_fd == -1)
+    {
+        log_shim_error("apple_mmap_icu_data: failed to open %s", path);
+        goto error;
+    }
+
+    struct stat src_st;
+    int result = fstat(src_fd, &src_st);
+    if (result == -1)
+    {
+        log_shim_error("apple_mmap_icu_data: failed to fstat %s", path);
+        goto error;
+    }
+
+    char tmp_file[APPLE_TMPFILE_NAME_SIZE];
+    size_t src_size = src_st.st_size;
+    size_t icu_data_size = 0;
+    const char *last_period = strrchr(path, '.');
+    const char *icu_data_name = NULL;
+    if (last_period && strcmp(last_period, ".lzfse") == 0)
+    {
+        char *cache_file = tmp_file;
+
+        uint64_t pid = (uint64_t) getpid();
+        int written = snprintf(tmp_file, APPLE_TMPFILE_NAME_SIZE, "%" PRIu64 ".", pid);
+        if (written < 0)
+        {
+            log_shim_error("apple_mmap_icu_data: failed to generate tmpfile PID prefix");
+            goto error;
+        }
+        cache_file += written;
+        written = snprintf(cache_file, APPLE_TMPFILE_NAME_SIZE - written, "icudt-%" PRIu64 "-%" PRIu64 "-%" PRIu64 ".dat.decompressed",
+            (uint64_t) src_st.st_ino,
+            (uint64_t) src_st.st_size,
+            (uint64_t) src_st.st_mtimespec.tv_sec);
+        if (written < 0)
+        {
+            log_shim_error("apple_mmap_icu_data: failed to generate cache file name");
+            goto error;
+        }
+
+        char cache_dir[PATH_MAX + 1];
+        result = apple_cache_directory(cache_dir);
+        if (result == -1)
+        {
+            goto error;
+        }
+        dir_fd = open(cache_dir, O_DIRECTORY);
+        if (dir_fd == -1)
+        {
+            log_shim_error("apple_mmap_icu_data: failed to open directory %s", cache_dir);
+            goto error;
+        }
+
+        cache_fd = openat(dir_fd, cache_file, O_RDONLY);
+        if (cache_fd == -1)
+        {
+            cache_fd = openat(dir_fd, tmp_file, O_RDWR | O_CREAT, 0640);
+            if (cache_fd == -1)
+            {
+                log_shim_error("apple_mmap_icu_data: failed to open %s/%s for writing", cache_dir, tmp_file);
+                goto error;
+            }
+            const char *src_mem = mmap(NULL, src_size, PROT_READ, MAP_SHARED, src_fd, 0);
+            if (src_mem == MAP_FAILED)
+            {
+                log_shim_error("apple_mmap_icu_data: failed to map %s with size %zu", path, src_size);
+                goto error;
+            }
+            size_t decompressed_data_size = 0;
+            int result = apple_decompress_to_fd(cache_fd, &decompressed_data_size, src_mem, src_st.st_size);
+            munmap((void *) src_mem, src_st.st_size);
+            fsync(cache_fd);
+            if (!result)
+            {
+                goto error;
+            }
+            result = renameat(dir_fd, tmp_file, dir_fd, cache_file);
+            fsync(dir_fd);
+            if (result == -1)
+            {
+                log_shim_error("apple_mmap_icu_data: failed to rename %s to %s", tmp_file, cache_file);
+                goto error;
+            }
+        }
+        close(src_fd);
+        src_fd = -1;
+        struct stat cache_st;
+        result = fstat(cache_fd, &cache_st);
+        if (result == -1)
+        {
+            log_shim_error("apple_mmap_icu_data: failed to fstat %s", cache_file);
+            goto error;
+        }
+        icu_data_size = cache_st.st_size;
+        icu_data_name = cache_file;
+    }
+    else
+    {
+        cache_fd = src_fd;
+        src_fd = -1;
+        icu_data_size = src_size;
+        icu_data_name = path;
+    }
+    const char *cache_mem = mmap(NULL, icu_data_size, PROT_READ, MAP_SHARED, cache_fd, 0);
+    if (cache_mem == MAP_FAILED)
+    {
+        log_shim_error("apple_mmap_icu_data: failed to map %s with size %zu", icu_data_name, icu_data_size);
+        goto error;
+    }
+    close(cache_fd);
+    close(dir_fd);
+    return cache_mem;
+error:
+    if (dir_fd >= 0)
+    {
+        close(dir_fd);
+    }
+    if (src_fd >= 0)
+    {
+        close(src_fd);
+    }
+    if (cache_fd >= 0)
+    {
+        close(cache_fd);
+    }
     return NULL;
 }
-#endif
-
-int32_t GlobalizationNative_LoadICUData(const char* path)
+#else
+static const char *
+cstdlib_load_icu_data(const char *path)
 {
-    int32_t ret = -1;
-    char *icu_data = NULL;
-
     char *file_buf = NULL;
-    long file_buf_size = 0;
-    char *uncompressed_file_buf = NULL;
-
     FILE *fp = fopen(path, "rb");
 
     if (fp == NULL)
@@ -212,7 +376,7 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
         goto error;
     }
 
-    file_buf_size = ftell(fp);
+    long file_buf_size = ftell(fp);
 
     if (file_buf_size == -1)
     {
@@ -244,34 +408,7 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
     fclose(fp);
     fp = NULL;
 
-    #if defined(USE_APPLE_DECOMPRESSION)
-    {
-        const char *last_period = strrchr(path, '.');
-        if (last_period && strcmp(last_period, ".lzfse") == 0)
-        {
-            uncompressed_file_buf = apple_decompress(file_buf, file_buf_size);
-            if (uncompressed_file_buf == NULL)
-            {
-                goto error;
-            }
-            icu_data = uncompressed_file_buf;
-            free(file_buf);
-            file_buf = NULL;
-        }
-    }
-    #endif
-    if (icu_data == NULL)
-    {
-        icu_data = file_buf;
-    }
-
-    if (load_icu_data(icu_data) == 0)
-    {
-        log_shim_error("ICU BAD EXIT %d.", ret);
-        return ret;
-    }
-
-    return GlobalizationNative_LoadICU();
+    return file_buf;
 
 error:
     if (fp != NULL)
@@ -282,11 +419,34 @@ error:
     {
         free(file_buf);
     }
-    if (uncompressed_file_buf != NULL)
+    return NULL;
+}
+#endif
+
+int32_t
+GlobalizationNative_LoadICUData(const char* path)
+{
+    const char *icu_data =
+        #if defined(USE_APPLE_DECOMPRESSION)
+        apple_mmap_icu_data(path)
+        #else
+        cstdlib_load_icu_data(path)
+        #endif
+        ;
+
+    if (icu_data == NULL)
     {
-        free(uncompressed_file_buf);
+        log_shim_error("Failed to load ICU data.");
+        return -1;
     }
-    return ret;
+
+    if (load_icu_data(icu_data) == 0)
+    {
+        log_shim_error("ICU BAD EXIT.");
+        return -1;
+    }
+
+    return GlobalizationNative_LoadICU();
 }
 
 const char* GlobalizationNative_GetICUDTName(const char* culture)
