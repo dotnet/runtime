@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Versioning;
-
 namespace System
 {
     /// <summary>Defines a mechanism for computing the modulus or remainder of two values.</summary>
@@ -18,12 +16,5 @@ namespace System
         /// <param name="right">The value which divides <paramref name="left" />.</param>
         /// <returns>The modulus or remainder of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
         static abstract TResult operator %(TSelf left, TOther right);
-
-        // /// <summary>Divides two values together to compute their modulus or remainder.</summary>
-        // /// <param name="left">The value which <paramref name="right" /> divides.</param>
-        // /// <param name="right">The value which divides <paramref name="left" />.</param>
-        // /// <returns>The modulus or remainder of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
-        // /// <exception cref="OverflowException">The modulus or remainder of <paramref name="left" /> divided-by <paramref name="right" /> is not representable by <typeparamref name="TResult" />.</exception>
-        // static abstract checked TResult operator %(TSelf left, TOther right);
     }
 }
