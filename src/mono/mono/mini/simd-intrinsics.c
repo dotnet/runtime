@@ -614,12 +614,14 @@ static guint16 sri_vector_methods [] = {
 	SN_LessThan,
 	SN_LessThanOrEqual,
 	SN_Max,
+	SN_Min,
 	SN_Multiply,
 	SN_Negate,
 	SN_OnesComplement,
 	SN_Sqrt,
 	SN_Subtract,
 	SN_ToScalar,
+	SN_ToVector128Unsafe,
 	SN_ToVector128,
 	SN_ToVector256,
 	SN_ToVector256Unsafe,
@@ -863,6 +865,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			g_assert_not_reached ();
 		}
 		return ins;
+	}
 	case SN_Negate:
 	case SN_OnesComplement: {
 #ifdef TARGET_ARM64
