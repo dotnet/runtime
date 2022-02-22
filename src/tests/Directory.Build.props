@@ -71,6 +71,7 @@
 
     <TestBuildMode Condition="'$(__TestBuildMode)' != ''">$(__TestBuildMode)</TestBuildMode>
     <RuntimeFlavor Condition="'$(__RuntimeFlavor)' != ''">$(__RuntimeFlavor)</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">coreclr</RuntimeFlavor>
 
     <RestoreDefaultOptimizationDataPackage Condition="'$(RestoreDefaultOptimizationDataPackage)' == ''">false</RestoreDefaultOptimizationDataPackage>
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
@@ -197,7 +198,6 @@
   <PropertyGroup>
     <!-- On Linux arm coreclr, the updated tracing/eventpipe/common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj project
          does not yet work for several eventpipe runtime tests. We segment those tests with the following property and symbol -->
-    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">coreclr</RuntimeFlavor>
     <UseUpdatedNETCoreClient Condition="!('$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'arm' And '$(RuntimeFlavor)' == 'coreclr')">true</UseUpdatedNETCoreClient>
     <DefineConstants Condition="'$(UseUpdatedNETCoreClient)' == 'true'">$(DefineConstants);UPDATED_NETCORE_CLIENT</DefineConstants>
   </PropertyGroup>
