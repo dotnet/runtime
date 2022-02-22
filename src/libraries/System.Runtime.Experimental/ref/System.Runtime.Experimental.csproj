@@ -17,7 +17,8 @@
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
     <DefineConstants>$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
     <IsPackable>true</IsPackable>
-    <ServicingVersion>1</ServicingVersion>
+    <ServicingVersion>2</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageDescription>Exposes new experimental APIs from System.Runtime</PackageDescription>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <!-- TODO: Remove when the package shipped with NET6. -->
