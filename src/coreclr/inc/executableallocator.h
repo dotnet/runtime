@@ -15,7 +15,7 @@
 
 #ifndef DACCESS_COMPILE
 
-#define LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+//#define LOG_EXECUTABLE_ALLOCATOR_STATISTICS
 
 // This class is responsible for allocation of all the executable memory in the runtime.
 class ExecutableAllocator
