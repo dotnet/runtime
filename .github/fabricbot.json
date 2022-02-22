@@ -5384,7 +5384,7 @@
           {
             "name": "labelAdded",
             "parameters": {
-              "label": "no-recent-activity"
+              "label": "backlog-cleanup-candidate"
             }
           }
         ]
@@ -5394,12 +5394,106 @@
         "issues",
         "project_card"
       ],
-      "taskName": "Issue cleanup notification",
+      "taskName": "Manual Issue Cleanup",
       "actions": [
         {
           "name": "addReply",
           "parameters": {
-            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of the experimental [issue cleanup initiative](https://github.com/dotnet/runtime/issues/60288) we are currently trialing in a limited number of areas. Please share any feedback you might have in the linked issue."
+            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of the experimental [issue cleanup initiative](https://github.com/dotnet/runtime/issues/60288) we are currently trialing. Please share any feedback you might have in the linked issue."
+          }
+        },
+        {
+          "name": "addLabel",
+          "parameters": {
+            "label": "no-recent-activity"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "scheduled",
+    "capabilityId": "ScheduledSearch",
+    "subCapability": "ScheduledSearch",
+    "version": "1.1",
+    "config": {
+      "frequency": [
+        {
+          "weekDay": 0,
+          "hours": [],
+          "timezoneOffset": 0
+        },
+        {
+          "weekDay": 1,
+          "hours": [],
+          "timezoneOffset": 0
+        },
+        {
+          "weekDay": 2,
+          "hours": [],
+          "timezoneOffset": 0
+        },
+        {
+          "weekDay": 3,
+          "hours": [],
+          "timezoneOffset": 0
+        },
+        {
+          "weekDay": 4,
+          "hours": [],
+          "timezoneOffset": 0
+        },
+        {
+          "weekDay": 5,
+          "hours": [],
+          "timezoneOffset": 0
+        },
+        {
+          "weekDay": 6,
+          "hours": [],
+          "timezoneOffset": 0
+        }
+      ],
+      "searchTerms": [
+        {
+          "name": "noActivitySince",
+          "parameters": {
+            "days": 1827
+          }
+        },
+        {
+          "name": "isIssue",
+          "parameters": {}
+        },
+        {
+          "name": "isOpen",
+          "parameters": {}
+        },
+        {
+          "name": "noLabel",
+          "parameters": {
+            "label": "backlog-cleanup-candidate"
+          }
+        }
+      ],
+      "taskName": "Automated Issue cleanup",
+      "actions": [
+        {
+          "name": "addLabel",
+          "parameters": {
+            "label": "backlog-cleanup-candidate"
+          }
+        },
+        {
+          "name": "addReply",
+          "parameters": {
+            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of the experimental [issue cleanup initiative](https://github.com/dotnet/runtime/issues/60288) we are currently trialing. Please share any feedback you might have in the linked issue."
+          }
+        },
+        {
+          "name": "addLabel",
+          "parameters": {
+            "label": "no-recent-activity"
           }
         }
       ]

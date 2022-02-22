@@ -1410,7 +1410,8 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 }
 
 //------------------------------------------------------------------------
-// ClassProbeVisitor: invoke functor on each virtual call in a tree
+// ClassProbeVisitor: invoke functor on each virtual call or cast-related
+//     helper calls in a tree
 //
 template <class TFunctor>
 class ClassProbeVisitor final : public GenTreeVisitor<ClassProbeVisitor<TFunctor>>
@@ -1436,6 +1437,12 @@ public:
             GenTreeCall* const call = node->AsCall();
             if (call->IsVirtual() && (call->gtCallType != CT_INDIRECT))
             {
+                // virtual call
+                m_functor(m_compiler, call);
+            }
+            else if (m_compiler->impIsCastHelperEligibleForClassProbe(call))
+            {
+                // isinst/cast helper
                 m_functor(m_compiler, call);
             }
         }
@@ -1469,7 +1476,7 @@ public:
         }
         else
         {
-            assert(call->IsVirtualVtable());
+            assert(call->IsVirtualVtable() || compiler->impIsCastHelperEligibleForClassProbe(call));
         }
 
         schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
@@ -1524,8 +1531,6 @@ public:
         //         ... args ...)
         //
 
-        assert(call->gtCallThisArg->GetNode()->TypeGet() == TYP_REF);
-
         // Sanity check that we're looking at the right schema entry
         //
         assert(m_schema[*m_currentSchemaIndex].ILOffset == (int32_t)call->gtClassProfileCandidateInfo->ilOffset);
@@ -1539,6 +1544,20 @@ public:
         //
         uint8_t* classProfile = m_schema[*m_currentSchemaIndex].Offset + m_profileMemory;
         *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
+
+        GenTreeCall::Use* objUse = nullptr;
+        if (compiler->impIsCastHelperEligibleForClassProbe(call))
+        {
+            // Grab the second arg of cast/isinst helper call
+            objUse = call->gtCallArgs->GetNext();
+        }
+        else
+        {
+            // Grab 'this' arg
+            objUse = call->gtCallThisArg;
+        }
+
+        assert(objUse->GetNode()->TypeIs(TYP_REF));
 
         // Grab a temp to hold the 'this' object as it will be used three times
         //
@@ -1556,12 +1575,12 @@ public:
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, call->gtCallThisArg->GetNode());
-        GenTree* const asgCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
+        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
+        GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
         // Update the call
         //
-        call->gtCallThisArg->SetNode(asgCommaNode);
+        objUse->SetNode(asgCommaNode);
 
         JITDUMP("Modified call is now\n");
         DISPTREE(call);

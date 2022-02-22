@@ -2575,10 +2575,10 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipDisposeImage(IntPtr image);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipCreateBitmapFromFile(string filename, out IntPtr bitmap);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipCreateBitmapFromFileICM(string filename, out IntPtr bitmap);
 
             [GeneratedDllImport(LibraryName)]
@@ -2695,25 +2695,25 @@ namespace System.Drawing
 #endif
                 WmfPlaceableFileHeader wmfplacealbeHeader, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipCreateMetafileFromFile(string file, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipRecordMetafile(IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipRecordMetafile(IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipRecordMetafileI(IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipRecordMetafileFileName(string fileName, IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipRecordMetafileFileName(string fileName, IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipRecordMetafileFileNameI(string fileName, IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
             [GeneratedDllImport(LibraryName)]
@@ -3430,10 +3430,10 @@ namespace System.Drawing
 #endif
             HandleRef graphics, int destSpace, int srcSpace, Point* points, int count);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipLoadImageFromFileICM(string filename, out IntPtr image);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipLoadImageFromFile(string filename, out IntPtr image);
 
             [GeneratedDllImport(LibraryName)]

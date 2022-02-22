@@ -21,7 +21,6 @@ namespace System.Runtime.InteropServices
     {
         public CharSet CharSet { get; set; }
         public string? EntryPoint { get; set; }
-        public bool ExactSpelling { get; set; }
         public bool SetLastError { get; set; }
 
         public GeneratedDllImportAttribute(string dllName)

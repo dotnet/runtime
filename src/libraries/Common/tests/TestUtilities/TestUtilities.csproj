@@ -43,6 +43,9 @@
       variant from the Common folder and adding the missing members manually.
     -->
     <Compile Include="Interop\Interop.Libraries.cs" />
+
+    <Compile Include="RandomTestCaseOrderer.cs" />
+    <Compile Include="RandomTestCollectionOrderer.cs" />
   </ItemGroup>
   <!-- Windows imports -->
   <ItemGroup>
@@ -107,6 +110,5 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 </Project>

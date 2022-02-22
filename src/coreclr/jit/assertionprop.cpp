@@ -164,6 +164,35 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_CAST:
             return ForCastOutput(node->AsCast());
 
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+            switch (node->AsHWIntrinsic()->GetHWIntrinsicId())
+            {
+#if defined(TARGET_XARCH)
+                case NI_BMI1_TrailingZeroCount:
+                case NI_BMI1_X64_TrailingZeroCount:
+                case NI_LZCNT_LeadingZeroCount:
+                case NI_LZCNT_X64_LeadingZeroCount:
+                case NI_POPCNT_PopCount:
+                case NI_POPCNT_X64_PopCount:
+#elif defined(TARGET_ARM64)
+                case NI_AdvSimd_PopCount:
+                case NI_AdvSimd_LeadingZeroCount:
+                case NI_AdvSimd_LeadingSignCount:
+                case NI_ArmBase_LeadingZeroCount:
+                case NI_ArmBase_Arm64_LeadingZeroCount:
+                case NI_ArmBase_Arm64_LeadingSignCount:
+#else
+#error Unsupported platform
+#endif
+                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+                default:
+                    break;
+            }
+            break;
+#endif // defined(FEATURE_HW_INTRINSICS)
+
         default:
             break;
     }
@@ -2882,8 +2911,8 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
     ValueNumPair vnPair = tree->gtVNPair;
     ValueNum     vnCns  = vnStore->VNConservativeNormalValue(vnPair);
 
-    // Check if node evaluates to a constant.
-    if (!vnStore->IsVNConstant(vnCns))
+    // Check if node evaluates to a constant or Vector.Zero.
+    if (!vnStore->IsVNConstant(vnCns) && !vnStore->IsVNVectorZero(vnCns))
     {
         return nullptr;
     }
@@ -3041,6 +3070,24 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             }
         }
         break;
+
+#if FEATURE_HW_INTRINSICS
+        case TYP_SIMD8:
+        case TYP_SIMD12:
+        case TYP_SIMD16:
+        case TYP_SIMD32:
+        {
+            assert(vnStore->IsVNVectorZero(vnCns));
+            VNSimdTypeInfo vnInfo = vnStore->GetVectorZeroSimdTypeOfVN(vnCns);
+
+            assert(vnInfo.m_simdBaseJitType != CORINFO_TYPE_UNDEF);
+            assert(vnInfo.m_simdSize != 0);
+            assert(getSIMDTypeForSize(vnInfo.m_simdSize) == vnStore->TypeOfVN(vnCns));
+
+            conValTree = gtNewSimdZeroNode(tree->TypeGet(), vnInfo.m_simdBaseJitType, vnInfo.m_simdSize, true);
+        }
+        break;
+#endif
 
         case TYP_BYREF:
             // Do not support const byref optimization.
@@ -5449,7 +5496,8 @@ struct VNAssertionPropVisitorInfo
 //
 GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
 {
-    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
+    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)) ||
+           vnStore->IsVNVectorZero(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
 
     GenTree* sideEffList = nullptr;
 
