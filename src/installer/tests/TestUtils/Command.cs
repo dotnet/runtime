@@ -288,6 +288,12 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
+        public Command RemoveEnvironmentVariable(string name)
+        {
+            Process.StartInfo.Environment.Remove(name);
+            return this;
+        }
+
         public Command CaptureStdOut()
         {
             ThrowIfRunning();
