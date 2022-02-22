@@ -335,7 +335,7 @@ handle_enum:
 		return OP_LMOVE;
 #endif
 	case MONO_TYPE_R4:
-		return cfg->r4fp ? OP_RMOVE : OP_FMOVE;
+		return OP_RMOVE;
 	case MONO_TYPE_R8:
 		return OP_FMOVE;
 	case MONO_TYPE_VALUETYPE:
@@ -481,8 +481,7 @@ add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **a
 	MonoInst *arg1 = *arg1_ref;
 	MonoInst *arg2 = *arg2_ref;
 
-	if (cfg->r4fp &&
-		((arg1->type == STACK_R4 && arg2->type == STACK_R8) ||
+	if (((arg1->type == STACK_R4 && arg2->type == STACK_R8) ||
 		 (arg1->type == STACK_R8 && arg2->type == STACK_R4))) {
 		MonoInst *conv;
 
@@ -1971,8 +1970,6 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 static MonoInst*
 convert_value (MonoCompile *cfg, MonoType *type, MonoInst *ins)
 {
-	if (!cfg->r4fp)
-		return ins;
 	type = mini_get_underlying_type (type);
 	switch (type->type) {
 	case MONO_TYPE_R4:
@@ -4528,13 +4525,13 @@ mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
 	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
 		MONO_EMIT_NEW_I8CONST (cfg, dreg, 0);
-	} else if (cfg->r4fp && t == MONO_TYPE_R4) {
+	} else if (t == MONO_TYPE_R4) {
 		MONO_INST_NEW (cfg, ins, OP_R4CONST);
 		ins->type = STACK_R4;
 		ins->inst_p0 = (void*)&r4_0;
 		ins->dreg = dreg;
 		MONO_ADD_INS (cfg->cbb, ins);
-	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
+	} else if (t == MONO_TYPE_R8) {
 		MONO_INST_NEW (cfg, ins, OP_R8CONST);
 		ins->type = STACK_R8;
 		ins->inst_p0 = (void*)&r8_0;
@@ -4564,9 +4561,9 @@ emit_dummy_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_ICONST);
 	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_I8CONST);
-	} else if (cfg->r4fp && t == MONO_TYPE_R4) {
+	} else if (t == MONO_TYPE_R4) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R4CONST);
-	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
+	} else if (t == MONO_TYPE_R8) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R8CONST);
 	} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
 		   ((t == MONO_TYPE_GENERICINST) && mono_type_generic_inst_is_valuetype (rtype))) {

@@ -1238,7 +1238,6 @@ typedef struct {
 	guint            disable_div_with_mul : 1;
 	guint            explicit_null_checks : 1;
 	guint            optimized_div : 1;
-	guint            force_float32 : 1;
 	int              monitor_enter_adjustment;
 	int              dyn_call_param_area;
 } MonoBackend;
@@ -1481,7 +1480,6 @@ typedef struct {
 	guint            no_inline : 1;
 	guint            gshared : 1;
 	guint            gsharedvt : 1;
-	guint            r4fp : 1;
 	guint            llvm_only : 1;
 	guint            interp : 1;
 	guint            use_current_cpu : 1;
