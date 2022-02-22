@@ -910,7 +910,7 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipGetMetafileHeaderFromEmf(IntPtr hEnhMetafile, MetafileHeaderEmf metafileHeaderEmf);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipGetMetafileHeaderFromFile(string filename, IntPtr header);
 
             [GeneratedDllImport(LibraryName)]
@@ -933,13 +933,13 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipCreateMetafileFromStream(IntPtr stream, IntPtr* metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipRecordMetafileStream(IntPtr stream, IntPtr referenceHdc, EmfType emfType, RectangleF* frameRect, MetafileFrameUnit frameUnit, string? description, IntPtr* metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipRecordMetafileStream(IntPtr stream, IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, IntPtr* metafile);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipRecordMetafileStreamI(IntPtr stream, IntPtr referenceHdc, EmfType emfType, Rectangle* frameRect, MetafileFrameUnit frameUnit, string? description, IntPtr* metafile);
 
             [GeneratedDllImport(LibraryName)]
@@ -949,7 +949,7 @@ namespace System.Drawing
 #endif
             HandleRef graphics, int sizeData, byte[] data);
 
-            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static partial int GdipCreateFontFromLogfontW(IntPtr hdc, ref Interop.User32.LOGFONT lf, out IntPtr font);
 
             [GeneratedDllImport(LibraryName)]

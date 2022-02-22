@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Logoncli
     {
-        [GeneratedDllImport(Libraries.Logoncli, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Logoncli, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
         internal static partial int DsGetDcName(
             string computerName,
             string domainName,

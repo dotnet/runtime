@@ -4,7 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime;
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace Internal.Runtime
 {
