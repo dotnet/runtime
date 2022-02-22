@@ -122,8 +122,7 @@ Note right of Thread: Async_Suspend_Requested
 Thread-->>Initiator: "InitSuspendRunning"
 Initiator->>Thread: pthread_kill()
 Note over Initiator: "wait for pending operations"
-Thread->>Handler: signal
-Handler-->>Handler: finish_async_suspend
+Handler->>Handler: finish_async_suspend
 Note right of Thread: Async_Suspended
 Handler-->>Initiator: notify initiator of suspend
 Note over Handler: sigsuspend()
@@ -228,13 +227,15 @@ participant Initiator
 participant Thread
 Note right of Thread: Running
 loop Periodically
-  Thread-->>Thread: poll
+  Thread->>Thread: poll
+  Thread-->>Thread: 0
 end
 Initiator->>Thread: request_suspend
 Note right of Thread: Async_Suspend_Requested
 Thread-->>Initiator: "InitSuspendRunning"
 Note over Initiator: "wait for pending operations"
-Thread-->>Thread: poll
+Thread->>Thread: poll
+Thread-->>Thread: "NotifyAndWait"
 Note right of Thread: Self_Suspended
 Thread-->>Initiator: notify initiator of suspend
 ```
@@ -251,7 +252,7 @@ Note right of Thread: Blocking_Suspend_Requested
 Thread-->>Initiator: "InitSuspendBlocking"
 Note over Thread: continues executing"
 Note over Initiator: "treat thread as suspended"
-Thread-->>Thread: done_Blocking
+Thread->>Thread: done_Blocking
 Note right of Thread: Blocking_Self_Suspended
 ```
 
@@ -274,6 +275,33 @@ participant Thread
 Note right of Thread: Blocking_Self_Suspended
 Initiator->>Thread: resume
 Note right of Thread: Running
+```
+
+Transitioning from GC Unsafe to GC Safe, if no suspend has been requested:
+
+```mermaid
+sequenceDiagram
+participant Thread
+Note right of Thread: Running
+Thread->>Thread: do_Blocking
+Note right of Thread: Blocking
+```
+
+Transitioning from GC Unsafe to GC Safe, if a suspend was requested:
+```mermaid
+sequenceDiagram
+participant Initiator
+participant Thread
+Initiator->>Thread: request_suspend
+Note right of Thread: Async_Suspend_Requested
+Thread-->>Initiator: "InitSuspendRunning"
+Note over Initiator: "wait for pending operations"
+Thread->>Thread: do_Blocking
+Thread-->>Thread: "poll and retry"
+Thread->>Thread: poll
+Note over Thread, Initiator: "normal suspend, then retry do_Blocking"
+Thread->>Thread: do_Blocking
+Note right of Thread: Blocking
 ```
 
 ## Hybrid suspend
@@ -362,7 +390,7 @@ Note right of Thread: Blocking
 Initiator->>Thread: request_suspend
 Note right of Thread: Blocking_Suspend_Requested
 Thread-->>Initiator: "InitSuspendBlocking"
-Initiator->>Thread: "SuspendThread"
+Initiator->>Thread: "SuspendThread()"
 alt "Thread running"
     Initiator->>Thread: finish_async_suspend
     Thread-->>Initiator: TRUE
@@ -373,7 +401,8 @@ else "Thread self-suspended"
     Note right of Thread: Blocking_Self_Suspended
     Initiator->>Thread: finish_async_suspend
     Thread-->>Initiator: FALSE
-    Note over Initiator: "thread is suspended"
+    Initiator->>Thread: "ResumeThread()"
+    Note over Initiator: "thread is already self-suspended"
 end
 ```
 
