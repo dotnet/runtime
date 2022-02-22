@@ -352,7 +352,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                 assert(sArgDst.m_cFloatReg > 0);
 
                 if ((sArgSrc.m_structFloatFlag == 1) || (sArgSrc.m_structFloatFlag == 4))
-                {//first float;   ||   second float;
+                { // first float. || second float;
                     assert(sArgDst.m_cGenReg == 1);
                     assert(sArgDst.m_cFloatReg == 1);
                     assert(sArgSrc.m_byteStackSize == 8);
@@ -371,7 +371,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                     break;
                 }
                 else if ((sArgSrc.m_structFloatFlag == 8) || (sArgSrc.m_structFloatFlag == 7))
-                {//second double.   ||    first double.
+                { // second double. || first double.
                     assert(sArgDst.m_cGenReg == 1);
                     assert(sArgDst.m_cFloatReg == 1);
                     assert(sArgSrc.m_byteStackSize == 16);
@@ -391,7 +391,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                     break;
                 }
 
-                assert(!"---------No this stack case.--------------");
+                assert(!"---------LoongArch64: No this stack case.--------------");
             }
         }
 #endif

@@ -79,18 +79,48 @@ LOCAL_LABEL(NoFloatingPoint):
     // Int return case
     beq  $a3, $zero, LOCAL_LABEL(IntReturn)
 
-    // Float or Double return case.
-    // TwoFloat or TwoDouble return case.
-    ori  $t4, $zero, 2
+    // Struct with Float/Double field return case.
+    ori  $t4, $zero, CallDescrData__flagOneFloat
     beq  $t4, $a3, LOCAL_LABEL(FloatReturn)
 
-    // Float and Int return case
-    ori  $t4, $zero, 4
+    ori  $t4, $zero, CallDescrData__flagOneDouble
+    beq  $t4, $a3, LOCAL_LABEL(DoubleReturn)
+
+    ori  $t4, $zero, CallDescrData__flagFloatInt
     beq  $t4, $a3, LOCAL_LABEL(FloatIntReturn)
 
-    // Int and Float return case
-    ori  $t4, $zero, 8
+    ori  $t4, $zero, CallDescrData__flagDoubleInt
+    beq  $t4, $a3, LOCAL_LABEL(DoubleIntReturn)
+
+    ori  $t4, $zero, CallDescrData__flagFloatLong
+    beq  $t4, $a3, LOCAL_LABEL(FloatLongReturn)
+
+    ori  $t4, $zero, CallDescrData__flagDoubleLong
+    beq  $t4, $a3, LOCAL_LABEL(DoubleLongReturn)
+
+    ori  $t4, $zero, CallDescrData__flagIntFloat
     beq  $t4, $a3, LOCAL_LABEL(IntFloatReturn)
+
+    ori  $t4, $zero, CallDescrData__flagLongFloat
+    beq  $t4, $a3, LOCAL_LABEL(LongFloatReturn)
+
+    ori  $t4, $zero, CallDescrData__flagIntDouble
+    beq  $t4, $a3, LOCAL_LABEL(IntDoubleReturn)
+
+    ori  $t4, $zero, CallDescrData__flagLongDouble
+    beq  $t4, $a3, LOCAL_LABEL(LongDoubleReturn)
+
+    ori  $t4, $zero, CallDescrData__flagFloatFloat
+    beq  $t4, $a3, LOCAL_LABEL(FloatFloatReturn)
+
+    ori  $t4, $zero, CallDescrData__flagDoubleFloat
+    beq  $t4, $a3, LOCAL_LABEL(DoubleFloatReturn)
+
+    ori  $t4, $zero, CallDescrData__flagFloatDouble
+    beq  $t4, $a3, LOCAL_LABEL(FloatDoubleReturn)
+
+    ori  $t4, $zero, CallDescrData__flagDoubleDouble
+    beq  $t4, $a3, LOCAL_LABEL(DoubleDoubleReturn)
 
     //b  LOCAL_LABEL(NotCorrectReturn)
 LOCAL_LABEL(NotCorrectReturn):
@@ -98,24 +128,77 @@ LOCAL_LABEL(NotCorrectReturn):
     EMIT_BREAKPOINT // Unreachable
 
 LOCAL_LABEL(FloatReturn):
+    fst.s  $f0, $s0, CallDescrData__returnValue
+    b  LOCAL_LABEL(ReturnDone)
+
+LOCAL_LABEL(DoubleReturn):
     fst.d  $f0, $s0, CallDescrData__returnValue
-    fst.d  $f1, $s0, CallDescrData__returnValue + 8
     b  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(FloatIntReturn):
+    fst.s  $f0, $s0, CallDescrData__returnValue
+    st.w  $a0, $s0, CallDescrData__returnValue + 4
+    b  LOCAL_LABEL(ReturnDone)
+
+LOCAL_LABEL(DoubleIntReturn):
+    fst.d  $f0, $s0, CallDescrData__returnValue
+    st.w  $a0, $s0, CallDescrData__returnValue + 8
+    b  LOCAL_LABEL(ReturnDone)
+
+LOCAL_LABEL(FloatLongReturn):
+    fst.s  $f0, $s0, CallDescrData__returnValue
+    st.d  $a0, $s0, CallDescrData__returnValue + 8
+    b  LOCAL_LABEL(ReturnDone)
+
+LOCAL_LABEL(DoubleLongReturn):
     fst.d  $f0, $s0, CallDescrData__returnValue
     st.d  $a0, $s0, CallDescrData__returnValue + 8
     b  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(IntFloatReturn):
+    st.w  $a0, $s0, CallDescrData__returnValue
+    fst.s  $f0, $s0, CallDescrData__returnValue + 4
+    b  LOCAL_LABEL(ReturnDone)
+
+LOCAL_LABEL(LongFloatReturn):
+    st.d  $a0, $s0, CallDescrData__returnValue
+    fst.s  $f0, $s0, CallDescrData__returnValue + 8
+    b  LOCAL_LABEL(ReturnDone)
+
+LOCAL_LABEL(IntDoubleReturn):
+    st.w  $a0, $s0, CallDescrData__returnValue
+    fst.d  $f0, $s0, CallDescrData__returnValue + 8
+    b  LOCAL_LABEL(ReturnDone)
+
+LOCAL_LABEL(LongDoubleReturn):
     st.d  $a0, $s0, CallDescrData__returnValue
     fst.d  $f0, $s0, CallDescrData__returnValue + 8
     b  LOCAL_LABEL(ReturnDone)
 
+LOCAL_LABEL(FloatFloatReturn):
+    fst.s  $f0, $s0, CallDescrData__returnValue
+    fst.s  $f1, $s0, CallDescrData__returnValue + 4
+    b  LOCAL_LABEL(ReturnDone)
+
+LOCAL_LABEL(DoubleFloatReturn):
+    fst.d  $f0, $s0, CallDescrData__returnValue
+    fst.s  $f1, $s0, CallDescrData__returnValue + 8
+    b  LOCAL_LABEL(ReturnDone)
+
+LOCAL_LABEL(FloatDoubleReturn):
+    fst.s  $f0, $s0, CallDescrData__returnValue
+    fst.d  $f1, $s0, CallDescrData__returnValue + 8
+    b  LOCAL_LABEL(ReturnDone)
+
+LOCAL_LABEL(DoubleDoubleReturn):
+    fst.d  $f0, $s0, CallDescrData__returnValue
+    fst.d  $f1, $s0, CallDescrData__returnValue + 8
+    b  LOCAL_LABEL(ReturnDone)
+
 LOCAL_LABEL(IntReturn):
     // Save return value into retbuf for int
-    st.d  $v0, $s0, CallDescrData__returnValue
-    st.d  $v1, $s0, CallDescrData__returnValue + 8
+    st.d  $a0, $s0, CallDescrData__returnValue
+    st.d  $a1, $s0, CallDescrData__returnValue + 8
 
 LOCAL_LABEL(ReturnDone):
 

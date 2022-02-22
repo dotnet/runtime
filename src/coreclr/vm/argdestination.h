@@ -97,54 +97,39 @@ public:
 
         int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_argLocDescForStructInRegs->m_idxFloatReg * 8;
 
-        if (m_argLocDescForStructInRegs->m_structFields == 5)
-        {//struct with two floats.
+        if (m_argLocDescForStructInRegs->m_structFields == STRUCT_FLOAT_FIELD_ONLY_TWO)
+        { // struct with two floats.
             _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 2);
             _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 0);
             *(INT64*)((char*)m_base + argOfs) = *(INT32*)src;
             *(INT64*)((char*)m_base + argOfs + 8) = *((INT32*)src + 1);
         }
-        else if (m_argLocDescForStructInRegs->m_structFields & 1)
-        {//the first field is float.
-            *(INT64*)((char*)m_base + argOfs) = *(INT32*)src;
-            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
-            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
-            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & 6) == 0);//the second field is integer.
-            argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
-            if (m_argLocDescForStructInRegs->m_structFields & 0x40)
-                *(INT64*)((char*)m_base + argOfs) = *((INT32*)src + 1);//the second field is int32.
+        else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) != 0)
+        { // the first field is float or double.
+            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8) == 0)
+                *(INT64*)((char*)m_base + argOfs) = *(INT32*)src; // the first field is float
             else
-                *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
-        }
-        else if (m_argLocDescForStructInRegs->m_structFields & 2)
-        {//the first field is double.
-            *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src;
+                *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src; // the first field is double.
             _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
             _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
-            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & 6) == 0);//the second field is integer.
+            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND) == 0);//the second field is integer.
             argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
-            *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);//NOTE: here ignoring the size.
+            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) != 0)
+                *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
+            else
+                *(INT64*)((char*)m_base + argOfs) = *((INT32*)src + 1); // the second field is int32.
         }
-        else if (m_argLocDescForStructInRegs->m_structFields & 4)
-        {//the second field is float.
-            if (m_argLocDescForStructInRegs->m_structFields & 0x40)
-                *(UINT64*)((char*)m_base + argOfs) = *((INT32*)src + 1);//the first field is int32.
+        else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND) != 0)
+        { // the second field is float or double.
+            *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src; // NOTE: here ignoring the first size.
+            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) == 0)
+                *(UINT64*)((char*)m_base + argOfs) = *((INT32*)src + 1); // the second field is int32.
             else
                 *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
             _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
             _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
-            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & 3) == 0);//the first field is integer.
+            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) == 0);//the first field is integer.
             argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
-            *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src;//NOTE: here ignoring the size.
-        }
-        else if (m_argLocDescForStructInRegs->m_structFields & 8)
-        {//the second field is double.
-            *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);//NOTE: here ignoring the size.
-            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
-            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
-            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & 3) == 0);//the second field is integer.
-            argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
-            *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src;//NOTE: here ignoring the size.
         }
         else
             _ASSERTE(!"---------UNReachable-------LoongArch64!!!");

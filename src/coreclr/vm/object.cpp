@@ -1818,7 +1818,6 @@ BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, Met
 #endif // UNIX_AMD64_ABI
 
 #if defined(TARGET_LOONGARCH64)
-
     if (argDest->IsStructPassedInRegs())
     {
         // We should only get here if we are unboxing a T as a Nullable<T>
@@ -1843,8 +1842,6 @@ BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, Met
                 if (destMT == boxedVal->GetMethodTable())
                 {
                     CopyValueClassArg(argDest, boxedVal->GetData(), destMT, 0);
-                    //if (*(UINT64*)(argDest->GetStructGenRegDestinationAddress()) == 0)
-                    //    *(UINT64*)(argDest->GetStructGenRegDestinationAddress()) = 1;
                     return TRUE;
                 }
                 return FALSE;
@@ -1855,6 +1852,7 @@ BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, Met
         }
         return TRUE;
     }
+
 #endif
 
     return UnBoxNoGC(argDest->GetDestinationAddress(), boxedVal, destMT);
