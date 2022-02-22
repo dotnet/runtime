@@ -90,55 +90,97 @@ namespace System.Security.Cryptography
                 return true;
             }
 
-            // At this point we know that we have multiple blocks that need to be decrypted.
-            // So we decrypt all but the last block directly in to the buffer. The final
-            // block we decrypt in to a stack buffer, and if it fits, copy the last block to
-            // the output.
-
-            // We should only get here if we have multiple blocks to transform. The single
-            // block case should have happened on the stack.
-            Debug.Assert(input.Length > cipher.BlockSizeInBytes);
-
-            int writtenToOutput = 0;
-
-            // CFB8 means this may not be an exact multiple of the block size.
-            // If the an AES CFB8 ciphertext length is 129 with PKCS7 padding, then
-            // we'll have 113 bytes in the unpaddedBlocks and 16 in the paddedBlock.
-            // We still need to do this on block size, not padding size. The CFB8
-            // padding byte might be block size. We don't want unpaddedBlocks to
-            // contain removable padding, so split on block size.
-            ReadOnlySpan<byte> unpaddedBlocks = input[..^cipher.BlockSizeInBytes];
-            ReadOnlySpan<byte> paddedBlock = input[^cipher.BlockSizeInBytes..];
-            Debug.Assert(paddedBlock.Length % cipher.BlockSizeInBytes == 0);
-            Debug.Assert(paddedBlock.Length <= MaxInStackDecryptionBuffer);
-
-            try
+            // If the source and destination do not overlap, we can decrypt directly in to the user buffer.
+            if (!input.Overlaps(output))
             {
-                writtenToOutput = cipher.Transform(unpaddedBlocks, output);
-                int finalTransformWritten = cipher.TransformFinal(paddedBlock, stackBuffer);
+                // At this point we know that we have multiple blocks that need to be decrypted.
+                // So we decrypt all but the last block directly in to the buffer. The final
+                // block we decrypt in to a stack buffer, and if it fits, copy the last block to
+                // the output.
 
-                // This will throw on invalid padding.
-                int depaddedLength = SymmetricPadding.GetPaddingLength(
-                    stackBuffer.Slice(0, finalTransformWritten),
-                    paddingMode,
-                    cipher.BlockSizeInBytes);
+                // We should only get here if we have multiple blocks to transform. The single
+                // block case should have happened on the stack.
+                Debug.Assert(input.Length > cipher.BlockSizeInBytes);
 
-                if (output.Length - writtenToOutput < depaddedLength)
+                int writtenToOutput = 0;
+
+                // CFB8 means this may not be an exact multiple of the block size.
+                // If the an AES CFB8 ciphertext length is 129 with PKCS7 padding, then
+                // we'll have 113 bytes in the unpaddedBlocks and 16 in the paddedBlock.
+                // We still need to do this on block size, not padding size. The CFB8
+                // padding byte might be block size. We don't want unpaddedBlocks to
+                // contain removable padding, so split on block size.
+                ReadOnlySpan<byte> unpaddedBlocks = input[..^cipher.BlockSizeInBytes];
+                ReadOnlySpan<byte> paddedBlock = input[^cipher.BlockSizeInBytes..];
+                Debug.Assert(paddedBlock.Length % cipher.BlockSizeInBytes == 0);
+                Debug.Assert(paddedBlock.Length <= MaxInStackDecryptionBuffer);
+
+                try
+                {
+                    writtenToOutput = cipher.Transform(unpaddedBlocks, output);
+                    int finalTransformWritten = cipher.TransformFinal(paddedBlock, stackBuffer);
+
+                    // This will throw on invalid padding.
+                    int depaddedLength = SymmetricPadding.GetPaddingLength(
+                        stackBuffer.Slice(0, finalTransformWritten),
+                        paddingMode,
+                        cipher.BlockSizeInBytes);
+
+                    if (output.Length - writtenToOutput < depaddedLength)
+                    {
+                        CryptographicOperations.ZeroMemory(output.Slice(0, writtenToOutput));
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    stackBuffer.Slice(0, depaddedLength).CopyTo(output.Slice(writtenToOutput));
+                    bytesWritten = writtenToOutput + depaddedLength;
+                    return true;
+                }
+                catch (CryptographicException)
                 {
                     CryptographicOperations.ZeroMemory(output.Slice(0, writtenToOutput));
-                    bytesWritten = 0;
-                    return false;
+                    throw;
                 }
+            }
 
-                stackBuffer.Slice(0, depaddedLength).CopyTo(output.Slice(writtenToOutput));
-                bytesWritten = writtenToOutput + depaddedLength;
-                return true;
-            }
-            catch (CryptographicException)
+            // If we get here, then we have multiple blocks with overlapping buffers that don't fit in the stack.
+            // We need to rent and copy for this.
+            byte[] rentedBuffer = CryptoPool.Rent(input.Length);
+            Span<byte> buffer = rentedBuffer.AsSpan(0, input.Length);
+            Span<byte> decryptedBuffer = default;
+
+            // Keep our buffer fixed so the GC doesn't move it around before we clear and return to the pool.
+            fixed (byte* pBuffer = buffer)
             {
-                CryptographicOperations.ZeroMemory(output.Slice(0, writtenToOutput));
-                throw;
+                try
+                {
+                    int transformWritten = cipher.TransformFinal(input, buffer);
+                    decryptedBuffer = buffer.Slice(0, transformWritten);
+
+                    // This intentionally passes in BlockSizeInBytes instead of PaddingSizeInBytes. This is so that
+                    // "extra padded" CFB data can still be decrypted. The .NET Framework always padded CFB8 to the
+                    // block size, not the feedback size. We want the one-shot to be able to continue to decrypt
+                    // those ciphertexts, so for CFB8 we are more lenient on the number of allowed padding bytes.
+                    int unpaddedLength = SymmetricPadding.GetPaddingLength(decryptedBuffer, paddingMode, cipher.BlockSizeInBytes); // validates padding
+
+                    if (unpaddedLength > output.Length)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    decryptedBuffer.Slice(0, unpaddedLength).CopyTo(output);
+                    bytesWritten = unpaddedLength;
+                    return true;
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(decryptedBuffer);
+                    CryptoPool.Return(rentedBuffer, clearSize: 0); // ZeroMemory clears the part of the buffer that was written to.
+                }
             }
+
         }
 
         public static bool OneShotEncrypt(

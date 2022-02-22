@@ -597,5 +597,12 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.SequenceEqual(expected, actual);
             }
         }
+
+        protected static byte[] ByteArrayFilledWith(byte contents, int length)
+        {
+            byte[] ret = new byte[length];
+            ret.AsSpan().Fill(contents);
+            return ret;
+        }
     }
 }
