@@ -766,18 +766,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_BitwiseAnd:
 	case SN_BitwiseOr:
 	case SN_Xor: {
-		// if ((arg0_type == MONO_TYPE_R4) || (arg0_type == MONO_TYPE_R8))
-		// 	return NULL;
 		int instc0 = -1;
 		switch (id) {
 		case SN_BitwiseAnd:
-			instc0 = XBINOP_FORCEINT_and;
+			instc0 = XBINOP_FORCEINT_AND;
 			break;
 		case SN_BitwiseOr:
-			instc0 = XBINOP_FORCEINT_or;
+			instc0 = XBINOP_FORCEINT_OR;
 			break;
 		case SN_Xor:
-			instc0 = XBINOP_FORCEINT_xor;
+			instc0 = XBINOP_FORCEINT_XOR;
 			break;
 		default:
 			g_assert_not_reached ();
@@ -1530,7 +1528,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AddScalar, OP_XBINOP_SCALAR, OP_IADD, None, None, OP_XBINOP_SCALAR, OP_FADD},
 	{SN_AddWideningLower, OP_ARM64_SADD, None, OP_ARM64_UADD},
 	{SN_AddWideningUpper, OP_ARM64_SADD2, None, OP_ARM64_UADD2},
-	{SN_And, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_and},
+	{SN_And, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND},
 	{SN_BitwiseClear, OP_ARM64_BIC},
 	{SN_BitwiseSelect, OP_ARM64_BSL},
 	{SN_Ceiling, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTP},
@@ -1733,8 +1731,8 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_NegateSaturateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
 	{SN_NegateScalar, OP_ARM64_XNEG_SCALAR},
 	{SN_Not, OP_ARM64_MVN},
-	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_or},
-	{SN_OrNot, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_ornot},
+	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_OR},
+	{SN_OrNot, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_ORNOT},
 	{SN_PolynomialMultiply, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_PMUL},
 	{SN_PolynomialMultiplyWideningLower, OP_ARM64_PMULL},
 	{SN_PolynomialMultiplyWideningUpper, OP_ARM64_PMULL2},
@@ -1854,7 +1852,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_UnzipOdd, OP_ARM64_UZP2},
 	{SN_VectorTableLookup, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1},
 	{SN_VectorTableLookupExtension, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1},
-	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_xor},
+	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_XOR},
 	{SN_ZeroExtendWideningLower, OP_ARM64_UXTL},
 	{SN_ZeroExtendWideningUpper, OP_ARM64_UXTL2},
 	{SN_ZipHigh, OP_ARM64_ZIP2},
