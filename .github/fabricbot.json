@@ -5420,37 +5420,72 @@
       "frequency": [
         {
           "weekDay": 0,
-          "hours": [],
+          "hours": [
+            0,
+            6,
+            12,
+            18
+          ],
           "timezoneOffset": 0
         },
         {
           "weekDay": 1,
-          "hours": [],
+          "hours": [
+            0,
+            6,
+            12,
+            18
+          ],
           "timezoneOffset": 0
         },
         {
           "weekDay": 2,
-          "hours": [],
+          "hours": [
+            0,
+            6,
+            12,
+            18
+          ],
           "timezoneOffset": 0
         },
         {
           "weekDay": 3,
-          "hours": [],
+          "hours": [
+            0,
+            6,
+            12,
+            18
+          ],
           "timezoneOffset": 0
         },
         {
           "weekDay": 4,
-          "hours": [],
+          "hours": [
+            0,
+            6,
+            12,
+            18
+          ],
           "timezoneOffset": 0
         },
         {
           "weekDay": 5,
-          "hours": [],
+          "hours": [
+            0,
+            6,
+            12,
+            18
+          ],
           "timezoneOffset": 0
         },
         {
           "weekDay": 6,
-          "hours": [],
+          "hours": [
+            0,
+            6,
+            12,
+            18
+          ],
           "timezoneOffset": 0
         }
       ],
