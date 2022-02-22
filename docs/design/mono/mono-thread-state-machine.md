@@ -201,13 +201,13 @@ direction TB
 
 In cooperative suspend, the threads in `GC_Safe` states are always running - they are not blocked at all.  As a result, with this suspend policy, GC Safe code must not be able to manipulate runtime state at all: in embedding scenarios, all native runtime API calls have to be properly wrapped in thread state transitions.  Additionally, memory that may contain references into the managed heap must not be accessed by GC Safe code.  In other words, calls like `sleep()` or `read()` that may block are GC Safe, but calls like `mono_object_new()` are not - unless the thread performs a transition to GC Unsafe.
 
-To suspend a thread, the GC initiator performs a `request_suspend` transition and acts on the result.  If the thread was in a `GC_Unsafe` state, the initiator must wait.  If the thread was in `GC_Safe`, the intiator performs the `finish_async_supend` transition and assumes the thread is suspended.
+To suspend a thread, the GC initiator performs a `request_suspend` transition and acts on the result.  If the thread was in a `GC_Unsafe` state, the initiator must wait.  If the thread was in `GC_Safe`, the intiator has no more work to do: it assumes the thread is suspended.
 
 If the thread is in `GC_Unsafe` it must periodically perform the `poll` transition.  If it was `Running`, there is nothing to do.  If it was `Async_Suspend_Requested` it moves to the `Self_Suspended` state and notifies the initiator.
 
 Additionally threads must perform *blocking* transitions to notify the runtime of their intention to move between `GC_Safe` and `GC_Unsafe` states.
 
-When a thread want to move from the `GC_Unsafe` to the `GC_Safe` state, it performs a `do_Blocking` transition.  Entering `GC_Safe` cannot be nested: it is illegal to perform a `do_Blocking` transition from a `GC_Safe` state.  If the thread is `Running` it moves to the `Blocking` state (and keeps running - it is logically blocked from the point of view of the runtime).  If the thread was in the `Async_Suspend_Requested` state, it must perform a `poll` transition and self-suspend and then retry the `do_Blocking` transition after it is resumed.
+When a thread wants to move from the `GC_Unsafe` to the `GC_Safe` state, it performs a `do_Blocking` transition.  Entering `GC_Safe` cannot be nested: it is illegal to perform a `do_Blocking` transition from a `GC_Safe` state.  If the thread is `Running` it moves to the `Blocking` state (and keeps running - it is logically blocked from the point of view of the runtime).  If the thread was in the `Async_Suspend_Requested` state, it must perform a `poll` transition and self-suspend and then retry the `do_Blocking` transition after it is resumed.
 
 To return from a `GC_Safe` state to `GC_Unsafe` the thread performs a `done_Blocking` transition.  It is illegal to perform a `done_Blocking` transition in a `GC_Unsafe` state.  If the thread was `Blocking`, it returns to `Running`.  If the thread was in a `Blocking_Suspend_Requested` state, it must self-suspend and the suspend initiator will put it in the `Running` state when the thread is resumed.
 
