@@ -12,12 +12,12 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class ImpersonatedAuthTests: IClassFixture<WindowsIdentityFixture>
+    public class ImpersonatedAuthTests : IClassFixture<WindowsIdentityFixture>
     {
         private readonly WindowsIdentityFixture _fixture;
         private readonly ITestOutputHelper _output;
 
-        public  ImpersonatedAuthTests(WindowsIdentityFixture windowsIdentityFixture, ITestOutputHelper output)
+        public ImpersonatedAuthTests(WindowsIdentityFixture windowsIdentityFixture, ITestOutputHelper output)
         {
             _output = output;
             _fixture = windowsIdentityFixture;
@@ -31,6 +31,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65712")]
         public async Task DefaultHandler_ImpersonatedUser_Success(bool useNtlm)
         {
             await LoopbackServer.CreateClientAndServerAsync(
