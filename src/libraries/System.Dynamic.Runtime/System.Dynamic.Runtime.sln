@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Dynamic.Runtime", "s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Dynamic.Runtime.Tests", "tests\System.Dynamic.Runtime.Tests.csproj", "{3695B814-610C-41D5-A3F5-B0B55EF10863}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{6428C5CC-7326-4614-BFD8-1288410CD1A4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{6428C5CC-7326-4614-BFD8-1288410CD1A4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{14610D93-4B51-4853-A328-D5B7B2A6B6A1}"
 EndProject

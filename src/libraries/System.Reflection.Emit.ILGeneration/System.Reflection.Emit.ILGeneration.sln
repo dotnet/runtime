@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Emit.ILGe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Emit.ILGeneration.Tests", "tests\System.Reflection.Emit.ILGeneration.Tests.csproj", "{EA6F01DF-1F63-49FF-A6E8-CA9104296196}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{1CD00FA1-9919-45C2-B4E0-ED96C3E98C57}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{1CD00FA1-9919-45C2-B4E0-ED96C3E98C57}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{3461E542-7F19-4B98-B206-BDF932529A5B}"
 EndProject

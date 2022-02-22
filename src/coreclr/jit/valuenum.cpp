@@ -8169,15 +8169,15 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
         // Should not have been recorded as updating the GC heap.
         assert(!GetMemorySsaMap(GcHeap)->Lookup(tree));
 
-        unsigned lhsLclNum    = lclVarTree->GetLclNum();
-        unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
+        unsigned   lhsLclNum    = lclVarTree->GetLclNum();
+        unsigned   lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
+        LclVarDsc* lhsVarDsc    = lvaGetDesc(lhsLclNum);
 
         // Ignore vars that we excluded from SSA (for example, because they're address-exposed). They don't have
         // SSA names in which to store VN's on defs.  We'll yield unique VN's when we read from them.
         if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
         {
             FieldSeqNode* lhsFldSeq = nullptr;
-            LclVarDsc*    lhsVarDsc = lvaGetDesc(lhsLclNum);
 
             if (lhs->IsLocalExpr(this, &lclVarTree, &lhsFldSeq))
             {
@@ -8260,7 +8260,25 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             }
 #endif // DEBUG
         }
-        else if (lvaVarAddrExposed(lhsLclNum))
+        else if (lclVarTree->HasSsaName())
+        {
+            // The local wasn't in SSA, the tree is still an SSA def. There is only one
+            // case when this can happen - a promoted "CanBeReplacedWithItsField" struct.
+            assert((lhs == lclVarTree) && rhs->IsCall() && isEntire);
+            assert(lhsVarDsc->CanBeReplacedWithItsField(this));
+            // Give a new, unique, VN to the field.
+            LclVarDsc*    fieldVarDsc    = lvaGetDesc(lhsVarDsc->lvFieldLclStart);
+            LclSsaVarDsc* fieldVarSsaDsc = fieldVarDsc->GetPerSsaData(lclVarTree->GetSsaNum());
+            ValueNum      newUniqueVN    = vnStore->VNForExpr(compCurBB, fieldVarDsc->TypeGet());
+
+            fieldVarSsaDsc->m_vnPair.SetBoth(newUniqueVN);
+
+            JITDUMP("Tree [%06u] assigned VN to the only field V%02u/%u of promoted struct V%02u: new uniq ",
+                    dspTreeID(tree), lhsVarDsc->lvFieldLclStart, lclVarTree->GetSsaNum(), lhsLclNum);
+            JITDUMPEXEC(vnPrint(newUniqueVN, 1));
+            JITDUMP("\n");
+        }
+        else if (lhsVarDsc->IsAddressExposed())
         {
             fgMutateAddressExposedLocal(tree DEBUGARG("INITBLK/COPYBLK - address-exposed local"));
         }
@@ -8413,172 +8431,85 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 unsigned             lclNum = lcl->GetLclNum();
                 LclVarDsc*           varDsc = lvaGetDesc(lclNum);
 
-                if (varDsc->CanBeReplacedWithItsField(this))
+                // Do we have a Use (read) of the LclVar (defs will be handled at assignments)?
+                // Note that this a weak test, as we can have nodes under ADDRs that will be labeled as "uses".
+                if ((lcl->gtFlags & GTF_VAR_DEF) == 0)
                 {
-                    lclNum = varDsc->lvFieldLclStart;
-                    varDsc = lvaGetDesc(lclNum);
-                }
-
-                // Do we have a Use (read) of the LclVar?
-                //
-                if ((lcl->gtFlags & GTF_VAR_DEF) == 0 ||
-                    (lcl->gtFlags & GTF_VAR_USEASG)) // If it is a "pure" def, will handled as part of the assignment.
-                {
-                    bool          generateUniqueVN = false;
-                    FieldSeqNode* zeroOffsetFldSeq = nullptr;
-
-                    // When we have a TYP_BYREF LclVar it can have a zero offset field sequence that needs to be added
-                    if (typ == TYP_BYREF)
+                    if (lcl->HasSsaName())
                     {
-                        GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFldSeq);
-                    }
+                        // We expect all uses of promoted structs to be replaced with uses of their fields.
+                        assert(lvaInSsa(lclNum) && !varDsc->CanBeReplacedWithItsField(this));
 
-                    if (varDsc->lvPromoted && varDsc->lvFieldCnt == 1)
-                    {
-                        // If the promoted var has only one field var, treat like a use of the field var.
-                        lclNum = varDsc->lvFieldLclStart;
-                    }
-
-                    if (lcl->GetSsaNum() == SsaConfig::RESERVED_SSA_NUM)
-                    {
-                        // Not an SSA variable.
-
-                        if (lvaVarAddrExposed(lclNum))
-                        {
-                            // Address-exposed locals are part of ByrefExposed.
-                            ValueNum addrVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNum),
-                                                                 vnStore->VNForFieldSeq(nullptr));
-                            ValueNum loadVN = fgValueNumberByrefExposedLoad(typ, addrVN);
-
-                            lcl->gtVNPair.SetBoth(loadVN);
-                        }
-                        else
-                        {
-                            // Assign odd cases a new, unique, VN.
-                            generateUniqueVN = true;
-                        }
-                    }
-                    else
-                    {
                         ValueNumPair wholeLclVarVNP = varDsc->GetPerSsaData(lcl->GetSsaNum())->m_vnPair;
+                        assert(wholeLclVarVNP.BothDefined());
 
-                        // Check for mismatched LclVar size
-                        //
-                        unsigned typSize = genTypeSize(genActualType(typ));
-                        unsigned varSize = genTypeSize(genActualType(varDsc->TypeGet()));
-
-                        if (typSize == varSize)
+                        // Account for type mismatches.
+                        if (genActualType(varDsc) != genActualType(lcl))
                         {
-                            lcl->gtVNPair = wholeLclVarVNP;
-                        }
-                        else // mismatched LclVar definition and LclVar use size
-                        {
-                            if (typSize < varSize)
+                            if (genTypeSize(varDsc) != genTypeSize(lcl))
                             {
-                                // the indirection is reading less that the whole LclVar
-                                // create a new VN that represent the partial value
-                                //
-                                ValueNumPair partialLclVarVNP =
-                                    vnStore->VNPairForCast(wholeLclVarVNP, typ, varDsc->TypeGet());
-                                lcl->gtVNPair = partialLclVarVNP;
+                                assert((varDsc->TypeGet() == TYP_LONG) && lcl->TypeIs(TYP_INT));
+                                lcl->gtVNPair =
+                                    vnStore->VNPairForCast(wholeLclVarVNP, lcl->TypeGet(), varDsc->TypeGet());
                             }
                             else
                             {
-                                assert(typSize > varSize);
-                                // the indirection is reading beyond the end of the field
-                                //
-                                generateUniqueVN = true;
+                                assert((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF));
+                                lcl->gtVNPair = wholeLclVarVNP;
                             }
                         }
-                    }
-
-                    if (!generateUniqueVN)
-                    {
-                        // There are a couple of cases where we haven't assigned a valid value number to 'lcl'
-                        //
-                        if (lcl->gtVNPair.GetLiberal() == ValueNumStore::NoVN)
+                        else
                         {
-#ifdef DEBUG
-
-                            // So far, we know about three of these cases:
-                            // Case 1) We have a local var who has never been defined but it's seen as a use.
-                            //         This is the case of storeIndir(addr(lclvar)) = expr.  In this case since we only
-                            //         take the address of the variable, this doesn't mean it's a use nor we have to
-                            //         initialize it, so in this very rare case, we fabricate a value number;
-                            // Case 2) Local variables that represent structs which are assigned using CpBlk;
-                            // Case 3) Local variable was written using a partial write,
-                            //         for example, BLK<1>(ADDR(LCL_VAR int)) = 1, it will change only the first byte.
-                            //         Check that there was ld-addr-op on the local.
-                            //
-                            // Make sure we have one of these cases.
-                            //
-                            const GenTree*   nextNode = lcl->gtNext;
-                            const LclVarDsc* varDsc   = lvaGetDesc(lcl);
-
-                            assert((nextNode->gtOper == GT_ADDR && nextNode->AsOp()->gtOp1 == lcl) ||
-                                   varTypeIsStruct(lcl->TypeGet()) || varDsc->lvHasLdAddrOp);
-#endif // DEBUG
-
-                            // We will assign a unique value number for these
-                            //
-                            generateUniqueVN = true;
+                            lcl->gtVNPair = wholeLclVarVNP;
                         }
                     }
+                    else if (varDsc->IsAddressExposed())
+                    {
+                        // Address-exposed locals are part of ByrefExposed.
+                        ValueNum addrVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNum),
+                                                             vnStore->VNForFieldSeq(nullptr));
+                        ValueNum loadVN = fgValueNumberByrefExposedLoad(lcl->TypeGet(), addrVN);
 
-                    if (!generateUniqueVN && (zeroOffsetFldSeq != nullptr))
+                        lcl->gtVNPair.SetBoth(loadVN);
+                    }
+                    else
+                    {
+                        // An untracked local, and other odd cases.
+                        lcl->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lcl->TypeGet()));
+                    }
+
+                    // When we have a TYP_BYREF LclVar it can have a zero offset field sequence that needs to be added.
+                    FieldSeqNode* zeroOffsetFldSeq = nullptr;
+                    if ((typ == TYP_BYREF) && GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFldSeq))
                     {
                         ValueNum addrExtended = vnStore->ExtendPtrVN(lcl, zeroOffsetFldSeq);
                         if (addrExtended != ValueNumStore::NoVN)
                         {
+                            assert(lcl->gtVNPair.BothEqual());
                             lcl->gtVNPair.SetBoth(addrExtended);
                         }
                     }
-
-                    if (generateUniqueVN)
-                    {
-                        ValueNum uniqVN = vnStore->VNForExpr(compCurBB, lcl->TypeGet());
-                        lcl->gtVNPair.SetBoth(uniqVN);
-                    }
                 }
-                else if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
+                else
                 {
-                    // We have a Def (write) of the LclVar
+                    assert((lcl->gtFlags & GTF_VAR_DEF) != 0);
 
-                    // The below block ensures we give VNs to the fields of
-                    // "CanBeReplacedWithItsField" struct locals. To the numbering
-                    // of block assignments, those appear as untracked locals, but
-                    // we need to give the SSA defs they represent a VN.
-                    if (lcl->GetSsaNum() != SsaConfig::RESERVED_SSA_NUM)
-                    {
-                        ValueNum uniqVN = vnStore->VNForExpr(compCurBB, lcl->TypeGet());
-                        varDsc->GetPerSsaData(lcl->GetSsaNum())->m_vnPair.SetBoth(uniqVN);
-                    }
-
-                    // Location nodes get VNForVoid (no exceptions needed).
-                    lcl->gtVNPair = vnStore->VNPForVoid();
+                    // Give location nodes VNForVoid. Note that for non-struct
+                    // locals, this will get overriden in "fgValueNumberAssignment",
+                    // because some code (notably copy propagation) depends on that.
+                    // TODO-Cleanup: get rid of this dependency.
+                    lcl->SetVNs(vnStore->VNPForVoid());
                 }
             }
             break;
-
-            case GT_FTN_ADDR:
-                // Use the value of the function pointer (actually, a method handle.)
-                tree->gtVNPair.SetBoth(
-                    vnStore->VNForHandle(ssize_t(tree->AsFptrVal()->gtFptrMethod), GTF_ICON_METHOD_HDL));
-                break;
-
-            // This group passes through a value from a child node.
-            case GT_RET_EXPR:
-                tree->SetVNsFromNode(tree->AsRetExpr()->gtInlineCandidate);
-                break;
 
             case GT_LCL_FLD:
             {
                 GenTreeLclFld* lclFld = tree->AsLclFld();
                 assert(!lvaInSsa(lclFld->GetLclNum()) || (lclFld->GetFieldSeq() != nullptr));
-                // If this is a (full) def, then the variable will be labeled with the new SSA number,
-                // which will not have a value.  We skip; it will be handled by one of the assignment-like
-                // forms (assignment, or initBlk or copyBlk).
-                if (((lclFld->gtFlags & GTF_VAR_DEF) == 0) || (lclFld->gtFlags & GTF_VAR_USEASG))
+
+                // If this is a (full or partial) def we skip; it will be handled as part of the assignment.
+                if ((lclFld->gtFlags & GTF_VAR_DEF) == 0)
                 {
                     unsigned   ssaNum = lclFld->GetSsaNum();
                     LclVarDsc* varDsc = lvaGetDesc(lclFld);
@@ -8616,7 +8547,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             }
             break;
 
-            // The ones below here all get a new unique VN -- but for various reasons, explained after each.
             case GT_CATCH_ARG:
                 // We know nothing about the value of a caught expression.
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
@@ -8687,6 +8617,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_MEMORYBARRIER: // Leaf
                 // For MEMORYBARRIER add an arbitrary side effect on GcHeap/ByrefExposed.
                 fgMutateGcHeap(tree DEBUGARG("MEMORYBARRIER"));
+                tree->gtVNPair = vnStore->VNPForVoid();
                 break;
 
             // These do not represent values.
@@ -8696,19 +8627,19 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 #if !defined(FEATURE_EH_FUNCLETS)
             case GT_END_LFIN: // Control flow
 #endif
+                tree->gtVNPair = vnStore->VNPForVoid();
+                break;
+
             case GT_ARGPLACE:
                 // This node is a standin for an argument whose value will be computed later.  (Perhaps it's
                 // a register argument, and we don't want to preclude use of the register in arg evaluation yet.)
-                // We give this a "fake" value number now; if the call in which it occurs cares about the
-                // value (e.g., it's a helper call whose result is a function of argument values) we'll reset
-                // this later, when the later args have been assigned VNs.
-                tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                // We defer giving this a value number now; we'll reset it later, when numbering the call.
                 break;
 
             case GT_PHI_ARG:
                 // This one is special because we should never process it in this method: it should
                 // always be taken care of, when needed, during pre-processing of a blocks phi definitions.
-                assert(false);
+                assert(!"PHI_ARG in fgValueNumberTree");
                 break;
 
             default:

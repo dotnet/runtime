@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Primitive
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Primitives", "src\System.Reflection.Primitives.csproj", "{5D40069E-7CC2-4B40-A41D-6B003CCB4075}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{AA8D698E-B854-4D0E-83A2-0EAD0BA62122}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{AA8D698E-B854-4D0E-83A2-0EAD0BA62122}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{6DF455E8-D2C8-40EC-AEF2-AE05A66405F7}"
 EndProject

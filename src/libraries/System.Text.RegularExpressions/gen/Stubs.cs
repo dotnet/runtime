@@ -73,7 +73,7 @@ namespace System.Threading
 
 namespace System.Text.RegularExpressions
 {
-    internal class RegexReplacement
+    internal sealed class RegexReplacement
     {
         public RegexReplacement(string rep, RegexNode concat, Hashtable caps) { }
 

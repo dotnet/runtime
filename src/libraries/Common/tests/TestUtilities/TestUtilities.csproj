@@ -43,6 +43,9 @@
       variant from the Common folder and adding the missing members manually.
     -->
     <Compile Include="Interop\Interop.Libraries.cs" />
+
+    <Compile Include="RandomTestCaseOrderer.cs" />
+    <Compile Include="RandomTestCollectionOrderer.cs" />
   </ItemGroup>
   <!-- Windows imports -->
   <ItemGroup>

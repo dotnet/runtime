@@ -5905,6 +5905,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		}
 		case CEE_CONV_R_UN:
 			switch (td->sp [-1].type) {
+			case STACK_TYPE_R4:
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+				break;
 			case STACK_TYPE_R8:
 				break;
 			case STACK_TYPE_I8:
