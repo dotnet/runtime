@@ -5188,11 +5188,15 @@ GenTree* Lowering::CreateMultiUseForIndirectionCellAddressIfProfitable(GenTreeCa
     GenTree* addr;
     if (!slot->OperIsLocal())
     {
-        unsigned lcl = comp->lvaGrabTemp(true DEBUGARG("Indirection cell address"));
-        LIR::Use use(BlockRange(), &slot, indirCellArg->lateUse->GetNode());
-        ReplaceWithLclVar(use, lcl);
+        if (m_indirCellAddressLcl == BAD_VAR_NUM)
+        {
+            m_indirCellAddressLcl = comp->lvaGrabTemp(true DEBUGARG("Indirection cell address"));
+        }
 
-        addr = comp->gtNewLclvNode(lcl, TYP_I_IMPL);
+        LIR::Use use(BlockRange(), &slot, indirCellArg->lateUse->GetNode());
+        ReplaceWithLclVar(use, m_indirCellAddressLcl);
+
+        addr = comp->gtNewLclvNode(m_indirCellAddressLcl, TYP_I_IMPL);
     }
     else
     {

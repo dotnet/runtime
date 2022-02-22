@@ -2498,7 +2498,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         assert(arg2 != nullptr);
         nonStandardArgs.Add(arg2, REG_LNGARG_HI, NonStandardArgKind::ShiftHigh);
     }
-#else  // !TARGET_X86
+#else // !TARGET_X86
     // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
     // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
     // convention for x86/SSE.
@@ -2534,6 +2534,13 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             GenTree* stubAddrArg = fgGetStubAddrArg(call);
             // And push the stub address onto the list of arguments
             call->gtCallArgs = gtPrependNewCallArg(stubAddrArg, call->gtCallArgs);
+
+#ifdef TARGET_ARM
+            // LSRA seems to do worse on ARM than other platforms, hint to it
+            // that this constant should go directly in the indirection cell
+            // register.
+            stubAddrArg->SetRegNum(virtualStubParamInfo->GetReg());
+#endif
 
             numArgs++;
             nonStandardArgs.Add(stubAddrArg, virtualStubParamInfo->GetReg(), NonStandardArgKind::VirtualStubCell);
@@ -2601,6 +2608,12 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         GenTree* indirectCellAddress = gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
 #ifdef DEBUG
         indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+#endif
+#ifdef TARGET_ARM
+        // LSRA seems to do worse on ARM than other platforms, hint to it
+        // that this constant should go directly in the indirection cell
+        // register.
+        indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
 #endif
 
         // Push the stub address onto the list of arguments.

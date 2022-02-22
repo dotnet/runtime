@@ -23,7 +23,7 @@ class Lowering final : public Phase
 {
 public:
     inline Lowering(Compiler* compiler, LinearScanInterface* lsra)
-        : Phase(compiler, PHASE_LOWERING), vtableCallTemp(BAD_VAR_NUM)
+        : Phase(compiler, PHASE_LOWERING), vtableCallTemp(BAD_VAR_NUM), m_indirCellAddressLcl(BAD_VAR_NUM)
     {
         m_lsra = (LinearScan*)lsra;
         assert(m_lsra);
@@ -624,6 +624,7 @@ private:
     unsigned              vtableCallTemp;       // local variable we use as a temp for vtable calls
     mutable SideEffectSet m_scratchSideEffects; // SideEffectSet used for IsSafeToContainMem and isRMWIndirCandidate
     BasicBlock*           m_block;
+    unsigned              m_indirCellAddressLcl;
 };
 
 #endif // _LOWER_H_
