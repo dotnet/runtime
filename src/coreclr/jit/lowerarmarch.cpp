@@ -891,9 +891,9 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
     if (!varTypeIsFloating(simdBaseType) && (op != nullptr))
     {
-        // Use USHORT variant as it has better latency/throughput on some CPUs than UBYTE
-        GenTree* cmp =
-            comp->gtNewSimdHWIntrinsicNode(simdType, op, NI_AdvSimd_Arm64_MaxAcross, CORINFO_TYPE_USHORT, simdSize);
+        // Use USHORT for V64 and UINT for V128 due to better latency/TP on some CPUs
+        CorInfoType maxType = (simdSize == 8) ? CORINFO_TYPE_USHORT : CORINFO_TYPE_UINT;
+        GenTree*    cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op, NI_AdvSimd_Arm64_MaxAcross, maxType, simdSize);
         BlockRange().InsertBefore(node, cmp);
         LowerNode(cmp);
         BlockRange().Remove(opZero);
