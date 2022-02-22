@@ -122,7 +122,7 @@ steps:
   - script: |
       set -x
       pwd
-      git clone git@github.com:naricc/dotnet-podcasts.git
+      git clone https://github.com/naricc/dotnet-podcasts.git
       cd dotnet-podcasts
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
