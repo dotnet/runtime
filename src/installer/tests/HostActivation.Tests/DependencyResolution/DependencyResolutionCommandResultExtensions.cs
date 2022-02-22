@@ -6,6 +6,7 @@ using FluentAssertions.Execution;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using TestUtils.Assertions;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
@@ -22,7 +23,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             foreach (string value in values)
             {
                 Execute.Assertion.ForCondition(propertyValue != null && propertyValue.Contains(value))
-                    .FailWith("The property {0} doesn't contain expected value: {1}\n{2}\n{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+                    .FailWithPreformatted($"The property {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
+                        $"{propertyName}='{propertyValue}'" +
+                        $"{assertion.GetDiagnosticsInfo()}");
             }
 
             return new AndConstraint<CommandResultAssertions>(assertion);
@@ -35,7 +38,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             foreach (string value in values)
             {
                 Execute.Assertion.ForCondition(propertyValue != null && !propertyValue.Contains(value))
-                    .FailWith("The property {0} contains unexpected value: {1}\n{2}\n{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+                    .FailWithPreformatted($"The property {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
+                        $"{propertyName}='{propertyValue}'" +
+                        $"{assertion.GetDiagnosticsInfo()}");
             }
 
             return new AndConstraint<CommandResultAssertions>(assertion);
@@ -80,7 +85,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             foreach (string value in values)
             {
                 Execute.Assertion.ForCondition(propertyValue != null && propertyValue.Contains(value))
-                    .FailWith("The resolved {0} doesn't contain expected value: {1}\n{2}\n{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+                    .FailWithPreformatted($"The resolved {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
+                        $"{propertyName}='{propertyValue}'" +
+                        $"{assertion.GetDiagnosticsInfo()}");
             }
 
             return new AndConstraint<CommandResultAssertions>(assertion);
@@ -96,7 +103,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             foreach (string value in values)
             {
                 Execute.Assertion.ForCondition(propertyValue != null && !propertyValue.Contains(value))
-                    .FailWith("The resolved {0} contains unexpected value: {1}\n{2}\n{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+                    .FailWithPreformatted($"The resolved {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
+                        $"{propertyName}='{propertyValue}'" +
+                        $"{assertion.GetDiagnosticsInfo()}");
             }
 
             return new AndConstraint<CommandResultAssertions>(assertion);
