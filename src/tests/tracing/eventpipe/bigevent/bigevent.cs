@@ -50,6 +50,7 @@ namespace Tracing.Tests.BigEventsValidation
             // This test tries to send a big event (>100KB) and checks that the app does not crash
             // See https://github.com/dotnet/runtime/issues/50515 for the regression issue
 #if (UPDATED_NETCORE_CLIENT == true)
+            Console.WriteLine($"NONLEGACY NETCORE.CLIENT");
             var providers = new List<EventPipeProvider>()
             {
                 new EventPipeProvider("BigEventSource", EventLevel.Verbose)
@@ -57,6 +58,7 @@ namespace Tracing.Tests.BigEventsValidation
 
             return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _Verify);
 #else
+            Console.WriteLine($"LEGACY TOOLS.RUNTIMECLIENT");
             var providers = new List<Provider>()
             {
                 new Provider("BigEventSource")

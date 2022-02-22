@@ -33,6 +33,7 @@ namespace Tracing.Tests.ProviderValidation
             // and that providers turned on that generate events are being written to
             // the stream.
 #if (UPDATED_NETCORE_CLIENT == true)
+            Console.WriteLine($"NONLEGACY NETCORE.CLIENT");
             var providers = new List<EventPipeProvider>()
             {
                 new EventPipeProvider("MyEventSource", EventLevel.Verbose),
@@ -41,6 +42,7 @@ namespace Tracing.Tests.ProviderValidation
 
             var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024);
 #else
+            Console.WriteLine($"LEGACY TOOLS.RUNTIMECLIENT");
             var providers = new List<Provider>()
             {
                 new Provider("MyEventSource"),

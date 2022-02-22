@@ -32,6 +32,7 @@ namespace Tracing.Tests.BufferValidation
             // This tests the resilience of message sending with
             // smaller buffers, specifically 1MB and 4MB
 #if (UPDATED_NETCORE_CLIENT == true)
+            Console.WriteLine($"NONLEGACY NETCORE.CLIENT");
             var providers = new List<EventPipeProvider>()
             {
                 new EventPipeProvider("MyEventSource", EventLevel.Verbose)
@@ -49,6 +50,7 @@ namespace Tracing.Tests.BufferValidation
 
             return 100;
 #else
+            Console.WriteLine($"LEGACY TOOLS.RUNTIMECLIENT");
             var providers = new List<Provider>()
             {
                 new Provider("MyEventSource")

@@ -8,6 +8,12 @@
     <!-- GCStress timeout: https://github.com/dotnet/runtime/issues/51133 -->
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'OSX'">true</GCStressIncompatible>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- On Linux arm coreclr, the updated tracing/eventpipe/common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj project
+         does not yet work for several eventpipe runtime tests. We segment those tests with the following property and symbol -->
+    <UseUpdatedNETCoreClient Condition="!('$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'arm' And '$(RuntimeFlavor)' == 'coreclr')">true</UseUpdatedNETCoreClient>
+    <DefineConstants Condition="'$(UseUpdatedNETCoreClient)' == 'true'">$(DefineConstants);UPDATED_NETCORE_CLIENT</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="../common/common.csproj" />

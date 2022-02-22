@@ -53,6 +53,7 @@ namespace Tracing.Tests.EventSourceError
             // This test validates that if an EventSource generates an error
             // during construction it gets emitted over EventPipe
 #if (UPDATED_NETCORE_CLIENT == true)
+            Console.WriteLine($"NONLEGACY NETCORE.CLIENT");
             var providers = new List<EventPipeProvider>
             {
                 new EventPipeProvider("IllegalTypesEventSource", EventLevel.Verbose)
@@ -60,6 +61,7 @@ namespace Tracing.Tests.EventSourceError
 
             return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesRundownContainMethodEvents);
 #else
+            Console.WriteLine($"LEGACY TOOLS.RUNTIMECLIENT");
             List<Provider> providers = new List<Provider>
             {
                 new Provider("IllegalTypesEventSource")

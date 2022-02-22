@@ -28,6 +28,7 @@ namespace Tracing.Tests.RundownValidation
             // and that the rundown contains the necessary events to get
             // symbols in a nettrace file.
 #if (UPDATED_NETCORE_CLIENT == true)
+            Console.WriteLine($"NONLEGACY NETCORE.CLIENT");
             var providers = new List<EventPipeProvider>()
             {
                 new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Verbose)
@@ -35,6 +36,7 @@ namespace Tracing.Tests.RundownValidation
 
             return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesRundownContainMethodEvents);
 #else
+            Console.WriteLine($"LEGACY TOOLS.RUNTIMECLIENT");
             var providers = new List<Provider>()
             {
                 new Provider("Microsoft-DotNETCore-SampleProfiler")

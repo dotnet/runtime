@@ -28,6 +28,7 @@ public unsafe class DebugInfoTest
             ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.JittedMethodILToNativeMap;
 
 #if UPDATED_NETCORE_CLIENT
+        Console.WriteLine($"NONLEGACY NETCORE.CLIENT");
         var dotnetRuntimeProvider = new List<EventPipeProvider>
         {
             new EventPipeProvider("Microsoft-Windows-DotNETRuntime", eventLevel: EventLevel.Verbose, keywords: (long)keywords)
@@ -41,6 +42,7 @@ public unsafe class DebugInfoTest
                 1024,
                 ValidateMappings);
 #else
+        Console.WriteLine($"LEGACY TOOLS.RUNTIMECLIENT");
         var dotnetRuntimeProvider = new List<Provider>
         {
             new Provider("Microsoft-Windows-DotNETRuntime", eventLevel: EventLevel.Verbose, keywords: (ulong)keywords)
