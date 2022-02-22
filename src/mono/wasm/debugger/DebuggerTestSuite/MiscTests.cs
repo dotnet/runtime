@@ -14,10 +14,15 @@ using Xunit.Sdk;
 namespace DebuggerTests
 {
 
-    public class MiscTests : DebuggerTestBase
+    public class MiscTests :
+#if RUN_IN_CHROME
+    DebuggerTestBase
+#else
+    DebuggerTestFirefox
+#endif
     {
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public void CheckThatAllSourcesAreSent()
         {
             Assert.Contains("dotnet://debugger-test.dll/debugger-test.cs", scripts.Values);
@@ -58,7 +63,7 @@ namespace DebuggerTests
             Assert.Equal(dicFileToUrl["/debugger-driver.html"], ex_json["exceptionDetails"]?["url"]?.Value<string>());
         }
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsAtBreakpointSite(bool use_cfo) =>
@@ -90,7 +95,7 @@ namespace DebuggerTests
                 }
             );
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task InspectLocalsTypesAtBreakpointSite() =>
             await CheckInspectLocalsAtBreakpointSite(
                 "dotnet://debugger-test.dll/debugger-test2.cs", 50, 8, "Types",
@@ -122,7 +127,7 @@ namespace DebuggerTests
                 }
             );
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task InspectSimpleStringLocals() =>
             await CheckInspectLocalsAtBreakpointSite(
                 "Math", "TestSimpleStrings", 13, "TestSimpleStrings",
@@ -194,7 +199,7 @@ namespace DebuggerTests
                 }, nameof(n_gs));
             });
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsWithGenericTypesAtBreakpointSite(bool use_cfo) =>
@@ -341,7 +346,7 @@ namespace DebuggerTests
             // FIXME: check ss_local.gs.List's members
         }
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData("BoxingTest", false)]
         [InlineData("BoxingTestAsync", true)]
         public async Task InspectBoxedLocals(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -394,7 +399,7 @@ namespace DebuggerTests
                 }, nameof(o_ia_props));
             });
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData("BoxedTypeObjectTest", false)]
         [InlineData("BoxedTypeObjectTestAsync", true)]
         public async Task InspectBoxedTypeObject(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -420,7 +425,7 @@ namespace DebuggerTests
                 }, "locals");
             });
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData("BoxedAsClass", false)]
         [InlineData("BoxedAsClassAsync", true)]
         public async Task InspectBoxedAsClassLocals(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -433,7 +438,6 @@ namespace DebuggerTests
             {
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 var dt = new DateTime(2310, 1, 2, 3, 4, 5);
-                Console.WriteLine(locals);
 
                 await CheckProps(locals, new
                 {
@@ -508,11 +512,11 @@ namespace DebuggerTests
             // FIXME: check ss_local.gs.List's members
         }
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData(137, 12, "MethodWithLocalsForToStringTest", false, false)]
-        [InlineData(147, 12, "MethodWithArgumentsForToStringTest", true, false)]
+        /*[InlineData(147, 12, "MethodWithArgumentsForToStringTest", true, false)]
         [InlineData(192, 12, "MethodWithArgumentsForToStringTestAsync", true, true)]
-        [InlineData(182, 12, "MethodWithArgumentsForToStringTestAsync", false, true)]
+        [InlineData(182, 12, "MethodWithArgumentsForToStringTestAsync", false, true)]*/
         public async Task InspectLocalsForToStringDescriptions(int line, int col, string method_name, bool call_other, bool invoke_async)
         {
             string entry_method_name = $"[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalsForToStringTest{(invoke_async ? "Async" : String.Empty)}";
@@ -599,7 +603,7 @@ namespace DebuggerTests
                 }, "sst_props");
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task InspectLocals()
         {
             var wait_res = await RunUntil("locals_inner");
@@ -645,7 +649,7 @@ namespace DebuggerTests
 
            });
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task MulticastDelegateTest() => await CheckInspectLocalsAtBreakpointSite(
             "MulticastDelegateTestClass", "Test", 5, "Test",
             "window.setTimeout(function() { invoke_static_method('[debugger-test] MulticastDelegateTestClass:run'); })",
@@ -659,7 +663,7 @@ namespace DebuggerTests
                 }, "this_props");
             });
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData("EmptyClass", false)]
         [InlineData("EmptyClass", true)]
         [InlineData("EmptyStruct", false)]
@@ -699,7 +703,7 @@ namespace DebuggerTests
             });
 
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task PreviousFrameForAReflectedCall() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.GetPropertiesTests.CloneableStruct", "SimpleStaticMethod", 1, "SimpleStaticMethod",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.GetPropertiesTests.TestWithReflection:run'); })",
@@ -875,7 +879,7 @@ namespace DebuggerTests
             });
 
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task InspectLocalsWithIndexAndPositionWithDifferentValues() //https://github.com/xamarin/xamarin-android/issues/6161
         {
             await EvaluateAndCheck(
@@ -890,12 +894,12 @@ namespace DebuggerTests
             );
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task MallocUntilReallocate() //https://github.com/xamarin/xamarin-android/issues/6161
         {
             string eval_expr = "window.setTimeout(function() { malloc_to_reallocate_test (); }, 1)";
 
-            var result = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), token);
+            var result = await Evaluate(eval_expr);
 
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
 
@@ -932,7 +936,7 @@ namespace DebuggerTests
             );
         }
 
-        [FactDependingOnTheBrowser]
+        [Fact]
         public async Task InspectLocalsUsingClassFromLibraryUsingDebugTypeFull()
         {
             var expression = $"{{ invoke_static_method('[debugger-test] DebugTypeFull:CallToEvaluateLocal'); }}";

@@ -286,7 +286,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal override Task<Result> SendCommandInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
-            if (method != "")
+            if (method != null && method != "")
             {
                 var tcs = new TaskCompletionSource<Result>();
                 MessageId msgId;
@@ -440,19 +440,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "source":
                     {
-                        if (args["to"].Value<string>().StartsWith("dotnet://"))
-                        {
-                            return await OnGetScriptSource(sessionId, args["to"].Value<string>(), token);
-                        }
-                        break;
+                        return await OnGetScriptSource(sessionId, args["to"].Value<string>(), token);
                     }
                 case "getBreakableLines":
                     {
-                        if (args["to"].Value<string>().StartsWith("dotnet://"))
-                        {
-                            return await OnGetBreakableLines(sessionId, args["to"].Value<string>(), token);
-                        }
-                        break;
+                        return await OnGetBreakableLines(sessionId, args["to"].Value<string>(), token);
                     }
                 case "getBreakpointPositionsCompressed":
                     {
@@ -669,7 +661,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         value = JObject.FromObject(new
                         {
-                            @class = variable["value"]?["description"]?.Value<string>(),
+                            @class = variable["value"]?["className"]?.Value<string>(),
+                            value = variable["value"]?["description"]?.Value<string>(),
                             actor = variable["value"]["objectId"].Value<string>(),
                             type = "object"
                         }),

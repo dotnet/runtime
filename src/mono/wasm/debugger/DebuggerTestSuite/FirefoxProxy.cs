@@ -137,7 +137,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
         var bp1_res = await cli.SendCommand("setBreakpoint", bp1_req, token);
         Assert.True(expect_ok == bp1_res.IsOk);
-
+        await Task.Delay(200);
         return bp1_res;
     }
     internal override async Task<JObject> EvaluateAndCheck(
@@ -151,8 +151,8 @@ public class DebuggerTestFirefox : DebuggerTestBase
                 text = expression,
                 options = new { eager = true, mapped = new { @await = true } }
             });
-
-       return await SendCommandAndCheck(
+        
+        return await SendCommandAndCheck(
                     o,
                     "evaluateJSAsync", script_loc, line, column, function_name,
                     wait_for_event_fn: wait_for_event_fn,
@@ -166,10 +166,10 @@ public class DebuggerTestFirefox : DebuggerTestBase
             return;
         int column_from_stack = -1;
         if (column != -1)
-            column_from_stack = location["column"].Value<int>();
+            column_from_stack = location["columnNumber"].Value<int>();
 
-        var loc_str = $"{ scripts[location["actor"].Value<string>()] }" +
-            $"#{ location["line"].Value<int>()}" +
+        var loc_str = $"{ scripts[location["scriptId"].Value<string>()] }" +
+            $"#{ location["lineNumber"].Value<int>()}" +
             $"#{ column_from_stack }";
 
         var expected_loc_str = $"{script_loc}#{line+1}#{column}";
@@ -232,27 +232,14 @@ public class DebuggerTestFirefox : DebuggerTestBase
             Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
             Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
         }
-        var wait_res = await insp.WaitFor(waitForEvent);
-
-        var frames = await cli.SendCommand("frames", JObject.FromObject(new
-            {
-                to = wait_res["from"].Value<string>(),
-                type = "frames",
-                start = 0,
-                count =  1000
-            }), token);
-
-        JToken top_frame = frames.Value["result"]?["value"]?["frames"]?[0];
+        var wait_res = await WaitFor(waitForEvent);
         if (function_name != null)
         {
-            AssertEqual(function_name, top_frame?["displayName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual(function_name, wait_res["callFrames"]?[0]?["functionName"]?.Value<string>(),  wait_res["callFrames"]?[0]?["functionName"]?.ToString());
         }
 
         if (script_loc != null && line >= 0)
-            CheckLocation(script_loc, line, column, scripts, top_frame["where"]);
-
-        
-        wait_res = await ConvertFirefoxToDefaultFormat(frames.Value["result"]?["value"]?["frames"] as JArray, wait_res);
+            CheckLocation(script_loc, line, column, scripts, wait_res["callFrames"]?[0]?["location"]);
 
         if (wait_for_event_fn != null)
         {
@@ -275,6 +262,62 @@ public class DebuggerTestFirefox : DebuggerTestBase
         return wait_res;
     }
 
+    internal JObject ConvertFromFirefoxToDefaultFormat(KeyValuePair<string, JToken> variable)
+    {
+        string name = variable.Key;
+        JToken value = variable.Value;
+        JObject variableValue = null;
+        if (value?["type"] == null || value["type"].Value<string>() == "object")
+        {
+            if (value["value"]["type"].Value<string>() == "null")
+            {
+                variableValue = JObject.FromObject(new
+                        {
+                            type = "object",
+                            subtype = "null",
+                            className = value["value"]["class"].Value<string>(),
+                            description = value["value"]["class"].Value<string>()
+                        });
+            }
+            else
+            {
+                variableValue = JObject.FromObject(new
+                        {
+                            type = value["value"]["type"],
+                            value = (string)null,
+                            description = value["value"]?["value"]?.Value<string>() == null ? value["value"]["class"].Value<string>() : value["value"]?["value"]?.Value<string>(),
+                            className = value["value"]["class"].Value<string>(),
+                            objectId = value["value"]["actor"].Value<string>(),
+                        });
+                if (value["value"]["actor"].Value<string>().StartsWith("dotnet:valuetype:"))
+                {
+                    variableValue["isValueType"] = true;
+                }
+                if (value["value"]["actor"].Value<string>().StartsWith("dotnet:array:"))
+                    variableValue["subtype"] = "array";
+            }
+        }
+        else
+        {
+            var description = value["value"].ToString();
+            if (value["type"].Value<string>() == "boolean")
+                description = description.ToLower();
+            variableValue = JObject.FromObject(new
+                    {
+                        type = value["type"],
+                        value = value["value"],
+                        description
+                    });
+        }
+
+        return JObject.FromObject(new
+        {
+            name,
+            writable = value["writable"] != null ? value["writable"] : false,
+            value = variableValue
+        });
+    }
+
     /* @fn_args is for use with `Runtime.callFunctionOn` only */
     internal override async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
     {
@@ -289,48 +332,29 @@ public class DebuggerTestFirefox : DebuggerTestBase
             var frame_props = await cli.SendCommand("getEnvironment", o, token);
             foreach (var variable in frame_props.Value["result"]["value"]["bindings"]["variables"].Value<JObject>())
             {
-                string name = variable.Key;
-                JToken value = variable.Value;
-                JObject variableValue = null;
-                if (value?["type"] == null || value["type"].Value<string>() == "object")
-                {
-                    if (value["value"]["type"].Value<string>() == "null")
-                    {
-                        variableValue = JObject.FromObject(new
-                                {
-                                    type = "object",
-                                    subtype = "null",
-                                    className = value["value"]["class"].Value<string>()
-                                });
-                    }
-                    else
-                    {
-                        variableValue = JObject.FromObject(new
-                                {
-                                    type = value["value"]["type"],
-                                    value = (string)null,
-                                    description = value["value"]["class"].Value<string>(),
-                                    className = value["value"]["class"].Value<string>(),
-                                    objectId = value["value"]["actor"].Value<string>(),
-                                });
-                    }
-                }
-                else
-                {
-                    variableValue = JObject.FromObject(new
-                            {
-                                type = value["type"],
-                                value = value["value"],
-                                description = value["value"].Value<string>()
-                            });
-                }
-
-                var varToAdd = JObject.FromObject(new
-                {
-                    name,
-                    writable = value["writable"] != null ? value["writable"] : false,
-                    value = variableValue
-                });
+                var varToAdd = ConvertFromFirefoxToDefaultFormat(variable);
+                ret.Add(varToAdd);
+            }
+            return ret;
+        }
+        if (id.StartsWith("dotnet:valuetype:") || id.StartsWith("dotnet:object:") || id.StartsWith("dotnet:array:"))
+        {
+            JArray ret = new ();
+            var o = JObject.FromObject(new
+            {
+                to = id,
+                type = "enumProperties"
+            });
+            var propertyIterator = await cli.SendCommand("enumProperties", o, token);
+            o = JObject.FromObject(new
+            {
+                to = propertyIterator.Value["result"]["value"]?["iterator"]?["actor"].Value<string>().Replace("propertyIterator", ""),
+                type = "prototypeAndProperties"
+            });
+            var objProps = await cli.SendCommand("prototypeAndProperties", o, token);
+            foreach (var prop in objProps.Value["result"]["value"]["ownProperties"].Value<JObject>())
+            {
+                var varToAdd = ConvertFromFirefoxToDefaultFormat(prop);
                 ret.Add(varToAdd);
             }
             return ret;
@@ -398,8 +422,53 @@ public class DebuggerTestFirefox : DebuggerTestBase
             }));
 
         bp1_res.Value["locations"] = arr;
-        //Console.WriteLine(bp1_res);
+        await Task.Delay(200);
         return bp1_res;
+    }
+    internal override bool SkipProperty(string propertyName)
+    {
+        if (propertyName == "isEnum")
+            return true;
+        return false;
+    }
+
+    internal override async Task CheckDateTimeGetter(JToken value, DateTime expected, string label = "")
+    {
+        await Task.CompletedTask;
+    }
+
+    internal override string EvaluateCommand()
+    {
+        return "evaluateJSAsync";
+    }
+
+    internal override JObject CreateEvaluateArgs(string expression)
+    {
+        return JObject.FromObject(new
+        {
+            to = client.ConsoleActorId,
+            type = "evaluateJSAsync",
+            text = expression,
+            options = new { eager = true, mapped = new { @await = true } }
+        });
+    }
+
+    internal override async Task<JObject> WaitFor(string what)
+    {
+        var wait_res = await insp.WaitFor(what);
+        var frames = await cli.SendCommand("frames", JObject.FromObject(new
+        {
+            to = wait_res["from"].Value<string>(),
+            type = "frames",
+            start = 0,
+            count =  1000
+        }), token);
+
+        JToken top_frame = frames.Value["result"]?["value"]?["frames"]?[0];
+
+        wait_res = await ConvertFirefoxToDefaultFormat(frames.Value["result"]?["value"]?["frames"] as JArray, wait_res);
+
+        return wait_res;
     }
 
 }
