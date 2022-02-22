@@ -8,8 +8,6 @@ using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Runtime.InteropServices
 {
     /// <summary>

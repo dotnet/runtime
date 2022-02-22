@@ -17,8 +17,7 @@ namespace Microsoft.Interop
         None = 0,
         CharSet = 1 << 0,
         EntryPoint = 1 << 1,
-        ExactSpelling = 1 << 2,
-        SetLastError = 1 << 3,
+        SetLastError = 1 << 2,
         All = ~None
     }
 
@@ -37,7 +36,6 @@ namespace Microsoft.Interop
         public DllImportMember IsUserDefined { get; init; }
         public CharSet CharSet { get; init; }
         public string? EntryPoint { get; init; }
-        public bool ExactSpelling { get; init; }
         public bool SetLastError { get; init; }
     }
 }

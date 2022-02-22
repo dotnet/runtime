@@ -46,7 +46,7 @@ namespace Internal.IL
                 return RuntimeHelpersIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name == "Unsafe" && mdType.Namespace == "Internal.Runtime.CompilerServices")
+            if (mdType.Name == "Unsafe" && mdType.Namespace == "System.Runtime.CompilerServices")
             {
                 return UnsafeIntrinsics.EmitIL(method);
             }

@@ -807,12 +807,7 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUN
     TypeHandle typeHandle = refType->GetType();
 
     if (typeHandle.IsTypeDesc()) {
-
-        if (typeHandle.IsGenericVariable()) {
-            return tdPublic;
-        }
-
-        return 0;
+        return tdPublic;
     }
 
 #ifdef FEATURE_COMINTEROP

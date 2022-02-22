@@ -355,7 +355,6 @@ namespace Microsoft.Interop
             DllImportMember userDefinedValues = DllImportMember.None;
             CharSet charSet = CharSet.Ansi;
             string? entryPoint = null;
-            bool exactSpelling = false; // VB has different and unusual default behavior here.
             bool setLastError = false;
 
             // All other data on attribute is defined as NamedArguments.
@@ -384,14 +383,6 @@ namespace Microsoft.Interop
                         }
                         entryPoint = (string)namedArg.Value.Value!;
                         break;
-                    case nameof(GeneratedDllImportData.ExactSpelling):
-                        userDefinedValues |= DllImportMember.ExactSpelling;
-                        if (namedArg.Value.Value is not bool)
-                        {
-                            return null;
-                        }
-                        exactSpelling = (bool)namedArg.Value.Value!;
-                        break;
                     case nameof(GeneratedDllImportData.SetLastError):
                         userDefinedValues |= DllImportMember.SetLastError;
                         if (namedArg.Value.Value is not bool)
@@ -413,7 +404,6 @@ namespace Microsoft.Interop
                 IsUserDefined = userDefinedValues,
                 CharSet = charSet,
                 EntryPoint = entryPoint,
-                ExactSpelling = exactSpelling,
                 SetLastError = setLastError,
             };
         }
@@ -603,19 +593,17 @@ namespace Microsoft.Interop
                 AttributeArgument(
                     NameEquals(nameof(DllImportAttribute.EntryPoint)),
                     null,
-                    CreateStringExpressionSyntax(targetDllImportData.EntryPoint!))
+                    CreateStringExpressionSyntax(targetDllImportData.EntryPoint!)),
+                AttributeArgument(
+                    NameEquals(nameof(DllImportAttribute.ExactSpelling)),
+                    null,
+                    CreateBoolExpressionSyntax(true))
             };
 
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.CharSet))
             {
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.CharSet));
                 ExpressionSyntax value = CreateEnumExpressionSyntax(targetDllImportData.CharSet);
-                newAttributeArgs.Add(AttributeArgument(name, null, value));
-            }
-            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.ExactSpelling))
-            {
-                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.ExactSpelling));
-                ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.ExactSpelling);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.SetLastError))
@@ -669,7 +657,6 @@ namespace Microsoft.Interop
             {
                 CharSet = dllImportData.CharSet,
                 EntryPoint = dllImportData.EntryPoint,
-                ExactSpelling = dllImportData.ExactSpelling,
                 SetLastError = dllImportData.SetLastError,
                 IsUserDefined = dllImportData.IsUserDefined & membersToForward
             };

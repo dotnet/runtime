@@ -67,11 +67,10 @@ namespace Microsoft.Interop
 
         private const string System_Runtime_CompilerServices_Unsafe = "System.Runtime.CompilerServices.Unsafe";
 
-        private const string Internal_Runtime_CompilerServices_Unsafe = "Internal.Runtime.CompilerServices.Unsafe";
 
         public static string Unsafe(InteropGenerationOptions options)
         {
-            return options.UseInternalUnsafeType ? Internal_Runtime_CompilerServices_Unsafe : System_Runtime_CompilerServices_Unsafe;
+            return System_Runtime_CompilerServices_Unsafe;
         }
 
         public const string System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute = "System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute";
