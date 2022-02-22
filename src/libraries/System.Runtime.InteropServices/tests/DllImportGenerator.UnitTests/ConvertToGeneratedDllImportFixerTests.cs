@@ -478,5 +478,29 @@ partial class Test
                 source,
                 fixedSource);
         }
+
+        [ConditionalFact]
+        public async Task BooleanMarshalAsAdded()
+        {
+            string source = @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern bool [|Method|](bool b);
+}}";
+            // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
+            string fixedSource = @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool {{|CS8795:Method|}}([MarshalAs(UnmanagedType.Bool)] bool b);
+}}";
+            await VerifyCS.VerifyCodeFixAsync(
+                source,
+                fixedSource);
+        }
     }
 }
