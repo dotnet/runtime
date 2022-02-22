@@ -843,10 +843,10 @@ class {|#0:S|}
     public ref byte GetPinnableReference() => ref c;
 }
 
-[CustomTypeMarshaller(typeof(S))]
+[CustomTypeMarshaller(typeof(S), BufferSize = 0x100)]
 struct {|#1:Native|}
 {
-    public Native(S s, Span<byte> buffer, BufferSize = 0x100) {}
+    public Native(S s, Span<byte> buffer) {}
 
     public IntPtr Value => IntPtr.Zero;
 }";
