@@ -227,10 +227,10 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"            }}");
             writer.WriteLine();
 
-            writer.WriteLine($"            private bool FindFirstChar(global::System.ReadOnlySpan<char> inputSpan)");
+            writer.WriteLine($"            private bool FindNextPossibleStartingPosition(global::System.ReadOnlySpan<char> inputSpan)");
             writer.WriteLine($"            {{");
             writer.Indent += 4;
-            RequiredHelperFunctions requiredHelpers = EmitFindFirstChar(writer, rm, id);
+            RequiredHelperFunctions requiredHelpers = EmitFindNextPossibleStartingPosition(writer, rm, id);
             writer.Indent -= 4;
             writer.WriteLine($"            }}");
             writer.WriteLine();
@@ -238,10 +238,10 @@ namespace System.Text.RegularExpressions.Generator
             {
                 writer.WriteLine($"            [global::System.Runtime.CompilerServices.SkipLocalsInit]");
             }
-            writer.WriteLine($"            private bool Go(global::System.ReadOnlySpan<char> inputSpan)");
+            writer.WriteLine($"            private bool ValidateCurrentPositionMatches(global::System.ReadOnlySpan<char> inputSpan)");
             writer.WriteLine($"            {{");
             writer.Indent += 4;
-            requiredHelpers |= EmitGo(writer, rm, id);
+            requiredHelpers |= EmitValidateCurrentPositionMatches(writer, rm, id);
             writer.Indent -= 4;
             writer.WriteLine($"            }}");
 
@@ -281,14 +281,14 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 writer.WriteLine($"            /// <summary>Determines whether the character at the specified index is a boundary.</summary>");
                 writer.WriteLine($"            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]");
-                writer.WriteLine($"            private bool IsBoundary(global::System.ReadOnlySpan<char>inputSpan, int index)");
+                writer.WriteLine($"            private static bool IsBoundary(global::System.ReadOnlySpan<char> inputSpan, int index)");
                 writer.WriteLine($"            {{");
                 writer.WriteLine($"                const char ZeroWidthNonJoiner = '\\u200C', ZeroWidthJoiner = '\\u200D';");
                 writer.WriteLine();
-                writer.WriteLine($"                return (index > base.runtextbeg && IsBoundaryWordChar(inputSpan![index - 1])) !=");
-                writer.WriteLine($"                       (index < inputSpan.Length && IsBoundaryWordChar(inputSpan![index]));");
+                writer.WriteLine($"                return (index > 0 && IsBoundaryWordChar(inputSpan[index - 1])) !=");
+                writer.WriteLine($"                       ((uint)index < (uint)inputSpan.Length && IsBoundaryWordChar(inputSpan[index]));");
                 writer.WriteLine();
-                writer.WriteLine($"                bool IsBoundaryWordChar(char ch) =>");
+                writer.WriteLine($"                static bool IsBoundaryWordChar(char ch) =>");
                 writer.WriteLine($"                    IsWordChar(ch) ||");
                 writer.WriteLine($"                    (ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner);");
                 writer.WriteLine($"            }}");
@@ -299,12 +299,12 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 writer.WriteLine($"            /// <summary>Determines whether the character at the specified index is a boundary.</summary>");
                 writer.WriteLine($"            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]");
-                writer.WriteLine($"            private bool IsECMABoundary(global::System.ReadOnlySpan<char>inputSpan, int index)");
+                writer.WriteLine($"            private static bool IsECMABoundary(global::System.ReadOnlySpan<char> inputSpan, int index)");
                 writer.WriteLine($"            {{");
-                writer.WriteLine($"                return (index > base.runtextbeg && IsECMAWordChar(inputSpan![index - 1])) !=");
-                writer.WriteLine($"                       (index < inputSpan.Length && IsECMAWordChar(inputSpan![index]));");
+                writer.WriteLine($"                return (index > 0 && IsECMAWordChar(inputSpan[index - 1])) !=");
+                writer.WriteLine($"                       ((uint)index < (uint)inputSpan.Length && IsECMAWordChar(inputSpan[index]));");
                 writer.WriteLine();
-                writer.WriteLine($"                bool IsECMAWordChar(char ch) =>");
+                writer.WriteLine($"                static bool IsECMAWordChar(char ch) =>");
                 writer.WriteLine($"                    ((((uint)ch - 'A') & ~0x20) < 26) || // ASCII letter");
                 writer.WriteLine($"                    (((uint)ch - '0') < 10) || // digit");
                 writer.WriteLine($"                    ch == '_' || // underscore");
@@ -344,7 +344,7 @@ namespace System.Text.RegularExpressions.Generator
         {
             using (EmitBlock(writer, "while (true)"))
             {
-                using (EmitBlock(writer, "if (FindFirstChar(text))"))
+                using (EmitBlock(writer, "if (FindNextPossibleStartingPosition(text))"))
                 {
                     if (rm.MatchTimeout != Timeout.Infinite)
                     {
@@ -353,7 +353,7 @@ namespace System.Text.RegularExpressions.Generator
                     }
 
                     writer.WriteLine("// If we got a match, we're done.");
-                    using (EmitBlock(writer, "if (Go(text))"))
+                    using (EmitBlock(writer, "if (ValidateCurrentPositionMatches(text))"))
                     {
                         writer.WriteLine("return;");
                     }
@@ -371,8 +371,8 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
 
-        /// <summary>Emits the body of the FindFirstChar override.</summary>
-        private static RequiredHelperFunctions EmitFindFirstChar(IndentedTextWriter writer, RegexMethod rm, string id)
+        /// <summary>Emits the body of the FindNextPossibleStartingPosition.</summary>
+        private static RequiredHelperFunctions EmitFindNextPossibleStartingPosition(IndentedTextWriter writer, RegexMethod rm, string id)
         {
             RegexOptions options = (RegexOptions)rm.Options;
             RegexCode code = rm.Code;
@@ -461,7 +461,7 @@ namespace System.Text.RegularExpressions.Generator
             // searching is required; otherwise, false.
             bool EmitAnchors()
             {
-                // Anchors that fully implement FindFirstChar, with a check that leads to immediate success or failure determination.
+                // Anchors that fully implement FindNextPossibleStartingPosition, with a check that leads to immediate success or failure determination.
                 switch (code.FindOptimizations.FindMode)
                 {
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
@@ -778,8 +778,8 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
 
-        /// <summary>Emits the body of the Go override.</summary>
-        private static RequiredHelperFunctions EmitGo(IndentedTextWriter writer, RegexMethod rm, string id)
+        /// <summary>Emits the body of the ValidateCurrentPositionMatches.</summary>
+        private static RequiredHelperFunctions EmitValidateCurrentPositionMatches(IndentedTextWriter writer, RegexMethod rm, string id)
         {
             // In .NET Framework and up through .NET Core 3.1, the code generated for RegexOptions.Compiled was effectively an unrolled
             // version of what RegexInterpreter would process.  The RegexNode tree would be turned into a series of opcodes via
@@ -798,7 +798,7 @@ namespace System.Text.RegularExpressions.Generator
             // label that code should jump back to when backtracking.  That way, a subsequent EmitXx function doesn't need to know exactly
             // where to jump: it simply always jumps to "doneLabel" on match failure, and "doneLabel" is always configured to point to
             // the right location.  In an expression without backtracking, or before any backtracking constructs have been encountered,
-            // "doneLabel" is simply the final return location from the Go method that will undo any captures and exit, signaling to
+            // "doneLabel" is simply the final return location from the ValidateCurrentPositionMatches method that will undo any captures and exit, signaling to
             // the calling scan loop that nothing was matched.
 
             // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
@@ -820,13 +820,13 @@ namespace System.Text.RegularExpressions.Generator
             Debug.Assert(node.ChildCount() == 1, "Capture nodes should have one child");
             node = node.Child(0);
 
-            // In some limited cases, FindFirstChar will only return true if it successfully matched the whole expression.
-            // We can special case these to do essentially nothing in Go other than emit the capture.
+            // In some limited cases, FindNextPossibleStartingPosition will only return true if it successfully matched the whole expression.
+            // We can special case these to do essentially nothing in ValidateCurrentPositionMatches other than emit the capture.
             switch (node.Kind)
             {
                 case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set when !IsCaseInsensitive(node):
                     // This is the case for single and multiple characters, though the whole thing is only guaranteed
-                    // to have been validated in FindFirstChar when doing case-sensitive comparison.
+                    // to have been validated in FindNextPossibleStartingPosition when doing case-sensitive comparison.
                     writer.WriteLine($"int start = base.runtextpos;");
                     writer.WriteLine($"int end = start + {(node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1)};");
                     writer.WriteLine("base.Capture(0, start, end);");

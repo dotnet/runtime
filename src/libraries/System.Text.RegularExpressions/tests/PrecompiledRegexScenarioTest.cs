@@ -18,11 +18,23 @@ namespace System.Text.RegularExpressions.Tests
         public void TestPrecompiledRegex()
         {
             string text = "asdf134success1245something";
+            string textWithMultipleMatches = @"asdf134success1245something
+bsdf135success1245somethingelse
+csdf136success2245somethingnew
+dsdf137success3245somethingold";
+            string[] expectedMatches = textWithMultipleMatches.Split(Environment.NewLine);
             RegexTestClass testClass = new RegexTestClass();
 
             // Test Matches overloads
             Assert.Equal(1, testClass.Matches(text).Count);
             Assert.Equal(0, testClass.Matches(text, startat: 7).Count);
+            MatchCollection multipleMatches = testClass.Matches(textWithMultipleMatches);
+            Assert.Equal(4, multipleMatches.Count);
+            for (int i = 0; i < expectedMatches.Length; i++)
+            {
+                Assert.Equal(expectedMatches[i], multipleMatches[i].Value.Trim()); // Calling Trim since the match will contain the new line as part of the match.
+            }
+
 
             // Test Match overloads
             Assert.Equal(1, testClass.Match(text).Groups[0].Captures.Count);
@@ -36,7 +48,7 @@ namespace System.Text.RegularExpressions.Tests
 
             // Test Groups
             Assert.Equal(text, testClass.Match(text).Groups[0].Value);
-            Assert.Equal(new int[] { 0, 1, 2}, testClass.GetGroupNumbers());
+            Assert.Equal(new int[] { 0, 1, 2 }, testClass.GetGroupNumbers());
             Assert.Equal(new string[] { "0", "1", "output" }, testClass.GetGroupNames());
         }
     }
@@ -52,8 +64,8 @@ namespace RegexTestNamespace
             roptions = RegexOptions.IgnoreCase;
             internalMatchTimeout = TimeSpan.FromTicks(-10000L);
             factory = new RegexFactoryTestClass();
-            Caps = new Hashtable {{0, 0}, {1, 1}, {2, 2}};
-            CapNames = new Hashtable {{"0", 0}, {"1", 1}, {"output", 2}};
+            Caps = new Hashtable { { 0, 0 }, { 1, 1 }, { 2, 2 } };
+            CapNames = new Hashtable { { "0", 0 }, { "1", 1 }, { "output", 2 } };
             capslist = new string[3];
             capslist[0] = "0";
             capslist[1] = "1";
@@ -152,7 +164,7 @@ namespace RegexTestNamespace
                         }
                     }
                 }
-                IL_441:
+            IL_441:
                 while (true)
                 {
                     this.runtrackpos = num2;
@@ -182,7 +194,7 @@ namespace RegexTestNamespace
                     }
                     goto IL_49E;
                 }
-                IL_4C7:
+            IL_4C7:
                 this.CheckTimeout();
                 num = runtrack[num2++];
                 num4 = runtrack[num2++];
@@ -194,7 +206,7 @@ namespace RegexTestNamespace
                     continue;
                 }
                 continue;
-                IL_51D:
+            IL_51D:
                 this.CheckTimeout();
                 num = runtrack[num2++];
                 num4 = runtrack[num2++];
@@ -204,7 +216,7 @@ namespace RegexTestNamespace
                     runtrack[--num2] = num - 1;
                     runtrack[--num2] = 3;
                 }
-                IL_204:
+            IL_204:
                 this.CheckTimeout();
                 num4 = runstack[num3++];
                 this.Capture(1, num4, num);
@@ -247,21 +259,21 @@ namespace RegexTestNamespace
                 runtrack[--num2] = num - 1;
                 runtrack[--num2] = 5;
             }
-            IL_3FC:
+        IL_3FC:
             this.CheckTimeout();
             num4 = runstack[num3++];
             this.Capture(0, num4, num);
             runtrack[--num2] = num4;
             runtrack[num2 - 1] = 4;
-            IL_432:
+        IL_432:
             this.CheckTimeout();
             this.runtextpos = num;
             return;
-            IL_49E:
+        IL_49E:
             this.CheckTimeout();
             num = runtrack[num2++];
             goto IL_432;
-            IL_598:
+        IL_598:
             this.CheckTimeout();
             num = runtrack[num2++];
             num4 = runtrack[num2++];
@@ -293,10 +305,10 @@ namespace RegexTestNamespace
                 while (num2 > 0);
                 bool arg_74_0 = false;
                 goto IL_6C;
-                IL_63:
+            IL_63:
                 num--;
                 arg_74_0 = true;
-                IL_6C:
+            IL_6C:
                 this.runtextpos = num;
                 return arg_74_0;
             }

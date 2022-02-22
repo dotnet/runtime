@@ -314,6 +314,6 @@
     <value>balancing group (?&lt;name1-name2&gt;subexpression) or (?'name1-name2' subexpression)</value>
   </data>
   <data name="UsingSpanAPIsWithCompiledToAssembly" xml:space="preserve">
-    <value>Attempted to call Span overloads with a pre compiled Regex engine is not supported. Please use the string overloads instead.</value>
+    <value>Searching an input span using a pre-compiled Regex assembly is not supported. Please use the string overloads or use a newer Regex implementation.</value>
   </data>
 </root>

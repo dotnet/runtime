@@ -389,7 +389,7 @@ namespace System.Text.RegularExpressions
                 switch (_operator)
                 {
                     case RegexOpcode.Stop:
-                        return runmatch!.FoundAMatch;
+                        return runmatch!.FoundMatch;
 
                     case RegexOpcode.Nothing:
                         break;

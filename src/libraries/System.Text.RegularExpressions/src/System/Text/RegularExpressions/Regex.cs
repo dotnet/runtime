@@ -404,7 +404,7 @@ namespace System.Text.RegularExpressions
 
             Match? match = runner.runmatch;
             // if we got a match, set runmatch to null if quick is true
-            if (match!.FoundAMatch)
+            if (match!.FoundMatch)
             {
                 runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
 
@@ -469,7 +469,7 @@ namespace System.Text.RegularExpressions
 
                 runner.runmatch!.Text = null; // Drop reference to text
 
-                return runner.runmatch!.FoundAMatch ? null : RegularExpressions.Match.Empty;
+                return runner.runmatch!.FoundMatch ? null : RegularExpressions.Match.Empty;
             }
             finally
             {

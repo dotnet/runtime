@@ -84,7 +84,7 @@ namespace System.Text.RegularExpressions
             _groupcoll?.Reset();
         }
 
-        internal bool FoundAMatch
+        internal bool FoundMatch
         {
             get => _matchcount[0] > 0;
         }

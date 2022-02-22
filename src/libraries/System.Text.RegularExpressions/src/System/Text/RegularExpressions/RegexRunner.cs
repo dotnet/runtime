@@ -141,7 +141,7 @@ namespace System.Text.RegularExpressions
 #endif
                     Go();
 
-                    if (runmatch!.FoundAMatch)
+                    if (runmatch!.FoundMatch)
                     {
                         return runmatch;
                     }
@@ -308,7 +308,7 @@ namespace System.Text.RegularExpressions
 
                     // See if we have a match.
                     Match match = runmatch!;
-                    if (match.FoundAMatch)
+                    if (match.FoundMatch)
                     {
                         // Hand it out to the callback in canonical form.
                         if (!reuseMatchObject)
