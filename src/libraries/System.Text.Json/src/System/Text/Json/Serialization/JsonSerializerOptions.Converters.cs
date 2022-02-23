@@ -159,7 +159,10 @@ namespace System.Text.Json
         [RequiresUnreferencedCode("Getting a converter for a type may require reflection which depends on unreferenced code.")]
         public JsonConverter GetConverter(Type typeToConvert!!)
         {
-            RootBuiltInConverters();
+            if (!IsInitializedForReflectionSerializer)
+            {
+                InitializeForReflectionSerializer();
+            }
             return GetConverterInternal(typeToConvert);
         }
 

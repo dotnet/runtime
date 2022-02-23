@@ -456,6 +456,8 @@ namespace System.Text.Json.Serialization.Tests
         [JsonConstructor]
         public Point_2D(int x, int y) => (X, Y) = (x, y);
 
+        public Point_2D() : this(0, 0) { }
+
         public void Initialize() { }
 
         public void Verify()

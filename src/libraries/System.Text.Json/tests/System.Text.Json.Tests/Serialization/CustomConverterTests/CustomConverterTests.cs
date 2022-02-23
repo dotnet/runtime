@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -161,19 +163,29 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(true, obj);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetConverterRootsBuiltInConverters()
         {
-            JsonSerializerOptions options = new();
-            RunTest<DateTime>();
-            RunTest<Point_2D>();
-
-            void RunTest<TConverterReturn>()
+            RemoteExecutor.Invoke(static () =>
             {
-                JsonConverter converter = options.GetConverter(typeof(TConverterReturn));
-                Assert.NotNull(converter);
-                Assert.True(converter is JsonConverter<TConverterReturn>);
-            }
+                JsonSerializerOptions options = new();
+                RunTest<DateTime>();
+                RunTest<Point_2D>();
+
+                void RunTest<T>() where T : new()
+                {
+                    JsonConverter<T> converter = options.GetConverter(typeof(T)) as JsonConverter<T>;
+                    Assert.NotNull(converter);
+
+                    // Should be possible to call into converters that require
+                    // reflection-based metadata
+                    T value = new();
+                    using var writer = new Utf8JsonWriter(new MemoryStream());
+                    converter.Write(writer, value, options);
+                    writer.Flush();
+                    Assert.True(writer.BytesCommitted > 0);
+                }
+            }).Dispose();
         }
 
         [Fact]

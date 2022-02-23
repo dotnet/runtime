@@ -99,7 +99,6 @@ namespace System.Text.Json
         public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
             JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
-            Debug.Assert(options == jsonTypeInfo.Options);
             return Initialize(jsonTypeInfo, supportContinuation);
         }
 
