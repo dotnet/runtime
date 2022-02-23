@@ -710,8 +710,7 @@ void BaseDomain::InitVSD()
 {
     STANDARD_VM_CONTRACT;
 
-    UINT32 startingId = TypeIDMap::STARTING_UNSHARED_DOMAIN_ID;
-    m_typeIDMap.Init(startingId, 2);
+    m_typeIDMap.Init();
 
     GetLoaderAllocator()->InitVirtualCallStubManager(this);
 }

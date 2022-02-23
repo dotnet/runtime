@@ -95,7 +95,7 @@ mini_magic_type_size (MonoCompile *cfg, MonoType *type)
 		return 4;
 	else if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8)
 		return 8;
-	else if (type->type == MONO_TYPE_R4 && !m_type_is_byref (type) && (!cfg || cfg->r4fp))
+	else if (type->type == MONO_TYPE_R4 && !m_type_is_byref (type))
 		return 4;
 	else if (type->type == MONO_TYPE_R8 && !m_type_is_byref (type))
 		return 8;
@@ -162,7 +162,7 @@ emit_widen (MonoCompile *cfg, const MagicTypeInfo *info, int sreg)
 {
 	MonoInst *ins;
 
-	if (cfg->r4fp && info->conv_4_to_8 == OP_FCONV_TO_R8)
+	if (info->conv_4_to_8 == OP_FCONV_TO_R8)
 		MONO_INST_NEW (cfg, ins, OP_RCONV_TO_R8);
 	else
 		MONO_INST_NEW (cfg, ins, info->conv_4_to_8);
@@ -182,7 +182,7 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	int type_index;
 	MonoStackType stack_type;
 
-	if (info->op_index == 2 && cfg->r4fp && TARGET_SIZEOF_VOID_P == 4) {
+	if (info->op_index == 2 && TARGET_SIZEOF_VOID_P == 4) {
 		type_index = 3;
 		stack_type = STACK_R4;
 	} else {
