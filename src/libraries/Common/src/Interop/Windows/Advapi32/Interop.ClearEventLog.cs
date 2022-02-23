@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "ClearEventLogW", CharSet = CharSet.Unicode, SetLastError = true)]
         public static partial bool ClearEventLog(SafeEventLogReadHandle hEventLog, string lpBackupFileName);
     }
 }

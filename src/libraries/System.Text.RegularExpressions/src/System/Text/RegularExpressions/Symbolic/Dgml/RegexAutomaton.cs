@@ -27,7 +27,7 @@ namespace System.Text.RegularExpressions.Symbolic.DGML
                 (srm._pattern._info.StartsWithLineAnchor ? CharKind.StartStop : 0);
 
             //inReverse only matters if Ar contains some line anchor
-            _q0 = _builder.MkState(inReverse ? srm._reversePattern : (addDotStar ? srm._dotStarredPattern : srm._pattern), startId);
+            _q0 = _builder.CreateState(inReverse ? srm._reversePattern : (addDotStar ? srm._dotStarredPattern : srm._pattern), startId);
 
             if (asNFA)
             {
@@ -66,7 +66,7 @@ namespace System.Text.RegularExpressions.Symbolic.DGML
                                 _states.Add(p.Id);
                             }
 
-                            var qp = (q.Id, p.Id);
+                            (int, int) qp = (q.Id, p.Id);
                             normalizedmoves[qp] = normalizedmoves.ContainsKey(qp) ?
                                 _builder._solver.Or(normalizedmoves[qp], c) :
                                 c;
@@ -112,12 +112,12 @@ namespace System.Text.RegularExpressions.Symbolic.DGML
             if (_nfa is not null)
             {
                 Debug.Assert(state < _nfa.StateCount);
-                var str = Net.WebUtility.HtmlEncode(_nfa.GetNode(state).ToString());
+                string? str = Net.WebUtility.HtmlEncode(_nfa.GetNode(state).ToString());
                 return _nfa.IsUnexplored(state) ? $"Unexplored:{str}" : str;
             }
 
-            Debug.Assert(_builder._statearray is not null);
-            return _builder._statearray[state].DgmlView;
+            Debug.Assert(_builder._stateArray is not null);
+            return _builder._stateArray[state].DgmlView;
         }
 
         public IEnumerable<int> GetStates() => _states;
@@ -130,8 +130,8 @@ namespace System.Text.RegularExpressions.Symbolic.DGML
                 return _nfa.CanBeNullable(state);
             }
 
-            Debug.Assert(_builder._statearray is not null && state < _builder._statearray.Length);
-            return _builder._statearray[state].Node.CanBeNullable;
+            Debug.Assert(_builder._stateArray is not null && state < _builder._stateArray.Length);
+            return _builder._stateArray[state].Node.CanBeNullable;
         }
 
         public IEnumerable<Move<(SymbolicRegexNode<T>?, T)>> GetMoves() => _moves;

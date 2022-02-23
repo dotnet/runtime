@@ -10,7 +10,4 @@
          Include the reference project in the solution file if it targets more than just NetCoreAppCurrent as other frameworks like .NETFramework, .NETStandard or older .NETCoreApp ones require it. -->
     <IncludeInSolutionFile Condition="'$(IsNETCoreAppRef)' == 'true' and '$(MSBuildProjectName)' != '$(SlnGenMainProject)' and '$(TargetFramework)' == '$(NetCoreAppCurrent)' and ('$(TargetFrameworks)' == '' or '$(TargetFrameworks)' == '$(NetCoreAppCurrent)')">false</IncludeInSolutionFile>
   </PropertyGroup>
-  <ItemGroup>
-    <SlnGenCustomProjectTypeGuid Include=".ilproj" ProjectTypeGuid="{9A19103F-16F7-4668-BE54-9A1E7A4F7556}" />
-  </ItemGroup>
 </Project>

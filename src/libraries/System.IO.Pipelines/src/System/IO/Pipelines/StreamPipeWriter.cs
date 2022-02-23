@@ -212,13 +212,18 @@ namespace System.IO.Pipelines
 
             _isCompleted = true;
 
-            FlushInternal(writeToStream: exception == null);
-
-            _internalTokenSource?.Dispose();
-
-            if (!_leaveOpen)
+            try
             {
-                InnerStream.Dispose();
+                FlushInternal(writeToStream: exception == null);
+            }
+            finally
+            {
+                _internalTokenSource?.Dispose();
+
+                if (!_leaveOpen)
+                {
+                    InnerStream.Dispose();
+                }
             }
         }
 
@@ -231,17 +236,22 @@ namespace System.IO.Pipelines
 
             _isCompleted = true;
 
-            await FlushAsyncInternal(writeToStream: exception == null, data: Memory<byte>.Empty).ConfigureAwait(false);
-
-            _internalTokenSource?.Dispose();
-
-            if (!_leaveOpen)
+            try
             {
+                await FlushAsyncInternal(writeToStream: exception == null, data: Memory<byte>.Empty).ConfigureAwait(false);
+            }
+            finally
+            {
+                _internalTokenSource?.Dispose();
+
+                if (!_leaveOpen)
+                {
 #if (!NETSTANDARD2_0 && !NETFRAMEWORK)
-                await InnerStream.DisposeAsync().ConfigureAwait(false);
+                    await InnerStream.DisposeAsync().ConfigureAwait(false);
 #else
-                InnerStream.Dispose();
+                    InnerStream.Dispose();
 #endif
+                }
             }
         }
 

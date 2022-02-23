@@ -17,11 +17,11 @@ internal static partial class Interop
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial IntPtr ldap_init(string hostName, int portNumber);
 
-        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_connect", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_connect", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial int ldap_connect(ConnectionHandle ldapHandle, in LDAP_TIMEVAL timeout);
 
-        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_unbind", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Wldap32, EntryPoint = "ldap_unbind", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         public static partial int ldap_unbind(IntPtr ldapHandle);
 
