@@ -12,13 +12,20 @@
 .assembly 'u_array_merge_Target_64BIT'
 { }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions {}
 .class public auto ansi Test_u_array_merge_Target_64BIT extends [mscorlib]System.Object
 {
 .method private hidebysig static int32 Main() il managed
 {
-	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-	    01 00 00 00
-	)
+    // [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [mscorlib]System.Type,
+                                                                                                  string[]) = ( 01 00 55 50 6C 61 74 66 6F 72 6D 44 65 74 65 63   // ..UPlatformDetec
+                                                                                                                74 69 6F 6E 2C 20 54 65 73 74 4C 69 62 72 61 72   // tion, TestLibrar
+                                                                                                                79 2C 20 56 65 72 73 69 6F 6E 3D 30 2E 30 2E 30   // y, Version=0.0.0
+                                                                                                                2E 30 2C 20 43 75 6C 74 75 72 65 3D 6E 65 75 74   // .0, Culture=neut
+                                                                                                                72 61 6C 2C 20 50 75 62 6C 69 63 4B 65 79 54 6F   // ral, PublicKeyTo
+                                                                                                                6B 65 6E 3D 6E 75 6C 6C 01 00 00 00 0E 49 73 36   // ken=null.....Is6
+                                                                                                                34 42 69 74 50 72 6F 63 65 73 73 00 00 )          // 4BitProcess..
 	.entrypoint
 	.maxstack  8
 	.locals (unsigned int64[0...], native unsigned int[0...], native unsigned int, native unsigned int)
