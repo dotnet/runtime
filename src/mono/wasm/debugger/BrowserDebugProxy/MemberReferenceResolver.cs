@@ -369,7 +369,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task<JObject> Resolve(InvocationExpressionSyntax method, Dictionary<string, JObject> memberAccessValues, CancellationToken token)
         {
             var methodName = "";
-            int isTryingLinq = 0;
+            bool isExtensionMethod = false;
             try
             {
                 JObject rootObject = null;
@@ -404,7 +404,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 var genericTypeArgs = await context.SdbAgent.GetTypeParamsOrArgsForGenericType(typeId, token);
                                 if (genericTypeArgs.Count > 0)
                                 {
-                                    isTryingLinq = 1;
+                                    isExtensionMethod = true;
                                     methodId = await context.SdbAgent.MakeGenericMethod(methodId, genericTypeArgs, token);
                                     break;
                                 }
@@ -416,57 +416,68 @@ namespace Microsoft.WebAssembly.Diagnostics
                         throw new ReturnAsErrorException($"Method '{methodName}' not found in type '{typeName}'", "ArgumentError");
                     }
                     using var commandParamsObjWriter = new MonoBinaryWriter();
-                    if (isTryingLinq == 0)
+                    if (!isExtensionMethod)
+                    {
+                        // instance method
                         commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
+                    }
 
                     if (method.ArgumentList != null)
                     {
                         int passedArgsCnt = method.ArgumentList.Arguments.Count;
-                        int sentToDebuggerParamsCnt = passedArgsCnt;
-                        var methodParamsInfo = new List<ParameterInfo>();
+                        int methodParamsCnt = passedArgsCnt;
+                        List<ParameterInfo> methodParamsInfo = null;
+                        logger.LogInformation($"passed: {passedArgsCnt}, isExtensionMethod: {isExtensionMethod}");
                         var methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
                         if (methodInfo != null) //FIXME: #65670
                         {
                             methodParamsInfo = methodInfo.Info.ParametersInfo.ToList();
-                            int methodParamsCnt = methodParamsInfo.Count;
+                            methodParamsCnt = methodParamsInfo.Count;
+                            logger.LogInformation($"got method info with {methodParamsCnt} params");
+                            if (isExtensionMethod)
+                            {
+                                // implicit *this* parameter
+                                methodParamsCnt--;
+                            }
                             if (passedArgsCnt > methodParamsCnt)
                                 throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Too many arguments passed.", "ArgumentError");
-                            sentToDebuggerParamsCnt = methodParamsCnt;
-                            if (isTryingLinq == 1 && sentToDebuggerParamsCnt > 0)
-                                sentToDebuggerParamsCnt--;
                         }
 
-                        commandParamsObjWriter.Write(sentToDebuggerParamsCnt + isTryingLinq);
-                        if (isTryingLinq == 1)
-                            commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
-
-                        for (var i = 0; i < sentToDebuggerParamsCnt; i++)
+                        if (isExtensionMethod)
                         {
-                            // explicitly passed arguments
-                            if (i < method.ArgumentList.Arguments.Count)
+                            commandParamsObjWriter.Write(methodParamsCnt + 1);
+                            commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
+                        }
+                        else
+                        {
+                            commandParamsObjWriter.Write(methodParamsCnt);
+                        }
+
+                        int argIndex = 0;
+                        // explicitly passed arguments
+                        for (; argIndex < passedArgsCnt; argIndex++)
+                        {
+                            var arg = method.ArgumentList.Arguments[argIndex];
+                            if (arg.Expression is LiteralExpressionSyntax literal)
                             {
-                                var arg = method.ArgumentList.Arguments[i];
-                                if (arg.Expression is LiteralExpressionSyntax literal)
-                                {
-                                    if (!await commandParamsObjWriter.WriteConst(literal, context.SdbAgent, token))
-                                        throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Unable to write LiteralExpressionSyntax into binary writer.", "ArgumentError");
-                                }
-                                else if (arg.Expression is IdentifierNameSyntax identifierName)
-                                {
-                                    if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[identifierName.Identifier.Text], context.SdbAgent, token))
-                                        throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Unable to write IdentifierNameSyntax into binary writer.", "ArgumentError");
-                                }
-                                else
-                                {
-                                    throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Unable to write into binary writer, not recognized expression type: {arg.Expression.GetType().Name}", "ArgumentError");
-                                }
+                                if (!await commandParamsObjWriter.WriteConst(literal, context.SdbAgent, token))
+                                    throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Unable to write LiteralExpressionSyntax into binary writer.", "ArgumentError");
                             }
-                            // optional arguments that were not overwritten
+                            else if (arg.Expression is IdentifierNameSyntax identifierName)
+                            {
+                                if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[identifierName.Identifier.Text], context.SdbAgent, token))
+                                    throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Unable to write IdentifierNameSyntax into binary writer.", "ArgumentError");
+                            }
                             else
                             {
-                                if (!await commandParamsObjWriter.WriteConst(methodParamsInfo[i].TypeCode, methodParamsInfo[i].Value, context.SdbAgent, token))
-                                    throw new ReturnAsErrorException($"Unable to write optional parameter {methodParamsInfo[i].Name} value in method '{methodName}' to the mono buffer.", "ArgumentError");
+                                throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Unable to write into binary writer, not recognized expression type: {arg.Expression.GetType().Name}", "ArgumentError");
                             }
+                        }
+                        // optional arguments that were not overwritten
+                        for (; argIndex < methodParamsCnt; argIndex++)
+                        {
+                            if (!await commandParamsObjWriter.WriteConst(methodParamsInfo[argIndex].TypeCode, methodParamsInfo[argIndex].Value, context.SdbAgent, token))
+                                throw new ReturnAsErrorException($"Unable to write optional parameter {methodParamsInfo[argIndex].Name} value in method '{methodName}' to the mono buffer.", "ArgumentError");
                         }
                         var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);
                         return await GetValueFromObject(retMethod, token);
