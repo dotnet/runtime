@@ -3566,6 +3566,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, TRUE);
 			break;
 		case OP_RCONV_TO_I4:
+		case OP_RCONV_TO_I:
 			x86_sse_cvtss2si_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_RCONV_TO_U4:
