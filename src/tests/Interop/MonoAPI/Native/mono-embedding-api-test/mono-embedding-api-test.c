@@ -74,26 +74,6 @@ extern "C" {
 #define __thiscall /* nothing */
 #endif
 
-#ifdef _MSC_VER
-#define TEST_PRAGMA_WARNING_PUSH() __pragma(warning (push))
-#define TEST_PRAGMA_WARNING_DISABLE(x) __pragma(warning (disable:x))
-#define TEST_PRAGMA_WARNING_POP() __pragma(warning (pop))
-
-#define TEST_DISABLE_WARNING(x) \
-		TEST_PRAGMA_WARNING_PUSH() \
-		TEST_PRAGMA_WARNING_DISABLE(x)
-
-#define TEST_RESTORE_WARNING \
-		TEST_PRAGMA_WARNING_POP()
-#else
-#define TEST_PRAGMA_WARNING_PUSH()
-#define TEST_PRAGMA_WARNING_DISABLE(x)
-#define TEST_PRAGMA_WARNING_POP()
-#define TEST_DISABLE_WARNING(x)
-#define TEST_RESTORE_WARNING
-#endif
-
-
 #ifdef WIN32
 extern __declspec(dllimport) void __stdcall CoTaskMemFree(void *ptr);
 #endif
@@ -114,42 +94,14 @@ typedef int (STDCALL *SimpleDelegate) (int a);
 typedef size_t gsize;
 typedef ptrdiff_t gssize;
 
-typedef int            gint;
-typedef unsigned int   guint;
-typedef short          gshort;
-typedef unsigned short gushort;
-typedef long           glong;
-typedef unsigned long  gulong;
 typedef void *         gpointer;
-typedef const void *   gconstpointer;
-typedef char           gchar;
-typedef unsigned char  guchar;
 
 /* Types defined in terms of the stdint.h */
-typedef int8_t         gint8;
 typedef uint8_t        guint8;
 typedef int16_t        gint16;
-typedef uint16_t       guint16;
 typedef int32_t        gint32;
 typedef uint32_t       guint32;
 typedef int64_t        gint64;
-typedef uint64_t       guint64;
-typedef float          gfloat;
-typedef double         gdouble;
-typedef int32_t        gboolean;
-
-#define GPOINTER_TO_INT(ptr)   ((gint)(gssize)(ptr))
-#define GPOINTER_TO_UINT(ptr)  ((guint)(gsize)(ptr))
-#define GINT_TO_POINTER(v)     ((gpointer)(gssize)(v))
-#define GUINT_TO_POINTER(v)    ((gpointer)(gsize)(v))
-	
-#ifdef WIN32
-#include <wchar.h>
-typedef wchar_t gunichar2;
-#else
-typedef guint16 gunichar2;
-#endif
-typedef guint32 gunichar;
 
 static gpointer
 g_malloc (gsize x)
@@ -170,33 +122,7 @@ g_free (void *ptr)
 }
 
 #define g_assert(x) assert((x))
-#if defined(_MSC_VER)
-#define  eg_unreachable() __assume(0)
-#elif defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 5)))
-#define  eg_unreachable() __builtin_unreachable()
-#else
-#define  eg_unreachable()
-#endif
-#define g_assert_not_reached() do { g_assert (0); abort (); eg_unreachable (); } while(0)
 	
-#define g_snprintf snprintf
-
-typedef void *GError;
-
-static gunichar2 *
-g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
-{
-	// TODO: implement this or delete the callers, if the tests are not useful
-	g_assert_not_reached ();
-}
-
-static gchar *
-g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err)
-{
-	// TODO: implement this or delete the callers if the tests are not useful
-	g_assert_not_reached ();
-}
-
 static void marshal_free (void *ptr)
 {
 #ifdef WIN32
@@ -215,17 +141,6 @@ static void* marshal_alloc (gsize size)
 #endif
 }
 
-static void* marshal_alloc0 (gsize size)
-{
-#ifdef WIN32
-	void* ptr = CoTaskMemAlloc (size);
-	memset(ptr, 0, size);
-	return ptr;
-#else
-	return g_malloc0 (size);
-#endif
-}
-
 static char* marshal_strdup (const char *str)
 {
 #ifdef WIN32
@@ -241,33 +156,6 @@ static char* marshal_strdup (const char *str)
 	return strdup (str);
 #endif
 }
-
-static gunichar2* marshal_bstr_alloc(const gchar* str)
-{
-#ifdef WIN32
-	gunichar2* temp = g_utf8_to_utf16 (str, -1, NULL, NULL, NULL);
-	gunichar2* ret = SysAllocString (temp);
-	g_free (temp);
-	return ret;
-#else
-	gchar* ret = NULL;
-	int slen = strlen (str);
-	gunichar2* temp;
-	/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
-	ret = (gchar *)g_malloc ((slen + 1) * sizeof(gunichar2) + sizeof(guint32));
-	if (ret == NULL)
-		return NULL;
-	temp = g_utf8_to_utf16 (str, -1, NULL, NULL, NULL);
-	memcpy (ret + sizeof(guint32), temp, slen * sizeof(gunichar2));
-	* ((guint32 *) ret) = slen * sizeof(gunichar2);
-	ret [4 + slen * sizeof(gunichar2)] = 0;
-	ret [5 + slen * sizeof(gunichar2)] = 0;
-
-	return (gunichar2*)(ret + 4);
-#endif
-}
-
-#define marshal_new0(type,size)       ((type *) marshal_alloc0 (sizeof (type)* (size)))
 
 /*
  * mono_method_get_unmanaged_thunk tests
@@ -290,7 +178,7 @@ typedef struct _TestStruct {
 // Copied from eglib gmodule-win32.c
 #if HAVE_API_SUPPORT_WIN32_ENUM_PROCESS_MODULES
 static gpointer
-w32_find_symbol (const gchar *symbol_name)
+w32_find_symbol (const char *symbol_name)
 {
 	HMODULE *modules;
 	DWORD buffer_size = sizeof (HMODULE) * 1024;
@@ -337,7 +225,7 @@ w32_find_symbol (const gchar *symbol_name)
 }
 #elif !HAVE_EXTERN_DEFINED_WIN32_ENUM_PROCESS_MODULES
 static gpointer
-w32_find_symbol (const gchar *symbol_name)
+w32_find_symbol (const char *symbol_name)
 {
 	SetLastError (ERROR_NOT_SUPPORTED);
 	return NULL;
@@ -1223,7 +1111,8 @@ invoke_block_foreign_thread (void *user_data)
         pthread_mutex_unlock (&nm->coord_mutex);
 
 	pthread_mutex_lock (&nm->deadlock_mutex); // blocks forever
-	g_assert_not_reached ();
+	fprintf(stderr, "did not expect to reach past deadlock\n");
+	abort();
 }
 #endif
 
