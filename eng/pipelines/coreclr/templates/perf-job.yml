@@ -48,7 +48,6 @@ jobs:
     pgoRunType: ${{ parameters.pgoRunType }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
-
     # Test job depends on the corresponding build job
     dependsOn:
     - ${{ if not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono')) }}:
@@ -97,14 +96,6 @@ jobs:
       - ${{ parameters.framework }}
     steps:
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
-    - powershell: |
-        Write-Host "ENV; $env:mauiVersion"
-      displayName: Test variables
-      condition: always()
-    - powershell: |
-        Write-Host "DOC1; $(mauiVersion)"
-      displayName: Test variables
-      condition: always()
 
     # Optionally download live-built libraries
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
