@@ -120,7 +120,7 @@
     <ItemGroup>
       <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
       <!-- For merged project wrappers, include native libraries in all project references -->
-      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/$(LibPrefix)*$(LibSuffix)" />
+      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" />
     </ItemGroup>
     <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
         DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')" 
