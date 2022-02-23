@@ -1258,7 +1258,6 @@ retry:
                 return;
             }
         }
-        dprintf (3, ("uoh alloc: could not release lock on %Ix", obj));
     }
 };
 
@@ -22286,7 +22285,7 @@ void gc_heap::equalize_promoted_bytes()
         //   while (surplus regions is non-empty)
         //     get surplus region from biggest size class
         //     put it into heap from biggest deficit size class
-        //     re-insert heap gets re-inserted by deficit size class
+        //     re-insert heap by resulting deficit size class
 
         heap_segment* surplus_regions = nullptr;
         size_t max_deficit = 0;
@@ -22303,7 +22302,7 @@ void gc_heap::equalize_promoted_bytes()
                 {
                     break;
                 }
-                assert (surv_per_heap[i] >= heap_segment_survived (region));
+                assert (surv_per_heap[i] >= (size_t)heap_segment_survived (region));
                 dprintf (REGIONS_LOG, ("heap: %d surv: %Id - %Id = %Id",
                     i,
                     surv_per_heap[i],
@@ -22315,7 +22314,7 @@ void gc_heap::equalize_promoted_bytes()
                 heap_segment_next (region) = surplus_regions;
                 surplus_regions = region;
 
-                max_survived = max (max_survived, heap_segment_survived (region));
+                max_survived = max (max_survived, (size_t)heap_segment_survived (region));
             }
             if (surv_per_heap[i] < avg_surv_per_heap)
             {
