@@ -17,10 +17,10 @@ internal static partial class Interop
         internal const int SND_FILENAME = 0x20000;
         internal const int SND_NOSTOP = 0x10;
 
-        [GeneratedDllImport(Libraries.WinMM, EntryPoint = "PlaySoundW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.WinMM, EntryPoint = "PlaySoundW", CharSet = CharSet.Unicode)]
         internal static partial bool PlaySound(string soundName, IntPtr hmod, int soundFlags);
 
-        [GeneratedDllImport(Libraries.WinMM, EntryPoint = "PlaySoundW", ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.WinMM, EntryPoint = "PlaySoundW")]
         internal static partial bool PlaySound(byte[]? soundName, IntPtr hmod, int soundFlags);
     }
 }

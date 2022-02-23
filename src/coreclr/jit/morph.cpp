@@ -5511,7 +5511,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // See https://github.com/dotnet/runtime/pull/61293#issuecomment-964146497
 
     // Use 2) form only for primitive types for now - it significantly reduced number of size regressions
-    if (!varTypeIsIntegral(elemTyp))
+    if (!varTypeIsIntegral(elemTyp) && !varTypeIsFloating(elemTyp))
     {
         groupArrayRefWithElemOffset = false;
     }
@@ -13724,8 +13724,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
     // TODO-Bug: this code will lose the GC-ness of a tree like "native int + byref(0)".
     if (op2->IsIntegralConst(0) && ((add->TypeGet() == op1->TypeGet()) || !op1->TypeIs(TYP_REF)))
     {
-        if (op2->IsCnsIntOrI() && (op2->AsIntCon()->gtFieldSeq != nullptr) &&
-            (op2->AsIntCon()->gtFieldSeq != FieldSeqStore::NotAField()))
+        if (op2->IsCnsIntOrI() && varTypeIsI(op1))
         {
             fgAddFieldSeqForZeroOffset(op1, op2->AsIntCon()->gtFieldSeq);
         }
@@ -17935,7 +17934,7 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
     if (verbose)
     {
         printf("\nfgAddFieldSeqForZeroOffset for");
-        gtDispFieldSeq(fieldSeqZero);
+        gtDispAnyFieldSeq(fieldSeqZero);
 
         printf("\naddr (Before)\n");
         gtDispNode(addr, nullptr, nullptr, false);

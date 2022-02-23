@@ -8,14 +8,17 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>
-    /// Represents nodes in a Binary Decision Diagram (BDD), which compactly represent sets of integers. All non-leaf
-    /// nodes have an Ordinal, which indicates the position of the bit the node relates to (0 for the least significant
+    /// Represents nodes in a Binary Decision Diagram (BDD), which compactly represent sets of integers and allows for fast
+    /// querying of whether an integer is in the set, and if so, what value it maps to (typically True or False).
+    /// </summary>
+    /// <remarks>
+    /// All non-leaf nodes have an Ordinal, which indicates the position of the bit the node relates to (0 for the least significant
     /// bit), and two children, One and Zero, for the cases of the current bit being 1 or 0, respectively. An integer
     /// belongs to the set represented by the BDD if the path from the root following the branches that correspond to
     /// the bits of the integer leads to the True leaf. This class also supports multi-terminal BDDs (MTBDD), i.e. ones where
     /// the leaves are something other than True or False, which are used for representing classifiers.
-    /// </summary>
-    internal sealed class BDD : IComparable
+    /// </remarks>
+    internal sealed class BDD : IComparable<BDD>
     {
         /// <summary>
         /// The ordinal for the True special value.
@@ -59,6 +62,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private readonly int _hashcode;
 
+#if DEBUG // used only for serialization, which is debug-only
         /// <summary>
         /// Representation of False for serialization.
         /// </summary>
@@ -78,6 +82,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Representation of True for compact serialization of BDDs.
         /// </summary>
         private static readonly byte[] s_trueRepresentationCompact = new byte[] { 1 };
+#endif
 
         internal BDD(int ordinal, BDD? one, BDD? zero)
         {
@@ -170,69 +175,8 @@ namespace System.Text.RegularExpressions.Symbolic
             obj is BDD bdd &&
             (this == bdd || (Ordinal == bdd.Ordinal && One == bdd.One && Zero == bdd.Zero));
 
-        /// <summary>
-        /// Returns a topologically sorted array of all the nodes (other than True or False) in this BDD
-        /// such that, all MTBDD leaves (other than True or False) appear first in the array
-        /// and all nonterminals with smaller ordinal appear before nodes with larger ordinal.
-        /// So this BDD itself (if different from True or False) appears last.
-        /// In the case of True or False returns the empty array.
-        /// </summary>
-        public BDD[] TopologicalSort()
-        {
-            if (IsFull || IsEmpty)
-                return Array.Empty<BDD>();
-
-            if (IsLeaf)
-                return new BDD[] { this };
-
-            // Order the nodes according to their ordinals into the nonterminals array
-            var nonterminals = new List<BDD>[Ordinal + 1];
-            var sorted = new List<BDD>();
-            var toVisit = new Stack<BDD>();
-            var visited = new HashSet<BDD>();
-
-            toVisit.Push(this);
-
-            while (toVisit.Count > 0)
-            {
-                BDD node = toVisit.Pop();
-                // True and False are not included in the result
-                if (node.IsFull || node.IsEmpty)
-                    continue;
-
-                if (node.IsLeaf)
-                {
-                    // MTBDD terminals can be directly added to the sorted nodes, since they have no children that
-                    // would come first in the topological ordering.
-                    sorted.Add(node);
-                }
-                else
-                {
-                    // Non-terminals are grouped by their ordinal so that they can be sorted into a topological order.
-                    (nonterminals[node.Ordinal] ??= new List<BDD>()).Add(node);
-
-                    if (visited.Add(node.Zero))
-                        toVisit.Push(node.Zero);
-
-                    if (visited.Add(node.One))
-                        toVisit.Push(node.One);
-                }
-            }
-
-            // Flush the grouped non-terminals into the sorted nodes from smallest to highest ordinal. The highest
-            // ordinal is guaranteed to have only one node, which places the root of the BDD at the end.
-            for (int i = 0; i < nonterminals.Length; i++)
-            {
-                if (nonterminals[i] != null)
-                {
-                    sorted.AddRange(nonterminals[i]);
-                }
-            }
-
-            return sorted.ToArray();
-        }
-
         #region Serialization
+#if DEBUG // currently used only from the debug-only code that regenerates the embedded serialized BDD data
         /// <summary>
         /// Serialize this BDD in a flat ulong array. The BDD may have at most 2^k ordinals and 2^n nodes, such that k+2n &lt; 64
         /// BDD.False is represented by return value ulong[]{0}.
@@ -312,6 +256,68 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
+        /// Returns a topologically sorted array of all the nodes (other than True or False) in this BDD
+        /// such that, all MTBDD leaves (other than True or False) appear first in the array
+        /// and all nonterminals with smaller ordinal appear before nodes with larger ordinal.
+        /// So this BDD itself (if different from True or False) appears last.
+        /// In the case of True or False returns the empty array.
+        /// </summary>
+        private BDD[] TopologicalSort()
+        {
+            if (IsFull || IsEmpty)
+                return Array.Empty<BDD>();
+
+            if (IsLeaf)
+                return new BDD[] { this };
+
+            // Order the nodes according to their ordinals into the nonterminals array
+            var nonterminals = new List<BDD>[Ordinal + 1];
+            var sorted = new List<BDD>();
+            var toVisit = new Stack<BDD>();
+            var visited = new HashSet<BDD>();
+
+            toVisit.Push(this);
+
+            while (toVisit.Count > 0)
+            {
+                BDD node = toVisit.Pop();
+                // True and False are not included in the result
+                if (node.IsFull || node.IsEmpty)
+                    continue;
+
+                if (node.IsLeaf)
+                {
+                    // MTBDD terminals can be directly added to the sorted nodes, since they have no children that
+                    // would come first in the topological ordering.
+                    sorted.Add(node);
+                }
+                else
+                {
+                    // Non-terminals are grouped by their ordinal so that they can be sorted into a topological order.
+                    (nonterminals[node.Ordinal] ??= new List<BDD>()).Add(node);
+
+                    if (visited.Add(node.Zero))
+                        toVisit.Push(node.Zero);
+
+                    if (visited.Add(node.One))
+                        toVisit.Push(node.One);
+                }
+            }
+
+            // Flush the grouped non-terminals into the sorted nodes from smallest to highest ordinal. The highest
+            // ordinal is guaranteed to have only one node, which places the root of the BDD at the end.
+            for (int i = 0; i < nonterminals.Length; i++)
+            {
+                if (nonterminals[i] != null)
+                {
+                    sorted.AddRange(nonterminals[i]);
+                }
+            }
+
+            return sorted.ToArray();
+        }
+
+        /// <summary>
         /// Serialize this BDD into a byte array.
         /// This method is not valid for MTBDDs where some elements may be negative.
         /// </summary>
@@ -353,59 +359,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             return result;
         }
-
-        /// <summary>
-        /// Recreates a BDD from a ulong array that has been created using Serialize.
-        /// Is executed using a lock on algebra (if algebra != null) in a single thread mode.
-        /// If no algebra is given (algebra is null) then creates the BDD without using a BDD algebra --
-        /// which implies that all BDD nodes other than True and False are new BDD objects
-        /// that have not been internalized or cached.
-        /// </summary>
-        public static BDD Deserialize(long[] arcs, BDDAlgebra algebra)
-        {
-            if (arcs.Length == 1)
-            {
-                return arcs[0] == 0 ? False : True;
-            }
-
-            // the number of bits used for ordinals and node identifiers are stored in the first two values
-            int k = arcs.Length;
-            int ordinal_bits = (int)arcs[0];
-            int node_bits = (int)arcs[1];
-
-            // create bit masks for the sizes of ordinals and node identifiers
-            long ordinal_mask = (1 << ordinal_bits) - 1;
-            long node_mask = (1 << node_bits) - 1;
-            BitLayout(ordinal_bits, node_bits, out int zero_node_shift, out int one_node_shift, out int ordinal_shift);
-
-            // store BDD nodes by their id when they are created
-            BDD[] nodes = new BDD[k];
-            nodes[0] = False;
-            nodes[1] = True;
-
-            for (int i = 2; i < k; i++)
-            {
-                long arc = arcs[i];
-                if (arc <= 0)
-                {
-                    // this is an MTBDD leaf. Its ordinal was serialized negated
-                    nodes[i] = algebra.GetOrCreateBDD((int)-arc, null, null);
-                }
-                else
-                {
-                    // reconstruct the ordinal and child identifiers for a non-terminal
-                    int ord = (int)((arc >> ordinal_shift) & ordinal_mask);
-                    int oneId = (int)((arc >> one_node_shift) & node_mask);
-                    int zeroId = (int)((arc >> zero_node_shift) & node_mask);
-
-                    // the BDD nodes for the children are guaranteed to exist already due to the topological order
-                    nodes[i] = algebra.GetOrCreateBDD(ord, nodes[oneId], nodes[zeroId]);
-                }
-            }
-
-            //the result is the final BDD in the nodes array
-            return nodes[k - 1];
-        }
+#endif
 
         /// <summary>
         /// Recreates a BDD from a byte array that has been created using SerializeToBytes.
@@ -588,9 +542,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// If minimal elements are the same, compare Ordinals.
         /// This provides a total order for terminals.
         /// </summary>
-        public int CompareTo(object? obj)
+        public int CompareTo(BDD? other)
         {
-            if (obj is not BDD bdd)
+            if (other is null)
             {
                 return -1;
             }
@@ -598,22 +552,22 @@ namespace System.Text.RegularExpressions.Symbolic
             if (IsLeaf)
             {
                 return
-                    !bdd.IsLeaf || Ordinal < bdd.Ordinal ? -1 :
-                    Ordinal == bdd.Ordinal ? 0 :
+                    !other.IsLeaf || Ordinal < other.Ordinal ? -1 :
+                    Ordinal == other.Ordinal ? 0 :
                     1;
             }
 
-            if (bdd.IsLeaf)
+            if (other.IsLeaf)
             {
                 return 1;
             }
 
             ulong min = GetMin();
-            ulong bdd_min = bdd.GetMin();
+            ulong bdd_min = other.GetMin();
             return
                 min < bdd_min ? -1 :
                 bdd_min < min ? 1 :
-                Ordinal.CompareTo(bdd.Ordinal);
+                Ordinal.CompareTo(other.Ordinal);
         }
     }
 }

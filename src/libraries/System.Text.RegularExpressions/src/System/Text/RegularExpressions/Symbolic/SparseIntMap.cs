@@ -66,6 +66,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 return false;
             }
+
             if (key >= _sparse.Length)
             {
                 Grow(key);
