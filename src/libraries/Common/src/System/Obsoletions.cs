@@ -125,5 +125,8 @@ namespace System
 
         internal const string SystemDataSerializationFormatBinaryMessage = "SerializationFormat.Binary is obsolete and should not be used. See https://aka.ms/serializationformat-binary-obsolete for more information.";
         internal const string SystemDataSerializationFormatBinaryDiagId = "SYSLIB0038";
+
+        internal const string TlsVersion10and11Message = "TLS versions 1.0 and 1.1 are obsolete and not considered secure by the industry. Consider using newer TLS protocol version.";
+        internal const string TlsVersion10and11DiagId = "SYSLIB0039";
     }
 }

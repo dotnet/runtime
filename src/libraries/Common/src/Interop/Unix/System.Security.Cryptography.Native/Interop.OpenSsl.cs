@@ -46,32 +46,32 @@ internal static partial class Interop
             return bindingHandle;
         }
 
-         private static volatile int s_disableTlsResume = -1;
+        private static volatile int s_disableTlsResume = -1;
 
-         private static bool DisableTlsResume
-         {
-             get
-             {
-                 int disableTlsResume = s_disableTlsResume;
-                 if (disableTlsResume != -1)
-                 {
-                     return disableTlsResume != 0;
-                 }
+        private static bool DisableTlsResume
+        {
+            get
+            {
+                int disableTlsResume = s_disableTlsResume;
+                if (disableTlsResume != -1)
+                {
+                    return disableTlsResume != 0;
+                }
 
-                 // First check for the AppContext switch, giving it priority over the environment variable.
-                 if (AppContext.TryGetSwitch(DisableTlsResumeCtxSwitch, out bool value))
-                 {
-                     s_disableTlsResume = value ? 1 : 0;
-                 }
-                 else
-                 {
-                     // AppContext switch wasn't used. Check the environment variable.
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(DisableTlsResumeCtxSwitch, out bool value))
+                {
+                    s_disableTlsResume = value ? 1 : 0;
+                }
+                else
+                {
+                    // AppContext switch wasn't used. Check the environment variable.
                     s_disableTlsResume =
                         Environment.GetEnvironmentVariable(DisableTlsResumeEnvironmentVariable) is string envVar &&
                         (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
-                 }
+                }
 
-                 return s_disableTlsResume != 0;
+                return s_disableTlsResume != 0;
             }
         }
 
@@ -98,7 +98,9 @@ internal static partial class Interop
                     // we are using default settings but cipher suites policy says that TLS 1.3
                     // is not compatible with our settings (i.e. we requested no encryption or disabled
                     // all TLS 1.3 cipher suites)
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                     protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+#pragma warning restore SYSLIB0039
                 }
                 else
                 {
@@ -147,7 +149,7 @@ internal static partial class Interop
                     // Sets policy and security level
                     if (!Ssl.SetEncryptionPolicy(sslCtx, sslAuthenticationOptions.EncryptionPolicy))
                     {
-                        throw new SslException( SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
+                        throw new SslException(SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
                     }
                 }
 
@@ -274,7 +276,7 @@ internal static partial class Interop
 
             if (cacheSslContext)
             {
-               sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(protocols | (SslProtocols)(hasAlpn ? 1 : 0), out sslCtxHandle);
+                sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(protocols | (SslProtocols)(hasAlpn ? 1 : 0), out sslCtxHandle);
             }
 
             if (sslCtxHandle == null)
@@ -576,7 +578,7 @@ internal static partial class Interop
         {
             *outp = null;
             *outlen = 0;
-            IntPtr sslData =  Ssl.SslGetData(ssl);
+            IntPtr sslData = Ssl.SslGetData(ssl);
 
             // reset application data to avoid dangling pointer.
             Ssl.SslSetData(ssl, IntPtr.Zero);
