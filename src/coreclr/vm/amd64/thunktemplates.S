@@ -7,7 +7,7 @@
 
 PAGE_SIZE = 4096
 
-#define DATA_SLOT(stub, field) (stub##Code + PAGE_SIZE + stub##Data__##field)
+#define DATA_SLOT(stub, field) C_FUNC(stub##Code) + PAGE_SIZE + stub##Data__##field
 
 LEAF_ENTRY StubPrecodeCode, _TEXT
         mov    r10, [rip + DATA_SLOT(StubPrecode, MethodDesc)]
@@ -67,7 +67,7 @@ PATCH_LABEL ResolveStubCode_ThisDeref
         jmp    QWORD PTR [rax+0x10]
 PATCH_LABEL ResolveStubCode_FailEntry
         add    DWORD PTR [rip + DATA_SLOT(ResolveStub, Counter)], -1
-        jge    Resolve
+        jge    LOCAL_LABEL(Resolve)
         or     r11, 1 // SDF_ResolveBackPatch
 PATCH_LABEL ResolveStubCode_SlowEntry
         push   rdx

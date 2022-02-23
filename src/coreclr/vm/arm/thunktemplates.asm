@@ -10,8 +10,6 @@
 
     ALIGN 4
 
-    PAGE_SIZE = 4096
-
     #define DATA_SLOT(stub, field) stub##Code + PAGE_SIZE + stub##Data__##field
 
     LEAF_ENTRY StubPrecodeCode
