@@ -467,8 +467,6 @@ namespace System.Text.RegularExpressions
 
                 runner.Scan(input);
 
-                runner.runmatch!.Text = null; // Drop reference to text
-
                 return runner.runmatch!.FoundMatch ? null : RegularExpressions.Match.Empty;
             }
             finally
@@ -485,6 +483,7 @@ namespace System.Text.RegularExpressions
             try
             {
                 runner.InitializeTimeout(internalMatchTimeout);
+                runner.runtext = input;
                 int runtextpos = startat;
                 while (true)
                 {
@@ -493,13 +492,24 @@ namespace System.Text.RegularExpressions
 
                     int stoppos = RightToLeft ? 0 : input.Length;
 
-                    Match? match = InternalPerformScan(reuseMatchObject, input, 0, runner, input, false);
+                    Match? match = InternalPerformScan(reuseMatchObject, input, 0, runner, input, returnNullIfQuick: false);
 
-                    // if we got a match, set runmatch to null if quick is true
+                    // if we got a match, then call the callback function with the match and prepare for next iteration.
                     if (match!.Success)
                     {
+                        if (!reuseMatchObject)
+                        {
+                            // We're not reusing match objects, so null out our field reference to the instance.
+                            // It'll be recreated the next time one is needed.
+                            runner.runmatch = null;
+                        }
+
                         if (!callback(ref state, match))
                         {
+                            // If the callback returns false, we're done.
+                            // Drop reference to text to avoid keeping it alive in a cache.
+                            runner.runtext = null!;
+
                             if (reuseMatchObject)
                             {
                                 // We're reusing the single match instance, so clear out its text as well.
@@ -515,7 +525,6 @@ namespace System.Text.RegularExpressions
                         // the current position, just as Match.NextMatch() would pass in _textpos as textstart.
                         runtextpos = startat = runner.runtextpos;
 
-
                         // Reset state for another iteration.
                         runner.runtrackpos = runner.runtrack!.Length;
                         runner.runstackpos = runner.runstack!.Length;
@@ -525,6 +534,9 @@ namespace System.Text.RegularExpressions
                         {
                             if (runner.runtextpos == stoppos)
                             {
+                                // Drop reference to text to avoid keeping it alive in a cache.
+                                runner.runtext = null!;
+
                                 if (reuseMatchObject)
                                 {
                                     // See above comment.
@@ -544,6 +556,9 @@ namespace System.Text.RegularExpressions
                         // We failed to match at this position.  If we're at the stopping point, we're done.
                         if (runner.runtextpos == stoppos)
                         {
+                            runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
+                            if (!reuseMatchObject)
+                                runner.runmatch = null;
                             return;
                         }
                     }

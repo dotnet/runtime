@@ -465,8 +465,9 @@ namespace System.Text.RegularExpressions
 
         internal bool IsBoundary(ReadOnlySpan<char> inputSpan, int index)
         {
-            return (index > runtextbeg && RegexCharClass.IsBoundaryWordChar(inputSpan[index - 1])) !=
-                   (index < inputSpan.Length && RegexCharClass.IsBoundaryWordChar(inputSpan[index]));
+            int indexM1 = index - 1;
+            return ((uint)indexM1 < (uint)inputSpan.Length && RegexCharClass.IsBoundaryWordChar(inputSpan[indexM1])) !=
+                   ((uint)index < (uint)inputSpan.Length && RegexCharClass.IsBoundaryWordChar(inputSpan[index]));
         }
 
         /// <summary>Called to determine a char's inclusion in the \w set.</summary>
@@ -480,8 +481,9 @@ namespace System.Text.RegularExpressions
 
         internal bool IsECMABoundary(ReadOnlySpan<char> inputSpan, int index)
         {
-            return (index > runtextbeg && RegexCharClass.IsECMAWordChar(inputSpan[index - 1])) !=
-                   (index < inputSpan.Length && RegexCharClass.IsECMAWordChar(inputSpan[index]));
+            int indexM1 = index - 1;
+            return ((uint)indexM1 < (uint)inputSpan.Length && RegexCharClass.IsECMAWordChar(inputSpan[indexM1])) !=
+                   ((uint)index < (uint)inputSpan.Length && RegexCharClass.IsECMAWordChar(inputSpan[index]));
         }
 
         protected static bool CharInSet(char ch, string set, string category)

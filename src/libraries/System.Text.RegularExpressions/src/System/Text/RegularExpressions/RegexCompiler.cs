@@ -190,6 +190,10 @@ namespace System.Text.RegularExpressions
             _ilg!.Emit(OpCodes.Ldfld, ft);
         }
 
+        /// <summary>Fetches the address of argument in passed in <paramref name="position"/></summary>
+        /// <param name="position">The position of the argument which address needs to be fetched.</param>
+        private void Ldarga_s(int position) => _ilg!.Emit(OpCodes.Ldarga_S, position);
+
         /// <summary>A macro for Ldthis(); Ldfld(); Stloc();</summary>
         private void Mvfldloc(FieldInfo ft, LocalBuilder lt)
         {
@@ -359,8 +363,8 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Generates the implementation for FindFirstChar.</summary>
-        protected void EmitFindFirstChar()
+        /// <summary>Generates the implementation for TryFindNextPossibleStartingPosition.</summary>
+        protected void EmitTryFindNextPossibleStartingPosition()
         {
             Debug.Assert(_code != null);
             _int32LocalsPool?.Clear();
@@ -475,7 +479,7 @@ namespace System.Text.RegularExpressions
             {
                 Label label;
 
-                // Anchors that fully implement FindFirstChar, with a check that leads to immediate success or failure determination.
+                // Anchors that fully implement TryFindNextPossibleStartingPosition, with a check that leads to immediate success or failure determination.
                 switch (_code.FindOptimizations.FindMode)
                 {
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
@@ -1021,8 +1025,8 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Generates the implementation for Go.</summary>
-        protected void EmitGo()
+        /// <summary>Generates the implementation for TryMatchAtCurrentPosition.</summary>
+        protected void EmitTryMatchAtCurrentPosition()
         {
             // In .NET Framework and up through .NET Core 3.1, the code generated for RegexOptions.Compiled was effectively an unrolled
             // version of what RegexInterpreter would process.  The RegexNode tree would be turned into a series of opcodes via
@@ -1041,7 +1045,7 @@ namespace System.Text.RegularExpressions
             // label that code should jump back to when backtracking.  That way, a subsequent EmitXx function doesn't need to know exactly
             // where to jump: it simply always jumps to "doneLabel" on match failure, and "doneLabel" is always configured to point to
             // the right location.  In an expression without backtracking, or before any backtracking constructs have been encountered,
-            // "doneLabel" is simply the final return location from the Go method that will undo any captures and exit, signaling to
+            // "doneLabel" is simply the final return location from the TryMatchAtCurrentPosition method that will undo any captures and exit, signaling to
             // the calling scan loop that nothing was matched.
 
             Debug.Assert(_code != null);
@@ -1057,13 +1061,13 @@ namespace System.Text.RegularExpressions
             node = node.Child(0);
 
 
-            // In some limited cases, FindFirstChar will only return true if it successfully matched the whole expression.
-            // We can special case these to do essentially nothing in Go other than emit the capture.
+            // In some limited cases, TryFindNextPossibleStartingPosition will only return true if it successfully matched the whole expression.
+            // We can special case these to do essentially nothing in TryMatchAtCurrentPosition other than emit the capture.
             switch (node.Kind)
             {
                 case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set when !IsCaseInsensitive(node):
                     // This is the case for single and multiple characters, though the whole thing is only guaranteed
-                    // to have been validated in FindFirstChar when doing case-sensitive comparison.
+                    // to have been validated in TryFindNextPossibleStartingPosition when doing case-sensitive comparison.
                     // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
                     // base.runtextpos = base.runtextpos + node.Str.Length;
                     // return true;
@@ -3963,21 +3967,17 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        protected void EmitScan(DynamicMethod findFirstCharMethod, DynamicMethod goMethod)
+        protected void EmitScan(DynamicMethod tryFindNextStartingPositionMethod, DynamicMethod tryMatchAtCurrentPositionMethod)
         {
             Label returnLabel = DefineLabel();
 
-            // while (true)
-            Label whileLoopEnd = DefineLabel();
+            // while (TryFindNextPossibleStartingPosition(text))
             Label whileLoopBody = DefineLabel();
             MarkLabel(whileLoopBody);
-
-            // if (FindFirstChar(text))
-            Label postWhileLabel = DefineLabel();
             Ldthis();
             Ldarg_1();
-            Call(findFirstCharMethod);
-            BrfalseFar(postWhileLabel);
+            Call(tryFindNextStartingPositionMethod);
+            BrfalseFar(returnLabel);
 
             if (_hasTimeout)
             {
@@ -3986,18 +3986,14 @@ namespace System.Text.RegularExpressions
                 Call(s_checkTimeoutMethod);
             }
 
-            // if (Go(text))
+            // if (TryMatchAtCurrentPosition(text) || runtextpos == text.length)
             //   return;
             Ldthis();
             Ldarg_1();
-            Call(goMethod);
+            Call(tryMatchAtCurrentPositionMethod);
             BrtrueFar(returnLabel);
-
-            // if (runtextpos == text.length)
-            //   return;
-            MarkLabel(postWhileLabel);
             Ldthisfld(s_runtextposField);
-            _ilg!.Emit(OpCodes.Ldarga_S, 1);
+            Ldarga_s(1);
             Call(s_spanGetLengthMethod);
             Ceq();
             BrtrueFar(returnLabel);
@@ -4011,7 +4007,6 @@ namespace System.Text.RegularExpressions
 
             // End loop body.
             BrFar(whileLoopBody);
-            MarkLabel(whileLoopEnd);
 
             // return;
             MarkLabel(returnLabel);

@@ -337,33 +337,24 @@ namespace System.Text.RegularExpressions
                 stoppos = 0;
             }
 
-            while (true)
+            while (_code.FindOptimizations.TryFindNextStartingPosition(text, ref runtextpos, runtextbeg, runtextstart, runtextend))
             {
-                if (_code.FindOptimizations.TryFindNextStartingPosition(text, ref runtextpos, runtextbeg, runtextstart, runtextend))
-                {
-                    CheckTimeout();
+                CheckTimeout();
 
-                    if (Go(text))
-                    {
-                        return;
-                    }
-
-                    // Reset state for another iteration.
-                    runtrackpos = runtrack!.Length;
-                    runstackpos = runstack!.Length;
-                    runcrawlpos = runcrawl!.Length;
-                }
-
-                if (runtextpos == stoppos)
+                if (TryMatchAtCurrentPosition(text) || runtextpos == stoppos)
                 {
                     return;
                 }
 
+                // Reset state for another iteration.
+                runtrackpos = runtrack!.Length;
+                runstackpos = runstack!.Length;
+                runcrawlpos = runcrawl!.Length;
                 runtextpos += bump;
             }
         }
 
-        private bool Go(ReadOnlySpan<char> inputSpan)
+        private bool TryMatchAtCurrentPosition(ReadOnlySpan<char> inputSpan)
         {
             SetOperator((RegexOpcode)_code.Codes[0]);
             _codepos = 0;

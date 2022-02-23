@@ -52,14 +52,14 @@ namespace System.Text.RegularExpressions
                 description = string.Concat("_", pattern.Length > DescriptionLimit ? pattern.AsSpan(0, DescriptionLimit) : pattern);
             }
 
-            DynamicMethod findFirstCharMethod = DefineDynamicMethod($"Regex{regexNum}_FindFirstChar{description}", typeof(bool), typeof(CompiledRegexRunner), s_paramTypes);
-            EmitFindFirstChar();
+            DynamicMethod tryfindNextPossibleStartPositionMethod = DefineDynamicMethod($"Regex{regexNum}_TryFindNextPossibleStartingPosition{description}", typeof(bool), typeof(CompiledRegexRunner), s_paramTypes);
+            EmitTryFindNextPossibleStartingPosition();
 
-            DynamicMethod goMethod = DefineDynamicMethod($"Regex{regexNum}_Go{description}", typeof(bool), typeof(CompiledRegexRunner), s_paramTypes);
-            EmitGo();
+            DynamicMethod tryMatchAtCurrentPositionMethod = DefineDynamicMethod($"Regex{regexNum}_TryMatchAtCurrentPosition{description}", typeof(bool), typeof(CompiledRegexRunner), s_paramTypes);
+            EmitTryMatchAtCurrentPosition();
 
             DynamicMethod scanMethod = DefineDynamicMethod($"Regex{regexNum}_Scan{description}", null, typeof(CompiledRegexRunner), new[] { typeof(RegexRunner), typeof(ReadOnlySpan<char>) });
-            EmitScan(findFirstCharMethod, goMethod);
+            EmitScan(tryfindNextPossibleStartPositionMethod, tryMatchAtCurrentPositionMethod);
 
             return new CompiledRegexRunnerFactory(scanMethod);
         }
