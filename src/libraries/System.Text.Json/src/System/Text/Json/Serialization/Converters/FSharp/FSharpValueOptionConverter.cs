@@ -67,7 +67,7 @@ namespace System.Text.Json.Serialization.Converters
 
             TElement element = _optionValueGetter(ref value);
 
-            state.Current.DeclaredJsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
+            state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
             return _elementConverter.TryWrite(writer, element, options, ref state);
         }
 

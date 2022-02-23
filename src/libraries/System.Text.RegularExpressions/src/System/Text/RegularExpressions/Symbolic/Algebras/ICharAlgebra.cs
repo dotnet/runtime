@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>
@@ -36,12 +34,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Compute the number of elements in the set
         /// </summary>
         ulong ComputeDomainSize(T set);
-
-        /// <summary>
-        /// Enumerate all characters in the set
-        /// </summary>
-        /// <param name="set">given set</param>
-        IEnumerable<char> GenerateAllCharacters(T set);
 
         /// <summary>
         /// Convert a predicate into a set of characters.

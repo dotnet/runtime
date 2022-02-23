@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
+
 using X86 = System.Runtime.Intrinsics.X86;
 
 namespace System

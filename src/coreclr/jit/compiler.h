@@ -3625,6 +3625,7 @@ public:
     void gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, char* bufp, unsigned bufLength);
     void gtGetLateArgMsg(GenTreeCall* call, GenTree* arg, int argNum, char* bufp, unsigned bufLength);
     void gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, IndentStack* indentStack);
+    void gtDispAnyFieldSeq(FieldSeqNode* fieldSeq);
     void gtDispFieldSeq(FieldSeqNode* pfsn);
 
     void gtDispRange(LIR::ReadOnlyRange const& range);
@@ -4581,10 +4582,11 @@ public:
                                            GenTreeCall::Use*       args               = nullptr,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr);
 
-    GenTree* impCastClassOrIsInstToTree(GenTree*                op1,
-                                        GenTree*                op2,
-                                        CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                        bool                    isCastClass);
+    bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
+    bool impIsCastHelperMayHaveProfileData(GenTree* tree);
+
+    GenTree* impCastClassOrIsInstToTree(
+        GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSET ilOffset);
 
     GenTree* impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass);
 
@@ -5319,7 +5321,8 @@ public:
                            LclVarDsc*       varDsc,
                            VARSET_VALARG_TP life,
                            bool*            doAgain,
-                           bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
+                           bool*            pStmtInfoDirty,
+                           bool* pStoreRemoved DEBUGARG(bool* treeModf));
 
     void fgInterBlockLocalVarLiveness();
 
@@ -5573,6 +5576,7 @@ public:
 
 #ifdef DEBUG
     void fgDebugCheckExceptionSets();
+    void fgDebugCheckValueNumberedTree(GenTree* tree);
 #endif
 
     // These are the current value number for the memory implicit variables while
@@ -6421,6 +6425,9 @@ private:
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
+#ifdef FEATURE_HW_INTRINSICS
+    GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
+#endif
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
     GenTree* fgOptimizeAddition(GenTreeOp* add);
     GenTree* fgOptimizeMultiply(GenTreeOp* mul);
@@ -8420,18 +8427,6 @@ public:
     {
         codeGen->SetInterruptible(value);
     }
-
-#ifdef TARGET_ARMARCH
-
-    bool GetHasTailCalls()
-    {
-        return codeGen->GetHasTailCalls();
-    }
-    void SetHasTailCalls(bool value)
-    {
-        codeGen->SetHasTailCalls(value);
-    }
-#endif // TARGET_ARMARCH
 
 #if DOUBLE_ALIGN
     const bool genDoubleAlign()

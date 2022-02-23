@@ -207,6 +207,7 @@
       <_EmccCFlags Include="-DDRIVER_GEN=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />
       <_EmccCFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
+      <_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="'$(WasmProfilers)' == 'aot'" />
       <_EmccCFlags Include="-DCORE_BINDINGS" />
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
       <_EmccCFlags Include="-emit-llvm" />
@@ -418,22 +419,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_GenerateDriverGenC" Condition="'$(_WasmShouldAOT)' != 'true' and '$(WasmProfilers)' != ''">
-    <PropertyGroup>
-      <EmccExtraCFlags>$(EmccExtraCFlags) -DDRIVER_GEN=1</EmccExtraCFlags>
-      <_DriverGenCNeeded>true</_DriverGenCNeeded>
-      <InitAotProfilerCmd>
-void mono_profiler_init_aot (const char *desc)%3B
-EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_profiler_init_aot (desc)%3B }
-      </InitAotProfilerCmd>
-    </PropertyGroup>
-
-    <Message Text="Generating $(_DriverGenCPath)" Importance="Low" />
-    <WriteLinesToFile File="$(_DriverGenCPath)" Overwrite="true" Lines="$(InitAotProfilerCmd)" WriteOnlyWhenDifferent="true" />
-
-    <ItemGroup>
-        <FileWrites Include="$(_DriverGenCPath)" />
-    </ItemGroup>
+  <Target Name="_GenerateDriverGenC" Condition="'$(_WasmShouldAOT)' != 'true'">
   </Target>
 
   <Target Name="_CheckEmccIsExpectedVersion">
@@ -564,7 +550,6 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       AdditionalAssemblySearchPaths="@(_WasmAOTSearchPaths)"
       UseAotDataFile="false"
       AOTProfilePath="$(AOTProfilePath)"
-      Profilers="$(WasmProfilers)"
       AotModulesTablePath="$(_DriverGenCPath)"
       UseLLVM="true"
       DisableParallelAot="$(DisableParallelAot)"

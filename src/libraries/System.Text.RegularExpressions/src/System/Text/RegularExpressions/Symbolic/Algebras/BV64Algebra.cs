@@ -157,15 +157,11 @@ namespace System.Text.RegularExpressions.Symbolic
             return minterms;
         }
 
-        public IEnumerable<char> GenerateAllCharacters(ulong set) => throw new NotSupportedException();
-
         /// <summary>Pretty print the bitvector bv as the character set it represents.</summary>
         public string PrettyPrint(ulong bv)
         {
-            ICharAlgebra<BDD> bddalgebra = SymbolicRegexRunnerFactory.s_unicode._solver;
-            Debug.Assert(_partition is not null && bddalgebra is not null);
-
-            return bddalgebra.PrettyPrint(ConvertToCharSet(bddalgebra, bv));
+            CharSetSolver solver = CharSetSolver.Instance;
+            return solver.PrettyPrint(ConvertToCharSet(solver, bv));
         }
     }
 }

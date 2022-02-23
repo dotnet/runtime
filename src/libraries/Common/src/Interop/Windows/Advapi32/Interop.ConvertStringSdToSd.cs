@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "ConvertStringSecurityDescriptorToSecurityDescriptorW",
-            CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+            CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial bool ConvertStringSdToSd(
             string stringSd,
             /* DWORD */ uint stringSdRevision,

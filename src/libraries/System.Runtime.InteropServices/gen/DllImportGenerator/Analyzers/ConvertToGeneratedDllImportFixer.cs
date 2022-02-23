@@ -28,6 +28,8 @@ namespace Microsoft.Interop.Analyzers
         public override FixAllProvider GetFixAllProvider() => CustomFixAllProvider.Instance;
 
         private const string ConvertToGeneratedDllImportKey = "ConvertToGeneratedDllImport";
+        private const string ConvertToGeneratedDllImportWithASuffixKey = "ConvertToGeneratedDllImportA";
+        private const string ConvertToGeneratedDllImportWithWSuffixKey = "ConvertToGeneratedDllImportW";
 
         private static readonly string[] s_preferredAttributeArgumentOrder =
             {
@@ -60,9 +62,48 @@ namespace Microsoft.Interop.Analyzers
                     cancelToken => ConvertToGeneratedDllImport(
                         context.Document,
                         methodSyntax,
+                        entryPointSuffix: null,
                         cancelToken),
                     equivalenceKey: ConvertToGeneratedDllImportKey),
                 context.Diagnostics);
+
+            foreach (Diagnostic diagnostic in context.Diagnostics)
+            {
+                if (!bool.Parse(diagnostic.Properties[ConvertToGeneratedDllImportAnalyzer.ExactSpellingPropertyKey]))
+                {
+                    CharSet charSet = (CharSet)Enum.Parse(typeof(CharSet), diagnostic.Properties[ConvertToGeneratedDllImportAnalyzer.CharSetPropertyKey]);
+                    // CharSet.Auto traditionally maps to either an A or W suffix
+                    // depending on the default CharSet of the platform.
+                    // We will offer both suffix options when CharSet.Auto is provided
+                    // to enable developers to pick which variant they mean (since they could explicitly decide they want one or the other)
+                    if (charSet is CharSet.None or CharSet.Ansi or CharSet.Auto)
+                    {
+                        context.RegisterCodeFix(
+                            CodeAction.Create(
+                                string.Format(Resources.ConvertToGeneratedDllImportWithSuffix, "A"),
+                                cancelToken => ConvertToGeneratedDllImport(
+                                    context.Document,
+                                    methodSyntax,
+                                    entryPointSuffix: 'A',
+                                    cancelToken),
+                                equivalenceKey: ConvertToGeneratedDllImportWithASuffixKey),
+                            context.Diagnostics);
+                    }
+                    if (charSet is CharSet.Unicode or CharSet.Auto)
+                    {
+                        context.RegisterCodeFix(
+                            CodeAction.Create(
+                                string.Format(Resources.ConvertToGeneratedDllImportWithSuffix, "W"),
+                                cancelToken => ConvertToGeneratedDllImport(
+                                    context.Document,
+                                    methodSyntax,
+                                    entryPointSuffix: 'W',
+                                    cancelToken),
+                                equivalenceKey: ConvertToGeneratedDllImportWithWSuffixKey),
+                            context.Diagnostics);
+                    }
+                }
+            }
         }
 
         private class CustomFixAllProvider : DocumentBasedFixAllProvider
@@ -86,7 +127,7 @@ namespace Microsoft.Interop.Analyzers
                     if (editor.SemanticModel.GetDeclaredSymbol(methodSyntax, fixAllContext.CancellationToken) is not IMethodSymbol methodSymbol)
                         continue;
 
-                    SyntaxNode generatedDeclaration = ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, fixAllContext.CancellationToken);
+                    SyntaxNode generatedDeclaration = ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, GetSuffixFromEquivalenceKey(fixAllContext.CodeActionEquivalenceKey), fixAllContext.CancellationToken);
 
                     if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
                     {
@@ -105,11 +146,19 @@ namespace Microsoft.Interop.Analyzers
 
                 return editor.GetChangedDocument();
             }
+
+            private static char? GetSuffixFromEquivalenceKey(string equivalenceKey) => equivalenceKey switch
+            {
+                ConvertToGeneratedDllImportWithASuffixKey => 'A',
+                ConvertToGeneratedDllImportWithWSuffixKey => 'W',
+                _ => null
+            };
         }
 
         private static async Task<Document> ConvertToGeneratedDllImport(
             Document doc,
             MethodDeclarationSyntax methodSyntax,
+            char? entryPointSuffix,
             CancellationToken cancellationToken)
         {
             DocumentEditor editor = await DocumentEditor.CreateAsync(doc, cancellationToken).ConfigureAwait(false);
@@ -118,7 +167,7 @@ namespace Microsoft.Interop.Analyzers
             if (editor.SemanticModel.GetDeclaredSymbol(methodSyntax, cancellationToken) is not IMethodSymbol methodSymbol)
                 return doc;
 
-            SyntaxNode generatedDeclaration = ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, cancellationToken);
+            SyntaxNode generatedDeclaration = ConvertMethodDeclarationToGeneratedDllImport(methodSyntax, editor, generator, methodSymbol, entryPointSuffix, cancellationToken);
 
             if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
             {
@@ -137,7 +186,13 @@ namespace Microsoft.Interop.Analyzers
             return editor.GetChangedDocument();
         }
 
-        private static SyntaxNode ConvertMethodDeclarationToGeneratedDllImport(MethodDeclarationSyntax methodSyntax, DocumentEditor editor, SyntaxGenerator generator, IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+        private static SyntaxNode ConvertMethodDeclarationToGeneratedDllImport(
+            MethodDeclarationSyntax methodSyntax,
+            DocumentEditor editor,
+            SyntaxGenerator generator,
+            IMethodSymbol methodSymbol,
+            char? entryPointSuffix,
+            CancellationToken cancellationToken)
         {
             INamedTypeSymbol? dllImportAttrType = editor.SemanticModel.Compilation.GetTypeByMetadataName(typeof(DllImportAttribute).FullName);
             if (dllImportAttrType == null)
@@ -159,6 +214,8 @@ namespace Microsoft.Interop.Analyzers
                 dllImportSyntax,
                 methodSymbol.GetDllImportData()!,
                 generatedDllImportAttrType,
+                methodSymbol.Name,
+                entryPointSuffix,
                 out SyntaxNode? unmanagedCallConvAttributeMaybe);
 
             // Add annotation about potential behavioural and compatibility changes
@@ -351,6 +408,8 @@ namespace Microsoft.Interop.Analyzers
             AttributeSyntax dllImportSyntax,
             DllImportData dllImportData,
             INamedTypeSymbol generatedDllImportAttrType,
+            string methodName,
+            char? entryPointSuffix,
             out SyntaxNode? unmanagedCallConvAttributeMaybe)
         {
             unmanagedCallConvAttributeMaybe = null;
@@ -361,6 +420,7 @@ namespace Microsoft.Interop.Analyzers
 
             // Update attribute arguments for GeneratedDllImport
             List<SyntaxNode> argumentsToRemove = new List<SyntaxNode>();
+            AttributeArgumentSyntax? entryPointAttributeArgument = null;
             foreach (SyntaxNode argument in generator.GetAttributeArguments(generatedDllImportSyntax))
             {
                 if (argument is not AttributeArgumentSyntax attrArg)
@@ -395,6 +455,36 @@ namespace Microsoft.Interop.Analyzers
                         argumentsToRemove.Add(argument);
                     }
                 }
+                else if (IsMatchingNamedArg(attrArg, nameof(DllImportAttribute.ExactSpelling)))
+                {
+                    argumentsToRemove.Add(argument);
+                }
+                else if (IsMatchingNamedArg(attrArg, nameof(DllImportAttribute.EntryPoint)))
+                {
+                    entryPointAttributeArgument = attrArg;
+                    if (!dllImportData.ExactSpelling && entryPointSuffix.HasValue)
+                    {
+                        if (entryPointAttributeArgument.Expression.IsKind(SyntaxKind.StringLiteralExpression))
+                        {
+                            string? entryPoint = (string?)((LiteralExpressionSyntax)entryPointAttributeArgument.Expression).Token.Value;
+                            if (entryPoint is not null)
+                            {
+                                entryPointAttributeArgument = entryPointAttributeArgument.WithExpression(
+                                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
+                                        SyntaxFactory.Literal(entryPoint + entryPointSuffix)));
+                            }
+                        }
+                        else
+                        {
+                            entryPointAttributeArgument = entryPointAttributeArgument.WithExpression(
+                                SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression,
+                                entryPointAttributeArgument.Expression,
+                                SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
+                                    SyntaxFactory.Literal(entryPointSuffix.ToString()))));
+                        }
+                    }
+                    argumentsToRemove.Add(attrArg);
+                }
                 else if (IsMatchingNamedArg(attrArg, nameof(DllImportAttribute.PreserveSig)))
                 {
                     // We transform the signature for PreserveSig, so we can remove the argument
@@ -402,7 +492,17 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
+            if (entryPointSuffix.HasValue && entryPointAttributeArgument is null)
+            {
+                entryPointAttributeArgument = (AttributeArgumentSyntax)generator.AttributeArgument("EntryPoint",
+                    generator.LiteralExpression(methodName + entryPointSuffix.Value));
+            }
+
             generatedDllImportSyntax = generator.RemoveNodes(generatedDllImportSyntax, argumentsToRemove);
+            if (entryPointAttributeArgument is not null)
+            {
+                generatedDllImportSyntax = generator.AddAttributeArguments(generatedDllImportSyntax, new[] { entryPointAttributeArgument });
+            }
             return SortDllImportAttributeArguments((AttributeSyntax)generatedDllImportSyntax, generator);
         }
 
