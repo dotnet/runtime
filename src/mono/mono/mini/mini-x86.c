@@ -1894,10 +1894,7 @@ emit_r4const (MonoCompile *cfg, guint8* code, int dreg, float *p)
 	float f = *p;
 
 	if ((f == 0.0) && (mono_signbit (f) == 0)) {
-		if (cfg->r4fp)
-			x86_sse_xorps_reg_reg (code, dreg, dreg);
-		else
-			x86_sse_xorpd_reg_reg (code, dreg, dreg);
+		x86_sse_xorps_reg_reg (code, dreg, dreg);
 	} else {
 		if (cfg->compile_aot) {
 			guint32 val = *(guint32*)p;
@@ -1908,8 +1905,6 @@ emit_r4const (MonoCompile *cfg, guint8* code, int dreg, float *p)
 			mono_add_patch_info (cfg, code - cfg->native_code + X86_SSE_REG_MEM_OFFSET, MONO_PATCH_INFO_R4, p);
 			x86_sse_movss_reg_mem (code, dreg, NULL);
 		}
-		if (!cfg->r4fp)
-			x86_sse_cvtss2sd_reg_reg (code, dreg, dreg);
 	}
 	return code;
 }
@@ -3480,21 +3475,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_sse_movsd_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;
 		case OP_STORER4_MEMBASE_REG:
-			if (cfg->r4fp) {
-				x86_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
-			} else {
-				/* This requires a double->single conversion */
-				x86_sse_cvtsd2ss_reg_reg (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
-				x86_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, MONO_ARCH_FP_SCRATCH_REG);
-			}
+			x86_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
 			break;
 		case OP_LOADR4_MEMBASE:
-			if (cfg->r4fp) {
-				x86_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
-			} else {
-				x86_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
-				x86_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
-			}
+			x86_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;
 		case OP_X86_MOVE_R8_TO_FPSTACK: {
 			/* Move a value from an SSE register to the top of the fp stack */
@@ -3511,12 +3495,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ICONV_TO_R4:
-			if (cfg->r4fp) {
-				x86_sse_cvtsi2ss_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
-			} else {
-				x86_sse_cvtsi2ss_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
-				x86_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
-			}
+			x86_sse_cvtsi2ss_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_ICONV_TO_R8:
 			x86_sse_cvtsi2sd_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
@@ -3530,12 +3509,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
 			break;
 		case OP_FCONV_TO_R4:
-			if (cfg->r4fp) {
-				x86_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
-			} else {
-				x86_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
-				x86_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
-			}
+			x86_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
@@ -4695,8 +4669,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ICONV_TO_R4_RAW:
 			x86_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
-			if (!cfg->r4fp)
-			  x86_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
 			break;
 		case OP_EXTRACT_I4:
 			x86_movd_reg_xreg (code, ins->dreg, ins->sreg1);
@@ -4748,33 +4720,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_INSERTX_R4_SLOW:
 			switch (ins->inst_c0) {
 			case 0:
-				if (cfg->r4fp)
-					x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
-				else
-					x86_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
+				x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
 				break;
 			case 1:
 				x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
-				if (cfg->r4fp)
-					x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
-				else
-					x86_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
+				x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
 				x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
 				break;
 			case 2:
 				x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
-				if (cfg->r4fp)
-					x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
-				else
-					x86_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
+				x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
 				x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
 				break;
 			case 3:
 				x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
-				if (cfg->r4fp)
-					x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
-				else
-					x86_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
+				x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
 				x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
 				break;
 			}
@@ -4829,12 +4789,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_R4:
-			if (cfg->r4fp) {
-				x86_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
-			} else {
-				x86_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
-				x86_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->dreg);
-			}
+			x86_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			x86_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_R8:
