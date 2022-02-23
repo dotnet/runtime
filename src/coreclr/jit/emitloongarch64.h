@@ -70,7 +70,6 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 //  Emit the 32-bit LOONGARCH64 instruction 'code' into the 'dst'  buffer
 unsigned emitOutput_Instr(BYTE* dst, code_t code);
 
-// NOTEADD: New functions in emitarm64.h
 // Method to do check if mov is redundant with respect to the last instruction.
 // If yes, the caller of this method can choose to omit current mov instruction.
 static bool IsMovInstruction(instruction ins);
@@ -104,7 +103,6 @@ inline static unsigned getBitWidth(emitAttr size)
 
 inline static bool isGeneralRegister(regNumber reg)
 {
-    // Excludes REG_R0 ??
     return (reg >= REG_INT_FIRST) && (reg <= REG_INT_LAST);
 }
 
@@ -131,14 +129,8 @@ void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int o
 void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 void emitIns_I_I(instruction ins, emitAttr attr, ssize_t cc, ssize_t offs);
 
-void emitIns_R_I_I(
-    instruction ins, emitAttr attr, regNumber reg1, ssize_t hint, ssize_t off, insOpts opt = INS_OPTS_NONE);
-
-void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
-
 void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t imm, insOpts opt = INS_OPTS_NONE);
 
-// NOTEADD: NEW function in emitarm64.
 void emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
 
@@ -167,31 +159,10 @@ void emitIns_R_R_R_I(instruction ins,
                      insOpts     opt      = INS_OPTS_NONE,
                      emitAttr    attrReg2 = EA_UNKNOWN);
 
-void emitIns_R_R_R_Ext(instruction ins,
-                       emitAttr    attr,
-                       regNumber   reg1,
-                       regNumber   reg2,
-                       regNumber   reg3,
-                       insOpts     opt         = INS_OPTS_NONE,
-                       int         shiftAmount = -1);
-
-// NODECHANGE: ADD an arg.
 void emitIns_R_R_I_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4);
-
-void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs);
-
-void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
-
-void emitIns_S_S_R_R(
-    instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);
-
-void emitIns_R_R_S_S(
-    instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);
-
-void emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val);
 
 void emitIns_R_C(
     instruction ins, emitAttr attr, regNumber reg, regNumber tmpReg, CORINFO_FIELD_HANDLE fldHnd, int offs);
@@ -200,32 +171,12 @@ void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 
 void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
 
-void emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, regNumber reg, int offs);
-
-void emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, ssize_t offs, ssize_t val);
-
-void emitIns_R_D(instruction ins, emitAttr attr, unsigned offs, regNumber reg);
-
-void emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg, int instrCount);
-
-void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int offs);
-
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
-// NODECHANGE: ADD a description of arguments "disp"
 void emitIns_R_AI(instruction ins,
                   emitAttr    attr,
                   regNumber   reg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
-
-void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
-
-void emitIns_R_ARR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, regNumber rg2, int disp);
-
-void emitIns_ARR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, regNumber rg2, int disp);
-
-void emitIns_R_ARX(
-    instruction ins, emitAttr attr, regNumber ireg, regNumber reg, regNumber rg2, unsigned mul, int disp);
 
 enum EmitCallType
 {

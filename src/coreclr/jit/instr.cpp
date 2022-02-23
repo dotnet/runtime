@@ -424,7 +424,11 @@ void CodeGen::inst_RV(instruction ins, regNumber reg, var_types type, emitAttr s
         size = emitActualTypeSize(type);
     }
 
+#ifdef TARGET_LOONGARCH64
+    NYI_LOONGARCH64("inst_RV-----unimplemented/unused on LOONGARCH64 yet----");
+#else
     GetEmitter()->emitIns_R(ins, size, reg);
+#endif
 }
 
 /*****************************************************************************
@@ -647,6 +651,8 @@ void CodeGen::inst_RV_IV(
  *  been made addressable).
  */
 
+#ifndef TARGET_LOONGARCH64
+// Now this is only used on xarch.
 void CodeGen::inst_TT(instruction ins, GenTree* tree, unsigned offs, int shfv, emitAttr size)
 {
     bool sizeInferred = false;
@@ -747,6 +753,7 @@ AGAIN:
             assert(!"invalid address");
     }
 }
+#endif
 
 //------------------------------------------------------------------------
 // inst_TT_RV: Generate a store of a lclVar
@@ -903,7 +910,9 @@ AGAIN:
             // For LoongArch64-ABI, the float arg might be passed by integer register,
             // when there is no float register left but there is integer register(s) left.
             if (emitter::isFloatReg(reg))
+            {
                 assert((ins == INS_fld_d) || (ins == INS_fld_s));
+            }
             else if (emitter::isGeneralRegister(reg) && (ins != INS_lea))
             {
                 ins = size == EA_4BYTE ? INS_ld_w : INS_ld_d;

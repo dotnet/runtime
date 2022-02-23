@@ -396,11 +396,13 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_CMPXCHG:
         {
+            NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
+
             GenTreeCmpXchg* cmpXchgNode = tree->AsCmpXchg();
             srcCount                    = cmpXchgNode->gtOpComparand->isContained() ? 2 : 3;
             assert(dstCount == 1);
 
-            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+            // if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
             {
                 // For LOONGARCH exclusives requires a single internal register
                 buildInternalIntRegisterDefForNode(tree);
@@ -422,7 +424,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
                 // For LOONGARCH exclusives the lifetime of the comparand must be extended because
                 // it may be used used multiple during retries
-                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+                // if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
                 {
                     setDelayFree(comparandUse);
                 }
@@ -441,9 +443,12 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_XADD:
         case GT_XCHG:
         {
+            NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
+
             assert(dstCount == (tree->TypeGet() == TYP_VOID) ? 0 : 1);
             srcCount = tree->gtGetOp2()->isContained() ? 1 : 2;
 
+#if 0
             if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
             {
                 // GT_XCHG requires a single internal register; the others require two.
@@ -458,6 +463,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 // for ldclral we need an internal register.
                 buildInternalIntRegisterDefForNode(tree);
             }
+#endif
 
             assert(!tree->gtGetOp1()->isContained());
             RefPosition* op1Use = BuildUse(tree->gtGetOp1());
@@ -467,9 +473,9 @@ int LinearScan::BuildNode(GenTree* tree)
                 op2Use = BuildUse(tree->gtGetOp2());
             }
 
-            // For LOONGARCH exclusives the lifetime of the addr and data must be extended because
+            // For LOONGARCH64 exclusives the lifetime of the addr and data must be extended because
             // it may be used used multiple during retries
-            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+            // if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
             {
                 // Internals may not collide with target
                 if (dstCount == 1)

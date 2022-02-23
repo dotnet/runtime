@@ -2191,7 +2191,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             if (dataReg != targetReg)
             {
                 // Assign into targetReg when dataReg (from op1) is not the same register
-                inst_Mov(targetType, targetReg, dataReg, true);
+                inst_Mov(targetType, targetReg, dataReg, true, emitActualTypeSize(targetType));
             }
             genProduceReg(lclNode);
         }

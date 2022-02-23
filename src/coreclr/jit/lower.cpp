@@ -1080,18 +1080,9 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 
     bool isOnStack = (info->GetRegNum() == REG_STK);
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     // Mark contained when we pass struct
     // GT_FIELD_LIST is always marked contained when it is generated
-    if (type == TYP_STRUCT)
-    {
-        arg->SetContained();
-        if ((arg->OperGet() == GT_OBJ) && (arg->AsObj()->Addr()->OperGet() == GT_LCL_VAR_ADDR))
-        {
-            MakeSrcContained(arg, arg->AsObj()->Addr());
-        }
-    }
-#elif defined(TARGET_LOONGARCH64)
     if (type == TYP_STRUCT)
     {
         arg->SetContained();
@@ -1484,9 +1475,9 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
 #endif // TARGET_ARMARCH
 
 #if defined(TARGET_LOONGARCH64)
-        if (call->IsVarargs() /*|| comp->opts.compUseSoftFP*/)
+        if (call->IsVarargs())
         {
-            // For vararg call or on armel, reg args should be all integer.
+            // For vararg call, reg args should be all integer.
             // Insert copies as needed to move float value to integer register.
             GenTree* newNode = LowerFloatArg(ppArg, info);
             if (newNode != nullptr)
@@ -1522,7 +1513,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 //------------------------------------------------------------------------
-// LowerFloatArg: Lower float call arguments on the arm platform.
+// LowerFloatArg: Lower float call arguments on the arm/LoongArch64 platform.
 //
 // Arguments:
 //    arg  - The arg node
@@ -2853,8 +2844,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 {
     assert(cmp->gtGetOp2()->IsIntegralConst());
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) // || defined(TARGET_LOONGARCH64)
-    ////TODO: add optimize for LoongArch64.
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    // TODO-LoongArch64: add optimize for LoongArch64.
     GenTree*       op1      = cmp->gtGetOp1();
     GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
     ssize_t        op2Value = op2->IconValue();
@@ -5784,7 +5775,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
         else
         {
-#if defined(TARGET_ARM64) //|| defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64)
             // 64-bit MUL is more expensive than UMULL on ARM64.
             genTreeOps mulOper = simpleMul ? GT_MUL_LONG : GT_MULHI;
 #else

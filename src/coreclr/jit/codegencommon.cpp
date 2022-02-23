@@ -6029,7 +6029,7 @@ void CodeGen::genFnProlog()
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     genPushCalleeSavedRegisters(initReg, &initRegZeroed);
-#else  // !TARGET_ARM64 || !TARGET_LOONGARCH64
+#else // !TARGET_ARM64 || !TARGET_LOONGARCH64
     if (!isOSRx64Root)
     {
         genPushCalleeSavedRegisters();

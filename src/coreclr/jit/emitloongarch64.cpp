@@ -455,20 +455,8 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 /*static*/ emitJumpKind emitter::emitInsToJumpKind(instruction ins)
 {
-    assert(!"unimplemented on LOONGARCH yet");
+    NYI_LOONGARCH64("emitInsToJumpKind-----unimplemented on LOONGARCH64 yet----");
     return EJ_NONE;
-#if 0
-    for (unsigned i = 0; i < ArrLen(emitJumpKindInstructions); i++)
-    {
-        if (ins == emitJumpKindInstructions[i])
-        {
-            emitJumpKind ret = (emitJumpKind)i;
-            assert(EJ_NONE < ret && ret < EJ_COUNT);
-            return ret;
-        }
-    }
-    unreached();
-#endif
 }
 
 /*****************************************************************************
@@ -1008,57 +996,13 @@ void emitter::emitIns_I_I(instruction ins, emitAttr attr, ssize_t cc, ssize_t of
 
 /*****************************************************************************
  *
- *  Add an instruction referencing a single register.
- */
-
-void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-    code_t code = emitInsCode(ins);
-
-#ifdef DEBUG
-#endif
-    switch (ins)
-    {
-        case INS_jr:
-        case INS_jr_hb:
-        case INS_mthi:
-        case INS_mtlo:
-            code |= (reg & 0x1f)<<21;//rs
-            break;
-
-        case INS_mfhi://mfhi
-        case INS_mflo:
-            code |= (reg & 0x1f)<<11;//rd
-            assert(isGeneralRegister(reg));
-            break;
-
-        default:
-            unreached();
-    }
-
-    instrDesc* id = emitNewInstr(attr);
-
-    id->idIns(ins);
-    id->idReg1(reg);
-    id->idAddr()->iiaSetInstrEncode(code);
-
-    id->idCodeSize(4);
-    //dispIns(id);
-    appendToCurIG(id);
-#endif
-}
-
-/*****************************************************************************
- *
  *  Add an instruction referencing a register and a constant.
  */
 
 void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t imm, insOpts opt /* = INS_OPTS_NONE */)
 {
     code_t code = emitInsCode(ins);
-    //#ifdef DEBUG
+
     switch (ins)
     {
         case INS_lu12i_w:
@@ -1115,7 +1059,6 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             unreached();
             break;
     } // end switch (ins)
-      //#endif
 
     instrDesc* id = emitNewInstr(attr);
 
@@ -1128,9 +1071,6 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     appendToCurIG(id);
 }
 
-// NOTEADD:This function is new in emitarm64.cpp,so it be added to emitloongarch.cpp.
-//        But I don't konw how to change it so that it can be used on LA.
-//        I just add a statement "assert(!"unimplemented on LOONGARCH yet");".
 //------------------------------------------------------------------------
 // emitIns_Mov: Emits a move instruction
 //
@@ -1144,11 +1084,16 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
 //
 void emitter::emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt /* = INS_OPTS_NONE */)
-{ // TODO: should amend for LoongArch64/LOONGARCH64.
+{ // TODO-LoongArch64: should amend for LoongArch64/LOONGARCH64.
     assert(IsMovInstruction(ins));
 
     if (!canSkip || (dstReg != srcReg))
-        emitIns_R_R(ins, attr, dstReg, srcReg);
+    {
+        if ((EA_4BYTE == attr) && (INS_mov == ins))
+            emitIns_R_R_I(INS_slli_w, attr, dstReg, srcReg, 0);
+        else
+            emitIns_R_R(ins, attr, dstReg, srcReg);
+    }
 }
 
 /*****************************************************************************
@@ -1311,42 +1256,6 @@ void emitter::emitIns_R_R(
     id->idCodeSize(4);
     // dispIns(id);
     appendToCurIG(id);
-}
-
-void emitter::emitIns_R_I_I(
-    instruction ins, emitAttr attr, regNumber reg, ssize_t hint, ssize_t off, insOpts opt /* = INS_OPTS_NONE */)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-#ifdef DEBUG
-    switch (ins)
-    {
-        case INS_pref:
-            assert(isGeneralRegister(reg));
-            assert((-32769 < off) && (off < 32768));
-            break;
-
-        default:
-            unreached();
-    }
-#endif
-    code_t code = emitInsCode(ins);
-
-    code |= (hint & 0x1f)<<16; //hint
-    code |= (reg & 0x1f)<<21; //rs or base
-    code |= (off & 0xffff);   //offset
-
-    ssize_t imms[] = {hint, off};
-    instrDesc* id = emitNewInstr(attr);
-
-    id->idIns(ins);
-    id->idReg1(reg);
-    id->idAddr()->iiaSetInstrEncode(code);
-
-    id->idCodeSize(4);
-    //dispIns(id);
-    appendToCurIG(id);
-#endif
 }
 
 /*****************************************************************************
@@ -1921,23 +1830,6 @@ void emitter::emitIns_R_R_R_I(instruction ins,
     appendToCurIG(id);
 }
 
-#if 1
-/*****************************************************************************
- *
- *  Add an instruction referencing three registers, with an extend option
- */
-
-void emitter::emitIns_R_R_R_Ext(instruction ins,
-                                emitAttr    attr,
-                                regNumber   reg1,
-                                regNumber   reg2,
-                                regNumber   reg3,
-                                insOpts     opt,         /* = INS_OPTS_NONE */
-                                int         shiftAmount) /* = -1 -- unset   */
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
 /*****************************************************************************
  *
  *  Add an instruction referencing two registers and two constants.
@@ -2033,97 +1925,6 @@ void emitter::emitIns_R_R_R_R(
 
 /*****************************************************************************
  *
- *  Add an instruction with a static data member operand. If 'size' is 0, the
- *  instruction operates on the address of the static member instead of its
- *  value (e.g. "push offset clsvar", rather than "push dword ptr [clsvar]").
- */
-
-void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-    NYI("emitIns_C");
-#endif
-}
-
-/*****************************************************************************
- *
- *  Add an instruction referencing stack-based local variable.
- */
-
-void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-    NYI("emitIns_S");
-#endif
-}
-
-#if 0
-/*****************************************************************************
- *
- *  Add an instruction referencing a register and a stack-based local variable.
- */
-
-void emitter::emitIns_R_R_S(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int sa)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-#if 1
-    regNumber regs[] = {reg1, reg2};
-    ssize_t imm = (ssize_t)sa;
-    emitAllocInstrOnly(emitInsOps(ins, regs, &imm), attr);
-#else
-    instrDesc* id = emitNewInstrCns(attr, sa);
-    insFormat fmt = IF_FMT_FUNC;
-
-    id->idIns(ins);
-    id->idInsFmt(fmt);
-    id->idInsOpt(INS_OPTS_NONE);
-
-    id->idReg1(reg1);
-    id->idReg2(reg2);
-
-    //dispIns(id);
-    appendToCurIG(id);
-#endif
-}
-#endif
-
-/*****************************************************************************
- *
- *  Add an instruction referencing two register and consectutive stack-based local variable slots.
- */
-void emitter::emitIns_R_R_S_S(
-    instruction ins, emitAttr attr1, emitAttr attr2, regNumber reg1, regNumber reg2, int varx, int offs)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-/*****************************************************************************
- *
- *  Add an instruction referencing consecutive stack-based local variable slots and two registers
- */
-void emitter::emitIns_S_S_R_R(
-    instruction ins, emitAttr attr1, emitAttr attr2, regNumber reg1, regNumber reg2, int varx, int offs)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-/*****************************************************************************
- *
- *  Add an instruction referencing stack-based local variable and an immediate
- */
-void emitter::emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-    NYI("emitIns_S_I");
-#endif
-}
-
-/*****************************************************************************
- *
  *  Add an instruction with a register + static member operands.
  *  Constant is stored into JIT data which is adjacent to code.
  *  For LOONGARCH64, maybe not the best, here just suports the func-interface.
@@ -2144,7 +1945,7 @@ void emitter::emitIns_R_C(
     //   pcaddu12i reg, off-hi-20bits
     //   load  reg, offs_lo-12bits(reg)    #when ins is load ins.
     //
-    // INS_OPTS_RC: ins == bl placeholders.  3-ins:       ////TODO: maybe optimize.
+    // INS_OPTS_RC: ins == bl placeholders.  3-ins:       ////TODO-LoongArch64: maybe optimize.
     //   lu12i_w reg, addr-hi-20bits
     //   ori     reg, reg, addr-lo-12bits
     //   lu32i_d reg, addr_hi-32bits
@@ -2168,7 +1969,7 @@ void emitter::emitIns_R_C(
         id->idCodeSize(8);
     }
     else
-        id->idCodeSize(12); // TODO: maybe optimize.
+        id->idCodeSize(12); // TODO-LoongArch64: maybe optimize.
 
     if (EA_IS_GCREF(attr))
     {
@@ -2183,7 +1984,7 @@ void emitter::emitIns_R_C(
         id->idOpSize(EA_PTRSIZE);
     }
 
-    // TODO: this maybe deleted.
+    // TODO-LoongArch64: this maybe deleted.
     id->idSetIsBound(); // We won't patch address since we will know the exact distance
                         // once JIT code and data are allocated together.
 
@@ -2195,38 +1996,9 @@ void emitter::emitIns_R_C(
     appendToCurIG(id);
 }
 
-/*****************************************************************************
- *
- *  Add an instruction with a static member + constant.
- */
-
-void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, ssize_t val)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-    NYI("emitIns_C_I");
-#endif
-}
-
-/*****************************************************************************
- *
- *  Add an instruction with a static member + register operands.
- */
-
-void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, regNumber reg, int offs)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-    assert(!"emitIns_C_R not supported for RyuJIT backend");
-#endif
-}
-
 void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)
 {
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-    NYI("emitIns_R_AR");
-#endif
+    NYI_LOONGARCH64("emitIns_R_AR-----unimplemented/unused on LOONGARCH64 yet----");
 }
 
 // This computes address from the immediate which is relocatable.
@@ -2275,54 +2047,6 @@ void emitter::emitIns_R_AI(instruction ins,
     appendToCurIG(id);
 }
 
-void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-    NYI("emitIns_AR_R");
-#endif
-}
-
-void emitter::emitIns_R_ARR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, regNumber rg2, int disp)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-    NYI("emitIns_R_ARR");
-#endif
-}
-
-void emitter::emitIns_ARR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, regNumber rg2, int disp)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-    NYI("emitIns_R_ARR");
-#endif
-}
-
-void emitter::emitIns_R_ARX(
-    instruction ins, emitAttr attr, regNumber ireg, regNumber reg, regNumber rg2, unsigned mul, int disp)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-#if 0
-    NYI("emitIns_R_ARR");
-#endif
-}
-
-/*****************************************************************************
- *
- *  Add a data label instruction.
- */
-void emitter::emitIns_R_D(instruction ins, emitAttr attr, unsigned offs, regNumber reg)
-{
-    NYI("emitIns_R_D");
-}
-
-void emitter::emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg, int imm)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-#endif
-
 /*****************************************************************************
  *
  *  Record that a jump instruction uses the short encoding
@@ -2330,8 +2054,8 @@ void emitter::emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, reg
  */
 void emitter::emitSetShortJump(instrDescJmp* id)
 {
-    /* TODO: maybe delete it on future. */
-    return;
+    // TODO-LoongArch64: maybe delete it on future.
+    NYI_LOONGARCH64("emitSetShortJump-----unimplemented/unused on LOONGARCH64 yet----");
 }
 
 /*****************************************************************************
@@ -2395,7 +2119,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
-    assert(!"unimplemented on LOONGARCH yet: emitIns_J_R."); // not used.
+    NYI_LOONGARCH64("emitIns_J_R-----unimplemented/unused on LOONGARCH64 yet----");
 }
 
 // NOTE:
@@ -2466,7 +2190,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
     id->idjShort = false;
 
-    ////TODO: maybe deleted this for loongarch64.
+    // TODO-LoongArch64: maybe deleted this.
     id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
 #ifdef DEBUG
     if (emitComp->opts.compLongAddress) // Force long branches
@@ -2496,7 +2220,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 //
 void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1, regNumber reg2)
 {
-    // TODO:
+    // TODO-LoongArch64:
     //   Now the emitIns_J_cond_la() is only the short condition branch.
     //   There is no long condition branch for loongarch64 so far.
     //   For loongarch64, the long condition branch is like this:
@@ -2734,7 +2458,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     id->idIns(ins);
 
     id->idInsOpt(INS_OPTS_C);
-    // TODO: maybe optimize.
+    // TODO-LoongArch64: maybe optimize.
 
     // INS_OPTS_C: placeholders.  1/2/4-ins:
     //   if (callType == EC_INDIR_R)
@@ -2895,7 +2619,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
     }
     else
     {
-        //      lu12i_w  t2, dst_offset_lo32-hi   //TODO: maybe optimize.
+        //      lu12i_w  t2, dst_offset_lo32-hi   // TODO-LoongArch64: maybe optimize.
         //      ori  t2, t2, dst_offset_lo32-lo
         //      lu32i_d  t2, dst_offset_hi32-lo
         //      jirl  t2
@@ -3338,7 +3062,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //   pcaddu12i reg, offset-hi20
             //   addi_d  reg, reg, offset-lo12
             //
-            // else:       ////TODO:optimize.
+            // else:       // TODO-LoongArch64:optimize.
             //   lu12i_w reg, dst-hi-12bits
             //   ori reg, reg, dst-lo-12bits
             //   lu32i_d reg, dst-hi-32bits
@@ -3410,7 +3134,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //   bnez/beqz  dst      |   b  dst           |    b  dst
             //_next:
             //
-            //  case_2:           <---------- TODO: from INS_OPTS_J:
+            //  case_2:           <---------- TODO-LoongArch64: from INS_OPTS_J:
             //   bnez/beqz  _next:
             //   pcaddi r21,off-hi
             //   jirl  r0,r21,off-lo
@@ -3439,7 +3163,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         {
                             regNumber reg2 = id->idReg2();
                             assert((INS_bceqz <= ins) && (ins <= INS_bgeu));
-                            // assert((INS_bceqz <= ins) && (ins <= INS_bl));//TODO
+                            // assert((INS_bceqz <= ins) && (ins <= INS_bl)); // TODO-LoongArch64
                             if ((INS_beq == ins) || (INS_bne == ins))
                             {
                                 if ((-0x400000 <= imm) && (imm < 0x400000))
@@ -3766,12 +3490,6 @@ void emitter::emitDisInsName(code_t code, const BYTE* dst, instrDesc* id)
             goto Label_OPCODE_0;
             // break;
         }
-        // case 0x1:
-        //{
-        //    assert(!"unimplemented on loongarch yet!");
-        //    //goto Label_OPCODE_1;
-        //    break;
-        //}
         case 0x2:
         {
             goto Label_OPCODE_2;
@@ -6129,7 +5847,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
 regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src)
 {
-    assert(!"unimplemented on LOONGARCH yet");
+    NYI_LOONGARCH64("emitInsBinary-----unimplemented on LOONGARCH64 yet----");
     return REG_R0;
 }
 
@@ -6382,10 +6100,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             {
                 if (attr == EA_4BYTE)
                     emitIns_R_R_I_I(INS_bstrins_d, EA_8BYTE, dst->GetRegNum(), REG_R0, 63, 32);
-                // else
-                //{
-                //    assert(!"unimplemented on LOONGARCH yet:  ulong * ulong !!!");
-                //}
             }
 
             if (needCheckOv)
@@ -6586,7 +6300,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 {
     insExecutionCharacteristics result;
 
-    // TODO: support this function for LoongArch64.
+    // TODO-LoongArch64: support this function.
     result.insThroughput       = PERFSCORE_THROUGHPUT_ZERO;
     result.insLatency          = PERFSCORE_LATENCY_ZERO;
     result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
@@ -6681,95 +6395,8 @@ bool emitter::IsMovInstruction(instruction ins)
 
 bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
 {
-    assert(!"unimplemented on LOONGARCH yet");
+    NYI_LOONGARCH64("IsRedundantMov-----unimplemented on LOONGARCH64 yet----");
     return false;
-#if 0
-    assert(ins == INS_mov);
-
-    if (canSkip && (dst == src))
-    {
-        // These elisions used to be explicit even when optimizations were disabled
-        return true;
-    }
-
-    if (!emitComp->opts.OptimizationEnabled())
-    {
-        // The remaining move elisions should only happen if optimizations are enabled
-        return false;
-    }
-
-    if (dst == src)
-    {
-        // A mov with a EA_4BYTE has the side-effect of clearing the upper bits
-        // So only eliminate mov instructions that are not clearing the upper bits
-        //
-        if (isGeneralRegisterOrSP(dst) && (size == EA_8BYTE))
-        {
-            JITDUMP("\n -- suppressing mov because src and dst is same 8-byte register.\n");
-            return true;
-        }
-        else if (isVectorRegister(dst) && (size == EA_16BYTE))
-        {
-            JITDUMP("\n -- suppressing mov because src and dst is same 16-byte register.\n");
-            return true;
-        }
-    }
-
-    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
-
-    if (!isFirstInstrInBlock && // Don't optimize if instruction is not the first instruction in IG.
-        (emitLastIns != nullptr) &&
-        (emitLastIns->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
-        (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous instruction.
-    {
-        // Check if we did same move in prev instruction except dst/src were switched.
-        regNumber prevDst    = emitLastIns->idReg1();
-        regNumber prevSrc    = emitLastIns->idReg2();
-        insFormat lastInsfmt = emitLastIns->idInsFmt();
-
-        // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
-        // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
-        //
-        const bool isValidLastInsFormats =
-            ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2G) || (lastInsfmt == IF_DR_2E));
-
-        if (isValidLastInsFormats && (prevDst == dst) && (prevSrc == src))
-        {
-            assert(emitLastIns->idOpSize() == size);
-            JITDUMP("\n -- suppressing mov because previous instruction already moved from src to dst register.\n");
-            return true;
-        }
-
-        if ((prevDst == src) && (prevSrc == dst) && isValidLastInsFormats)
-        {
-            // For mov with EA_8BYTE, ensure src/dst are both scalar or both vector.
-            if (size == EA_8BYTE)
-            {
-                if (isVectorRegister(src) == isVectorRegister(dst))
-                {
-                    JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst "
-                            "to src register.\n");
-                    return true;
-                }
-            }
-
-            // For mov with EA_16BYTE, both src/dst will be vector.
-            else if (size == EA_16BYTE)
-            {
-                assert(isVectorRegister(src) && isVectorRegister(dst));
-                assert(lastInsfmt == IF_DV_3C);
-
-                JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to "
-                        "src register.\n");
-                return true;
-            }
-
-            // For mov of other sizes, don't optimize because it has side-effect of clearing the upper bits.
-        }
-    }
-
-    return false;
-#endif
 }
 
 //----------------------------------------------------------------------------------------
@@ -6798,71 +6425,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 bool emitter::IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    assert(!"unimplemented on LOONGARCH yet");
+    NYI_LOONGARCH64("IsRedundantLdStr-----unimplemented on LOONGARCH64 yet----");
     return false;
-#if 0
-    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
-
-    if (((ins != INS_ldr) && (ins != INS_str)) || (isFirstInstrInBlock) || (emitLastIns == nullptr))
-    {
-        return false;
-    }
-
-    regNumber prevReg1   = emitLastIns->idReg1();
-    regNumber prevReg2   = emitLastIns->idReg2();
-    insFormat lastInsfmt = emitLastIns->idInsFmt();
-    emitAttr  prevSize   = emitLastIns->idOpSize();
-    ssize_t prevImm = emitLastIns->idIsLargeCns() ? ((instrDescCns*)emitLastIns)->idcCnsVal : emitLastIns->idSmallCns();
-
-    // Only optimize if:
-    // 1. "base" or "base plus immediate offset" addressing modes.
-    // 2. Addressing mode matches with previous instruction.
-    // 3. The operand size matches with previous instruction
-    if (((fmt != IF_LS_2A) && (fmt != IF_LS_2B)) || (fmt != lastInsfmt) || (prevSize != size))
-    {
-        return false;
-    }
-
-    if ((ins == INS_ldr) && (emitLastIns->idIns() == INS_str))
-    {
-        // If reg1 is of size less than 8-bytes, then eliminating the 'ldr'
-        // will not zero the upper bits of reg1.
-
-        // Make sure operand size is 8-bytes
-        //  str w0, [x1, #4]
-        //  ldr w0, [x1, #4]  <-- can't eliminate because upper-bits of x0 won't get set.
-        if (size != EA_8BYTE)
-        {
-            return false;
-        }
-
-        if ((prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm))
-        {
-            JITDUMP("\n -- suppressing 'ldr reg%u [reg%u, #%u]' as previous 'str reg%u [reg%u, #%u]' was from same "
-                    "location.\n",
-                    reg1, reg2, imm, prevReg1, prevReg2, prevImm);
-            return true;
-        }
-    }
-    else if ((ins == INS_str) && (emitLastIns->idIns() == INS_ldr))
-    {
-        // Make sure src and dst registers are not same.
-        //  ldr x0, [x0, #4]
-        //  str x0, [x0, #4]  <-- can't eliminate because [x0+3] is not same destination as previous source.
-        // Note, however, that we can not eliminate store in the following sequence
-        //  ldr wzr, [x0, #4]
-        //  str wzr, [x0, #4]
-        // since load operation doesn't (and can't) change the value of its destination register.
-        if ((reg1 != reg2) && (prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm) && (reg1 != REG_ZR))
-        {
-            JITDUMP("\n -- suppressing 'str reg%u [reg%u, #%u]' as previous 'ldr reg%u [reg%u, #%u]' was from same "
-                    "location.\n",
-                    reg1, reg2, imm, prevReg1, prevReg2, prevImm);
-            return true;
-        }
-    }
-
-    return false;
-#endif
 }
 #endif // defined(TARGET_LOONGARCH64)

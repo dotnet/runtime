@@ -795,21 +795,13 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     }
 #endif
 
-// Record how many instructions and bytes of code this group contains
+    // Record how many instructions and bytes of code this group contains
 
-#ifdef TARGET_LOONGARCH64
-    noway_assert((unsigned int)emitCurIGinsCnt == emitCurIGinsCnt);
-#else
     noway_assert((BYTE)emitCurIGinsCnt == emitCurIGinsCnt);
-#endif
     noway_assert((unsigned short)emitCurIGsize == emitCurIGsize);
 
-#ifdef TARGET_LOONGARCH64
-    ig->igInsCnt = (unsigned int)emitCurIGinsCnt;
-#else
     ig->igInsCnt = (BYTE)emitCurIGinsCnt;
-#endif
-    ig->igSize = (unsigned short)emitCurIGsize;
+    ig->igSize   = (unsigned short)emitCurIGsize;
     emitCurCodeOffset += emitCurIGsize;
     assert(IsCodeAligned(emitCurCodeOffset));
 
@@ -1177,11 +1169,6 @@ void emitter::emitBegFN(bool hasFramePtr
 #endif
 
     ig->igNext = nullptr;
-
-//#ifdef TARGET_LOONGARCH64
-// On future maybe use this.
-//    ig->igJmpCnt = 0;
-//#endif
 
 #ifdef DEBUG
     emitScratchSigInfo = nullptr;

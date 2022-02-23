@@ -1526,7 +1526,10 @@ public:
 
     void inst_FS_ST(instruction ins, emitAttr size, TempDsc* tmp, unsigned ofs);
 
+#ifndef TARGET_LOONGARCH64
+    // Now this is only used on xarch.
     void inst_TT(instruction ins, GenTree* tree, unsigned offs = 0, int shfv = 0, emitAttr size = EA_UNKNOWN);
+#endif
 
     void inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumber reg);
 

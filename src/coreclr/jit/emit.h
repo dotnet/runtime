@@ -303,12 +303,8 @@ struct insGroup
 #if EMIT_TRACK_STACK_DEPTH
     unsigned igStkLvl; // stack level on entry
 #endif
-    regMaskSmall igGCregs; // set of registers with live GC refs
-#ifdef TARGET_LOONGARCH64
-    unsigned int igInsCnt; // # of instructions  in this group
-#else
+    regMaskSmall  igGCregs; // set of registers with live GC refs
     unsigned char igInsCnt; // # of instructions  in this group
-#endif
 
 #else // REGMASK_BITS
 
@@ -598,20 +594,19 @@ protected:
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
 #elif defined(TARGET_LOONGARCH64)
-        /* TODO: not include SIMD-vector. */
+        // TODO-LoongArch64: not include SIMD-vector.
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
-#else  // !(defined(TARGET_XARCH) || defined(TARGET_ARM64))
+#else  // !(defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
         static_assert_no_msg(INS_count <= 256);
         instruction _idIns : 8;
-#endif // !(defined(TARGET_XARCH) || defined(TARGET_ARM64))
+#endif // !(defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 
 // The format for the instruction
 #if defined(TARGET_XARCH)
         static_assert_no_msg(IF_COUNT <= 128);
         insFormat _idInsFmt : 7;
 #elif defined(TARGET_LOONGARCH64)
-        // insFormat _idInsFmt : 5;// NOTE: LOONGARCH64 does not used the _idInsFmt .
         unsigned _idCodeSize : 5; // the instruction(s) size of this instrDesc described. If not enough, please use the
                                   // _idInsCount.
                                   // unsigned _idInsCount : 5; // the instruction(s) count of this instrDesc described.
@@ -683,13 +678,11 @@ protected:
         opSize   _idOpSize : 3;   // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16, 5=32
                                   // At this point we have fully consumed first DWORD so that next field
                                   // doesn't cross a byte boundary.
-#elif defined(TARGET_ARM64)
-// Moved the definition of '_idOpSize' later so that we don't cross a 32-bit boundary when laying out bitfields
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 /* _idOpSize defined bellow. */
-#else  // ARM
-        opSize      _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
-#endif // ARM
+#else
+        opSize    _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
+#endif // ARM || TARGET_LOONGARCH64
 
         // On Amd64, this is where the second DWORD begins
         // On System V a call could return a struct in 2 registers. The instrDescCGCA struct below has  member that
@@ -738,7 +731,7 @@ protected:
 #endif
 
 #ifdef TARGET_LOONGARCH64
-        /* TODO: for LOONGARCH: maybe delete on future. */
+        // TODO-LoongArch64: maybe delete on future.
         opSize  _idOpSize : 3;  // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
         insOpts _idInsOpt : 6;  // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
                                 // accessing a local on stack.
@@ -759,7 +752,7 @@ protected:
 // For Arm64, we have used 17 bits from the second DWORD.
 #define ID_EXTRA_BITFIELD_BITS (17)
 #elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
-// For xarch and LoongArch64, we have used 14 bits from the second DWORD.
+                                 // For xarch and LoongArch64, we have used 14 bits from the second DWORD.
 #define ID_EXTRA_BITFIELD_BITS (14)
 #else
 #error Unsupported or unset target architecture
@@ -916,7 +909,7 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
-#elif defined(TARGET_LOONGARCH64) // TARGET_XARCH
+#elif defined(TARGET_LOONGARCH64)
             struct
             {
                 unsigned int iiaEncodedInstr; // instruction's binary encoding.
@@ -947,7 +940,7 @@ protected:
             {
                 return iiaJmpOffset;
             }
-#endif                            // defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_LOONGARCH64)
 
         } _idAddrUnion;
 

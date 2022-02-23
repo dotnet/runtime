@@ -812,7 +812,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         if (compFeatureArgSplit())
         {
             // This does not affect the normal calling convention for LoongArch64!!
-            if (this->info.compIsVarArgs && argType == TYP_STRUCT)
+            if (this->info.compIsVarArgs && (argType == TYP_STRUCT))
             {
                 if (varDscInfo->canEnreg(TYP_INT, 1) &&     // The beginning of the struct can go in a register
                     !varDscInfo->canEnreg(TYP_INT, cSlots)) // The end of the struct can't fit in a register
@@ -885,53 +885,53 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         }
         else
 #elif defined(TARGET_LOONGARCH64)
-        var_types arg1_Type = TYP_UNKNOWN;
-        var_types arg2_Type = TYP_UNKNOWN;
+        var_types arg1Type = TYP_UNKNOWN;
+        var_types arg2Type = TYP_UNKNOWN;
         if (floatFlags & STRUCT_HAS_FLOAT_FIELDS_MASK)
         {
             assert(varTypeIsStruct(argType));
-            int float_num = 0;
+            int floatNum = 0;
             if (floatFlags == STRUCT_FLOAT_FIELD_ONLY_ONE)
             {
                 assert(argSize <= 8);
                 assert(varDsc->lvExactSize <= argSize);
-                float_num = 1;
+                floatNum = 1;
 
-                arg1_Type             = (varDsc->lvExactSize == 8) ? TYP_DOUBLE : TYP_FLOAT;
-                canPassArgInRegisters = varDscInfo->canEnreg(arg1_Type, 1);
+                arg1Type              = (varDsc->lvExactSize == 8) ? TYP_DOUBLE : TYP_FLOAT;
+                canPassArgInRegisters = varDscInfo->canEnreg(arg1Type, 1);
             }
             else if (floatFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
             {
-                arg1_Type             = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                arg2_Type             = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                float_num             = 2;
+                arg1Type              = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                arg2Type              = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                floatNum              = 2;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 2);
             }
             else if (floatFlags & STRUCT_FLOAT_FIELD_FIRST)
             {
-                float_num             = 1;
+                floatNum              = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
                 canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
 
-                arg1_Type = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                arg2_Type = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
+                arg1Type = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                arg2Type = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
             }
             else if (floatFlags & STRUCT_FLOAT_FIELD_SECOND)
             {
-                float_num             = 1;
+                floatNum              = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
                 canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
 
-                arg1_Type = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
-                arg2_Type = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                arg1Type = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
+                arg2Type = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
             }
 
             if (!canPassArgInRegisters)
             {
-                assert(float_num > 0);
+                assert(floatNum > 0);
                 canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
-                arg1_Type             = TYP_UNKNOWN;
-                arg2_Type             = TYP_UNKNOWN;
+                arg1Type              = TYP_UNKNOWN;
+                arg2Type              = TYP_UNKNOWN;
             }
         }
         else
@@ -947,7 +947,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             if (!canPassArgInRegisters && (cSlots > 1))
             {
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, 1);
-                arg1_Type             = canPassArgInRegisters ? TYP_I_IMPL : TYP_UNKNOWN;
+                arg1Type              = canPassArgInRegisters ? TYP_I_IMPL : TYP_UNKNOWN;
             }
 #endif
         }
@@ -980,9 +980,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
             else
 #elif defined(TARGET_LOONGARCH64)
-            if (arg1_Type != TYP_UNKNOWN)
+            if (arg1Type != TYP_UNKNOWN)
             {
-                firstAllocatedRegArgNum = varDscInfo->allocRegArg(arg1_Type, 1);
+                firstAllocatedRegArgNum = varDscInfo->allocRegArg(arg1Type, 1);
             }
             else
 #endif // defined(TARGET_LOONGARCH64)
@@ -1036,15 +1036,15 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #elif defined(TARGET_LOONGARCH64)
             if (argType == TYP_STRUCT)
             {
-                if (arg1_Type != TYP_UNKNOWN)
+                if (arg1Type != TYP_UNKNOWN)
                 {
-                    varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, arg1_Type));
-                    varDsc->lvIs4Field1 = (int)emitActualTypeSize(arg1_Type) == 4 ? 1 : 0;
-                    if (arg2_Type != TYP_UNKNOWN)
+                    varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, arg1Type));
+                    varDsc->lvIs4Field1 = (int)emitActualTypeSize(arg1Type) == 4 ? 1 : 0;
+                    if (arg2Type != TYP_UNKNOWN)
                     {
-                        firstAllocatedRegArgNum = varDscInfo->allocRegArg(arg2_Type, 1);
-                        varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, arg2_Type));
-                        varDsc->lvIs4Field2            = (int)emitActualTypeSize(arg2_Type) == 4 ? 1 : 0;
+                        firstAllocatedRegArgNum = varDscInfo->allocRegArg(arg2Type, 1);
+                        varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, arg2Type));
+                        varDsc->lvIs4Field2            = (int)emitActualTypeSize(arg2Type) == 4 ? 1 : 0;
                         varDscInfo->hasMultiSlotStruct = true;
                     }
                     else if (cSlots > 1)
@@ -1052,7 +1052,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         varDsc->lvIsSplit = 1;
                         varDsc->SetOtherArgReg(REG_STK);
                         varDscInfo->hasMultiSlotStruct = true;
-                        varDscInfo->setAllRegArgUsed(arg1_Type);
+                        varDscInfo->setAllRegArgUsed(arg1Type);
                         varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
                     }
                 }
