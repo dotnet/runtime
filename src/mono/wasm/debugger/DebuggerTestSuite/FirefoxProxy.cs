@@ -20,6 +20,8 @@ namespace DebuggerTests;
 
 public class DebuggerTestFirefox : DebuggerTestBase
 {
+    protected new static bool RunningOnChrome { get { return false; } }
+    
     internal FirefoxInspectorClient client;
     public DebuggerTestFirefox(string driver = "debugger-driver.html"):base(driver)
     {

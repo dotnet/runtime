@@ -8,10 +8,10 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class DateTimeTests : DebuggerTestBase
+    public class DateTimeTests : DebuggerTests
     {
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData("en-US", "dddd, MMMM d, yyyy h:mm:ss tt", "dddd, MMMM d, yyyy", "h:mm:ss tt", "M/d/yyyy", "h:mm tt")]
         [InlineData("ja-JP", "yyyy年M月d日dddd H:mm:ss", "yyyy年M月d日dddd", "H:mm:ss", "yyyy/MM/dd", "H:mm")]
         [InlineData("es-ES", "dddd, d 'de' MMMM 'de' yyyy H:mm:ss", "dddd, d 'de' MMMM 'de' yyyy", "H:mm:ss", "d/M/yyyy", "H:mm")]

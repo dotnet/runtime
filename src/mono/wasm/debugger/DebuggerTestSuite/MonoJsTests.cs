@@ -11,9 +11,9 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class MonoJsTests : DebuggerTestBase
+    public class MonoJsTests : DebuggerTests
     {
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task BadRaiseDebugEventsTest()
         {
             var bad_expressions = new[]
@@ -38,7 +38,7 @@ namespace DebuggerTests
             }
         }
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData(true)]
         [InlineData(false)]
         [InlineData(null)]
@@ -70,7 +70,7 @@ namespace DebuggerTests
                 Assert.False(tcs.Task == t, "Event should not have been logged");
         }
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData(true, 1)]
         [InlineData(false, 0)]
         public async Task DuplicateAssemblyLoadedEventNotLoadedFromBundle(bool load_pdb, int expected_count)
@@ -82,7 +82,7 @@ namespace DebuggerTests
                 expected_count
             );
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData(true, 1)]
         [InlineData(false, 1)] // Since it's being loaded from the bundle, it will have the pdb even if we don't provide one
         public async Task DuplicateAssemblyLoadedEventForAssemblyFromBundle(bool load_pdb, int expected_count)
@@ -94,7 +94,7 @@ namespace DebuggerTests
                 expected_count
             );
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task DuplicateAssemblyLoadedEventWithEmbeddedPdbNotLoadedFromBundle()
             => await AssemblyLoadedEventTest(
                 "lazy-debugger-test-embedded",

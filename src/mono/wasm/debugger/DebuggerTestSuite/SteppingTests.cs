@@ -9,12 +9,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class SteppingTests :
-#if RUN_IN_CHROME
-    DebuggerTestBase
-#else
-    DebuggerTestFirefox
-#endif
+    public class SteppingTests : DebuggerTests
     {
         [Fact]
         public async Task TrivalStepping()
@@ -92,7 +87,7 @@ namespace DebuggerTests
             );
         }
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsInPreviousFramesDuringSteppingIn2(bool use_cfo)
@@ -159,7 +154,7 @@ namespace DebuggerTests
             await CheckString(props, "c", "20_xx");
         }
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsInPreviousFramesDuringSteppingIn(bool use_cfo)
@@ -324,7 +319,7 @@ namespace DebuggerTests
             );
         }
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsInAsyncMethods(bool use_cfo)
@@ -381,7 +376,7 @@ namespace DebuggerTests
             // TODO: Check `this` properties
         }
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeMethodArgsWhileStepping(bool use_cfo)
@@ -503,7 +498,7 @@ namespace DebuggerTests
             // FIXME: check ss_local.gs.List's members
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task CheckUpdatedValueTypeFieldsOnResume()
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
@@ -549,7 +544,7 @@ namespace DebuggerTests
             }
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task CheckUpdatedValueTypeLocalsOnResumeAsync()
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
@@ -573,7 +568,7 @@ namespace DebuggerTests
             await CheckDateTime(locals, "dt", dt);
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task CheckUpdatedVTArrayMembersOnResume()
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
@@ -610,7 +605,7 @@ namespace DebuggerTests
             }
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task SteppingIntoMscorlib()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 83, 8);
@@ -630,7 +625,7 @@ namespace DebuggerTests
             Assert.Matches("^dotnet://(mscorlib|System\\.Console)\\.dll/Console.cs", scripts[script_id]);
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task CreateGoodBreakpointAndHitAndRemoveAndDontHit()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -648,7 +643,7 @@ namespace DebuggerTests
             await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd");
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task CreateGoodBreakpointAndHitAndRemoveTwice()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -665,7 +660,7 @@ namespace DebuggerTests
             await RemoveBreakpoint(bp.Value["breakpointId"]?.ToString());
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task CreateGoodBreakpointAndHitAndRemoveAndDontHitAndCreateAgainAndHit()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -685,7 +680,7 @@ namespace DebuggerTests
             await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "IntAdd");
         }
 
-        // [FactDependingOnTheBrowser]
+        // [ConditionalFact("RunningOnChrome")]
         //https://github.com/dotnet/runtime/issues/42421
         public async Task BreakAfterAwaitThenStepOverTillBackToCaller()
         {
@@ -702,7 +697,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 15, 12, "MoveNext");
         }
 
-        // [FactDependingOnTheBrowser]
+        // [ConditionalFact("RunningOnChrome")]
         //[ActiveIssue("https://github.com/dotnet/runtime/issues/42421")]
         public async Task StepOutOfAsyncMethod()
         {
@@ -807,7 +802,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Resume, source_file, 56, 12, "MoveNext");
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task BreakOnMethodCalledFromHiddenLine()
         {
             await SetBreakpointInMethod("debugger-test.dll", "HiddenSequencePointTest", "StepOverHiddenSP2", 0);
@@ -825,7 +820,7 @@ namespace DebuggerTests
             CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 537, 8, scripts, top_frame["location"]);
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task StepOverHiddenLinesShouldResumeAtNextAvailableLineInTheMethod()
         {
             string source_loc = "dotnet://debugger-test.dll/debugger-test.cs";
@@ -839,7 +834,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, source_loc, 542, 8, "StepOverHiddenSP");
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         async Task StepOverHiddenLinesInMethodWithNoNextAvailableLineShouldResumeAtCallSite()
         {
             string source_loc = "dotnet://debugger-test.dll/debugger-test.cs";
@@ -853,7 +848,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, source_loc, 544, 4, "StepOverHiddenSP");
         }
 
-        // [FactDependingOnTheBrowser]
+        // [ConditionalFact("RunningOnChrome")]
         // Issue: https://github.com/dotnet/runtime/issues/42704
         async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLine()
         {
@@ -864,7 +859,7 @@ namespace DebuggerTests
                 "StepOverHiddenSP2");
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task BreakpointOnHiddenLineOfMethodWithNoNextVisibleLineShouldNotPause()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 554, 12);
@@ -891,7 +886,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 678, 4, "Bart");
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task StepAndEvaluateExpression()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 682, 0);
@@ -943,7 +938,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 720, 4, "MoveNext");
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task CheckResetFrameNumberForEachStep()
         {
             var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "SteppingInto", "MethodToStep", 1);
@@ -981,7 +976,7 @@ namespace DebuggerTests
                 );
         }
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData("Debugger.stepInto")]
         [InlineData("Debugger.stepOver")]
         public async Task DebuggerHiddenIgnoreStepUserBreakpoint(string steppingFunction)

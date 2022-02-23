@@ -10,7 +10,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class AsyncTests : DebuggerTestBase
+    public class AsyncTests : DebuggerTests
     {
 
         // FIXME: method with multiple async blocks - so that we have two separate classes for that method!
@@ -19,7 +19,7 @@ namespace DebuggerTests
         // FIXME: check object properties..
 
         //FIXME: function name
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData("ContinueWithStaticAsync", "<ContinueWithStaticAsync>b__3_0")]
         [InlineData("ContinueWithInstanceAsync", "<ContinueWithInstanceAsync>b__5_0")]
         public async Task AsyncLocalsInContinueWith(string method_name, string expected_method_name) => await CheckInspectLocalsAtBreakpointSite(
@@ -40,7 +40,7 @@ namespace DebuggerTests
                 await CheckValue(res.Value["result"], TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"), "t.Status");
              });
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task AsyncLocalsInContinueWithInstanceUsingThisBlock() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithInstanceUsingThisAsync", 5, "<ContinueWithInstanceUsingThisAsync>b__6_0",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
@@ -62,7 +62,7 @@ namespace DebuggerTests
                 await CheckValue(res.Value["result"], TDateTime(new DateTime(2510, 1, 2, 3, 4, 5)), "this.Date");
              });
 
-         [FactDependingOnTheBrowser] // NestedContinueWith
+         [ConditionalFact("RunningOnChrome")] // NestedContinueWith
          public async Task AsyncLocalsInNestedContinueWithStaticBlock() => await CheckInspectLocalsAtBreakpointSite(
               "DebuggerTests.AsyncTests.ContinueWithTests", "NestedContinueWithStaticAsync", 5, "MoveNext",
               "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",

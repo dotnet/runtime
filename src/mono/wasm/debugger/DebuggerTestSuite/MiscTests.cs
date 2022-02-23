@@ -14,12 +14,7 @@ using Xunit.Sdk;
 namespace DebuggerTests
 {
 
-    public class MiscTests :
-#if RUN_IN_CHROME
-    DebuggerTestBase
-#else
-    DebuggerTestFirefox
-#endif
+    public class MiscTests : DebuggerTests
     {
 
         [Fact]
@@ -30,7 +25,7 @@ namespace DebuggerTests
             Assert.Contains("dotnet://debugger-test.dll/dependency.cs", scripts.Values);
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task ExceptionThrownInJS()
         {
             var eval_req = JObject.FromObject(new
@@ -43,7 +38,7 @@ namespace DebuggerTests
             Assert.Equal("Uncaught", eval_res.Error["exceptionDetails"]?["text"]?.Value<string>());
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task ExceptionThrownInJSOutOfBand()
         {
             await SetBreakpoint("/debugger-driver.html", 27, 2);
@@ -82,7 +77,7 @@ namespace DebuggerTests
                 }
             );
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task InspectPrimitiveTypeLocalsAtBreakpointSite() =>
             await CheckInspectLocalsAtBreakpointSite(
                 "dotnet://debugger-test.dll/debugger-test.cs", 154, 8, "PrimitiveTypesTest",
@@ -162,7 +157,7 @@ namespace DebuggerTests
                 }
             );
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData("TestNullableLocal", false)]
         [InlineData("TestNullableLocalAsync", true)]
         public async Task InspectNullableLocals(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -225,7 +220,7 @@ namespace DebuggerTests
                 }
             );
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task RuntimeGetPropertiesWithInvalidScopeIdTest()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 49, 8);
@@ -255,7 +250,7 @@ namespace DebuggerTests
             );
         }
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsWithStructs(bool use_cfo)
@@ -448,7 +443,7 @@ namespace DebuggerTests
                 }, "locals");
             });
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsWithStructsStaticAsync(bool use_cfo)
@@ -610,7 +605,7 @@ namespace DebuggerTests
             var locals = await GetProperties(wait_res["callFrames"][1]["callFrameId"].Value<string>());
         }
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsForStructInstanceMethod(bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
@@ -680,7 +675,7 @@ namespace DebuggerTests
                 AssertEqual(0, frame_locals.Values<JToken>().Count(), "locals");
             });
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task StaticMethodWithLocalEmptyStructThatWillGetExpanded(bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -738,7 +733,7 @@ namespace DebuggerTests
                     ?.Where(f => f["functionName"]?.Value<string>() == function_name)
                     ?.FirstOrDefault();
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task DebugLazyLoadedAssemblyWithPdb()
         {
             Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
@@ -762,7 +757,7 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb()
         {
             Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
@@ -786,7 +781,7 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task DebugLazyLoadedAssemblyWithEmbeddedPdbALC()
         {
             int line = 9;
@@ -803,7 +798,7 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task CannotDebugLazyLoadedAssemblyWithoutPdb()
         {
             int line = 9;
@@ -819,7 +814,7 @@ namespace DebuggerTests
             Assert.DoesNotContain(source_location, scripts.Values);
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task GetSourceUsingSourceLink()
         {
             var bp = await SetBreakpointInMethod("debugger-test-with-source-link.dll", "DebuggerTests.ClassToBreak", "TestBreakpoint", 0);
@@ -839,7 +834,7 @@ namespace DebuggerTests
             Assert.True(source.IsOk, $"Failed to getScriptSource: {source}");
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task GetSourceEmbeddedSource()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -859,7 +854,7 @@ namespace DebuggerTests
             Assert.False(source.Value["scriptSource"].Value<string>().Contains("// Unable to read document"));
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task InspectTaskAtLocals() => await CheckInspectLocalsAtBreakpointSite(
             "InspectTask",
             "RunInspectTask",
@@ -959,7 +954,7 @@ namespace DebuggerTests
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
 
-        [TheoryDependingOnTheBrowser]
+        [ConditionalTheory("RunningOnChrome")]
         [InlineData(
             "DebuggerTests.CheckSpecialCharactersInPath", 
             "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]

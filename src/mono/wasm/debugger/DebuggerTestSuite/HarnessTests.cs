@@ -12,9 +12,9 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class HarnessTests : DebuggerTestBase
+    public class HarnessTests : DebuggerTests
     {
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task TimedOutWaitingForInvalidBreakpoint()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 100, 0);
@@ -23,7 +23,7 @@ namespace DebuggerTests
             Assert.Contains("timed out", tce.Message);
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task ExceptionThrown()
         {
             var ae = await Assert.ThrowsAsync<ArgumentException>(
@@ -31,11 +31,11 @@ namespace DebuggerTests
             Assert.Contains("non_existant_fn is not defined", ae.Message);
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task BrowserCrash() => await Assert.ThrowsAsync<WebSocketException>(async () =>
             await SendCommandAndCheck(null, "Browser.crash", null, -1, -1, null));
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task InspectorWaitForAfterMessageAlreadyReceived()
         {
             Result res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -53,7 +53,7 @@ namespace DebuggerTests
             await insp.WaitFor(Inspector.PAUSE);
         }
 
-        [FactDependingOnTheBrowser]
+        [ConditionalFact("RunningOnChrome")]
         public async Task InspectorWaitForMessageThatNeverArrives()
         {
             var tce = await Assert.ThrowsAsync<TaskCanceledException>(async () => await insp.WaitFor("Message.that.never.arrives"));

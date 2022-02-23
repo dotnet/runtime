@@ -18,8 +18,18 @@ using Xunit.Sdk;
 
 namespace DebuggerTests
 {
+    public class DebuggerTests :
+#if RUN_IN_CHROME
+    DebuggerTestBase
+#else
+    DebuggerTestFirefox
+#endif
+    {}
+
     public class DebuggerTestBase : IAsyncLifetime
     {
+        protected static bool RunningOnChrome { get { return true; } }
+
         internal InspectorClient cli;
         internal Inspector insp;
         protected CancellationToken token;
@@ -1493,23 +1503,5 @@ namespace DebuggerTests
         Over,
         Out,
         Resume
-    }
-
-    public sealed class FactDependingOnTheBrowser : FactAttribute
-    {
-        public FactDependingOnTheBrowser() {
-            #if !RUN_IN_CHROME
-                Skip = "Ignore on Firefox";
-            #endif
-        }
-    }
-
-    public sealed class TheoryDependingOnTheBrowser : TheoryAttribute
-    {
-        public TheoryDependingOnTheBrowser() {
-            #if !RUN_IN_CHROME
-                Skip = "Ignore on Firefox";
-            #endif
-        }
     }
 }
