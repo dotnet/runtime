@@ -328,6 +328,7 @@ namespace System.Net.Security.Tests
             var supportedProtocols = new SslProtocolSupport.SupportedSslProtocolsTestData();
 
             foreach (var serverProtocols in supportedProtocols)
+            {
                 foreach (var clientProtocols in supportedProtocols)
                 {
                     SslProtocols serverProtocol = (SslProtocols)serverProtocols[0];
@@ -338,6 +339,7 @@ namespace System.Net.Security.Tests
                         yield return new object[] { clientProtocol, serverProtocol, typeof(AuthenticationException) };
                     }
                 }
+            }
         }
 
         public static IEnumerable<Object[]> SupportedProtocolData()

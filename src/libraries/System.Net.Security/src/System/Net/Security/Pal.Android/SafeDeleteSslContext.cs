@@ -227,7 +227,6 @@ namespace System.Net
 
             if (credential.Protocols != SslProtocols.None)
             {
-                ;
                 SslProtocols protocolsToEnable = credential.Protocols & s_supportedSslProtocols.Value;
                 if (protocolsToEnable == 0)
                 {
