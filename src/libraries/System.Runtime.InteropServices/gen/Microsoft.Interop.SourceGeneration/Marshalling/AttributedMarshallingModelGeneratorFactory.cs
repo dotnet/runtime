@@ -9,7 +9,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public readonly record struct AttributedMarshallingModelOptions(InteropGenerationOptions InteropOptions, bool RuntimeMarshallingDisabled);
+    public readonly record struct AttributedMarshallingModelOptions(bool RuntimeMarshallingDisabled);
 
     public class AttributedMarshallingModelGeneratorFactory : IMarshallingGeneratorFactory
     {
@@ -294,8 +294,7 @@ namespace Microsoft.Interop
                 return new ArrayMarshaller(
                     new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: true),
                     elementType,
-                    isBlittable,
-                    Options.InteropOptions);
+                    isBlittable);
             }
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
