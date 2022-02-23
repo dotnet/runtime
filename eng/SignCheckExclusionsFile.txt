@@ -13,3 +13,4 @@
 *comhosttemplatecomhostdll.dll;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
 *staticapphosttemplateapphostexe.exe;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
 *dotnet.js;;Workaround, https://github.com/dotnet/core-eng/issues/9933
+*dotnet_crypto_worker.js;;Workaround, https://github.com/dotnet/core-eng/issues/9933

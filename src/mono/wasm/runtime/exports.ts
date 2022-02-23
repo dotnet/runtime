@@ -388,6 +388,12 @@ const INTERNAL: any = {
     mono_wasm_raise_debug_event,
     mono_wasm_change_debugger_log_level,
     mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
+
+    // used for browser crypto
+    mono_wasm_crypto: {
+        channel: null,
+        worker: null
+    },
 };
 
 
