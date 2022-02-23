@@ -15,6 +15,11 @@ namespace System.Collections.Generic
     {
         private ArrayBuilder<T> _builder; // mutable struct; do not make this readonly
 
+        /// <summary>
+        /// Constructs a new builder.
+        /// </summary>
+        public LargeArrayBuilder() => this = default;
+
         public int Count => _builder.Count;
 
         public void Add(T item) => _builder.Add(item);
