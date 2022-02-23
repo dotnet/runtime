@@ -443,10 +443,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             set { }
         }
-        public ReturnAsErrorException(JObject error)
+        public ReturnAsErrorException(JObject error) : base(error.ToString())
             => Error = Result.Err(error);
 
         public ReturnAsErrorException(string message, string className)
+            : base($"[{className}] {message}")
         {
             var result = new
             {
@@ -466,5 +467,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }));
         }
+
+        public override string ToString() => $"Error object: {Error}. {base.ToString()}";
     }
 }
