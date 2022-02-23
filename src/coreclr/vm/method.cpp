@@ -1656,6 +1656,13 @@ UINT MethodDesc::CbStackPop()
     SUPPORTS_DAC;
     MetaSig msig(this);
     ArgIterator argit(&msig);
+
+    bool fCtorOfVariableSizedObject = msig.HasThis() && (GetMethodTable() == g_pStringClass) && IsCtor();
+    if (fCtorOfVariableSizedObject)
+    {
+        msig.ClearHasThis();
+    }
+    
     return argit.CbStackPop();
 }
 #endif // TARGET_X86

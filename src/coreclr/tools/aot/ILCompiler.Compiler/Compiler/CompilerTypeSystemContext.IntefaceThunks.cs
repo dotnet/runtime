@@ -149,7 +149,7 @@ namespace ILCompiler
             }
             protected override DefaultInterfaceMethodImplementationInstantiationThunk CreateValueFromKey(DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey key)
             {
-                TypeDesc owningTypeOfThunks = key.TargetMethod.Context.GeneratedAssembly.GetGlobalModuleType();
+                TypeDesc owningTypeOfThunks = ((CompilerTypeSystemContext)key.TargetMethod.Context).GeneratedAssembly.GetGlobalModuleType();
                 return new DefaultInterfaceMethodImplementationInstantiationThunk(owningTypeOfThunks, key.TargetMethod, key.InterfaceIndex);
             }
         }
@@ -191,6 +191,14 @@ namespace ILCompiler
                 get
                 {
                     return _targetMethod.Name;
+                }
+            }
+
+            public override string DiagnosticName
+            {
+                get
+                {
+                    return _targetMethod.DiagnosticName;
                 }
             }
 
@@ -274,6 +282,7 @@ namespace ILCompiler
             public override TypeDesc OwningType => _owningType;
 
             public override string Name => _methodRepresented.Name;
+            public override string DiagnosticName => _methodRepresented.DiagnosticName;
 
             public override MethodSignature Signature
             {

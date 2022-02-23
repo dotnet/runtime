@@ -671,7 +671,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private AssemblyCatalog? CreateAssemblyCatalogGuarded(string assemblyFilePath)
         {
-            Exception? exception = null;
+            Exception? exception;
 
             try
             {

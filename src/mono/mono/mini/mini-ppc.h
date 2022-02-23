@@ -28,7 +28,7 @@
 
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
-/* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
+/* fixme: align to 16byte instead of 32byte (we align to 32byte to get
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
@@ -71,9 +71,9 @@ typedef struct MonoCompileArch {
  * - for variables which contain values of registers, use host_mgreg_t or target_mgreg_t.
  * - for loading/saving pointers/ints, use the normal ppc_load_reg/ppc_save_reg ()
  *   macros.
- * - for loading/saving register sized quantities, use the ppc_ldr/ppc_str 
+ * - for loading/saving register sized quantities, use the ppc_ldr/ppc_str
  *   macros.
- * - make sure to not mix the two kinds of macros for the same memory location, 
+ * - make sure to not mix the two kinds of macros for the same memory location,
  *   since ppc is big endian, so a 8 byte store followed by a 4 byte load will
  *   load the upper 32 bit of the value.
  * - use OP_LOADR_MEMBASE/OP_STORER_MEMBASE to load/store register sized

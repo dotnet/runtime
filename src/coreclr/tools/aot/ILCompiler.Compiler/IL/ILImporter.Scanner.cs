@@ -310,7 +310,7 @@ namespace Internal.IL
                     {
                         // RyuJIT is going to call the "MdArray" creation helper even if this is an SzArray,
                         // hence the IsArray check above. Note that the MdArray helper can handle SzArrays.
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArr_NonVarArg), reason);
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArr), reason);
                         return;
                     }
                     else
@@ -417,11 +417,6 @@ namespace Internal.IL
             }
 
             TypeDesc exactType = method.OwningType;
-
-            if (method.IsUnmanagedCallersOnly && (opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn))
-            {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramUnmanagedCallersOnly, method);
-            }
 
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;

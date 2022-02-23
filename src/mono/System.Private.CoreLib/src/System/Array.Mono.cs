@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -130,7 +129,7 @@ namespace System
                 throw new ArgumentNullException(nameof(destinationArray));
 
             if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), "Value has to be >= 0.");
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (sourceArray.Rank != destinationArray.Rank)
                 throw new RankException(SR.Rank_MultiDimNotSupported);
@@ -144,26 +143,30 @@ namespace System
             if (FastCopy(sourceArray, sourceIndex, destinationArray, destinationIndex, length))
                 return;
 
+            CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
+        }
+
+        private static void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
+        {
             int source_pos = sourceIndex - sourceArray.GetLowerBound(0);
             int dest_pos = destinationIndex - destinationArray.GetLowerBound(0);
 
             if (source_pos < 0)
-                throw new ArgumentOutOfRangeException(nameof(sourceIndex), "Index was less than the array's lower bound in the first dimension.");
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_ArrayLB);
 
             if (dest_pos < 0)
-                throw new ArgumentOutOfRangeException(nameof(destinationIndex), "Index was less than the array's lower bound in the first dimension.");
+                throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_ArrayLB);
 
             // re-ordered to avoid possible integer overflow
             if (source_pos > sourceArray.Length - length)
                 throw new ArgumentException(SR.Arg_LongerThanSrcArray, nameof(sourceArray));
 
             if (dest_pos > destinationArray.Length - length)
-            {
-                throw new ArgumentException("Destination array was not long enough. Check destIndex and length, and the array's lower bounds", nameof(destinationArray));
-            }
+                throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
 
             Type src_type = sourceArray.GetType().GetElementType()!;
             Type dst_type = destinationArray.GetType().GetElementType()!;
+            Type dst_elem_type = dst_type;
             bool dst_type_vt = dst_type.IsValueType && Nullable.GetUnderlyingType(dst_type) == null;
 
             bool src_is_enum = src_type.IsEnum;
@@ -196,11 +199,8 @@ namespace System
                 {
                     object srcval = sourceArray.GetValueImpl(source_pos + i);
 
-                    if (!src_type.IsValueType && dst_is_enum)
+                    if (dst_type_vt && (srcval == null || (src_type == typeof(object) && !dst_elem_type.IsAssignableFrom (srcval.GetType()))))
                         throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
-
-                    if (dst_type_vt && (srcval == null || (src_type == typeof(object) && srcval.GetType() != dst_type)))
-                        throw new InvalidCastException();
 
                     try
                     {
@@ -537,12 +537,12 @@ namespace System
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
-        internal void InternalArray__ICollection_Add<T>(T item)
+        internal void InternalArray__ICollection_Add<T>(T _)
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
 
-        internal bool InternalArray__ICollection_Remove<T>(T item)
+        internal bool InternalArray__ICollection_Remove<T>(T _)
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
             return default;
@@ -574,12 +574,12 @@ namespace System
             return Length;
         }
 
-        internal void InternalArray__Insert<T>(int index, T item)
+        internal void InternalArray__Insert<T>(int _, T _1)
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
 
-        internal void InternalArray__RemoveAt(int index)
+        internal void InternalArray__RemoveAt(int _)
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }

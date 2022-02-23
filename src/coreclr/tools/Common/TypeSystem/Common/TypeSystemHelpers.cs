@@ -287,7 +287,7 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(interfaceMethodToResolve.OwningType.IsInterface);
 
-            MethodDesc result = null;
+            MethodDesc result;
             TypeDesc currentType = thisType;
             do
             {
@@ -307,7 +307,7 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(interfaceMethodToResolve.OwningType.IsInterface);
 
-            MethodDesc result = null;
+            MethodDesc result;
             TypeDesc currentType = thisType;
             do
             {

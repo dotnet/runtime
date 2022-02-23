@@ -70,6 +70,7 @@ namespace System.Net.NetworkInformation
         /// Provides Internet Protocol (IP) statistical data for this network interface.
         /// </summary>
         /// <returns>The interface's IP statistics.</returns>
+        [UnsupportedOSPlatform("android")]
         public virtual IPInterfaceStatistics GetIPStatistics()
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
@@ -81,6 +82,7 @@ namespace System.Net.NetworkInformation
         /// Do not use this method, use GetIPStatistics instead.
         /// </summary>
         /// <returns>The interface's IP statistics.</returns>
+        [UnsupportedOSPlatform("android")]
         public virtual IPv4InterfaceStatistics GetIPv4Statistics()
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);

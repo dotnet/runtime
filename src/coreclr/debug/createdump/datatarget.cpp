@@ -3,8 +3,6 @@
 
 #include "createdump.h"
 
-#define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)
-
 DumpDataTarget::DumpDataTarget(CrashInfo& crashInfo) :
     m_ref(1),
     m_crashInfo(crashInfo)

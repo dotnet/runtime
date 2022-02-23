@@ -65,11 +65,26 @@ hot_reload_stub_has_modified_rows (const MonoTableInfo *table);
 static int
 hot_reload_stub_table_num_rows_slow (MonoImage *image, int table_index);
 
-static GArray*
-hot_reload_stub_get_added_methods (MonoClass *klass);
-
 static uint32_t
 hot_reload_stub_method_parent (MonoImage *image, uint32_t method_index);
+
+static void*
+hot_reload_stub_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer);
+
+static uint32_t
+hot_reload_stub_field_parent (MonoImage *image, uint32_t field_index);
+
+static uint32_t
+hot_reload_stub_get_field_idx (MonoClassField *field);
+
+static MonoClassField *
+hot_reload_stub_get_field (MonoClass *klass, uint32_t fielddef_token);
+
+static gpointer
+hot_reload_stub_get_static_field_addr (MonoClassField *field);
+
+static MonoMethod *
+hot_reload_stub_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
@@ -89,8 +104,13 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_get_updated_method_ppdb,
 	&hot_reload_stub_has_modified_rows,
 	&hot_reload_stub_table_num_rows_slow,
-	&hot_reload_stub_get_added_methods,
 	&hot_reload_stub_method_parent,
+	&hot_reload_stub_metadata_linear_search,
+	&hot_reload_stub_field_parent,
+	&hot_reload_stub_get_field_idx,
+	&hot_reload_stub_get_field,
+	&hot_reload_stub_get_static_field_addr,
+	&hot_reload_stub_find_method_by_name,
 };
 
 static bool
@@ -200,16 +220,47 @@ hot_reload_stub_table_num_rows_slow (MonoImage *image, int table_index)
 	g_assert_not_reached (); /* should always take the fast path */
 }
 
-static GArray*
-hot_reload_stub_get_added_methods (MonoClass *klass)
+static uint32_t
+hot_reload_stub_method_parent (MonoImage *image, uint32_t method_index)
+{
+	return 0;
+}
+
+
+static void*
+hot_reload_stub_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer)
 {
 	return NULL;
 }
 
 static uint32_t
-hot_reload_stub_method_parent (MonoImage *image, uint32_t method_index)
+hot_reload_stub_field_parent (MonoImage *image, uint32_t field_index)
 {
 	return 0;
+}
+
+static uint32_t
+hot_reload_stub_get_field_idx (MonoClassField *field)
+{
+	return 0;
+}
+
+static MonoClassField *
+hot_reload_stub_get_field (MonoClass *klass, uint32_t fielddef_token)
+{
+	return NULL;
+}
+
+static gpointer
+hot_reload_stub_get_static_field_addr (MonoClassField *field)
+{
+	return NULL;
+}
+
+static MonoMethod *
+hot_reload_stub_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error)
+{
+	return NULL;
 }
 
 

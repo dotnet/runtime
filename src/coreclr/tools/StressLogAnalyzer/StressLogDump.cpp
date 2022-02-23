@@ -39,7 +39,7 @@ void GcHistAddLog(LPCSTR msg, StressMsg* stressMsg);
 
 
 /*********************************************************************************/
-static const WCHAR* getTime(const FILETIME* time, __out_ecount (buffLen) WCHAR* buff, int buffLen)
+static const WCHAR* getTime(const FILETIME* time, _Out_writes_ (buffLen) WCHAR* buff, int buffLen)
 {
     SYSTEMTIME systemTime;
     static const WCHAR badTime[] = W("BAD TIME");

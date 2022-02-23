@@ -7,6 +7,7 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 include(CheckLibraryExists)
+include(CheckFunctionExists)
 
 # CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
 if(POLICY CMP0075)
@@ -61,6 +62,9 @@ endif()
 # which are not distinguished from the test failing. So no error for that one.
 # For clang-5.0 avoid errors like "unused variable 'err' [-Werror,-Wunused-variable]".
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -Wno-error=unused-value -Wno-error=unused-variable")
+if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wno-error=builtin-requires-header")
+endif()
 
 # Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
 # the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
@@ -141,6 +145,18 @@ check_c_source_compiles(
     "
     HAVE_FLOCK64)
 
+check_c_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <ifaddrs.h>
+    int main(void)
+    {
+        struct ifaddrs ia;
+        return 0;
+    }
+    "
+    HAVE_IFADDRS)
+
 check_symbol_exists(
     O_CLOEXEC
     fcntl.h
@@ -156,9 +172,8 @@ check_symbol_exists(
     fcntl.h
     HAVE_F_FULLFSYNC)
 
-check_symbol_exists(
+check_function_exists(
     getifaddrs
-    ifaddrs.h
     HAVE_GETIFADDRS)
 
 check_symbol_exists(
@@ -675,7 +690,16 @@ check_symbol_exists(
     time.h
     HAVE_CLOCK_GETTIME_NSEC_NP)
 
-check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
+check_library_exists(c pthread_create "" HAVE_PTHREAD_IN_LIBC)
+
+if (HAVE_LIBPTHREAD)
+  set(PTHREAD_LIBRARY pthread)
+elseif (HAVE_PTHREAD_IN_LIBC)
+  set(PTHREAD_LIBRARY c)
+endif()
+
+check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
 check_symbol_exists(
     futimes
@@ -893,8 +917,8 @@ if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS
     set(HAVE_IOS_NETINET_IP_VAR_H 1)
     set(HAVE_IOS_NETINET_ICMP_VAR_H 1)
     set(HAVE_IOS_NETINET_UDP_VAR_H 1)
-    set(CMAKE_EXTRA_INCLUDE_FILES 
-        sys/types.h 
+    set(CMAKE_EXTRA_INCLUDE_FILES
+        sys/types.h
         "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h"
     )
 else()

@@ -28,9 +28,9 @@ internal class Test
         _temp = 101;
     }
 
-    private static int Main(string[] args)
+    private static int Main()
     {
-        Test t = TwoEndFinallys(args);
+        Test t = TwoEndFinallys(new string[] {});
         if (t._temp == 101)
             return 100;
         else return 101;

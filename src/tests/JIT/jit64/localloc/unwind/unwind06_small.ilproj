@@ -11,6 +11,6 @@
     <Compile Include="unwind06_small.il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\common\common.ilproj" />
+    <ProjectReference Include="..\..\..\common\localloc_common.ilproj" />
   </ItemGroup>
 </Project>

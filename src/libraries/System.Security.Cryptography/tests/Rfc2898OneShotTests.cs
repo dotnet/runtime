@@ -75,9 +75,13 @@ namespace System.Security.Cryptography
         [Fact]
         public static void Pbkdf2_PasswordBytes_NullHashName()
         {
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () =>
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () =>
                 Rfc2898DeriveBytes.Pbkdf2(
                     s_passwordBytes, s_salt, iterations: 1, default(HashAlgorithmName), s_extractLength)
+            );
+            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () =>
+                Rfc2898DeriveBytes.Pbkdf2(
+                    s_passwordBytes, s_salt, iterations: 1, new HashAlgorithmName(""), s_extractLength)
             );
         }
 
@@ -147,9 +151,13 @@ namespace System.Security.Cryptography
         [Fact]
         public static void Pbkdf2_PasswordString_NullHashName()
         {
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () =>
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () =>
                 Rfc2898DeriveBytes.Pbkdf2(
                     Password, s_salt, iterations: 1, default(HashAlgorithmName), s_extractLength)
+            );
+            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () =>
+                Rfc2898DeriveBytes.Pbkdf2(
+                    Password, s_salt, iterations: 1, new HashAlgorithmName(""), s_extractLength)
             );
         }
 

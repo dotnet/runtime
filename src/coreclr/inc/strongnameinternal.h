@@ -18,11 +18,11 @@ typedef struct {
 // Determine the number of bytes in a public key
 DWORD StrongNameSizeOfPublicKey(const PublicKeyBlob &keyPublicKey);
 
-bool StrongNameIsValidPublicKey(__in_ecount(cbPublicKeyBlob) const BYTE *pbPublicKeyBlob, DWORD cbPublicKeyBlob);
+bool StrongNameIsValidPublicKey(_In_reads_(cbPublicKeyBlob) const BYTE *pbPublicKeyBlob, DWORD cbPublicKeyBlob);
 bool StrongNameIsValidPublicKey(const PublicKeyBlob &keyPublicKey);
 
 // Determine if a public key is the ECMA key
-bool StrongNameIsEcmaKey(__in_ecount(cbKey) const BYTE *pbKey, DWORD cbKey);
+bool StrongNameIsEcmaKey(_In_reads_(cbKey) const BYTE *pbKey, DWORD cbKey);
 bool StrongNameIsEcmaKey(const PublicKeyBlob &keyPublicKey);
 
 HRESULT StrongNameTokenFromPublicKey(BYTE* pbPublicKeyBlob,  // [in] public key blob

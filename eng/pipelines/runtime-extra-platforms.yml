@@ -1,0 +1,47 @@
+# This pipeline includes the platforms that we don't have resources to run on every PR but that we want
+# to still have test coverage, we run this pipeline on a schedule and also developers can run it
+# via /azp run command on PRs. This pipeline permits us to have the main runtime pipeline run the same
+# platforms in PRs and Scheduled builds.
+
+# Setting batch to true, triggers one build at a time.
+# if there is a push while a build in progress, it will wait,
+# until the running build finishes, and produce a build with all the changes
+# that happened during the last build.
+trigger: none
+
+schedules:
+  - cron: "0 9,21 * * *" # run at 9:00 and 21:00 (UTC) which is 1:00 and 13:00 (PST).
+    displayName: Runtime extra main schedule
+    branches:
+      include:
+      - main
+    always: false # run only if there were changes since the last successful scheduled run.
+  - cron: "0 6,18 * * *" # run at 6:00 and 18:00 (UTC) which is 22:00 and 10:00 (PST).
+    displayName: Runtime extra release schedule
+    branches:
+      include:
+      - release/*
+    always: false # run only if there were changes since the last successful scheduled run.
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+jobs:
+
+#
+# Evaluate paths
+#
+- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+  - template: /eng/pipelines/common/evaluate-default-paths.yml
+
+# include this unconditionally, because it has per job conditions
+- template: /eng/pipelines/runtime-extra-platforms-wasm.yml
+  parameters:
+    isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
+    isRollingBuild: ${{ variables.isRollingBuild }}
+
+# Any jobs that are not specific to any platform
+- ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
+  - template: /eng/pipelines/runtime-extra-platforms-other.yml
+    parameters:
+      isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}

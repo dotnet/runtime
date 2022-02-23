@@ -105,8 +105,7 @@ namespace Internal.Reflection.Augments
             get
             {
                 ReflectionCoreCallbacks callbacks = s_reflectionCoreCallbacks;
-                if (callbacks == null)
-                    throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
+                Debug.Assert(callbacks != null);
                 return callbacks;
             }
         }
@@ -139,7 +138,7 @@ namespace Internal.Reflection.Augments
             Type type, bool nonPublic);
         public abstract object ActivatorCreateInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes);
+            Type type, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes);
 
         // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed.
         public abstract Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure);

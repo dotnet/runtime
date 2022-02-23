@@ -114,6 +114,12 @@ stub_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, gpo
 	return FALSE;
 }
 
+static gboolean
+stub_run_finally_with_il_state (gpointer il_state, int clause_index, gpointer handler_ip, gpointer handler_ip_end)
+{
+	g_assert_not_reached ();
+}
+
 static void
 stub_frame_iter_init (MonoInterpStackIter *iter, gpointer interp_exit_data)
 {
@@ -234,6 +240,13 @@ stub_entry_llvmonly (gpointer res, gpointer *args, gpointer imethod)
 
 static gpointer
 stub_get_interp_method (MonoMethod *method, MonoError *error)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+static MonoJitInfo*
+stub_compile_interp_method (MonoMethod *method, MonoError *error)
 {
 	g_assert_not_reached ();
 	return NULL;

@@ -31,7 +31,7 @@ namespace MS.Internal.Xml.XPath
                 {
                     throw XPathException.Create(SR.Xp_InvalidPattern);
                 }
-                XPathNavigator? result = null;
+                XPathNavigator? result;
                 if (matches(context))
                 {
                     if (matchSelf)

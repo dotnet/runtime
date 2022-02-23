@@ -580,7 +580,7 @@ ClrDataAccess::GetStackLimits(CLRDATA_ADDRESS threadPtr, CLRDATA_ADDRESS *lower,
 }
 
 HRESULT
-ClrDataAccess::GetRegisterName(int regNum, unsigned int count, __out_z __inout_ecount(count) WCHAR *buffer, unsigned int *pNeeded)
+ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_(count) WCHAR *buffer, unsigned int *pNeeded)
 {
     if (!buffer && !pNeeded)
         return E_POINTER;
@@ -1334,7 +1334,7 @@ ClrDataAccess::GetMethodDescPtrFromIP(CLRDATA_ADDRESS ip, CLRDATA_ADDRESS * ppMD
 }
 
 HRESULT
-ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded)
+ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded)
 {
     if (methodDesc == 0)
         return E_INVALIDARG;
@@ -1438,7 +1438,7 @@ ClrDataAccess::GetDomainFromContext(CLRDATA_ADDRESS contextAddr, CLRDATA_ADDRESS
 
 
 HRESULT
-ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, __out_z __inout_ecount(count) WCHAR *stringData, unsigned int *pNeeded)
+ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded)
 {
     if (obj == 0)
         return E_INVALIDARG;
@@ -1490,7 +1490,7 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, __ou
 }
 
 HRESULT
-ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, __out_z __inout_ecount(count) WCHAR *className, unsigned int *pNeeded)
+ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *className, unsigned int *pNeeded)
 {
     if (obj == 0)
         return E_INVALIDARG;
@@ -1752,7 +1752,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
 }
 
 HRESULT
-ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, __out_z __inout_ecount(count) WCHAR *mtName, unsigned int *pNeeded)
+ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout_updates_z_(count) WCHAR *mtName, unsigned int *pNeeded)
 {
     if (mt == 0)
         return E_INVALIDARG;
@@ -2015,7 +2015,7 @@ ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClass, CLRDATA_ADDRESS
 }
 
 HRESULT
-ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, __out_z __inout_ecount(count) WCHAR *frameName, unsigned int *pNeeded)
+ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_updates_z_(count) WCHAR *frameName, unsigned int *pNeeded)
 {
     if (vtable == 0)
         return E_INVALIDARG;
@@ -2055,7 +2055,7 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, __out_z 
 }
 
 HRESULT
-ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, __out_z __inout_ecount(count) WCHAR *fileName, unsigned int *pNeeded)
+ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded)
 {
     if (addr == 0 || (fileName == NULL && pNeeded == NULL) || (fileName != NULL && count == 0))
         return E_INVALIDARG;
@@ -2381,7 +2381,7 @@ ClrDataAccess::GetFailedAssemblyData(CLRDATA_ADDRESS assembly, unsigned int *pCo
 
 HRESULT
 ClrDataAccess::GetFailedAssemblyLocation(CLRDATA_ADDRESS assembly, unsigned int count,
-                                         __out_z __inout_ecount(count) WCHAR *location, unsigned int *pNeeded)
+                                         _Inout_updates_z_(count) WCHAR *location, unsigned int *pNeeded)
 {
     if (assembly == NULL || (location == NULL && pNeeded == NULL) || (location != NULL && count == 0))
         return E_INVALIDARG;
@@ -2411,7 +2411,7 @@ ClrDataAccess::GetFailedAssemblyLocation(CLRDATA_ADDRESS assembly, unsigned int 
 }
 
 HRESULT
-ClrDataAccess::GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded)
+ClrDataAccess::GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded)
 {
     if (assembly == NULL || (name == NULL && pNeeded == NULL) || (name != NULL && count == 0))
         return E_INVALIDARG;
@@ -2521,7 +2521,7 @@ ClrDataAccess::GetFailedAssemblyList(CLRDATA_ADDRESS appDomain, int count,
 }
 
 HRESULT
-ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded)
+ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded)
 {
     SOSDacEnter();
 
@@ -2562,7 +2562,7 @@ ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, __out_
 
 HRESULT
 ClrDataAccess::GetApplicationBase(CLRDATA_ADDRESS appDomain, int count,
-                                  __out_z __inout_ecount(count) WCHAR *base, unsigned int *pNeeded)
+                                  _Inout_updates_z_(count) WCHAR *base, unsigned int *pNeeded)
 {
     // Method is not supported on CoreCLR
 
@@ -2571,7 +2571,7 @@ ClrDataAccess::GetApplicationBase(CLRDATA_ADDRESS appDomain, int count,
 
 HRESULT
 ClrDataAccess::GetPrivateBinPaths(CLRDATA_ADDRESS appDomain, int count,
-                                  __out_z __inout_ecount(count) WCHAR *paths, unsigned int *pNeeded)
+                                  _Inout_updates_z_(count) WCHAR *paths, unsigned int *pNeeded)
 {
     // Method is not supported on CoreCLR
 
@@ -2580,7 +2580,7 @@ ClrDataAccess::GetPrivateBinPaths(CLRDATA_ADDRESS appDomain, int count,
 
 HRESULT
 ClrDataAccess::GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count,
-                                      __out_z __inout_ecount(count) WCHAR *configFile, unsigned int *pNeeded)
+                                      _Inout_updates_z_(count) WCHAR *configFile, unsigned int *pNeeded)
 {
     // Method is not supported on CoreCLR
 
@@ -2619,10 +2619,7 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
     assemblyData->ModuleCount = 0;
     assemblyData->isDomainNeutral = FALSE;
 
-    pAssembly->GetManifestFile();
-
-    ModuleIterator mi = pAssembly->IterateModules();
-    while (mi.Next())
+    if (pAssembly->GetModule())
     {
         assemblyData->ModuleCount++;
     }
@@ -2632,7 +2629,7 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
 }
 
 HRESULT
-ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, __out_z __inout_ecount(count) WCHAR *name, unsigned int *pNeeded)
+ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded)
 {
     SOSDacEnter();
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
@@ -2640,17 +2637,17 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, __o
     if (name)
         name[0] = 0;
 
-    if (!pAssembly->GetManifestFile()->GetPath().IsEmpty())
+    if (!pAssembly->GetPEAssembly()->GetPath().IsEmpty())
     {
-        if (!pAssembly->GetManifestFile()->GetPath().DacGetUnicode(count, name, pNeeded))
+        if (!pAssembly->GetPEAssembly()->GetPath().DacGetUnicode(count, name, pNeeded))
             hr = E_FAIL;
         else if (name)
             name[count-1] = 0;
     }
-    else if (!pAssembly->GetManifestFile()->IsDynamic())
+    else if (!pAssembly->GetPEAssembly()->IsDynamic())
     {
         StackSString displayName;
-        pAssembly->GetManifestFile()->GetDisplayName(displayName, 0);
+        pAssembly->GetPEAssembly()->GetDisplayName(displayName, 0);
 
         const WCHAR *val = displayName.GetUnicode();
 
@@ -2673,7 +2670,7 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, __o
 }
 
 HRESULT
-ClrDataAccess::GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, __out_z __inout_ecount(count) WCHAR *location, unsigned int *pNeeded)
+ClrDataAccess::GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, _Inout_updates_z_(count) WCHAR *location, unsigned int *pNeeded)
 {
     if ((assembly == NULL) || (location == NULL && pNeeded == NULL) || (location != NULL && count == 0))
     {
@@ -2685,9 +2682,9 @@ ClrDataAccess::GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, __out_z 
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
 
     // Turn from bytes to wide characters
-    if (!pAssembly->GetManifestFile()->GetPath().IsEmpty())
+    if (!pAssembly->GetPEAssembly()->GetPath().IsEmpty())
     {
-        if (!pAssembly->GetManifestFile()->GetPath().
+        if (!pAssembly->GetPEAssembly()->GetPath().
             DacGetUnicode(count, location, pNeeded))
         {
             hr = E_FAIL;
@@ -2715,21 +2712,14 @@ ClrDataAccess::GetAssemblyModuleList(CLRDATA_ADDRESS assembly, unsigned int coun
     SOSDacEnter();
 
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
-    ModuleIterator mi = pAssembly->IterateModules();
-    unsigned int n = 0;
     if (modules)
     {
-        while (mi.Next() && n < count)
-            modules[n++] = HOST_CDADDR(mi.GetModule());
-    }
-    else
-    {
-        while (mi.Next())
-            n++;
+        if (pAssembly->GetModule() && count > 0)
+            modules[0] = HOST_CDADDR(pAssembly->GetModule());
     }
 
     if (pNeeded)
-        *pNeeded = n;
+        *pNeeded = 1;
 
     SOSDacLeave();
     return hr;
@@ -3648,7 +3638,7 @@ ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyn
 }
 
 HRESULT
-ClrDataAccess::GetJitHelperFunctionName(CLRDATA_ADDRESS ip, unsigned int count, __out_z __inout_ecount(count) char *name, unsigned int *pNeeded)
+ClrDataAccess::GetJitHelperFunctionName(CLRDATA_ADDRESS ip, unsigned int count, _Inout_updates_z_(count) char *name, unsigned int *pNeeded)
 {
     SOSDacEnter();
 

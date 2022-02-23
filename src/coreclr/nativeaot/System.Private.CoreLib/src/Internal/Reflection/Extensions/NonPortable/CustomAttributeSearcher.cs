@@ -143,9 +143,8 @@ namespace Internal.Reflection.Extensions.NonPortable
                     for (int i = 0; i < immediateResults.Count; i++)
                     {
                         Type attributeType = immediateResults[i].AttributeType;
-                        AttributeUsageAttribute? usage;
                         TypeUnificationKey attributeTypeKey = new TypeUnificationKey(attributeType);
-                        if (!encounteredTypes.TryGetValue(attributeTypeKey, out usage))
+                        if (!encounteredTypes.TryGetValue(attributeTypeKey, out _))
                             encounteredTypes.Add(attributeTypeKey, null);
                     }
 

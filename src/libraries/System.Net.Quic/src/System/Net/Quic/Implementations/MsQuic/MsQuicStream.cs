@@ -16,7 +16,7 @@ namespace System.Net.Quic.Implementations.MsQuic
     internal sealed class MsQuicStream : QuicStreamProvider
     {
         // Delegate that wraps the static function that will be called when receiving an event.
-        internal static readonly StreamCallbackDelegate s_streamDelegate = new StreamCallbackDelegate(NativeCallbackHandler);
+        internal static unsafe readonly StreamCallbackDelegate s_streamDelegate = new StreamCallbackDelegate(NativeCallbackHandler);
 
         // The state is passed to msquic and then it's passed back by msquic to the callback handler.
         private readonly State _state = new State();
@@ -533,7 +533,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             int originalDestinationLength = destinationBuffer.Length;
             QuicBuffer nativeBuffer;
-            int takeLength = 0;
+            int takeLength;
             int i = 0;
 
             do
@@ -853,17 +853,17 @@ namespace System.Net.Quic.Implementations.MsQuic
         /// Callback calls for a single instance of a stream are serialized by msquic.
         /// They happen on a msquic thread and shouldn't take too long to not to block msquic.
         /// </summary>
-        private static uint NativeCallbackHandler(
+        private static unsafe uint NativeCallbackHandler(
             IntPtr stream,
             IntPtr context,
-            ref StreamEvent streamEvent)
+            StreamEvent* streamEvent)
         {
             GCHandle gcHandle = GCHandle.FromIntPtr(context);
             Debug.Assert(gcHandle.IsAllocated);
             Debug.Assert(gcHandle.Target is not null);
             var state = (State)gcHandle.Target;
 
-            return HandleEvent(state, ref streamEvent);
+            return HandleEvent(state, ref *streamEvent);
         }
 
         private static uint HandleEvent(State state, ref StreamEvent evt)

@@ -1,0 +1,8 @@
+TOP=$(realpath $(CURDIR)/../../..)
+CONFIG?=Release
+WASI_SDK_VERSION=12
+
+WASI_OBJ_DIR=$(TOP)/artifacts/obj/mono/Wasi.$(CONFIG)
+WASI_BIN_DIR=$(TOP)/artifacts/bin/mono/Wasi.$(CONFIG)
+WASI_SDK_ROOT=$(WASI_OBJ_DIR)/wasi-sdk-$(WASI_SDK_VERSION).0
+WASI_SDK_CLANG=$(WASI_SDK_ROOT)/bin/clang

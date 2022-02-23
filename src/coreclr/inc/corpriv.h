@@ -102,9 +102,9 @@ STDAPI GetAssemblyMDInternalImportByStreamEx( // Return code.
 
 __success(SUCCEEDED(return))
 STDAPI GetNativeImageDescription(
-    __in_z LPCWSTR wzCustomString,                     // [IN] Custom string of the native image
+    _In_z_ LPCWSTR wzCustomString,                     // [IN] Custom string of the native image
     DWORD dwConfigMask,                         // [IN] Config mask of the native image
-    __out_ecount_part_opt(*pdwLength,*pdwLength) LPWSTR pwzZapInfo,// [OUT] The description string. Can be NULL to find the size of buffer to allocate
+    _Out_writes_to_opt_(*pdwLength,*pdwLength) LPWSTR pwzZapInfo,// [OUT] The description string. Can be NULL to find the size of buffer to allocate
     LPDWORD pdwLength);                         // [IN/OUT] Length of the pwzZapInfo buffer on IN.
                                                 //          Number of WCHARs (including termintating NULL) on OUT
 

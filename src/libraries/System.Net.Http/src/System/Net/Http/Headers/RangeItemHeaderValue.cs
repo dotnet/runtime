@@ -110,8 +110,7 @@ namespace System.Net.Http.Headers
             }
 
             // Empty segments are allowed, so skip all delimiter-only segments (e.g. ", ,").
-            bool separatorFound = false;
-            int current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(input, startIndex, true, out separatorFound);
+            int current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(input, startIndex, true, out _);
             // It's OK if we didn't find leading separator characters. Ignore 'separatorFound'.
 
             if (current == input.Length)
@@ -132,7 +131,7 @@ namespace System.Net.Http.Headers
                 rangeCollection.Add(range!);
 
                 current = current + rangeLength;
-                current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(input, current, true, out separatorFound);
+                current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(input, current, true, out bool separatorFound);
 
                 // If the string is not consumed, we must have a delimiter, otherwise the string is not a valid
                 // range list.

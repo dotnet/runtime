@@ -19,10 +19,10 @@ class CycleTimer
 
     // This wraps GetCycleCount64 in the signature of QueryThreadCycleTime -- but note
     // that it ignores the "thrd" argument.
-    static BOOL WINAPI DefaultQueryThreadCycleTime(__in HANDLE thrd, __out PULONG64 cyclesPtr);
+    static BOOL WINAPI DefaultQueryThreadCycleTime(_In_ HANDLE thrd, _Out_ PULONG64 cyclesPtr);
 
     // The function pointer type for QueryThreadCycleTime.
-    typedef BOOL (WINAPI *QueryThreadCycleTimeSig)(__in HANDLE, __out PULONG64);
+    typedef BOOL (WINAPI *QueryThreadCycleTimeSig)(_In_ HANDLE, _Out_ PULONG64);
 
     // Returns a function pointer for QueryThreadCycleTime, or else BadFPtr.
     static QueryThreadCycleTimeSig GetQueryThreadCycleTime();

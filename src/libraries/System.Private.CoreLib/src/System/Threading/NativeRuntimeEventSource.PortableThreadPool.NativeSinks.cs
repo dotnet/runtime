@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
-using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
@@ -158,7 +155,6 @@ namespace System.Diagnostics.Tracing
             bool MultiDequeues,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            int multiDequeuesInt = Convert.ToInt32(MultiDequeues); // bool maps to "win:Boolean", a 4-byte boolean
             LogThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
         }
 

@@ -58,7 +58,7 @@ namespace System.Runtime.InteropServices
 
         internal static IntPtr LoadBySearch(Assembly callingAssembly, bool searchAssemblyDirectory, int dllImportSearchPathFlags, ref LoadLibErrorTracker errorTracker, string libraryName)
         {
-            IntPtr ret = IntPtr.Zero;
+            IntPtr ret;
 
             int loadWithAlteredPathFlags = 0;
             bool libNameIsRelativePath = !Path.IsPathFullyQualified(libraryName);

@@ -26,9 +26,6 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetQuietShutdown")]
         internal static partial void SslCtxSetQuietShutdown(SafeSslContextHandle ctx);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetVerify")]
-        internal static unsafe partial void SslCtxSetVerify(SafeSslContextHandle ctx, delegate* unmanaged<int, IntPtr, int> callback);
-
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCiphers")]
         internal static unsafe partial bool SslCtxSetCiphers(SafeSslContextHandle ctx, byte* cipherList, byte* cipherSuites);
 

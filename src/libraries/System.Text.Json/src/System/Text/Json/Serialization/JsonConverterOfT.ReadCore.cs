@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization
                 }
 
                 JsonPropertyInfo jsonPropertyInfo = state.Current.JsonTypeInfo.PropertyInfoForTypeInfo;
-                bool success = TryRead(ref reader, jsonPropertyInfo.RuntimePropertyType!, options, ref state, out T? value);
+                bool success = TryRead(ref reader, jsonPropertyInfo.PropertyType, options, ref state, out T? value);
                 if (success)
                 {
                     // Read any trailing whitespace. This will throw if JsonCommentHandling=Disallow.

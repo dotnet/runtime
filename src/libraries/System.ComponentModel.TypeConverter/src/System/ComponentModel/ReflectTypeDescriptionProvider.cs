@@ -228,18 +228,9 @@ namespace System.ComponentModel
         /// table for the editor type, if one can be found.
         /// </summary>
         [RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static construtors trimmed.")]
-        internal static void AddEditorTable(Type editorBaseType, Hashtable table)
+        internal static void AddEditorTable(Type editorBaseType!!, Hashtable table)
         {
-            if (editorBaseType == null)
-            {
-                throw new ArgumentNullException(nameof(editorBaseType));
-            }
-
-            if (table == null)
-            {
-                Debug.Fail("COMPAT: Editor table should not be null");
-                // don't throw; RTM didn't so we can't do it either.
-            }
+            Debug.Assert(table != null, "COMPAT: Editor table should not be null"); // don't throw; RTM didn't so we can't do it either.
 
             lock (s_internalSyncObject)
             {
@@ -262,7 +253,7 @@ namespace System.ComponentModel
         {
             Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
 
-            object? obj = null;
+            object? obj;
 
             if (argTypes != null)
             {
@@ -355,10 +346,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the component name from the site.
         /// </summary>
-        internal string? GetComponentName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
+        internal static string? GetComponentName(object? instance)
         {
-            ReflectedTypeData td = GetTypeData(type, true)!;
-            return td.GetComponentName(instance);
+            return ReflectedTypeData.GetComponentName(instance);
         }
 
         /// <summary>
@@ -464,7 +454,7 @@ namespace System.ComponentModel
         /// Retrieves custom extender attributes. We don't support
         /// extender attributes, so we always return an empty collection.
         /// </summary>
-        internal AttributeCollection GetExtendedAttributes(object instance)
+        internal static AttributeCollection GetExtendedAttributes(object instance)
         {
             return AttributeCollection.Empty;
         }
@@ -481,10 +471,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the component name from the site.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
-        internal string? GetExtendedComponentName(object instance)
+        internal static string? GetExtendedComponentName(object instance)
         {
-            return GetComponentName(instance.GetType(), instance);
+            return GetComponentName(instance);
         }
 
         /// <summary>
@@ -502,7 +491,7 @@ namespace System.ComponentModel
         /// Return the default event. The default event is determined by the
         /// presence of a DefaultEventAttribute on the class.
         /// </summary>
-        internal EventDescriptor? GetExtendedDefaultEvent(object instance)
+        internal static EventDescriptor? GetExtendedDefaultEvent()
         {
             return null; // we don't support extended events.
         }
@@ -510,7 +499,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Return the default property.
         /// </summary>
-        internal PropertyDescriptor? GetExtendedDefaultProperty(object instance)
+        internal static PropertyDescriptor? GetExtendedDefaultProperty(object instance)
         {
             return null; // extender properties are never the default.
         }
@@ -527,7 +516,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the events for this type.
         /// </summary>
-        internal EventDescriptorCollection GetExtendedEvents(object instance)
+        internal static EventDescriptorCollection GetExtendedEvents(object instance)
         {
             return EventDescriptorCollection.Empty;
         }
@@ -630,13 +619,8 @@ namespace System.ComponentModel
             return properties;
         }
 
-        protected internal override IExtenderProvider[] GetExtenderProviders(object instance)
+        protected internal override IExtenderProvider[] GetExtenderProviders(object instance!!)
         {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
-
             IComponent? component = instance as IComponent;
             if (component != null && component.Site != null)
             {
@@ -796,7 +780,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the owner for a property.
         /// </summary>
-        internal object GetExtendedPropertyOwner(object instance, PropertyDescriptor? pd)
+        internal static object GetExtendedPropertyOwner(object instance, PropertyDescriptor? pd)
         {
             return GetPropertyOwner(instance.GetType(), instance, pd);
         }
@@ -878,7 +862,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the owner for a property.
         /// </summary>
-        internal object GetPropertyOwner(Type type, object instance, PropertyDescriptor? pd)
+        internal static object GetPropertyOwner(Type type, object instance, PropertyDescriptor? pd)
         {
             return TypeDescriptor.GetAssociation(type, instance);
         }

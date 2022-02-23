@@ -149,7 +149,7 @@ namespace System.Xml.Serialization
         {
             Assembly? serializer = null;
             contract = null;
-            string? serializerName = null;
+            string? serializerName;
 
             using (AssemblyLoadContext.EnterContextualReflection(type.Assembly))
             {

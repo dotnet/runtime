@@ -275,7 +275,7 @@ namespace System.Xml.Schema
             {
                 case XmlNodeType.Element:
                     _annotationNSManager!.PushScope();
-                    currentNode = LoadElementNode(root);
+                    LoadElementNode(root);
                     //  Dev10 (TFS) #479761: The following code was to address the issue of where an in-scope namespace delaration attribute
                     //      was not added when an element follows an empty element. This fix will result in persisting schema in a consistent form
                     //      although it does not change the semantic meaning of the schema.

@@ -9,7 +9,7 @@
 .assembly extern xunit.core {}
 
 .assembly extern mscorlib{}
-.assembly extern common{}
+.assembly extern localloc_common{}
 .assembly 'eh07_small'{}
 
 .class private auto ansi beforefieldinit LocallocTest

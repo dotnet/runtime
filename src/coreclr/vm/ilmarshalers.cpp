@@ -1635,14 +1635,13 @@ void ILVBByValStrWMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
 
-    pslILEmit->EmitLDNULL();            // this
     EmitLoadNativeValue(pslILEmit);     // ptr
     pslILEmit->EmitLDC(0);              // startIndex
     pslILEmit->EmitLDLOC(m_dwCCHLocal); // length
 
     // String CtorCharPtrStartLength(char *ptr, int startIndex, int length)
     // TODO Phase5: Why do we call this weirdo?
-    pslILEmit->EmitCALL(METHOD__STRING__CTORF_CHARPTR_START_LEN, 4, 1);
+    pslILEmit->EmitCALL(METHOD__STRING__CTORF_CHARPTR_START_LEN, 3, 1);
 
     EmitStoreManagedValue(pslILEmit);
     pslILEmit->EmitLabel(pNullRefLabel);
@@ -4923,8 +4922,8 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ConvertSpaceToManaged, MngdSafeArrayMarsha
             {
                 WCHAR strExpectedRank[64];
                 WCHAR strActualRank[64];
-                _ltow_s(pThis->m_iRank, strExpectedRank, COUNTOF(strExpectedRank), 10);
-                _ltow_s(iSafeArrayRank, strActualRank, COUNTOF(strActualRank), 10);
+                _ltow_s(pThis->m_iRank, strExpectedRank, ARRAY_SIZE(strExpectedRank), 10);
+                _ltow_s(iSafeArrayRank, strActualRank, ARRAY_SIZE(strActualRank), 10);
                 COMPlusThrow(kSafeArrayRankMismatchException, IDS_EE_SAFEARRAYRANKMISMATCH, strActualRank, strExpectedRank);
             }
         }

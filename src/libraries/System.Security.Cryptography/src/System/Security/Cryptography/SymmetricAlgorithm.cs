@@ -70,8 +70,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != this.BlockSize / 8)
                     throw new CryptographicException(SR.Cryptography_InvalidIVSize);
 
@@ -90,8 +89,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 long bitLength = value.Length * 8L;
                 if (bitLength > int.MaxValue || !ValidKeySize((int)bitLength))
@@ -447,12 +445,9 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
         /// </remarks>
-        public byte[] DecryptEcb(byte[] ciphertext, PaddingMode paddingMode)
+        public byte[] DecryptEcb(byte[] ciphertext!!, PaddingMode paddingMode)
         {
             // Padding mode is validated by callee.
-            if (ciphertext is null)
-                throw new ArgumentNullException(nameof(ciphertext));
-
             return DecryptEcb(new ReadOnlySpan<byte>(ciphertext), paddingMode);
         }
 
@@ -566,12 +561,9 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
         /// </remarks>
-        public byte[] EncryptEcb(byte[] plaintext, PaddingMode paddingMode)
+        public byte[] EncryptEcb(byte[] plaintext!!, PaddingMode paddingMode)
         {
             // paddingMode is validated by callee
-            if (plaintext is null)
-                throw new ArgumentNullException(nameof(plaintext));
-
             return EncryptEcb(new ReadOnlySpan<byte>(plaintext), paddingMode);
         }
 
@@ -690,13 +682,8 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptCbcCore" />.
         /// </remarks>
-        public byte[] DecryptCbc(byte[] ciphertext, byte[] iv, PaddingMode paddingMode = PaddingMode.PKCS7)
+        public byte[] DecryptCbc(byte[] ciphertext!!, byte[] iv!!, PaddingMode paddingMode = PaddingMode.PKCS7)
         {
-            if (ciphertext is null)
-                throw new ArgumentNullException(nameof(ciphertext));
-            if (iv is null)
-                throw new ArgumentNullException(nameof(iv));
-
             return DecryptCbc(new ReadOnlySpan<byte>(ciphertext), new ReadOnlySpan<byte>(iv), paddingMode);
         }
 
@@ -847,13 +834,8 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptCbcCore" />.
         /// </remarks>
-        public byte[] EncryptCbc(byte[] plaintext, byte[] iv, PaddingMode paddingMode = PaddingMode.PKCS7)
+        public byte[] EncryptCbc(byte[] plaintext!!, byte[] iv!!, PaddingMode paddingMode = PaddingMode.PKCS7)
         {
-            if (plaintext is null)
-                throw new ArgumentNullException(nameof(plaintext));
-            if (iv is null)
-                throw new ArgumentNullException(nameof(iv));
-
             return EncryptCbc(new ReadOnlySpan<byte>(plaintext), new ReadOnlySpan<byte>(iv), paddingMode);
         }
 
@@ -1021,13 +1003,8 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptCfbCore" />.
         /// </remarks>
-        public byte[] DecryptCfb(byte[] ciphertext, byte[] iv, PaddingMode paddingMode = PaddingMode.None, int feedbackSizeInBits = 8)
+        public byte[] DecryptCfb(byte[] ciphertext!!, byte[] iv!!, PaddingMode paddingMode = PaddingMode.None, int feedbackSizeInBits = 8)
         {
-            if (ciphertext is null)
-                throw new ArgumentNullException(nameof(ciphertext));
-            if (iv is null)
-                throw new ArgumentNullException(nameof(iv));
-
             return DecryptCfb(
                 new ReadOnlySpan<byte>(ciphertext),
                 new ReadOnlySpan<byte>(iv),

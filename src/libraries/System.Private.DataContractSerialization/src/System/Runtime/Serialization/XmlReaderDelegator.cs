@@ -15,9 +15,8 @@ namespace System.Runtime.Serialization
         protected XmlDictionaryReader? dictionaryReader;
         protected bool isEndOfEmptyElement;
 
-        public XmlReaderDelegator(XmlReader reader)
+        public XmlReaderDelegator(XmlReader reader!!)
         {
-            XmlObjectSerializer.CheckNull(reader, nameof(reader));
             this.reader = reader;
             this.dictionaryReader = reader as XmlDictionaryReader;
         }
@@ -768,12 +767,12 @@ namespace System.Runtime.Serialization
 
         private XmlQualifiedName ParseQualifiedName(string str)
         {
-            string name, prefix;
+            string name;
             string? ns;
             if (str == null || str.Length == 0)
                 name = ns = string.Empty;
             else
-                XmlObjectSerializerReadContext.ParseQualifiedName(str, this, out name, out ns, out prefix);
+                XmlObjectSerializerReadContext.ParseQualifiedName(str, this, out name, out ns, out _);
             return new XmlQualifiedName(name, ns);
         }
 
@@ -807,7 +806,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new bool[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;
@@ -837,7 +836,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new DateTime[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;
@@ -867,7 +866,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new decimal[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;
@@ -897,7 +896,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new int[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;
@@ -927,7 +926,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new long[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;
@@ -957,7 +956,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new float[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;
@@ -987,7 +986,7 @@ namespace System.Runtime.Serialization
             {
                 CheckExpectedArrayLength(context, arrayLength);
                 array = new double[arrayLength];
-                int read = 0, offset = 0;
+                int read, offset = 0;
                 while ((read = dictionaryReader.ReadArray(itemName, itemNamespace, array, offset, arrayLength - offset)) > 0)
                 {
                     offset += read;

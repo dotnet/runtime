@@ -61,13 +61,8 @@ namespace System
         /// Converts the given value object to
         /// the specified destination type using the specified context and arguments.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
+        public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
-
             if (value is Uri uri)
             {
                 if (destinationType == typeof(InstanceDescriptor))
@@ -95,7 +90,7 @@ namespace System
         {
             if (value is string text)
             {
-                return Uri.TryCreate(text, UriKind.RelativeOrAbsolute, out Uri? uri);
+                return Uri.TryCreate(text, UriKind.RelativeOrAbsolute, out _);
             }
             return value is Uri;
         }

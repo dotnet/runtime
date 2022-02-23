@@ -33,11 +33,7 @@ typedef BitVec          EXPSET_TP;
 typedef BitVec_ValArg_T EXPSET_VALARG_TP;
 typedef BitVec_ValRet_T EXPSET_VALRET_TP;
 
-#if LARGE_EXPSET
 #define EXPSET_SZ 64
-#else
-#define EXPSET_SZ 32
-#endif
 
 typedef BitVec          ASSERT_TP;
 typedef BitVec_ValArg_T ASSERT_VALARG_TP;
@@ -829,6 +825,17 @@ struct BasicBlock : private LIR::Range
         BBswtDesc*  bbJumpSwt;  // switch descriptor
     };
 
+    bool KindIs(BBjumpKinds kind) const
+    {
+        return bbJumpKind == kind;
+    }
+
+    template <typename... T>
+    bool KindIs(BBjumpKinds kind, T... rest) const
+    {
+        return KindIs(kind) || KindIs(rest...);
+    }
+
     // NumSucc() gives the number of successors, and GetSucc() returns a given numbered successor.
     //
     // There are two versions of these functions: ones that take a Compiler* and ones that don't. You must
@@ -1157,24 +1164,18 @@ struct BasicBlock : private LIR::Range
      */
 
     union {
-        EXPSET_TP bbCseGen; // CSEs computed by block
-#if ASSERTION_PROP
+        EXPSET_TP bbCseGen;       // CSEs computed by block
         ASSERT_TP bbAssertionGen; // value assignments computed by block
-#endif
     };
 
     union {
-        EXPSET_TP bbCseIn; // CSEs available on entry
-#if ASSERTION_PROP
+        EXPSET_TP bbCseIn;       // CSEs available on entry
         ASSERT_TP bbAssertionIn; // value assignments available on entry
-#endif
     };
 
     union {
-        EXPSET_TP bbCseOut; // CSEs available on exit
-#if ASSERTION_PROP
+        EXPSET_TP bbCseOut;       // CSEs available on exit
         ASSERT_TP bbAssertionOut; // value assignments available on exit
-#endif
     };
 
     void* bbEmitCookie;

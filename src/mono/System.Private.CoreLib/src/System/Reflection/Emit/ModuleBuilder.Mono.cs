@@ -87,13 +87,13 @@ namespace System.Reflection.Emit
         private static extern void set_wrappers_type(ModuleBuilder mb, Type? ab);
 
         [DynamicDependency(nameof(table_indexes))]  // Automatically keeps all previous fields too due to StructLayout
-        internal ModuleBuilder(AssemblyBuilder assb, string name, bool emitSymbolInfo)
+        internal ModuleBuilder(AssemblyBuilder assb, string name)
         {
             this.name = this.scopename = name;
             this.fqname = name;
             this.assembly = this.assemblyb = assb;
             guid = Guid.NewGuid().ToByteArray();
-            table_idx = get_next_table_index(this, 0x00, 1);
+            table_idx = get_next_table_index(0x00, 1);
             name_cache = new Dictionary<ITypeName, TypeBuilder>();
             us_string_cache = new Dictionary<string, int>(512);
 
@@ -148,10 +148,7 @@ namespace System.Reflection.Emit
             Justification = "Reflection.Emit is not subject to trimming")]
         private FieldBuilder DefineDataImpl(string name, int size, FieldAttributes attributes)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException("name cannot be empty", nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
             if (global_type_created != null)
                 throw new InvalidOperationException("global fields already created");
             if ((size <= 0) || (size >= 0x3f0000))
@@ -165,7 +162,7 @@ namespace System.Reflection.Emit
             {
                 TypeBuilder tb = DefineType(typeName,
                     TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
-                                             typeof(ValueType), null, PackingSize.Size1, size);
+                                             typeof(ValueType), null, FieldBuilder.RVADataPackingSize(size), size);
                 tb.CreateType();
                 datablobtype = tb;
             }
@@ -307,7 +304,7 @@ namespace System.Reflection.Emit
 
         internal TypeBuilder? GetRegisteredType(ITypeName name)
         {
-            TypeBuilder? result = null;
+            TypeBuilder? result;
             name_cache.TryGetValue(name, out result);
             return result;
         }
@@ -408,10 +405,7 @@ namespace System.Reflection.Emit
         [ComVisible(true)]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
-            if (className == null)
-                throw new ArgumentNullException(nameof(className));
-            if (className.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(className));
+            ArgumentException.ThrowIfNullOrEmpty(className);
 
             TypeBuilder? result = null;
 
@@ -472,7 +466,7 @@ namespace System.Reflection.Emit
                 return result;
         }
 
-        internal int get_next_table_index(object obj, int table, int count)
+        internal int get_next_table_index(int table, int count)
         {
             if (table_indexes == null)
             {

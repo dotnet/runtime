@@ -31,7 +31,6 @@
 #define MONO_ARCH_EMULATE_FCONV_TO_U4 1
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS 1
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS 1
-#define MONO_ARCH_FLOAT32_SUPPORTED 1
 
 //mini-codegen stubs - this doesn't do anything
 #define MONO_ARCH_CALLEE_REGS (1 << 0)
@@ -45,7 +44,7 @@
 #define MONO_ARCH_INST_SREG2_MASK(ins) 0
 
 struct MonoLMF {
-	/* 
+	/*
 	 * If the second lowest bit is set to 1, then this is a MonoLMFExt structure, and
 	 * the other fields are not valid.
 	 */
@@ -100,9 +99,12 @@ typedef struct {
 // sdks/wasm/driver.c is C and uses this
 G_EXTERN_C void mono_wasm_enable_debugging (int log_level);
 
-void mono_wasm_set_timeout (int timeout, int id);
+void mono_wasm_set_timeout (int timeout);
 
 int mono_wasm_assembly_already_added (const char *assembly_name);
 void mono_wasm_print_stack_trace (void);
 
-#endif /* __MONO_MINI_WASM_H__ */  
+gboolean
+mini_wasm_is_scalar_vtype (MonoType *type);
+
+#endif /* __MONO_MINI_WASM_H__ */

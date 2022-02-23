@@ -74,7 +74,7 @@ internal static partial class Interop
         /// Gets executable name for process given it's PID
         /// </summary>
         /// <param name="pid">The PID of the process</param>
-        public static unsafe string? GetProcPath(int pid)
+        public static unsafe string GetProcPath(int pid)
         {
             Span<int> sysctlName = stackalloc int[] { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, pid };
             byte* pBuffer = null;
@@ -83,7 +83,7 @@ internal static partial class Interop
             try
             {
                 Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
-                return System.Text.Encoding.UTF8.GetString(pBuffer, (int)bytesLength - 1);
+                return System.Text.Encoding.UTF8.GetString(pBuffer, bytesLength - 1);
             }
             finally
             {

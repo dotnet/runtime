@@ -64,6 +64,14 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return "GetHashCode";
+            }
+        }
+
         public override bool IsVirtual
         {
             get
@@ -140,6 +148,14 @@ namespace Internal.IL.Stubs
         }
 
         public override string Name
+        {
+            get
+            {
+                return "Equals";
+            }
+        }
+
+        public override string DiagnosticName
         {
             get
             {

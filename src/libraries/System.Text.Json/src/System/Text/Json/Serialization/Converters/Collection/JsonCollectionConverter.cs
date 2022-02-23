@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -20,7 +18,33 @@ namespace System.Text.Json.Serialization
         internal override Type ElementType => typeof(TElement);
 
         protected abstract void Add(in TElement value, ref ReadStack state);
-        protected abstract void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options);
+
+        /// <summary>
+        /// When overridden, create the collection. It may be a temporary collection or the final collection.
+        /// </summary>
+        protected virtual void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        {
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
+
+            if (typeInfo.CreateObject is null)
+            {
+                // The contract model was not able to produce a default constructor for two possible reasons:
+                // 1. Either the declared collection type is abstract and cannot be instantiated.
+                // 2. The collection type does not specify a default constructor.
+                if (TypeToConvert.IsAbstract || TypeToConvert.IsInterface)
+                {
+                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                }
+                else
+                {
+                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
+                }
+            }
+
+            state.Current.ReturnValue = typeInfo.CreateObject()!;
+            Debug.Assert(state.Current.ReturnValue is TCollection);
+        }
+
         protected virtual void ConvertCollection(ref ReadStack state, JsonSerializerOptions options) { }
 
         protected static JsonConverter<TElement> GetElementConverter(JsonTypeInfo elementTypeInfo)
@@ -33,7 +57,7 @@ namespace System.Text.Json.Serialization
 
         protected static JsonConverter<TElement> GetElementConverter(ref WriteStack state)
         {
-            JsonConverter<TElement> converter = (JsonConverter<TElement>)state.Current.DeclaredJsonPropertyInfo!.ConverterBase;
+            JsonConverter<TElement> converter = (JsonConverter<TElement>)state.Current.JsonPropertyInfo!.ConverterBase;
             Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
 
             return converter;
@@ -258,7 +282,7 @@ namespace System.Text.Json.Serialization
                         writer.WriteStartArray();
                     }
 
-                    state.Current.DeclaredJsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
+                    state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
                 }
 
                 success = OnWriteResume(writer, value, options, ref state);

@@ -80,16 +80,18 @@ inline HANDLE PalGetCurrentThread()
 }
 
 #ifdef UNICODE
-extern "C" uint32_t __stdcall GetEnvironmentVariableW(__in_z_opt LPCWSTR, __out_z_opt LPWSTR, uint32_t);
-inline uint32_t PalGetEnvironmentVariable(__in_z_opt LPCWSTR arg1, __out_z_opt LPWSTR arg2, uint32_t arg3)
+_Success_(return != 0 && return < nSize)
+extern "C" uint32_t __stdcall GetEnvironmentVariableW(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize);
+inline uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize)
 {
-    return GetEnvironmentVariableW(arg1, arg2, arg3);
+    return GetEnvironmentVariableW(lpName, lpBuffer, nSize);
 }
 #else
-extern "C" uint32_t __stdcall GetEnvironmentVariableA(__in_z_opt LPCSTR, __out_z_opt LPSTR, uint32_t);
-inline uint32_t PalGetEnvironmentVariable(__in_z_opt LPCSTR arg1, __out_z_opt LPSTR arg2, uint32_t arg3)
+_Success_(return != 0 && return < nSize)
+extern "C" uint32_t __stdcall GetEnvironmentVariableA(_In_opt_ LPCSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPSTR lpBuffer, _In_ uint32_t nSize);
+inline uint32_t PalGetEnvironmentVariable(_In_opt_ LPCSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPSTR lpBuffer, _In_ uint32_t nSize)
 {
-    return GetEnvironmentVariableA(arg1, arg2, arg3);
+    return GetEnvironmentVariableA(lpName, lpBuffer, nSize);
 }
 #endif
 

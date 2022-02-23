@@ -46,9 +46,9 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder"/> that will be used
         /// to construct the <see cref="IConfiguration"/> for the host.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public IHostBuilder ConfigureHostConfiguration(Action<IConfigurationBuilder> configureDelegate)
+        public IHostBuilder ConfigureHostConfiguration(Action<IConfigurationBuilder> configureDelegate!!)
         {
-            _configureHostConfigActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+            _configureHostConfigActions.Add(configureDelegate);
             return this;
         }
 
@@ -60,9 +60,9 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder"/> that will be used
         /// to construct the <see cref="IConfiguration"/> for the host.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate)
+        public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate!!)
         {
-            _configureAppConfigActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+            _configureAppConfigActions.Add(configureDelegate);
             return this;
         }
 
@@ -72,9 +72,9 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder"/> that will be used
         /// to construct the <see cref="IConfiguration"/> for the host.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate)
+        public IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate!!)
         {
-            _configureServicesActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+            _configureServicesActions.Add(configureDelegate);
             return this;
         }
 
@@ -84,9 +84,9 @@ namespace Microsoft.Extensions.Hosting
         /// <typeparam name="TContainerBuilder">The type of the builder to create.</typeparam>
         /// <param name="factory">A factory used for creating service providers.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory)
+        public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory!!)
         {
-            _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory ?? throw new ArgumentNullException(nameof(factory)));
+            _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory);
             return this;
         }
 
@@ -96,9 +96,9 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="factory">A factory used for creating service providers.</param>
         /// <typeparam name="TContainerBuilder">The type of the builder to create.</typeparam>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory)
+        public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory!!)
         {
-            _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostBuilderContext, factory ?? throw new ArgumentNullException(nameof(factory)));
+            _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostBuilderContext, factory);
             return this;
         }
 
@@ -110,10 +110,9 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder"/> that will be used
         /// to construct the <see cref="IConfiguration"/> for the host.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate)
+        public IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate!!)
         {
-            _configureContainerActions.Add(new ConfigureContainerAdapter<TContainerBuilder>(configureDelegate
-                ?? throw new ArgumentNullException(nameof(configureDelegate))));
+            _configureContainerActions.Add(new ConfigureContainerAdapter<TContainerBuilder>(configureDelegate));
             return this;
         }
 
@@ -121,6 +120,7 @@ namespace Microsoft.Extensions.Hosting
         /// Run the given actions to initialize the host. This can only be called once.
         /// </summary>
         /// <returns>An initialized <see cref="IHost"/></returns>
+        /// <remarks>Adds basic services to the host such as application lifetime, host environment, and logging.</remarks>
         public IHost Build()
         {
             if (_hostBuilt)

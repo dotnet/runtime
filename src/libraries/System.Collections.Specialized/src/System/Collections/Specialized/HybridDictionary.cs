@@ -81,9 +81,9 @@ namespace System.Collections.Specialized
                 //   (2) There is writer which is doing ChangeOver. However in that case
                 //       we should see the change to hashtable as well.
                 //       So it should work just fine.
-                else if (key == null)
+                else
                 {
-                    throw new ArgumentNullException(nameof(key));
+                    ArgumentNullException.ThrowIfNull(key);
                 }
                 return null;
             }
@@ -287,9 +287,9 @@ namespace System.Collections.Specialized
             {
                 return cachedList.Contains(key);
             }
-            else if (key == null)
+            else
             {
-                throw new ArgumentNullException(nameof(key));
+                ArgumentNullException.ThrowIfNull(key);
             }
             return false;
         }
@@ -342,9 +342,9 @@ namespace System.Collections.Specialized
             {
                 list.Remove(key);
             }
-            else if (key == null)
+            else
             {
-                throw new ArgumentNullException(nameof(key));
+                ArgumentNullException.ThrowIfNull(key);
             }
         }
     }

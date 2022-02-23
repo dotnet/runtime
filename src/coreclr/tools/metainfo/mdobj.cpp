@@ -57,7 +57,7 @@ static HRESULT FindObjMetaData(PVOID pImage, PVOID *ppMetaData, long *pcbMetaDat
 
 
 // This function returns the address to the MapView of file and file size.
-void GetMapViewOfFile(__in WCHAR *szFile, PBYTE *ppbMap, DWORD *pdwFileSize)
+void GetMapViewOfFile(_In_ WCHAR *szFile, PBYTE *ppbMap, DWORD *pdwFileSize)
 {
     HANDLE      hMapFile;
     DWORD       dwHighSize;
@@ -161,7 +161,7 @@ char *GetNameOfObj(PBYTE pbLongNames, PIMAGE_ARCHIVE_MEMBER_HEADER pMemHdr, char
 //
 // Opens the .LIB file, and displays the metadata in the specified object files.
 
-void DisplayArchive(__in_z __in WCHAR* szFile, ULONG DumpFilter, __in_z __in_opt WCHAR* szObjName, strPassBackFn pDisplayString)
+void DisplayArchive(_In_z_ WCHAR* szFile, ULONG DumpFilter, _In_opt_z_ WCHAR* szObjName, strPassBackFn pDisplayString)
 {
     PBYTE       pbMapAddress;
     PBYTE       pbStartAddress;
@@ -249,7 +249,7 @@ void DisplayArchive(__in_z __in WCHAR* szFile, ULONG DumpFilter, __in_z __in_opt
 // Opens the meta data content of a .EXE, .CLB, .CLASS, .TLB, .DLL or .LIB file, and
 // calls RawDisplay()
 
-void DisplayFile(__in_z __in WCHAR* szFile, BOOL isFile, ULONG DumpFilter, __in_z __in_opt WCHAR* szObjName, strPassBackFn pDisplayString)
+void DisplayFile(_In_z_ WCHAR* szFile, BOOL isFile, ULONG DumpFilter, _In_opt_z_ WCHAR* szObjName, strPassBackFn pDisplayString)
 {
     // Open the emit scope
 

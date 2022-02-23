@@ -71,8 +71,8 @@ namespace System.Text.Json
         /// <remarks>
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WriteNull(string propertyName)
-            => WriteNull((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
+        public void WriteNull(string propertyName!!)
+            => WriteNull(propertyName.AsSpan());
 
         /// <summary>
         /// Writes the property name and the JSON literal "null" as part of a name/value pair of a JSON object.
@@ -163,8 +163,8 @@ namespace System.Text.Json
         /// <remarks>
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WriteBoolean(string propertyName, bool value)
-            => WriteBoolean((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
+        public void WriteBoolean(string propertyName!!, bool value)
+            => WriteBoolean(propertyName.AsSpan(), value);
 
         /// <summary>
         /// Writes the property name and <see cref="bool"/> value (as a JSON literal "true" or "false") as part of a name/value pair of a JSON object.

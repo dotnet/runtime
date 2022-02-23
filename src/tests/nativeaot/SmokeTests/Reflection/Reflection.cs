@@ -27,6 +27,7 @@ internal class ReflectionTest
         //
         // Tests for dependency graph in the compiler
         //
+        TestRunClassConstructor.Run();
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
@@ -59,6 +60,7 @@ internal class ReflectionTest
         TestGetUninitializedObject.Run();
         TestInstanceFields.Run();
         TestReflectionInvoke.Run();
+        TestInvokeMemberParamsCornerCase.Run();
         TestDefaultInterfaceInvoke.Run();
         TestCovariantReturnInvoke.Run();
 #if !CODEGEN_CPP
@@ -261,6 +263,26 @@ internal class ReflectionTest
                     throw new Exception();
             }
 #endif
+        }
+    }
+
+    class TestInvokeMemberParamsCornerCase
+    {
+        public struct MyStruct { }
+
+        public static int Count(params MyStruct[] myStructs)
+        {
+            return myStructs.Length;
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestInvokeMemberParamsCornerCase));
+
+            // Needs MethodTable for MyStruct[] and the compiler should have created it.
+            typeof(TestInvokeMemberParamsCornerCase).InvokeMember(nameof(Count),
+                BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static,
+                null, null, new object[] { default(MyStruct) });
         }
     }
 
@@ -1630,6 +1652,26 @@ internal class ReflectionTest
                 throw new Exception();
 
             if (typeof(TypeWithCodelessMethods).GetMethods(BindingFlags.Public | BindingFlags.Static).Length != 1)
+                throw new Exception();
+        }
+    }
+
+    class TestRunClassConstructor
+    {
+        static class TypeWithNoStaticFieldsButACCtor
+        {
+            static TypeWithNoStaticFieldsButACCtor()
+            {
+                s_cctorRan = true;
+            }
+        }
+
+        private static bool s_cctorRan;
+
+        public static void Run()
+        {
+            RuntimeHelpers.RunClassConstructor(typeof(TypeWithNoStaticFieldsButACCtor).TypeHandle);
+            if (!s_cctorRan)
                 throw new Exception();
         }
     }

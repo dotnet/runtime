@@ -16,7 +16,6 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -303,10 +302,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _SuppressFinalize(object o);
 
-        public static void SuppressFinalize(object obj)
+        public static void SuppressFinalize(object obj!!)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
             _SuppressFinalize(obj);
         }
 
@@ -317,10 +314,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _ReRegisterForFinalize(object o);
 
-        public static void ReRegisterForFinalize(object obj)
+        public static void ReRegisterForFinalize(object obj!!)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
             _ReRegisterForFinalize(obj);
         }
 
@@ -460,19 +455,19 @@ namespace System
         {
             if (totalSize <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(totalSize), "totalSize can't be zero or negative");
+                throw new ArgumentOutOfRangeException(nameof(totalSize), SR.ArgumentOutOfRange_MustBePositive);
             }
 
             if (hasLohSize)
             {
                 if (lohSize <= 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(lohSize), "lohSize can't be zero or negative");
+                    throw new ArgumentOutOfRangeException(nameof(lohSize), SR.ArgumentOutOfRange_MustBePositive);
                 }
 
                 if (lohSize > totalSize)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(lohSize), "lohSize can't be greater than totalSize");
+                    throw new ArgumentOutOfRangeException(nameof(lohSize), SR.ArgumentOutOfRange_NoGCLohSizeGreaterTotalSize);
                 }
             }
 
@@ -482,10 +477,9 @@ namespace System
                 case StartNoGCRegionStatus.NotEnoughMemory:
                     return false;
                 case StartNoGCRegionStatus.AlreadyInProgress:
-                    throw new InvalidOperationException("The NoGCRegion mode was already in progress");
+                    throw new InvalidOperationException(SR.InvalidOperationException_AlreadyInNoGCRegion);
                 case StartNoGCRegionStatus.AmountTooLarge:
-                    throw new ArgumentOutOfRangeException(nameof(totalSize),
-                        "totalSize is too large. For more information about setting the maximum size, see \"Latency Modes\" in https://go.microsoft.com/fwlink/?LinkId=522706");
+                    throw new ArgumentOutOfRangeException(nameof(totalSize), SR.ArgumentOutOfRangeException_NoGCRegionSizeTooLarge);
             }
 
             Debug.Assert(status == StartNoGCRegionStatus.Succeeded);
@@ -516,11 +510,11 @@ namespace System
         {
             EndNoGCRegionStatus status = (EndNoGCRegionStatus)_EndNoGCRegion();
             if (status == EndNoGCRegionStatus.NotInProgress)
-                throw new InvalidOperationException("NoGCRegion mode must be set");
+                throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionNotInProgress);
             else if (status == EndNoGCRegionStatus.GCInduced)
-                throw new InvalidOperationException("Garbage collection was induced in NoGCRegion mode");
+                throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionInduced);
             else if (status == EndNoGCRegionStatus.AllocationExceeded)
-                throw new InvalidOperationException("Allocated memory exceeds specified memory for NoGCRegion mode");
+                throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionAllocationExceeded);
         }
 
         private readonly struct MemoryLoadChangeNotification
@@ -610,10 +604,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(lowMemoryPercent));
             }
-            if (notification == null)
-            {
-                throw new ArgumentNullException(nameof(notification));
-            }
+            ArgumentNullException.ThrowIfNull(notification);
 
             lock (s_notifications)
             {
@@ -626,13 +617,8 @@ namespace System
             }
         }
 
-        internal static void UnregisterMemoryLoadChangeNotification(Action notification)
+        internal static void UnregisterMemoryLoadChangeNotification(Action notification!!)
         {
-            if (notification == null)
-            {
-                throw new ArgumentNullException(nameof(notification));
-            }
-
             lock (s_notifications)
             {
                 for (int i = 0; i < s_notifications.Count; ++i)

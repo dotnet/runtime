@@ -45,7 +45,7 @@ namespace System.Threading
         {
             Debug.Assert(timeoutMs >= -1);
 
-            bool success = Interop.Kernel32.GetQueuedCompletionStatus(_completionPort, out int numberOfBytes, out UIntPtr completionKey, out IntPtr pointerToOverlapped, timeoutMs);
+            bool success = Interop.Kernel32.GetQueuedCompletionStatus(_completionPort, out _, out _, out _, timeoutMs);
             Debug.Assert(success || (Marshal.GetLastPInvokeError() == WaitHandle.WaitTimeout));
             return success;
         }

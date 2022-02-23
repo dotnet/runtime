@@ -4,3 +4,6 @@ let ENVIRONMENT_IS_GLOBAL = typeof globalThis.Module === "object" && globalThis.
 if (ENVIRONMENT_IS_GLOBAL) {
     createDotnetRuntime(() => { return globalThis.Module; }).then((exports) => exports);
 }
+else if (typeof globalThis.__onDotnetRuntimeLoaded === "function") {
+    globalThis.__onDotnetRuntimeLoaded(createDotnetRuntime);
+}

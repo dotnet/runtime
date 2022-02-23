@@ -81,7 +81,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		else
 			opcode = OP_ADDCC;
 		EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
-		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
+		MONO_EMIT_NEW_COND_EXC (cfg, OV, ins->inst_exc_name);
 		NULLIFY_INS (ins);
 		break;
 	}
@@ -95,7 +95,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		else
 			opcode = OP_ADDCC;
 		EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
-		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
+		MONO_EMIT_NEW_COND_EXC (cfg, C, ins->inst_exc_name);
 		NULLIFY_INS (ins);
 		break;
 	}
@@ -110,7 +110,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		else
 			opcode = OP_SUBCC;
 		EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
-		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
+		MONO_EMIT_NEW_COND_EXC (cfg, OV, ins->inst_exc_name);
 		NULLIFY_INS (ins);
 		break;
 	}
@@ -124,12 +124,12 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		else
 			opcode = OP_SUBCC;
 		EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
-		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
+		MONO_EMIT_NEW_COND_EXC (cfg, C, ins->inst_exc_name);
 		NULLIFY_INS (ins);
 		break;
 	}
 #endif
-		
+
 	case OP_ICONV_TO_OVF_I8:
 	case OP_ICONV_TO_OVF_I:
 		ins->opcode = OP_SEXT_I4;
@@ -310,7 +310,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	mono_arch_decompose_opts (cfg, ins);
 
 	/*
-	 * The code below assumes that we are called immediately after emitting 
+	 * The code below assumes that we are called immediately after emitting
 	 * ins. This means we can emit code using the normal code generation
 	 * macros.
 	 */
@@ -327,7 +327,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		if (COMPILE_LLVM (cfg))
 			break;
 		ins->opcode = OP_IADDCC;
-		MONO_EMIT_NEW_COND_EXC (cfg, IC, "OverflowException");
+		MONO_EMIT_NEW_COND_EXC (cfg, IC, ins->inst_exc_name);
 		break;
 	case OP_ISUB_OVF:
 		if (COMPILE_LLVM (cfg))
@@ -600,7 +600,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 	 */
 
 	/**
-	 * Create a dummy bblock and emit code into it so we can use the normal 
+	 * Create a dummy bblock and emit code into it so we can use the normal
 	 * code generation macros.
 	 */
 	cfg->cbb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
@@ -859,25 +859,25 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				/* ADC sets the condition code */
 				MONO_EMIT_NEW_BIALU (cfg, OP_IADDCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
 				MONO_EMIT_NEW_BIALU (cfg, OP_IADC, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
-				MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
+				MONO_EMIT_NEW_COND_EXC (cfg, OV, tree->inst_exc_name);
 				break;
 			case OP_LADD_OVF_UN:
 				/* ADC sets the condition code */
 				MONO_EMIT_NEW_BIALU (cfg, OP_IADDCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
 				MONO_EMIT_NEW_BIALU (cfg, OP_IADC, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
-				MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
+				MONO_EMIT_NEW_COND_EXC (cfg, C, tree->inst_exc_name);
 				break;
 			case OP_LSUB_OVF:
 				/* SBB sets the condition code */
 				MONO_EMIT_NEW_BIALU (cfg, OP_ISUBCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
 				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
-				MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
+				MONO_EMIT_NEW_COND_EXC (cfg, OV, tree->inst_exc_name);
 				break;
 			case OP_LSUB_OVF_UN:
 				/* SBB sets the condition code */
 				MONO_EMIT_NEW_BIALU (cfg, OP_ISUBCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
 				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
-				MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
+				MONO_EMIT_NEW_COND_EXC (cfg, C, tree->inst_exc_name);
 				break;
 			case OP_LAND:
 				MONO_EMIT_NEW_BIALU (cfg, OP_IAND, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
@@ -980,7 +980,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 					break;
 				case OP_LCEQ: {
 					int d1, d2;
-	
+
 					/* Branchless version based on gcc code */
 					d1 = alloc_ireg (cfg);
 					d2 = alloc_ireg (cfg);
@@ -998,7 +998,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				case OP_LCGT:
 				case OP_LCGT_UN: {
 					MonoBasicBlock *set_to_0, *set_to_1;
-	
+
 					NEW_BBLOCK (cfg, set_to_0);
 					NEW_BBLOCK (cfg, set_to_1);
 
@@ -1013,7 +1013,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 					MONO_EMIT_NEW_ICONST (cfg, next->dreg, 1);
 					MONO_START_BB (cfg, set_to_0);
 					NULLIFY_INS (next);
-					break;	
+					break;
 				}
 				default:
 					g_assert_not_reached ();
@@ -1067,7 +1067,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 					break;
 				case OP_LCEQ: {
 					int d1, d2;
-	
+
 					/* Branchless version based on gcc code */
 					d1 = alloc_ireg (cfg);
 					d2 = alloc_ireg (cfg);
@@ -1085,7 +1085,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				case OP_LCGT:
 				case OP_LCGT_UN: {
 					MonoBasicBlock *set_to_0, *set_to_1;
-	
+
 					NEW_BBLOCK (cfg, set_to_0);
 					NEW_BBLOCK (cfg, set_to_1);
 
@@ -1100,7 +1100,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 					MONO_EMIT_NEW_ICONST (cfg, next->dreg, 1);
 					MONO_START_BB (cfg, set_to_0);
 					NULLIFY_INS (next);
-					break;	
+					break;
 				}
 				default:
 					g_assert_not_reached ();
@@ -1161,23 +1161,23 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 	 *   everywhere.
 	 * - it gets rid of the LDADDR opcodes generated when vtype operations are decomposed,
 	 *   enabling optimizations to work on vtypes too.
-	 * Unlike decompose_long_opts, this pass does not alter the CFG of the method so it 
+	 * Unlike decompose_long_opts, this pass does not alter the CFG of the method so it
 	 * can be executed anytime. It should be executed as late as possible so vtype
 	 * opcodes can be optimized by the other passes.
 	 * The pinvoke wrappers need to manipulate vtypes in their unmanaged representation.
-	 * This is indicated by setting the 'backend.is_pinvoke' field of the MonoInst for the 
+	 * This is indicated by setting the 'backend.is_pinvoke' field of the MonoInst for the
 	 * var to 1.
-	 * This is done on demand, ie. by the LDNATIVEOBJ opcode, and propagated by this pass 
+	 * This is done on demand, ie. by the LDNATIVEOBJ opcode, and propagated by this pass
 	 * when OP_VMOVE opcodes are decomposed.
 	 */
 
-	/* 
+	/*
 	 * Vregs have no associated type information, so we store the type of the vregs
 	 * in ins->klass.
 	 */
 
 	/**
-	 * Create a dummy bblock and emit code into it so we can use the normal 
+	 * Create a dummy bblock and emit code into it so we can use the normal
 	 * code generation macros.
 	 */
 	cfg->cbb = (MonoBasicBlock *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
@@ -1238,11 +1238,11 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 					EMIT_NEW_VARLOADA_VREG (cfg, dest, ins->dreg, m_class_get_byval_arg (ins->klass));
 
 					mini_emit_initobj (cfg, dest, NULL, ins->klass);
-					
+
 					if (cfg->compute_gc_maps) {
 						MonoInst *tmp;
 
-						/* 
+						/*
 						 * Tell the GC map code that the vtype is considered live after
 						 * the initialization.
 						 */
@@ -1445,8 +1445,11 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 						src->klass = ins->klass;
 						src->dreg = ins->sreg1;
 					}
+
+					cfg->disable_inline_rgctx_fetch = TRUE;
 					MonoInst *tmp = mini_emit_box (cfg, src, ins->klass, mini_class_check_context_used (cfg, ins->klass));
 					g_assert (tmp);
+					cfg->disable_inline_rgctx_fetch = FALSE;
 
 					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, tmp->dreg);
 
@@ -1488,12 +1491,12 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 	MonoBasicBlock *bb, *first_bb;
 
 	/*
-	 * Unlike decompose_long_opts, this pass does not alter the CFG of the method so it 
+	 * Unlike decompose_long_opts, this pass does not alter the CFG of the method so it
 	 * can be executed anytime. It should be run before decompose_long
 	 */
 
 	/**
-	 * Create a dummy bblock and emit code into it so we can use the normal 
+	 * Create a dummy bblock and emit code into it so we can use the normal
 	 * code generation macros.
 	 */
 	cfg->cbb = (MonoBasicBlock *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
@@ -1625,7 +1628,7 @@ mono_decompose_soft_float (MonoCompile *cfg)
 	 */
 
 	/**
-	 * Create a dummy bblock and emit code into it so we can use the normal 
+	 * Create a dummy bblock and emit code into it so we can use the normal
 	 * code generation macros.
 	 */
 	cfg->cbb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
@@ -1714,7 +1717,7 @@ mono_decompose_soft_float (MonoCompile *cfg)
 					conv = mono_emit_jit_icall (cfg, mono_fload_r4, iargs);
 					conv->dreg = ins->dreg;
 					break;
-				}					
+				}
 				case OP_FCALL:
 				case OP_FCALL_REG:
 				case OP_FCALL_MEMBASE: {
@@ -1806,7 +1809,7 @@ mono_decompose_soft_float (MonoCompile *cfg)
 					cmp->sreg1 = call->dreg;
 					cmp->inst_imm = 0;
 					MONO_ADD_INS (cfg->cbb, cmp);
-					
+
 					MONO_INST_NEW (cfg, br, OP_IBNE_UN);
 					br->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof (gpointer) * 2);
 					br->inst_true_bb = ins->next->inst_true_bb;

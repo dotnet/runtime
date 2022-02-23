@@ -178,10 +178,10 @@ namespace System.Diagnostics
         internal ProcessModule() { }
         public System.IntPtr BaseAddress { get { throw null; } }
         public System.IntPtr EntryPointAddress { get { throw null; } }
-        public string? FileName { get { throw null; } }
+        public string FileName { get { throw null; } }
         public System.Diagnostics.FileVersionInfo FileVersionInfo { get { throw null; } }
         public int ModuleMemorySize { get { throw null; } }
-        public string? ModuleName { get { throw null; } }
+        public string ModuleName { get { throw null; } }
         public override string ToString() { throw null; }
     }
     public partial class ProcessModuleCollection : System.Collections.ReadOnlyCollectionBase

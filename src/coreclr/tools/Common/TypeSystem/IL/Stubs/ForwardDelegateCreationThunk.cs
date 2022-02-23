@@ -75,6 +75,14 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return "ForwardDelegateCreationStub__" + DelegateType.DiagnosticName;
+            }
+        }
+
         /// <summary>
         /// This thunk creates a delegate from a native function pointer
         /// by first creating a PInvokeDelegateWrapper from the function pointer

@@ -37,14 +37,9 @@ namespace System.IO.Pipes
             {
                 throw new NotSupportedException(SR.NotSupported_AnonymousPipeUnidirectional);
             }
-            if (serverSafePipeHandle == null)
-            {
-                throw new ArgumentNullException(nameof(serverSafePipeHandle));
-            }
-            if (clientSafePipeHandle == null)
-            {
-                throw new ArgumentNullException(nameof(clientSafePipeHandle));
-            }
+            ArgumentNullException.ThrowIfNull(serverSafePipeHandle);
+            ArgumentNullException.ThrowIfNull(clientSafePipeHandle);
+
             if (serverSafePipeHandle.IsInvalid)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(serverSafePipeHandle));

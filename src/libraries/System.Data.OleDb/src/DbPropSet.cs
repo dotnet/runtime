@@ -99,10 +99,9 @@ namespace System.Data.OleDb
         private void SetLastErrorInfo(OleDbHResult lastErrorHr)
         {
             // note: OleDbHResult is actually a simple wrapper over HRESULT with OLEDB-specific codes
-            UnsafeNativeMethods.IErrorInfo? errorInfo = null;
             string message = string.Empty;
 
-            OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
+            OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, out UnsafeNativeMethods.IErrorInfo? errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((errorInfoHr == OleDbHResult.S_OK) && (errorInfo != null))
             {
                 try

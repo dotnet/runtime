@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Authz
     {
-        [GeneratedDllImport(Libraries.Authz, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Authz, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial bool AuthzInitializeResourceManager(
             int flags,
             IntPtr pfnAccessCheck,

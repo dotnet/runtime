@@ -24,10 +24,10 @@ struct ParamDescriptor
 };
 
 char* DumpMarshaling(IMDInternalImport* pImport,
-                     __inout_ecount(cchszString) char* szString,
+                     _Inout_updates_(cchszString) char* szString,
                      DWORD cchszString,
                      mdToken tok);
-char* DumpParamAttr(__inout_ecount(cchszString) char* szString,
+char* DumpParamAttr(_Inout_updates_(cchszString) char* szString,
                     DWORD cchszString,
                     DWORD dwAttr);
 
@@ -41,7 +41,7 @@ const char* PrettyPrintSig(
     const char* name,                   // can be "", the name of the method for this sig 0 means local var sig
     CQuickBytes *out,                   // where to put the pretty printed string
     IMDInternalImport *pIMDI,           // ptr to IMDInternalImport class with ComSig
-    __in_opt const char* inlabel,			// prefix for names (NULL if no names required)
+    _In_opt_ const char* inlabel,			// prefix for names (NULL if no names required)
     BOOL printTyArity=FALSE);           // flag to print Type Param number (MemberRefs only)
 
 PCCOR_SIGNATURE PrettyPrintType(
@@ -68,14 +68,14 @@ const char* PrettyPrintClass(
 
 bool IsNameToQuote(const char *name);
 bool IsLocalToQuote(const char *name);
-const char* UnquotedProperName(__in __nullterminated const char* name, unsigned len=(unsigned)-1);
-const char* ProperName(__in __nullterminated const char* name, bool isLocalName = false);
+const char* UnquotedProperName(_In_ __nullterminated const char* name, unsigned len=(unsigned)-1);
+const char* ProperName(_In_ __nullterminated const char* name, bool isLocalName = false);
 #define ProperLocalName(x) ProperName(x, true)
-const char* KEYWORD(__in_opt __nullterminated const char* szOrig);
-const char* COMMENT(__in_opt __nullterminated const char* szOrig);
-const char* ERRORMSG(__in_opt __nullterminated const char* szOrig);
-const char* ANCHORPT(__in __nullterminated const char* szOrig, mdToken tk);
-const char* JUMPPT(__in __nullterminated const char* szOrig, mdToken tk);
+const char* KEYWORD(_In_opt_z_ const char* szOrig);
+const char* COMMENT(_In_opt_z_ const char* szOrig);
+const char* ERRORMSG(_In_opt_z_ const char* szOrig);
+const char* ANCHORPT(_In_ __nullterminated const char* szOrig, mdToken tk);
+const char* JUMPPT(_In_ __nullterminated const char* szOrig, mdToken tk);
 const char* SCOPE(void);
 const char* UNSCOPE(void);
 const char* LTN(void);

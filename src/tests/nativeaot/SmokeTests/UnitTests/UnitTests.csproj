@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- There's just too many of these warnings -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <NoWarn>$(NoWarn);IL3050;IL3054</NoWarn>
+
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BasicThreading.cs" />
+    <Compile Include="Delegates.cs" />
+    <Compile Include="Generics.cs" />
+    <Compile Include="Interfaces.cs" />
+    <Compile Include="Threading.cs" />
+    <Compile Include="Main.cs" />
+  </ItemGroup>
+</Project>

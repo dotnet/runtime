@@ -97,7 +97,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         }
                         Type? baseType = walk.BaseType;
                         if (baseType == null)
-                            throw new CustomAttributeFormatException(SR.Format(SR.CustomAttributeFormat_InvalidFieldFail, name));
+                            throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidFieldFail, name));
                         walk = baseType;
                     }
                 }
@@ -114,7 +114,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         }
                         Type? baseType = walk.BaseType;
                         if (baseType == null)
-                            throw new CustomAttributeFormatException(SR.Format(SR.CustomAttributeFormat_InvalidPropertyFail, name));
+                            throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
                         walk = baseType;
                     }
                 }

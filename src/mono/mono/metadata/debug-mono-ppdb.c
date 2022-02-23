@@ -29,10 +29,12 @@
 #include <mono/utils/bsearch.h>
 #include <mono/utils/mono-logger-internals.h>
 
-#if HOST_WIN32 || HOST_WASM
+#ifndef DISABLE_EMBEDDED_PDB
+#ifdef INTERNAL_ZLIB
 #include <external/zlib/zlib.h>
-#elif HAVE_SYS_ZLIB
+#else
 #include <zlib.h>
+#endif
 #endif
 
 #include "debug-mono-ppdb.h"
@@ -162,7 +164,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		return NULL;
 	}
 
-#if HOST_WIN32 || HOST_WASM || HAVE_SYS_ZLIB
+#ifndef DISABLE_EMBEDDED_PDB
 	if (ppdb_data) {
 		/* Embedded PPDB data */
 		/* ppdb_size is the uncompressed size */

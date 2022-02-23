@@ -66,7 +66,7 @@ mono_cross_helpers_run (void)
 	if (g_hasenv ("DUMP_CROSS_OFFSETS"))
 		mono_dump_jit_offsets ();
 #endif
-	
+
 #if defined (HAS_CROSS_COMPILER_OFFSETS) && !defined (MONO_CROSS_COMPILE)
 	mono_metadata_cross_helpers_run ();
 

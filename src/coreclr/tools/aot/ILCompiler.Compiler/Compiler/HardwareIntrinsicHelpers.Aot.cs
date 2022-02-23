@@ -95,6 +95,7 @@ namespace ILCompiler
             public const int Bmi1 = 0x0400;
             public const int Bmi2 = 0x0800;
             public const int Lzcnt = 0x1000;
+            public const int AvxVnni = 0x2000;
 
             public static int FromHardwareIntrinsicId(string id)
             {
@@ -113,6 +114,7 @@ namespace ILCompiler
                     "Bmi1" => Bmi1,
                     "Bmi2" => Bmi2,
                     "Lzcnt" => Lzcnt,
+                    "AvxVnni" => AvxVnni,
                     _ => throw new NotSupportedException(),
                 };
             }
@@ -155,6 +157,8 @@ namespace ILCompiler
                         InstructionSet.X64_BMI2_X64 => Bmi2,
                         InstructionSet.X64_LZCNT => Lzcnt,
                         InstructionSet.X64_LZCNT_X64 => Popcnt,
+                        InstructionSet.X64_AVXVNNI => AvxVnni,
+                        InstructionSet.X64_AVXVNNI_X64 => AvxVnni,
 
                         // SSE and SSE2 are baseline ISAs - they're always available
                         InstructionSet.X64_SSE => 0,

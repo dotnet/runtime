@@ -60,7 +60,7 @@ namespace System.Net.Http.Unit.Tests.HPack
             FillAvailableSpaceWithOnes(buffer);
             string[] headerValues = Array.Empty<string>();
 
-            foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
+            foreach (HeaderEntry header in headers.GetEntries())
             {
                 int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref headerValues);
                 Assert.InRange(headerValuesCount, 0, int.MaxValue);

@@ -70,7 +70,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                object? value = null;
+                object? value;
                 if (IsOpen)
                 {
                     value = GetDataSourceValue(OleDbPropertySetGuid.DBInit, ODB.DBPROP_INIT_TIMEOUT);
@@ -583,8 +583,7 @@ namespace System.Data.OleDb
 
             // ErrorInfo object is to be checked regardless the hresult returned by the function called
             Exception? e = null;
-            UnsafeNativeMethods.IErrorInfo? errorInfo = null;
-            OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
+            OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, out UnsafeNativeMethods.IErrorInfo? errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((OleDbHResult.S_OK == hr) && (null != errorInfo))
             {
                 try

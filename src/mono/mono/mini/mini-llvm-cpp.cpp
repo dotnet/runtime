@@ -105,7 +105,7 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, LLVMValueRef Arr
 	auto sz = unwrap (ArraySize);
 	auto b = unwrap (builder);
 	auto ins = alignment > 0
-		? b->Insert (new AllocaInst (ty, 0, sz, to_align (alignment), Name))
+		? b->Insert (new AllocaInst (ty, 0, sz, to_align (alignment)), Name)
 		: b->CreateAlloca (ty, 0, sz, Name);
 	return wrap (ins);
 }

@@ -85,8 +85,8 @@ public static partial class DataContractSerializerTests
     [Fact]
     public static void DCS_CharAsRoot()
     {
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<char>(char.MinValue, @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</char>"), char.MinValue);
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<char>(char.MaxValue, @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">65535</char>"), char.MaxValue);
+        Assert.StrictEqual(char.MinValue, DataContractSerializerHelper.SerializeAndDeserialize<char>(char.MinValue, @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</char>"));
+        Assert.StrictEqual(char.MaxValue, DataContractSerializerHelper.SerializeAndDeserialize<char>(char.MaxValue, @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">65535</char>"));
         Assert.StrictEqual('a', DataContractSerializerHelper.SerializeAndDeserialize<char>('a', @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">97</char>"));
         Assert.StrictEqual('\u00F1', DataContractSerializerHelper.SerializeAndDeserialize<char>('\u00F1', @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">241</char>"));
         Assert.StrictEqual('\u6F22', DataContractSerializerHelper.SerializeAndDeserialize<char>('\u6F22', @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">28450</char>"));
@@ -96,8 +96,8 @@ public static partial class DataContractSerializerTests
     public static void DCS_ByteAsRoot()
     {
         Assert.StrictEqual(10, DataContractSerializerHelper.SerializeAndDeserialize<byte>(10, @"<unsignedByte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">10</unsignedByte>"));
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<byte>(byte.MinValue, @"<unsignedByte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</unsignedByte>"), byte.MinValue);
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<byte>(byte.MaxValue, @"<unsignedByte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">255</unsignedByte>"), byte.MaxValue);
+        Assert.StrictEqual(byte.MinValue, DataContractSerializerHelper.SerializeAndDeserialize<byte>(byte.MinValue, @"<unsignedByte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</unsignedByte>"));
+        Assert.StrictEqual(byte.MaxValue, DataContractSerializerHelper.SerializeAndDeserialize<byte>(byte.MaxValue, @"<unsignedByte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">255</unsignedByte>"));
     }
 
     [Fact]
@@ -124,26 +124,26 @@ public static partial class DataContractSerializerTests
     [Fact]
     public static void DCS_DoubleAsRoot()
     {
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<double>(-1.2, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-1.2</double>"), -1.2);
+        Assert.StrictEqual(-1.2, DataContractSerializerHelper.SerializeAndDeserialize<double>(-1.2, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-1.2</double>"));
         Assert.StrictEqual(0, DataContractSerializerHelper.SerializeAndDeserialize<double>(0, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</double>"));
         Assert.StrictEqual(2.3, DataContractSerializerHelper.SerializeAndDeserialize<double>(2.3, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2.3</double>"));
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<double>(double.MinValue, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-1.7976931348623157E+308</double>"), double.MinValue);
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<double>(double.MaxValue, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">1.7976931348623157E+308</double>"), double.MaxValue);
+        Assert.StrictEqual(double.MinValue, DataContractSerializerHelper.SerializeAndDeserialize<double>(double.MinValue, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-1.7976931348623157E+308</double>"));
+        Assert.StrictEqual(double.MaxValue, DataContractSerializerHelper.SerializeAndDeserialize<double>(double.MaxValue, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">1.7976931348623157E+308</double>"));
     }
 
     [Fact]
     public static void DCS_FloatAsRoot()
     {
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<float>((float)-1.2, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-1.2</float>"), (float)-1.2);
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<float>((float)0, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</float>"), (float)0);
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<float>((float)2.3, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2.3</float>"), (float)2.3);
+        Assert.StrictEqual((float)-1.2, DataContractSerializerHelper.SerializeAndDeserialize<float>((float)-1.2, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-1.2</float>"));
+        Assert.StrictEqual((float)0, DataContractSerializerHelper.SerializeAndDeserialize<float>((float)0, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</float>"));
+        Assert.StrictEqual((float)2.3, DataContractSerializerHelper.SerializeAndDeserialize<float>((float)2.3, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2.3</float>"));
     }
 
     [Fact]
     public static void DCS_FloatAsRoot_NotNetFramework()
     {
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<float>(float.MinValue, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-3.4028235E+38</float>"), float.MinValue);
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<float>(float.MaxValue, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">3.4028235E+38</float>"), float.MaxValue);
+        Assert.StrictEqual(float.MinValue, DataContractSerializerHelper.SerializeAndDeserialize<float>(float.MinValue, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-3.4028235E+38</float>"));
+        Assert.StrictEqual(float.MaxValue, DataContractSerializerHelper.SerializeAndDeserialize<float>(float.MaxValue, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">3.4028235E+38</float>"));
     }
 
     [Fact]

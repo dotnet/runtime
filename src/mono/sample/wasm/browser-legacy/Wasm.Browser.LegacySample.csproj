@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration>Debug</Configuration>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>main.js</WasmMainJSPath>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
     <WasmDebugLevel>1</WasmDebugLevel>
-    <WasmBuildNative>true</WasmBuildNative>
+    <WasmEnableES6>false</WasmEnableES6>
+    <RunAOTCompilation>false</RunAOTCompilation>
   </PropertyGroup>
 
   <ItemGroup>

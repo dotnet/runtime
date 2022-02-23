@@ -297,6 +297,32 @@ namespace System.Text.RegularExpressions.Tests
 
                     yield return new object[]
                     {
+                            engine,
+                            @"(?(\w+)\w+|)", "abcd", RegexOptions.None,
+                            new CaptureData[]
+                            {
+                                new CaptureData("abcd", 0, 4),
+                                new CaptureData("", 4, 0),
+                            }
+                    };
+
+                    if (!PlatformDetection.IsNetFramework)
+                    {
+                        // .NET Framework has some behavioral inconsistencies when there's no else branch.
+                        yield return new object[]
+                        {
+                            engine,
+                            @"(?(\w+)\w+)", "abcd", RegexOptions.None,
+                            new CaptureData[]
+                            {
+                                new CaptureData("abcd", 0, 4),
+                                new CaptureData("", 4, 0),
+                            }
+                        };
+                    }
+
+                    yield return new object[]
+                    {
                         engine,
                         @"^.*$", "abc\ndefg\n\nhijkl\n", RegexOptions.Multiline | RegexOptions.RightToLeft,
                         new[]

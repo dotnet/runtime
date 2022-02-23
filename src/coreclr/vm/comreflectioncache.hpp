@@ -233,7 +233,7 @@ struct DispIDCacheElement
         pMT = var.pMT;
         strNameLength = var.strNameLength;
         lcid = var.lcid;
-        wcscpy_s (strName, COUNTOF(strName), var.strName);
+        wcscpy_s (strName, ARRAY_SIZE(strName), var.strName);
         return *this;
     }
 

@@ -22,15 +22,11 @@
 }
 .assembly 'int32_neg_range'
 {
-
-
-  
-  
 }
 .assembly extern xunit.core {}
 .namespace JitTest
 {
-  .class private auto ansi Test
+  .class public auto ansi Int32_Neg_Range
          extends [mscorlib]System.Object
   {
     .method private hidebysig static int32 
@@ -92,7 +88,7 @@
       ret
     } // end of method 'Test::try_index'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -141,61 +137,61 @@
       			ldloc.0
       			ldc.i4		-800000
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[-80005...-80000], int32, int32)
+      			call		int32 JitTest.Int32_Neg_Range::try_index(int32[-80005...-80000], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		-80006
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[-80005...-80000], int32, int32)
+      			call		int32 JitTest.Int32_Neg_Range::try_index(int32[-80005...-80000], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		-80005
       			ldc.i4.1
-      			call		int32 JitTest.Test::try_index(int32[-80005...-80000], int32, int32)
+      			call		int32 JitTest.Int32_Neg_Range::try_index(int32[-80005...-80000], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		-80000
       			ldc.i4.1
-      			call		int32 JitTest.Test::try_index(int32[-80005...-80000], int32, int32)
+      			call		int32 JitTest.Int32_Neg_Range::try_index(int32[-80005...-80000], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		-79999
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[-80005...-80000], int32, int32)
+      			call		int32 JitTest.Int32_Neg_Range::try_index(int32[-80005...-80000], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		-1
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[-80005...-80000], int32, int32)
+      			call		int32 JitTest.Int32_Neg_Range::try_index(int32[-80005...-80000], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		0
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[-80005...-80000], int32, int32)
+      			call		int32 JitTest.Int32_Neg_Range::try_index(int32[-80005...-80000], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		0xfffffeff
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[-80005...-80000], int32, int32)
+      			call		int32 JitTest.Int32_Neg_Range::try_index(int32[-80005...-80000], int32, int32)
       			brfalse		Failure
 
       			ldloc.0
       			ldc.i4		0x7ffffeff
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[-80005...-80000], int32, int32)
+      			call		int32 JitTest.Int32_Neg_Range::try_index(int32[-80005...-80000], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		7000000
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[-80005...-80000], int32, int32)
+      			call		int32 JitTest.Int32_Neg_Range::try_index(int32[-80005...-80000], int32, int32)
       			brfalse		Failure
       			
       			ldc.i4    0x64

@@ -10,7 +10,7 @@ public static class OptionsHelper
     private const string PriorityOption = "build_property.Priority";
     private const string RuntimeFlavorOption = "build_property.RuntimeFlavor";
     private const string IsOutOfProcessTestAssemblyOption = "build_metadata.AdditionalFiles.IsOutOfProcessTestAssembly";
-    private const string TestFilterOption = "build_metadata.AdditionalFiles.TestFilter";
+    private const string TestFilterOption = "build_property.TestFilter";
     private const string TestAssemblyRelativePathOption = "build_metadata.AdditionalFiles.TestAssemblyRelativePath";
     private const string TestDisplayNameOption = "build_metadata.AdditionalFiles.TestDisplayName";
     private const string SingleTestDisplayNameOption = "build_metadata.AdditionalFiles.SingleTestDisplayName";

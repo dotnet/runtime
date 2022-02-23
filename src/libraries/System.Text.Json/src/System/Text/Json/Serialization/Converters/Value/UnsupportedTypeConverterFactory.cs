@@ -23,6 +23,8 @@ namespace System.Text.Json.Serialization.Converters
                 type == typeof(SerializationInfo) ||
                 type == typeof(IntPtr) ||
                 type == typeof(UIntPtr) ||
+                // Exlude delegates.
+                typeof(Delegate).IsAssignableFrom(type) ||
                 // DateOnly/TimeOnly support to be added in future releases;
                 // guard against invalid object-based serializations for now.
                 // cf. https://github.com/dotnet/runtime/issues/53539

@@ -84,9 +84,9 @@ mono_close_pipe (int p [2])
 
 #if defined(__APPLE__)
 #if defined (TARGET_OSX)
-/* Apple defines this in crt_externs.h but doesn't provide that header for 
+/* Apple defines this in crt_externs.h but doesn't provide that header for
  * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
- * in fact exist on all implementations (so far) 
+ * in fact exist on all implementations (so far)
  */
 G_BEGIN_DECLS
 gchar ***_NSGetEnviron(void);
@@ -131,12 +131,12 @@ read_pipes (int outfd, gchar **out_str, int errfd, gchar **err_str, GError **ger
 	if (out_str) {
 		*out_str = NULL;
 		out = g_string_new ("");
-	}	
+	}
 
 	if (err_str) {
 		*err_str = NULL;
 		err = g_string_new ("");
-	}	
+	}
 
 	do {
 		if (out_closed && err_closed)
@@ -208,18 +208,18 @@ write_all (int fd, const void *vbuf, size_t n)
 	const char *buf = (const char *) vbuf;
 	size_t nwritten = 0;
 	int w;
-	
+
 	do {
 		do {
 			w = write (fd, buf + nwritten, n - nwritten);
 		} while (w == -1 && errno == EINTR);
-		
+
 		if (w == -1)
 			return -1;
-		
+
 		nwritten += w;
 	} while (nwritten < n);
-	
+
 	return nwritten;
 }
 
@@ -264,7 +264,7 @@ g_spawn_command_line_sync (const gchar *command_line,
 	int stderr_pipe [2] = { -1, -1 };
 	int status;
 	int res;
-	
+
 	if (!g_shell_parse_argv (command_line, &argc, &argv, gerror))
 		return FALSE;
 

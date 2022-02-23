@@ -22,6 +22,7 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_Bmi1 = 0x0400,
     XArchIntrinsicConstants_Bmi2 = 0x0800,
     XArchIntrinsicConstants_Lzcnt = 0x1000,
+    XArchIntrinsicConstants_AvxVnni = 0x2000,
 };
 #endif //HOST_X86 || HOST_AMD64
 

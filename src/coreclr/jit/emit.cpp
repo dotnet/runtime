@@ -1454,9 +1454,10 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     assert(IsCodeAligned(emitCurIGsize));
 
-    /* Make sure we have enough space for the new instruction */
+    // Make sure we have enough space for the new instruction.
+    // `igInsCnt` is currently a byte, so we can't have more than 255 instructions in a single insGroup.
 
-    if ((emitCurIGfreeNext + sz >= emitCurIGfreeEndp) || emitForceNewIG)
+    if ((emitCurIGfreeNext + sz >= emitCurIGfreeEndp) || emitForceNewIG || (emitCurIGinsCnt >= 255))
     {
         emitNxtIG(true);
     }
@@ -2507,6 +2508,8 @@ bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
 
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
+
+        case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             return true;
 
         default:
@@ -2738,13 +2741,29 @@ void emitter::emitSplit(emitLocation*         startLoc,
                 reportCandidate = false;
             }
 
+            // Don't report a zero-size candidate. This will only occur in a stress mode with JitSplitFunctionSize
+            // set to something small, and a zero-sized IG (possibly inserted for use by the alignment code). Normally,
+            // the split size will be much larger than the maximum size of an instruction group. The invariant we want
+            // to maintain is that each fragment contains a non-zero amount of code.
+            if (reportCandidate && (candidateSize == 0))
+            {
+#ifdef DEBUG
+                if (EMITVERBOSE)
+                    printf("emitSplit: can't split at IG%02u; zero-sized candidate\n", igLastCandidate->igNum);
+#endif
+                reportCandidate = false;
+            }
+
             // Report it!
             if (reportCandidate)
             {
 #ifdef DEBUG
-                if (EMITVERBOSE && (candidateSize >= maxSplitSize))
-                    printf("emitSplit: split at IG%02u is size %d, larger than requested maximum size of %d\n",
-                           igLastCandidate->igNum, candidateSize, maxSplitSize);
+                if (EMITVERBOSE)
+                {
+                    printf("emitSplit: split at IG%02u is size %d, %s than requested maximum size of %d\n",
+                           igLastCandidate->igNum, candidateSize, (candidateSize >= maxSplitSize) ? "larger" : "less",
+                           maxSplitSize);
+                }
 #endif
 
                 // hand memory ownership to the callback function
@@ -9306,6 +9325,10 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             result = RBM_INIT_PINVOKE_FRAME_TRASH;
             break;
 #endif // defined(TARGET_X86)
+
+        case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+            result = RBM_VALIDATE_INDIRECT_CALL_TRASH;
+            break;
 
         default:
             result = RBM_CALLEE_TRASH_NOGC;

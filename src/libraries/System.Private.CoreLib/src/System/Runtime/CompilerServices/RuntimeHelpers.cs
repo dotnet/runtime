@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Reflection;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -66,13 +64,8 @@ namespace System.Runtime.CompilerServices
         }
 
         [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object? userData)
+        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code!!, CleanupCode backoutCode!!, object? userData)
         {
-            if (code == null)
-                throw new ArgumentNullException(nameof(code));
-            if (backoutCode == null)
-                throw new ArgumentNullException(nameof(backoutCode));
-
             bool exceptionThrown = true;
 
             try
@@ -114,8 +107,22 @@ namespace System.Runtime.CompilerServices
         /// <param name="fldHandle">A field handle that specifies the location of the data to be referred to by the ReadOnlySpan{T}. The Rva of the field must be aligned on a natural boundary of type T</param>
         /// <returns>A ReadOnlySpan{T} of the data stored in the field</returns>
         /// <exception cref="ArgumentException"><paramref name="fldHandle"/> does not refer to a field which is an Rva, is misaligned, or T is of an invalid type.</exception>
-        /// <remarks>This method is intended for compiler user rather than use directly in code. T must be one of byte, sbyte, char, short, ushort, int, long, ulong, float, or double.</remarks>
+        /// <remarks>This method is intended for compiler use rather than use directly in code. T must be one of byte, sbyte, char, short, ushort, int, long, ulong, float, or double.</remarks>
         [Intrinsic]
         public static unsafe ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle) => new ReadOnlySpan<T>(GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length), length);
+
+
+        // The following intrinsics return true if input is a compile-time constant
+        // Feel free to add more overloads on demand
+#pragma warning disable IDE0060
+        [Intrinsic]
+        internal static bool IsKnownConstant(string? t) => false;
+
+        [Intrinsic]
+        internal static bool IsKnownConstant(char t) => false;
+
+        [Intrinsic]
+        internal static bool IsKnownConstant(int t) => false;
+#pragma warning restore IDE0060
     }
 }

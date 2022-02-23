@@ -17,6 +17,17 @@ namespace ILCompiler
         {
             _genericsMode = genericsMode;
         }
+
+        internal DefType GetClosestDefType(TypeDesc type)
+        {
+            if (type.IsArray)
+            {
+                return GetWellKnownType(WellKnownType.Array);
+            }
+
+            Debug.Assert(type is DefType);
+            return (DefType)type;
+        }
     }
 
     public partial class ReadyToRunCompilerContext : CompilerTypeSystemContext

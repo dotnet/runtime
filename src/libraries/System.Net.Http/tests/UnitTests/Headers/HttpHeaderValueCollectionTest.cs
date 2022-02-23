@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -18,8 +16,6 @@ namespace System.Net.Http.Tests
         private static readonly HeaderDescriptor knownStringHeader = (new KnownHeader("known-string-header", HttpHeaderType.General, new MockHeaderParser(typeof(string)))).Descriptor;
         private static readonly HeaderDescriptor knownUriHeader = (new KnownHeader("known-uri-header", HttpHeaderType.General, new MockHeaderParser(typeof(Uri)))).Descriptor;
 
-        private static readonly Uri specialValue = new Uri("http://special/");
-        private static readonly Uri invalidValue = new Uri("http://invalid/");
         private static readonly TransferCodingHeaderValue specialChunked = new TransferCodingHeaderValue("chunked");
 
         // Note that this type just forwards calls to HttpHeaders. So this test method focuses on making sure
@@ -35,45 +31,6 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void Count_AddSingleValueThenQueryCount_ReturnsValueCountWithSpecialValues()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<string> collection = new HttpHeaderValueCollection<string>(knownStringHeader, headers,
-                "special");
-
-            Assert.Equal(0, collection.Count);
-
-            headers.Add(knownStringHeader, "value2");
-            Assert.Equal(1, collection.Count);
-
-            headers.Clear();
-            headers.Add(knownStringHeader, "special");
-            Assert.Equal(1, collection.Count);
-            headers.Add(knownStringHeader, "special");
-            headers.Add(knownStringHeader, "special");
-            Assert.Equal(3, collection.Count);
-        }
-
-        [Fact]
-        public void Count_AddMultipleValuesThenQueryCount_ReturnsValueCountWithSpecialValues()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<string> collection = new HttpHeaderValueCollection<string>(knownStringHeader, headers,
-                "special");
-
-            Assert.Equal(0, collection.Count);
-
-            collection.Add("value1");
-            headers.Add(knownStringHeader, "special");
-            Assert.Equal(2, collection.Count);
-
-            headers.Add(knownStringHeader, "special");
-            headers.Add(knownStringHeader, "value2");
-            headers.Add(knownStringHeader, "special");
-            Assert.Equal(5, collection.Count);
-        }
-
-        [Fact]
         public void Add_CallWithNullValue_Throw()
         {
             MockHeaders headers = new MockHeaders();
@@ -86,8 +43,7 @@ namespace System.Net.Http.Tests
         public void Add_AddValues_AllValuesAdded()
         {
             MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
+            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers);
 
             collection.Add(new Uri("http://www.example.org/1/"));
             collection.Add(new Uri("http://www.example.org/2/"));
@@ -150,7 +106,6 @@ namespace System.Net.Http.Tests
             HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers);
 
             collection.ParseAdd(null);
-            Assert.False(collection.IsSpecialValueSet);
             Assert.Equal(0, collection.Count);
             Assert.Equal(string.Empty, collection.ToString());
         }
@@ -159,27 +114,13 @@ namespace System.Net.Http.Tests
         public void ParseAdd_AddValues_AllValuesAdded()
         {
             MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
+            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers);
 
             collection.ParseAdd("http://www.example.org/1/");
             collection.ParseAdd("http://www.example.org/2/");
             collection.ParseAdd("http://www.example.org/3/");
 
             Assert.Equal(3, collection.Count);
-        }
-
-        [Fact]
-        public void ParseAdd_UseSpecialValue_Added()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
-
-            collection.ParseAdd(specialValue.AbsoluteUri);
-
-            Assert.True(collection.IsSpecialValueSet);
-            Assert.Equal(specialValue.ToString(), collection.ToString());
         }
 
         [Fact]
@@ -198,7 +139,6 @@ namespace System.Net.Http.Tests
 
             Assert.True(headers.WwwAuthenticate.TryParseAdd(null));
 
-            Assert.False(headers.WwwAuthenticate.IsSpecialValueSet);
             Assert.Equal(0, headers.WwwAuthenticate.Count);
             Assert.Equal(string.Empty, headers.WwwAuthenticate.ToString());
         }
@@ -207,27 +147,13 @@ namespace System.Net.Http.Tests
         public void TryParseAdd_AddValues_AllAdded()
         {
             MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
+            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers);
 
             Assert.True(collection.TryParseAdd("http://www.example.org/1/"));
             Assert.True(collection.TryParseAdd("http://www.example.org/2/"));
             Assert.True(collection.TryParseAdd("http://www.example.org/3/"));
 
             Assert.Equal(3, collection.Count);
-        }
-
-        [Fact]
-        public void TryParseAdd_UseSpecialValue_Added()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
-
-            Assert.True(collection.TryParseAdd(specialValue.AbsoluteUri));
-
-            Assert.True(collection.IsSpecialValueSet);
-            Assert.Equal(specialValue.ToString(), collection.ToString());
         }
 
         [Fact]
@@ -266,27 +192,6 @@ namespace System.Net.Http.Tests
             collection.Clear();
 
             Assert.Equal(0, collection.Count);
-        }
-
-        [Fact]
-        public void Clear_AddValuesAndSpecialValueThenClear_EverythingCleared()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
-
-            collection.SetSpecialValue();
-            collection.Add(new Uri("http://www.example.org/1/"));
-            collection.Add(new Uri("http://www.example.org/2/"));
-            collection.Add(new Uri("http://www.example.org/3/"));
-
-            Assert.Equal(4, collection.Count);
-            Assert.True(collection.IsSpecialValueSet, "Special value not set.");
-
-            collection.Clear();
-
-            Assert.Equal(0, collection.Count);
-            Assert.False(collection.IsSpecialValueSet, "Special value was removed by Clear().");
         }
 
         [Fact]
@@ -389,21 +294,13 @@ namespace System.Net.Http.Tests
         public void CopyTo_AddSingleValue_ContainsSingleValue()
         {
             MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
+            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers);
 
             collection.Add(new Uri("http://www.example.org/"));
 
             Uri[] array = new Uri[1];
             collection.CopyTo(array, 0);
             Assert.Equal(new Uri("http://www.example.org/"), array[0]);
-
-            // Now only set the special value: nothing should be added to the array.
-            headers.Clear();
-            headers.Add(knownUriHeader, specialValue.ToString());
-            array[0] = null;
-            collection.CopyTo(array, 0);
-            Assert.Equal(specialValue, array[0]);
         }
 
         [Fact]
@@ -427,78 +324,10 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void CopyTo_AddValuesAndSpecialValue_AllValuesCopied()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
-
-            collection.Add(new Uri("http://www.example.org/1/"));
-            collection.Add(new Uri("http://www.example.org/2/"));
-            collection.SetSpecialValue();
-            collection.Add(new Uri("http://www.example.org/3/"));
-
-            Uri[] array = new Uri[5];
-            collection.CopyTo(array, 1);
-
-            Assert.Null(array[0]);
-            Assert.Equal(new Uri("http://www.example.org/1/"), array[1]);
-            Assert.Equal(new Uri("http://www.example.org/2/"), array[2]);
-            Assert.Equal(specialValue, array[3]);
-            Assert.Equal(new Uri("http://www.example.org/3/"), array[4]);
-
-            Assert.True(collection.IsSpecialValueSet, "Special value not set.");
-        }
-
-        [Fact]
-        public void CopyTo_OnlySpecialValue_Copied()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
-
-            collection.SetSpecialValue();
-            headers.Add(knownUriHeader, specialValue.ToString());
-            headers.Add(knownUriHeader, specialValue.ToString());
-            headers.Add(knownUriHeader, specialValue.ToString());
-
-            Uri[] array = new Uri[4];
-            array[0] = null;
-            collection.CopyTo(array, 0);
-
-            Assert.Equal(specialValue, array[0]);
-            Assert.Equal(specialValue, array[1]);
-            Assert.Equal(specialValue, array[2]);
-            Assert.Equal(specialValue, array[3]);
-
-            Assert.True(collection.IsSpecialValueSet, "Special value not set.");
-        }
-
-        [Fact]
-        public void CopyTo_OnlySpecialValueEmptyDestination_Copied()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
-
-            collection.SetSpecialValue();
-            headers.Add(knownUriHeader, specialValue.ToString());
-
-            Uri[] array = new Uri[2];
-            collection.CopyTo(array, 0);
-
-            Assert.Equal(specialValue, array[0]);
-            Assert.Equal(specialValue, array[1]);
-
-            Assert.True(collection.IsSpecialValueSet, "Special value not set.");
-        }
-
-        [Fact]
         public void CopyTo_ArrayTooSmall_Throw()
         {
             MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<string> collection = new HttpHeaderValueCollection<string>(knownStringHeader, headers,
-                "special");
+            HttpHeaderValueCollection<string> collection = new HttpHeaderValueCollection<string>(knownStringHeader, headers);
 
             string[] array = new string[1];
             array[0] = null;
@@ -666,170 +495,6 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void GetEnumerator_AddValuesAndSpecialValueAndGetEnumeratorFromInterface_AllValuesReturned()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
-
-            collection.Add(new Uri("http://www.example.org/1/"));
-            collection.Add(new Uri("http://www.example.org/2/"));
-            collection.Add(new Uri("http://www.example.org/3/"));
-            collection.SetSpecialValue();
-
-            System.Collections.IEnumerable enumerable = collection;
-
-            // The "special value" should be ignored and not part of the resulting collection.
-            int i = 1;
-            bool specialFound = false;
-            foreach (var item in enumerable)
-            {
-                if (item.Equals(specialValue))
-                {
-                    specialFound = true;
-                }
-                else
-                {
-                    Assert.Equal(new Uri("http://www.example.org/" + i + "/"), item);
-                    i++;
-                }
-            }
-
-            Assert.True(specialFound);
-
-            Assert.True(collection.IsSpecialValueSet, "Special value not set.");
-        }
-
-        [Fact]
-        public void GetEnumerator_AddValuesAndSpecialValue_AllValuesReturned()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
-
-            collection.Add(new Uri("http://www.example.org/1/"));
-            collection.Add(new Uri("http://www.example.org/2/"));
-            collection.SetSpecialValue();
-            collection.Add(new Uri("http://www.example.org/3/"));
-
-            System.Collections.IEnumerable enumerable = collection;
-
-            // The special value we added above, must be part of the collection returned by GetEnumerator().
-            int i = 1;
-            bool specialFound = false;
-            foreach (var item in enumerable)
-            {
-                if (item.Equals(specialValue))
-                {
-                    specialFound = true;
-                }
-                else
-                {
-                    Assert.Equal(new Uri("http://www.example.org/" + i + "/"), item);
-                    i++;
-                }
-            }
-
-            Assert.True(specialFound);
-            Assert.True(collection.IsSpecialValueSet, "Special value not set.");
-        }
-
-        [Fact]
-        public void IsSpecialValueSet_NoSpecialValueUsed_ReturnsFalse()
-        {
-            // Create a new collection _without_ specifying a special value.
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                null, null);
-
-            Assert.False(collection.IsSpecialValueSet,
-                "Special value is set even though collection doesn't define a special value.");
-        }
-
-        [Fact]
-        public void RemoveSpecialValue_AddRemoveSpecialValue_SpecialValueGetsRemoved()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
-
-            collection.SetSpecialValue();
-            Assert.True(collection.IsSpecialValueSet, "Special value not set.");
-            Assert.Equal(1, headers.GetValues(knownUriHeader).Count());
-
-            collection.RemoveSpecialValue();
-            Assert.False(collection.IsSpecialValueSet, "Special value is set.");
-
-            // Since the only header value was the "special value", removing it will remove the whole header
-            // from the collection.
-            Assert.False(headers.Contains(knownUriHeader));
-        }
-
-        [Fact]
-        public void RemoveSpecialValue_AddValueAndSpecialValueThenRemoveSpecialValue_SpecialValueGetsRemoved()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
-
-            collection.Add(new Uri("http://www.example.org/"));
-            collection.SetSpecialValue();
-            Assert.True(collection.IsSpecialValueSet, "Special value not set.");
-            Assert.Equal(2, headers.GetValues(knownUriHeader).Count());
-
-            collection.RemoveSpecialValue();
-            Assert.False(collection.IsSpecialValueSet, "Special value is set.");
-            Assert.Equal(1, headers.GetValues(knownUriHeader).Count());
-        }
-
-        [Fact]
-        public void RemoveSpecialValue_AddTwoValuesAndSpecialValueThenRemoveSpecialValue_SpecialValueGetsRemoved()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue);
-
-            collection.Add(new Uri("http://www.example.org/1/"));
-            collection.Add(new Uri("http://www.example.org/2/"));
-            collection.SetSpecialValue();
-            Assert.True(collection.IsSpecialValueSet, "Special value not set.");
-            Assert.Equal(3, headers.GetValues(knownUriHeader).Count());
-
-            // The difference between this test and the previous one is that HttpHeaders in this case will use
-            // a List<T> to store the two remaining values, whereas in the previous case it will just store
-            // the remaining value (no list).
-            collection.RemoveSpecialValue();
-            Assert.False(collection.IsSpecialValueSet, "Special value is set.");
-            Assert.Equal(2, headers.GetValues(knownUriHeader).Count());
-        }
-
-        [Fact]
-        public void Ctor_ProvideValidator_ValidatorIsUsedWhenAddingValues()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                MockValidator);
-
-            // Adding an arbitrary Uri should not throw.
-            collection.Add(new Uri("http://some/"));
-
-            // When we add 'invalidValue' our MockValidator will throw.
-            Assert.Throws<MockException>(() => { collection.Add(invalidValue); });
-        }
-
-        [Fact]
-        public void Ctor_ProvideValidator_ValidatorIsUsedWhenRemovingValues()
-        {
-            // Use different ctor overload than in previous test to make sure all ctor overloads work correctly.
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                specialValue, MockValidator);
-
-            // When we remove 'invalidValue' our MockValidator will throw.
-            Assert.Throws<MockException>(() => { collection.Remove(invalidValue); });
-        }
-
-        [Fact]
         public void ToString_SpecialValues_Success()
         {
             HttpRequestMessage request = new HttpRequestMessage();
@@ -894,14 +559,6 @@ namespace System.Net.Http.Tests
         }
 
         #region Helper methods
-
-        private static void MockValidator(HttpHeaderValueCollection<Uri> collection, Uri value)
-        {
-            if (value == invalidValue)
-            {
-                throw new MockException();
-            }
-        }
 
         public class MockException : Exception
         {

@@ -14,7 +14,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private readonly Lazy<ParameterInfo> _importingLazyParameter;
 
         public ReflectionParameterImportDefinition(
-            Lazy<ParameterInfo> importingLazyParameter,
+            Lazy<ParameterInfo> importingLazyParameter!!,
             string contractName,
             string? requiredTypeIdentity,
             IEnumerable<KeyValuePair<string, Type>>? requiredMetadata,
@@ -24,11 +24,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             ICompositionElement? origin)
             : base(contractName, requiredTypeIdentity, requiredMetadata, cardinality, false, true, requiredCreationPolicy, metadata, origin)
         {
-            if (importingLazyParameter == null)
-            {
-                throw new ArgumentNullException(nameof(importingLazyParameter));
-            }
-
             _importingLazyParameter = importingLazyParameter;
         }
 

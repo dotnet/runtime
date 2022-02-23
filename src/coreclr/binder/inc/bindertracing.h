@@ -27,7 +27,7 @@ namespace BinderTracing
     {
     public:
         // This class assumes the assembly spec will have a longer lifetime than itself
-        AssemblyBindOperation(AssemblySpec *assemblySpec, const WCHAR *assemblyPath = nullptr);
+        AssemblyBindOperation(AssemblySpec *assemblySpec, const SString& assemblyPath = SString::Empty());
         ~AssemblyBindOperation();
 
         void SetResult(PEAssembly *assembly, bool cached = false);

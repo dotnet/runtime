@@ -184,6 +184,13 @@ struct VNFuncApp
     }
 };
 
+// An instance of this struct represents the decoded information of a SIMD type from a value number.
+struct VNSimdTypeInfo
+{
+    unsigned int m_simdSize;
+    CorInfoType  m_simdBaseJitType;
+};
+
 // We use a unique prefix character when printing value numbers in dumps:  i.e.  $1c0
 // This define is used with string concatenation to put this in printf format strings
 #define FMT_VN "$%x"
@@ -463,7 +470,7 @@ public:
 
 #ifdef FEATURE_SIMD
     // A helper function for constructing VNF_SimdType VNs.
-    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType);
+    ValueNum VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType);
 #endif // FEATURE_SIMD
 
     // Create or return the existimg value number representing a singleton exception set
@@ -493,6 +500,8 @@ public:
     // in the vnFullSet.
     // Both arguments must be either VNForEmptyExcSet() or applications of VNF_ExcSetCons.
     bool VNExcIsSubset(ValueNum vnFullSet, ValueNum vnCandidateSet);
+
+    bool VNPExcIsSubset(ValueNumPair vnpFullSet, ValueNumPair vnpCandidateSet);
 
     // Returns "true" iff "vn" is an application of "VNF_ValWithExc".
     bool VNHasExc(ValueNum vn)
@@ -527,6 +536,12 @@ public:
     // Sets the liberal & conservative
     // Keeps any Exception set values
     ValueNumPair VNPMakeNormalUniquePair(ValueNumPair vnp);
+
+    // A new unique value with the given exception set.
+    ValueNum VNUniqueWithExc(var_types type, ValueNum vnExcSet);
+
+    // A new unique VN pair with the given exception set pair.
+    ValueNumPair VNPUniqueWithExc(var_types type, ValueNumPair vnpExcSet);
 
     // If "vn" is a "VNF_ValWithExc(norm, excSet)" value, returns the "norm" argument; otherwise,
     // just returns "vn".
@@ -706,17 +721,25 @@ public:
     // Returns true iff the VN represents a (non-handle) constant.
     bool IsVNConstant(ValueNum vn);
 
+    bool IsVNVectorZero(ValueNum vn);
+
+#ifdef FEATURE_SIMD
+    VNSimdTypeInfo GetSimdTypeOfVN(ValueNum vn);
+
+    VNSimdTypeInfo GetVectorZeroSimdTypeOfVN(ValueNum vn);
+#endif
+
     // Returns true iff the VN represents an integer constant.
     bool IsVNInt32Constant(ValueNum vn);
 
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
 
     // Returns true if the VN is known or likely to appear as the conservative value number
-    // of the length argument to a GT_ARR_BOUNDS_CHECK node.
+    // of the length argument to a GT_BOUNDS_CHECK node.
     bool IsVNCheckedBound(ValueNum vn);
 
     // Record that a VN is known to appear as the conservative value number of the length
-    // argument to a GT_ARR_BOUNDS_CHECK node.
+    // argument to a GT_BOUNDS_CHECK node.
     void SetVNIsCheckedBound(ValueNum vn);
 
     // Information about the individual components of a value number representing an unsigned

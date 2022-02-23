@@ -66,10 +66,6 @@
 
       <!-- Color output doesn't work well when capturing the output in the CI system -->
       <XunitArgs>$(XunitArgs) -nocolor</XunitArgs>
-
-      <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'"  >$(CORE_ROOT)\corerun</CorerunExecutable>
-      <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
-      <CorerunExecutable Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator'"> $(DotnetRoot)/dotnet</CorerunExecutable>
     </PropertyGroup>
 
     <!-- Work around cmd command length limit by using relative paths
@@ -83,9 +79,12 @@
   </Target>
 
   <Target Name="RunSingleMergedTest">
-    <Exec Command="chmod +x $(TestWrapperScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" Condition="'$(TargetOS)' != 'windows'" />
-    <Exec Command="$(TestWrapperScript) &gt;$(RedirectOutputToFile)" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" />
-    <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" />
+    <Exec Command="chmod +x $(TestWrapperScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(TargetOS)' != 'windows'" />
+    <Exec Command="$(TestWrapperScript) &gt;$(RedirectOutputToFile)" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="MergedTestExitCode" />
+    </Exec>
+    <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" Condition="'$(MergedTestExitCode)' == '0'" />
+    <Message Importance="High" Text="Error running test group '$(TestWrapperScript)' - exit code $(MergedTestExitCode)" Condition="'$(MergedTestExitCode)' != '0'" />
   </Target>
 
   <Target Name="RunMergedTests" DependsOnTargets="PrepareTestsToRun">
@@ -99,8 +98,11 @@
   </Target>
 
   <Target Name="RunLegacyTests" DependsOnTargets="PrepareTestsToRun">
+      <!-- Run xunit with dotnet.
+           We set roll-forward LatestMajor so that dotnet doesn't choose some old runtime that comes from
+           the era when xunit.console.dll was built. -->
     <PropertyGroup>
-      <XunitCommandLine>$(CorerunExecutable) $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
+      <XunitCommandLine>$(DotNetCli) --roll-forward latestmajor $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
     </PropertyGroup>
 
     <Exec Command="$(XunitCommandLine)"

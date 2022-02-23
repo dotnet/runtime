@@ -2509,6 +2509,7 @@ void RedirectedThreadFrame::ExceptionUnwind()
 #ifndef TARGET_UNIX
 
 #ifdef TARGET_X86
+
 //****************************************************************************************
 // This will check who caused the exception.  If it was caused by the the redirect function,
 // the reason is to resume the thread back at the point it was redirected in the first
@@ -2577,7 +2578,15 @@ int RedirectedHandledJITCaseExceptionFilter(
     pFrame->Pop();
 
     // Copy the saved context record into the EH context;
-    ReplaceExceptionContextRecord(pExcepPtrs->ContextRecord, pCtx);
+    // NB: cannot use ReplaceExceptionContextRecord here.
+    //     these contexts may contain extended registers and may have different format
+    //     for reasons such as alignment or context compaction
+    CONTEXT* pTarget = pExcepPtrs->ContextRecord;
+    if (!CopyContext(pTarget, pTarget->ContextFlags, pCtx))
+    {
+        STRESS_LOG1(LF_SYNC, LL_ERROR, "ERROR: Could not set context record, lastError = 0x%x\n", GetLastError());
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
 
     DWORD espValue = pCtx->Esp;
 
@@ -3591,12 +3600,12 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                         DWORD id = (DWORD) thread->m_OSThreadId;
                         if (id == 0xbaadf00d)
                         {
-                            sprintf_s (message, COUNTOF(message), "Thread CLR ID=%x cannot be suspended",
+                            sprintf_s (message, ARRAY_SIZE(message), "Thread CLR ID=%x cannot be suspended",
                                         thread->GetThreadId());
                         }
                         else
                         {
-                            sprintf_s (message, COUNTOF(message), "Thread OS ID=%x cannot be suspended",
+                            sprintf_s (message, ARRAY_SIZE(message), "Thread OS ID=%x cannot be suspended",
                                         id);
                         }
                         DbgAssertDialog(__FILE__, __LINE__, message);
@@ -6255,7 +6264,7 @@ void SuspendStatistics::DisplayAndUpdate()
 const char* const str_timeUnit[]   = { "usec", "msec", "sec" };
 const int         timeUnitFactor[] = { 1, 1000, 1000000 };
 
-void MinMaxTot::DisplayAndUpdate(FILE* logFile, __in_z const char *pName, MinMaxTot *pLastOne, int fullCount, int priorCount, timeUnit unit /* = usec */)
+void MinMaxTot::DisplayAndUpdate(FILE* logFile, _In_z_ const char *pName, MinMaxTot *pLastOne, int fullCount, int priorCount, timeUnit unit /* = usec */)
 {
     LIMITED_METHOD_CONTRACT;
 

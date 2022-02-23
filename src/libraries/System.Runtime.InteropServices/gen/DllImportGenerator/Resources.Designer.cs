@@ -79,6 +79,42 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to When a constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named BufferSize to provide the size of the caller-allocated buffer..
+        /// </summary>
+        internal static string CallerAllocConstructorMustHaveBufferSizeConstantDescription {
+            get {
+                return ResourceManager.GetString("CallerAllocConstructorMustHaveBufferSizeConstantDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must have a &apos;public const int BufferSize&apos; field that specifies the size of the stack buffer because it has a constructor that takes a caller-allocated Span&lt;byte&gt;.
+        /// </summary>
+        internal static string CallerAllocConstructorMustHaveBufferSizeConstantMessage {
+            get {
+                return ResourceManager.GetString("CallerAllocConstructorMustHaveBufferSizeConstantMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A type that supports marshalling from managed to native using a caller-allocated buffer should also support marshalling from managed to native where using a caller-allocated buffer is impossible..
+        /// </summary>
+        internal static string CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription {
+            get {
+                return ResourceManager.GetString("CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Native type &apos;{0}&apos; has a constructor taking a caller-allocated buffer, but does not support marshalling in scenarios where using a caller-allocated buffer is impossible.
+        /// </summary>
+        internal static string CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage {
+            get {
+                return ResourceManager.GetString("CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The &apos;BlittableTypeAttribute&apos; and &apos;NativeMarshallingAttribute&apos; attributes are mutually exclusive..
         /// </summary>
         internal static string CannotHaveMultipleMarshallingAttributesDescription {
@@ -187,6 +223,24 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Automatically converting a P/Invoke with &apos;PreserveSig&apos; set to &apos;false&apos; to a source-generated P/Invoke may produce invalid code.
+        /// </summary>
+        internal static string ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode {
+            get {
+                return ResourceManager.GetString("ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos;.
+        /// </summary>
+        internal static string ConvertToGeneratedDllImport {
+            get {
+                return ResourceManager.GetString("ConvertToGeneratedDllImport", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Use &apos;GeneratedDllImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
         /// </summary>
         internal static string ConvertToGeneratedDllImportDescription {
@@ -201,15 +255,6 @@ namespace Microsoft.Interop {
         internal static string ConvertToGeneratedDllImportMessage {
             get {
                 return ResourceManager.GetString("ConvertToGeneratedDllImportMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos;.
-        /// </summary>
-        internal static string ConvertToGeneratedDllImportNoPreprocessor {
-            get {
-                return ResourceManager.GetString("ConvertToGeneratedDllImportNoPreprocessor", resourceCulture);
             }
         }
         
@@ -232,11 +277,11 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos; under a preprocessor define.
+        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos; with &apos;{0}&apos; suffix.
         /// </summary>
-        internal static string ConvertToGeneratedDllImportWithPreprocessor {
+        internal static string ConvertToGeneratedDllImportWithSuffix {
             get {
-                return ResourceManager.GetString("ConvertToGeneratedDllImportWithPreprocessor", resourceCulture);
+                return ResourceManager.GetString("ConvertToGeneratedDllImportWithSuffix", resourceCulture);
             }
         }
         
@@ -484,47 +529,20 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to .
+        /// </summary>
+        internal static string RuntimeMarshallingMustBeDisabled {
+            get {
+                return ResourceManager.GetString("RuntimeMarshallingMustBeDisabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to An abstract type derived from &apos;SafeHandle&apos; cannot be marshalled by reference. The provided type must be concrete..
         /// </summary>
         internal static string SafeHandleByRefMustBeConcrete {
             get {
                 return ResourceManager.GetString("SafeHandleByRefMustBeConcrete", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to When constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named StackBufferSize to provide the size of the stack-allocated buffer..
-        /// </summary>
-        internal static string StackallocConstructorMustHaveStackBufferSizeConstantDescription {
-            get {
-                return ResourceManager.GetString("StackallocConstructorMustHaveStackBufferSizeConstantDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must have a &apos;public const int StackBufferSize&apos; field that specifies the size of the stack buffer because it has a constructor that takes a stack-allocated Span&lt;byte&gt;.
-        /// </summary>
-        internal static string StackallocConstructorMustHaveStackBufferSizeConstantMessage {
-            get {
-                return ResourceManager.GetString("StackallocConstructorMustHaveStackBufferSizeConstantMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to A type that supports marshalling from managed to native by stack allocation should also support marshalling from managed to native where stack allocation is impossible..
-        /// </summary>
-        internal static string StackallocMarshallingShouldSupportAllocatingMarshallingFallbackDescription {
-            get {
-                return ResourceManager.GetString("StackallocMarshallingShouldSupportAllocatingMarshallingFallbackDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Native type &apos;{0}&apos; has a stack-allocating constructor does not support marshalling in scenarios where stack allocation is impossible.
-        /// </summary>
-        internal static string StackallocMarshallingShouldSupportAllocatingMarshallingFallbackMessage {
-            get {
-                return ResourceManager.GetString("StackallocMarshallingShouldSupportAllocatingMarshallingFallbackMessage", resourceCulture);
             }
         }
         

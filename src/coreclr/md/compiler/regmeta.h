@@ -213,7 +213,7 @@ public:
         mdTypeDef   *ptd);                  // [OUT] Put the TypeDef token here.
 
     STDMETHODIMP GetScopeProps(             // S_OK or error.
-        __out_ecount_opt (cchName) LPWSTR szName, // [OUT] Put name here.
+        _Out_writes_opt_ (cchName) LPWSTR szName, // [OUT] Put name here.
         ULONG       cchName,                // [IN] Size of name buffer in wide chars.
         ULONG       *pchName,               // [OUT] Put size of name (wide chars) here.
         GUID        *pmvid);                // [OUT] Put MVID here.
@@ -223,7 +223,7 @@ public:
 
     STDMETHODIMP GetTypeDefProps(           // S_OK or error.
         mdTypeDef   td,                     // [IN] TypeDef token for inquiry.
-        __out_ecount_opt (cchTypeDef) LPWSTR szTypeDef, // [OUT] Put name here.
+        _Out_writes_opt_ (cchTypeDef) LPWSTR szTypeDef, // [OUT] Put name here.
         ULONG       cchTypeDef,             // [IN] size of name buffer in wide chars.
         ULONG       *pchTypeDef,            // [OUT] put size of name (wide chars) here.
         DWORD       *pdwTypeDefFlags,       // [OUT] Put flags here.
@@ -237,7 +237,7 @@ public:
     STDMETHODIMP GetTypeRefProps(
         mdTypeRef   tr,                     // S_OK or error.
         mdToken     *ptkResolutionScope,    // [OUT] Resolution scope, mdModuleRef or mdAssemblyRef.
-        __out_ecount_opt (cchName) LPWSTR szName, // [OUT] Name buffer.
+        _Out_writes_opt_ (cchName) LPWSTR szName, // [OUT] Name buffer.
         ULONG       cchName,                // [IN] Size of Name buffer.
         ULONG       *pchName);              // [OUT] Actual size of Name.
 
@@ -352,7 +352,7 @@ public:
     STDMETHODIMP GetMethodProps(
         mdMethodDef mb,                     // The method for which to get props.
         mdTypeDef   *pClass,                // Put method's class here.
-        __out_ecount_opt (cchMethod) LPWSTR szMethod, // Put method's name here.
+        _Out_writes_opt_ (cchMethod) LPWSTR szMethod, // Put method's name here.
         ULONG       cchMethod,              // Size of szMethod buffer in wide chars.
         ULONG       *pchMethod,             // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
@@ -364,7 +364,7 @@ public:
     STDMETHODIMP GetMemberRefProps(         // S_OK or error.
         mdMemberRef mr,                     // [IN] given memberref
         mdToken     *ptk,                   // [OUT] Put classref or classdef here.
-        __out_ecount_opt (cchMember) LPWSTR szMember, // [OUT] buffer to fill for member's name
+        _Out_writes_opt_ (cchMember) LPWSTR szMember, // [OUT] buffer to fill for member's name
         ULONG       cchMember,              // [IN] the count of char of szMember
         ULONG       *pchMember,             // [OUT] actual count of char in member name
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to meta data blob value
@@ -442,7 +442,7 @@ public:
 
     STDMETHODIMP GetModuleRefProps(         // S_OK or error.
         mdModuleRef mur,                    // [IN] moduleref token.
-        __out_ecount_opt (cchName) LPWSTR szName, // [OUT] buffer to fill with the moduleref name.
+        _Out_writes_opt_ (cchName) LPWSTR szName, // [OUT] buffer to fill with the moduleref name.
         ULONG       cchName,                // [IN] size of szName in wide characters.
         ULONG       *pchName);              // [OUT] actual count of characters in the name.
 
@@ -469,14 +469,14 @@ public:
 
     STDMETHODIMP GetUserString(             // S_OK or error.
         mdString    stk,                    // [IN] String token.
-        __out_ecount_opt (cchString) LPWSTR szString, // [OUT] Copy of string.
+        _Out_writes_opt_ (cchString) LPWSTR szString, // [OUT] Copy of string.
         ULONG       cchString,              // [IN] Max chars of room in szString.
         ULONG       *pchString);            // [OUT] How many chars in actual string.
 
     STDMETHODIMP GetPinvokeMap(             // S_OK or error.
         mdToken     tk,                     // [IN] FieldDef or MethodDef.
         DWORD       *pdwMappingFlags,       // [OUT] Flags used for mapping.
-        __out_ecount_opt (cchImportName) LPWSTR szImportName, // [OUT] Import name.
+        _Out_writes_opt_ (cchImportName) LPWSTR szImportName, // [OUT] Import name.
         ULONG       cchImportName,          // [IN] Size of the name buffer.
         ULONG       *pchImportName,         // [OUT] Actual number of characters stored.
         mdModuleRef *pmrImportDLL);         // [OUT] ModuleRef token for the target DLL.
@@ -533,7 +533,7 @@ public:
     STDMETHODIMP GetMemberProps(
         mdToken     mb,                     // The member for which to get props.
         mdTypeDef   *pClass,                // Put member's class here.
-        __out_ecount_opt (cchMember) LPWSTR szMember, // Put member's name here.
+        _Out_writes_opt_ (cchMember) LPWSTR szMember, // Put member's name here.
         ULONG       cchMember,              // Size of szMember buffer in wide chars.
         ULONG       *pchMember,             // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
@@ -548,7 +548,7 @@ public:
     STDMETHODIMP GetFieldProps(
         mdFieldDef  mb,                     // The field for which to get props.
         mdTypeDef   *pClass,                // Put field's class here.
-        __out_ecount_opt (cchField) LPWSTR szField, // Put field's name here.
+        _Out_writes_opt_ (cchField) LPWSTR szField, // Put field's name here.
         ULONG       cchField,               // Size of szField buffer in wide chars.
         ULONG       *pchField,              // Put actual size here
         DWORD       *pdwAttr,               // Put flags here.
@@ -580,7 +580,7 @@ public:
         mdParamDef  tk,                     // [IN]The Parameter.
         mdMethodDef *pmd,                   // [OUT] Parent Method token.
         ULONG       *pulSequence,           // [OUT] Parameter sequence.
-        __out_ecount_opt (cchName) LPWSTR szName, // [OUT] Put name here.
+        _Out_writes_opt_ (cchName) LPWSTR szName, // [OUT] Put name here.
         ULONG       cchName,                // [OUT] Size of name buffer.
         ULONG       *pchName,               // [OUT] Put actual size of name here.
         DWORD       *pdwAttr,               // [OUT] Put flags here.
@@ -613,7 +613,7 @@ public:
         DWORD        *pdwParamFlags,        // [OUT] Flags, for future use (e.g. variance)
         mdToken      *ptOwner,              // [OUT] Owner (TypeDef or MethodDef)
         DWORD        *reserved,              // [OUT] For future use (e.g. non-type parameters)
-        __out_ecount_opt (cchName) LPWSTR wzname, // [OUT] Put name here
+        _Out_writes_opt_ (cchName) LPWSTR wzname, // [OUT] Put name here
         ULONG        cchName,               // [IN] Size of buffer
         ULONG        *pchName);             // [OUT] Put size of name (wide chars) here.
 
@@ -654,7 +654,7 @@ public:
         DWORD* pdwMAchine);                 // [OUT] Machine as defined in NT header
 
     STDMETHODIMP GetVersionString(          // S_OK or error.
-        __out_ecount_opt (cchBufSize) LPWSTR pwzBuf, // [OUT] Put version string here.
+        _Out_writes_opt_ (cchBufSize) LPWSTR pwzBuf, // [OUT] Put version string here.
         DWORD       cchBufSize,             // [IN] size of the buffer, in wide chars
         DWORD       *pchBufSize);           // [OUT] Size of the version string, wide chars, including terminating nul.
 
@@ -666,7 +666,7 @@ public:
         const void  **ppbPublicKey,         // [OUT] Pointer to the public key.
         ULONG       *pcbPublicKey,          // [OUT] Count of bytes in the public key.
         ULONG       *pulHashAlgId,          // [OUT] Hash Algorithm.
-        __out_ecount_part_opt(cchName, *pchName) LPWSTR  szName, // [OUT] Buffer to fill with assembly's simply name.
+        _Out_writes_to_opt_(cchName, *pchName) LPWSTR  szName, // [OUT] Buffer to fill with assembly's simply name.
         ULONG       cchName,                // [IN] Size of buffer in wide chars.
         ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
         ASSEMBLYMETADATA *pMetaData,        // [OUT] Assembly MetaData.
@@ -676,7 +676,7 @@ public:
         mdAssemblyRef mdar,                 // [IN] The AssemblyRef for which to get the properties.
         const void  **ppbPublicKeyOrToken,  // [OUT] Pointer to the public key or token.
         ULONG       *pcbPublicKeyOrToken,   // [OUT] Count of bytes in the public key or token.
-        __out_ecount_part_opt(cchName, *pchName)LPWSTR szName, // [OUT] Buffer to fill with name.
+        _Out_writes_to_opt_(cchName, *pchName)LPWSTR szName, // [OUT] Buffer to fill with name.
         ULONG       cchName,                // [IN] Size of buffer in wide chars.
         ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
         ASSEMBLYMETADATA *pMetaData,        // [OUT] Assembly MetaData.
@@ -686,7 +686,7 @@ public:
 
     STDMETHODIMP GetFileProps(              // S_OK or error.
         mdFile      mdf,                    // [IN] The File for which to get the properties.
-        __out_ecount_part_opt(cchName, *pchName) LPWSTR      szName, // [OUT] Buffer to fill with name.
+        _Out_writes_to_opt_(cchName, *pchName) LPWSTR      szName, // [OUT] Buffer to fill with name.
         ULONG       cchName,                // [IN] Size of buffer in wide chars.
         ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
         const void  **ppbHashValue,         // [OUT] Pointer to the Hash Value Blob.
@@ -695,7 +695,7 @@ public:
 
     STDMETHODIMP GetExportedTypeProps(      // S_OK or error.
         mdExportedType   mdct,              // [IN] The ExportedType for which to get the properties.
-        __out_ecount_part_opt(cchName, *pchName) LPWSTR      szName, // [OUT] Buffer to fill with name.
+        _Out_writes_to_opt_(cchName, *pchName) LPWSTR      szName, // [OUT] Buffer to fill with name.
         ULONG       cchName,                // [IN] Size of buffer in wide chars.
         ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
         mdToken     *ptkImplementation,     // [OUT] mdFile or mdAssemblyRef that provides the ExportedType.
@@ -704,7 +704,7 @@ public:
 
     STDMETHODIMP GetManifestResourceProps(  // S_OK or error.
         mdManifestResource  mdmr,           // [IN] The ManifestResource for which to get the properties.
-        __out_ecount_part_opt(cchName, *pchName)LPWSTR      szName,  // [OUT] Buffer to fill with name.
+        _Out_writes_to_opt_(cchName, *pchName)LPWSTR      szName,  // [OUT] Buffer to fill with name.
         ULONG       cchName,                // [IN] Size of buffer in wide chars.
         ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
         mdToken     *ptkImplementation,     // [OUT] mdFile or mdAssemblyRef that provides the ExportedType.
@@ -1354,19 +1354,19 @@ public:
     // Returns S_OK or error code. Fills *pcbStringsHeapSize with 0 on error.
     // Implements public API code:IMetaDataTables::GetStringHeapSize.
     STDMETHODIMP GetStringHeapSize(
-        __out ULONG *pcbStringsHeapSize);       // [OUT] Size of the string heap.
+        _Out_ ULONG *pcbStringsHeapSize);       // [OUT] Size of the string heap.
 
     // Fills size (*pcbBlobsHeapSize) of blobs heap (#Blob).
     // Returns S_OK or error code. Fills *pcbBlobsHeapSize with 0 on error.
     // Implements public API code:IMetaDataTables::GetBlobHeapSize.
     STDMETHODIMP GetBlobHeapSize(
-        __out ULONG *pcbBlobsHeapSize);         // [OUT] Size of the blob heap.
+        _Out_ ULONG *pcbBlobsHeapSize);         // [OUT] Size of the blob heap.
 
     // Fills size (*pcbGuidsHeapSize) of guids heap (#GUID).
     // Returns S_OK or error code. Fills *pcbGuidsHeapSize with 0 on error.
     // Implements public API code:IMetaDataTables::GetGuidHeapSize.
     STDMETHODIMP GetGuidHeapSize(
-        __out ULONG *pcbGuidsHeapSize);         // [OUT] Size of the Guid heap.
+        _Out_ ULONG *pcbGuidsHeapSize);         // [OUT] Size of the Guid heap.
 
     // Fills size (*pcbUserStringsHeapSize) of user strings heap (#US) (referenced from IL).
     // Returns S_OK or error code. Fills *pcbUserStringsHeapSize with 0 on error.
@@ -1374,16 +1374,16 @@ public:
     // Backward compatibility: returns S_OK even if the string doesn't have odd number of bytes as specified
     // in CLI ECMA specification.
     STDMETHODIMP GetUserStringHeapSize(
-        __out ULONG *pcbUserStringsHeapSize);   // [OUT] Size of the user string heap.
+        _Out_ ULONG *pcbUserStringsHeapSize);   // [OUT] Size of the user string heap.
 
     // Implements public API code:IMetaDataTables::GetNumTables.
     STDMETHODIMP GetNumTables(
-        __out ULONG *pcTables);         // [OUT] Count of tables.
+        _Out_ ULONG *pcTables);         // [OUT] Count of tables.
 
     // Implements public API code:IMetaDataTables::GetNumTables.
     STDMETHODIMP GetTableIndex(
               ULONG  token,             // [IN] Token for which to get table index.
-        __out ULONG *pixTbl);           // [OUT] Put table index here.
+        _Out_ ULONG *pixTbl);           // [OUT] Put table index here.
 
     // Implements public API code:IMetaDataTables::GetTableInfo.
     STDMETHODIMP GetTableInfo(
@@ -1458,8 +1458,8 @@ public:
     // Implements public API code:IMetaDataTables::GetUserString.
     STDMETHODIMP GetUserString(
                         ULONG        ixUserString,  // [IN] Value from a UserString column.
-        __out           ULONG       *pcbData,       // [OUT] Put size of the UserString here.
-        __deref_out_opt const void **ppData);       // [OUT] Put a pointer to the UserString here.
+        _Out_           ULONG       *pcbData,       // [OUT] Put size of the UserString here.
+        _Outptr_opt_ const void **ppData);       // [OUT] Put a pointer to the UserString here.
 
     //#GetNextString_IMetaDataTables
     // Fills index of string (*pixNextString) from the internal strings heap (#String) starting behind
@@ -1468,7 +1468,7 @@ public:
     // Implements public API code:IMetaDataTables::.GetNextString.
     STDMETHODIMP GetNextString(
               ULONG  ixString,                  // [IN] Value from a string column.
-        __out ULONG *pixNextString);            // [OUT] Put the index of the next string here.
+        _Out_ ULONG *pixNextString);            // [OUT] Put the index of the next string here.
 
     //#GetNextBlob_IMetaDataTables
     // Fills index of blob (*pixNextBlob) from the blobs heap (#Blob) starting behind blob at index ixBlob.
@@ -1476,7 +1476,7 @@ public:
     // Implements public API code:IMetaDataTables::GetNextString.
     STDMETHODIMP GetNextBlob(
               ULONG  ixBlob,                    // [IN] Value from a blob column.
-        __out ULONG *pixNextBlob);              // [OUT] Put the index of the next blob here.
+        _Out_ ULONG *pixNextBlob);              // [OUT] Put the index of the next blob here.
 
     //#GetNextGuid_IMetaDataTables
     // Fills index of guid (*pixNextGuid) from the guids heap (#GUID) starting behind guid at index ixGuid.
@@ -1486,7 +1486,7 @@ public:
     // specified in CLI ECMA specification.
     STDMETHODIMP GetNextGuid(
               ULONG  ixGuid,                    // [IN] Value from a guid column.
-        __out ULONG *pixNextGuid);              // [OUT] Put the index of the next guid here.
+        _Out_ ULONG *pixNextGuid);              // [OUT] Put the index of the next guid here.
 
     //#GetNextUserString_IMetaDataTables
     // Fills index of user string (*pixNextUserString) from the user strings heap (#US) starting behind string
@@ -1497,7 +1497,7 @@ public:
     // in CLI ECMA specification.
     STDMETHODIMP GetNextUserString(
               ULONG  ixUserString,              // [IN] Value from a UserString column.
-        __out ULONG *ixpNextUserString);        // [OUT] Put the index of the next user string here.
+        _Out_ ULONG *ixpNextUserString);        // [OUT] Put the index of the next user string here.
 
     // Implements public API code:IMetaDataTables2::GetMetaDataStorage.
     STDMETHODIMP GetMetaDataStorage(

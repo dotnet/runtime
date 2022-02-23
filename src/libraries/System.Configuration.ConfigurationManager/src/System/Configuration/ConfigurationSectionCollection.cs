@@ -68,10 +68,8 @@ namespace System.Configuration
             foreach (string key in allKeys) Remove(key);
         }
 
-        public void CopyTo(ConfigurationSection[] array, int index)
+        public void CopyTo(ConfigurationSection[] array!!, int index)
         {
-            if (array == null) throw new ArgumentNullException(nameof(array));
-
             int c = Count;
             if (array.Length < c + index) throw new ArgumentOutOfRangeException(nameof(index));
 
