@@ -807,13 +807,27 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
 	case SN_CreateScalarUnsafe:
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
-	case SN_Equals:
+	case SN_Equals: {
+		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+			return NULL;
+
 		return emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
-	case SN_EqualsAll:
+	}
+	case SN_EqualsAll: {
+		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+			return NULL;
+
 		return emit_xequal (cfg, klass, args [0], args [1]);
+	}
 	case SN_EqualsAny: {
+		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+			return NULL;
+
 		MonoInst *cmp_eq = emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
-		MonoInst *zero = emit_xzero (cfg, args [0]->klass);
+		MonoInst *zero = emit_xzero (cfg, klass);
 		MonoInst *ins = emit_xequal (cfg, klass, cmp_eq, zero);
 		int sreg = ins->dreg;
 		int dreg = alloc_ireg (cfg);
@@ -846,6 +860,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_GreaterThanOrEqual:
 	case SN_LessThan:
 	case SN_LessThanOrEqual: {
+		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
+			return NULL;
+
 		gboolean is_unsigned = type_is_unsigned (fsig->params [0]);
 		MonoInst *ins = emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
 		switch (id) {
