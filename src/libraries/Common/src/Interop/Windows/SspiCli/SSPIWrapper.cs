@@ -436,7 +436,11 @@ namespace System.Net
                 typeof(SafeFreeCertContext),
                 out SafeHandle? sspiHandle);
 
-            if (errorCode != 0)
+            // certificate is not always present (e.g. on server when querying client certificate)
+            // but we still want to consider such case as a success.
+            bool success = errorCode == 0 || errorCode == (int)Interop.SECURITY_STATUS.NoCredentials;
+
+            if (!success)
             {
                 sspiHandle?.Dispose();
                 sspiHandle = null;
@@ -444,7 +448,7 @@ namespace System.Net
             }
 
             certContext = sspiHandle as SafeFreeCertContext;
-            return errorCode == 0;
+            return success;
         }
 
         public static bool QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(ISSPIInterface secModule, SafeDeleteContext securityContext, out SafeFreeCertContext? certContext)

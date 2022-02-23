@@ -36,9 +36,9 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [InlineData(true, true)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
+        // [InlineData(true, true)]
+        // [InlineData(false, true)]
+        // [InlineData(true, false)]
         [InlineData(false, false)]
         public async Task CertificateSelectionCallback_DelayedCertificate_OK(bool delayCertificate, bool sendClientCertificate)
         {
