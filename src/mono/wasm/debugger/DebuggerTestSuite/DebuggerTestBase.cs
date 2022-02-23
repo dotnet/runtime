@@ -12,6 +12,7 @@ using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace DebuggerTests
@@ -26,7 +27,14 @@ namespace DebuggerTests
 
         public bool UseCallFunctionOnBeforeGetProperties;
 
+        private const int DefaultTestTimeoutMs = 1 * 60 * 1000;
+        protected TimeSpan TestTimeout = TimeSpan.FromMilliseconds(DefaultTestTimeoutMs);
+
         static string s_debuggerTestAppPath;
+        static int s_idCounter = -1;
+
+        public int Id { get; init; }
+
         protected static string DebuggerTestAppPath
         {
             get
@@ -104,13 +112,31 @@ namespace DebuggerTests
             }
         }
 
+        static string s_testLogPath = null;
+        public static string TestLogPath
+        {
+            get
+            {
+                if (s_testLogPath == null)
+                {
+                    string logPathVar = Environment.GetEnvironmentVariable("TEST_LOG_PATH");
+                    logPathVar = string.IsNullOrEmpty(logPathVar) ? Environment.CurrentDirectory : logPathVar;
+                    Interlocked.CompareExchange(ref s_testLogPath, logPathVar, null);
+                    Console.WriteLine ($"logPathVar: {logPathVar}, s_testLogPath: {s_testLogPath}");
+                }
+
+                return s_testLogPath;
+            }
+        }
+
         public DebuggerTestBase(string driver = "debugger-driver.html")
         {
+            Id = Interlocked.Increment(ref s_idCounter);
             // the debugger is working in locale of the debugged application. For example Datetime.ToString()
             // we want the test to mach it. We are also starting chrome with --lang=en-US
             System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 
-            insp = new Inspector();
+            insp = new Inspector(Id);
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
 
@@ -134,7 +160,7 @@ namespace DebuggerTests
              };
 
             await Ready();
-            await insp.OpenSessionAsync(fn);
+            await insp.OpenSessionAsync(fn, TestTimeout);
         }
 
         public virtual async Task DisposeAsync() => await insp.ShutdownAsync().ConfigureAwait(false);

@@ -18,6 +18,7 @@
     <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
     <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj" ReferenceOutputAssembly="false" Private="false" />
 
+    <PackageReference Include="Serilog.Extensions.Logging.File" Version="2.0.0" />
     <!-- needed for ConditionalFact etc -->
     <ProjectReference Include="$(RepoRoot)src\libraries\Common\tests\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
