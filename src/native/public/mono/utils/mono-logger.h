@@ -10,7 +10,7 @@ MONO_BEGIN_DECLS
 
 #include <mono/utils/details/mono-logger-types.h>
 
-#define MONO_API_FUNCTION(ret,name,args) ret name args;
+#define MONO_API_FUNCTION(ret,name,args) MONO_API ret name args;
 #include <mono/utils/details/mono-logger-functions.h>
 #undef MONO_API_FUNCTION
 

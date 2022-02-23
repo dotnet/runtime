@@ -50,7 +50,7 @@ MONO_BEGIN_DECLS
 
 #define mono_metadata_token_code(token) ((token) & 0xff000000)
 
-#define MONO_API_FUNCTION(ret,name,args) ret name args;
+#define MONO_API_FUNCTION(ret,name,args) MONO_API ret name args;
 #include <mono/metadata/details/metadata-functions.h>
 #undef MONO_API_FUNCTION
 

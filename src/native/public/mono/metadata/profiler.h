@@ -30,7 +30,7 @@ MONO_BEGIN_DECLS
  */
 #define MONO_PROFILER_API_VERSION 3
 
-#define MONO_API_FUNCTION(ret,name,args) ret name args;
+#define MONO_API_FUNCTION(ret,name,args) MONO_API ret name args;
 #include <mono/metadata/details/profiler-functions.h>
 #undef MONO_API_FUNCTION
 

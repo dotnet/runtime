@@ -19,7 +19,7 @@
 MONO_BEGIN_DECLS
 MONO_API_DATA const MonoOpcode mono_opcodes [];
 
-#define MONO_API_FUNCTION(ret,name,args) ret name args;
+#define MONO_API_FUNCTION(ret,name,args) MONO_API ret name args;
 #include <mono/metadata/details/opcodes-functions.h>
 #undef MONO_API_FUNCTION
 MONO_END_DECLS
