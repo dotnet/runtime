@@ -2121,8 +2121,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             using var localsDebuggerCmdReader = await SendDebuggerAgentCommand(CmdFrame.GetValues, commandParamsWriter, token);
             foreach (var var in varIds)
             {
-                var var_json = await CreateJObjectForVariableValue(localsDebuggerCmdReader, var.Name, false, -1, false, token);
-                locals.Add(var_json);
+                try
+                {
+                    var var_json = await CreateJObjectForVariableValue(localsDebuggerCmdReader, var.Name, false, -1, false, token);
+                    locals.Add(var_json);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug($"Failed to create value for local var {var}: {ex}");
+                    continue;
+                }
             }
             if (!method.Info.IsStatic())
             {
