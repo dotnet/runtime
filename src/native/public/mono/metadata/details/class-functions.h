@@ -162,8 +162,6 @@ MONO_API_FUNCTION(MONO_API MonoMethod*, mono_event_get_add_method, (MonoEvent *e
 
 MONO_API_FUNCTION(MONO_API MonoMethod*, mono_event_get_remove_method, (MonoEvent *event))
 
-MONO_API_FUNCTION(MONO_API MonoMethod*, mono_event_get_remove_method, (MonoEvent *event))
-
 MONO_API_FUNCTION(MONO_API MonoMethod*, mono_event_get_raise_method, (MonoEvent *event))
 
 MONO_API_FUNCTION(MONO_API MonoClass*, mono_event_get_parent, (MonoEvent *event))
