@@ -392,6 +392,7 @@ gchar   g_ascii_tolower      (gchar c);
 gchar   g_ascii_toupper      (gchar c);
 gchar  *g_ascii_strdown      (const gchar *str, gssize len);
 void    g_ascii_strdown_no_alloc (char* dst, const char* src, gsize len);
+gchar  *g_ascii_strup        (const gchar *str, gssize len);
 gint    g_ascii_strncasecmp  (const gchar *s1, const gchar *s2, gsize n);
 gint    g_ascii_strcasecmp   (const gchar *s1, const gchar *s2);
 gint    g_ascii_xdigit_value (gchar c);
@@ -399,6 +400,34 @@ gint    g_ascii_xdigit_value (gchar c);
 #define g_ascii_isalpha(c)   (isalpha (c) != 0)
 #define g_ascii_isprint(c)   (isprint (c) != 0)
 #define g_ascii_isxdigit(c)  (isxdigit (c) != 0)
+gboolean g_utf16_ascii_equal (const gunichar2 *utf16, size_t ulen, const char *ascii, size_t alen);
+gboolean g_utf16_asciiz_equal (const gunichar2 *utf16, const char *ascii);
+
+static inline
+gboolean g_ascii_equal (const char *s1, gsize len1, const char *s2, gsize len2)
+{
+    return len1 == len2 && (s1 == s2 || memcmp (s1, s2, len1) == 0);
+}
+
+static inline
+gboolean g_asciiz_equal (const char *s1, const char *s2)
+{
+    return s1 == s2 || strcmp (s1, s2) == 0;
+}
+
+static inline
+gboolean
+g_ascii_equal_caseinsensitive (const char *s1, gsize len1, const char *s2, gsize len2)
+{
+    return len1 == len2 && (s1 == s2 || g_ascii_strncasecmp (s1, s2, len1) == 0);
+}
+
+static inline
+gboolean
+g_asciiz_equal_caseinsensitive (const char *s1, const char *s2)
+{
+    return s1 == s2 || g_ascii_strcasecmp (s1, s2) == 0;
+}
 
 /* FIXME: g_strcasecmp supports utf8 unicode stuff */
 #ifdef _MSC_VER
@@ -857,6 +886,7 @@ typedef enum {
 } GConvertError;
 
 gint       g_unichar_to_utf8 (gunichar c, gchar *outbuf);
+gunichar  *g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written);
 gunichar  *g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
 G_EXTERN_C // Used by libtest, at least.
 gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
@@ -1065,6 +1095,32 @@ gchar *g_mkdtemp (gchar *tmpl);
  * Low-level write-based printing functions
  */
 
+static inline int
+g_async_safe_fgets (char *str, int num, int handle, gboolean *newline)
+{
+	memset (str, 0, num);
+	// Make sure we don't overwrite the last index so that we are
+	// guaranteed to be NULL-terminated
+	int without_padding = num - 1;
+	int i=0;
+	while (i < without_padding && g_read (handle, &str [i], sizeof(char))) {
+		if (str [i] == '\n') {
+			str [i] = '\0';
+			*newline = TRUE;
+		}
+
+		if (!isprint (str [i]))
+			str [i] = '\0';
+
+		if (str [i] == '\0')
+			break;
+
+		i++;
+	}
+
+	return i;
+}
+
 static inline gint
 g_async_safe_vfprintf (int handle, gchar const *format, va_list args)
 {
@@ -1134,7 +1190,12 @@ gchar    *g_convert            (const gchar *str, gssize len,
 extern const guchar g_utf8_jump_table[256];
 
 gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **end);
+gunichar  g_utf8_get_char_validated (const gchar *str, gssize max_len);
+#define   g_utf8_next_char(p)  ((p) + g_utf8_jump_table[(guchar)(*p)])
+gunichar  g_utf8_get_char      (const gchar *src);
 glong     g_utf8_strlen        (const gchar *str, gssize max);
+gchar    *g_utf8_offset_to_pointer (const gchar *str, glong offset);
+glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 
 /*
  * priorities

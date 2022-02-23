@@ -124,6 +124,7 @@
 #define g_path_get_basename monoeg_g_path_get_basename
 #define g_path_get_dirname monoeg_g_path_get_dirname
 #define g_path_is_absolute monoeg_g_path_is_absolute
+#define g_async_safe_fgets monoeg_g_async_safe_fgets
 #define g_async_safe_fprintf monoeg_g_async_safe_fprintf
 #define g_async_safe_vfprintf monoeg_g_async_safe_vfprintf
 #define g_async_safe_printf monoeg_g_async_safe_printf
@@ -233,14 +234,18 @@
 #define g_utf16_to_ucs4 monoeg_g_utf16_to_ucs4
 #define g_utf16_to_utf8 monoeg_g_utf16_to_utf8
 #define g_utf16_to_utf8_custom_alloc monoeg_g_utf16_to_utf8_custom_alloc
+#define g_utf16_ascii_equal monoeg_g_utf16_ascii_equal
+#define g_utf16_asciiz_equal monoeg_g_utf16_asciiz_equal
 #define g_utf8_jump_table monoeg_g_utf8_jump_table
+#define g_utf8_get_char monoeg_g_utf8_get_char
 #define g_utf8_strlen monoeg_g_utf8_strlen
 #define g_utf8_to_utf16 monoeg_g_utf8_to_utf16
 #define g_utf8_to_utf16_custom_alloc monoeg_g_utf8_to_utf16_custom_alloc
 #define g_utf8_validate monoeg_g_utf8_validate
 #define g_unichar_to_utf8 monoeg_g_unichar_to_utf8
-#define g_unichar_is_space monoeg_g_unichar_is_space
-#define g_unicode_break_type monoeg_g_unicode_break_type
+#define g_utf8_offset_to_pointer monoeg_g_utf8_offset_to_pointer
+#define g_utf8_pointer_to_offset monoeg_g_utf8_pointer_to_offset
+#define g_utf8_to_ucs4_fast monoeg_g_utf8_to_ucs4_fast
 #define g_vasprintf monoeg_g_vasprintf
 #define g_win32_getlocale monoeg_g_win32_getlocale
 #define g_assertion_disable_global monoeg_assertion_disable_global
@@ -259,8 +264,10 @@
 #define g_utf16_len monoeg_utf16_len
 
 #define g_ascii_strcasecmp monoeg_ascii_strcasecmp
+#define g_ascii_strup monoeg_ascii_strup
 #define g_ascii_toupper monoeg_ascii_toupper
 #define g_unichar_to_utf16 monoeg_unichar_to_utf16
+#define g_utf8_get_char_validated monoeg_utf8_get_char_validated
 #define g_utf8_to_ucs4 monoeg_utf8_to_ucs4
 
 
