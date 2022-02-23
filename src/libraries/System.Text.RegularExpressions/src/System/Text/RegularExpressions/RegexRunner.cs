@@ -20,7 +20,9 @@ namespace System.Text.RegularExpressions
 {
     public abstract class RegexRunner
     {
-        protected internal int runtextbeg;         // beginning of text to search
+        protected internal int runtextbeg;         // beginning of text to search. We now always use a sliced span of the input
+                                                   // from runtextbeg to runtextend, which means that runtextbeg is now always 0 except
+                                                   // for CompiledToAssembly scenario which works over the original input.
         protected internal int runtextend;         // end of text to search
         protected internal int runtextstart;       // starting point for search
 
@@ -57,6 +59,10 @@ namespace System.Text.RegularExpressions
         protected internal Match? runmatch;        // result object
         protected internal Regex? runregex;        // regex object
 
+        internal int originalRuntextbeg;           // In the CompiledToAssembly case, it is important to store the original runtexbeg
+                                                   // that was passed in from the user, mainly because it works over the original input
+                                                   // as opposed to working over the sliced span.
+
         // TODO: Expose something as protected internal: https://github.com/dotnet/runtime/issues/59629
         private protected bool quick;              // false if match details matter, true if only the fact that match occurred matters
 
@@ -91,25 +97,29 @@ namespace System.Text.RegularExpressions
         protected internal virtual void Scan(ReadOnlySpan<char> text)
         {
             string? s = runtext;
-            // If beginning was passed in, then runtext and span won't match lengths so calculate the beginning to be used for the comparison.
-            int beginning = (s != null && s.Length != text.Length) ? s.Length - text.Length : 0;
-            if (s == null || text != s.AsSpan(beginning, text.Length))
+            // The passed in span is sliced from runtextbeg to runtextend already, but in the precompiled scenario
+            // we require to use the complete input and to use the full string instead. We first test to ensure that the
+            // passed in span matches the original input by using the original runtextbeg. If that is not the case,
+            // then it means the user is calling the new span-based APIs using CompiledToAssembly, so we throw NSE
+            // so as to prevent a lot of unexpected allocations.
+            if (s == null || text != s.AsSpan(originalRuntextbeg, text.Length))
             {
                 // If we landed here then we are dealing with a CompiledToAssembly case where the new Span overloads are being called.
                 throw new NotSupportedException(SR.UsingSpanAPIsWithCompiledToAssembly);
             }
 
-            // If beginning wasn't zero, then we have to adjust some of the
-            // internal fields of RegexRunner to ensure the Precompiled Go and FFC
-            // will work as expected.
-            if (beginning != 0)
+            // If the original beginning wasn't zero, then we have to adjust some of the
+            // internal fields of RegexRunner to ensure the Precompiled Go and FFC methods
+            // will continue to work as expected since they work over the original input, as opposed
+            // to using the sliced span.
+            if (originalRuntextbeg != 0)
             {
-                runtextbeg = beginning;
-                runtextstart += beginning;
-                runtextend += beginning;
+                runtextbeg = originalRuntextbeg;
+                runtextstart += originalRuntextbeg;
+                runtextend += originalRuntextbeg;
             }
 
-            Scan(runregex!, s, beginning, beginning + text.Length, runtextstart + beginning, -1, quick, runregex!.internalMatchTimeout);
+            Scan(runregex!, s, originalRuntextbeg, originalRuntextbeg + text.Length, runtextstart + originalRuntextbeg, -1, quick, runregex!.internalMatchTimeout);
         }
 
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)

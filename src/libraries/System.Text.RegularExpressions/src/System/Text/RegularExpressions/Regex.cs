@@ -400,6 +400,10 @@ namespace System.Text.RegularExpressions
 
         private static Match? InternalPerformScan(bool quick, string input, int beginning, RegexRunner runner, ReadOnlySpan<char> span, bool returnNullIfQuick)
         {
+            // We need to save the original beginning of the input in case we are in the CompileToAssembly case, which relies on
+            // setting runtextbeg and runtextend correctly. We cannot calculate these values on the fly based on input and the span
+            // because it is not guaranteed that span.Length + beginning = input.
+            runner.originalRuntextbeg = beginning;
             runner.Scan(span);
 
             Match? match = runner.runmatch;
