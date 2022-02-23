@@ -114,7 +114,7 @@ steps:
       chmod -R a+rx .
       ./dotnet-install.sh --channel 6.0.2xx --quality signed --install-dir .
       ./dotnet --info
-      ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --source https://aka.ms/dotnet6/nuget/index.json --source https://api.nuget.org/v3/index.json
+      ./dotnet workload install maui  --source https://aka.ms/dotnet6/nuget/index.json --source https://api.nuget.org/v3/index.json
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
 
