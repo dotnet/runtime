@@ -54,9 +54,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>fe5cc1841d12196d94a4ae3b276cb92d8d7ca73d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="6.0.0-beta.22107.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="6.0.0-beta.22122.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>fe5cc1841d12196d94a4ae3b276cb92d8d7ca73d</Sha>
+      <Sha>853684cf39fdc68035736a4ff0f81303bf4b4361</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Templating" Version="6.0.0-beta.22107.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
