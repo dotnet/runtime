@@ -487,11 +487,11 @@ namespace System.Text.RegularExpressions
             try
             {
                 runner.InitializeTimeout(internalMatchTimeout);
-                runner.runtext = input;
                 int runtextpos = startat;
                 while (true)
                 {
                     runner.InitializeForScan(this, input, startat, false);
+                    runner.runtext = input;
                     runner.runtextpos = runtextpos;
 
                     int stoppos = RightToLeft ? 0 : input.Length;

@@ -14,18 +14,17 @@ namespace System.Text.RegularExpressions.Tests
 {
     public class PrecompiledRegexScenarioTest
     {
-        [Fact]
-        public void TestPrecompiledRegex()
-        {
-            string text = "asdf134success1245something";
-            string textWithMultipleMatches = @"asdf134success1245something
+        const string text = "asdf134success1245something";
+        const string textWithMultipleMatches = @"asdf134success1245something
 bsdf135success1245somethingelse
 csdf136success2245somethingnew
 dsdf137success3245somethingold";
+
+        [Fact]
+        public void PrecompiledRegex_MatchesTest()
+        {
             string[] expectedMatches = textWithMultipleMatches.Split(Environment.NewLine);
             RegexTestClass testClass = new RegexTestClass();
-
-            
 
             // Test Matches overloads
             Assert.Equal(1, testClass.Matches(text).Count);
@@ -36,9 +35,13 @@ dsdf137success3245somethingold";
             {
                 Assert.Equal(expectedMatches[i], multipleMatches[i].Value.Trim()); // Calling Trim since the match will contain the new line as part of the match.
             }
+        }
 
+        [Fact]
+        public void PrecompiledRegex_MatchTest()
+        {
+            RegexTestClass testClass = new RegexTestClass();
 
-            // Test Match overloads
             Assert.Equal(1, testClass.Match(text).Groups[0].Captures.Count);
             Assert.Equal(Match.Empty, testClass.Match(text, beginning: 7, length: text.Length - 7));
             Assert.Equal(5, testClass.Match(text, beginning: 5, length: text.Length - 5).Index);
@@ -46,11 +49,52 @@ dsdf137success3245somethingold";
             Assert.True(testClass.Match("asdf134succes1245somethingasdf134success1245something", 26, 27).Success); // The last 27 characters should match.
             Assert.Equal(Match.Empty, testClass.Match(text, startat: 7));
             Assert.Equal(6, testClass.Match(text, startat: 6).Index);
+        }
 
-            // Test Span-based IsMatch throws for Precompiled scenario.
+        [Fact]
+        public void PrecompiledRegex_ReplaceTest()
+        {
+            RegexTestClass testClass = new RegexTestClass();
+
+            Assert.Equal("4success", testClass.Replace(text, "$1${output}"));
+            Assert.Equal("4success", testClass.Replace(text, (match) =>
+            {
+                return $"{match.Groups[1]}{match.Groups["output"]}";
+            }));
+            Assert.Equal("4success\n5success\n6success\n7success", testClass.Replace(textWithMultipleMatches, "$1${output}"));
+        }
+
+        [Fact]
+        public void PrecompiledRegex_SplitTest()
+        {
+            RegexTestClass testClass = new RegexTestClass();
+
+            Assert.Equal(new[] { "", "4", "success", "\n", "5", "success", "\n", "6", "success", "\n", "7", "success", "" }, testClass.Split(textWithMultipleMatches));
+            Assert.Equal(new[] { "", "4", "success", "\nbsdf135success1245somethingelse\r\ncsdf136success2245somethingnew\r\ndsdf137success3245somethingold" }, testClass.Split(textWithMultipleMatches, 2));
+        }
+
+        [Fact]
+        public void PrecompiledRegex_CountTest()
+        {
+            RegexTestClass testClass = new RegexTestClass();
+
+            Assert.Equal(4, testClass.Count(textWithMultipleMatches));
+            Assert.Equal(4, testClass.Count(textWithMultipleMatches));
+        }
+
+        [Fact]
+        public void PrecompiledRegex_ThrowsWhenSpanIsMatchIsCalled()
+        {
+            RegexTestClass testClass = new RegexTestClass();
+
             Assert.Throws<NotSupportedException>(() => testClass.IsMatch(text.AsSpan()));
+        }
 
-            // Test Groups
+        [Fact]
+        public void PrecompiledRegex_Groups()
+        {
+            RegexTestClass testClass = new RegexTestClass();
+
             Assert.Equal(text, testClass.Match(text).Groups[0].Value);
             Assert.Equal(new int[] { 0, 1, 2 }, testClass.GetGroupNumbers());
             Assert.Equal(new string[] { "0", "1", "output" }, testClass.GetGroupNames());
