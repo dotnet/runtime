@@ -1786,10 +1786,6 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     {
         return (OBJECTREF*) pRD->pCurrentContextPointers->Fp;
     }
-    //else if (regNum == 2) //TP
-    //{
-    //    return (OBJECTREF*) pRD->pCurrentContextPointers->Tp;
-    //}
     else if (regNum < 22)
     {
         return (OBJECTREF*)*(DWORD64**)(&pRD->volatileCurrContextPointers.A0 + (regNum - 4));//A0=4.
