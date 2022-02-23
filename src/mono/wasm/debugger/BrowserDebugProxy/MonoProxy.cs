@@ -805,12 +805,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (retValue?["value"]?.Value<bool>() == true)
                         return true;
                 }
-                else if (retValue?["value"]?.Type != JTokenType.Null)
+                else if (retValue?["value"] != null && // null object, missing value
+                         retValue?["value"]?.Type != JTokenType.Null)
+                {
                     return true;
+                }
             }
             catch (Exception e)
             {
-                Log("info", $"Unable evaluate conditional breakpoint: {e} condition:{condition}");
+                Log("info", $"Unable to evaluate breakpoint condition {condition}: {e}");
                 bp.ConditionAlreadyEvaluatedWithError = true;
                 return false;
             }
