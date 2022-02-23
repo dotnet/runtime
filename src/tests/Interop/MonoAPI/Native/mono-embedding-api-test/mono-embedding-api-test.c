@@ -26,7 +26,9 @@
 #include <pthread.h>
 #endif
 
+#ifndef WIN32
 #define S_OK 0x0
+#endif
 
 #ifdef __cplusplus
 
@@ -6058,85 +6060,6 @@ mono_test_marshal_return_single_double_struct (void)
 {
 	SingleDoubleStruct res = {3.0};
 	return res;
-}
-
-LIBTEST_API int STDCALL
-mono_test_has_thiscall_globals (void)
-{
-// Visual C++ does not accept __thiscall on global functions, only
-// member function and function pointers. Gcc accepts it also on global functions.
-#if defined (HOST_X86) && defined (HOST_WIN32) && !defined (_MSC_VER)
-	return 1;
-#else
-	return 0;
-#endif
-}
-
-LIBTEST_API int STDCALL
-mono_test_has_thiscall_pointers (void)
-{
-#if defined (HOST_X86) && defined (HOST_WIN32)
-	return 1;
-#else
-	return 0;
-#endif
-}
-
-LIBTEST_API int
-#ifndef _MSC_VER
-__thiscall
-#endif
-_mono_test_native_thiscall1 (int arg)
-{
-	return arg;
-}
-
-LIBTEST_API int
-#ifndef _MSC_VER
-__thiscall
-#endif
-_mono_test_native_thiscall2 (int arg, int arg2)
-{
-	return arg + (arg2^1);
-}
-
-LIBTEST_API int
-#ifndef _MSC_VER
-__thiscall
-#endif
-_mono_test_native_thiscall3 (int arg, int arg2, int arg3)
-{
-	return arg + (arg2^1) + (arg3^2);
-}
-
-typedef int (
-#ifndef _MSC_VER
-__thiscall
-#endif
-*ThiscallFunction)(int arg, int arg2);
-
-LIBTEST_API ThiscallFunction STDCALL
-mono_test_get_native_thiscall2 (void)
-{
-	return _mono_test_native_thiscall2;
-}
-
-LIBTEST_API int STDCALL
-_mono_test_managed_thiscall1 (int (__thiscall*fn)(int), int arg)
-{
-	return fn(arg);
-}
-
-LIBTEST_API int STDCALL
-_mono_test_managed_thiscall2 (int (__thiscall*fn)(int,int), int arg, int arg2)
-{
-	return fn(arg, arg2);
-}
-
-LIBTEST_API int STDCALL
-_mono_test_managed_thiscall3 (int (__thiscall*fn)(int,int,int), int arg, int arg2, int arg3)
-{
-	return fn(arg, arg2, arg3);
 }
 
 typedef struct {
