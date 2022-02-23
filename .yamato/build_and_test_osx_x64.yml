@@ -1,9 +1,14 @@
+{% metadata_file .yamato/Globals.metafile %}
+---
 name: Build and Test OSX x64
 
 agent:
   type: Unity::VM::osx
   image: platform-foundation/mac-bokken:latest
   flavor: m1.mac
+
+variables:
+  ARTIFACT_FILENAME: {{globals.artifact_base_name}}-osx-x64.7z
 
 commands:
   - mkdir artifacts
@@ -17,7 +22,7 @@ commands:
     cmake --build .
   - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset clr+libs -a x64 -c release -ci -ninja
   - cp unity/unitygc/release/libunitygc.dylib artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64/native
-  - artifacts/7za-mac-x64/7za a artifacts/unity/dotnet-runtime-unity-osx-x64.7z ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64
+  - artifacts/7za-mac-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64
 # build/run tests
   - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset libs.tests -test -a x64 -c release -ci -ninja
   - ./src/tests/build.sh x64 release ci
@@ -34,4 +39,4 @@ triggers:
 artifacts: 
   osx64:
     paths:
-      - artifacts/unity/dotnet-runtime-unity-osx-x64.7z
+      - artifacts/unity/$ARTIFACT_FILENAME

@@ -1,0 +1,22 @@
+name: Build and Publish To Stevedore OSX x64
+
+agent:
+  type: Unity::VM::osx
+  image: platform-foundation/mac-bokken:latest
+  flavor: m1.mac
+
+dependencies:
+  - path: .yamato/build_and_test_osx_x64.yml
+    location: build
+    unzip: false
+
+commands:
+# upload to stevedore
+  - curl -sSo StevedoreUpload "$STEVEDORE_UPLOAD_TOOL_MAC_X64_URL"
+  - chmod +x StevedoreUpload
+  - ./StevedoreUpload --version-len=12 --repo=testing --version="$GIT_REVISION" build/*
+
+artifacts: 
+  osx64:
+    paths:
+      - stevedore/artifactid.txt
