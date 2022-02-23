@@ -11,10 +11,10 @@ internal static partial class Interop
 {
     internal static partial class Winspool
     {
-        [GeneratedDllImport(Libraries.Winspool, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Winspool, EntryPoint = "DeviceCapabilitiesW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial int DeviceCapabilities(string pDevice, string pPort, short fwCapabilities, IntPtr pOutput, IntPtr /*DEVMODE*/ pDevMode);
 
-        [GeneratedDllImport(Libraries.Winspool, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Winspool, EntryPoint = "DocumentPropertiesW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial int DocumentProperties(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -29,7 +29,7 @@ internal static partial class Interop
 #endif
             HandleRef /*DEVMODE*/ pDevModeInput, int fMode);
 
-        [GeneratedDllImport(Libraries.Winspool, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Winspool, EntryPoint = "DocumentPropertiesW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial int DocumentProperties(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]

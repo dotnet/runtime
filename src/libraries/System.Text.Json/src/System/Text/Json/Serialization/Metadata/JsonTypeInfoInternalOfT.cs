@@ -14,9 +14,10 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates serialization metadata for a type using a simple converter.
         /// </summary>
-        public JsonTypeInfoInternal(JsonSerializerOptions options)
+        public JsonTypeInfoInternal(JsonConverter converter, JsonSerializerOptions options)
             : base(typeof(T), options)
         {
+            ElementType = converter.ElementType;
         }
 
         /// <summary>
@@ -45,6 +46,7 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning restore CS8714
 
             PropInitFunc = objectInfo.PropertyMetadataInitializer;
+            ElementType = converter.ElementType;
             SerializeHandler = objectInfo.SerializeHandler;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, Options);
             NumberHandling = objectInfo.NumberHandling;

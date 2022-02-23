@@ -17,12 +17,9 @@ internal static partial class Interop
         }
 
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateNetworkChangeListenerSocket")]
-        public static unsafe partial Error CreateNetworkChangeListenerSocket(int* socket);
-
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseNetworkChangeListenerSocket")]
-        public static partial Error CloseNetworkChangeListenerSocket(int socket);
+        public static unsafe partial Error CreateNetworkChangeListenerSocket(IntPtr* socket);
 
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadEvents")]
-        public static unsafe partial void ReadEvents(int socket, delegate* unmanaged<int, NetworkChangeKind, void> onNetworkChange);
+        public static unsafe partial Error ReadEvents(SafeHandle socket, delegate* unmanaged<IntPtr, NetworkChangeKind, void> onNetworkChange);
     }
 }

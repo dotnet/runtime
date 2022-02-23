@@ -1704,7 +1704,7 @@ public:
         return (DebugOperKind() & DBK_NOTLIR) == 0;
     }
 
-    bool        OperSupportsReverseOps() const;
+    bool OperSupportsReverseOpEvalOrder(Compiler* comp) const;
     static bool RequiresNonNullOp2(genTreeOps oper);
     bool IsValidCallArgument();
 #endif // DEBUG
@@ -5325,6 +5325,34 @@ public:
         return (CorInfoType)gtSimdBaseJitType;
     }
 
+    CorInfoType GetNormalizedSimdBaseJitType() const
+    {
+        CorInfoType simdBaseJitType = GetSimdBaseJitType();
+        switch (simdBaseJitType)
+        {
+            case CORINFO_TYPE_NATIVEINT:
+            {
+#ifdef TARGET_64BIT
+                return CORINFO_TYPE_LONG;
+#else
+                return CORINFO_TYPE_INT;
+#endif
+            }
+
+            case CORINFO_TYPE_NATIVEUINT:
+            {
+#ifdef TARGET_64BIT
+                return CORINFO_TYPE_ULONG;
+#else
+                return CORINFO_TYPE_UINT;
+#endif
+            }
+
+            default:
+                return simdBaseJitType;
+        }
+    }
+
     void SetSimdBaseJitType(CorInfoType simdBaseJitType)
     {
         gtSimdBaseJitType = (unsigned char)simdBaseJitType;
@@ -6088,10 +6116,13 @@ struct GenTreeIndir : public GenTreeOp
     }
 
 #if DEBUGGABLE_GENTREE
-protected:
-    friend GenTree;
     // Used only for GenTree::GetVtableForOper()
     GenTreeIndir() : GenTreeOp()
+    {
+    }
+#else
+    // Used by XARCH codegen to construct temporary trees to pass to the emitter.
+    GenTreeIndir() : GenTreeOp(GT_NOP, TYP_UNDEF)
     {
     }
 #endif
@@ -7844,22 +7875,7 @@ inline GenTree* GenTree::gtGetOp1() const
     }
 }
 
-inline bool GenTree::OperSupportsReverseOps() const
-{
-    if (OperIsBinary() && !OperIs(GT_COMMA, GT_INTRINSIC, GT_BOUNDS_CHECK))
-    {
-        return (AsOp()->gtGetOp1() != nullptr) && (AsOp()->gtGetOp2() != nullptr);
-    }
-#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-    if (OperIsMultiOp())
-    {
-        return AsMultiOp()->GetOperandCount() == 2;
-    }
-#endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
-    return false;
-}
 #endif // DEBUG
-
 inline GenTree* GenTree::gtGetOp2() const
 {
     assert(OperIsBinary());
