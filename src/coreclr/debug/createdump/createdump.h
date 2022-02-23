@@ -98,6 +98,7 @@ typedef int T_CONTEXT;
 #include "crashinfo.h"
 #include "crashreportwriter.h"
 #include "dumpwriter.h"
+#include "runtimeinfo.h"
 #endif
 
 #ifndef MAX_LONGPATH
