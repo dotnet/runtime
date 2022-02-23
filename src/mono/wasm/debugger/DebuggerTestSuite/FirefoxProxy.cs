@@ -267,6 +267,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
         string name = variable.Key;
         JToken value = variable.Value;
         JObject variableValue = null;
+        string valueType = "value";
         if (value?["type"] == null || value["type"].Value<string>() == "object")
         {
             if (value["value"]["type"].Value<string>() == "null")
@@ -279,8 +280,18 @@ public class DebuggerTestFirefox : DebuggerTestBase
                             description = value["value"]["class"].Value<string>()
                         });
             }
-            else
+            else if (value?["value"]?["type"].Value<string>() == "function")
             {
+                variableValue = JObject.FromObject(new
+                    {
+                        type = "function",
+                        objectId = value["value"]["actor"].Value<string>(),
+                        className = "Function",
+                        description = $"get {name} ()"
+                    });
+                valueType = "get";
+            }
+            else {
                 variableValue = JObject.FromObject(new
                         {
                             type = value["value"]["type"],
@@ -290,9 +301,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
                             objectId = value["value"]["actor"].Value<string>(),
                         });
                 if (value["value"]["actor"].Value<string>().StartsWith("dotnet:valuetype:"))
-                {
                     variableValue["isValueType"] = true;
-                }
                 if (value["value"]["actor"].Value<string>().StartsWith("dotnet:array:"))
                     variableValue["subtype"] = "array";
             }
@@ -309,13 +318,13 @@ public class DebuggerTestFirefox : DebuggerTestBase
                         description
                     });
         }
-
-        return JObject.FromObject(new
+        var ret = JObject.FromObject(new
         {
             name,
-            writable = value["writable"] != null ? value["writable"] : false,
-            value = variableValue
+            writable = value["writable"] != null ? value["writable"] : false
         });
+        ret[valueType] = variableValue;
+        return ret;
     }
 
     /* @fn_args is for use with `Runtime.callFunctionOn` only */

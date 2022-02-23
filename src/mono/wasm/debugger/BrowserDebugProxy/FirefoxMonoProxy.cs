@@ -653,9 +653,23 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (var variable in res)
             {
                 JObject variableDesc;
-                if (variable["value"] == null) //skipping properties for now
-                    continue;
-                if (variable["value"]["objectId"] != null)
+                if (variable["get"] != null)
+                {
+                    variableDesc = JObject.FromObject(new
+                    {
+                        value = JObject.FromObject(new
+                        {
+                            @class = variable["value"]?["className"]?.Value<string>(),
+                            value = variable["value"]?["description"]?.Value<string>(),
+                            actor = variable["get"]["objectId"].Value<string>(),
+                            type = "function"
+                        }),
+                        enumerable = true,
+                        configurable = false,
+                        actor = variable["get"]["objectId"].Value<string>()
+                    });
+                }
+                else if (variable["value"]["objectId"] != null)
                 {
                     variableDesc = JObject.FromObject(new
                     {

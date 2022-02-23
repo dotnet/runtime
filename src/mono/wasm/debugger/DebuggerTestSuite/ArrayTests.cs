@@ -9,10 +9,15 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class ArrayTests : DebuggerTestBase
+    public class ArrayTests :
+#if RUN_IN_CHROME
+    DebuggerTestBase
+#else
+    DebuggerTestFirefox
+#endif
     {
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData(19, 8, "PrimitiveTypeLocals", false, 0, false)]
         [InlineData(19, 8, "PrimitiveTypeLocals", false, 0, true)]
         [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
@@ -29,7 +34,7 @@ namespace DebuggerTests
             frame_idx: frame_idx,
             use_cfo: use_cfo);
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData(36, 8, "ValueTypeLocals", false, 0, false)]
         [InlineData(36, 8, "ValueTypeLocals", false, 0, true)]
         [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
@@ -54,7 +59,7 @@ namespace DebuggerTests
             frame_idx: frame_idx,
             use_cfo: use_cfo);
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData(54, 8, "ObjectTypeLocals", false, 0, false)]
         [InlineData(54, 8, "ObjectTypeLocals", false, 0, true)]
         [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
@@ -81,7 +86,7 @@ namespace DebuggerTests
             frame_idx: frame_idx,
             use_cfo: use_cfo);
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData(72, 8, "GenericTypeLocals", false, 0, false)]
         [InlineData(72, 8, "GenericTypeLocals", false, 0, true)]
         [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
@@ -118,7 +123,7 @@ namespace DebuggerTests
             frame_idx: frame_idx,
             use_cfo: use_cfo);
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData(89, 8, "GenericValueTypeLocals", false, 0, false)]
         [InlineData(89, 8, "GenericValueTypeLocals", false, 0, true)]
         [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
@@ -153,7 +158,7 @@ namespace DebuggerTests
             frame_idx: frame_idx,
             use_cfo: use_cfo);
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData(213, 8, "GenericValueTypeLocals2", false, 0, false)]
         [InlineData(213, 8, "GenericValueTypeLocals2", false, 0, true)]
         [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
@@ -218,6 +223,13 @@ namespace DebuggerTests
             string local_var_name_prefix, object[] array, object[] array_elem_props,
             bool test_prev_frame = false, int frame_idx = 0, bool use_cfo = false)
         {
+#if !RUN_IN_CHROME
+            if (use_cfo)
+            {
+                await Task.CompletedTask;
+                return;
+            }
+#endif
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -354,7 +366,7 @@ namespace DebuggerTests
                 label: "c#PointsField");
         }
 
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsStaticAsync(bool use_cfo)
@@ -418,7 +430,7 @@ namespace DebuggerTests
         }
 
         // TODO: Check previous frame too
-        [TheoryDependingOnTheBrowser]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsInstanceAsync(bool use_cfo)
