@@ -480,6 +480,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                             lineNumber = args["location"]["line"].Value<int>() - 1,
                             columnNumber = args["location"]["column"].Value<int>()
                         });
+                        if (args["options"]?["condition"]?.Value<string>() != null)
+                            req["condition"] = args["options"]?["condition"]?.Value<string>();
 
                         var request = BreakpointRequest.Parse(bpid, req);
                         bool loaded = context.Source.Task.IsCompleted;
@@ -611,7 +613,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                             try
                             {
                                 ExecutionContext ctx = GetContext(sessionId);
-                                SendEvent(sessionId, "", ctx.CallStackObject, token);
+                                var callStack = await ctx.CallStackObject.Task;
+                                SendEvent(sessionId, "", callStack, token);
                                 return true;
                             }
                             catch (Exception) //if the page is refreshed maybe it stops here.
@@ -856,13 +859,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 frames = callFrames,
                 from = threadName
             });
+            context.CallStackObject.TrySetResult(o);
             if (!await EvaluateCondition(sessionId, context, context.CallStack.First(), bp, token))
             {
                 context.ClearState();
                 await SendResume(sessionId, token);
                 return true;
             }
-            context.CallStackObject = o;
             return true;
         }
         internal async Task<bool> OnGetBreakableLines(MessageId msg_id, string script_id, CancellationToken token)

@@ -382,7 +382,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public string DebugId { get; set; }
         public Dictionary<string, BreakpointRequest> BreakpointRequests { get; } = new Dictionary<string, BreakpointRequest>();
-
         public TaskCompletionSource<DebugStore> ready;
         public bool IsRuntimeReady => ready != null && ready.Task.IsCompleted;
         public bool IsSkippingHiddenMethod { get; set; }
@@ -396,7 +395,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public List<Frame> CallStack { get; set; }
 
-        public JObject CallStackObject { get; set; }
+        public TaskCompletionSource<JObject> CallStackObject { get; set; } = new TaskCompletionSource<JObject>();
 
         public string[] LoadedFiles { get; set; }
         internal DebugStore store;
@@ -433,7 +432,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             CallStack = null;
             SdbAgent.ClearCache();
             perScopeCaches.Clear();
-            CallStackObject = null;
+            CallStackObject = new TaskCompletionSource<JObject>();
         }
     }
 
