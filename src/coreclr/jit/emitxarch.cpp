@@ -4362,6 +4362,24 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
     emitAdjustStackDepthPushPop(ins);
 }
 
+void emitter::emitIns_A(instruction ins, emitAttr attr, GenTreeIndir* indir)
+{
+    ssize_t    offs = indir->Offset();
+    instrDesc* id   = emitNewInstrAmd(attr, offs);
+    insFormat  fmt  = emitInsModeFormat(ins, IF_ARD);
+
+    id->idIns(ins);
+    emitHandleMemOp(indir, id, fmt, ins);
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+
+    emitAdjustStackDepthPushPop(ins);
+}
+
 //------------------------------------------------------------------------
 // IsMovInstruction: Determines whether a give instruction is a move instruction
 //

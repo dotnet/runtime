@@ -7847,7 +7847,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
                     switch (fieldNode->OperGet())
                     {
                         case GT_LCL_VAR:
-                            inst_TT(INS_push, fieldNode, 0, 0, emitActualTypeSize(fieldNode->TypeGet()));
+                            inst_TT(INS_push, emitActualTypeSize(fieldNode), fieldNode);
                             break;
                         case GT_CNS_INT:
                             if (fieldNode->IsIconHandle())
@@ -7873,7 +7873,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
                 switch (fieldNode->OperGet())
                 {
                     case GT_LCL_VAR:
-                        inst_RV_TT(INS_mov, intTmpReg, fieldNode);
+                        inst_RV_TT(INS_mov, emitTypeSize(fieldNode), intTmpReg, fieldNode);
                         break;
                     case GT_CNS_INT:
                         genSetRegToConst(intTmpReg, fieldNode->TypeGet(), fieldNode);
