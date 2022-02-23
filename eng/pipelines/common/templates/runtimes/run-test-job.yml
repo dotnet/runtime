@@ -382,7 +382,8 @@ jobs:
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:
           - normal
-          - no_tiered_compilation
+          - ${{ if ne(parameters.runtimeFlavor, 'mono') }}: # tiered compilation isn't done on mono yet
+            - no_tiered_compilation
 
         ${{ if in(parameters.testGroup, 'jitstress') }}:
           scenarios:

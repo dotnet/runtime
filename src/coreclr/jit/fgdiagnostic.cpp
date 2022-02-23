@@ -2954,7 +2954,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
     // We reuse GTF_REVERSE_OPS as GTF_VAR_ARR_INDEX for LCL_VAR nodes.
     if (((tree->gtFlags & GTF_REVERSE_OPS) != 0) && !tree->OperIs(GT_LCL_VAR))
     {
-        assert(tree->OperSupportsReverseOps());
+        assert(tree->OperSupportsReverseOpEvalOrder(this));
     }
 
     GenTree* op1 = tree->OperIsSimple() ? tree->gtGetOp1() : nullptr;
