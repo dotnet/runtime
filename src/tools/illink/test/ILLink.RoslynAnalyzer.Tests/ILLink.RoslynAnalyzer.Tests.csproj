@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="$(CompilerGeneratedFilesOutputPath)" />
+    <Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*" />
   </ItemGroup>
 
   <ItemGroup>
