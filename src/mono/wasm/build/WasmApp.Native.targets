@@ -219,7 +219,7 @@
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
       <_EmccLDFlags Include="-Wl,--allow-undefined" />
-      <_EmccLDSFlags Include="-s TOTAL_MEMORY=$(EmccTotalMemory)" />
+      <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccTotalMemory)" />
 
       <!-- ILLinker should have removed unused imports, so error for Publish -->
       <_EmccLDSFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=0" Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
