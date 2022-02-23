@@ -1,6 +1,4 @@
 
-#include <platformdefines.h>
-
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -27,6 +25,8 @@
 #else
 #include <pthread.h>
 #endif
+
+#define S_OK 0x0
 
 #ifdef __cplusplus
 
