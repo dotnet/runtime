@@ -1,3 +1,4 @@
+
 #include <platformdefines.h>
 
 #include <assert.h>
@@ -7850,6 +7851,22 @@ mono_test_native_to_managed_exception_rethrow (NativeToManagedExceptionRethrowFu
 typedef void (*VoidVoidCallback) (void);
 typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
 
+static int sym_inited = 0;
+
+/* MONO_API functions that aren't in public headers */
+static void (*sym_mono_install_ftnptr_eh_callback) (MonoFtnPtrEHCallback);
+static void (*sym_mono_threads_exit_gc_safe_region_unbalanced) (gpointer, gpointer *);
+
+static void (*null_function_ptr) (void);
+
+
+#if 1
+#include "api-types.h"
+
+#define MONO_API_FUNCTION(ret,name,args) static ret (*sym_ ## name) args;
+#include "api-functions.h"
+#undef MONO_API_FUNCTION
+#else
 typedef void *MonoDomain;
 typedef void *MonoAssembly;
 typedef void *MonoImage;
@@ -7861,15 +7878,11 @@ typedef long long MonoObject;
 typedef MonoObject MonoException;
 typedef int32_t mono_bool;
 
-static int sym_inited = 0;
-static void (*sym_mono_install_ftnptr_eh_callback) (MonoFtnPtrEHCallback);
 static MonoObject* (*sym_mono_gchandle_get_target) (guint32 gchandle);
 static guint32 (*sym_mono_gchandle_new) (MonoObject *, mono_bool pinned);
 static void (*sym_mono_gchandle_free) (guint32 gchandle);
 static void (*sym_mono_raise_exception) (MonoException *ex);
 static void (*sym_mono_domain_unload) (gpointer);
-static void (*sym_mono_threads_exit_gc_safe_region_unbalanced) (gpointer, gpointer *);
-static void (*null_function_ptr) (void);
 
 static MonoDomain *(*sym_mono_get_root_domain) (void);
 
@@ -7890,7 +7903,7 @@ static MonoThread *(*sym_mono_thread_attach)(MonoDomain *);
 static void (*sym_mono_thread_detach)(MonoThread *);
 
 static MonoObject *(*sym_mono_runtime_invoke) (MonoMethod *, void*, void**, MonoObject**);
-
+#endif
 
 // SYM_LOOKUP(mono_runtime_invoke)
 // expands to
@@ -7981,7 +7994,7 @@ mono_test_ftnptr_eh_callback (guint32 gchandle)
 	exc = sym_mono_gchandle_get_target (exception_handle);
 	sym_mono_gchandle_free (exception_handle);
 
-	sym_mono_raise_exception (exc);
+	sym_mono_raise_exception ((MonoException*)exc);
 	g_assert (((void)"mono_raise_exception should not return", 0));
 }
 
