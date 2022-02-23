@@ -44,7 +44,8 @@ namespace System.Text.RegularExpressions.Generator
                 // Pair each with whether unsafe code is allowed
                 .Combine(allowUnsafeProvider)
 
-                // Get the resulting code string or error Diagnostic for each MethodDeclarationSyntax/Compilation pair
+                // Get the resulting code string or error Diagnostic for
+                // each MethodDeclarationSyntax/allow-unsafe-blocks pair
                 .Select((state, _) =>
                 {
                     Debug.Assert(state.Left is not null);
