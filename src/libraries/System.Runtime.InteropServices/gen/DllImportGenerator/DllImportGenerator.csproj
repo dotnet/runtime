@@ -11,7 +11,7 @@
     <RunAnalyzers>true</RunAnalyzers>
 
     <!-- Packaging properties -->
-    <!-- DllImportGenerator should currently not produce a package. -->
+    <!-- In the future DllImportGenerator might ship as part of a package, but meanwhile disable packaging. -->
     <IsPackable>false</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
