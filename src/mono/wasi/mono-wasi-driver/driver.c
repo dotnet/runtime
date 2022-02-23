@@ -199,6 +199,8 @@ void SystemNative_PRead();
 void SystemNative_CanGetHiddenFlag();
 int32_t SystemNative_Access(const char* path, int32_t mode);
 void SystemNative_Malloc();
+void SystemNative_Free();
+void SystemNative_SysLog();
 
 #define PAL_O_RDONLY 0x0000
 #define PAL_O_WRONLY 0x0001
@@ -263,6 +265,11 @@ int64_t SystemNative_GetTimestamp2()
 	}
 }
 
+void syslog(int pri, const char *fmt, int ignored) {
+	printf ("Not implemented: call to syslog\n");
+	assert (0);
+}
+
 static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_GetEnv", SystemNative_GetEnv },
 	{"SystemNative_GetEnviron", SystemNative_GetEnviron },
@@ -295,6 +302,8 @@ static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_GetTimestamp", SystemNative_GetTimestamp2},
 	{"SystemNative_Access", SystemNative_Access},
 	{"SystemNative_Malloc", SystemNative_Malloc},
+	{"SystemNative_Free", SystemNative_Free},
+	{"SystemNative_SysLog", SystemNative_SysLog},
 	{NULL, NULL}
 };
 
