@@ -814,7 +814,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (ReturnAsErrorException raee)
             {
                 logger.LogDebug($"Unable to evaluate breakpoint condition '{condition}': {raee}");
-                SendLog(sessionId, raee.Message, token, type: "error");
+                SendLog(sessionId, $"Unable to evaluate breakpoint condition '{condition}': {raee.Message}", token, type: "error");
                 bp.ConditionAlreadyEvaluatedWithError = true;
             }
             catch (Exception e)
