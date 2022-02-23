@@ -494,6 +494,8 @@ namespace DebuggerTests
 
 
         [Fact]
+        [Trait("Category", "windows-failing")] // https://github.com/dotnet/runtime/issues/65744
+        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/65744
         public async Task EvaluateSimpleMethodCallsError() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
