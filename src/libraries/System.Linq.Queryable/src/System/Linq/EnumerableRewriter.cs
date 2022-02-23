@@ -292,7 +292,7 @@ namespace System.Linq
                 Debug.Assert(matchingMethods.Length > 1);
                 ParameterInfo[][] parameters = matchingMethods.Select(m => m.GetParameters()).ToArray();
 
-                // `AreAssignableFrom` defines a partial order on method signatures; pick a maximal element using that order.
+                // `AreAssignableFrom[Strict]` defines a partial order on method signatures; pick a maximal element using that order.
                 // It is assumed that `matchingMethods` is a small array, so a naive quadratic search is probably better than
                 // doing some variant of topological sorting.
 
@@ -301,8 +301,9 @@ namespace System.Linq
                     bool isMaximal = true;
                     for (int j = 0; j < matchingMethods.Length; j++)
                     {
-                        if (i != j && AreAssignableFrom(parameters[i], parameters[j]))
+                        if (i != j && AreAssignableFromStrict(parameters[i], parameters[j]))
                         {
+                            // Found a matching method that contains strictly more specific parameter types.
                             isMaximal = false;
                             break;
                         }
@@ -317,18 +318,21 @@ namespace System.Linq
                 Debug.Fail("Search should have found a maximal element");
                 throw new Exception();
 
-                static bool AreAssignableFrom(ParameterInfo[] left, ParameterInfo[] right)
+                static bool AreAssignableFromStrict(ParameterInfo[] left, ParameterInfo[] right)
                 {
                     Debug.Assert(left.Length == right.Length);
+
+                    bool areEqual = true;
+                    bool areAssignableFrom = true;
                     for (int i = 0; i < left.Length; i++)
                     {
-                        if (!left[i].ParameterType.IsAssignableFrom(right[i].ParameterType))
-                        {
-                            return false;
-                        }
+                        Type leftParam = left[i].ParameterType;
+                        Type rightParam = right[i].ParameterType;
+                        areEqual = areEqual && leftParam == rightParam;
+                        areAssignableFrom = areAssignableFrom && leftParam.IsAssignableFrom(rightParam);
                     }
 
-                    return true;
+                    return !areEqual && areAssignableFrom;
                 }
             }
         }
