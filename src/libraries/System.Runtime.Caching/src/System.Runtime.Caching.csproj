@@ -20,6 +20,7 @@ System.Runtime.Caching.FileChangeMonitor
 System.Runtime.Caching.HostFileChangeMonitor
 System.Runtime.Caching.MemoryCache
 System.Runtime.Caching.ObjectCache</PackageDescription>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\Caching\Counters.cs" />

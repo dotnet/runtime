@@ -8,6 +8,7 @@
 
 Commonly Used Types:
 System.BinaryData</PackageDescription>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <ItemGroup>

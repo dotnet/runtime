@@ -8,6 +8,7 @@
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
+    <PackageTags>hosting</PackageTags>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

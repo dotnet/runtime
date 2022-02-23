@@ -11,6 +11,7 @@
 Commonly Used Types:
 System.Reflection.MetadataLoadContext
 System.Reflection.MetadataAssemblyResolver</PackageDescription>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\CoreRtBridge.cs" />

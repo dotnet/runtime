@@ -12,6 +12,7 @@ System.Threading.RateLimiting.RateLimiter
 System.Threading.RateLimiting.ConcurrencyLimiter
 System.Threading.RateLimiting.TokenBucketRateLimiter
 System.Threading.RateLimiting.RateLimitLease</PackageDescription>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Threading\RateLimiting\ConcurrencyLimiter.cs" />

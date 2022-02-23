@@ -6,8 +6,9 @@
     <!-- Use targeting pack references instead of granular ones in the project file. -->
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <IsPackable>true</IsPackable>
+    <PackageTags>hosting</PackageTags>
     <PackageDescription>.NET hosting infrastructure for Windows Services.</PackageDescription>
-	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
 

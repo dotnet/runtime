@@ -5,6 +5,11 @@
     <ContractDependencyPaths Condition="'$(ContractDependencyPaths)' == ''">@(ReferencePath->'%(RelativeDir)'->Distinct())</ContractDependencyPaths>
     <!-- Fall back to the targeting pack dir for NetCoreAppCurrent to avoid passing through dependencies from ref to src. -->
     <ContractDependencyPaths Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">$(ContractDependencyPaths);$(MicrosoftNetCoreAppRefPackRefDir)</ContractDependencyPaths>
+
+    <!-- Ignore the .ref.cs file-->
+    <ReferenceSourceTargetName>$(TargetName).ref.g.cs</ReferenceSourceTargetName>
+    <!-- Rename to DefaultExcludesInProjectFolder when https://github.com/dotnet/sdk/pull/24063 is merged and consumed. -->
+    <DefaultItemExcludesInProjectFolder>$(ReferenceSourceTargetName)</DefaultItemExcludesInProjectFolder>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -12,6 +17,21 @@
     <GenAPIHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GenAPIHeaderFile>
     <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</GenAPITargetPath>
     <GenAPILangVersion Condition="'$(LangVersion)' != ''">$(LangVersion)</GenAPILangVersion>
+  </PropertyGroup>
+
+  <!-- Create a reference source file from the platform agnostic NetCoreAppCurrent assembly and make sure that it isn't treated as a compile input. -->
+  <PropertyGroup Condition="'$(ProduceReferenceAssembly)' == 'true' and
+                            '$(IsSourceProject)' == 'true' and
+                            '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                            $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
+                            '$(TargetFrameworkSuffix)' == '' and
+                            '$(DotNetBuildFromSource)' != 'true'">
+    <!-- Use a different header and don't feed in an attribute exclusion list. -->
+    <GenAPITargetPath>$(MSBuildProjectDirectory)\$(ReferenceSourceTargetName)</GenAPITargetPath>
+    <GenAPIHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.Generated.txt</GenAPIHeaderFile>
+    <GenAPIExcludeAttributesList />
+    <GenerateReferenceAssemblySource Condition="'$(GenerateReferenceAssemblySource)' == ''">true</GenerateReferenceAssemblySource>
+    <TargetsTriggeredByCompilation>$(TargetsTriggeredByCompilation);GenerateReferenceAssemblySource</TargetsTriggeredByCompilation>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">

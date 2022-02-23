@@ -75,8 +75,9 @@
   <PropertyGroup>
     <!-- Default any assembly not specifying a key to use the Open Key -->
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
+    <!-- Microsoft.Extensions projects have a separate StrongNameKeyId and no dedicated reference project. -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
+    <ProduceReferenceAssembly Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.')) and '$(IsSourceProject)' == 'true'">true</ProduceReferenceAssembly>
     <!-- We can't generate an apphost without restoring the targeting pack. -->
     <UseAppHost>false</UseAppHost>
     <EnableDefaultItems>false</EnableDefaultItems>

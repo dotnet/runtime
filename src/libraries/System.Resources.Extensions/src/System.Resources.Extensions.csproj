@@ -12,6 +12,7 @@
 Commonly Used Types:
 System.Resources.Extensions.DeserializingResourceReader
 System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <ItemGroup>

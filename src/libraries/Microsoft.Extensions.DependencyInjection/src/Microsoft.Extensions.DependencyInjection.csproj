@@ -39,7 +39,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <Compile Include="**\*.cs" />
+    <Compile Include="**\*.cs" Exclude="$(MSBuildProjectName).ref.cs" />
     <Compile Remove="ServiceLookup\ILEmit\**\*.cs" />
     <Compile Condition="'$(ILEmitBackend)' == 'True'" Include="ServiceLookup\ILEmit\*.cs" />
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs"
