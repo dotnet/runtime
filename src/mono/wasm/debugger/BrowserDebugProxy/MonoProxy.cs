@@ -28,7 +28,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int RuntimeId { get; private init; }
         public bool JustMyCode { get; private set; }
 
-        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0) : base(loggerFactory)
+        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "") : base(loggerFactory, loggerId)
         {
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
             RuntimeId = runtimeId;
