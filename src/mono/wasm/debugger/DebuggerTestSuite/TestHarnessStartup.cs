@@ -181,8 +181,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var client = new HttpClient();
                         var psi = new ProcessStartInfo();
 
-                        string noSandboxForContainers = File.Exists("/.dockerenv") ? "--no-sandbox" : "";
-                        psi.Arguments = $"--headless --disable-gpu --lang=en-US --incognito {noSandboxForContainers} --remote-debugging-port={devToolsUrl.Port} http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}";
+                        psi.Arguments = $"--headless --disable-gpu --lang=en-US --incognito --remote-debugging-port={devToolsUrl.Port} http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}";
+                        if (File.Exists("/.dockerenv"))
+                        {
+                            Logger.LogInformation("Detected a container, disabling sandboxing for debugger tests.");
+                            psi.Arguments += " --no-sandbox";
+                        }
                         psi.UseShellExecute = false;
                         psi.FileName = options.ChromePath;
                         psi.RedirectStandardError = true;

@@ -19,9 +19,3 @@ RUN curl -sSL "https://netcorenativeassets.blob.core.windows.net/resource-packag
     && echo $'#!/usr/bin/env bash\n\
 "/usr/local/v8/d8" --snapshot_blob="/usr/local/v8/snapshot_blob.bin" "$@"\n' > /usr/local/bin/v8 \
     && chmod +x /usr/local/bin/v8
-
-# Install chromium for test suite
-RUN apt-get update \
-    && apt-get install software-properties-common -y \
-    && echo | add-apt-repository ppa:system76/pop \
-    && apt install chromium -y
