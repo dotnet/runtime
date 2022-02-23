@@ -1224,7 +1224,7 @@ protected:
 #endif // TARGET_XARCH
 
     void genCodeForCast(GenTreeOp* tree);
-    void genCodeForLclAddr(GenTree* tree);
+    void genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode);
     void genCodeForIndexAddr(GenTreeIndexAddr* tree);
     void genCodeForIndir(GenTreeIndir* tree);
     void genCodeForNegNot(GenTree* tree);
