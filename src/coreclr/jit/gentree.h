@@ -6913,7 +6913,7 @@ public:
     // block node.
 
     enum class Kind : __int8{
-        Invalid, RepInstr, PartialRepInstr, Unroll, Push, PushAllSlots,
+        Invalid, RepInstr, PartialRepInstr, Unroll, Push,
     };
     Kind gtPutArgStkKind;
 #endif
@@ -7017,7 +7017,7 @@ public:
 
     bool isPushKind() const
     {
-        return (gtPutArgStkKind == Kind::Push) || (gtPutArgStkKind == Kind::PushAllSlots);
+        return gtPutArgStkKind == Kind::Push;
     }
 #else  // !FEATURE_PUT_STRUCT_ARG_STK
     unsigned GetStackByteSize() const;
