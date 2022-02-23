@@ -36,7 +36,7 @@ namespace System.Net.Security.Tests
         private static HashSet<TlsCipherSuite> s_tls13CipherSuiteLookup = new HashSet<TlsCipherSuite>(GetTls13CipherSuites());
         private static HashSet<TlsCipherSuite> s_tls12CipherSuiteLookup = new HashSet<TlsCipherSuite>(GetTls12CipherSuites());
         private static HashSet<TlsCipherSuite> s_tls10And11CipherSuiteLookup = new HashSet<TlsCipherSuite>(GetTls10And11CipherSuites());
-        private static Lazy<IReadOnlyList<TlsCipherSuite>> s_supportedNonTls13CipherSuites = new Lazy<IReadOnlyList<TlsCipherSuite>>(GetSupportedNonTls13CipherSuites);
+        private static readonly Lazy<IReadOnlyList<TlsCipherSuite>> s_supportedNonTls13CipherSuites = new Lazy<IReadOnlyList<TlsCipherSuite>>(GetSupportedNonTls13CipherSuites);
 
         private static Dictionary<SslProtocols, HashSet<TlsCipherSuite>> s_protocolCipherSuiteLookup = new Dictionary<SslProtocols, HashSet<TlsCipherSuite>>()
         {
@@ -699,14 +699,7 @@ namespace System.Net.Security.Tests
                 clientOptions.EnabledSslProtocols = clientParams.SslProtocols;
                 clientOptions.CipherSuitesPolicy = clientParams.CipherSuitesPolicy;
                 clientOptions.TargetHost = "test";
-                clientOptions.RemoteCertificateValidationCallback =
-                    new RemoteCertificateValidationCallback((object sender,
-                                                             X509Certificate certificate,
-                                                             X509Chain chain,
-                                                             SslPolicyErrors sslPolicyErrors) =>
-                    {
-                        return true;
-                    });
+                clientOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
                 Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).GetAwaiter().GetResult();
 
