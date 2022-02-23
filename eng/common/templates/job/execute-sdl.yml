@@ -54,7 +54,7 @@ jobs:
     # If it's not devdiv, it's dnceng
     ${{ if ne(variables['System.TeamProject'], 'DevDiv') }}:
       name: NetCore1ESPool-Internal
-      demands: ImageOverride -equals Build.Server.Amd64.VS2019
+      demands: ImageOverride -equals Build.Server.Amd64.VS2022
   steps:
   - checkout: self
     clean: true
@@ -120,7 +120,7 @@ jobs:
         -ExtractPath $(Build.ArtifactStagingDirectory)\artifacts
       displayName: Extract Archive Artifacts
       continueOnError: ${{ parameters.sdlContinueOnError }}
-  
+
   - template: /eng/common/templates/steps/execute-sdl.yml
     parameters:
       overrideGuardianVersion: ${{ parameters.overrideGuardianVersion }}

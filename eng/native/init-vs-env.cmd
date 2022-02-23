@@ -45,11 +45,6 @@ set "__VSCOMNTOOLS="
 set "VSCMD_START_DIR="
 
 :VSDetected
-if "%VisualStudioVersion%"=="16.0" (
-    set __VSVersion=vs2019
-    set __PlatformToolset=v142
-    goto :SetVCEnvironment
-)
 if "%VisualStudioVersion%"=="17.0" (
     set __VSVersion=vs2022
     set __PlatformToolset=v142
@@ -57,7 +52,7 @@ if "%VisualStudioVersion%"=="17.0" (
 )
 
 :VSMissing
-echo %__MsgPrefix%Error: Visual Studio 2019 or 2022 with C++ tools required. ^
+echo %__MsgPrefix%Error: Visual Studio 2022 with C++ tools required. ^
 Please see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md for build requirements.
 exit /b 1
 
