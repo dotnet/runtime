@@ -292,25 +292,24 @@ namespace System.Linq
                 Debug.Assert(matchingMethods.Length > 1);
                 ParameterInfo[][] parameters = matchingMethods.Select(m => m.GetParameters()).ToArray();
 
-                // `IsLessDerivedThan` defines a partial order on method signatures; pick a maximal element using that order.
+                // `AreAssignableFrom` defines a partial order on method signatures; pick a maximal element using that order.
                 // It is assumed that `matchingMethods` is a small array, so a naive quadratic search is probably better than
                 // doing some variant of topological sorting.
 
                 for (int i = 0; i < matchingMethods.Length; i++)
                 {
-                    bool foundDerivedMethodSignature = false;
+                    bool isMaximal = true;
                     for (int j = 0; j < matchingMethods.Length; j++)
                     {
-                        if (i != j && IsLessDerivedThan(parameters[i], parameters[j]))
+                        if (i != j && AreAssignableFrom(parameters[i], parameters[j]))
                         {
-                            foundDerivedMethodSignature = true;
+                            isMaximal = false;
                             break;
                         }
                     }
 
-                    if (!foundDerivedMethodSignature)
+                    if (isMaximal)
                     {
-                        // Found a maximal element
                         return matchingMethods[i];
                     }
                 }
@@ -318,12 +317,12 @@ namespace System.Linq
                 Debug.Fail("Search should have found a maximal element");
                 throw new Exception();
 
-                static bool IsLessDerivedThan(ParameterInfo[] params1, ParameterInfo[] params2)
+                static bool AreAssignableFrom(ParameterInfo[] left, ParameterInfo[] right)
                 {
-                    Debug.Assert(params1.Length == params2.Length);
-                    for (int i = 0; i < params1.Length; i++)
+                    Debug.Assert(left.Length == right.Length);
+                    for (int i = 0; i < left.Length; i++)
                     {
-                        if (!params1[i].ParameterType.IsAssignableFrom(params2[i].ParameterType))
+                        if (!left[i].ParameterType.IsAssignableFrom(right[i].ParameterType))
                         {
                             return false;
                         }
