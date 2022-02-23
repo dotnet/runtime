@@ -51,7 +51,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
 
-        internal void SendLog(SessionId sessionId, string message, CancellationToken token)
+        internal void SendLog(SessionId sessionId, string message, CancellationToken token, string type = "warning")
         {
             if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
                 return;
@@ -68,7 +68,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendEvent(id, "Log.entryAdded", o, token);*/
             var o = JObject.FromObject(new
             {
-                type = "warning",
+                type,
                 args = new JArray(JObject.FromObject(new
                                 {
                                     type = "string",
@@ -811,11 +811,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return true;
                 }
             }
+            catch (ReturnAsErrorException raee)
+            {
+                logger.LogDebug($"Unable to evaluate breakpoint condition '{condition}': {raee}");
+                SendLog(sessionId, raee.Message, token, type: "error");
+                bp.ConditionAlreadyEvaluatedWithError = true;
+            }
             catch (Exception e)
             {
-                Log("info", $"Unable to evaluate breakpoint condition {condition}: {e}");
+                Log("info", $"Unable to evaluate breakpoint condition '{condition}': {e}");
                 bp.ConditionAlreadyEvaluatedWithError = true;
-                return false;
             }
             return false;
         }
