@@ -20,6 +20,9 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Slices the specified array using the specified range.
         /// </summary>
+        [UnconditionalSuppressMessage("ArrayCreateInstance", "IL3050:RequiresDynamicCode",
+            Justification = @"The RequiresDynamicCode warning is about Array.CreateInstance. However, we must have
+             preserved the code to create a U : T array, if the incoming array is U : T.")]
         public static T[] GetSubArray<T>(T[] array, Range range)
         {
             if (array == null)

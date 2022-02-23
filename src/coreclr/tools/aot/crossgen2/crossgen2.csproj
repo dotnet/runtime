@@ -5,10 +5,10 @@
     <OutputPath Condition="'$(RunningPublish)' != 'true'">$(RuntimeBinDir)/crossgen2</OutputPath>
     <RuntimeIdentifier Condition="'$(RunningPublish)' == 'true'">$(Crossgen2PackageRID)</RuntimeIdentifier>
     <AppHostRuntimeIdentifier>$(Crossgen2PackageRID)</AppHostRuntimeIdentifier>
-    <!-- Publish trimmed disabled due to failure in trimming S.P.C -->
-    <PublishTrimmed>false</PublishTrimmed>
+    <!-- Publish trimmed disabled outside NativeAOT due to failure in trimming S.P.C -->
+    <PublishTrimmed Condition="'$(NativeAotSupported)' == 'true'">true</PublishTrimmed>
     <PublishReadyToRun>true</PublishReadyToRun>
-    <PublishSingleFile>true</PublishSingleFile>
+    <PublishSingleFile>false</PublishSingleFile>
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />
@@ -16,5 +16,21 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="../../../../installer/pkg/sfx/Microsoft.NETCore.App/ReadyToRun.targets"
           Condition="'$(RunningPublish)' == 'true'" />
+
+  <PropertyGroup Condition="'$(RunningPublish)' == 'true' and '$(NativeAotSupported)' == 'true'">
+    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows'">clang-9</CppCompilerAndLinker>
+    <SysRoot Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
+    <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
+    <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
+    <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+
+    <!-- Forced by ILLink targets; we should fix the SDK -->
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.targets" Condition="'$(RunningPublish)' == 'true' and '$(NativeAotSupported)' == 'true'" />
 
 </Project>
