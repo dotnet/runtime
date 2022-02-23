@@ -279,7 +279,7 @@ namespace System.Text.Json.Serialization.Converters
                     if (jsonPropertyInfo.ShouldSerialize)
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
-                        state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
+                        state.Current.JsonPropertyInfo = jsonPropertyInfo;
                         state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
                         bool success = jsonPropertyInfo.GetMemberAndWriteJson(obj, ref state, writer);
@@ -295,7 +295,7 @@ namespace System.Text.Json.Serialization.Converters
                 if (dataExtensionProperty?.ShouldSerialize == true)
                 {
                     // Remember the current property for JsonPath support if an exception is thrown.
-                    state.Current.DeclaredJsonPropertyInfo = dataExtensionProperty;
+                    state.Current.JsonPropertyInfo = dataExtensionProperty;
                     state.Current.NumberHandling = dataExtensionProperty.NumberHandling;
 
                     bool success = dataExtensionProperty.GetMemberAndWriteJsonExtensionData(obj, ref state, writer);
@@ -334,7 +334,7 @@ namespace System.Text.Json.Serialization.Converters
                     Debug.Assert(jsonPropertyInfo != null);
                     if (jsonPropertyInfo.ShouldSerialize)
                     {
-                        state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
+                        state.Current.JsonPropertyInfo = jsonPropertyInfo;
                         state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
                         if (!jsonPropertyInfo.GetMemberAndWriteJson(obj!, ref state, writer))
@@ -366,7 +366,7 @@ namespace System.Text.Json.Serialization.Converters
                     if (dataExtensionProperty?.ShouldSerialize == true)
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
-                        state.Current.DeclaredJsonPropertyInfo = dataExtensionProperty;
+                        state.Current.JsonPropertyInfo = dataExtensionProperty;
                         state.Current.NumberHandling = dataExtensionProperty.NumberHandling;
 
                         if (!dataExtensionProperty.GetMemberAndWriteJsonExtensionData(obj, ref state, writer))

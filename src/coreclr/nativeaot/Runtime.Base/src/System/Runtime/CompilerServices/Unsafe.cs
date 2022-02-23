@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-namespace Internal.Runtime.CompilerServices
+namespace System.Runtime.CompilerServices
 {
     //
     // Subsetted clone of System.Runtime.CompilerServices.Unsafe for internal runtime use.

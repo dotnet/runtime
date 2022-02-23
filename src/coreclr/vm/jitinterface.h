@@ -71,6 +71,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         CORJIT_FLAGS flags,
                         ULONG* sizeOfCode = NULL);
 
+void setILIntrinsicMethodInfo(CORINFO_METHOD_INFO* methInfo,
+                              uint8_t* ilcode,
+                              int ilsize,
+                              int maxstack);
+
+
 void getMethodInfoHelper(MethodDesc * ftn,
                          CORINFO_METHOD_HANDLE ftnHnd,
                          COR_ILMETHOD_DECODER * header,

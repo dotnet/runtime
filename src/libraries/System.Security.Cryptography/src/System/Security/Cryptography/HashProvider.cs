@@ -4,7 +4,7 @@
 using System;
 using System.Diagnostics;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     //
     // This abstract class represents a reusable hash object and can wrap a CNG or WinRT hash object.

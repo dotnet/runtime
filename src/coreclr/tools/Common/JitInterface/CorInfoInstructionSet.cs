@@ -294,6 +294,35 @@ namespace Internal.JitInterface
             this = ExpandInstructionSetByImplicationHelper(architecture, this);
         }
 
+        public static InstructionSet ConvertToImpliedInstructionSetForVectorInstructionSets(TargetArchitecture architecture, InstructionSet input)
+        {
+            switch(architecture)
+            {
+            case TargetArchitecture.ARM64:
+                switch(input)
+                {
+                case InstructionSet.ARM64_Vector64: return InstructionSet.ARM64_AdvSimd;
+                case InstructionSet.ARM64_Vector128: return InstructionSet.ARM64_AdvSimd;
+                }
+                break;
+            case TargetArchitecture.X64:
+                switch(input)
+                {
+                case InstructionSet.X64_Vector128: return InstructionSet.X64_SSE;
+                case InstructionSet.X64_Vector256: return InstructionSet.X64_AVX;
+                }
+                break;
+            case TargetArchitecture.X86:
+                switch(input)
+                {
+                case InstructionSet.X86_Vector128: return InstructionSet.X86_SSE;
+                case InstructionSet.X86_Vector256: return InstructionSet.X86_AVX;
+                }
+                break;
+            }
+            return input;
+        }
+
         public static InstructionSetFlags ExpandInstructionSetByImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
         {
             InstructionSetFlags oldflags = input;
