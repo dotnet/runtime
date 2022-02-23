@@ -30,5 +30,6 @@
 
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
+    <AnalysisLevel>latest</AnalysisLevel>
   </PropertyGroup>
 </Project>
