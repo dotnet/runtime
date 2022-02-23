@@ -5,8 +5,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Loggin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.0", "gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj", "{A5439E79-96D6-4F02-8DD0-23DFF979851D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{7F536552-0E2A-4642-B7CF-863727C2F9CD}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "src\Microsoft.Extensions.Logging.Abstractions.csproj", "{75C579F7-F20B-41F1-8CAF-641DE7ADA4EE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests", "tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj", "{C333EC5A-F386-4A01-AE20-12D499551304}"
@@ -20,8 +18,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{4DE63935-DCA9-4D63-9C1F-AAE79C89CA8B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{03F31CEE-D63E-4E7F-949F-139B33DC3385}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{7631380A-FB73-4241-9987-0891A21E9769}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{548DF5F7-790C-4A1C-89EB-BD904CA1BA86}"
 EndProject
@@ -43,10 +39,6 @@ Global
 		{A5439E79-96D6-4F02-8DD0-23DFF979851D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A5439E79-96D6-4F02-8DD0-23DFF979851D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A5439E79-96D6-4F02-8DD0-23DFF979851D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7F536552-0E2A-4642-B7CF-863727C2F9CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7F536552-0E2A-4642-B7CF-863727C2F9CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7F536552-0E2A-4642-B7CF-863727C2F9CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7F536552-0E2A-4642-B7CF-863727C2F9CD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{75C579F7-F20B-41F1-8CAF-641DE7ADA4EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{75C579F7-F20B-41F1-8CAF-641DE7ADA4EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{75C579F7-F20B-41F1-8CAF-641DE7ADA4EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -79,7 +71,6 @@ Global
 		{A5439E79-96D6-4F02-8DD0-23DFF979851D} = {03F31CEE-D63E-4E7F-949F-139B33DC3385}
 		{B4C84174-9BAE-4C59-B0D5-0AA7E80BE0CE} = {03F31CEE-D63E-4E7F-949F-139B33DC3385}
 		{6645D0C4-83D1-4426-B9CD-67096CB7A60F} = {03F31CEE-D63E-4E7F-949F-139B33DC3385}
-		{7F536552-0E2A-4642-B7CF-863727C2F9CD} = {7631380A-FB73-4241-9987-0891A21E9769}
 		{75C579F7-F20B-41F1-8CAF-641DE7ADA4EE} = {548DF5F7-790C-4A1C-89EB-BD904CA1BA86}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
