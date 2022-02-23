@@ -6,6 +6,6 @@
 #error "MONO_API_FUNCTION(ret,name,args) macro not defined before including function declaration header"
 #endif
 
-MONO_API_FUNCTION(MONO_API void, mono_free, (void*))
-MONO_API_FUNCTION(MONO_API mono_bool, mono_set_allocator_vtable, (MonoAllocatorVTable* vtable))
+MONO_API_FUNCTION(void, mono_free, (void*))
+MONO_API_FUNCTION(mono_bool, mono_set_allocator_vtable, (MonoAllocatorVTable* vtable))
 

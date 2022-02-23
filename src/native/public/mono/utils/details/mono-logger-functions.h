@@ -6,12 +6,12 @@
 #error "MONO_API_FUNCTION(ret,name,args) macro not defined before including function declaration header"
 #endif
 
-MONO_API_FUNCTION(MONO_API void, mono_trace_set_level_string, (const char *value))
+MONO_API_FUNCTION(void, mono_trace_set_level_string, (const char *value))
 
-MONO_API_FUNCTION(MONO_API void, mono_trace_set_mask_string, (const char *value))
+MONO_API_FUNCTION(void, mono_trace_set_mask_string, (const char *value))
 
-MONO_API_FUNCTION(MONO_API void, mono_trace_set_log_handler, (MonoLogCallback callback, void *user_data))
+MONO_API_FUNCTION(void, mono_trace_set_log_handler, (MonoLogCallback callback, void *user_data))
 
-MONO_API_FUNCTION(MONO_API void, mono_trace_set_print_handler, (MonoPrintCallback callback))
+MONO_API_FUNCTION(void, mono_trace_set_print_handler, (MonoPrintCallback callback))
 
-MONO_API_FUNCTION(MONO_API void, mono_trace_set_printerr_handler, (MonoPrintCallback callback))
+MONO_API_FUNCTION(void, mono_trace_set_printerr_handler, (MonoPrintCallback callback))

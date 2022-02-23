@@ -6,6 +6,6 @@
 #error "MONO_API_FUNCTION(ret,name,args) macro not defined before including function declaration header"
 #endif
 
-MONO_API_FUNCTION(MONO_API MonoDlFallbackHandler *, mono_dl_fallback_register, (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func, \
+MONO_API_FUNCTION(MonoDlFallbackHandler *, mono_dl_fallback_register, (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func, \
 										MonoDlFallbackClose close_func, void *user_data))
-MONO_API_FUNCTION(MONO_API void, mono_dl_fallback_unregister, (MonoDlFallbackHandler *handler))
+MONO_API_FUNCTION(void, mono_dl_fallback_unregister, (MonoDlFallbackHandler *handler))
