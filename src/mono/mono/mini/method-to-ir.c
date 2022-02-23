@@ -13051,7 +13051,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							 * sregs could use it. So set a flag, and do it after
 							 * the sregs.
 							 */
-							if ((!cfg->backend->use_fpstack || ((store_opcode != OP_STORER8_MEMBASE_REG) && (store_opcode != OP_STORER4_MEMBASE_REG))) && !((var)->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
+							if (!((var)->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
 								dest_has_lvreg = TRUE;
 						}
 					}
@@ -13141,7 +13141,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 							sreg = alloc_dreg (cfg, stacktypes [regtype]);
 
-							if ((!cfg->backend->use_fpstack || ((load_opcode != OP_LOADR8_MEMBASE) && (load_opcode != OP_LOADR4_MEMBASE))) && !((var)->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && !no_lvreg) {
+							if (!((var)->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && !no_lvreg) {
 								if (var->dreg == prev_dreg) {
 									/*
 									 * sreg refers to the value loaded by the load

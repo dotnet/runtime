@@ -95,8 +95,6 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define MONO_ARCH_CALLEE_XREGS MONO_ARCH_CALLEE_FREGS
 #define MONO_ARCH_CALLEE_SAVED_XREGS 0
 
-#define MONO_ARCH_USE_FPSTACK FALSE
-
 #define MONO_ARCH_INST_FIXED_REG(desc) (((desc == ' ') || (desc == 'i')) ? -1 : ((desc == 's') ? X86_ECX : ((desc == 'a') ? X86_EAX : ((desc == 'd') ? X86_EDX : ((desc == 'l') ? X86_EAX : -1)))))
 
 #define MONO_ARCH_INST_FIXED_MASK(desc) ((desc == 'y') ? (X86_BYTE_REGS) : 0)
