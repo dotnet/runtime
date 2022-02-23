@@ -81,14 +81,15 @@ namespace System.Reflection.Metadata
                 basename = assm.GetName().Name + ".dll";
             Console.Error.WriteLine($"Applying metadata update for {basename}, revision {count}");
 
-            string dmeta_name = $"{basename}.{count}.dmeta";
-            string dil_name = $"{basename}.{count}.dil";
-            byte[] dmeta_data = System.IO.File.ReadAllBytes(dmeta_name);
-            byte[] dil_data = System.IO.File.ReadAllBytes(dil_name);
-            byte[] dpdb_data = null; // TODO also use the dpdb data
+	    string dmeta_name = $"{basename}.{count}.dmeta";
+	    string dil_name = $"{basename}.{count}.dil";
+	    string dpdb_name = $"{basename}.{count}.dpdb";
+	    byte[] dmeta_data = System.IO.File.ReadAllBytes(dmeta_name);
+	    byte[] dil_data = System.IO.File.ReadAllBytes(dil_name);
+	    byte[] dpdb_data = System.IO.File.ReadAllBytes(dpdb_name);
 
-            MetadataUpdater.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
-        }
+	    MetadataUpdater.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
+	}
 
         internal static void AddRemoteInvokeOptions (ref RemoteInvokeOptions options)
         {
