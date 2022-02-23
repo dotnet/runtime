@@ -11401,64 +11401,27 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 #endif
 #endif // !TARGET_64BIT
 
-#ifdef TARGET_ARM64
-            // For ARM64 we don't have a remainder instruction,
-            // The architecture manual suggests the following transformation to
-            // generate code for such operator:
-            //
-            // a % b = a - (a / b) * b;
-            //
-            // There are special cases where it can be done better, for example
-            // when the modulo operation is unsigned and the divisor is a
-            // integer constant power of two.  In this case, we can make the transform:
-            //
-            // a % b = a & (b - 1);
-            //
-            // Lower supports it for all cases except when `a` is constant, but
-            // in Morph we can't guarantee that `a` won't be transformed into a constant,
-            // so can't guarantee that lower will be able to do this optimization.
+            if (!optValnumCSE_phase)
             {
-                if(oper == GT_UMOD && op2->IsCnsIntPow2())
+                // a % b = a & (b - 1);
+                if(oper == GT_UMOD && op2->IsIntegralConstPow2())
                 {
-                    assert(!optValnumCSE_phase);
-
                     tree = fgMorphUModToAndSub(tree->AsOp());
                     op1  = tree->AsOp()->gtOp1;
                     op2  = tree->AsOp()->gtOp2;
                 }
-                // Do "a % b = a - (a / b) * b" morph.
+                // a % b = a - (a / b) * b;
+#ifdef TARGET_ARM64
                 else
-                {
-                    assert(!optValnumCSE_phase);
-
-                    tree = fgMorphModToSubMulDiv(tree->AsOp());
-                    op1  = tree->AsOp()->gtOp1;
-                    op2  = tree->AsOp()->gtOp2;
-                }
-            }
-#else  // !TARGET_ARM64
-            // If b is not a power of 2 constant then lowering replaces a % b
-            // with a - (a / b) * b and applies magic division optimization to
-            // a / b. The code may already contain an a / b expression (e.g.
-            // x = a / 10; y = a % 10;) and then we end up with redundant code.
-            // If we convert % to / here we give CSE the opportunity to eliminate
-            // the redundant division. If there's no redundant division then
-            // nothing is lost, lowering would have done this transform anyway.
-
-            if (!optValnumCSE_phase && ((tree->OperGet() == GT_MOD) && op2->IsIntegralConst()))
-            {
-                ssize_t divisorValue    = op2->AsIntCon()->IconValue();
-                size_t  absDivisorValue = (divisorValue == SSIZE_T_MIN) ? static_cast<size_t>(divisorValue)
-                                                                       : static_cast<size_t>(abs(divisorValue));
-
-                if (!isPow2(absDivisorValue))
+#else
+                else if (oper == GT_MOD && !op2->IsIntegralConstPow2())
+#endif
                 {
                     tree = fgMorphModToSubMulDiv(tree->AsOp());
                     op1  = tree->AsOp()->gtOp1;
                     op2  = tree->AsOp()->gtOp2;
                 }
             }
-#endif // !TARGET_ARM64
             break;
 
         USE_HELPER_FOR_ARITH:
@@ -14624,7 +14587,7 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
         noway_assert(!"Illegal gtOper in fgMorphUModToAndSub");
     }
 
-    assert(tree->gtOp2->IsCnsIntPow2());
+    assert(tree->gtOp2->IsIntegralConstPow2());
 
     var_types type = tree->gtType;
 

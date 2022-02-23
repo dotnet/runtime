@@ -2107,9 +2107,9 @@ public:
 
     inline bool IsCnsIntOrI() const;
 
-    inline bool IsCnsIntPow2() const;
-
     inline bool IsIntegralConst() const;
+
+    inline bool IsIntegralConstPow2() const;
 
     inline bool IsIntCnsFitsInI32(); // Constant fits in INT32
 
@@ -8306,11 +8306,6 @@ inline bool GenTree::IsCnsIntOrI() const
     return (gtOper == GT_CNS_INT);
 }
 
-inline bool GenTree::IsCnsIntPow2() const
-{
-    return IsCnsIntOrI() && isPow2(AsIntConCommon()->IconValue());
-}
-
 inline bool GenTree::IsIntegralConst() const
 {
 #ifdef TARGET_64BIT
@@ -8318,6 +8313,11 @@ inline bool GenTree::IsIntegralConst() const
 #else  // !TARGET_64BIT
     return ((gtOper == GT_CNS_INT) || (gtOper == GT_CNS_LNG));
 #endif // !TARGET_64BIT
+}
+
+inline bool GenTree::IsIntegralConstPow2() const
+{
+    return IsIntegralConst() && isPow2(AsIntConCommon()->IconValue());
 }
 
 // Is this node an integer constant that fits in a 32-bit signed integer (INT32)
