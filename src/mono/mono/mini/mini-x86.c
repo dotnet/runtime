@@ -3683,14 +3683,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_F_TO_I4:
-			g_assert_not_reached ();
-			x86_fst_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, FALSE, TRUE);
-			x86_mov_reg_membase (code, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, 4);
+			x86_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_MOVE_I4_TO_F:
-			g_assert_not_reached ();
-			x86_mov_membase_reg (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, ins->sreg1, 4);
-			x86_fld_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, FALSE);
+			x86_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_FADD:
 			x86_sse_addsd_reg_reg (code, ins->dreg, ins->sreg2);
