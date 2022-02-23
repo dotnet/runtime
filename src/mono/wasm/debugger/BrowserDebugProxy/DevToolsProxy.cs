@@ -35,7 +35,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             string loggerSuffix = string.IsNullOrEmpty(loggerId) ? string.Empty : $"-{loggerId}";
             logger = loggerFactory.CreateLogger($"{nameof(DevToolsProxy)}{loggerSuffix}");
-          
+
             var channel = Channel.CreateUnbounded<Task>(new UnboundedChannelOptions { SingleReader = true });
             _channelWriter = channel.Writer;
             _channelReader = channel.Reader;
