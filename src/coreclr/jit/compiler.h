@@ -218,6 +218,10 @@ public:
     {
     }
 
+    LclSsaVarDsc(BasicBlock* block) : m_block(block), m_asg(nullptr)
+    {
+    }
+
     LclSsaVarDsc(BasicBlock* block, GenTreeOp* asg) : m_block(block), m_asg(asg)
     {
         assert((asg == nullptr) || asg->OperIs(GT_ASG));
@@ -397,7 +401,8 @@ enum class DoNotEnregisterReason
     SwizzleArg,       // the local is passed using LCL_FLD as another type.
     BlockOpRet,       // the struct is returned and it promoted or there is a cast.
     ReturnSpCheck,    // the local is used to do SP check
-    SimdUserForcesDep // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
+    SimdUserForcesDep, // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
+    HiddenBufferStructArg
 };
 
 enum class AddressExposedReason
@@ -526,6 +531,8 @@ public:
 
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
+    unsigned char lvHiddenBufferStructArg : 1; // True when this struct (or its field) are passed as hidden buffer
+                                               // pointer.
 
 #ifdef FEATURE_HFA_FIELDS_PRESENT
     CorInfoHFAElemType _lvHfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
@@ -750,6 +757,16 @@ public:
     bool IsAddressExposed() const
     {
         return m_addrExposed;
+    }
+
+    void SetHiddenBufferStructArg(char value)
+    {
+        lvHiddenBufferStructArg = value;
+    }
+
+    bool IsHiddenBufferStructArg() const
+    {
+        return lvHiddenBufferStructArg;
     }
 
 private:
@@ -3784,6 +3801,8 @@ public:
     // Getters and setters for address-exposed and do-not-enregister local var properties.
     bool lvaVarAddrExposed(unsigned varNum) const;
     void lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReason reason));
+    bool lvaVarHiddenBufferStructArg(unsigned varNum) const;
+    void lvaSetHiddenBufferStructArg(unsigned varNum);
     void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
 
@@ -9938,6 +9957,9 @@ public:
         // If set, tries to hide alignment instructions behind unconditional jumps.
         bool compJitHideAlignBehindJmp;
 
+        // If set, eliminates the extra copy done after function call having hidden buffer struct arg
+        bool compJitOptimizeStructHiddenBuffer;
+
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler
 #endif                     // LATE_DISASM
@@ -10587,9 +10609,6 @@ public:
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
 
-    // Returns true if the method being compiled has a return buffer.
-    bool compHasRetBuffArg();
-
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and
     // have them run within this method.  They will be run only once per process, and only
@@ -10645,6 +10664,7 @@ public:
         unsigned m_totalNumberOfStructEnregVars;
 
         unsigned m_addrExposed;
+        unsigned m_hiddenStructArg;
         unsigned m_VMNeedsStackAddr;
         unsigned m_localField;
         unsigned m_blockOp;

@@ -9406,6 +9406,9 @@ void Compiler::optRemoveRedundantZeroInits()
 
                         break;
                     }
+                    //case GT_CALL:
+                        //assert(!"Need to handle zero inits.\n");
+                        //break;
                     case GT_ASG:
                     {
                         GenTreeOp* treeOp = tree->AsOp();

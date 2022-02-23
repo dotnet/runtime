@@ -1266,6 +1266,38 @@ bool GenTreeCall::AreArgsComplete() const
     return false;
 }
 
+//-------------------------------------------------------------------------
+// GetRetBufArg: Returns the "return buffer" argument.
+//
+// Return Value:
+//     Returns the "return buffer" argument
+//
+void GenTreeCall::SetRetBufArg(GenTreeLclVar* retBufArg)
+{
+    assert(HasRetBufArg());
+    _retBufArg = retBufArg;
+    /*if (HasRetBufArg())
+    {
+        if (_retBufArg == nullptr)
+        {
+            unsigned index = (gtCallThisArg != nullptr) ? 1 : 0;
+            while (index < fgArgInfo->ArgCount())
+            {
+                fgArgTabEntry* entry = fgArgInfo->GetArgEntry(index);
+                if (entry->nonStandardArgKind == NonStandardArgKind::FixedRetBuffer ||
+                    entry->nonStandardArgKind == NonStandardArgKind::None)
+                {
+                    _retBufArg = entry->GetNode()->AsLclVarCommon();
+                    break;
+                }
+                index++;
+            }
+        }
+    }
+
+    return _retBufArg;*/
+}
+
 //--------------------------------------------------------------------------
 // Equals: Check if 2 CALL nodes are equal.
 //
@@ -5376,6 +5408,17 @@ bool GenTree::OperRequiresAsgFlag()
         }
     }
 #endif // FEATURE_HW_INTRINSICS
+    if (gtOper == GT_CALL)
+    {
+        GenTreeCall* callNode = this->AsCall();
+
+        // If the call has return buffer argument, it produced a definition and hence
+        // should be marked with assignment.
+        bool result = callNode->GetRetBufArg() != nullptr;
+
+        assert(!result || callNode->HasRetBufArg());
+        return result;
+    }
     return false;
 }
 
@@ -15461,6 +15504,20 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
             blkNode = AsOp()->gtOp1->AsBlk();
         }
     }
+    else if (OperIs(GT_CALL))
+    {
+        GenTreeLclVar* retBufLclVar = AsCall()->GetRetBufArg();
+        if (retBufLclVar != nullptr)
+        {            
+            *pLclVarTree = retBufLclVar;
+
+            if (pIsEntire != nullptr)
+            {
+                *pIsEntire = false;
+            }
+            return true;
+        }
+    }
     else if (OperIsBlk())
     {
         blkNode = this->AsBlk();
@@ -15510,7 +15567,7 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
             {
                 unsigned lclOffset = addrArgLcl->GetLclOffs();
 
-                if (lclOffset != 0)
+                if ((lclOffset != 0) || comp->lvaVarHiddenBufferStructArg(addrArgLcl->GetLclNum()))
                 {
                     // We aren't updating the bytes at [0..lclOffset-1] so *pIsEntire should be set to false
                     *pIsEntire = false;

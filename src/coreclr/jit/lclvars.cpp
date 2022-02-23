@@ -1518,6 +1518,16 @@ bool Compiler::lvaVarAddrExposed(unsigned varNum) const
 }
 
 /*****************************************************************************
+ * Returns true if variable "varNum" may be hidden return buffer for struct.
+ */
+
+bool Compiler::lvaVarHiddenBufferStructArg(unsigned varNum) const
+{
+    const LclVarDsc* varDsc = lvaGetDesc(varNum);
+    return varDsc->IsHiddenBufferStructArg();
+}
+
+/*****************************************************************************
  * Returns true iff variable "varNum" should not be enregistered (or one of several reasons).
  */
 
@@ -2501,6 +2511,33 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReaso
     lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::AddrExposed));
 }
 
+
+/*****************************************************************************
+ *
+ *  lvaSetHiddenBufferStructArg: Set the local var "varNum" as hidden buffer struct arg.
+ */
+
+void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+
+    varDsc->SetHiddenBufferStructArg(true);
+
+    if (varDsc->lvPromoted)
+    {
+        noway_assert(varTypeIsStruct(varDsc));
+
+        for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
+        {
+            noway_assert(lvaTable[i].lvIsStructField);
+            lvaTable[i].SetHiddenBufferStructArg(true);
+            lvaSetVarDoNotEnregister(i DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
+        }
+    }
+
+    lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
+}
+
 //------------------------------------------------------------------------
 // lvaSetVarLiveInOutOfHandler: Set the local varNum as being live in and/or out of a handler
 //
@@ -2573,6 +2610,10 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
         case DoNotEnregisterReason::AddrExposed:
             JITDUMP("it is address exposed\n");
             assert(varDsc->IsAddressExposed());
+            break;
+        case DoNotEnregisterReason::HiddenBufferStructArg:
+            JITDUMP("it is hidden buffer struct arg\n");
+            assert(varDsc->IsHiddenBufferStructArg());
             break;
         case DoNotEnregisterReason::DontEnregStructs:
             JITDUMP("struct enregistration is disabled\n");
@@ -4110,8 +4151,10 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                     varDsc->lvSingleDefRegCandidate           = false;
                     varDsc->lvDisqualifySingleDefRegCandidate = true;
                 }
-                else
+                else if (!varDsc->lvDoNotEnregister)
                 {
+                    // Variables can be marked as DoNotEngister in earlier stages like LocalAddressVisitor.
+                    // No need to track them for single-def.
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                     // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
                     // such variable. In future, need to enable enregisteration for such variables.
@@ -7464,6 +7507,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("X");
         }
+        if (varDsc->IsHiddenBufferStructArg())
+        {
+            printf("H");
+        }
         if (varTypeIsStruct(varDsc))
         {
             printf("S");
@@ -7514,6 +7561,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (varDsc->IsAddressExposed())
     {
         printf(" addr-exposed");
+    }
+    if (varDsc->IsHiddenBufferStructArg())
+    {
+        printf(" hidden-struct-arg");
     }
     if (varDsc->lvHasLdAddrOp)
     {
@@ -8207,7 +8258,7 @@ void Compiler::lvaDispVarSet(VARSET_VALARG_TP set, VARSET_VALARG_TP allVars)
                 needSpace = true;
             }
 
-            printf("V%02u", lclNum);
+            printf("[V%02u, T%d]", lclNum, index);
         }
         else if (VarSetOps::IsMember(this, allVars, index))
         {

@@ -3036,6 +3036,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 actualFlags |= GTF_ASG;
             }
 
+            // If it has a return buffer argument, then it produces a value.
+            if (call->GetRetBufArg() != nullptr)
+            {
+                actualFlags |= GTF_ASG;
+            }
+
             for (GenTreeCall::Use& use : call->Args())
             {
                 if ((use.GetNode()->gtFlags & GTF_ASG) != 0)

@@ -33,7 +33,7 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
         for (GenTree* const tree : stmt->TreeList())
         {
             GenTreeLclVarCommon* lclDefNode = nullptr;
-            if (tree->OperIs(GT_ASG) && tree->DefinesLocal(this, &lclDefNode))
+            if (tree->OperIs(GT_ASG, GT_CALL) && tree->DefinesLocal(this, &lclDefNode))
             {
                 const unsigned lclNum = optIsSsaLocal(lclDefNode);
 
@@ -377,7 +377,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
             treeLifeUpdater.UpdateLife(tree);
 
             GenTreeLclVarCommon* lclDefNode = nullptr;
-            if (tree->OperIs(GT_ASG) && tree->DefinesLocal(this, &lclDefNode))
+            if (tree->OperIs(GT_ASG, GT_CALL) && tree->DefinesLocal(this, &lclDefNode))
             {
                 const unsigned lclNum = optIsSsaLocal(lclDefNode);
 
