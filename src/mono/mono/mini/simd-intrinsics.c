@@ -837,14 +837,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 
-		MonoInst *cmp_eq = emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
-		MonoInst *zero = emit_xzero (cfg, klass);
-		MonoInst *ins = emit_xequal (cfg, klass, cmp_eq, zero);
-		int sreg = ins->dreg;
-		int dreg = alloc_ireg (cfg);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sreg, 0);
-		EMIT_NEW_UNALU (cfg, ins, OP_CEQ, dreg, -1);
-		return ins;
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		MonoInst *cmp_eq = emit_xcompare (cfg, arg_class, arg0_type, args [0], args [1]);
+		MonoInst *zero = emit_xzero (cfg, arg_class);
+		return emit_not_xequal (cfg, arg_class, cmp_eq, zero);
 	}
 	case SN_GetElement: {
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
