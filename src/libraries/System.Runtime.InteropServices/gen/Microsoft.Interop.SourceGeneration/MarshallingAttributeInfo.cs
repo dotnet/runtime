@@ -15,6 +15,11 @@ namespace Microsoft.Interop
     /// <summary>
     /// Type used to pass on default marshalling details.
     /// </summary>
+    /// <remarks>
+    /// This type used to pass default marshalling details to <see cref="MarshallingAttributeInfoParser"/>.
+    /// Since it contains a <see cref="INamedTypeSymbol"/>, it should not be used as a field on any types
+    /// derived from <see cref="MarshallingInfo"/>. See remarks on <see cref="MarshallingInfo"/>.
+    /// </remarks>
     public sealed record DefaultMarshallingInfo(
         CharEncoding CharEncoding,
         INamedTypeSymbol? StringMarshallingCustomType
@@ -24,6 +29,13 @@ namespace Microsoft.Interop
     // for C# vNext discriminated unions. Once discriminated unions are released,
     // these should be updated to be implemented as a discriminated union.
 
+    /// <summary>
+    /// Base type for marshalling information
+    /// </summary>
+    /// <remarks>
+    /// Types derived from this are used to represent the stub information calculated from the semantic model.
+    /// To support incremental generation, they must not include any types derived from <see cref="ISymbol"/>.
+    /// </remarks>
     public abstract record MarshallingInfo
     {
         // Add a constructor that can only be called by derived types in the same assembly
