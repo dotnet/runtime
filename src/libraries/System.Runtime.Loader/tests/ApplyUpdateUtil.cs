@@ -95,6 +95,20 @@ namespace System.Reflection.Metadata
         {
             options = options ?? new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables.Add(DotNetModifiableAssembliesSwitch, DotNetModifiableAssembliesValue);
+            /* Ask mono to use .dpdb data to generate sequence points even without a debugger attached */
+            if (IsMonoRuntime)
+                AppendEnvironmentVariable(options.StartInfo.EnvironmentVariables, "MONO_DEBUG", "gen-seq-points");
+        }
+
+        private static void AppendEnvironmentVariable(System.Collections.Specialized.StringDictionary env, string key, string addedValue)
+        {
+            if (!env.ContainsKey(key))
+                env.Add(key, addedValue);
+            else
+	    {
+                string oldValue = env[key];
+                env[key] = oldValue + "," + addedValue;
+            }
         }
 
         /// Run the given test case, which applies updates to the given assembly.
