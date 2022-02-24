@@ -2511,7 +2511,6 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReaso
     lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::AddrExposed));
 }
 
-
 /*****************************************************************************
  *
  *  lvaSetHiddenBufferStructArg: Set the local var "varNum" as hidden buffer struct arg.
@@ -4153,8 +4152,8 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                 }
                 else if (!varDsc->lvDoNotEnregister)
                 {
-                    // Variables can be marked as DoNotEngister in earlier stages like LocalAddressVisitor.
-                    // No need to track them for single-def.
+// Variables can be marked as DoNotEngister in earlier stages like LocalAddressVisitor.
+// No need to track them for single-def.
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                     // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
                     // such variable. In future, need to enable enregisteration for such variables.

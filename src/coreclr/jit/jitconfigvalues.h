@@ -72,10 +72,9 @@ CONFIG_INTEGER(JitHideAlignBehindJmp,
                1) // If set, try to hide align instruction (if any) behind an unconditional jump instruction (if any)
                   // that is present before the loop start.
 
-
 CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, W("JitOptimizeStructHiddenBuffer"), 1) // Optimizes the extra copy done
-                                                                                     // after function call having hidden buffer
-                                                                                     // struct arg
+// after function call having hidden buffer
+// struct arg
 
 // Print the alignment boundaries in disassembly.
 CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)

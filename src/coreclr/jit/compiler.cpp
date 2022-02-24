@@ -2409,9 +2409,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopBoundary       = (unsigned short)JitConfig.JitAlignLoopBoundary();
     opts.compJitAlignLoopMinBlockWeight = (unsigned short)JitConfig.JitAlignLoopMinBlockWeight();
 
-    opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
-    opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
-    opts.compJitHideAlignBehindJmp   = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitAlignLoopForJcc            = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize       = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitHideAlignBehindJmp         = JitConfig.JitHideAlignBehindJmp() == 1;
     opts.compJitOptimizeStructHiddenBuffer = JitConfig.JitOptimizeStructHiddenBuffer() == 1;
 #else
     opts.compJitAlignLoopAdaptive       = true;

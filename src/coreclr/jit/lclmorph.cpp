@@ -710,10 +710,7 @@ private:
                     }
                     assert(hiddenArgOp->OperIs(GT_LCL_VAR));
 
-                    //hiddenArgOp->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
-
                     m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
-                    callTree->gtCallMoreFlags |= GTF_CALL_RETBUF_STRUCTARG;
                     hasHiddenStructArg = true;
 
                     callTree->SetRetBufArg(hiddenArgOp->AsLclVar());

@@ -10068,9 +10068,9 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         assert(lclVarTree->gtFlags & GTF_VAR_DEF);
         assert(!isEntire);
 
-        unsigned   hiddenArgLclNum    = lclVarTree->GetLclNum();
-        LclVarDsc* hiddenArgVarDsc       = lvaGetDesc(hiddenArgLclNum);
-        unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
+        unsigned   hiddenArgLclNum = lclVarTree->GetLclNum();
+        LclVarDsc* hiddenArgVarDsc = lvaGetDesc(hiddenArgLclNum);
+        unsigned   lclDefSsaNum    = GetSsaNumForLocalVarDef(lclVarTree);
 
         if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
         {

@@ -3748,8 +3748,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_EXP_RUNTIME_LOOKUP      = 0x02000000, // this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
     GTF_CALL_M_STRESS_TAILCALL         = 0x04000000, // the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
     GTF_CALL_M_EXPANDED_EARLY          = 0x08000000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
-    GTF_CALL_M_LATE_DEVIRT             = 0x10000000, // this call has late devirtualzation info
-    GTF_CALL_RETBUF_STRUCTARG          = 0x20000000, // this call has hidden buffer struct argument
+    GTF_CALL_M_LATE_DEVIRT             = 0x10000000 // this call has late devirtualzation info
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4144,7 +4143,6 @@ struct GenTreeCall final : public GenTree
     {
         return UseList(gtCallLateArgs);
     }
-
 
 #ifdef DEBUG
     // Used to register callsites with the EE
@@ -4823,7 +4821,6 @@ struct GenTreeCall final : public GenTree
 
     bool AreArgsComplete() const;
 
-
     CorInfoCallConvExtension GetUnmanagedCallConv() const
     {
         return IsUnmanaged() ? unmgdCallConv : CorInfoCallConvExtension::Managed;
@@ -4852,7 +4849,6 @@ struct GenTreeCall final : public GenTree
     void SetRetBufArg(GenTreeLclVar* retBufArg);
 
     GenTreeLclVar* _retBufArg; // TODO: Rename to gt* something
-
 };
 
 struct GenTreeCmpXchg : public GenTree

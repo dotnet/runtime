@@ -396,13 +396,13 @@ enum class DoNotEnregisterReason
 #endif
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
-    StoreBlkSrc,      // the local is used as STORE_BLK source.
-    OneAsgRetyping,   // fgMorphOneAsgBlockOp prevents this local from being enregister.
-    SwizzleArg,       // the local is passed using LCL_FLD as another type.
-    BlockOpRet,       // the struct is returned and it promoted or there is a cast.
-    ReturnSpCheck,    // the local is used to do SP check
-    SimdUserForcesDep, // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
-    HiddenBufferStructArg
+    StoreBlkSrc,          // the local is used as STORE_BLK source.
+    OneAsgRetyping,       // fgMorphOneAsgBlockOp prevents this local from being enregister.
+    SwizzleArg,           // the local is passed using LCL_FLD as another type.
+    BlockOpRet,           // the struct is returned and it promoted or there is a cast.
+    ReturnSpCheck,        // the local is used to do SP check
+    SimdUserForcesDep,    // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
+    HiddenBufferStructArg // the argument is a hidden return buffer passed to a method.
 };
 
 enum class AddressExposedReason
@@ -529,8 +529,8 @@ public:
     unsigned char lvContainsHoles : 1;     // True when we have a promoted struct that contains holes
     unsigned char lvCustomLayout : 1;      // True when this struct has "CustomLayout"
 
-    unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
-    unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
+    unsigned char lvIsMultiRegArg : 1;         // true if this is a multireg LclVar struct used in an argument context
+    unsigned char lvIsMultiRegRet : 1;         // true if this is a multireg LclVar struct assigned from a multireg call
     unsigned char lvHiddenBufferStructArg : 1; // True when this struct (or its field) are passed as hidden buffer
                                                // pointer.
 

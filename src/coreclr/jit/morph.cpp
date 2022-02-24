@@ -9285,7 +9285,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     /* Assign DEF flags if it produces a definition from "return buffer" */
     fgAssignSetVarDef(call);
 
-
     // Should we expand this virtual method call target early here?
     //
     if (call->IsExpandedEarly() && call->IsVirtualVtable())
@@ -15296,9 +15295,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
                 tree->gtFlags &= ~GTF_EXCEPT;
             }
 
-
             tree = fgMorphCall(tree->AsCall());
-
 
             break;
 

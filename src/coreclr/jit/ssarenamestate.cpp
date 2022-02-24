@@ -49,7 +49,7 @@ unsigned SsaRenameState::Top(unsigned lclNum)
     noway_assert(top != nullptr);
 
     DBG_SSA_JITDUMP("[SsaRenameState::Top] " FMT_BB ", V%02u, ssaNum = %d\n", top->m_block->bbNum, lclNum,
-                top->m_ssaNum);
+                    top->m_ssaNum);
 
     return top->m_ssaNum;
 }
