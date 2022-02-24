@@ -367,6 +367,7 @@ namespace Microsoft.Interop
                         // This should never occur in a released build,
                         // but can happen when evolving the ecosystem.
                         // Return null here to indicate invalid attribute data.
+                        Debug.WriteLine($"An unknown member '{namedArg.Key}' was found on {attrData.AttributeClass}");
                         return null;
                     case nameof(GeneratedDllImportData.StringMarshalling):
                         userDefinedValues |= DllImportMember.StringMarshalling;
