@@ -98,7 +98,7 @@ System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescript
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Requests" />
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
