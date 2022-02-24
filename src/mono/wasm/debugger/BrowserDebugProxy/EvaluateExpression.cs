@@ -231,6 +231,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         typeRet = "string";
                         break;
                     }
+                    case "symbol":
+                     {
+                         var str = value?.Value<string>()?.Replace("\'", "")?.LastOrDefault();
+                         valueRet = $"\"{str}\"";
+                         typeRet = "string";
+                         break;
+                     }
                     case "number":
                         //casting to double and back to string would loose precision; so casting straight to string
                         valueRet = value?.Value<string>();
