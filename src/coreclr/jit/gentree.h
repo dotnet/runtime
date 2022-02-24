@@ -2111,6 +2111,8 @@ public:
 
     inline bool IsIntegralConstPow2() const;
 
+    inline bool IsIntegralConstAbsPow2() const;
+
     inline bool IsIntCnsFitsInI32(); // Constant fits in INT32
 
     inline bool IsCnsFltOrDbl() const;
@@ -8334,6 +8336,18 @@ inline bool GenTree::IsIntegralConst() const
 inline bool GenTree::IsIntegralConstPow2() const
 {
     return IsIntegralConst() && isPow2(AsIntConCommon()->IconValue());
+}
+
+inline bool GenTree::IsIntegralConstAbsPow2() const
+{
+    if (IsIntegralConst())
+    {
+        ssize_t value   = AsIntConCommon()->IconValue();
+        size_t  absValue = (value == SSIZE_T_MIN) ? static_cast<size_t>(value) : static_cast<size_t>(abs(value));
+        return isPow2(absValue);
+    }
+
+    return false;
 }
 
 // Is this node an integer constant that fits in a 32-bit signed integer (INT32)

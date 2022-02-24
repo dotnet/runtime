@@ -11403,6 +11403,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
             if (!optValnumCSE_phase)
             {
+#ifdef TARGET_ARM64
                 // a % b = a & (b - 1);
                 if(oper == GT_UMOD && op2->IsIntegralConstPow2())
                 {
@@ -11411,10 +11412,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     op2  = tree->AsOp()->gtOp2;
                 }
                 // a % b = a - (a / b) * b;
-#ifdef TARGET_ARM64
                 else
 #else
-                else if (oper == GT_MOD && !op2->IsIntegralConstPow2())
+                if (oper == GT_MOD && !op2->IsIntegralConstAbsPow2())
 #endif
                 {
                     tree = fgMorphModToSubMulDiv(tree->AsOp());
