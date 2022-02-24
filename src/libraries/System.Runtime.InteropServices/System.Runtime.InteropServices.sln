@@ -5,7 +5,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib.Generators", "..\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj", "{1B248B4C-7584-4C04-850A-A50EB592052C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.DllImportGenerator", "gen\DllImportGenerator\DllImportGenerator.csproj", "{07F19F91-D438-428D-99F0-61DAD87E78BA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllImportGenerator", "gen\DllImportGenerator\DllImportGenerator.csproj", "{07F19F91-D438-428D-99F0-61DAD87E78BA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{768B77B0-EA45-469D-B39E-545EB72F5A43}"
 EndProject
@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices", "src\System.Runtime.InteropServices.csproj", "{4FC33B9B-1BCF-4D16-B886-DCA8F2B823C1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.Ancillary", "tests\Ancillary.Interop\Ancillary.Interop.csproj", "{79F7BE0E-01AA-4AFB-B047-CF7C0B38F81E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ancillary.Interop", "tests\Ancillary.Interop\Ancillary.Interop.csproj", "{79F7BE0E-01AA-4AFB-B047-CF7C0B38F81E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllImportGenerator.Tests", "tests\DllImportGenerator.Tests\DllImportGenerator.Tests.csproj", "{57A1A6FD-9231-4DFB-8619-F0EDEDA208E3}"
 EndProject
@@ -23,7 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.Tests", "tests\System.Runtime.InteropServices.UnitTests\System.Runtime.InteropServices.Tests.csproj", "{049B7FD4-ACEF-4BCD-A7A7-75C9BBEC4EBF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.Tests.NativeExports", "tests\TestAssets\NativeExports\NativeExports.csproj", "{866D295E-424A-4747-9417-CD7746936138}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NativeExports", "tests\TestAssets\NativeExports\NativeExports.csproj", "{866D295E-424A-4747-9417-CD7746936138}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharedTypes", "tests\TestAssets\SharedTypes\SharedTypes.csproj", "{D3A329E3-0FEB-4136-9CB6-B38319B0FFA5}"
 EndProject

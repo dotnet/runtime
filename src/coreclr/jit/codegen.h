@@ -98,8 +98,8 @@ private:
 
     static bool genShouldRoundFP();
 
-    GenTreeIndir indirForm(var_types type, GenTree* base);
-    GenTreeStoreInd storeIndirForm(var_types type, GenTree* base, GenTree* data);
+    static GenTreeIndir indirForm(var_types type, GenTree* base);
+    static GenTreeStoreInd storeIndirForm(var_types type, GenTree* base, GenTree* data);
 
     GenTreeIntCon intForm(var_types type, ssize_t value);
 
@@ -1488,6 +1488,139 @@ public:
     void inst_RV_SH(instruction ins, emitAttr size, regNumber reg, unsigned val, insFlags flags = INS_FLAGS_DONT_CARE);
 
 #if defined(TARGET_XARCH)
+
+    enum class OperandKind{
+        ClsVar, // [CLS_VAR_ADDR]                 - "C" in the emitter.
+        Local,  // [Local or spill temp + offset] - "S" in the emitter.
+        Indir,  // [base+index*scale+disp]        - "A" in the emitter.
+        Imm,    // immediate                      - "I" in the emitter.
+        Reg     // reg                            - "R" in the emitter.
+    };
+
+    class OperandDesc
+    {
+        OperandKind m_kind;
+        union {
+            struct
+            {
+                CORINFO_FIELD_HANDLE m_fieldHnd;
+            };
+            struct
+            {
+                int      m_varNum;
+                uint16_t m_offset;
+            };
+            struct
+            {
+                GenTree*      m_addr;
+                GenTreeIndir* m_indir;
+                var_types     m_indirType;
+            };
+            struct
+            {
+                ssize_t m_immediate;
+                bool    m_immediateNeedsReloc;
+            };
+            struct
+            {
+                regNumber m_reg;
+            };
+        };
+
+    public:
+        OperandDesc(CORINFO_FIELD_HANDLE fieldHnd) : m_kind(OperandKind::ClsVar), m_fieldHnd(fieldHnd)
+        {
+        }
+
+        OperandDesc(int varNum, uint16_t offset) : m_kind(OperandKind::Local), m_varNum(varNum), m_offset(offset)
+        {
+        }
+
+        OperandDesc(GenTreeIndir* indir)
+            : m_kind(OperandKind::Indir), m_addr(indir->Addr()), m_indir(indir), m_indirType(indir->TypeGet())
+        {
+        }
+
+        OperandDesc(var_types indirType, GenTree* addr)
+            : m_kind(OperandKind::Indir), m_addr(addr), m_indir(nullptr), m_indirType(indirType)
+        {
+        }
+
+        OperandDesc(ssize_t immediate, bool immediateNeedsReloc)
+            : m_kind(OperandKind::Imm), m_immediate(immediate), m_immediateNeedsReloc(immediateNeedsReloc)
+        {
+        }
+
+        OperandDesc(regNumber reg) : m_kind(OperandKind::Reg), m_reg(reg)
+        {
+        }
+
+        OperandKind GetKind() const
+        {
+            return m_kind;
+        }
+
+        CORINFO_FIELD_HANDLE GetFieldHnd() const
+        {
+            assert(m_kind == OperandKind::ClsVar);
+            return m_fieldHnd;
+        }
+
+        int GetVarNum() const
+        {
+            assert(m_kind == OperandKind::Local);
+            return m_varNum;
+        }
+
+        int GetLclOffset() const
+        {
+            assert(m_kind == OperandKind::Local);
+            return m_offset;
+        }
+
+        // TODO-Cleanup: instead of this rather unsightly workaround with
+        // "indirForm", create a new abstraction for address modes to pass
+        // to the emitter (or at least just use "addr"...).
+        GenTreeIndir* GetIndirForm(GenTreeIndir* pIndirForm)
+        {
+            if (m_indir == nullptr)
+            {
+                GenTreeIndir indirForm = CodeGen::indirForm(m_indirType, m_addr);
+                memcpy(pIndirForm, &indirForm, sizeof(GenTreeIndir));
+            }
+            else
+            {
+                pIndirForm = m_indir;
+            }
+
+            return pIndirForm;
+        }
+
+        ssize_t GetImmediate() const
+        {
+            assert(m_kind == OperandKind::Imm);
+            return m_immediate;
+        }
+
+        bool ImmediateNeedsReloc() const
+        {
+            assert(m_kind == OperandKind::Imm);
+            return m_immediateNeedsReloc;
+        }
+
+        regNumber GetReg() const
+        {
+            return m_reg;
+        }
+
+        bool IsContained() const
+        {
+            return m_kind != OperandKind::Reg;
+        }
+    };
+
+    OperandDesc genOperandDesc(GenTree* op);
+
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
     void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival);
     void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW);

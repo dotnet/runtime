@@ -47,6 +47,7 @@
                         and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))
                         and '$(IncludeDllImportGeneratorSources)' == 'true'">
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedDllImportAttribute.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\StringMarshalling.cs" />
 
     <!-- Only add the following files if we are on the latest TFM (that is, net7). -->
     <Compile Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedMarshallingAttribute.cs" />
