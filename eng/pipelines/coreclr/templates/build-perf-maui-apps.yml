@@ -16,6 +16,7 @@ parameters:
   archiveExtension: ''
   archiveType: ''
   tarCompression: ''
+  appname: ''
 
 
 steps:
@@ -141,6 +142,45 @@ steps:
       mv ./bin/Release/net6.0-android/android-arm64/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+
+  - ${{ if eq(parameters.appname, "newmaui" }}:
+    - script: |
+        ./dotnet new maui -n MauiTesting
+        cd MauiTesting
+        cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
+        cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
+      displayName: Setup MAUI Project
+      workingDirectory: $(Build.SourcesDirectory)
+
+    - script: |
+        chmod -R a+r .
+        ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
+        mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
+      displayName: Build MAUI Android
+      workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+  # -- end newmaui --
+
+  - ${{ if eq(parameters.appname, "podcast" }}:
+    # -- clone podcast app --
+    - script: |
+        set -x
+        pwd
+        git clone https://github.com/naricc/dotnet-podcasts.git
+        cd dotnet-podcasts
+        cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
+        cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
+      displayName:  Clone podcast app
+      workingDirectory: $(Build.SourcesDirectory)
+
+    - script: |
+        set -x
+        pwd
+        chmod -R a+r .
+        ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiAndroid.binlog -f net6.0-android -c Release
+        mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
+      displayName: Build podcast app for MAUI
+      workingDirectory:  $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
+   #--- end podcast ---
 
     # This step pulls the product version from the used Microsoft.Maui.dll file properties and saves it for upload with the maui test counter.
     # We pull from this file as we did not find another place to reliably get the version information pre or post build.
