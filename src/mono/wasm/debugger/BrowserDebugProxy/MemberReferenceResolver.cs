@@ -393,36 +393,25 @@ namespace Microsoft.WebAssembly.Diagnostics
                     methodName = memberAccessExpressionSyntax.Name.ToString();
                 }
                 else if (expr is IdentifierNameSyntax)
-                    if (scopeCache.ObjectFields.TryGetValue("this", out JObject valueRet)) {
+                {
+                    if (scopeCache.ObjectFields.TryGetValue("this", out JObject valueRet))
+                    {
                         rootObject = await GetValueFromObject(valueRet, token);
-                    methodName = expr.ToString();
+                        methodName = expr.ToString();
+                    }
                 }
 
                 if (rootObject != null)
                 {
-                    DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                    if (!DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
+                        throw new Exception($"Cannot invoke method '{methodName}' on invalid object id: {rootObject["objectId"]?.Value<string>()}");
+
                     var typeIds = await context.SdbAgent.GetTypeIdFromObject(objectId.Value, true, token);
                     int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], methodName, token);
                     var className = await context.SdbAgent.GetTypeNameOriginal(typeIds[0], token);
                     if (methodId == 0) //try to search on System.Linq.Enumerable
-                    {
-                        if (linqTypeId == -1)
-                            linqTypeId = await context.SdbAgent.GetTypeByName("System.Linq.Enumerable", token);
-                        methodId = await context.SdbAgent.GetMethodIdByName(linqTypeId, methodName, token);
-                        if (methodId != 0)
-                        {
-                            foreach (var typeId in typeIds)
-                            {
-                                var genericTypeArgs = await context.SdbAgent.GetTypeParamsOrArgsForGenericType(typeId, token);
-                                if (genericTypeArgs.Count > 0)
-                                {
-                                    isExtensionMethod = true;
-                                    methodId = await context.SdbAgent.MakeGenericMethod(methodId, genericTypeArgs, token);
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                        methodId = await FindMethodIdOnLinqEnumerable(typeIds, methodName);
+
                     if (methodId == 0) {
                         var typeName = await context.SdbAgent.GetTypeName(typeIds[0], token);
                         throw new ReturnAsErrorException($"Method '{methodName}' not found in type '{typeName}'", "ArgumentError");
@@ -499,7 +488,37 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (Exception ex) when (ex is not ReturnAsErrorException)
             {
+            {
                 throw new Exception($"Unable to evaluate method '{methodName}'", ex);
+            }
+
+            async Task<int> FindMethodIdOnLinqEnumerable(IList<int> typeIds, string methodName)
+            {
+                if (linqTypeId == -1)
+                {
+                    linqTypeId = await context.SdbAgent.GetTypeByName("System.Linq.Enumerable", token);
+                    if (linqTypeId == 0)
+                    {
+                        logger.LogDebug($"Cannot find type 'System.Linq.Enumerable'");
+                        return 0;
+                    }
+                }
+
+                int newMethodId = await context.SdbAgent.GetMethodIdByName(linqTypeId, methodName, token);
+                if (newMethodId == 0)
+                    return 0;
+
+                foreach (int typeId in typeIds)
+                {
+                    List<int> genericTypeArgs = await context.SdbAgent.GetTypeParamsOrArgsForGenericType(typeId, token);
+                    if (genericTypeArgs.Count > 0)
+                    {
+                        isTryingLinq = 1;
+                        return await context.SdbAgent.MakeGenericMethod(newMethodId, genericTypeArgs, token);
+                    }
+                }
+
+                return 0;
             }
         }
     }
