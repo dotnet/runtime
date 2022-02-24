@@ -95,7 +95,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			test.TestState.AnalyzerConfigFiles.Add (
 						("/.editorconfig", SourceText.From (@$"
 is_global = true
-build_property.{MSBuildPropertyOptionNames.EnableAOTAnalyzer} = true")));
+build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 			test.FixedState.ExpectedDiagnostics.AddRange (fixedExpected);
 			return test.RunAsync ();
 		}

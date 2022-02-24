@@ -50,7 +50,7 @@ namespace System.Diagnostics.CodeAnalysis
 			test.TestState.AnalyzerConfigFiles.Add (
 						("/.editorconfig", SourceText.From (@$"
 is_global = true
-build_property.{MSBuildPropertyOptionNames.EnableAOTAnalyzer} = true")));
+build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 			if (numberOfIterations != null) {
 				test.NumberOfIncrementalIterations = numberOfIterations;
 				test.NumberOfFixAllIterations = numberOfIterations;
