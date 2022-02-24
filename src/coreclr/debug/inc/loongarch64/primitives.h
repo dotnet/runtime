@@ -24,7 +24,7 @@ typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
 #define PRD_TYPE                               LONG
 #define CORDbg_BREAK_INSTRUCTION_SIZE 4
-#define CORDbg_BREAK_INSTRUCTION (LONG)0xD43E0000
+#define CORDbg_BREAK_INSTRUCTION (LONG)0x002A0005
 
 inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
 {
@@ -48,7 +48,6 @@ inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
 
 constexpr CorDebugRegister g_JITToCorDbgReg[] =
 {
-    REGISTER_LOONGARCH64_R0,
     REGISTER_LOONGARCH64_RA,
     REGISTER_LOONGARCH64_TP,
     REGISTER_LOONGARCH64_SP,
@@ -118,7 +117,7 @@ inline BOOL CompareControlRegisters(const DT_CONTEXT * pCtx1, const DT_CONTEXT *
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // @LOONGARCHTODO: Sort out frame registers
+    // TODO-LoongArch64: Sort out frame registers
 
     if ((pCtx1->PC == pCtx2->PC) &&
         (pCtx1->SP == pCtx2->SP) &&
@@ -209,8 +208,7 @@ inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // @LOONGARCHTODO: LOONGARCH appears to leave the PC at the start of the breakpoint (at least according to Windbg,
-    // which may be adjusting the view).
+    // LoongArch64 appears to leave the PC at the start of the breakpoint.
     return;
 }
 
@@ -223,23 +221,20 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
 
 inline void SetSSFlag(DT_CONTEXT *pContext)
 {
-assert(!"unimplemented on LOONGARCH yet");
-    _ASSERTE(pContext != NULL);
-//    pContext->Cpsr |= 0x00200000;
+    // TODO-LoongArch64: LoongArch64 doesn't support cpsr.
+    _ASSERTE(!"unimplemented on LOONGARCH64 yet");
 }
 
 inline void UnsetSSFlag(DT_CONTEXT *pContext)
 {
-assert(!"unimplemented on LOONGARCH yet");
-    _ASSERTE(pContext != NULL);
-//    pContext->Cpsr &= ~0x00200000;
+    // TODO-LoongArch64: LoongArch64 doesn't support cpsr.
+    _ASSERTE(!"unimplemented on LOONGARCH64 yet");
 }
 
 inline bool IsSSFlagEnabled(DT_CONTEXT * pContext)
 {
-assert(!"unimplemented on LOONGARCH yet");
-    _ASSERTE(pContext != NULL);
-//    return (pContext->Cpsr & 0x00200000) != 0;
+    // TODO-LoongArch64: LoongArch64 doesn't support cpsr.
+    _ASSERTE(!"unimplemented on LOONGARCH64 yet");
     return false;
 }
 

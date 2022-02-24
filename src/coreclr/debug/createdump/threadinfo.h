@@ -27,12 +27,7 @@ class CrashInfo;
 #define user_regs_struct user_regs
 #define user_fpregs_struct user_fpregs
 #elif defined(__loongarch64)
-//usr/include/loongarch64-linux-gnu/sys/user.h
-//struct user_regs_struct
-//{
-//  unsigned long long  gpr[32];
-//  unsigned long long  pc;
-//} __attribute__((__packed__));
+// struct user_regs_struct {} defined `/usr/include/loongarch64-linux-gnu/sys/user.h`
 
 struct user_fpregs_struct
 {
