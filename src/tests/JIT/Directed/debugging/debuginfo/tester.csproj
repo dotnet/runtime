@@ -5,6 +5,7 @@
     <Optimize>True</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'arm' And '$(RuntimeFlavor)' == 'coreclr'">true</CLRTestTargetUnsupported>
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>

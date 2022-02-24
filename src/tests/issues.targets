@@ -3857,9 +3857,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'arm' And '$(RuntimeFlavor)' == 'coreclr'" >
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester.cs;$(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester.csproj">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
+        <!-- $(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester.csproj is skipped using CLRTestTargetUnsupported -->
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/bigevent/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
