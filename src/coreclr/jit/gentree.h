@@ -4134,9 +4134,29 @@ struct GenTreeCall final : public GenTree
         return UseList(gtCallArgs);
     }
 
+    GenTree* GetArg(unsigned index)
+    {
+        Use* use = gtCallArgs;
+        for (size_t i = 0; i < index; i++)
+        {
+            use = use->GetNext();
+        }
+        return use->GetNode();
+    }
+
     UseList LateArgs()
     {
         return UseList(gtCallLateArgs);
+    }
+
+    GenTree* GetLateArg(unsigned index)
+    {
+        Use* use = gtCallArgs;
+        for (size_t i = 0; i < index; i++)
+        {
+            use = use->GetNext();
+        }
+        return use->GetNode();
     }
 
 #ifdef DEBUG

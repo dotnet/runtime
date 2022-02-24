@@ -11550,11 +11550,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 if ((call->gtCallType == CT_HELPER) &&
                     (eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_LDELEMA_REF))
                 {
-                    GenTree*             objOp   = call->gtCallArgs->GetNode();
-                    GenTree*             indexOp = call->gtCallArgs->GetNext()->GetNode();
-                    GenTree*             clsOp   = call->gtCallArgs->GetNext()->GetNext()->GetNode();
-                    CORINFO_CLASS_HANDLE cls     = gtGetHelperArgClassHandle(clsOp);
-                    if ((cls != NO_CLASS_HANDLE) && impIsClassExact(cls))
+                    GenTree*             objOp      = call->GetArg(0);
+                    GenTree*             indexOp    = call->GetArg(1);
+                    GenTree*             clsOp      = call->GetArg(2);
+                    CORINFO_CLASS_HANDLE ldelemaCls = gtGetHelperArgClassHandle(clsOp);
+                    CORINFO_CLASS_HANDLE objElemCls = gtGetArrayElementClassHandle(objOp);
+                    if ((ldelemaCls == objElemCls) && impIsClassExact(ldelemaCls))
                     {
                         JITDUMP("Folding\n");
                         DISPTREE(tree);
