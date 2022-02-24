@@ -216,16 +216,24 @@ namespace SharedTypes
                 int byteCount = Encoding.UTF8.GetBytes(str, buffer);
                 buffer[byteCount] = 0; // null-terminate
                 span = buffer;
-                Value = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
             }
             else
             {
                 allocated = (byte*)Marshal.StringToCoTaskMemUTF8(str);
-                Value = allocated;
             }
         }
 
-        public byte* Value { get; set; } = null;
+        public byte* Value
+        {
+            get
+            {
+                return allocated != null ? allocated : (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+            }
+            set
+            {
+                allocated = value;
+            }
+        }
 
         public string? ToManaged() => Marshal.PtrToStringUTF8((IntPtr)Value);
 
