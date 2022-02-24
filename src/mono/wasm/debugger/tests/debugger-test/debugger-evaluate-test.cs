@@ -871,8 +871,8 @@ namespace DebuggerTests
             public ulong GetUInt64(ulong param = 1) => param;
             public float GetSingle(float param = 1.23f) => param;
             public double GetDouble(double param = 1.23) => param;
-            public string GetString(string param = "1.23") => param;   
-            public string GetUnicodeString(string param = "żółć") => param;           
+            public string GetString(string param = "1.23") => param;
+            public string GetUnicodeString(string param = "żółć") => param;
             
             #nullable enable
             public bool? GetBoolNullable(bool? param = true) => param;
