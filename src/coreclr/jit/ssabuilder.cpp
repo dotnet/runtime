@@ -883,8 +883,9 @@ void SsaBuilder::RenameCall(GenTreeCall* callNode, BasicBlock* block)
             // the SSA number of the use that is implied by the argument. The SSA number of the new definition
             // will be recorded in the m_opAsgnVarDefSsaNums map.
             retBufArg->SetSsaNum(m_renameStack.Top(lclNum));
-            m_pCompiler->GetOpAsgnVarDefSsaNums()->Set(retBufArg, ssaNum);
 
+            m_pCompiler->GetOpAsgnVarDefSsaNums()->Set(retBufArg, ssaNum);
+            m_renameStack.Push(block, lclNum, ssaNum);
             return;
         }
 
