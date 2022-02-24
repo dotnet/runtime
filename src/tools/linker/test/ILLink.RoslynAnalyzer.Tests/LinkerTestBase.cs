@@ -11,7 +11,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		private static readonly (string, string)[] MSBuildProperties = UseMSBuildProperties (
 			MSBuildPropertyOptionNames.EnableTrimAnalyzer,
 			MSBuildPropertyOptionNames.EnableSingleFileAnalyzer,
-			MSBuildPropertyOptionNames.EnableAOTAnalyzer);
+			MSBuildPropertyOptionNames.EnableAotAnalyzer);
 
 		protected Task RunTest ([CallerMemberName] string testName = "", bool allowMissingWarnings = false)
 		{
