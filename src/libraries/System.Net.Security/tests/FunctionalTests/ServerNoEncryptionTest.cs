@@ -96,7 +96,10 @@ namespace System.Net.Security.Tests
                     else
                     {
                         var ae = await Assert.ThrowsAsync<AuthenticationException>(() => sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocolSupport.DefaultSslProtocols, false));
-                        Assert.IsType<PlatformNotSupportedException>(ae.InnerException);
+                        if (!OperatingSystem.IsWindows())
+                        {
+                            Assert.IsType<PlatformNotSupportedException>(ae.InnerException);
+                        }
                     }
                 }
             }

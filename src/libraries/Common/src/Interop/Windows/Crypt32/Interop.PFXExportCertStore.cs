@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
         internal static partial bool PFXExportCertStore(SafeCertStoreHandle hStore, ref DATA_BLOB pPFX, SafePasswordHandle szPassword, PFXExportFlags dwFlags);
     }
 }

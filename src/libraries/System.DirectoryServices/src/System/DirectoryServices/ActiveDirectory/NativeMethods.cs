@@ -309,7 +309,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 ULONG Flags,
                 PDOMAIN_CONTROLLER_INFO* DomainControllerInfo
                 );*/
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcNameW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DsGetDcName(
             string? computerName,
             string? domainName,
@@ -327,7 +327,7 @@ namespace System.DirectoryServices.ActiveDirectory
                          ULONG DcFlags,
                          PHANDLE RetGetDcContext
                          );*/
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcOpenW", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcOpenW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DsGetDcOpen(
             string? dnsName,
             int optionFlags,
@@ -343,7 +343,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         LPSOCKET_ADDRESS* SockAddresses,
                         LPTSTR* DnsHostName
                         );*/
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcNextW", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcNextW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DsGetDcNext(
             IntPtr getDcContextHandle,
             ref IntPtr sockAddressCount,
@@ -353,7 +353,7 @@ namespace System.DirectoryServices.ActiveDirectory
         /*void WINAPI DsGetDcClose(
                         HANDLE GetDcContextHandle
                         );*/
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcCloseW", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcCloseW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void DsGetDcClose(
             IntPtr getDcContextHandle);
 
@@ -380,7 +380,7 @@ namespace System.DirectoryServices.ActiveDirectory
             PDNS_RECORD *ppQueryResultsSet,
             PVOID *pReserved
             );*/
-        [GeneratedDllImport(global::Interop.Libraries.Dnsapi, EntryPoint = "DnsQuery_W", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Dnsapi, EntryPoint = "DnsQuery_W", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DnsQuery(
             string recordName,
             short recordType,
@@ -393,7 +393,7 @@ namespace System.DirectoryServices.ActiveDirectory
             PDNS_RECORD pRecordList,
             DNS_FREE_TYPE FreeType
             );*/
-        [GeneratedDllImport(global::Interop.Libraries.Dnsapi, CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(global::Interop.Libraries.Dnsapi)]
         internal static partial void DnsRecordListFree(
             IntPtr dnsResultList,
             bool dnsFreeType);
@@ -447,7 +447,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DWORD lpString2,
             DWORD cchCount2
             );*/
-        [GeneratedDllImport(global::Interop.Libraries.Kernel32, EntryPoint = "CompareStringW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(global::Interop.Libraries.Kernel32, EntryPoint = "CompareStringW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int CompareString(
             uint locale,
             uint dwCmpFlags,

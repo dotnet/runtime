@@ -115,6 +115,33 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The generated &apos;DllImportAttribute&apos; will not have a value corresponding to &apos;{0}={1}&apos;..
+        /// </summary>
+        internal static string CannotForwardToDllImportDescription {
+            get {
+                return ResourceManager.GetString("CannotForwardToDllImportDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}={1}&apos; has no equivalent in &apos;DllImportAtttribute&apos; and will not be forwarded.
+        /// </summary>
+        internal static string CannotForwardToDllImportMessage {
+            get {
+                return ResourceManager.GetString("CannotForwardToDllImportMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Specified &apos;GeneratedDllImportAttribute&apos; arguments cannot be forwarded to &apos;DllImportAttribute&apos;.
+        /// </summary>
+        internal static string CannotForwardToDllImportTitle {
+            get {
+                return ResourceManager.GetString("CannotForwardToDllImportTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The &apos;BlittableTypeAttribute&apos; and &apos;NativeMarshallingAttribute&apos; attributes are mutually exclusive..
         /// </summary>
         internal static string CannotHaveMultipleMarshallingAttributesDescription {
@@ -273,6 +300,15 @@ namespace Microsoft.Interop {
         internal static string ConvertToGeneratedDllImportWarning {
             get {
                 return ResourceManager.GetString("ConvertToGeneratedDllImportWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos; with &apos;{0}&apos; suffix.
+        /// </summary>
+        internal static string ConvertToGeneratedDllImportWithSuffix {
+            get {
+                return ResourceManager.GetString("ConvertToGeneratedDllImportWithSuffix", resourceCulture);
             }
         }
         

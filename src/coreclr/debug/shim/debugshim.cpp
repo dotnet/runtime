@@ -13,14 +13,6 @@
 #include <clrinternal.h> //has the CLR_ID_V4_DESKTOP guid in it
 #include "palclr.h"
 
-#ifndef IMAGE_FILE_MACHINE_ARMNT
-#define IMAGE_FILE_MACHINE_ARMNT             0x01c4  // ARM Thumb-2 Little-Endian
-#endif
-
-#ifndef IMAGE_FILE_MACHINE_ARM64
-#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
-#endif
-
 //*****************************************************************************
 // CLRDebuggingImpl implementation (ICLRDebugging)
 //*****************************************************************************

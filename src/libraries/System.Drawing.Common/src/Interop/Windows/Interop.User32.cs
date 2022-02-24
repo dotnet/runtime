@@ -11,28 +11,28 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [GeneratedDllImport(Libraries.User32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.User32, EntryPoint = "LoadIconW", SetLastError = true)]
         internal static partial IntPtr LoadIcon(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef hInst, IntPtr iconId);
 
-        [GeneratedDllImport(Libraries.User32, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.User32, SetLastError = true)]
         internal static partial bool DestroyIcon(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef hIcon);
 
-        [GeneratedDllImport(Libraries.User32, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.User32, SetLastError = true)]
         internal static partial IntPtr CopyImage(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef hImage, int uType, int cxDesired, int cyDesired, int fuFlags);
 
-        [GeneratedDllImport(Libraries.User32, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.User32, SetLastError = true)]
         internal static partial bool GetIconInfo(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -42,7 +42,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.User32, SetLastError = true)]
         public static partial int GetSystemMetrics(int nIndex);
 
-        [GeneratedDllImport(Libraries.User32, CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.User32, SetLastError = true)]
         internal static partial bool DrawIconEx(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]

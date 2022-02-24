@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 

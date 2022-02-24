@@ -41,18 +41,6 @@ namespace System.Text
             AppendFormatHelper(provider, format, new ParamsArray(args));
         }
 
-        internal void AppendSpanFormattable<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable
-        {
-            if (value.TryFormat(_chars.Slice(_pos), out int charsWritten, format, provider))
-            {
-                _pos += charsWritten;
-            }
-            else
-            {
-                Append(value.ToString(format, provider));
-            }
-        }
-
         // Copied from StringBuilder, can't be done via generic extension
         // as ValueStringBuilder is a ref struct and cannot be used in a generic.
         internal void AppendFormatHelper(IFormatProvider? provider, string format!!, ParamsArray args)

@@ -747,6 +747,11 @@ namespace System.Net.Security
                 return frameSize;
             }
 
+            if (frameSize < int.MaxValue)
+            {
+                _buffer.EnsureAvailableSpace(frameSize - _buffer.EncryptedLength);
+            }
+
             while (_buffer.EncryptedLength < frameSize)
             {
                 // there should be space left to read into
