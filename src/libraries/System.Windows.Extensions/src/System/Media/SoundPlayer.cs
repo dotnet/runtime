@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Net;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
@@ -22,6 +22,7 @@ namespace System.Media
         private Uri? _uri;
         private string _soundLocation = string.Empty;
         private int _loadTimeout = DefaultLoadTimeout;
+        private HttpClient _httpClient = new HttpClient();
 
         // used to lock all synchronous calls to the SoundPlayer object
         private readonly ManualResetEvent _semaphore = new ManualResetEvent(true);
@@ -261,16 +262,7 @@ namespace System.Media
             // setup the http stream
             if (_uri != null && !_uri.IsFile && _stream == null)
             {
-#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
-                WebRequest webRequest = WebRequest.Create(_uri);
-#pragma warning restore SYSLIB0014
-                webRequest.Timeout = LoadTimeout;
-
-                WebResponse webResponse;
-                webResponse = webRequest.GetResponse();
-
-                // now get the stream
-                _stream = webResponse.GetResponseStream();
+                _stream = _httpClient.GetStreamAsync(_uri).Result;
             }
 
             // DO NOT assert - NRE is expected for null stream
@@ -486,14 +478,7 @@ namespace System.Media
                 // setup the http stream
                 if (_uri != null && !_uri.IsFile && _stream == null)
                 {
-#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
-                    WebRequest webRequest = WebRequest.Create(_uri);
-#pragma warning restore SYSLIB0014
-                    using (cancellationToken.Register(r => ((WebRequest)r!).Abort(), webRequest))
-                    {
-                        WebResponse webResponse = await webRequest.GetResponseAsync().ConfigureAwait(false);
-                        _stream = webResponse.GetResponseStream();
-                    }
+                    _stream = _httpClient.GetStreamAsync(_uri, cancellationToken).Result;
                 }
 
                 _streamData = new byte[BlockSize];
