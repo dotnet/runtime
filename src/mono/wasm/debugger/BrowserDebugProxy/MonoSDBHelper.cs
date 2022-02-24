@@ -1544,6 +1544,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<int> GetMethodIdByName(int type_id, string method_name, CancellationToken token)
         {
+            if (type_id <= 0)
+                throw new DebuggerAgentException($"Invalid type_id {type_id} (method_name: {method_name}");
+
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write((int)type_id);
             commandParamsWriter.Write(method_name);
