@@ -18,25 +18,21 @@ namespace System.Collections.Immutable
 
         public void Add(T item)
         {
-            var keyWrapper = new NullableKeyWrapper(item);
-
 #if NET6_0_OR_GREATER
-            ref int count = ref CollectionsMarshal.GetValueRefOrAddDefault(_dictionary, keyWrapper, out _);
+            ref int count = ref CollectionsMarshal.GetValueRefOrAddDefault(_dictionary, item, out _);
             count++;
 #else
-        _dictionary[keyWrapper] = _dictionary.TryGetValue(keyWrapper, out int count) ? count + 1 : 1;
+            _dictionary[item] = _dictionary.TryGetValue(item, out int count) ? count + 1 : 1;
 #endif
         }
 
         public bool TryRemove(T item)
         {
-            var keyWrapper = new NullableKeyWrapper(item);
-
 #if NET6_0_OR_GREATER
-            ref int count = ref CollectionsMarshal.GetValueRefOrNullRef(_dictionary, keyWrapper);
+            ref int count = ref CollectionsMarshal.GetValueRefOrNullRef(_dictionary, item);
             if (Unsafe.IsNullRef(ref count) || count == 0)
 #else
-        if (!_dictionary.TryGetValue(keyWrapper, out int count) || count == 0)
+            if (!_dictionary.TryGetValue(item, out int count) || count == 0)
 #endif
             {
                 return false;
@@ -45,7 +41,7 @@ namespace System.Collections.Immutable
 #if NET6_0_OR_GREATER
             count--;
 #else
-        _dictionary[keyWrapper] = count - 1;
+            _dictionary[item] = count - 1;
 #endif
             return true;
         }
@@ -54,7 +50,12 @@ namespace System.Collections.Immutable
         {
             public readonly T Key;
 
-            public NullableKeyWrapper(T key)
+            public static implicit operator NullableKeyWrapper(T key)
+            {
+                return new NullableKeyWrapper(key);
+            }
+
+            private NullableKeyWrapper(T key)
             {
                 Key = key;
             }
