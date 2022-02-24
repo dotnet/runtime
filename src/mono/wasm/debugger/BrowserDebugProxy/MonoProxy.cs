@@ -590,7 +590,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         try {
                             return await CallOnFunction(id, args, token);
                         }
-                        catch (Exception){
+                        catch (Exception ex) {
+                            logger.LogDebug($"Runtime.callFunctionOn failed for {id} with args {args}: {ex}");
                             SendResponse(id,
                                 Result.Exception(new ArgumentException(
                                     $"Runtime.callFunctionOn not supported with ({args["objectId"]}).")),
@@ -604,8 +605,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             SetJustMyCode(id, args, token);
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
+                            logger.LogDebug($"DotnetDebugger.justMyCode failed for {id} with args {args}: {ex}");
                             SendResponse(id,
                                 Result.Exception(new ArgumentException(
                                     $"DotnetDebugger.justMyCode got incorrect argument ({args})")),

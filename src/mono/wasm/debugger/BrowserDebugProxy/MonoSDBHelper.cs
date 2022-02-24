@@ -1429,9 +1429,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 return retValue?["value"]?.Value<string>();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                logger.LogDebug($"Could not evaluate DebuggerDisplayAttribute - {expr} - {await GetTypeName(typeId, token)}");
+                logger.LogDebug($"Could not evaluate DebuggerDisplayAttribute - {expr} - {await GetTypeName(typeId, token)}: {ex}");
             }
             return null;
         }

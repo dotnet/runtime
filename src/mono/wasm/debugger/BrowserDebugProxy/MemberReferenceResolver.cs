@@ -372,9 +372,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 return null;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new Exception($"Unable to evaluate method '{elementAccess}'");
+                throw new Exception($"Unable to evaluate method '{elementAccess}'", ex);
             }
         }
 
