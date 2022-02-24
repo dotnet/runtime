@@ -12,7 +12,7 @@ const DotnetSupportLib = {
     $DOTNET__postset: `
 let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)}, 
+    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
 readAsync = __dotnet_replacements.readAsync;
@@ -44,22 +44,22 @@ const linked_functions = [
 
     // corebindings.c
     "mono_wasm_invoke_js_with_args",
-    "mono_wasm_get_object_property",
-    "mono_wasm_set_object_property",
-    "mono_wasm_get_by_index",
-    "mono_wasm_set_by_index",
-    "mono_wasm_get_global_object",
-    "mono_wasm_create_cs_owned_object",
+    "mono_wasm_get_object_property_ref",
+    "mono_wasm_set_object_property_ref",
+    "mono_wasm_get_by_index_ref",
+    "mono_wasm_set_by_index_ref",
+    "mono_wasm_get_global_object_ref",
+    "mono_wasm_create_cs_owned_object_ref",
     "mono_wasm_release_cs_owned_object",
-    "mono_wasm_typed_array_to_array",
-    "mono_wasm_typed_array_copy_to",
-    "mono_wasm_typed_array_from",
-    "mono_wasm_typed_array_copy_from",
+    "mono_wasm_typed_array_to_array_ref",
+    "mono_wasm_typed_array_copy_to_ref",
+    "mono_wasm_typed_array_from_ref",
+    "mono_wasm_typed_array_copy_from_ref",
     "mono_wasm_cancel_promise",
-    "mono_wasm_web_socket_open",
+    "mono_wasm_web_socket_open_ref",
     "mono_wasm_web_socket_send",
     "mono_wasm_web_socket_receive",
-    "mono_wasm_web_socket_close",
+    "mono_wasm_web_socket_close_ref",
     "mono_wasm_web_socket_abort",
     "mono_wasm_compile_function",
 

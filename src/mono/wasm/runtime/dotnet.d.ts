@@ -72,7 +72,7 @@ declare function mono_wasm_new_root_buffer(capacity: number, name?: string): Was
  * The result object has get() and set(value) methods, along with a .value property.
  * When you are done using the root you must call its .release() method.
  */
-declare function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(value?: T | undefined): WasmRoot<T>;
+declare function mono_wasm_new_root<T extends MonoObject>(value?: T | undefined): WasmRoot<T>;
 /**
  * Releases 1 or more root or root buffer objects.
  * Multiple objects may be passed on the argument list.
@@ -91,23 +91,29 @@ declare class WasmRootBuffer {
     constructor(offset: VoidPtr, capacity: number, ownsAllocation: boolean, name?: string);
     _throw_index_out_of_range(): void;
     _check_in_range(index: number): void;
-    get_address(index: number): NativePointer;
+    get_address(index: number): MonoObjectRef;
     get_address_32(index: number): number;
     get(index: number): ManagedPointer;
     set(index: number, value: ManagedPointer): ManagedPointer;
+    copy_value_from_address(index: number, sourceAddress: MonoObjectRef): void;
     _unsafe_get(index: number): number;
     _unsafe_set(index: number, value: ManagedPointer | NativePointer): void;
     clear(): void;
     release(): void;
     toString(): string;
 }
-interface WasmRoot<T extends ManagedPointer | NativePointer> {
-    get_address(): NativePointer;
+interface WasmRoot<T extends MonoObject> {
+    get_address(): MonoObjectRef;
     get_address_32(): number;
+    get address(): MonoObjectRef;
     get(): T;
     set(value: T): T;
     get value(): T;
     set value(value: T);
+    copy_from_address(source: MonoObjectRef): void;
+    copy_to_address(destination: MonoObjectRef): void;
+    copy_from(source: WasmRoot<T>): void;
+    copy_to(destination: WasmRoot<T>): void;
     valueOf(): T;
     clear(): void;
     release(): void;
@@ -122,6 +128,9 @@ interface MonoString extends MonoObject {
 }
 interface MonoArray extends MonoObject {
     __brand: "MonoArray";
+}
+interface MonoObjectRef extends ManagedPointer {
+    __brandMonoObjectRef: "MonoObjectRef";
 }
 declare type MonoConfig = {
     isError: false;
@@ -237,10 +246,23 @@ declare function mono_wasm_load_config(configFilePath: string): Promise<void>;
 
 declare function mono_wasm_load_icu_data(offset: VoidPtr): boolean;
 
+/**
+ * @deprecated Not GC or thread safe
+ */
 declare function conv_string(mono_obj: MonoString): string | null;
+declare function conv_string_root(root: WasmRoot<MonoString>): string | null;
+/**
+ * @deprecated Not GC or thread safe
+ */
 declare function js_string_to_mono_string(string: string): MonoString;
 
+/**
+ * @deprecated Not GC or thread safe. For blazor use only
+ */
 declare function js_to_mono_obj(js_obj: any): MonoObject;
+/**
+ * @deprecated Not GC or thread safe
+ */
 declare function js_typed_array_to_array(js_obj: any): MonoArray;
 
 declare function unbox_mono_obj(mono_obj: MonoObject): any;
@@ -251,7 +273,7 @@ declare function mono_call_assembly_entry_point(assembly: string, args?: any[], 
 
 declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 
-declare type _MemOffset = number | VoidPtr | NativePointer;
+declare type _MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
 declare type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 declare function setU8(offset: _MemOffset, value: number): void;
 declare function setU16(offset: _MemOffset, value: number): void;
@@ -313,13 +335,27 @@ declare const MONO: {
 };
 declare type MONOType = typeof MONO;
 declare const BINDING: {
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_obj_array_new: (size: number) => MonoArray;
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_obj_array_set: (array: MonoArray, idx: number, obj: MonoObject) => void;
+    /**
+     * @deprecated Not GC or thread safe
+     */
     js_string_to_mono_string: typeof js_string_to_mono_string;
     js_typed_array_to_array: typeof js_typed_array_to_array;
     js_to_mono_obj: typeof js_to_mono_obj;
     mono_array_to_js_array: typeof mono_array_to_js_array;
     conv_string: typeof conv_string;
+    /**
+     * @deprecated Renamed to conv_string_root
+     */
+    conv_string_rooted: typeof conv_string_root;
+    conv_string_root: typeof conv_string_root;
     bind_static_method: typeof mono_bind_static_method;
     call_assembly_entry_point: typeof mono_call_assembly_entry_point;
     unbox_mono_obj: typeof unbox_mono_obj;

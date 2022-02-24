@@ -38,24 +38,24 @@ import {
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
-import { conv_string, js_string_to_mono_string, mono_intern_string } from "./strings";
-import { js_to_mono_obj, js_typed_array_to_array, mono_wasm_typed_array_to_array } from "./js-to-cs";
+import { conv_string, conv_string_root, js_string_to_mono_string, mono_intern_string } from "./strings";
+import { js_to_mono_obj, js_typed_array_to_array, mono_wasm_typed_array_to_array_ref } from "./js-to-cs";
 import {
-    mono_array_to_js_array, mono_wasm_create_cs_owned_object, unbox_mono_obj
+    mono_array_to_js_array, mono_wasm_create_cs_owned_object_ref, unbox_mono_obj
 } from "./cs-to-js";
 import {
     call_static_method, mono_bind_static_method, mono_call_assembly_entry_point,
     mono_method_resolve,
     mono_wasm_compile_function,
-    mono_wasm_get_by_index, mono_wasm_get_global_object, mono_wasm_get_object_property,
+    mono_wasm_get_by_index_ref, mono_wasm_get_global_object_ref, mono_wasm_get_object_property_ref,
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
-    mono_wasm_invoke_js_with_args, mono_wasm_set_by_index, mono_wasm_set_object_property
+    mono_wasm_invoke_js_with_args, mono_wasm_set_by_index_ref, mono_wasm_set_object_property_ref
 } from "./method-calls";
-import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_typed_array_copy_from, mono_wasm_load_bytes_into_heap } from "./buffers";
+import { mono_wasm_typed_array_copy_to_ref, mono_wasm_typed_array_from_ref, mono_wasm_typed_array_copy_from_ref, mono_wasm_load_bytes_into_heap } from "./buffers";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
-import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from "./web-socket";
+import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close_ref, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
 import {
     setI8, setI16, setI32, setI64,
@@ -114,13 +114,27 @@ export type MONOType = typeof MONO;
 
 const BINDING = {
     //current "public" BINDING API
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_obj_array_new: cwraps.mono_wasm_obj_array_new,
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_obj_array_set: cwraps.mono_wasm_obj_array_set,
+    /**
+     * @deprecated Not GC or thread safe
+     */
     js_string_to_mono_string,
     js_typed_array_to_array,
     js_to_mono_obj,
     mono_array_to_js_array,
     conv_string,
+    /**
+     * @deprecated Renamed to conv_string_root
+     */
+    conv_string_rooted: conv_string_root,
+    conv_string_root,
     bind_static_method: mono_bind_static_method,
     call_assembly_entry_point: mono_call_assembly_entry_point,
     unbox_mono_obj,
@@ -281,22 +295,22 @@ export const __linker_exports: any = {
 
     // also keep in sync with corebindings.c
     mono_wasm_invoke_js_with_args,
-    mono_wasm_get_object_property,
-    mono_wasm_set_object_property,
-    mono_wasm_get_by_index,
-    mono_wasm_set_by_index,
-    mono_wasm_get_global_object,
-    mono_wasm_create_cs_owned_object,
+    mono_wasm_get_object_property_ref,
+    mono_wasm_set_object_property_ref,
+    mono_wasm_get_by_index_ref,
+    mono_wasm_set_by_index_ref,
+    mono_wasm_get_global_object_ref,
+    mono_wasm_create_cs_owned_object_ref,
     mono_wasm_release_cs_owned_object,
-    mono_wasm_typed_array_to_array,
-    mono_wasm_typed_array_copy_to,
-    mono_wasm_typed_array_from,
-    mono_wasm_typed_array_copy_from,
+    mono_wasm_typed_array_to_array_ref,
+    mono_wasm_typed_array_copy_to_ref,
+    mono_wasm_typed_array_from_ref,
+    mono_wasm_typed_array_copy_from_ref,
     mono_wasm_cancel_promise,
-    mono_wasm_web_socket_open,
+    mono_wasm_web_socket_open_ref,
     mono_wasm_web_socket_send,
     mono_wasm_web_socket_receive,
-    mono_wasm_web_socket_close,
+    mono_wasm_web_socket_close_ref,
     mono_wasm_web_socket_abort,
     mono_wasm_compile_function,
 
