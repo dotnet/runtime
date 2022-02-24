@@ -20,8 +20,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Xunit;
 
-[assembly: System.Tests.GenericAttribute<System.Type>]
-[module: System.Tests.GenericAttribute<bool>]
 [module: Debuggable(true, false)]
 namespace System.Tests
 {
@@ -223,22 +221,6 @@ namespace System.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
-        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForAssembly()
-        {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            GenericAttributesTestHelper<Type>(t => Attribute.GetCustomAttributes(assembly, t));
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
-        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForModule()
-        {
-            Module module = typeof(HasGenericAttribute).Module;
-            GenericAttributesTestHelper<bool>(t => Attribute.GetCustomAttributes(module, t));
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887)", TestRuntimes.Mono)]
         public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForType()
         {
             GenericAttributesTestHelper<string>(t => Attribute.GetCustomAttributes(typeof(HasGenericAttribute), t));
@@ -335,8 +317,7 @@ namespace System.Tests
             // [TestAttributes.FooAttribute()]
             // [TestAttributes.ComplicatedAttribute((Int32)1, Stuff = 2)]
             // [System.Diagnostics.DebuggableAttribute((Boolean)True, (Boolean)False)]
-            // [System.Tests.GenericAttribute<bool>]
-            Assert.Equal(5, customAttributes.Count);
+            Assert.Equal(4, customAttributes.Count);
         }
 
         [Fact]
