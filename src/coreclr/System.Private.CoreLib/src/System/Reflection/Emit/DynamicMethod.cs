@@ -49,6 +49,7 @@ namespace System.Reflection.Emit
         // class initialization (ctor and init)
         //
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes)
@@ -64,6 +65,7 @@ namespace System.Reflection.Emit
                 true);
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
@@ -80,6 +82,7 @@ namespace System.Reflection.Emit
                 true);
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
@@ -96,6 +99,7 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
@@ -113,6 +117,7 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name,
                              MethodAttributes attributes,
                              CallingConventions callingConvention,
@@ -132,6 +137,7 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
@@ -148,6 +154,7 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
@@ -165,6 +172,7 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         public DynamicMethod(string name,
                              MethodAttributes attributes,
                              CallingConventions callingConvention,

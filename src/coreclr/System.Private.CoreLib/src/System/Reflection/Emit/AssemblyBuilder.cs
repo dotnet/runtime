@@ -139,6 +139,7 @@ namespace System.Reflection.Emit
 
         #region DefineDynamicAssembly
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
@@ -149,6 +150,7 @@ namespace System.Reflection.Emit
                                                  null);
         }
 
+        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
         [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
