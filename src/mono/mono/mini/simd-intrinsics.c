@@ -267,6 +267,17 @@ emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
 }
 
 static MonoInst*
+emit_not_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
+{
+	MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
+	int sreg = ins->dreg;
+	int dreg = alloc_ireg (cfg);
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sreg, 0);
+	EMIT_NEW_UNALU (cfg, ins, OP_CEQ, dreg, -1);
+	return ins;
+}
+
+static MonoInst*
 emit_xzero (MonoCompile *cfg, MonoClass *klass)
 {
 	return emit_simd_ins (cfg, klass, OP_XZERO, -1, -1);
@@ -1019,15 +1030,15 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		break;
 	}
 	case SN_op_Equality:
-		return emit_xequal (cfg, klass, args [0], args [1]);
-	case SN_op_Inequality: {
-		MonoInst *ins = emit_xequal (cfg, klass, args [0], args [1]);
-		int sreg = ins->dreg;
-		int dreg = alloc_ireg (cfg);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sreg, 0);
-		EMIT_NEW_UNALU (cfg, ins, OP_CEQ, dreg, -1);
-		return ins;
-	}
+	case SN_op_Inequality:
+		g_assert (fsig->param_count == 2 && fsig->ret->type == MONO_TYPE_BOOLEAN &&
+				  mono_metadata_type_equal (fsig->params [0], type) &&
+				  mono_metadata_type_equal (fsig->params [1], type));
+		switch (id) {
+			case SN_op_Equality: return emit_xequal (cfg, klass, args [0], args [1]);
+			case SN_op_Inequality: return emit_not_xequal (cfg, klass, args [0], args [1]);
+			default: g_assert_not_reached ();
+		}
 	default:
 		break;
 	}
@@ -1309,14 +1320,11 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		g_assert (fsig->param_count == 2 && fsig->ret->type == MONO_TYPE_BOOLEAN &&
 				  mono_metadata_type_equal (fsig->params [0], type) &&
 				  mono_metadata_type_equal (fsig->params [1], type));
-		ins = emit_xequal (cfg, klass, args [0], args [1]);
-		if (id == SN_op_Inequality) {
-			int sreg = ins->dreg;
-			int dreg = alloc_ireg (cfg);
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sreg, 0);
-			EMIT_NEW_UNALU (cfg, ins, OP_CEQ, dreg, -1);
+		switch (id) {
+			case SN_op_Equality: return emit_xequal (cfg, klass, args [0], args [1])
+			case SN_op_Inequality: return emit_not_xequal (cfg, klass, args [0], args [1]);
+			default: g_assert_not_reached ();
 		}
-		return ins;
 	case SN_GreaterThan:
 	case SN_GreaterThanOrEqual:
 	case SN_LessThan:
