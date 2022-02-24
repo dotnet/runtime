@@ -9,7 +9,7 @@ namespace System.Text.RegularExpressions
     {
         private readonly DynamicMethod _scanMethod;
 
-        // Delegates are lazily created to avoid forcing JIT'ing until the regex is actually executed.
+        // Delegate is lazily created to avoid forcing JIT'ing until the regex is actually executed.
         private CompiledRegexRunner.ScanDelegate? _scan;
 
         public CompiledRegexRunnerFactory(DynamicMethod scanMethod)

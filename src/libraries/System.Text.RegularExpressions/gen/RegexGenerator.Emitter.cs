@@ -283,15 +283,12 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]");
                 writer.WriteLine($"            private static bool IsBoundary(global::System.ReadOnlySpan<char> inputSpan, int index)");
                 writer.WriteLine($"            {{");
-                writer.WriteLine($"                const char ZeroWidthNonJoiner = '\\u200C', ZeroWidthJoiner = '\\u200D';");
-                writer.WriteLine();
                 writer.WriteLine($"                int indexM1 = index - 1;");
                 writer.WriteLine($"                return ((uint)indexM1 < (uint)inputSpan.Length && IsBoundaryWordChar(inputSpan[indexM1])) !=");
                 writer.WriteLine($"                       ((uint)index < (uint)inputSpan.Length && IsBoundaryWordChar(inputSpan[index]));");
                 writer.WriteLine();
                 writer.WriteLine($"                static bool IsBoundaryWordChar(char ch) =>");
-                writer.WriteLine($"                    IsWordChar(ch) ||");
-                writer.WriteLine($"                    (ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner);");
+                writer.WriteLine($"                    IsWordChar(ch) || (ch == '\\u200C' | ch == '\\u200D');");
                 writer.WriteLine($"            }}");
             }
 
@@ -342,6 +339,7 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
 
+        /// <summary>Emits the body of the Scan method override.</summary>
         private static void EmitScan(IndentedTextWriter writer, RegexMethod rm, string id)
         {
             using (EmitBlock(writer, "while (TryFindNextPossibleStartingPosition(text))"))

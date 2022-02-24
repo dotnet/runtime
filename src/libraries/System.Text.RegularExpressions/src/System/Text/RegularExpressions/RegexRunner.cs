@@ -97,6 +97,7 @@ namespace System.Text.RegularExpressions
         protected internal virtual void Scan(ReadOnlySpan<char> text)
         {
             string? s = runtext;
+
             // The passed in span is sliced from runtextbeg to runtextend already, but in the precompiled scenario
             // we require to use the complete input and to use the full string instead. We first test to ensure that the
             // passed in span matches the original input by using the original runtextbeg. If that is not the case,

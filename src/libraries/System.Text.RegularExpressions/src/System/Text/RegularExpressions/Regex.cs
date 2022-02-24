@@ -407,8 +407,10 @@ namespace System.Text.RegularExpressions
             runner.Scan(span);
 
             Match? match = runner.runmatch;
-            // if we got a match, set runmatch to null if quick is true
-            if (match!.FoundMatch)
+            Debugger.Assert(match is not null);
+
+            // If we got a match, set runmatch to null if quick is true.
+            if (match.FoundMatch)
             {
                 runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
 
@@ -419,12 +421,14 @@ namespace System.Text.RegularExpressions
 
                 if (quick && returnNullIfQuick)
                 {
-                    runner.runmatch!.Text = null; // Drop reference to text
+                    match.Text = null; // Drop reference to text
                     return null;
                 }
 
                 if (!quick)
+                {
                     runner.runmatch = null;
+                }
 
                 match.Tidy(runner.runtextpos);
 
@@ -446,11 +450,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-
-                if (runner.runmatch != null)
-                {
-                    runner.runmatch.Text = null;
-                }
+                match.Text = null;
             }
 
             return RegularExpressions.Match.Empty;
@@ -497,9 +497,10 @@ namespace System.Text.RegularExpressions
                     int stoppos = RightToLeft ? 0 : input.Length;
 
                     Match? match = InternalPerformScan(reuseMatchObject, input, 0, runner, input, returnNullIfQuick: false);
+                    Debug.Assert(match is not null);
 
                     // if we got a match, then call the callback function with the match and prepare for next iteration.
-                    if (match!.Success)
+                    if (match.Success)
                     {
                         if (!reuseMatchObject)
                         {
@@ -512,7 +513,7 @@ namespace System.Text.RegularExpressions
                         {
                             // If the callback returns false, we're done.
                             // Drop reference to text to avoid keeping it alive in a cache.
-                            runner.runtext = null!;
+                            runner.runtext = null;
 
                             if (reuseMatchObject)
                             {
@@ -520,7 +521,7 @@ namespace System.Text.RegularExpressions
                                 // We don't do this if we're not reusing instances, as in that case we're
                                 // dropping the whole reference to the match, and we no longer own the instance
                                 // having handed it out to the callback.
-                                match.Text = null!;
+                                match.Text = null;
                             }
                             return;
                         }
@@ -539,12 +540,12 @@ namespace System.Text.RegularExpressions
                             if (runner.runtextpos == stoppos)
                             {
                                 // Drop reference to text to avoid keeping it alive in a cache.
-                                runner.runtext = null!;
+                                runner.runtext = null;
 
                                 if (reuseMatchObject)
                                 {
                                     // See above comment.
-                                    match.Text = null!;
+                                    match.Text = null;
                                 }
                                 return;
                             }
@@ -562,7 +563,9 @@ namespace System.Text.RegularExpressions
                         {
                             runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache
                             if (!reuseMatchObject)
+                            {
                                 runner.runmatch = null;
+                            }
                             return;
                         }
                     }
