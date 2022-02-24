@@ -58,7 +58,7 @@ internal static partial class Interop
             SafeGssNameHandle desiredName,
             out SafeGssCredHandle outputCredHandle);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitiateCredWithPassword", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitiateCredWithPassword", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial Status InitiateCredWithPassword(
             out Status minorStatus,
             bool isNtlm,

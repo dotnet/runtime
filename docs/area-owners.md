@@ -165,5 +165,6 @@ The repo has a number of community members carrying the triager role. While not 
 
 * @huoyaoyuan
 * @SingleAccretion
+* @teo-tsirpanis
 * @tmds
 * @vcsjones

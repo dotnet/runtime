@@ -19,7 +19,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private SymbolicRegexInfo(uint i) => _info = i;
 
-        internal static SymbolicRegexInfo Mk(bool isAlwaysNullable = false, bool canBeNullable = false, bool startsWithLineAnchor = false,
+        internal static SymbolicRegexInfo Create(bool isAlwaysNullable = false, bool canBeNullable = false, bool startsWithLineAnchor = false,
             bool startsWithBoundaryAnchor = false, bool containsSomeAnchor = false,
             bool containsLineAnchor = false, bool containsSomeCharacter = false, bool isLazy = true)
         {
@@ -86,7 +86,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public bool IsLazy => (_info & IsLazyMask) != 0;
 
-        public static SymbolicRegexInfo Or(SymbolicRegexInfo[] infos)
+        public static SymbolicRegexInfo Or(params SymbolicRegexInfo[] infos)
         {
             uint isLazy = IsLazyMask;
             uint i = 0;
@@ -133,7 +133,7 @@ namespace System.Text.RegularExpressions.Symbolic
             bool containsLineAnchor = left_info.ContainsLineAnchor || right_info.ContainsLineAnchor;
             bool containsSomeCharacter = left_info.ContainsSomeCharacter || right_info.ContainsSomeCharacter;
 
-            return Mk(isNullable, canBeNullable, startsWithLineAnchor, startsWithBoundaryAnchor, containsSomeAnchor, containsLineAnchor, containsSomeCharacter, isLazy);
+            return Create(isNullable, canBeNullable, startsWithLineAnchor, startsWithBoundaryAnchor, containsSomeAnchor, containsLineAnchor, containsSomeCharacter, isLazy);
         }
 
         public static SymbolicRegexInfo Loop(SymbolicRegexInfo body_info, int lowerBound, bool isLazy)
@@ -168,7 +168,7 @@ namespace System.Text.RegularExpressions.Symbolic
             // - If node is always nullable (info.IsNullable=true) then Not(node) can never be nullable
             // For example \B.CanBeNullable=true and \B.IsNullable=false
             // and ~(\B).CanBeNullable=true and ~(\B).IsNullable=false
-            Mk(isAlwaysNullable: !info.CanBeNullable,
+            Create(isAlwaysNullable: !info.CanBeNullable,
                 canBeNullable: !info.IsNullable,
                 startsWithLineAnchor: info.StartsWithLineAnchor,
                 startsWithBoundaryAnchor: info.StartsWithBoundaryAnchor,

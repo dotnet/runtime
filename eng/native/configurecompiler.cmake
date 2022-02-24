@@ -390,6 +390,10 @@ if (CLR_CMAKE_HOST_UNIX)
 
   add_compile_options(-Wno-unused-but-set-variable)
 
+  # Turn off floating point expression contraction because it is considered a value changing
+  # optimization in the IEEE 754 specification and is therefore considered unsafe.
+  add_compile_options(-ffp-contract=off)
+
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wno-unknown-warning-option)
 
@@ -489,10 +493,16 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
   elseif(CLR_CMAKE_TARGET_LINUX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX>)
+    if(CLR_CMAKE_TARGET_LINUX_MUSL)
+        add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX_MUSL>)
+    endif()
   elseif(CLR_CMAKE_TARGET_NETBSD)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_NETBSD>)
   elseif(CLR_CMAKE_TARGET_SUNOS)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_SUNOS>)
+    if(CLR_CMAKE_TARGET_OS_ILLUMOS)
+      add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ILLUMOS>)
+    endif()
   endif()
 else(CLR_CMAKE_TARGET_UNIX)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WINDOWS>)

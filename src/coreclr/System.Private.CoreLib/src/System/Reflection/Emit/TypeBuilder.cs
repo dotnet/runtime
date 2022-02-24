@@ -25,23 +25,14 @@ namespace System.Reflection.Emit
             private readonly byte[]? m_binaryAttribute;
             private readonly CustomAttributeBuilder? m_customBuilder;
 
-            public CustAttr(ConstructorInfo con, byte[] binaryAttribute)
+            public CustAttr(ConstructorInfo con!!, byte[] binaryAttribute!!)
             {
-                if (con is null)
-                    throw new ArgumentNullException(nameof(con));
-
-                if (binaryAttribute is null)
-                    throw new ArgumentNullException(nameof(binaryAttribute));
-
                 m_con = con;
                 m_binaryAttribute = binaryAttribute;
             }
 
-            public CustAttr(CustomAttributeBuilder customBuilder)
+            public CustAttr(CustomAttributeBuilder customBuilder!!)
             {
-                if (customBuilder is null)
-                    throw new ArgumentNullException(nameof(customBuilder));
-
                 m_customBuilder = customBuilder;
             }
 
@@ -157,14 +148,14 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Static FCalls
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethod", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethod", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineMethod(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
             MethodAttributes attributes);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodSpec")]
         internal static partial int DefineMethodSpec(QCallModule module, int tkParent, byte[] signature, int sigLength);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineField", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineField", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineField(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
             FieldAttributes attributes);
 
@@ -195,11 +186,11 @@ namespace System.Reflection.Emit
                 localAttr, (localAttr != null) ? localAttr.Length : 0);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineProperty", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineProperty", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineProperty(QCallModule module, int tkParent, string name, PropertyAttributes attributes,
             byte[] signature, int sigLength);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineEvent", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineEvent", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineEvent(QCallModule module, int tkParent, string name, EventAttributes attributes, int tkEventType);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodSemantics")]
@@ -212,7 +203,7 @@ namespace System.Reflection.Emit
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetMethodImpl")]
         internal static partial void SetMethodImpl(QCallModule module, int tkMethod, MethodImplAttributes MethodImplAttributes);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParamInfo", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParamInfo", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int SetParamInfo(QCallModule module, int tkMethod, int iSequence,
             ParameterAttributes iParamAttributes, string? strParamName);
 
@@ -228,7 +219,7 @@ namespace System.Reflection.Emit
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetConstantValue")]
         private static unsafe partial void SetConstantValue(QCallModule module, int tk, int corType, void* pValue);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetPInvokeData", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetPInvokeData", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void SetPInvokeData(QCallModule module, string DllName, string name, int token, int linkFlags);
 
         #endregion
@@ -509,11 +500,8 @@ namespace System.Reflection.Emit
             {
                 for (i = 0; i < interfaces.Length; i++)
                 {
-                    if (interfaces[i] == null)
-                    {
-                        // cannot contain null in the interface list
-                        throw new ArgumentNullException(nameof(interfaces));
-                    }
+                    // cannot contain null in the interface list
+                    ArgumentNullException.ThrowIfNull(interfaces[i], nameof(interfaces));
                 }
                 interfaceTokens = new int[interfaces.Length + 1];
                 for (i = 0; i < interfaces.Length; i++)
@@ -647,11 +635,11 @@ namespace System.Reflection.Emit
         #endregion
 
         #region FCalls
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineType", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineType", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int DefineType(QCallModule module,
             string fullname, int tkParent, TypeAttributes attributes, int tkEnclosingType, int[] interfaceTokens);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineGenericParam", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineGenericParam", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int DefineGenericParam(QCallModule module,
             string name, int tkParent, GenericParameterAttributes attributes, int position, int[] constraints);
 
@@ -1120,8 +1108,7 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
@@ -1134,8 +1121,7 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
@@ -1161,17 +1147,13 @@ namespace System.Reflection.Emit
             }
         }
 
-        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names!!)
         {
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
-
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
             for (int i = 0; i < names.Length; i++)
-                if (names[i] == null)
-                    throw new ArgumentNullException(nameof(names));
+                ArgumentNullException.ThrowIfNull(names[i], nameof(names));
 
             if (m_inst != null)
                 throw new InvalidOperationException();
@@ -1214,14 +1196,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void DefineMethodOverrideNoLock(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
+        private void DefineMethodOverrideNoLock(MethodInfo methodInfoBody!!, MethodInfo methodInfoDeclaration!!)
         {
-            if (methodInfoBody == null)
-                throw new ArgumentNullException(nameof(methodInfoBody));
-
-            if (methodInfoDeclaration == null)
-                throw new ArgumentNullException(nameof(methodInfoDeclaration));
-
             ThrowIfCreated();
 
             if (!ReferenceEquals(methodInfoBody.DeclaringType, this))
@@ -1700,11 +1676,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        private FieldBuilder DefineInitializedDataNoLock(string name, byte[] data, FieldAttributes attributes)
+        private FieldBuilder DefineInitializedDataNoLock(string name, byte[] data!!, FieldAttributes attributes)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-
             // This method will define an initialized Data in .sdata.
             // We will create a fake TypeDef to represent the data with size. This TypeDef
             // will be the signature for the Field.
@@ -1801,7 +1774,6 @@ namespace System.Reflection.Emit
             return new PropertyBuilder(
                     m_module,
                     name,
-                    sigHelper,
                     attributes,
                     returnType,
                     prToken,
@@ -2096,13 +2068,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType!!)
         {
-            if (interfaceType == null)
-            {
-                throw new ArgumentNullException(nameof(interfaceType));
-            }
-
             AssemblyBuilder.CheckContext(interfaceType);
 
             ThrowIfCreated();
@@ -2125,23 +2092,14 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
-
             DefineCustomAttribute(m_module, m_tdType, ((ModuleBuilder)m_module).GetConstructorToken(con),
                 binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
-
             customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, m_tdType);
         }
 

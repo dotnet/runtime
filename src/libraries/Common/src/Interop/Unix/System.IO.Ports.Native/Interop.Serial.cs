@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Serial
     {
-        [GeneratedDllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_SerialPortOpen", CharSet = CharSet.Ansi, SetLastError = true)]
+        [GeneratedDllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_SerialPortOpen", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial SafeSerialDeviceHandle SerialPortOpen(string name);
 
         [GeneratedDllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_SerialPortClose", SetLastError = true)]

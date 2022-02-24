@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,20 +45,21 @@ namespace DllImportGenerator.UnitTests.Verifiers
         }
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, string)"/>
-        public static async Task VerifyCodeFixAsync(string source, string fixedSource)
-            => await VerifyCodeFixAsync(source, DiagnosticResult.EmptyDiagnosticResults, fixedSource);
+        public static async Task VerifyCodeFixAsync(string source, string fixedSource, string? fixEquivalenceKey = null)
+            => await VerifyCodeFixAsync(source, DiagnosticResult.EmptyDiagnosticResults, fixedSource, fixEquivalenceKey);
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult, string)"/>
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult expected, string fixedSource)
-            => await VerifyCodeFixAsync(source, new[] { expected }, fixedSource);
+        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult expected, string fixedSource, string? fixEquivalenceKey = null)
+            => await VerifyCodeFixAsync(source, new[] { expected }, fixedSource, fixEquivalenceKey);
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult[], string)"/>
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource)
+        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource, string? fixEquivalenceKey = null)
         {
             var test = new Test
             {
                 TestCode = source,
                 FixedCode = fixedSource,
+                CodeActionEquivalenceKey = fixEquivalenceKey,
             };
 
             test.ExpectedDiagnostics.AddRange(expected);
@@ -113,6 +115,33 @@ namespace DllImportGenerator.UnitTests.Verifiers
                     solution = solution.WithProjectParseOptions(projectId, ((CSharpParseOptions)project.ParseOptions!).WithLanguageVersion(LanguageVersion.Preview));
                     return solution;
                 });
+            }
+
+            protected override CompilationWithAnalyzers CreateCompilationWithAnalyzers(Compilation compilation, ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerOptions options, CancellationToken cancellationToken)
+            {
+                return new CompilationWithAnalyzers(
+                    compilation,
+                    analyzers,
+                    new CompilationWithAnalyzersOptions(
+                        options,
+                        onAnalyzerException: null,
+                        concurrentAnalysis: true,
+                        logAnalyzerExecutionTime: true,
+                        reportSuppressedDiagnostics: false,
+                        analyzerExceptionFilter: ex =>
+                        {
+                            // We're hunting down a intermittent issue that causes NullReferenceExceptions deep in Roslyn. To ensure that we get an actionable dump, we're going to FailFast here to force a process dump.
+                            if (ex is NullReferenceException)
+                            {
+                                // Break a debugger here so there's a chance to investigate if someone is already attached.
+                                if (System.Diagnostics.Debugger.IsAttached)
+                                {
+                                    System.Diagnostics.Debugger.Break();
+                                }
+                                Environment.FailFast($"Encountered a NullReferenceException while running an analyzer. Taking the process down to get an actionable crash dump. Exception information:{ex.ToString()}");
+                            }
+                            return true;
+                        }));
             }
 
             protected override async Task RunImplAsync(CancellationToken cancellationToken)

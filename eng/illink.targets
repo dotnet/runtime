@@ -9,7 +9,6 @@
   <PropertyGroup>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">
       $(TargetsTriggeredByCompilation);
-      _SetILLinkTrimAssembly;
       ILLinkTrimAssembly
     </TargetsTriggeredByCompilation>
   </PropertyGroup>
@@ -197,14 +196,6 @@
     <ItemGroup>
       <FileWrites Include="$(ILLinkLinkAttributesXml)" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="_SetILLinkTrimAssembly"
-          Condition="'$(ILLinkTrimAssembly)' == ''">
-    <PropertyGroup>
-      <!-- Currently ILLink cannot handle type projections from Windows.winmd, disable if the project references it -->
-      <ILLinkTrimAssembly Condition="'%(ReferencePath.FileName)%(ReferencePath.Extension)' == 'Windows.winmd'">false</ILLinkTrimAssembly>
-    </PropertyGroup>
   </Target>
 
   <!-- ILLink.Tasks arguments common to runs for both individual libraries and for the entire runtime pack -->

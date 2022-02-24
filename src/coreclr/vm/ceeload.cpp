@@ -4615,16 +4615,16 @@ void Module::RunEagerFixups()
     {
         // For composite images, multiple modules may request initializing eager fixups
         // from multiple threads so we need to lock their resolution.
-        if (compositeNativeImage->EagerFixupsHaveRun())
-        {
-            return;
-        }
         CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
         if (compositeNativeImage->EagerFixupsHaveRun())
         {
+            if (compositeNativeImage->ReadyToRunCodeDisabled())
+                GetReadyToRunInfo()->DisableAllR2RCode();
             return;
         }
         RunEagerFixupsUnlocked();
+        if (GetReadyToRunInfo()->ReadyToRunCodeDisabled())
+            compositeNativeImage->DisableAllR2RCode();
         compositeNativeImage->SetEagerFixupsHaveRun();
     }
     else
@@ -6925,7 +6925,6 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly
 
     m_pInMemoryWriter = NULL;
     m_sdataSection = NULL;
-    m_pCreatingAssembly = NULL;
     m_pCeeFileGen = NULL;
     m_pDynamicMetadata = NULL;
 }

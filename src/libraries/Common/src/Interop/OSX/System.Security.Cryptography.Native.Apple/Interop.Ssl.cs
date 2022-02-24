@@ -111,7 +111,7 @@ internal static partial class Interop
             SafeSslHandle sslHandle,
             SafeCreateHandle cfCertRefs);
 
-        [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial int AppleCryptoNative_SslSetTargetName(
             SafeSslHandle sslHandle,
             string targetName,

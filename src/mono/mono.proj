@@ -667,6 +667,7 @@
       <MonoAotCrossOffsetsToolParams Include="--netcore" />
       <MonoAotCrossOffsetsToolParams Include="--targetdir=&quot;$(MonoObjDir.TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;" />
+      <MonoAotCrossOffsetsToolParams Include="--nativedir=&quot;$(SharedNativeRoot.TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoAotOffsetsFile)&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(MonoLibClang)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotOffsetsPrefix)' != ''" Include="--prefix=&quot;$(MonoAotOffsetsPrefix)&quot;" />

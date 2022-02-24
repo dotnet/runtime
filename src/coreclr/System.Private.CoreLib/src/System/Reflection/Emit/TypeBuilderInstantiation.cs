@@ -24,13 +24,11 @@ namespace System.Reflection.Emit
             if (!type.IsGenericTypeDefinition)
                 throw new InvalidOperationException();
 
-            if (typeArguments == null)
-                throw new ArgumentNullException(nameof(typeArguments));
+            ArgumentNullException.ThrowIfNull(typeArguments);
 
             foreach (Type t in typeArguments)
             {
-                if (t == null)
-                    throw new ArgumentNullException(nameof(typeArguments));
+                ArgumentNullException.ThrowIfNull(t, nameof(typeArguments));
             }
 
             return new TypeBuilderInstantiation(type, typeArguments);

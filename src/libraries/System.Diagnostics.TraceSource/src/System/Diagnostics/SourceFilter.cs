@@ -16,12 +16,9 @@ namespace System.Diagnostics
             Source = source;
         }
 
-        public override bool ShouldTrace(TraceEventCache? cache, string source, TraceEventType eventType, int id, string? formatOrMessage,
+        public override bool ShouldTrace(TraceEventCache? cache, string source!!, TraceEventType eventType, int id, string? formatOrMessage,
                                          object?[]? args, object? data1, object?[]? data)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
             return string.Equals(_src, source);
         }
 

@@ -34,7 +34,7 @@ namespace DebuggerTests
             });
 
             var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
-            Assert.True(eval_res.IsErr);
+            Assert.False(eval_res.IsOk);
             Assert.Equal("Uncaught", eval_res.Error["exceptionDetails"]?["text"]?.Value<string>());
         }
 
@@ -245,7 +245,7 @@ namespace DebuggerTests
                    });
 
                    var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
-                   Assert.True(frame_props.IsErr);
+                   Assert.False(frame_props.IsOk);
                }
             );
         }
@@ -954,5 +954,24 @@ namespace DebuggerTests
             );
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
+
+        [Theory]
+        [InlineData(
+            "DebuggerTests.CheckSpecialCharactersInPath", 
+            "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]
+        [InlineData(
+            "DebuggerTests.CheckSNonAsciiCharactersInPath", 
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ął.cs")]
+        public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
+            string classWithNamespace, string expectedFileLocation)
+        {
+            var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
+            await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
+                expectedFileLocation,
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                "Evaluate");
+        }
     }
 }

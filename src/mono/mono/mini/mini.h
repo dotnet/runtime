@@ -53,7 +53,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #include "mini-arch.h"
 #include "regalloc.h"
 #include "mini-unwind.h"
-#include "jit.h"
+#include <mono/jit/jit.h>
 #include "cfgdump.h"
 #include "tiered.h"
 
@@ -1238,7 +1238,6 @@ typedef struct {
 	guint            disable_div_with_mul : 1;
 	guint            explicit_null_checks : 1;
 	guint            optimized_div : 1;
-	guint            force_float32 : 1;
 	int              monitor_enter_adjustment;
 	int              dyn_call_param_area;
 } MonoBackend;
@@ -1481,7 +1480,6 @@ typedef struct {
 	guint            no_inline : 1;
 	guint            gshared : 1;
 	guint            gsharedvt : 1;
-	guint            r4fp : 1;
 	guint            llvm_only : 1;
 	guint            interp : 1;
 	guint            use_current_cpu : 1;
@@ -1909,7 +1907,7 @@ realloc_code (MonoCompile *cfg, int size)
 	const int EXTRA_CODE_SPACE = 16;
 	const int code_len = cfg->code_len;
 
-	if (G_UNLIKELY (code_len + size > (cfg->code_size - EXTRA_CODE_SPACE)))
+	if (G_UNLIKELY ((guint)(code_len + size) > (cfg->code_size - EXTRA_CODE_SPACE)))
 		return mini_realloc_code_slow (cfg, size);
 	return cfg->native_code + code_len;
 }
@@ -1917,7 +1915,7 @@ realloc_code (MonoCompile *cfg, int size)
 static inline void
 set_code_len (MonoCompile *cfg, int len)
 {
-	g_assert (len <= cfg->code_size);
+	g_assert ((guint)len <= cfg->code_size);
 	cfg->code_len = len;
 }
 
@@ -2329,6 +2327,7 @@ MonoInst*         mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmeth
 MonoInst*         mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*         mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field);
 MonoInst*         mini_handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, int enum_val_reg, MonoInst *enum_flag);
+MonoInst*         mini_handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst *val, int context_used);
 
 MonoMethod*       mini_get_memcpy_method (void);
 MonoMethod*       mini_get_memset_method (void);

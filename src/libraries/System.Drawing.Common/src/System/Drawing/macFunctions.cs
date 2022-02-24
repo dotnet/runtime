@@ -151,7 +151,7 @@ namespace System.Drawing
         }
 
         #region Cocoa Methods
-        [GeneratedDllImport("libobjc.dylib", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport("libobjc.dylib", StringMarshalling = StringMarshalling.Utf8)]
         public static partial IntPtr objc_getClass(string className);
         [GeneratedDllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
         public static partial IntPtr intptr_objc_msgSend(IntPtr basePtr, IntPtr selector);
@@ -160,7 +160,7 @@ namespace System.Drawing
         [GeneratedDllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
         [return:MarshalAs(UnmanagedType.U1)]
         public static partial bool bool_objc_msgSend(IntPtr handle, IntPtr selector);
-        [GeneratedDllImport("libobjc.dylib", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport("libobjc.dylib", StringMarshalling = StringMarshalling.Utf8)]
         public static partial IntPtr sel_registerName(string selectorName);
         #endregion
 

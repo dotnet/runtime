@@ -28,23 +28,20 @@ namespace System.Diagnostics.Tracing
         //
         // These PInvokes are used by EventSource to interact with the EventPipe.
         //
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_CreateProvider", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_CreateProvider", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial IntPtr CreateProvider(string providerName, Interop.Advapi32.EtwEnableCallback callbackFunc);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DefineEvent")]
         internal static unsafe partial IntPtr DefineEvent(IntPtr provHandle, uint eventID, long keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetProvider", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetProvider", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial IntPtr GetProvider(string providerName);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DeleteProvider")]
         internal static partial void DeleteProvider(IntPtr provHandle);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_EventActivityIdControl")]
-        internal static extern int EventActivityIdControl(uint controlCode, ref Guid activityId);
-#pragma warning restore DLLIMPORTGENANALYZER015
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_EventActivityIdControl")]
+        internal static partial int EventActivityIdControl(uint controlCode, ref Guid activityId);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WriteEventData")]
         internal static unsafe partial void WriteEventData(IntPtr eventHandle, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId);

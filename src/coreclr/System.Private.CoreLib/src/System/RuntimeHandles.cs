@@ -10,7 +10,6 @@ using System.Runtime.Loader;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -519,7 +518,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IRuntimeMethodInfo GetDeclaringMethod(RuntimeType type);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByName", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByName", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void GetTypeByName(string name, bool throwOnError, bool ignoreCase, StackCrawlMarkHandle stackMark,
             ObjectHandleOnStack assemblyLoadContext,
             ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
@@ -553,7 +552,7 @@ namespace System
             return type;
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByNameUsingCARules", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByNameUsingCARules", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void GetTypeByNameUsingCARules(string name, QCallModule scope, ObjectHandleOnStack type);
 
         internal static RuntimeType GetTypeByNameUsingCARules(string name, RuntimeModule scope)

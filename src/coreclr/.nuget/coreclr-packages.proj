@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
   <ItemGroup Condition="'$(TargetOS)' == 'windows' or '$(DotNetBuildFromSource)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.pkgproj" />
-    <ProjectReference Include="Microsoft.ILVerification\Microsoft.ILVerification.pkgproj" />
-    <ProjectReference Include="dotnet-ilverify\dotnet-ilverify.pkgproj" />
+    <ProjectReference Include="Microsoft.ILVerification\Microsoft.ILVerification.pkgproj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <ProjectReference Include="dotnet-ilverify\dotnet-ilverify.pkgproj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(DotNetBuildFromSource)' != 'true'">
