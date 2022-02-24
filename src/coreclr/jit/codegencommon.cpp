@@ -6029,7 +6029,7 @@ void CodeGen::genFnProlog()
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     genPushCalleeSavedRegisters(initReg, &initRegZeroed);
-#else // !TARGET_ARM64 || !TARGET_LOONGARCH64
+#else  // !TARGET_ARM64 || !TARGET_LOONGARCH64
     if (!isOSRx64Root)
     {
         genPushCalleeSavedRegisters();
@@ -8128,7 +8128,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             assert(regCount == 2);
             int offset = genTypeSize(type);
             type       = retTypeDesc.GetReturnRegType(1);
-            offset     = offset < genTypeSize(type) ? genTypeSize(type) : offset;
+            offset     = (int)((unsigned int)offset < genTypeSize(type) ? genTypeSize(type) : offset);
             toReg      = retTypeDesc.GetABIReturnReg(1);
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         }
