@@ -102,10 +102,8 @@ namespace System.Net.WebSockets
                 {
                     // AuthenticationSchemes.Digest, AuthenticationSchemes.Negotiate, AuthenticationSchemes.NTLM.
 #if (WINDOWS)
-                    if (user.Identity is WindowsIdentity windowsIdentity)
-                    {
-                        return new WindowsPrincipal(new WindowsIdentity(windowsIdentity.Token, windowsIdentity.AuthenticationType!, WindowsAccountType.Normal, true));
-                    }
+                    WindowsIdentity windowsIdentity = (WindowsIdentity)user.Identity!;
+                    return new WindowsPrincipal(new WindowsIdentity(windowsIdentity.Token, windowsIdentity.AuthenticationType!, WindowsAccountType.Normal, true));
 #else
                     throw new PlatformNotSupportedException();
 #endif
