@@ -3029,8 +3029,21 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
 
     //////////////////////////////////////
     // Get and save the thread's context
-    BOOL success = CopyContext(pCtx, pCtx->ContextFlags, pCurrentThreadCtx);
+
+    // this method is called for GC stress in managed code.
+    // if current context has XState features, we are only interested in AVX
+    DWORD64 srcFeatures = 0;
+    BOOL success = GetXStateFeaturesMask(pCurrentThreadCtx, &srcFeatures);
+    if (srcFeatures & XSTATE_MASK_AVX)
+    {
+        success &= SetXStateFeaturesMask(pCurrentThreadCtx, XSTATE_MASK_AVX);
+    }
+
+    success &= CopyContext(pCtx, pCtx->ContextFlags, pCurrentThreadCtx);
     _ASSERTE(success);
+
+    if (!success)
+        return FALSE;
 
     // Ensure that this flag is set for the next time through the normal path,
     // RedirectThreadAtHandledJITCase.
