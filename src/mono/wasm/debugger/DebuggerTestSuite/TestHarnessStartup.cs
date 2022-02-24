@@ -203,7 +203,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (File.Exists("/.dockerenv"))
                         {
                             Logger.LogInformation("Detected a container, disabling sandboxing for debugger tests.");
-                            psi.Arguments += " --no-sandbox";
+                            psi.Arguments = "--no-sandbox " + psi.Arguments;
                         }
                         psi.UseShellExecute = false;
                         psi.FileName = options.ChromePath;
