@@ -129,7 +129,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private Result(JObject resultOrError, bool isError)
         {
-            bool resultHasError = isError || string.Equals((resultOrError?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
+            if (resultOrError == null)
+                throw new ArgumentNullException(nameof(resultOrError));
+
+            bool resultHasError = isError || string.Equals((resultOrError["result"] as JObject)?["subtype"]?.Value<string>(), "error");
+            resultHasError |= resultOrError["exceptionDetails"] != null;
             if (resultHasError)
             {
                 Value = null;
@@ -146,7 +150,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var error = obj["error"] as JObject;
             if (error != null)
                 return new Result(error, true);
-            var result = obj["result"] as JObject;
+            var result = (obj["result"] as JObject) ?? new JObject();
             return new Result(result, false);
         }
 
