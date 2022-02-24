@@ -97,7 +97,7 @@ jobs:
     DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
   pool:
     name: NetCore1ESPool-Public
-    demands: ImageOverride -equals Build.Server.Amd64.VS2022.Open
+    demands: ImageOverride -equals Build.Windows.Amd64.VS2022.Open
 
   steps:
   - checkout: self
