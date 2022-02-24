@@ -42,6 +42,8 @@ namespace Microsoft.Interop
 
     internal sealed class DllImportStubContext : IEquatable<DllImportStubContext>
     {
+        private static readonly string GeneratorVersion = typeof(DllImportGenerator).Assembly.GetName().Version.ToString();
+
         // We don't need the warnings around not setting the various
         // non-nullable fields/properties on this type in the constructor
         // since we always use a property initializer.
@@ -124,17 +126,27 @@ namespace Microsoft.Interop
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
             // Define additional attributes for the stub definition.
+            additionalAttrs.Add(
+                AttributeList(
+                    SingletonSeparatedList(
+                        Attribute(ParseName(TypeNames.System_CodeDom_Compiler_GeneratedCodeAttribute),
+                            AttributeArgumentList(
+                                SeparatedList(
+                                    new[]
+                                    {
+                                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal("Microsoft.Interop.DllImportGenerator"))),
+                                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(GeneratorVersion)))
+                                    }))))));
+
             if (env.TargetFrameworkVersion >= new Version(5, 0) && !MethodIsSkipLocalsInit(env, method))
             {
                 additionalAttrs.Add(
                     AttributeList(
-                        SeparatedList(new[]
-                        {
+                        SingletonSeparatedList(
                             // Adding the skip locals init indiscriminately since the source generator is
                             // targeted at non-blittable method signatures which typically will contain locals
                             // in the generated code.
-                            Attribute(ParseName(TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute))
-                        })));
+                            Attribute(ParseName(TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute)))));
             }
 
             return new DllImportStubContext()
