@@ -241,14 +241,14 @@ namespace Microsoft.Extensions.Hosting
             _hostBuilderContext.Configuration = _appConfiguration;
         }
 
-        internal static IServiceCollection CreateServiceCollection(
+        internal static void PopulateServiceCollection(
+            IServiceCollection services,
             HostBuilderContext hostBuilderContext,
             HostingEnvironment hostingEnvironment,
             PhysicalFileProvider defaultFileProvider,
             IConfiguration appConfiguration,
             Func<IServiceProvider> serviceProviderGetter)
         {
-            var services = new ServiceCollection();
 #pragma warning disable CS0618 // Type or member is obsolete
             services.AddSingleton<IHostingEnvironment>(hostingEnvironment);
 #pragma warning restore CS0618 // Type or member is obsolete
@@ -279,13 +279,14 @@ namespace Microsoft.Extensions.Hosting
             });
             services.AddOptions().Configure<HostOptions>(options => { options.Initialize(hostBuilderContext.Configuration); });
             services.AddLogging();
-
-            return services;
         }
 
         private void InitializeServiceProvider()
         {
-            var services = CreateServiceCollection(
+            var services = new ServiceCollection();
+
+            PopulateServiceCollection(
+                services,
                 _hostBuilderContext,
                 _hostingEnvironment,
                 _defaultProvider,

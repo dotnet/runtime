@@ -489,12 +489,26 @@ namespace Microsoft.Extensions.Hosting.Tests
         public void HostServicesSameServiceProviderAsInHostBuilder()
         {
             HostApplicationBuilder builder = CreateEmptyBuilder();
-            IHost host = builder.Build();
+            using IHost host = builder.Build();
 
             Type type = builder.GetType();
             FieldInfo field = type.GetField("_appServices", BindingFlags.Instance | BindingFlags.NonPublic)!;
             var appServicesFromHostBuilder = (IServiceProvider)field.GetValue(builder)!;
             Assert.Same(appServicesFromHostBuilder, host.Services);
+        }
+
+
+        [Fact]
+        public void HostApplicationBuilderThrowsExceptionIfServicesAlreadyBuilt()
+        {
+            HostApplicationBuilder builder = CreateEmptyBuilder();
+            using IHost host = builder.Build();
+
+            Assert.Throws<InvalidOperationException>(() => builder.Services.AddSingleton(new ServiceA()));
+            Assert.Throws<InvalidOperationException>(() => builder.Services.Remove(ServiceDescriptor.Singleton(new ServiceA())));
+            Assert.Throws<InvalidOperationException>(() => builder.Services[0] = ServiceDescriptor.Singleton(new ServiceA()));
+            Assert.Throws<InvalidOperationException>(() => builder.Services.Clear());
+            Assert.Throws<InvalidOperationException>(() => builder.Services.RemoveAt(0));
         }
 
         private static HostApplicationBuilder CreateEmptyBuilder()
