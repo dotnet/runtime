@@ -11554,8 +11554,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     GenTree*             indexOp    = call->GetArg(1);
                     GenTree*             clsOp      = call->GetArg(2);
                     CORINFO_CLASS_HANDLE ldelemaCls = gtGetHelperArgClassHandle(clsOp);
-                    CORINFO_CLASS_HANDLE objElemCls = gtGetArrayElementClassHandle(objOp);
-                    if ((ldelemaCls == objElemCls) && impIsClassExact(ldelemaCls))
+                    if ((ldelemaCls != NO_CLASS_HANDLE) && (ldelemaCls == gtGetArrayElementClassHandle(objOp)) &&
+                        impIsClassExact(ldelemaCls))
                     {
                         JITDUMP("Folding\n");
                         DISPTREE(tree);
