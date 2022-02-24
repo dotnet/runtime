@@ -21,8 +21,8 @@
 
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl-fallback.h>
-#include <mono/mini/jit.h>
-#include <mono/mini/mono-private-unstable.h>
+#include <mono/jit/jit.h>
+#include <mono/jit/mono-private-unstable.h>
 
 #include "wasm/runtime/pinvoke.h"
 

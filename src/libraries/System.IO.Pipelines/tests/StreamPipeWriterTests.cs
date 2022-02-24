@@ -458,6 +458,28 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public void CompleteAlwaysCallsDispose()
+        {
+            var stream = new CountsDisposesStream();
+            PipeWriter writer = PipeWriter.Create(stream);
+            writer.Complete();
+
+            Assert.True(stream.DisposeCalled);
+        }
+
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
+        [Fact]
+        public async Task CompleteAsyncAlwaysCallsDisposeAsync()
+        {
+            var stream = new CountsDisposesStream();
+            PipeWriter writer = PipeWriter.Create(stream);
+            await writer.CompleteAsync();
+
+            Assert.True(stream.DisposeAsyncCalled);
+        }
+#endif
+
+        [Fact]
         public void GetMemorySameAsTheMaxPoolSizeUsesThePool()
         {
             using (var pool = new DisposeTrackingBufferPool())
@@ -643,6 +665,25 @@ namespace System.IO.Pipelines.Tests
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 throw new OperationCanceledException();
+            }
+#endif
+        }
+
+        private class CountsDisposesStream : ThrowsOperationCanceledExceptionStream
+        {
+            public bool DisposeCalled { get; set; }
+            public bool DisposeAsyncCalled { get; set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                DisposeCalled = true;
+            }
+
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
+            public override ValueTask DisposeAsync()
+            {
+                DisposeAsyncCalled = true;
+                return default;
             }
 #endif
         }

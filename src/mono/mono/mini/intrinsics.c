@@ -115,7 +115,7 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	MonoInst *ins = NULL;
 	int opcode = 0;
 	// Convert Math and MathF methods into LLVM intrinsics, e.g. MathF.Sin -> @llvm.sin.f32
-	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "MathF") && cfg->r4fp) {
+	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "MathF")) {
 		// (float)
 		if (fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R4) {
 			if (!strcmp (cmethod->name, "Ceiling")) {
@@ -571,17 +571,62 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [1]->dreg, args [0]->dreg);
 		ins->type = STACK_PTR;
 		return ins;
+	} else if (!strcmp (cmethod->name, "Unbox")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+
+		t = ctx->method_inst->type_argv [0];
+		t = mini_get_underlying_type (t);
+
+		MonoClass *klass = mono_class_from_mono_type_internal (t);
+		int context_used = mini_class_check_context_used (cfg, klass);
+		return mini_handle_unbox (cfg, klass, args [0], context_used);
+	} else if (!strcmp (cmethod->name, "Copy")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+
+		t = ctx->method_inst->type_argv [0];
+		t = mini_get_underlying_type (t);
+
+		MonoClass *klass = mono_class_from_mono_type_internal (t);
+		mini_emit_memory_copy (cfg, args [0], args [1], klass, FALSE, 0);
+		return cfg->cbb->last_ins;
+	} else if (!strcmp (cmethod->name, "CopyBlock")) {
+		g_assert (fsig->param_count == 3);
+
+		mini_emit_memory_copy_bytes (cfg, args [0], args [1], args [2], 0);
+		return cfg->cbb->last_ins;
+	} else if (!strcmp (cmethod->name, "CopyBlockUnaligned")) {
+		g_assert (fsig->param_count == 3);
+
+		mini_emit_memory_copy_bytes (cfg, args [0], args [1], args [2], MONO_INST_UNALIGNED);
+		return cfg->cbb->last_ins;
+	} else if (!strcmp (cmethod->name, "InitBlock")) {
+		g_assert (fsig->param_count == 3);
+
+		mini_emit_memory_init_bytes (cfg, args [0], args [1], args [2], 0);
+		return cfg->cbb->last_ins;
 	} else if (!strcmp (cmethod->name, "InitBlockUnaligned")) {
 		g_assert (fsig->param_count == 3);
 
 		mini_emit_memory_init_bytes (cfg, args [0], args [1], args [2], MONO_INST_UNALIGNED);
- 		MONO_INST_NEW (cfg, ins, OP_NOP);
-		MONO_ADD_INS (cfg->cbb, ins);
-		return ins;
+		return cfg->cbb->last_ins;
 	}
 	else if (!strcmp (cmethod->name, "SkipInit")) {
  		MONO_INST_NEW (cfg, ins, OP_NOP);
 		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
+	} else if (!strcmp (cmethod->name, "SubtractByteOffset")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		int dreg = alloc_preg (cfg);
+		EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [0]->dreg, args [1]->dreg);
+		ins->type = STACK_PTR;
 		return ins;
 	} else if (!strcmp (cmethod->name, "IsNullRef")) {
 		g_assert (fsig->param_count == 1);
@@ -2004,12 +2049,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			   (!strcmp (cmethod_klass_name, "Span`1") || !strcmp (cmethod_klass_name, "ReadOnlySpan`1"))) {
 		return emit_span_intrinsics (cfg, cmethod, fsig, args);
 	} else if (in_corlib &&
-			   !strcmp (cmethod_klass_name_space, "Internal.Runtime.CompilerServices") &&
+			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
 			   !strcmp (cmethod_klass_name, "Unsafe")) {
-		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
-	} else if (!strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
-			   !strcmp (cmethod_klass_name, "Unsafe") &&
-			   (in_corlib || !strcmp (cmethod_klass_image->assembly->aname.name, "System.Runtime.CompilerServices.Unsafe"))) {
 		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
 	} else if (in_corlib &&
 			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
