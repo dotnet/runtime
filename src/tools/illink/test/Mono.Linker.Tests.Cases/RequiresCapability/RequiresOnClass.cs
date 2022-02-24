@@ -29,6 +29,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestStaticMethodOnRequiresTypeSuppressedByRequiresOnMethod ();
 			TestStaticConstructorCalls ();
 			TestOtherMemberTypesWithRequires ();
+			TestNameOfDoesntWarn ();
 			ReflectionAccessOnMethod.Test ();
 			ReflectionAccessOnCtor.Test ();
 			ReflectionAccessOnField.Test ();
@@ -426,6 +427,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			MemberTypesWithRequires.Event -= null;
 		}
 
+		static void TestNameOfDoesntWarn ()
+		{
+			_ = nameof (ClassWithRequires.StaticMethod);
+			_ = nameof (MemberTypesWithRequires.field);
+			_ = nameof (MemberTypesWithRequires.Property);
+			_ = nameof (MemberTypesWithRequires.Event);
+		}
+
 		class ReflectionAccessOnMethod
 		{
 			// Analyzer still dont understand RUC on type
@@ -591,11 +600,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				typeof (DerivedWithRequires).RequiresPublicFields ();
 			}
 
-			[ExpectedWarning ("IL2026", "WithRequires.StaticField")]
-			// Analyzer does not recognize the binding flags
+			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticField", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField")]
-			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField", ProducedBy = ProducedBy.Trimmer)]
 			static void TestDirectReflectionAccess ()
 			{
 				typeof (WithRequires).GetField (nameof (WithRequires.StaticField));
@@ -606,7 +613,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				typeof (DerivedWithRequires).GetField (nameof (DerivedWithRequires.DerivedStaticField));
 			}
 
-			[ExpectedWarning ("IL2026", "WithRequires.StaticField")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
 			[DynamicDependency (nameof (WithRequires.StaticField), typeof (WithRequires))]

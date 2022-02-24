@@ -30,6 +30,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresOnPropertyGetterAndSetter ();
 			TestThatTrailingPeriodIsAddedToMessage ();
 			TestThatTrailingPeriodIsNotDuplicatedInWarningMessage ();
+			TestRequiresFromNameOf ();
 			OnEventMethod.Test ();
 			RequiresOnGenerics.Test ();
 		}
@@ -135,6 +136,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		static void TestThatTrailingPeriodIsNotDuplicatedInWarningMessage ()
 		{
 			WarningMessageEndsWithPeriod ();
+		}
+
+		static void TestRequiresFromNameOf ()
+		{
+			_ = nameof (BasicRequires.RequiresWithMessageOnly);
 		}
 
 		class OnEventMethod
