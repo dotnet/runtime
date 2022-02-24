@@ -14105,7 +14105,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
             knownPositiveOp->ChangeType(TYP_INT);
 #ifndef TARGET_64BIT
             assert(knownPositiveOp->OperIs(GT_CNS_LNG));
-            knownPositiveOp->ChangeOperUnchecked(GT_CNS_INT);
+            knownPositiveOp->BashToConst(static_cast<int>(knownPositiveOp->AsIntCommon()->IntegralValue()));
 #endif
             fgUpdateConstTreeValueNumber(knownPositiveOp);
         }
