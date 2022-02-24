@@ -234,8 +234,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (!DotnetObjectId.TryParse(objThis?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     return null;
 
-                var rootResObj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
-                var objRet = rootResObj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == nameTrimmed);
+                ValueOrError<JToken> valueOrError = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
+                if (valueOrError.HasError)
+                {
+                    logger.LogDebug($"ResolveAsLocalOrThisMember failed with : {valueOrError.Error}");
+                    return null;
+                }
+
+                JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == nameTrimmed);
                 if (objRet != null)
                     return await GetValueFromObject(objRet, token);
 
@@ -255,8 +261,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                         return null;
 
-                    var resolvedResObj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
-                    var objRet = resolvedResObj.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == partTrimmed);
+                    ValueOrError<JToken> valueOrError = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
+                    if (valueOrError.HasError)
+                    {
+                        logger.LogDebug($"ResolveAsInstanceMember failed with : {valueOrError.Error}");
+                        return null;
+                    }
+
+                    JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == partTrimmed);
                     if (objRet == null)
                         return null;
 

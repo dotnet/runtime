@@ -462,12 +462,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!DotnetObjectId.TryParse(args?["objectId"], out DotnetObjectId objectId))
                             break;
 
-                        var ret = await RuntimeGetPropertiesInternal(id, objectId, args, token, true);
-                        if (ret == null) {
-                            SendResponse(id, Result.Err($"Unable to RuntimeGetProperties '{objectId}'"), token);
+                        var valueOrError = await RuntimeGetPropertiesInternal(id, objectId, args, token, true);
+                        if (valueOrError.HasError)
+                        {
+                            logger.LogDebug($"Runtime.getProperties: {valueOrError.Error}");
+                            SendResponse(id, valueOrError.Error.Value, token);
                         }
                         else
-                            SendResponse(id, Result.OkFromObject(ret), token);
+                        {
+                            SendResponse(id, Result.OkFromObject(valueOrError.Value), token);
+                        }
                         return true;
                     }
 
@@ -715,7 +719,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<JToken> RuntimeGetPropertiesInternal(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token, bool sortByAccessLevel = false)
+        internal async Task<ValueOrError<JToken>> RuntimeGetPropertiesInternal(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token, bool sortByAccessLevel = false)
         {
             var context = GetContext(id);
             var accessorPropertiesOnly = false;
@@ -737,51 +741,57 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     case "scope":
                     {
-                        var resScope = await GetScopeProperties(id, objectId.Value, token);
-                        if (sortByAccessLevel)
-                            return resScope.Value;
-                        return resScope.Value?["result"];
+                        Result resScope = await GetScopeProperties(id, objectId.Value, token);
+                        return resScope.IsOk
+                            ? ValueOrError<JToken>.WithValue(sortByAccessLevel ? resScope.Value : resScope.Value?["result"])
+                            : ValueOrError<JToken>.WithError(resScope);
                     }
                     case "valuetype":
                     {
                         var resValType = await context.SdbAgent.GetValueTypeValues(objectId.Value, accessorPropertiesOnly, token);
-                        return sortByAccessLevel ? JObject.FromObject(new { result = resValType }) : resValType;
+                        return resValType switch
+                        {
+                            null => ValueOrError<JToken>.WithError($"Could not get properties for {objectId}"),
+                            _    => ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resValType }) : resValType)
+                        };
                     }
                     case "array":
                     {
                         var resArr = await context.SdbAgent.GetArrayValues(objectId.Value, token);
-                        return sortByAccessLevel ? JObject.FromObject(new { result = resArr }) : resArr;
+                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resArr }) : resArr);
                     }
                     case "methodId":
                     {
                         var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId.Value, objectId.SubValue, null, token);
-                        return sortByAccessLevel ? JObject.FromObject(new { result = new JArray(resMethod) }) : new JArray(resMethod);
+                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = new JArray(resMethod) }) : new JArray(resMethod));
                     }
                     case "object":
                     {
-                        var resObj = (await context.SdbAgent.GetObjectValues(objectId.Value, objectValuesOpt, token, sortByAccessLevel));
-                        return sortByAccessLevel ? resObj[0] : resObj;
+                        var resObj = await context.SdbAgent.GetObjectValues(objectId.Value, objectValuesOpt, token, sortByAccessLevel);
+                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? resObj[0] : resObj);
                     }
                     case "pointer":
                     {
                         var resPointer = new JArray { await context.SdbAgent.GetPointerContent(objectId.Value, token) };
-                        return sortByAccessLevel ? JObject.FromObject(new { result = resPointer }) : resPointer;
+                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resPointer }) : resPointer);
                     }
                     case "cfo_res":
                     {
                         Result res = await SendMonoCommand(id, MonoCommands.GetDetails(RuntimeId, objectId.Value, args), token);
                         string value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
-                        return value_json_str != null ?
-                                (sortByAccessLevel ? JObject.FromObject(new { result = JArray.Parse(value_json_str) }) : JArray.Parse(value_json_str)) :
-                                null;
+                        if (res.IsOk && value_json_str == null)
+                            return ValueOrError<JToken>.WithError($"Internal error: Could not find expected __value_as_json_string__ field in the result: {res}");
+
+                        return value_json_str != null
+                                    ? ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = JArray.Parse(value_json_str) }) : JArray.Parse(value_json_str))
+                                    : ValueOrError<JToken>.WithError(res);
                     }
                     default:
-                        return null;
-
+                        return ValueOrError<JToken>.WithError($"RuntimeGetProperties: unknown object id scheme: {objectId.Scheme}");
                 }
             }
-            catch (Exception) {
-                return null;
+            catch (Exception ex) {
+                return ValueOrError<JToken>.WithError($"RuntimeGetProperties: Failed to get properties for {objectId}: {ex}");
             }
         }
 
