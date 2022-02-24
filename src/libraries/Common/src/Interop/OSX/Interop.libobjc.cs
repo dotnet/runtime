@@ -16,9 +16,9 @@ internal static partial class Interop
             public nint patchVersion;
         }
 
-        [GeneratedDllImport(Libraries.libobjc, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.libobjc, StringMarshalling = StringMarshalling.Utf8)]
         private static partial IntPtr objc_getClass(string className);
-        [GeneratedDllImport(Libraries.libobjc, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.libobjc, StringMarshalling = StringMarshalling.Utf8)]
         private static partial IntPtr sel_getUid(string selector);
         [GeneratedDllImport(Libraries.libobjc, EntryPoint = "objc_msgSend")]
         private static partial IntPtr intptr_objc_msgSend(IntPtr basePtr, IntPtr selector);

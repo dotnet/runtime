@@ -119,7 +119,7 @@ partial class Test
     public static extern int [|Method1|](out int ret);
 
     [DllImport(""DoesNotExist"", EntryPoint = ""Entry"", CharSet = CharSet.Unicode)]
-    public static extern int [|Method2|](out int ret);
+    public static extern string [|Method2|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
             string fixedSource = @$"
@@ -129,8 +129,8 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
     public static partial int {{|CS8795:Method1|}}(out int ret);
 
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"", CharSet = CharSet.Unicode)]
-    public static partial int {{|CS8795:Method2|}}(out int ret);
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial string {{|CS8795:Method2|}}(out int ret);
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
@@ -155,6 +155,9 @@ partial class Test
 
     [DllImport(""DoesNotExist"", PreserveSig = true)]
     public static extern int [|Method3|](out int ret);
+
+    [DllImport(""DoesNotExist"", CharSet = CharSet.Unicode)]
+    public static extern int [|Method4|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
             string fixedSource = @$"
@@ -172,6 +175,9 @@ partial class Test
 
     [GeneratedDllImport(""DoesNotExist"")]
     public static partial int {{|CS8795:Method3|}}(out int ret);
+
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial int {{|CS8795:Method4|}}(out int ret);
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
@@ -237,15 +243,15 @@ using System.Runtime.InteropServices;
 partial class Test
 {{
     [DllImport(""DoesNotExist"", SetLastError = true, EntryPoint = ""Entry"", CharSet = CharSet.Unicode)]
-    public static extern int [|Method|](out int ret);
+    public static extern string [|Method|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
             string fixedSource = @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"", CharSet = CharSet.Unicode, SetLastError = true)]
-    public static partial int {{|CS8795:Method|}}(out int ret);
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    public static partial string {{|CS8795:Method|}}(out int ret);
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
@@ -268,7 +274,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"", CharSet = CharSet.{charSet})]
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceNoSuffix, "ConvertToGeneratedDllImport");
@@ -276,7 +282,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry{suffix}"", CharSet = CharSet.{charSet})]
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry{suffix}"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithSuffix, $"ConvertToGeneratedDllImport{suffix}");
@@ -296,7 +302,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"", CharSet = CharSet.Auto)]
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceNoSuffix, "ConvertToGeneratedDllImport");
@@ -304,7 +310,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""EntryA"", CharSet = CharSet.Auto)]
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""EntryA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, "ConvertToGeneratedDllImportA");
@@ -312,7 +318,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""EntryW"", CharSet = CharSet.Auto)]
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""EntryW"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithWSuffix, "ConvertToGeneratedDllImportW");
@@ -362,7 +368,7 @@ using System.Runtime.InteropServices;
 partial class Test
 {{
     private const string EntryPoint = ""Entry"";
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = EntryPoint + ""A"", CharSet = CharSet.Ansi)]
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = EntryPoint + ""A"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, "ConvertToGeneratedDllImportA");
@@ -382,7 +388,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""MethodA"", CharSet = CharSet.Ansi)]
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""MethodA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, "ConvertToGeneratedDllImportA");
@@ -404,7 +410,7 @@ using System.Runtime.InteropServices;
 partial class Test
 {{
     private const string Foo = ""Bar"";
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = nameof(Foo) + ""A"", CharSet = CharSet.Ansi)]
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = nameof(Foo) + ""A"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, "ConvertToGeneratedDllImportA");
@@ -424,7 +430,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""MethodA"", CharSet = CharSet.Ansi)]
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""MethodA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, "ConvertToGeneratedDllImportA");

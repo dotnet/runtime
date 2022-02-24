@@ -11,7 +11,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [GeneratedDllImport(Libraries.User32, EntryPoint = "LoadIconW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.User32, EntryPoint = "LoadIconW", SetLastError = true)]
         internal static partial IntPtr LoadIcon(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
@@ -42,7 +42,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.User32, SetLastError = true)]
         public static partial int GetSystemMetrics(int nIndex);
 
-        [GeneratedDllImport(Libraries.User32, CharSet = CharSet.Auto, SetLastError = true)]
+        [GeneratedDllImport(Libraries.User32, SetLastError = true)]
         internal static partial bool DrawIconEx(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
