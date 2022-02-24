@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Microsoft.Diagnostics.NETCore.Client;
+using Microsoft.Diagnostics.Tools.RuntimeClient;
 
 namespace Tracing.Tests.BigEventsValidation
 {
@@ -45,12 +45,13 @@ namespace Tracing.Tests.BigEventsValidation
         {
             // This test tries to send a big event (>100KB) and checks that the app does not crash
             // See https://github.com/dotnet/runtime/issues/50515 for the regression issue
-            var providers = new List<EventPipeProvider>()
+            var providers = new List<Provider>()
             {
-                new EventPipeProvider("BigEventSource", EventLevel.Verbose)
+                new Provider("BigEventSource")
             };
 
-            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _Verify);
+            var configuration = new SessionConfiguration(circularBufferSizeMB: 1024, format: EventPipeSerializationFormat.NetTrace,  providers: providers);
+            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, configuration, _Verify);
         }
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()

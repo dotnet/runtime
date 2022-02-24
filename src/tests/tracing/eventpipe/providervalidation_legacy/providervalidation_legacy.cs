@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
-using Microsoft.Diagnostics.NETCore.Client;
+using Microsoft.Diagnostics.Tools.RuntimeClient;
 
 namespace Tracing.Tests.ProviderValidation
 {
@@ -28,13 +28,15 @@ namespace Tracing.Tests.ProviderValidation
             // This test validates that the rundown events are present
             // and that providers turned on that generate events are being written to
             // the stream.
-            var providers = new List<EventPipeProvider>()
+            var providers = new List<Provider>()
             {
-                new EventPipeProvider("MyEventSource", EventLevel.Verbose),
-                new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Verbose)
+                new Provider("MyEventSource"),
+                new Provider("Microsoft-DotNETCore-SampleProfiler")
             };
 
-            var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024);
+            var config = new SessionConfiguration(circularBufferSizeMB: (uint)Math.Pow(2, 10), format: EventPipeSerializationFormat.NetTrace,  providers: providers);
+
+            var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, config);
             if (ret < 0)
                 return ret;
             else

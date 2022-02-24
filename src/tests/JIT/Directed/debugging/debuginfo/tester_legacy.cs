@@ -8,7 +8,7 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.Diagnostics.NETCore.Client;
+using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
@@ -23,17 +23,18 @@ public unsafe class DebugInfoTest
         var keywords =
             ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.JittedMethodILToNativeMap;
 
-        var dotnetRuntimeProvider = new List<EventPipeProvider>
+        var dotnetRuntimeProvider = new List<Provider>
         {
-            new EventPipeProvider("Microsoft-Windows-DotNETRuntime", eventLevel: EventLevel.Verbose, keywords: (long)keywords)
+            new Provider("Microsoft-Windows-DotNETRuntime", eventLevel: EventLevel.Verbose, keywords: (ulong)keywords)
         };
+
+        var config = new SessionConfiguration(1024, EventPipeSerializationFormat.NetTrace, dotnetRuntimeProvider);
 
         return
             IpcTraceTest.RunAndValidateEventCounts(
                 new Dictionary<string, ExpectedEventCount>(),
                 JitMethods,
-                dotnetRuntimeProvider,
-                1024,
+                config,
                 ValidateMappings);
     }
 
