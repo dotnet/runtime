@@ -7983,21 +7983,38 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     }
 
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
+    copy->_retBufArg = nullptr;
     copy->gtCallArgs      = nullptr;
     copy->gtCallLateArgs  = nullptr;
 
     GenTreeCall::Use** argsTail = &copy->gtCallArgs;
     for (GenTreeCall::Use& use : tree->Args())
     {
-        *argsTail = gtNewCallArgs(gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal));
+        GenTree* argNode = use.GetNode();
+        GenTree* copyArgNode = gtCloneExpr(use.GetNode(), addFlags, deepVarNum,
+                                           deepVarVal);
+        
+        *argsTail = gtNewCallArgs(copyArgNode);
         argsTail  = &((*argsTail)->NextRef());
     }
+
 
     argsTail = &copy->gtCallLateArgs;
     for (GenTreeCall::Use& use : tree->LateArgs())
     {
-        *argsTail = gtNewCallArgs(gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal));
+        GenTree* argTailNode = use.GetNode();
+        GenTree* copyArgTailNode = gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal);
+
+        *argsTail = gtNewCallArgs(copyArgTailNode);
         argsTail  = &((*argsTail)->NextRef());
+
+        // clone argNode
+        if (tree->_retBufArg == argTailNode)
+        {
+            assert(copy->_retBufArg == nullptr);
+            assert(copyArgTailNode->OperIs(GT_LCL_VAR));
+            copy->_retBufArg = copyArgTailNode->AsLclVar();
+        }
     }
 
     // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
@@ -8034,6 +8051,44 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     {
         // Create and initialize the fgArgInfo for our copy of the call tree
         copy->fgArgInfo = new (this, CMK_Unknown) fgArgInfo(copy, tree);
+
+        // set the cloned "return buffer" node, if exist.
+        if (tree->_retBufArg != nullptr)
+        {
+            unsigned index = tree->gtCallThisArg == nullptr ? 0 : 1;
+            while (index < tree->fgArgInfo->ArgCount())
+            {
+                fgArgTabEntry* entry = tree->fgArgInfo->GetArgEntry(index);
+                if (entry->nonStandardArgKind == NonStandardArgKind::FixedRetBuffer ||
+                    entry->nonStandardArgKind == NonStandardArgKind::None)
+                {
+                    // found ret buffer
+                    GenTree* argNodeCopy = copy->fgArgInfo->GetArgEntry(index)->GetNode();
+                    if (argNodeCopy->OperIs(GT_ADDR))
+                    {
+                        GenTree*       addrNodeCopy   = argNodeCopy->AsOp()->gtGetOp1();
+                        GenTreeLclVar* retBufNodeCopy = nullptr;
+
+                        assert(addrNodeCopy->OperIs(GT_LCL_VAR));
+                        retBufNodeCopy = addrNodeCopy->AsLclVar();
+
+                        /*if (addrNodeCopy->OperIs(GT_LCL_FLD))
+                        {
+                            retBufNodeCopy = addrNodeCopy->AsLclFld();
+                        }
+                        else
+                        {
+                            assert(addrNodeCopy->OperIs(GT_LCL_VAR));
+                            retBufNodeCopy = addrNodeCopy->AsLclVar();
+                        }*/
+                        copy->_retBufArg = retBufNodeCopy;
+                    }
+                    break;
+                }
+                index++;
+            }
+            assert(copy->_retBufArg != nullptr);
+        }
     }
     else
     {
@@ -9824,7 +9879,10 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 {
                     printf("(AX)"); // Variable has address exposed.
                 }
-
+                if (varDsc->IsHiddenBufferStructArg())
+                {
+                    printf("(RB)"); // Variable is hidden return buffer
+                }
                 if (varDsc->lvUnusedStruct)
                 {
                     assert(varDsc->lvPromoted);
