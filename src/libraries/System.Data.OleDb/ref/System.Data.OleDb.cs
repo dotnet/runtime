@@ -386,6 +386,8 @@ namespace System.Data.OleDb
         public System.Data.OleDb.OleDbParameter Add(string? parameterName, System.Data.OleDb.OleDbType oleDbType) { throw null; }
         public System.Data.OleDb.OleDbParameter Add(string? parameterName, System.Data.OleDb.OleDbType oleDbType, int size) { throw null; }
         public System.Data.OleDb.OleDbParameter Add(string? parameterName, System.Data.OleDb.OleDbType oleDbType, int size, string? sourceColumn) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated. Use AddWithValue(String parameterName, Object value) instead.")]
         public System.Data.OleDb.OleDbParameter Add(string? parameterName, object? value) { throw null; }
         public override void AddRange(System.Array values) { }
         public void AddRange(System.Data.OleDb.OleDbParameter[] values) { }

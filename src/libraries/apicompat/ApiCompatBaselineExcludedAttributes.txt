@@ -1,0 +1,4 @@
+// These attributes shouldn't be checked against baseline reference assemblies
+
+T:System.ComponentModel.EditorBrowsableAttribute
+T:System.ObsoleteAttribute

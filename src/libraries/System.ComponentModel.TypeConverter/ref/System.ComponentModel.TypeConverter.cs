@@ -550,6 +550,7 @@ namespace System.ComponentModel
         void CancelNew(int itemIndex);
         void EndNew(int itemIndex);
     }
+    [System.ObsoleteAttribute("IComNativeDescriptorHandler has been deprecated. Add a TypeDescriptionProvider to handle type TypeDescriptor.ComObjectType instead.")]
     public partial interface IComNativeDescriptorHandler
     {
         System.ComponentModel.AttributeCollection GetAttributes(object component);
@@ -988,6 +989,7 @@ namespace System.ComponentModel
         protected static System.Reflection.MethodInfo? FindMethod([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type componentClass, string name, System.Type[] args, System.Type returnType, bool publicOnly) { throw null; }
         public override int GetHashCode() { throw null; }
         protected virtual object? GetInvocationTarget(System.Type type, object instance) { throw null; }
+        [System.ObsoleteAttribute("MemberDescriptor.GetInvokee has been deprecated. Use GetInvocationTarget instead.")]
         protected static object GetInvokee(System.Type componentClass, object component) { throw null; }
         protected static System.ComponentModel.ISite? GetSite(object? component) { throw null; }
     }
@@ -1169,6 +1171,7 @@ namespace System.ComponentModel
         public override int GetHashCode() { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
+    [System.ObsoleteAttribute("RecommendedAsConfigurableAttribute has been deprecated. Use System.ComponentModel.SettingsBindableAttribute instead.")]
     public partial class RecommendedAsConfigurableAttribute : System.Attribute
     {
         public static readonly System.ComponentModel.RecommendedAsConfigurableAttribute Default;

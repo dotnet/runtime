@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Collections.Generic;
 
 namespace System.Runtime.InteropServices
 {
@@ -187,57 +188,66 @@ namespace System.Runtime.InteropServices
 
         #region PlatformNotSupported
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("GetExceptionCode() may be unavailable in future releases.")]
         public static int GetExceptionCode()
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadByte(Object, Int32) may be unavailable in future releases.")]
         public static byte ReadByte(object ptr, int ofs)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadInt16(Object, Int32) may be unavailable in future releases.")]
         public static short ReadInt16(object ptr, int ofs)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadInt32(Object, Int32) may be unavailable in future releases.")]
         public static int ReadInt32(object ptr, int ofs)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadInt64(Object, Int32) may be unavailable in future releases.")]
         public static long ReadInt64(object ptr, int ofs)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteByte(Object, Int32, Byte) may be unavailable in future releases.")]
         public static void WriteByte(object ptr, int ofs, byte val)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt16(Object, Int32, Int16) may be unavailable in future releases.")]
         public static void WriteInt16(object ptr, int ofs, short val)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt32(Object, Int32, Int32) may be unavailable in future releases.")]
         public static void WriteInt32(object ptr, int ofs, int val)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt64(Object, Int32, Int64) may be unavailable in future releases.")]
         public static void WriteInt64(object ptr, int ofs, long val)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 

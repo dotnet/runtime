@@ -5,6 +5,7 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [Obsolete(Obsoletions.DerivedCryptographicTypesMessage, DiagnosticId = Obsoletions.DerivedCryptographicTypesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public sealed partial class RC2CryptoServiceProvider : RC2
     {
         private readonly RC2 _impl;

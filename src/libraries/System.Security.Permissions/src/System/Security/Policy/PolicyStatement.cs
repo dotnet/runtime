@@ -15,6 +15,9 @@ namespace System.Security.Policy
         public PolicyStatement(PermissionSet permSet, PolicyStatementAttribute attributes) { }
         public PolicyStatementAttribute Attributes { get; set; }
         public string AttributeString { get { return null; } }
+#if NETCOREAPP
+        [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public PermissionSet PermissionSet { get; set; }
         public PolicyStatement Copy() { return this; }
         public override bool Equals(object o) => base.Equals(o);

@@ -364,6 +364,7 @@ namespace System
             return this;
         }
 
+        [Obsolete("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
         public static unsafe string Copy(string str!!)
         {
             string result = FastAllocateString(str.Length);

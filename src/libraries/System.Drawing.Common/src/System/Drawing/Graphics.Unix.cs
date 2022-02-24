@@ -540,6 +540,7 @@ namespace System.Drawing
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete(Obsoletions.GetContextInfoMessage, DiagnosticId = Obsoletions.GetContextInfoDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [SupportedOSPlatform("windows")]
         public object GetContextInfo()
         {

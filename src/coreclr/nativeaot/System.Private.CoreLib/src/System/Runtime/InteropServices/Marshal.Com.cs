@@ -188,9 +188,11 @@ namespace System.Runtime.InteropServices
                 case BStrWrapper value:
                     data->AsBstr = value.WrappedObject;
                     break;
+#pragma warning disable 0618 // CurrencyWrapper is obsolete
                 case CurrencyWrapper value:
                     data->AsCy = value.WrappedObject;
                     break;
+#pragma warning restore 0618
                 case UnknownWrapper value:
                     data->AsUnknown = value.WrappedObject;
                     break;
