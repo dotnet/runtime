@@ -17,7 +17,7 @@ namespace System.Diagnostics.Tracing
         public static class Keywords
         {
             public const EventKeywords AppContext = (EventKeywords)0x1;
-            public const EventKeywords NumProcesses = (EventKeywords)0x2;
+            public const EventKeywords ProcessorCount = (EventKeywords)0x2;
         }
 
         private static RuntimeEventSource? s_RuntimeEventSource;
@@ -68,7 +68,7 @@ namespace System.Diagnostics.Tracing
             base.WriteEvent((int)EventId.AppContextSwitch, switchName, value);
         }
 
-        [Event((int)EventId.ProcessorCount, Level = EventLevel.Informational, Keywords = Keywords.NumProcesses)]
+        [Event((int)EventId.ProcessorCount, Level = EventLevel.Informational, Keywords = Keywords.ProcessorCount)]
         internal void ProcessorCount(int processorCount)
         {
             base.WriteEvent((int)EventId.ProcessorCount, processorCount);
@@ -113,6 +113,7 @@ namespace System.Diagnostics.Tracing
                 _jitTimeCounter ??= new IncrementingPollingCounter("time-in-jit", this, () => System.Runtime.JitInfo.GetCompilationTime().TotalMilliseconds) { DisplayName = "Time spent in JIT", DisplayUnits = "ms", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
 
                 AppContext.LogSwitchValues(this);
+                ProcessorCount(Environment.ProcessorCount);
             }
 
         }
