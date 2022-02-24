@@ -61,6 +61,19 @@
                             and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))))" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\ArrayMarshaller.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EnabledGenerators Include="RegexGenerator" Condition="'$(EnableRegexGenerator)' == 'true'" />
+  </ItemGroup>
+
+  <!-- Use this complex ItemGroup-based filtering to add the ProjectReference to make sure dotnet/runtime stays compatible with NuGet Static Graph Restore. -->
+  <ItemGroup Condition="'@(EnabledGenerators)' != ''
+                        and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'RegexGenerator'))">
+    <ProjectReference
+      Include="$(LibrariesProjectRoot)System.Text.RegularExpressions/gen/System.Text.RegularExpressions.Generator.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
   <Target Name="ConfigureGenerators"
           DependsOnTargets="ConfigureDllImportGenerator"
           BeforeTargets="CoreCompile" />
