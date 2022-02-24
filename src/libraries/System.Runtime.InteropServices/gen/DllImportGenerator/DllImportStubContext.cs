@@ -190,7 +190,7 @@ namespace Microsoft.Interop
                 NativeIndex = TypePositionInfo.ReturnIndex
             };
 
-            InteropGenerationOptions options = new(env.Options.UseMarshalType, env.Options.UseInternalUnsafeType);
+            InteropGenerationOptions options = new(env.Options.UseMarshalType);
             IMarshallingGeneratorFactory generatorFactory;
 
             if (env.Options.GenerateForwarders)
@@ -213,13 +213,14 @@ namespace Microsoft.Interop
                 generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);
 
                 IAssemblySymbol coreLibraryAssembly = env.Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
-                ITypeSymbol disabledRuntimeMarshallingAttributeType = coreLibraryAssembly.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute);
-                bool runtimeMarshallingDisabled = env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
+                ITypeSymbol? disabledRuntimeMarshallingAttributeType = coreLibraryAssembly.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute);
+                bool runtimeMarshallingDisabled = disabledRuntimeMarshallingAttributeType is not null
+                    && env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
 
-                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(options, runtimeMarshallingDisabled));
+                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
                 // We don't need to include the later generator factories for collection elements
                 // as the later generator factories only apply to parameters.
-                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(options, runtimeMarshallingDisabled));
+                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
             }
