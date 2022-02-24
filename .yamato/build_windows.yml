@@ -1,6 +1,6 @@
 {% metadata_file .yamato/Globals.metafile %}
 ---
-name: Build and Test Windows x86
+name: Build Windows x86
 
 agent:
   type: Unity::VM
@@ -19,18 +19,11 @@ commands:
   - copy unity\unitygc\Release\unitygc.dll artifacts\bin\microsoft.netcore.app.runtime.win-x86\Release\runtimes\win-x86\native 
   - powershell .yamato\scripts\download_7z.ps1
   - artifacts\7za-win-x64\7za.exe a artifacts\unity\%ARTIFACT_FILENAME% .\artifacts\bin\microsoft.netcore.app.runtime.win-x86\Release\runtimes\win-x86
-# build/run tests
-  - build.cmd libs.tests -test -a x86 -c release -ci
-  - src\tests\build.cmd x86 release ci
-  - src\tests\run.cmd x86 release
 
-triggers:
-  pull_requests:
-    - targets:
-        only:
-          - "unity-main"
-
-artifacts: 
-  win32:
+artifacts:
+  win-x86-7z:
     paths:
-      - artifacts\unity\%ARTIFACT_FILENAME%
+      - artifacts\unity\**
+  win-x86:
+    paths:
+      - artifacts\bin\**

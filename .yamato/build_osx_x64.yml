@@ -1,6 +1,6 @@
 {% metadata_file .yamato/Globals.metafile %}
 ---
-name: Build and Test OSX x64
+name: Build OSX x64
 
 agent:
   type: Unity::VM::osx
@@ -23,20 +23,11 @@ commands:
   - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset clr+libs -a x64 -c release -ci -ninja
   - cp unity/unitygc/release/libunitygc.dylib artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64/native
   - artifacts/7za-mac-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64
-# build/run tests
-  - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset libs.tests -test -a x64 -c release -ci -ninja
-  - ./src/tests/build.sh x64 release ci
-  - ./src/tests/run.sh x64 release
-  - ./build.sh clr.paltests
-  - ./artifacts/bin/coreclr/OSX.x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/OSX.x64.Debug/paltests
 
-triggers:
-  pull_requests:
-    - targets:
-        only:
-          - "unity-main"
-
-artifacts: 
-  osx64:
+artifacts:
+  osx-x64-7z:
     paths:
-      - artifacts/unity/$ARTIFACT_FILENAME
+      - artifacts/unity/**
+  osx-x64:
+    paths:
+      - artifacts/bin/**

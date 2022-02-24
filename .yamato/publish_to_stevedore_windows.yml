@@ -1,0 +1,19 @@
+{% metadata_file .yamato/Globals.metafile %}
+---
+name: Publish To Stevedore Windows x86
+
+agent:
+  type: Unity::VM
+  image: platform-foundation/windows-vs2019-il2cpp-bokken:latest
+  flavor: b1.xlarge
+
+dependencies:
+  - path: .yamato/build_windows.yml
+
+variables:
+  STEVEDORE_REPO: {{globals.stevedore_publish_location}}
+
+commands:
+# upload to stevedore
+  - curl -sSo StevedoreUpload.exe "%STEVEDORE_UPLOAD_TOOL_WINDOWS_X64_URL%"
+  - StevedoreUpload.exe --version-len=12 --repo=%STEVEDORE_REPO% --version="%GIT_REVISION%" artifacts\unity\*
