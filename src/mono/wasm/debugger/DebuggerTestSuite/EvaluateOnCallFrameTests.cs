@@ -1070,9 +1070,9 @@ namespace DebuggerTests
                    ("test.GetInt64Nullable()", TNumber(1)),
                    ("test.GetUInt64Nullable()", TNumber(1)),
 
-                    ("test.GetChar()", TString("T")),
-                    ("test.GetCharNullable()", TString("T")),
-                    ("test.GetUnicodeChar()", TString("ą")),
+                   ("test.GetChar()", TString("T")),
+                   ("test.GetCharNullable()", TString("T")),
+                   ("test.GetUnicodeChar()", TString("ą")),
                    ("test.GetString()", TString("1.23")),
                    ("test.GetUnicodeString()", TString("żółć")),
                    ("test.GetString(null)", TObject("string", is_null: true)),
