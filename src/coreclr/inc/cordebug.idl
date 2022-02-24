@@ -286,7 +286,7 @@ interface ICorDebugDataTarget : IUnknown
         CORDB_PLATFORM_POSIX_X86,         // Posix supporting OS on Intel x86
         CORDB_PLATFORM_POSIX_ARM,         // Posix supporting OS on ARM32
         CORDB_PLATFORM_POSIX_ARM64,       // Posix supporting OS on ARM64
-        CORDB_PLATFORM_POSIX_LOONGARCH64  // Posix supporting OS on LOONGARCH64
+        CORDB_PLATFORM_POSIX_LOONGARCH64  // Posix supporting OS on LoongArch64
     } CorDebugPlatform;
 
     HRESULT GetPlatform([out] CorDebugPlatform * pTargetPlatform);
@@ -3918,7 +3918,7 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_ARM64_V30,
         REGISTER_ARM64_V31,
 
-        // LOONGARCH64 registers
+        // LoongArch64 registers
         REGISTER_LOONGARCH64_R0 = 0,
         REGISTER_LOONGARCH64_RA,
         REGISTER_LOONGARCH64_TP,

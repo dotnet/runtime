@@ -11,7 +11,8 @@
     <RunAnalyzers>true</RunAnalyzers>
 
     <!-- Packaging properties -->
-    <IsPackable>true</IsPackable>
+    <!-- In the future DllImportGenerator might ship as part of a package, but meanwhile disable packaging. -->
+    <IsPackable>false</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <PackageProjectUrl>https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.InteropServices/gen/DllImportGenerator</PackageProjectUrl>

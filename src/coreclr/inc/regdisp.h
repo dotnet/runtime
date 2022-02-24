@@ -189,7 +189,6 @@ typedef struct _Arm64VolatileContextPointer
 typedef struct _Loongarch64VolatileContextPointer
 {
     PDWORD64 R0;
-    //PDWORD64 Tp;
     PDWORD64 A0;
     PDWORD64 A1;
     PDWORD64 A2;
@@ -471,8 +470,6 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
     for (int i=0; i < 18; i++)
         pRD->volatileCurrContextPointers.X[i] = &pctx->X[i];
 #elif defined(TARGET_LOONGARCH64) // TARGET_ARM64
-    //pRD->volatileCurrContextPointers.R0 = &pctx->R0;
-    //pRD->volatileCurrContextPointers.Tp = &pctx->Tp;
     pRD->volatileCurrContextPointers.A0 = &pctx->A0;
     pRD->volatileCurrContextPointers.A1 = &pctx->A1;
     pRD->volatileCurrContextPointers.A2 = &pctx->A2;
