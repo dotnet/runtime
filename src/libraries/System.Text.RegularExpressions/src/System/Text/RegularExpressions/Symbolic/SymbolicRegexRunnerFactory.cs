@@ -10,7 +10,7 @@ namespace System.Text.RegularExpressions.Symbolic
     internal sealed class SymbolicRegexRunnerFactory : RegexRunnerFactory
     {
         /// <summary>A SymbolicRegexMatcher of either ulong or BV depending on the number of minterms.</summary>
-        internal readonly ISymbolicRegexMatcher _matcher;
+        internal readonly SymbolicRegexMatcher _matcher;
 
         /// <summary>Initializes the factory.</summary>
         public SymbolicRegexRunnerFactory(RegexCode code, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
@@ -42,7 +42,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // Convert the BDD-based AST to BV-based AST
                 SymbolicRegexNode<BV> rootBV = converter._builder.Transform(root, builderBV, bdd => builderBV._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<BV>(rootBV, code, minterms, matchTimeout, culture);
+                _matcher = new SymbolicRegexMatcher<BV>(rootBV, code, minterms, matchTimeout);
             }
             else
             {
@@ -58,7 +58,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // Convert the BDD-based AST to ulong-based AST
                 SymbolicRegexNode<ulong> root64 = converter._builder.Transform(root, builder64, bdd => builder64._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<ulong>(root64, code, minterms, matchTimeout, culture);
+                _matcher = new SymbolicRegexMatcher<ulong>(root64, code, minterms, matchTimeout);
             }
         }
 
@@ -69,15 +69,17 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Runner type produced by this factory.</summary>
         /// <remarks>
-        /// The wrapped <see cref="ISymbolicRegexMatcher"/> is itself thread-safe and can be shared across
+        /// The wrapped <see cref="SymbolicRegexMatcher"/> is itself thread-safe and can be shared across
         /// all runner instances, but the runner itself has state (e.g. for captures, positions, etc.)
         /// and must not be shared between concurrent uses.
         /// </remarks>
         private sealed class Runner<TSetType> : RegexRunner where TSetType : notnull
         {
             /// <summary>The matching engine.</summary>
+            /// <remarks>The matcher is stateless and may be shared by any number of threads executing concurrently.</remarks>
             private readonly SymbolicRegexMatcher<TSetType> _matcher;
-            /// <summary>Per thread data available to the matching engine.</summary>
+            /// <summary>Runner-specific data to pass to the matching engine.</summary>
+            /// <remarks>This state is per runner and is thus only used by one thread at a time.</remarks>
             private readonly SymbolicRegexMatcher<TSetType>.PerThreadData _perThreadData;
 
             internal Runner(SymbolicRegexMatcher<TSetType> matcher)
