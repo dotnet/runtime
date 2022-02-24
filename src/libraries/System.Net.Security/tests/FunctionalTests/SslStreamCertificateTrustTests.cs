@@ -20,7 +20,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.OSX)]
         public async Task SslStream_SendCertificateTrust_CertificateCollection()
         {
-            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = TestHelper.GenerateCertificates("foo");
+            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = TestHelper.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
 
             SslCertificateTrust trust = SslCertificateTrust.CreateForX509Collection(caCerts, sendTrustInHandshake: true);
             string[] acceptableIssuers = await ConnectAndGatherAcceptableIssuers(trust);
