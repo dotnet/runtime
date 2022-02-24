@@ -29,7 +29,12 @@ namespace System.Xml.Serialization
     {
         private readonly XmlMapping _mapping;
 
+        // These UnconditionalSuppressMessage attributes are understood by the trim analyzer but not by the linker.
+        // The assembly-level suppression suppresses the same warnings for the linker.
+        // https://github.com/dotnet/linker/issues/2648
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode")]
         internal static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode")]
         internal static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
 
         public ReflectionXmlSerializationReader(XmlMapping mapping, XmlReader xmlReader, XmlDeserializationEvents events, string? encodingStyle)
