@@ -549,3 +549,4 @@ jobs:
           archiveExtension: '.tar.gz'
           archiveType: tar
           tarCompression: gz
+          appname: 'podcast'
