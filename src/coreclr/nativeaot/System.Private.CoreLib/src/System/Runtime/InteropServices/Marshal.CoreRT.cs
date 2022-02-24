@@ -20,6 +20,7 @@ namespace System.Runtime.InteropServices
             return RuntimeAugments.InteropCallbacks.GetStructUnsafeStructSize(t.TypeHandle);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr OffsetOf(Type t, string fieldName)
         {
             if (t == null)
@@ -87,6 +88,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the DestroyStructure<T> overload instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
         {
             if (ptr == IntPtr.Zero)
@@ -124,6 +126,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the StructureToPtr<T> overload instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld)
         {
             if (structure == null)

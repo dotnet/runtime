@@ -95,6 +95,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static int SizeOf(object structure!!)
         {
             return SizeOfHelper(structure.GetType(), throwIfNotMarshalable: true);
@@ -106,6 +107,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static int SizeOf(Type t!!)
         {
             if (t is not RuntimeType)
@@ -161,6 +163,7 @@ namespace System.Runtime.InteropServices
         /// It must be used with EXTREME CAUTION since passing in invalid index or
         /// an array that is not pinned can cause unexpected results.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement(Array arr!!, int index)
         {
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
@@ -536,6 +539,7 @@ namespace System.Runtime.InteropServices
         /// native memory block to it.
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static object? PtrToStructure(IntPtr ptr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type structureType!!)
@@ -563,6 +567,7 @@ namespace System.Runtime.InteropServices
         /// Marshals data from a native memory block to a preallocated structure class.
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void PtrToStructure(IntPtr ptr, object structure)
         {
             PtrToStructureHelper(ptr, structure, allowValueClasses: false);
@@ -1106,6 +1111,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetDelegateForFunctionPointer<TDelegate> overload instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, Type t!!)
         {
             ArgumentNullException.ThrowIfNull(ptr);
@@ -1151,6 +1157,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr GetFunctionPointerForDelegate(Delegate d!!)
         {
             return GetFunctionPointerForDelegateInternal(d);

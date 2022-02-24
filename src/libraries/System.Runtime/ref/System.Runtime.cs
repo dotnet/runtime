@@ -14818,6 +14818,7 @@ namespace System.Text
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
         public string ToString(int startIndex, int length) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
         public partial struct AppendInterpolatedStringHandler
         {
@@ -14841,6 +14842,7 @@ namespace System.Text
             private object _dummy;
             private int _dummyPrimitive;
             public System.ReadOnlyMemory<char> Current { get { throw null; } }
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
             public System.Text.StringBuilder.ChunkEnumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
         }

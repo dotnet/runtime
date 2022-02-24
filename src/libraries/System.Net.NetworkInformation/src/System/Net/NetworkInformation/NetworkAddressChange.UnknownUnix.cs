@@ -32,6 +32,7 @@ namespace System.Net.NetworkInformation
             remove { throw new PlatformNotSupportedException(); }
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public static void RegisterNetworkChange(NetworkChange nc) { }
     }

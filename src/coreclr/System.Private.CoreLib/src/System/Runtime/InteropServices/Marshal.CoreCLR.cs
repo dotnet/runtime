@@ -29,6 +29,7 @@ namespace System.Runtime.InteropServices
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr OffsetOf(Type t!!, string fieldName)
         {
             FieldInfo? f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -221,6 +222,7 @@ namespace System.Runtime.InteropServices
         /// true, this routine will call DestroyStructure() first.
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
 
         /// <summary>
@@ -234,6 +236,7 @@ namespace System.Runtime.InteropServices
         /// "structuretype" is used to provide layout information.
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -336,6 +339,7 @@ namespace System.Runtime.InteropServices
         /// Object o should support Type T
         /// </summary>
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o!!, Type T!!)
         {
             return GetComInterfaceForObjectNative(o, T, true);
@@ -350,6 +354,7 @@ namespace System.Runtime.InteropServices
         /// invoke customized QueryInterface or not.
         /// </summary>
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o!!, Type T!!, CustomQueryInterfaceMode mode)
         {
             bool bEnableCustomizedQueryInterface = ((mode == CustomQueryInterfaceMode.Allow) ? true : false);
@@ -399,6 +404,7 @@ namespace System.Runtime.InteropServices
         public static extern object GetTypedObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, Type t);
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr CreateAggregatedObject(IntPtr pOuter, object o)
         {
             if (!IsBuiltInComSupported)
@@ -539,6 +545,7 @@ namespace System.Runtime.InteropServices
         /// of the specified type. The type must be derived from __ComObject.
         /// </summary>
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [return: NotNullIfNotNull("o")]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
@@ -612,6 +619,7 @@ namespace System.Runtime.InteropServices
         public static extern bool IsTypeVisibleFromCom(Type t);
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant)
         {
             if (!IsBuiltInComSupported)
@@ -626,6 +634,7 @@ namespace System.Runtime.InteropServices
         private static extern void GetNativeVariantForObjectNative(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
         {
             if (!IsBuiltInComSupported)
@@ -637,6 +646,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant)
         {
             if (!IsBuiltInComSupported)
@@ -651,6 +661,7 @@ namespace System.Runtime.InteropServices
         private static extern object? GetObjectForNativeVariantNative(/* VARIANT * */ IntPtr pSrcNativeVariant);
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
             if (!IsBuiltInComSupported)
@@ -662,6 +673,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static object?[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars)
         {
             if (!IsBuiltInComSupported)
@@ -676,6 +688,7 @@ namespace System.Runtime.InteropServices
         private static extern object?[] GetObjectsForNativeVariantsNative(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
             if (!IsBuiltInComSupported)

@@ -120,6 +120,7 @@ namespace System.Data.OleDb
         public override System.Data.DataTable GetSchema(string collectionName, string?[]? restrictionValues) { throw null; }
         public override void Open() { }
         public static void ReleaseObjectPool() { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public void ResetState() { }
         object System.ICloneable.Clone() { throw null; }
     }
@@ -196,8 +197,10 @@ namespace System.Data.OleDb
         public override bool GetBoolean(int ordinal) { throw null; }
         public override byte GetByte(int ordinal) { throw null; }
         public override long GetBytes(int ordinal, long dataIndex, byte[]? buffer, int bufferIndex, int length) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override char GetChar(int ordinal) { throw null; }
         public override long GetChars(int ordinal, long dataIndex, char[]? buffer, int bufferIndex, int length) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public new System.Data.OleDb.OleDbDataReader GetData(int ordinal) { throw null; }
         public override string GetDataTypeName(int index) { throw null; }
         public override System.DateTime GetDateTime(int ordinal) { throw null; }
@@ -336,7 +339,9 @@ namespace System.Data.OleDb
         public OleDbParameter() { }
         public OleDbParameter(string? name, System.Data.OleDb.OleDbType dataType) { }
         public OleDbParameter(string? name, System.Data.OleDb.OleDbType dataType, int size) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public OleDbParameter(string? parameterName, System.Data.OleDb.OleDbType dbType, int size, System.Data.ParameterDirection direction, bool isNullable, byte precision, byte scale, string? srcColumn, System.Data.DataRowVersion srcVersion, object? value) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public OleDbParameter(string? parameterName, System.Data.OleDb.OleDbType dbType, int size, System.Data.ParameterDirection direction, byte precision, byte scale, string? sourceColumn, System.Data.DataRowVersion sourceVersion, bool sourceColumnNullMapping, object? value) { }
         public OleDbParameter(string? name, System.Data.OleDb.OleDbType dataType, int size, string? srcColumn) { }
         public OleDbParameter(string? name, object? value) { }

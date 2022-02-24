@@ -31,12 +31,15 @@ namespace System.Runtime.InteropServices
         public static extern void SetLastPInvokeError(int error);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern IntPtr OffsetOf(Type t, string fieldName);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

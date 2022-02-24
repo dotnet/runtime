@@ -30,6 +30,7 @@ namespace System.Net.NetworkInformation
         }
 
         // Introduced for supporting design-time loading of System.Windows.dll
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public static void RegisterNetworkChange(NetworkChange nc) { }
 
