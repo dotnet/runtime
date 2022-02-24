@@ -3029,15 +3029,18 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
 
     //////////////////////////////////////
     // Get and save the thread's context
+    BOOL success = true;
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     // this method is called for GC stress in managed code.
     // if current context has XState features, we are only interested in AVX
     DWORD64 srcFeatures = 0;
-    BOOL success = GetXStateFeaturesMask(pCurrentThreadCtx, &srcFeatures);
+    success = GetXStateFeaturesMask(pCurrentThreadCtx, &srcFeatures);
     if (srcFeatures & XSTATE_MASK_AVX)
     {
         success &= SetXStateFeaturesMask(pCurrentThreadCtx, XSTATE_MASK_AVX);
     }
+#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 
     success &= CopyContext(pCtx, pCtx->ContextFlags, pCurrentThreadCtx);
     _ASSERTE(success);
