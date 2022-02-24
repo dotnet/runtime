@@ -38,7 +38,6 @@ PAGE_SIZE = 4096
         beq LOCAL_LABEL(CountReachedZero)
         ldr pc, DATA_SLOT(CallCountingStub, TargetForMethod)
 LOCAL_LABEL(CountReachedZero):
-        adr r12, CallCountingStubCode
         ldr pc, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
     LEAF_END_MARKED CallCountingStubCode
 

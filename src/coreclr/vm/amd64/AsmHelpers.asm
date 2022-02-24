@@ -697,13 +697,7 @@ ifdef FEATURE_TIERED_COMPILATION
 
 extern OnCallCountThresholdReached:proc
 
-LEAF_ENTRY OnCallCountThresholdReachedStub, _TEXT
-        ; Pop the return address (the stub-identifying token) into a non-argument volatile register that can be trashed
-        pop     rax
-        jmp     OnCallCountThresholdReachedStub2
-LEAF_END OnCallCountThresholdReachedStub, _TEXT
-
-NESTED_ENTRY OnCallCountThresholdReachedStub2, _TEXT
+NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT
         PROLOG_WITH_TRANSITION_BLOCK
 
         lea     rcx, [rsp + __PWTB_TransitionBlock] ; TransitionBlock *
@@ -712,7 +706,7 @@ NESTED_ENTRY OnCallCountThresholdReachedStub2, _TEXT
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         TAILJMP_RAX
-NESTED_END OnCallCountThresholdReachedStub2, _TEXT
+NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 endif ; FEATURE_TIERED_COMPILATION
 

@@ -37,7 +37,6 @@
         beq CountReachedZero
         ldr pc, DATA_SLOT(CallCountingStub, TargetForMethod)
 CountReachedZero
-        adr r12, CallCountingStubCode
         ldr pc, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
     LEAF_END_MARKED CallCountingStubCode
 

@@ -52,9 +52,8 @@ SLOT_ADDRESS_PATCH_LABEL CallCountingStub, RemainingCallCountCell
         INDJMP DATA_SLOT(CallCountingStub, TargetForMethod)
 SLOT_ADDRESS_PATCH_LABEL CallCountingStub, TargetForMethod
 LOCAL_LABEL(CountReachedZero):
-        INDCALL DATA_SLOT(CallCountingStub, TargetForThresholdReached)
+        INDJMP DATA_SLOT(CallCountingStub, TargetForThresholdReached)
 SLOT_ADDRESS_PATCH_LABEL CallCountingStub, TargetForThresholdReached
-        int    3
 LEAF_END_MARKED CallCountingStubCode
 
 LEAF_ENTRY LookupStubCode

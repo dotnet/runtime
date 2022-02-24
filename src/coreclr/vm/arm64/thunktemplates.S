@@ -32,9 +32,8 @@ LOCAL_LABEL(StubStart\PAGE_SIZE):
         ldr  x9, DATA_SLOT(CallCountingStub, TargetForMethod)
         br   x9
 LOCAL_LABEL(CountReachedZero\PAGE_SIZE):
-        adr  x10, LOCAL_LABEL(StubStart\PAGE_SIZE)
-        ldr  x9, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
-        br   x9
+        ldr  x10, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
+        br   x10
     LEAF_END_MARKED CallCountingStubCode\PAGE_SIZE
 
 

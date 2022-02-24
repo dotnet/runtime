@@ -27,7 +27,7 @@ LEAF_ENTRY CallCountingStubCode, _TEXT
         je     LOCAL_LABEL(CountReachedZero)
         jmp    QWORD PTR [rip + DATA_SLOT(CallCountingStub, TargetForMethod)]
     LOCAL_LABEL(CountReachedZero):
-        call   QWORD PTR [rip + DATA_SLOT(CallCountingStub, TargetForThresholdReached)]
+        jmp    QWORD PTR [rip + DATA_SLOT(CallCountingStub, TargetForThresholdReached)]
 LEAF_END_MARKED CallCountingStubCode, _TEXT
 
 LEAF_ENTRY LookupStubCode, _TEXT

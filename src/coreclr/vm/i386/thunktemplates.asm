@@ -53,9 +53,8 @@ SLOT_ADDRESS_PATCH_LABEL CallCountingStub, RemainingCallCountCell
         jmp    dword ptr  DATA_SLOT(CallCountingStub, TargetForMethod)
 SLOT_ADDRESS_PATCH_LABEL CallCountingStub, TargetForMethod
 CountReachedZero:
-        call   dword ptr  DATA_SLOT(CallCountingStub, TargetForThresholdReached)
+        jmp    dword ptr  DATA_SLOT(CallCountingStub, TargetForThresholdReached)
 SLOT_ADDRESS_PATCH_LABEL CallCountingStub, TargetForThresholdReached
-        int    3
 LEAF_END_MARKED _CallCountingStubCode@0
 
 LEAF_ENTRY _LookupStubCode@0

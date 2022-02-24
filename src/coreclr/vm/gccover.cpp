@@ -74,14 +74,17 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
 
     if (PrecodeStubManager::g_pManager->GetFixupPrecodeRangeList()->IsInRange(target))
     {
-        // If the target slot points to the fixup part of the stub, the actual
-        // stub starts FixupPrecode::FixupCodeOffset bytes below the target,
-        // so we need to compensate for it.
-        target -= FixupPrecode::FixupCodeOffset;
         if (!FixupPrecode::IsFixupPrecodeByASM(target))
         {
-            _ASSERTE(FALSE); // We should never get other precode type here
-            return nullptr;
+            // If the target slot points to the fixup part of the stub, the actual
+            // stub starts FixupPrecode::FixupCodeOffset bytes below the target,
+            // so we need to compensate for it.
+            target -= FixupPrecode::FixupCodeOffset;
+            if (!FixupPrecode::IsFixupPrecodeByASM(target))
+            {
+                _ASSERTE(!"Invalid FixupPrecode address"); // We should never get other precode type here
+                return nullptr;
+            }
         }
 
         return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(target))->GetMethodDesc();

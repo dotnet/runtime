@@ -30,9 +30,8 @@
         ldr  x9, DATA_SLOT(CallCountingStub, TargetForMethod)
         br   x9
 CountReachedZero        
-        adr  x10, CallCountingStubCode
-        ldr  x9, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
-        br   x9
+        ldr  x10, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
+        br   x10
     LEAF_END_MARKED CallCountingStubCode
 
 

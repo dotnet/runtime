@@ -28,7 +28,7 @@ LEAF_ENTRY CallCountingStubCode, _TEXT
         je     CountReachedZero
         jmp    QWORD PTR [DATA_SLOT(CallCountingStub, TargetForMethod)]
     CountReachedZero:
-        call   QWORD PTR [DATA_SLOT(CallCountingStub, TargetForThresholdReached)]
+        jmp    QWORD PTR [DATA_SLOT(CallCountingStub, TargetForThresholdReached)]
 LEAF_END_MARKED CallCountingStubCode, _TEXT
 
 LEAF_ENTRY LookupStubCode, _TEXT

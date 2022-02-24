@@ -1197,13 +1197,7 @@ NESTED_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
 #ifdef FEATURE_TIERED_COMPILATION
 
-LEAF_ENTRY OnCallCountThresholdReachedStub, _TEXT
-    // Pop the return address (the stub-identifying token) into a non-argument volatile register that can be trashed
-    pop     eax
-    jmp     C_FUNC(OnCallCountThresholdReachedStub2)
-LEAF_END OnCallCountThresholdReachedStub, _TEXT
-
-NESTED_ENTRY OnCallCountThresholdReachedStub2, _TEXT, NoHandler
+NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     STUB_PROLOG
 
     mov     esi, esp
@@ -1226,6 +1220,6 @@ NESTED_ENTRY OnCallCountThresholdReachedStub2, _TEXT, NoHandler
     // This will never be executed. It is just to help out stack-walking logic
     // which disassembles the epilog to unwind the stack.
     ret
-NESTED_END OnCallCountThresholdReachedStub2, _TEXT
+NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION

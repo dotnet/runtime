@@ -91,16 +91,12 @@ class CallCountingStub
 public:
 #if defined(TARGET_AMD64)
     static const int CodeSize = 24;
-    static const int StubIdentifyingTokenOffset = 24;
 #elif defined(TARGET_X86)
     static const int CodeSize = 24;
-    static const int StubIdentifyingTokenOffset = 22;
 #elif defined(TARGET_ARM64)
     static const int CodeSize = 40;
-    static const int StubIdentifyingTokenOffset = 0;
 #elif defined(TARGET_ARM)
     static const int CodeSize = 32;
-    static const int StubIdentifyingTokenOffset = 0;
 #endif
 
 private:
@@ -157,34 +153,6 @@ protected:
 
     DISABLE_COPY(CallCountingStub);
 };
-
-////////////////////////////////////////////////////////////////
-// CallCountingStub definitions
-
-#ifndef DACCESS_COMPILE
-inline const CallCountingStub *CallCountingStub::From(TADDR stubIdentifyingToken)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(stubIdentifyingToken != NULL);
-
-    const CallCountingStub *stub = (const CallCountingStub *)(stubIdentifyingToken - StubIdentifyingTokenOffset);
-
-    _ASSERTE(IS_ALIGNED(stub, Alignment));
-    return stub;
-}
-#endif
-
-inline PTR_CallCount CallCountingStub::GetRemainingCallCountCell() const
-{
-    WRAPPER_NO_CONTRACT;
-    return GetData()->RemainingCallCountCell;
-}
-
-inline PCODE CallCountingStub::GetTargetForMethod() const
-{
-    WRAPPER_NO_CONTRACT;
-    return GetData()->TargetForMethod;
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CallCountingManager
@@ -398,6 +366,10 @@ public:
 
 public:
     static void StopAndDeleteAllCallCountingStubs();
+    static const CallCountingStub* GetCallCountingStub(CallCount *pCallCount)
+    {
+        return CallCountingInfo::From(pCallCount)->GetCallCountingStub();
+    }
 private:
     static void StopAllCallCounting(TieredCompilationManager *tieredCompilationManager);
     static void DeleteAllCallCountingStubs();
@@ -413,6 +385,35 @@ public:
 
     DISABLE_COPY(CallCountingManager);
 };
+
+////////////////////////////////////////////////////////////////
+// CallCountingStub definitions
+
+#ifndef DACCESS_COMPILE
+inline const CallCountingStub *CallCountingStub::From(TADDR stubIdentifyingToken)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(stubIdentifyingToken != NULL);
+
+    // The stubIdentifyingToken is the pointer to the CallCount
+    const CallCountingStub *stub = CallCountingManager::GetCallCountingStub((CallCount*)stubIdentifyingToken);
+
+    _ASSERTE(IS_ALIGNED(stub, Alignment));
+    return stub;
+}
+#endif
+
+inline PTR_CallCount CallCountingStub::GetRemainingCallCountCell() const
+{
+    WRAPPER_NO_CONTRACT;
+    return GetData()->RemainingCallCountCell;
+}
+
+inline PCODE CallCountingStub::GetTargetForMethod() const
+{
+    WRAPPER_NO_CONTRACT;
+    return GetData()->TargetForMethod;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CallCountingManager::CallCountingStubManager

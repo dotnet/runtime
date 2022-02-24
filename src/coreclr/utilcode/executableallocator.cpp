@@ -426,43 +426,43 @@ void ExecutableAllocator::Release(void* pRX)
 
     if (IsDoubleMappingEnabled())
     {
-	    CRITSEC_Holder csh(m_CriticalSection);
+        CRITSEC_Holder csh(m_CriticalSection);
 
-	    // Locate the RX block corresponding to the pRX and remove it from the linked list
-	    BlockRX* pBlock;
-	    BlockRX* pPrevBlock = NULL;
+        // Locate the RX block corresponding to the pRX and remove it from the linked list
+        BlockRX* pBlock;
+        BlockRX* pPrevBlock = NULL;
 
-	    for (pBlock = m_pFirstBlockRX; pBlock != NULL; pBlock = pBlock->next)
-	    {
-	        if (pRX == pBlock->baseRX)
-	        {
-	            if (pPrevBlock == NULL)
-	            {
-	                m_pFirstBlockRX = pBlock->next;
-	            }
-	            else
-	            {
-	                pPrevBlock->next = pBlock->next;
-	            }
+        for (pBlock = m_pFirstBlockRX; pBlock != NULL; pBlock = pBlock->next)
+        {
+            if (pRX == pBlock->baseRX)
+            {
+                if (pPrevBlock == NULL)
+                {
+                    m_pFirstBlockRX = pBlock->next;
+                }
+                else
+                {
+                    pPrevBlock->next = pBlock->next;
+                }
 
-	            break;
-	        }
-	        pPrevBlock = pBlock;
-	    }
+                break;
+            }
+            pPrevBlock = pBlock;
+        }
 
-	    if (pBlock != NULL)
-	    {
+        if (pBlock != NULL)
+        {
             VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size);
             // Put the released block into the free block list
-	        pBlock->baseRX = NULL;
-	        pBlock->next = m_pFirstFreeBlockRX;
-	        m_pFirstFreeBlockRX = pBlock;
-	    }
-	    else
-	    {
-	        // The block was not found, which should never happen.
-	        g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RX block to release was not found"));
-	    }
+            pBlock->baseRX = NULL;
+            pBlock->next = m_pFirstFreeBlockRX;
+            m_pFirstFreeBlockRX = pBlock;
+        }
+        else
+        {
+            // The block was not found, which should never happen.
+            g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RX block to release was not found"));
+        }
     }
     else
     {
@@ -573,9 +573,9 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
         bool isFreeBlock;
         BlockRX* block = AllocateBlock(size, &isFreeBlock);
         if (block == NULL)
-	    {
-	        return NULL;
-	    }
+        {
+            return NULL;
+        }
 
         void *result = VMToOSInterface::ReserveDoubleMappedMemory(m_doubleMemoryMapperHandle, block->offset, size, loAddress, hiAddress);
 
@@ -660,14 +660,14 @@ void* ExecutableAllocator::Reserve(size_t size)
     {
         if (IsDoubleMappingEnabled())
         {
-    	    CRITSEC_Holder csh(m_CriticalSection);
+            CRITSEC_Holder csh(m_CriticalSection);
 
-	        bool isFreeBlock;
+            bool isFreeBlock;
             BlockRX* block = AllocateBlock(size, &isFreeBlock);
-	        if (block == NULL)
-	        {
-	            return NULL;
-	        }
+            if (block == NULL)
+            {
+                return NULL;
+            }
 
             result = (BYTE*)VMToOSInterface::ReserveDoubleMappedMemory(m_doubleMemoryMapperHandle, block->offset, size, 0, 0);
 
@@ -753,7 +753,7 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size)
     }
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-	StopWatch swAll(&g_mapTimeWithLockSum);
+    StopWatch swAll(&g_mapTimeWithLockSum);
 #endif
 
     CRITSEC_Holder csh(m_CriticalSection);
@@ -762,13 +762,13 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size)
     StopWatch sw(&g_mapTimeSum);
 #endif
 
-	void* result = FindRWBlock(pRX, size);
-	if (result != NULL)
-	{
-	    return result;
-	}
+    void* result = FindRWBlock(pRX, size);
+    if (result != NULL)
+    {
+        return result;
+    }
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-	StopWatch sw2(&g_mapFindRXTimeSum);
+    StopWatch sw2(&g_mapFindRXTimeSum);
 #endif
 
     for (BlockRX* pBlock = m_pFirstBlockRX; pBlock != NULL; pBlock = pBlock->next)
@@ -836,10 +836,10 @@ void ExecutableAllocator::UnmapRW(void* pRW)
     void* unmapAddress = NULL;
     size_t unmapSize;
 
-	if (!RemoveRWBlock(pRW, &unmapAddress, &unmapSize))
-	{
-	    g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RW block to unmap was not found"));
-	}
+    if (!RemoveRWBlock(pRW, &unmapAddress, &unmapSize))
+    {
+        g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RW block to unmap was not found"));
+    }
 
     if (unmapAddress && !VMToOSInterface::ReleaseRWMapping(unmapAddress, unmapSize))
     {
