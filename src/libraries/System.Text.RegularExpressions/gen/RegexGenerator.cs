@@ -25,31 +25,31 @@ namespace System.Text.RegularExpressions.Generator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            // To avoid invalidating the generator's output when anything from the compilation
+            // changes, we will extract from it the only thing we care about: whether unsafe
+            // code is allowed.
+            IncrementalValueProvider<bool> allowUnsafeProvider =
+                context.CompilationProvider
+                .Select((x, _) => x.Options is CSharpCompilationOptions { AllowUnsafe: true });
+
             // Contains one entry per regex method, either the generated code for that regex method,
             // a diagnostic to fail with, or null if no action should be taken for that regex.
             IncrementalValueProvider<ImmutableArray<object?>> codeOrDiagnostics =
                 context.SyntaxProvider
 
-                // Find all MethodDeclarationSyntax nodes attributed with RegexGenerator
-                .CreateSyntaxProvider(static (s, _) => IsSyntaxTargetForGeneration(s), static (ctx, _) => GetSemanticTargetForGeneration(ctx))
+                // Find all MethodDeclarationSyntax nodes attributed with RegexGenerator and gather the required information
+                .CreateSyntaxProvider(IsSyntaxTargetForGeneration, GetSemanticTargetForGeneration)
                 .Where(static m => m is not null)
 
-                // Pair each with the compilation
-                .Combine(context.CompilationProvider)
+                // Pair each with whether unsafe code is allowed
+                .Combine(allowUnsafeProvider)
 
-                // Use a custom comparer that ignores the compilation. We want to avoid regenerating for regex methods
-                // that haven't been changed, but any change to a regex method will change the Compilation, so we ignore
-                // the Compilation for purposes of caching.
-                .WithComparer(new LambdaComparer<(MethodDeclarationSyntax?, Compilation)>(
-                    static (left, right) => EqualityComparer<MethodDeclarationSyntax>.Default.Equals(left.Item1, right.Item1),
-                    static o => o.Item1?.GetHashCode() ?? 0))
-
-                // Get the resulting code string or error Diagnostic for each MethodDeclarationSyntax/Compilation pair
-                .Select((state, cancellationToken) =>
+                // Get the resulting code string or error Diagnostic for
+                // each MethodDeclarationSyntax/allow-unsafe-blocks pair
+                .Select((state, _) =>
                 {
-                    Debug.Assert(state.Item1 is not null);
-                    object? result = GetRegexTypeToEmit(state.Item2, state.Item1, cancellationToken);
-                    return result is RegexType regexType ? EmitRegexType(regexType, state.Item2) : result;
+                    Debug.Assert(state.Left is not null);
+                    return state.Left is RegexType regexType ? EmitRegexType(regexType, state.Right) : state.Left;
                 })
                 .Collect();
 
@@ -82,22 +82,6 @@ namespace System.Text.RegularExpressions.Generator
 
                 context.AddSource("RegexGenerator.g.cs", string.Join(Environment.NewLine, code));
             });
-        }
-
-        private sealed class LambdaComparer<T> : IEqualityComparer<T>
-        {
-            private readonly Func<T?, T?, bool> _equal;
-            private readonly Func<T?, int> _getHashCode;
-
-            public LambdaComparer(Func<T?, T?, bool> equal, Func<T?, int> getHashCode)
-            {
-                _equal = equal;
-                _getHashCode = getHashCode;
-            }
-
-            public bool Equals(T? x, T? y) => _equal(x, y);
-
-            public int GetHashCode(T obj) => _getHashCode(obj);
         }
     }
 }
