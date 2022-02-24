@@ -160,7 +160,7 @@ steps:
       workingDirectory: $(Build.SourcesDirectory)/MauiTesting
   # -- end newmaui --
 
-  - ${{ if eq(parameters.appname, "podcast" }}:
+  - ${{ if eq(parameters.appname, "podcast") }}:
     # -- clone podcast app --
     - script: |
         set -x
