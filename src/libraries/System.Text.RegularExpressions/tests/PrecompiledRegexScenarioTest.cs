@@ -70,7 +70,7 @@ dsdf137success3245somethingold";
             RegexTestClass testClass = new RegexTestClass();
 
             Assert.Equal(new[] { "", "4", "success", "\n", "5", "success", "\n", "6", "success", "\n", "7", "success", "" }, testClass.Split(textWithMultipleMatches));
-            Assert.Equal(new[] { "", "4", "success", "\nbsdf135success1245somethingelse\r\ncsdf136success2245somethingnew\r\ndsdf137success3245somethingold" }, testClass.Split(textWithMultipleMatches, 2));
+            Assert.Equal(new[] { "", "4", "success", $"\nbsdf135success1245somethingelse{Environment.NewLine}csdf136success2245somethingnew{Environment.NewLine}dsdf137success3245somethingold" }, testClass.Split(textWithMultipleMatches, 2));
         }
 
         [Fact]
