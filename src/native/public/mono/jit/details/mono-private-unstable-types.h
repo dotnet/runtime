@@ -1,5 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+//
 /**
- * \file
  *
  * Private unstable APIs.
  *
@@ -7,14 +9,14 @@
  * any time.
  *
  */
+#ifndef _MONO_JIT_PRIVATE_UNSTABLE_TYPES_H
+#define _MONO_JIT_PRIVATE_UNSTABLE_TYPES_H
 
+#include <mono/utils/details/mono-publib-types.h>
+#include <mono/metadata/details/image-types.h>
+#include <mono/metadata/details/mono-private-unstable-types.h>
 
-#ifndef __MONO_JIT_MONO_PRIVATE_UNSTABLE_H__
-#define __MONO_JIT_MONO_PRIVATE_UNSTABLE_H__
-
-#include <mono/utils/mono-publib.h>
-#include <mono/metadata/image.h>
-#include <mono/metadata/mono-private-unstable.h>
+MONO_BEGIN_DECLS
 
 typedef struct {
 	uint32_t kind; // 0 = Path of runtimeconfig.blob, 1 = pointer to image data, >= 2 undefined
@@ -58,24 +60,11 @@ typedef struct {
 typedef unsigned char* (*MonoLoadAotDataFunc)          (MonoAssembly *assembly, int size, void* user_data, void **out_handle);
 /* Not yet used */
 typedef void  (*MonoFreeAotDataFunc)          (MonoAssembly *assembly, int size, void* user_data, void *handle);
-MONO_API MONO_RT_EXTERNAL_ONLY void
-mono_install_load_aot_data_hook (MonoLoadAotDataFunc load_func, MonoFreeAotDataFunc free_func, void* user_data);
-
-MONO_API int
-monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues);
-
-MONO_API int
-monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void *user_data);
-
-// The wrapper MonoCoreRuntimeProperties struct can be stack-allocated or freed, but the structs inside it _must_ be heap-allocated and never freed, as they are not copied to avoid extra allocations
-MONO_API int
-monovm_initialize_preparsed (MonoCoreRuntimeProperties *parsed_properties, int propertyCount, const char **propertyKeys, const char **propertyValues);
 
 //#ifdef HOST_WASM
 typedef void* (*MonoWasmGetNativeToInterpTramp) (MonoMethod *method, void *extra_arg);
-
-MONO_API void
-mono_wasm_install_get_native_to_interp_tramp (MonoWasmGetNativeToInterpTramp cb);
 //#endif
 
-#endif /*__MONO_JIT_MONO_PRIVATE_UNSTABLE_H__*/
+MONO_END_DECLS
+
+#endif /* _MONO_JIT_PRIVATE_UNSTABLE_TYPES_H */
