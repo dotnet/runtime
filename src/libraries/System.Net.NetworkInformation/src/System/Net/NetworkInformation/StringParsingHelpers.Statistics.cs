@@ -175,7 +175,7 @@ namespace System.Net.NetworkInformation
         // Parses ICMP v4 statistics from /proc/net/snmp
         public static Icmpv4StatisticsTable ParseIcmpv4FromSnmpFile(string filePath)
         {
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
             int firstIpHeader = fileContents.IndexOf("Icmp:", StringComparison.Ordinal);
             int secondIpHeader = fileContents.IndexOf("Icmp:", firstIpHeader + 1, StringComparison.Ordinal);
             int inCsumErrorsIdx = fileContents.IndexOf("InCsumErrors", firstIpHeader + 1, StringComparison.Ordinal);
@@ -219,7 +219,7 @@ namespace System.Net.NetworkInformation
 
         public static Icmpv6StatisticsTable ParseIcmpv6FromSnmp6File(string filePath)
         {
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
             RowConfigReader reader = new RowConfigReader(fileContents);
             bool hasIcmp6OutErrors = fileContents.Contains("Icmp6OutErrors");
 
@@ -262,7 +262,7 @@ namespace System.Net.NetworkInformation
 
         public static IPGlobalStatisticsTable ParseIPv4GlobalStatisticsFromSnmpFile(string filePath)
         {
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
 
             int firstIpHeader = fileContents.IndexOf("Ip:", StringComparison.Ordinal);
             int secondIpHeader = fileContents.IndexOf("Ip:", firstIpHeader + 1, StringComparison.Ordinal);
@@ -300,7 +300,7 @@ namespace System.Net.NetworkInformation
         internal static IPGlobalStatisticsTable ParseIPv6GlobalStatisticsFromSnmp6File(string filePath)
         {
             // Read the remainder of statistics from snmp6.
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
             RowConfigReader reader = new RowConfigReader(fileContents);
 
             return new IPGlobalStatisticsTable()
@@ -329,7 +329,7 @@ namespace System.Net.NetworkInformation
         {
             // NOTE: There is no information in the snmp6 file regarding TCP statistics,
             // so the statistics are always pulled from /proc/net/snmp.
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
             int firstTcpHeader = fileContents.IndexOf("Tcp:", StringComparison.Ordinal);
             int secondTcpHeader = fileContents.IndexOf("Tcp:", firstTcpHeader + 1, StringComparison.Ordinal);
             int inCsumErrorsIdx = fileContents.IndexOf("InCsumErrors", firstTcpHeader + 1, StringComparison.Ordinal);
@@ -361,7 +361,7 @@ namespace System.Net.NetworkInformation
 
         internal static UdpGlobalStatisticsTable ParseUdpv4GlobalStatisticsFromSnmpFile(string filePath)
         {
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
             int firstUdpHeader = fileContents.IndexOf("Udp:", StringComparison.Ordinal);
             int secondUdpHeader = fileContents.IndexOf("Udp:", firstUdpHeader + 1, StringComparison.Ordinal);
             int inCsumErrorsIdx = fileContents.IndexOf("InCsumErrors", firstUdpHeader + 1, StringComparison.Ordinal);
@@ -385,7 +385,7 @@ namespace System.Net.NetworkInformation
 
         internal static UdpGlobalStatisticsTable ParseUdpv6GlobalStatisticsFromSnmp6File(string filePath)
         {
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
             RowConfigReader reader = new RowConfigReader(fileContents);
             bool hasUdp6Errors = fileContents.Contains("Udp6SndbufErrors");
 
@@ -403,7 +403,7 @@ namespace System.Net.NetworkInformation
 
         internal static IPInterfaceStatisticsTable ParseInterfaceStatisticsTableFromFile(string filePath, string name)
         {
-            using (StreamReader sr = new StreamReader(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false)))
+            using (StreamReader sr = OpenStreamReader(filePath))
             {
                 sr.ReadLine();
                 sr.ReadLine();
