@@ -410,7 +410,7 @@ namespace
 //
 // Arguments:
 //     * info - see file:../inc/CLRConfig.h for details.
-//
+//     * isDefault - the value was not set or had an invalid format so the default was returned.
 //     * result - the result.
 //
 // Return value:
@@ -431,9 +431,7 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, /* [Out] */ bool *
 
     DWORD resultMaybe;
     HRESULT hr = GetConfigDWORD(info.name, info.defaultValue, &resultMaybe, info.options);
-
-    // Ignore the default value even if it's set explicitly.
-    if (resultMaybe != info.defaultValue)
+    if (SUCCEEDED(hr))
     {
         *isDefault = false;
         return resultMaybe;

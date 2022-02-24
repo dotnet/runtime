@@ -32,7 +32,7 @@ namespace System.Net.Http.Headers
         /// <returns>true if the collection contains the header; otherwise, false.</returns>
         public bool Contains(string headerName) =>
             _headers is HttpHeaders headers &&
-            HeaderDescriptor.TryGet(headerName, out HeaderDescriptor descriptor) &&
+            headers.TryGetHeaderDescriptor(headerName, out HeaderDescriptor descriptor) &&
             headers.TryGetHeaderValue(descriptor, out _);
 
         /// <summary>Gets the values for the specified header name.</summary>
@@ -62,7 +62,7 @@ namespace System.Net.Http.Headers
         public bool TryGetValues(string headerName, out HeaderStringValues values)
         {
             if (_headers is HttpHeaders headers &&
-                HeaderDescriptor.TryGet(headerName, out HeaderDescriptor descriptor) &&
+                headers.TryGetHeaderDescriptor(headerName, out HeaderDescriptor descriptor) &&
                 headers.TryGetHeaderValue(descriptor, out object? info))
             {
                 HttpHeaders.GetStoreValuesAsStringOrStringArray(descriptor, info, out string? singleValue, out string[]? multiValue);

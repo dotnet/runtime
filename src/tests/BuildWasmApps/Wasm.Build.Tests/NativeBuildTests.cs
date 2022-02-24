@@ -32,9 +32,10 @@ namespace Wasm.Build.Tests
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
             BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                        dotnetWasmFromRuntimePack: false,
-                        id: id);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                                DotnetWasmFromRuntimePack: false));
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42,
                         test: output => {},
@@ -57,10 +58,11 @@ namespace Wasm.Build.Tests
 
             (_, string output) = BuildProject(
                                     buildArgs,
-                                    initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                                    dotnetWasmFromRuntimePack: false,
                                     id: id,
-                                    expectSuccess: false);
+                                    new BuildProjectOptions(
+                                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                                        DotnetWasmFromRuntimePack: false,
+                                        ExpectSuccess: false));
 
             Assert.Contains("Stopping after AOT", output);
         }
@@ -89,9 +91,10 @@ namespace Wasm.Build.Tests
             buildArgs = ExpandBuildArgs(buildArgs, insertAtEnd: printFileTypeTarget);
 
             (_, string output) = BuildProject(buildArgs,
-                                    initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                                    dotnetWasmFromRuntimePack: false,
-                                    id: id);
+                                    id: id,
+                                    new BuildProjectOptions(
+                                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                                        DotnetWasmFromRuntimePack: false));
 
             if (!output.Contains("** wasm-dis exit code: 0"))
                 throw new XunitException($"Expected to successfully run wasm-dis on System.Private.CoreLib.dll.o ."

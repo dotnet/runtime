@@ -2113,6 +2113,44 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        public void AddHeaders_ResponseHeaderToRequestHeaders_Success()
+        {
+            const string Name = "WWW-Authenticate";
+            const string Value = "Basic realm=\"Access to the staging site\", charset=\"UTF-8\"";
+
+            var request = new HttpRequestMessage();
+            Assert.True(request.Headers.TryAddWithoutValidation(Name, Value));
+
+            Assert.True(request.Headers.Contains(Name));
+            Assert.True(request.Headers.NonValidated.Contains(Name));
+
+            Assert.True(request.Headers.TryGetValues(Name, out IEnumerable<string> values));
+            Assert.Equal(Value, values.Single());
+
+            Assert.True(request.Headers.NonValidated.TryGetValues(Name, out HeaderStringValues nvValues));
+            Assert.Equal(Value, nvValues.Single());
+        }
+
+        [Fact]
+        public void AddHeaders_RequestHeaderToResponseHeaders_Success()
+        {
+            const string Name = "Referer";
+            const string Value = "https://dot.net";
+
+            var response = new HttpResponseMessage();
+            Assert.True(response.Headers.TryAddWithoutValidation(Name, Value));
+
+            Assert.True(response.Headers.Contains(Name));
+            Assert.True(response.Headers.NonValidated.Contains(Name));
+
+            Assert.True(response.Headers.TryGetValues(Name, out IEnumerable<string> values));
+            Assert.Equal(Value, values.Single());
+
+            Assert.True(response.Headers.NonValidated.TryGetValues(Name, out HeaderStringValues nvValues));
+            Assert.Equal(Value, nvValues.Single());
+        }
+
+        [Fact]
         public void HeaderStringValues_Default_Empty()
         {
             HeaderStringValues v = default;

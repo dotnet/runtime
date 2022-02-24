@@ -19,7 +19,7 @@ namespace DebuggerTests
             { "MONO_TYPE_CHAR",        TSymbol("0 '\u0000'"),                                   TSymbol("97 'a'") },
             { "MONO_TYPE_STRING",      TString(default),                                        TString("hello") },
             { "MONO_TYPE_ENUM",        TEnum("DebuggerTests.RGB", "Red"),                       TEnum("DebuggerTests.RGB", "Blue") },
-            { "MONO_TYPE_ARRAY",       TObject("byte[]", is_null: true),                        TArray("byte[]", 2) },
+            { "MONO_TYPE_ARRAY",       TObject("byte[]", is_null: true),                        TArray("byte[]", "byte[2]") },
             { "MONO_TYPE_VALUETYPE",   TValueType("DebuggerTests.Point"),                       TValueType("DebuggerTests.Point") },
             { "MONO_TYPE_VALUETYPE2",  TValueType("System.Decimal","0"),                        TValueType("System.Decimal", "1.1") },
             { "MONO_TYPE_GENERICINST", TObject("System.Func<int>", is_null: true),              TDelegate("System.Func<int>", "int Prepare ()") },

@@ -173,7 +173,8 @@ private:
     };
 
 public:
-    static SIZE_T DetermineTotalByteCount(SIZE_T dataByteCount);
+    static SIZE_T GetUsedByteCount(SIZE_T dataByteCount);
+    static SIZE_T GetTotalByteCount(SIZE_T dataByteCount);
 
 public:
     SharedMemorySharedDataHeader(SharedMemoryType type, UINT8 version);

@@ -234,6 +234,8 @@ namespace System
             }
         }
 
+        public static bool CanRunImpersonatedTests => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsWindowsAndElevated;
+
         private static int s_isWindowsElevated = -1;
         public static bool IsWindowsAndElevated
         {

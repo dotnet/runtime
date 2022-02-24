@@ -215,7 +215,7 @@ namespace System.IO.Hashing
             int totalLength = source.Length;
             State state = new State((uint)seed);
 
-            while (source.Length > StripeSize)
+            while (source.Length >= StripeSize)
             {
                 state.ProcessStripe(source);
                 source = source.Slice(StripeSize);

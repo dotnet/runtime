@@ -553,7 +553,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     args["details"]  = await SdbHelper.GetPointerContent(id, int.Parse(objectId.Value), token);
                     break;
                 case "array":
-                    args["details"]  = await SdbHelper.GetArrayValues(id, int.Parse(objectId.Value), token);
+                    args["details"]  = await SdbHelper.GetArrayValuesProxy(id, int.Parse(objectId.Value), token);
                     break;
                 case "cfo_res":
                 {

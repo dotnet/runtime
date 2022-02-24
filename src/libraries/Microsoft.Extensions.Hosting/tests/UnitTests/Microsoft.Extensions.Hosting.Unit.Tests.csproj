@@ -18,4 +18,10 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Workaround for https://github.com/dotnet/runtime/issues/63467 -->
+    <SuggestedBindingRedirects Include="Microsoft.Extensions.Hosting, Culture=neutral, PublicKeyToken=adb9793829ddae60"
+                               MaxVersion="$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)" />
+  </ItemGroup>
+
 </Project>

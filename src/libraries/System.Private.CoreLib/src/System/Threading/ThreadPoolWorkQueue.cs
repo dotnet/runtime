@@ -389,6 +389,7 @@ namespace System.Threading
         }
 
         internal bool loggingEnabled;
+        private bool _dispatchTimeSensitiveWorkFirst;
         internal readonly ConcurrentQueue<object> workItems = new ConcurrentQueue<object>(); // SOS's ThreadPool command depends on this name
         internal readonly ConcurrentQueue<IThreadPoolWorkItem>? timeSensitiveWorkQueue =
             ThreadPool.SupportsTimeSensitiveWorkItems ? new ConcurrentQueue<IThreadPoolWorkItem>() : null;
@@ -650,6 +651,21 @@ namespace System.Threading
                 int startTickCount = Environment.TickCount;
 
                 object? workItem = null;
+#pragma warning disable CS0162 // Unreachable code detected. SupportsTimeSensitiveWorkItems may be a constant in some runtimes.
+                if (ThreadPool.SupportsTimeSensitiveWorkItems)
+                {
+                    // Alternate between checking for time-sensitive work or other work first, that way both sets of work items
+                    // get a chance to run in situations where worker threads are starved and work items that run also take over
+                    // the thread, sustaining starvation. For example, if time-sensitive work is always checked last here, timer
+                    // callbacks may not run when worker threads are continually starved.
+                    bool dispatchTimeSensitiveWorkFirst = workQueue._dispatchTimeSensitiveWorkFirst;
+                    workQueue._dispatchTimeSensitiveWorkFirst = !dispatchTimeSensitiveWorkFirst;
+                    if (dispatchTimeSensitiveWorkFirst)
+                    {
+                        workItem = workQueue.TryDequeueTimeSensitiveWorkItem();
+                    }
+                }
+#pragma warning restore CS0162
 
                 //
                 // Loop until our quantum expires or there is no work.

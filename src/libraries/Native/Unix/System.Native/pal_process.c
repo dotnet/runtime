@@ -191,6 +191,24 @@ static int SetGroups(uint32_t* userGroups, int32_t userGroupsLength, uint32_t* p
     return rv;
 }
 
+typedef void (*VoidIntFn)(int);
+
+static
+VoidIntFn
+handler_from_sigaction (struct sigaction *sa)
+{
+    if (((unsigned int)sa->sa_flags) & SA_SIGINFO)
+    {
+        // work around -Wcast-function-type
+        void (*tmp)(void) = (void (*)(void))sa->sa_sigaction;
+        return (void (*)(int))tmp;
+    }
+    else
+    {
+        return sa->sa_handler;
+    }
+}
+
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
@@ -371,7 +389,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             }
             if (!sigaction(sig, NULL, &sa_old))
             {
-                void (*oldhandler)(int) = (((unsigned int)sa_old.sa_flags) & SA_SIGINFO) ? (void (*)(int))sa_old.sa_sigaction : sa_old.sa_handler;
+                void (*oldhandler)(int) = handler_from_sigaction (&sa_old);
                 if (oldhandler != SIG_IGN && oldhandler != SIG_DFL)
                 {
                     // It has a custom handler, put the default handler back.

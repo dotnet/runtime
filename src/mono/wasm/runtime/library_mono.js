@@ -699,8 +699,11 @@ var MonoSupportLib = {
 		_create_proxy_from_object_id: function (objectId, details) {
 			if (objectId.startsWith ('dotnet:array:'))
 			{
-				let ret = details.map (p => p.value);
-				return ret;
+				if (details.dimensionsDetails == undefined || details.dimensionsDetails.length == 1)
+				{
+					const ret = details.items.map (p => p.value);
+					return ret;
+				}
 			}
 
 			let proxy = {};
@@ -1503,8 +1506,12 @@ var MonoSupportLib = {
 	mono_set_timeout: function (timeout, id) {
 
 		if (typeof globalThis.setTimeout === 'function') {
-			globalThis.setTimeout (function () {
-				MONO.mono_wasm_set_timeout_exec (id);
+			if (MONO.lastScheduleTimeoutId) {
+				globalThis.clearTimeout(MONO.lastScheduleTimeoutId);
+				MONO.lastScheduleTimeoutId = undefined;
+			}
+			MONO.lastScheduleTimeoutId = globalThis.setTimeout(function mono_wasm_set_timeout_exec () {
+				MONO.mono_wasm_set_timeout_exec(id);
 			}, timeout);
 		} else {
 			++MONO.pump_count;

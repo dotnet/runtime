@@ -807,3 +807,15 @@ public class MyIncrementer
         return count + 1;
     }
 }
+
+public class DebugTypeFull
+{
+    public static void CallToEvaluateLocal(string asm_base64, string pdb_base64)
+    {
+        var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-full-debug-type.dll");
+        var myType = asm.GetType("DebuggerTests.ClassToInspectWithDebugTypeFull");
+        var myMethod = myType.GetConstructor(new Type[] { });
+        var a = myMethod.Invoke(new object[]{});
+        System.Diagnostics.Debugger.Break();
+    }
+}

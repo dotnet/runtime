@@ -19,6 +19,24 @@ public class Program
         WithoutGCRef poisoned2;
         Unsafe.SkipInit(out poisoned2);
         result &= VerifyPoison(&poisoned2, sizeof(WithoutGCRef));
+        
+        Massive notPoisoned;
+        Unsafe.SkipInit(out notPoisoned);
+        // too large to be poisoned, just expose it but don't check return value
+        VerifyPoison(&notPoisoned, sizeof(Massive));
+
+        WithoutGCRef poisoned4;
+        Unsafe.SkipInit(out poisoned4);
+        result &= VerifyPoison(&poisoned4, sizeof(WithoutGCRef));
+
+        Massive notPoisoned2;
+        Unsafe.SkipInit(out notPoisoned2);
+        // too large to be poisoned, just expose it but don't check return value
+        VerifyPoison(&notPoisoned2, sizeof(Massive));
+
+        GCRef zeroed2;
+        Unsafe.SkipInit(out zeroed2);
+        result &= VerifyZero(Unsafe.AsPointer(ref zeroed2), Unsafe.SizeOf<GCRef>());
 
         return result ? 100 : 101;
     }
@@ -52,5 +70,10 @@ public class Program
         public double ADouble;
         public int ANumber;
         public float AFloat;
+    }
+    
+    private unsafe struct Massive
+    {
+        public fixed byte Bytes[0x10008];
     }
 }
