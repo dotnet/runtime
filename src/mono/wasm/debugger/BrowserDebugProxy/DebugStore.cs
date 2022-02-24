@@ -336,7 +336,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public DebuggerAttributesInfo DebuggerAttrInfo { get; set; }
         public TypeInfo TypeInfo { get; }
         public bool HasSequencePoints { get => !DebugInformation.SequencePointsBlob.IsNil; }
-        public ParameterInfo[] ParametersInfo { get; private set; }
+        private ParameterInfo[] _parametersInfo;
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
         {
@@ -406,11 +406,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 DebuggerAttrInfo.ClearInsignificantAttrFlags();
             }
             localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
-            ParametersInfo = GetMethodParamsInfo();
         }
 
-        public ParameterInfo[] GetMethodParamsInfo()
+        public ParameterInfo[] GetParametersInfo()
         {
+            if (_parametersInfo != null)
+                return _parametersInfo;
+
             var paramsHandles = methodDef.GetParameters().ToArray();
             var paramsCnt = paramsHandles.Length;
             var paramsInfo = new ParameterInfo[paramsCnt];
@@ -434,6 +436,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     paramBytes
                 );
             }
+            _parametersInfo = paramsInfo;
             return paramsInfo;
         }
 

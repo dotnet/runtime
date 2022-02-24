@@ -426,13 +426,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         int passedArgsCnt = method.ArgumentList.Arguments.Count;
                         int methodParamsCnt = passedArgsCnt;
-                        List<ParameterInfo> methodParamsInfo = null;
+                        ParameterInfo[] methodParamsInfo = null;
                         logger.LogInformation($"passed: {passedArgsCnt}, isExtensionMethod: {isExtensionMethod}");
                         var methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
                         if (methodInfo != null) //FIXME: #65670
                         {
-                            methodParamsInfo = methodInfo.Info.ParametersInfo.ToList();
-                            methodParamsCnt = methodParamsInfo.Count;
+                            methodParamsInfo = methodInfo.Info.GetParametersInfo();
+                            methodParamsCnt = methodParamsInfo.Length;
                             logger.LogInformation($"got method info with {methodParamsCnt} params");
                             if (isExtensionMethod)
                             {
