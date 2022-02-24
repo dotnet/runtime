@@ -1385,7 +1385,7 @@ namespace System.Collections.Immutable
 
         private ICollection<int>? FindOrderedIndicesToRemoveByMultiSet(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer)
         {
-            var multiSet = new MultiSet(equalityComparer);
+            var multiSet = new MultiSet<T>(equalityComparer);
             foreach (T item in items)
             {
                 multiSet.Add(item);
@@ -1396,7 +1396,7 @@ namespace System.Collections.Immutable
 
         private ICollection<int>? FindOrderedIndicesToRemoveByMultiSet(ReadOnlySpan<T> items, IEqualityComparer<T>? equalityComparer)
         {
-            var multiSet = new MultiSet(equalityComparer);
+            var multiSet = new MultiSet<T>(equalityComparer);
             foreach (ref readonly T item in items)
             {
                 multiSet.Add(item);
@@ -1405,7 +1405,7 @@ namespace System.Collections.Immutable
             return GetOrderedIndicesToRemoveFor(multiSet);
         }
 
-        private ICollection<int>? GetOrderedIndicesToRemoveFor(MultiSet multiSet)
+        private ICollection<int>? GetOrderedIndicesToRemoveFor(MultiSet<T> multiSet)
         {
             List<int>? indicesToRemove = null;
             for (int i = 0; i < array!.Length; i++)
@@ -1432,97 +1432,6 @@ namespace System.Collections.Immutable
             }
 
             return indicesToRemove;
-        }
-
-        private struct MultiSet
-        {
-            private readonly IEqualityComparer<T> _equalityComparer;
-            private readonly Dictionary<int, LinkedList<(T value, int count)>> _dictionary = new();
-
-            public MultiSet()
-            {
-                _equalityComparer = EqualityComparer<T>.Default;
-            }
-
-            public MultiSet(IEqualityComparer<T>? equalityComparer)
-            {
-                _equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
-            }
-
-            public void Add(T item)
-            {
-                int hashCode = _equalityComparer.GetHashCode(item!);
-
-#if NET6_0_OR_GREATER
-                ref LinkedList<(T value, int count)>? list = ref CollectionsMarshal.GetValueRefOrAddDefault(_dictionary, hashCode, out bool exists);
-                if (exists)
-#else
-                if (_dictionary.TryGetValue(hashCode, out LinkedList<(T value, int count)>? list))
-#endif
-                {
-                    Debug.Assert(list != null && list.First != null);
-                    for (LinkedListNode<(T value, int count)>? node = list.First; node != null; node = node.Next)
-                    {
-#if NET5_0_OR_GREATER
-                        ref (T value, int count) nodeValue = ref node.ValueRef;
-#else
-                        (T value, int count) nodeValue = node.Value;
-#endif
-                        if (_equalityComparer.Equals(item, nodeValue.value))
-                        {
-                            nodeValue.count++;
-#if !NET5_0_OR_GREATER
-                            node.Value = nodeValue;
-#endif
-                            return;
-                        }
-                    }
-
-                    list.AddLast((item, 1));
-                }
-                else
-                {
-                    list = new LinkedList<(T value, int count)>();
-                    list.AddFirst((item, 1));
-
-#if !NET6_0_OR_GREATER
-            _dictionary[hashCode] = list;
-#endif
-                }
-            }
-
-            public bool TryRemove(T item)
-            {
-                int hashCode = _equalityComparer.GetHashCode(item!);
-                if (!_dictionary.TryGetValue(hashCode, out LinkedList<(T value, int count)>? list))
-                {
-                    return false;
-                }
-
-                for (LinkedListNode<(T value, int count)>? node = list.First; node != null; node = node.Next)
-                {
-#if NET5_0_OR_GREATER
-                    ref (T value, int count) nodeValue = ref node.ValueRef;
-#else
-                    (T value, int count) nodeValue = node.Value;
-#endif
-                    if (_equalityComparer.Equals(item, nodeValue.value))
-                    {
-                        if (nodeValue.count == 0)
-                        {
-                            return false;
-                        }
-
-                        nodeValue.count--;
-#if !NET5_0_OR_GREATER
-                        node.Value = nodeValue;
-#endif
-                        return true;
-                    }
-                }
-
-                return false;
-            }
         }
     }
 }
