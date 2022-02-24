@@ -225,6 +225,10 @@ namespace ILLink.RoslynAnalyzer
 					ISymbol member,
 					ImmutableArray<ISymbol> incompatibleMembers)
 				{
+					// Do not emit diagnostics if the operation is nameof()
+					if (operationContext.Operation.Parent is IOperation operation && operation.Kind == OperationKind.NameOf)
+						return;
+
 					ISymbol containingSymbol = FindContainingSymbol (operationContext, AnalyzerDiagnosticTargets);
 
 					// Do not emit any diagnostic if caller is annotated with the attribute too.
