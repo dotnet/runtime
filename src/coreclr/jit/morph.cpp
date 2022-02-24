@@ -11541,6 +11541,37 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
             break;
 
+        case GT_IND:
+        {
+            // Fold IND(LDELEMA_REF(obj, index, type)) to INDEX(obj, index) if type is exact
+            if (op1->IsCall())
+            {
+                GenTreeCall* call = op1->AsCall();
+                if ((call->gtCallType == CT_HELPER) &&
+                    (eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_LDELEMA_REF))
+                {
+                    GenTree*             objOp   = call->gtCallArgs->GetNode();
+                    GenTree*             indexOp = call->gtCallArgs->GetNext()->GetNode();
+                    GenTree*             clsOp   = call->gtCallArgs->GetNext()->GetNext()->GetNode();
+                    CORINFO_CLASS_HANDLE cls     = gtGetHelperArgClassHandle(clsOp);
+                    if ((cls != NO_CLASS_HANDLE) && impIsClassExact(cls))
+                    {
+                        JITDUMP("Folding\n");
+                        DISPTREE(tree);
+                        GenTree* newTree = gtNewIndexRef(TYP_REF, objOp, indexOp);
+                        JITDUMP("\nTo\n");
+                        DISPTREE(newTree);
+
+                        newTree = fgMorphTree(newTree);
+                        assert(newTree->gtEffectiveVal()->OperIs(GT_IND));
+                        newTree->gtEffectiveVal()->gtFlags |= (tree->gtFlags & GTF_IND_FLAGS);
+                        return newTree;
+                    }
+                }
+            }
+            break;
+        }
+
         case GT_EQ:
         case GT_NE:
         {
