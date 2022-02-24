@@ -1,5 +1,6 @@
 # For feature detection to work correctly, this needs to be outside of the conditional.
 set(EP_GENERATED_HEADER_PATH "${MONO_EVENTPIPE_GEN_INCLUDE_PATH}")
+include(../../../../eng/native/configurepaths.cmake)
 include(${SHARED_EVENTPIPE_SOURCE_PATH}configure.cmake)
 
 if(ENABLE_PERFTRACING)
