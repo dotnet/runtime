@@ -135,6 +135,17 @@
   <data name="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage" xml:space="preserve">
     <value>Native type '{0}' has a constructor taking a caller-allocated buffer, but does not support marshalling in scenarios where using a caller-allocated buffer is impossible</value>
   </data>
+  <data name="CannotForwardToDllImportDescription" xml:space="preserve">
+    <value>The generated 'DllImportAttribute' will not have a value corresponding to '{0}={1}'.</value>
+    <comment>{0} and {1} are the name and value of an attribute argument</comment>
+  </data>
+  <data name="CannotForwardToDllImportMessage" xml:space="preserve">
+    <value>'{0}={1}' has no equivalent in 'DllImportAtttribute' and will not be forwarded</value>
+    <comment>{0} and {1} are the name and value of an attribute argument</comment>
+  </data>
+  <data name="CannotForwardToDllImportTitle" xml:space="preserve">
+    <value>Specified 'GeneratedDllImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</value>
+  </data>
   <data name="CannotHaveMultipleMarshallingAttributesDescription" xml:space="preserve">
     <value>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</value>
   </data>

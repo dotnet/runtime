@@ -113,7 +113,12 @@ namespace System.Net.Test.Common
 
         private static Http3Options CreateOptions(GenericLoopbackOptions options)
         {
-            Http3Options http3Options = new Http3Options();
+            if (options is Http3Options http3Options)
+            {
+                return http3Options;
+            }
+
+            http3Options = new Http3Options();
             if (options != null)
             {
                 http3Options.Address = options.Address;

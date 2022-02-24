@@ -19,9 +19,9 @@ namespace System.Runtime.InteropServices
 #endif
     sealed class GeneratedDllImportAttribute : Attribute
     {
-        public CharSet CharSet { get; set; }
         public string? EntryPoint { get; set; }
         public bool SetLastError { get; set; }
+        public StringMarshalling StringMarshalling { get; set; }
 
         public GeneratedDllImportAttribute(string dllName)
         {

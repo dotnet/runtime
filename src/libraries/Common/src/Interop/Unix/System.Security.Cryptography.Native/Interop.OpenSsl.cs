@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -341,10 +342,36 @@ internal static partial class Interop
                     // if server actually requests a certificate.
                     Ssl.SslSetClientCertCallback(sslHandle, 1);
                 }
-
-                if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
+                else // sslAuthenticationOptions.IsServer
                 {
-                    Ssl.SslSetVerifyPeer(sslHandle);
+                    if (sslAuthenticationOptions.RemoteCertRequired)
+                    {
+                        Ssl.SslSetVerifyPeer(sslHandle);
+                    }
+
+                    if (sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
+                    {
+                        SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
+                        X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
+
+                        Debug.Assert(certList != null, "certList != null");
+                        Span<IntPtr> handles = certList.Count <= 256
+                            ? stackalloc IntPtr[256]
+                            : new IntPtr[certList.Count];
+
+                        for (int i = 0; i < certList.Count; i++)
+                        {
+                            handles[i] = certList[i].Handle;
+                        }
+
+                        if (!Ssl.SslAddClientCAs(sslHandle, handles.Slice(0, certList.Count)))
+                        {
+                            // The method can fail only when the number of cert names exceeds the maximum capacity
+                            // supported by STACK_OF(X509_NAME) structure, which should not happen under normal
+                            // operation.
+                            Debug.Fail("Failed to add issuer to trusted CA list.");
+                        }
+                    }
                 }
             }
             catch

@@ -37,7 +37,7 @@ jobs:
       richCodeNavigationEnvironment: "production"
       richCodeNavigationLanguage: "csharp"
       timeoutInMinutes: 240
-      buildArgs: -s libs.ref+libs.src -c debug -allConfigurations
+      buildArgs: -s libs.sfx+libs.oob -allConfigurations
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

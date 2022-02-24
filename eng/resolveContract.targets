@@ -28,7 +28,10 @@
           DependsOnTargets="ResolveProjectReferences"
           AfterTargets="GetTargetPathWithTargetPlatformMoniker">
     <ItemGroup>
-      <TargetPathWithTargetPlatformMoniker ReferenceAssembly="@(ResolvedMatchingContract)" />
+      <!-- Allow to point to a different reference project than what GenFacades uses to generate the type forwards. -->
+      <TargetPathWithTargetPlatformMoniker ReferenceAssembly="@(ResolvedMatchingContractOverride)" />
+      <TargetPathWithTargetPlatformMoniker ReferenceAssembly="@(ResolvedMatchingContract)"
+                                           Condition="'@(ResolvedMatchingContractOverride)' == ''" />
     </ItemGroup>
   </Target>
 
@@ -38,7 +41,7 @@
           Condition="'@(ProjectReference)' != '' and '@(_ResolvedProjectReferencePaths)' != ''">
     <!-- If we have a ProjectReference to CoreLib, we need to compile against implementation assemblies. -->
     <PropertyGroup Condition="@(_ResolvedProjectReferencePaths->AnyHaveMetadataValue('MSBuildSourceProjectFile', '$(CoreLibProject)'))">
-      <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+      <CompileUsingReferenceAssemblies Condition="'$(CompileUsingReferenceAssemblies)' == ''">false</CompileUsingReferenceAssemblies>
     </PropertyGroup>
     <!-- Clear the ReferenceAssembly attribute on resolved P2Ps that set SkipUseReferenceAssembly to true. -->
     <ItemGroup>
