@@ -134,7 +134,7 @@ steps:
       set -x
       pwd
       chmod -R a+r .
-      ../../../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
+      ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiAndroid.binlog -f net6.0-android -c Release
       mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
     displayName: Build podcast app for MAUI
     workingDirectory:  $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
