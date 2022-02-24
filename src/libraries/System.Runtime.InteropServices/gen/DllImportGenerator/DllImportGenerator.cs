@@ -364,8 +364,10 @@ namespace Microsoft.Interop
                 switch (namedArg.Key)
                 {
                     default:
-                        Debug.Fail($"An unknown member '{namedArg.Key}' was found on {attrData.AttributeClass}");
-                        continue;
+                        // This should never occur in a released build,
+                        // but can happen when evolving the ecosystem.
+                        // Return null here to indicate invalid attribute data.
+                        return null;
                     case nameof(GeneratedDllImportData.StringMarshalling):
                         userDefinedValues |= DllImportMember.StringMarshalling;
                         // TypedConstant's Value property only contains primitive values.
