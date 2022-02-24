@@ -818,29 +818,26 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
 	case SN_CreateScalarUnsafe:
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
-	case SN_Equals: {
-		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
-			return NULL;
-
-		return emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
-	}
-	case SN_EqualsAll: {
-		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
-			return NULL;
-
-		return emit_xequal (cfg, klass, args [0], args [1]);
-	}
+	case SN_Equals:
+	case SN_EqualsAll:
 	case SN_EqualsAny: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
 		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 
-		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		MonoInst *cmp_eq = emit_xcompare (cfg, arg_class, arg0_type, args [0], args [1]);
-		MonoInst *zero = emit_xzero (cfg, arg_class);
-		return emit_not_xequal (cfg, arg_class, cmp_eq, zero);
+		switch (id) {
+			case SN_Equals:
+				return emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
+			case SN_EqualsAll:
+				return emit_xequal (cfg, klass, args [0], args [1]);
+			case SN_EqualsAny: {
+				MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+				MonoInst *cmp_eq = emit_xcompare (cfg, arg_class, arg0_type, args [0], args [1]);
+				MonoInst *zero = emit_xzero (cfg, arg_class);
+				return emit_not_xequal (cfg, arg_class, cmp_eq, zero);
+			}
+			default: g_assert_not_reached ();
+		}
 	}
 	case SN_GetElement: {
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
@@ -1317,7 +1314,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 				  mono_metadata_type_equal (fsig->params [0], type) &&
 				  mono_metadata_type_equal (fsig->params [1], type));
 		switch (id) {
-			case SN_op_Equality: return emit_xequal (cfg, klass, args [0], args [1])
+			case SN_op_Equality: return emit_xequal (cfg, klass, args [0], args [1]);
 			case SN_op_Inequality: return emit_not_xequal (cfg, klass, args [0], args [1]);
 			default: g_assert_not_reached ();
 		}
