@@ -28,13 +28,13 @@ namespace System.Diagnostics.Tracing
         //
         // These PInvokes are used by EventSource to interact with the EventPipe.
         //
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_CreateProvider", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_CreateProvider", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial IntPtr CreateProvider(string providerName, Interop.Advapi32.EtwEnableCallback callbackFunc);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DefineEvent")]
         internal static unsafe partial IntPtr DefineEvent(IntPtr provHandle, uint eventID, long keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetProvider", CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetProvider", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial IntPtr GetProvider(string providerName);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DeleteProvider")]

@@ -1,6 +1,8 @@
 #ifndef __EVENTPIPE_RT_CONFIG_H__
 #define __EVENTPIPE_RT_CONFIG_H__
 
+#include "ep-shared-config.h"
+
 #ifndef FEATURE_CORECLR
 
 #include <config.h>
