@@ -1960,7 +1960,6 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 
 #if !defined(TARGET_UNIX) && (defined(TARGET_X86) || defined(TARGET_AMD64))
     DWORD context = CONTEXT_COMPLETE;
-    BOOL supportsAVX = FALSE;
 
     if (pfnInitializeContext2 == NULL)
     {
@@ -1974,7 +1973,6 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     if ((FeatureMask & XSTATE_MASK_AVX) != 0)
     {
         context = context | CONTEXT_XSTATE;
-        supportsAVX = TRUE;
     }
 
     // Retrieve contextSize by passing NULL for Buffer
@@ -3039,7 +3037,7 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     // This method is called for GC stress interrupts in managed code.
     // The current context may have various XState features, depending on what is used/dirty,
-    // but only AVX feature may contain live data. (that could change in the future)
+    // but only AVX feature may contain live data. (that could change with new features in JIT)
     // Besides pCtx may not have space to store other features.
     // So we will mask out everything but AVX.
     DWORD64 srcFeatures = 0;
