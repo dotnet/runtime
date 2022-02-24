@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "StartServiceCtrlDispatcherW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "StartServiceCtrlDispatcherW", SetLastError = true)]
         public static partial bool StartServiceCtrlDispatcher(IntPtr entry);
     }
 }

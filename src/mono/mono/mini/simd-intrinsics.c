@@ -597,6 +597,9 @@ static guint16 sri_vector_methods [] = {
 	SN_Max,
 	SN_Min,
 	SN_Multiply,
+	SN_Negate,
+	SN_OnesComplement,
+	SN_Sqrt,
 	SN_Subtract,
 	SN_ToScalar,
 	SN_ToVector128,
@@ -805,6 +808,24 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		int op = id == SN_GetLower ? OP_XLOWER : OP_XUPPER;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+	}
+	case SN_Negate:
+	case SN_OnesComplement: {
+#ifdef TARGET_ARM64
+		int op = id == SN_Negate ? OP_ARM64_XNEG : OP_ARM64_MVN;
+		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
+	}
+	case SN_Sqrt: {
+#ifdef TARGET_ARM64
+		if ((arg0_type != MONO_TYPE_R4) && (arg0_type != MONO_TYPE_R8))
+			return NULL;
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, arg0_type, fsig, args);
+#else
+		return NULL;
+#endif
 	}
 	case SN_ToScalar: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);

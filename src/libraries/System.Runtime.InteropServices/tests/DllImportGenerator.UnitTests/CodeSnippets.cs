@@ -13,10 +13,17 @@ namespace DllImportGenerator.UnitTests
         public static readonly string GeneratedDllImportAttributeDeclaration = @"
 namespace System.Runtime.InteropServices
 {
+    internal enum StringMarshalling
+    {
+        Custom = 0,
+        Utf8,
+        Utf16,
+    }
+
     sealed class GeneratedDllImportAttribute : System.Attribute
     {
         public GeneratedDllImportAttribute(string a) { }
-        public CharSet CharSet { get; set; }
+        public StringMarshalling StringMarshalling { get; set; }
     }
 }
 ";
@@ -191,9 +198,8 @@ using System.Runtime.InteropServices;
 partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"",
-        CharSet = CharSet.Unicode,
+        StringMarshalling = StringMarshalling.Utf16,
         EntryPoint = ""UserDefinedEntryPoint"",
-        ExactSpelling = true,
         SetLastError = true)]
     public static partial void Method();
 }
@@ -213,18 +219,22 @@ partial class Test
     private const int Two = 2;
 
     [GeneratedDllImport(nameof(Test),
-        CharSet = (CharSet)2,
+        StringMarshalling = (StringMarshalling)2,
         EntryPoint = EntryPointName,
-        ExactSpelling = 0 != 1,
         SetLastError = IsFalse)]
     public static partial void Method1();
 
     [GeneratedDllImport(nameof(Test),
-        CharSet = (CharSet)Two,
+        StringMarshalling = (StringMarshalling)Two,
         EntryPoint = EntryPointName,
-        ExactSpelling = One != Two,
         SetLastError = !IsTrue)]
     public static partial void Method2();
+
+    [GeneratedDllImport(nameof(Test),
+        StringMarshalling = (StringMarshalling)2,
+        EntryPoint = EntryPointName,
+        SetLastError = 0 != 1)]
+    public static partial void Method3();
 }
 ";
 
@@ -327,14 +337,14 @@ partial class Test
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
 
         /// <summary>
-        /// Declaration with parameters with <see cref="CharSet"/> set.
+        /// Declaration with parameters with <see cref="StringMarshalling"/> set.
         /// </summary>
-        public static string BasicParametersAndModifiersWithCharSet(string typename, CharSet value, string preDeclaration = "") => @$"
+        public static string BasicParametersAndModifiersWithStringMarshalling(string typename, StringMarshalling value, string preDeclaration = "") => @$"
 using System.Runtime.InteropServices;
 {preDeclaration}
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", CharSet = CharSet.{value})]
+    [GeneratedDllImport(""DoesNotExist"", StringMarshalling = StringMarshalling.{value})]
     public static partial {typename} Method(
         {typename} p,
         in {typename} pIn,
@@ -343,8 +353,8 @@ partial class Test
 }}
 ";
 
-        public static string BasicParametersAndModifiersWithCharSet<T>(CharSet value, string preDeclaration = "") =>
-            BasicParametersAndModifiersWithCharSet(typeof(T).ToString(), value, preDeclaration);
+        public static string BasicParametersAndModifiersWithStringMarshalling<T>(StringMarshalling value, string preDeclaration = "") =>
+            BasicParametersAndModifiersWithStringMarshalling(typeof(T).ToString(), value, preDeclaration);
 
         /// <summary>
         /// Declaration with parameters.

@@ -53,7 +53,7 @@ internal static partial class Interop
             }
         }
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_OpenDir", CharSet = CharSet.Ansi, SetLastError = true)]
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_OpenDir", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial IntPtr OpenDir(string path);
 
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetReadDirRBufferSize", SetLastError = false)]
