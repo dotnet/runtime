@@ -21,8 +21,8 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public partial class HostBuilder : IHostBuilder
     {
-        private const string _hostBuildingEventName = "HostBuilding";
-        private const string _hostBuiltEventName = "HostBuilt";
+        private const string HostBuildingEventName = "HostBuilding";
+        private const string HostBuiltEventName = "HostBuilt";
 
         private List<Action<IConfigurationBuilder>> _configureHostConfigActions = new List<Action<IConfigurationBuilder>>();
         private List<Action<HostBuilderContext, IConfigurationBuilder>> _configureAppConfigActions = new List<Action<HostBuilderContext, IConfigurationBuilder>>();
@@ -149,9 +149,9 @@ namespace Microsoft.Extensions.Hosting
         {
             var diagnosticListener = new DiagnosticListener("Microsoft.Extensions.Hosting");
 
-            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(_hostBuildingEventName))
+            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(HostBuildingEventName))
             {
-                Write(diagnosticListener, _hostBuildingEventName, builder);
+                Write(diagnosticListener, HostBuildingEventName, builder);
             }
 
             return diagnosticListener;
@@ -265,6 +265,9 @@ namespace Microsoft.Extensions.Hosting
 
             services.AddSingleton<IHost>(_ =>
             {
+                // We use serviceProviderGetter() instead of the _ parameter because these can be different given a custom IServiceProviderFactory.
+                // We want the host to always dispose the IServiceProvider returned by the IServiceProviderFactory.
+                // https://github.com/dotnet/runtime/issues/36060
                 IServiceProvider appServices = serviceProviderGetter();
                 return new Internal.Host(appServices,
                     hostingEnvironment,
@@ -317,9 +320,9 @@ namespace Microsoft.Extensions.Hosting
 
             var host = serviceProvider.GetRequiredService<IHost>();
 
-            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(_hostBuiltEventName))
+            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(HostBuiltEventName))
             {
-                Write(diagnosticListener, _hostBuiltEventName, host);
+                Write(diagnosticListener, HostBuiltEventName, host);
             }
 
             return host;

@@ -13,7 +13,6 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting.Fakes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Primitives;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
@@ -23,11 +22,11 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void DefaultConfigIsMutable()
         {
-            var builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = CreateEmptyBuilder();
 
             builder.Configuration["key1"] = "value1";
 
-            using var host = builder.Build();
+            using IHost host = builder.Build();
 
             var config = host.Services.GetRequiredService<IConfiguration>();
             config["key2"] = "value2";
@@ -71,10 +70,10 @@ namespace Microsoft.Extensions.Hosting.Tests
                     }
                 });
 
-                using var sub = DiagnosticListener.AllListeners.Subscribe(listener);
+                using var _ = DiagnosticListener.AllListeners.Subscribe(listener);
 
-                var builder = CreateEmptyBuilder();
-                var host = builder.Build();
+                HostApplicationBuilder builder = CreateEmptyBuilder();
+                IHost host = builder.Build();
 
                 Assert.NotNull(hostBuilderFromEvent);
                 Assert.Same(host, hostFromEvent);
@@ -106,9 +105,9 @@ namespace Microsoft.Extensions.Hosting.Tests
                     });
                 });
 
-                using var sub = DiagnosticListener.AllListeners.Subscribe(listener);
+                using var _ = DiagnosticListener.AllListeners.Subscribe(listener);
 
-                var builder = CreateEmptyBuilder();
+                HostApplicationBuilder builder = CreateEmptyBuilder();
                 Assert.Throws<NotSupportedException>(() => builder.Build());
             });
         }
@@ -116,7 +115,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void CanConfigureAppConfigurationAndRetrieveFromDI()
         {
-            var builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = CreateEmptyBuilder();
 
             builder.Configuration.AddInMemoryCollection(
                     new KeyValuePair<string, string>[]
@@ -131,7 +130,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     });
 
 
-            using var host = builder.Build();
+            using IHost host = builder.Build();
 
             var config = host.Services.GetService<IConfiguration>();
 
@@ -153,13 +152,13 @@ namespace Microsoft.Extensions.Hosting.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureAppConfigurationFromFile()
         {
-            var builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = CreateEmptyBuilder();
 
             builder.Configuration.AddJsonFile("appSettings.json", optional: false);
 
             Assert.Equal("value", builder.Configuration["key"]);
 
-            using var host = builder.Build();
+            using IHost host = builder.Build();
 
             var config = host.Services.GetService<IConfiguration>();
             Assert.NotNull(config);
@@ -169,7 +168,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void DisableDefaultIHostEnvironmentValues()
         {
-            var builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = CreateEmptyBuilder();
 
             Assert.Equal(Environments.Production, builder.Environment.EnvironmentName);
 #if NETCOREAPP
@@ -183,7 +182,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(AppContext.BaseDirectory, builder.Environment.ContentRootPath);
             Assert.IsAssignableFrom<PhysicalFileProvider>(builder.Environment.ContentRootFileProvider);
 
-            using var host = builder.Build();
+            using IHost host = builder.Build();
 
             var env = host.Services.GetRequiredService<IHostEnvironment>();
             Assert.Equal(Environments.Production, env.EnvironmentName);
@@ -222,7 +221,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal("AppA", builder.Environment.ApplicationName);
             Assert.Equal("EnvA", builder.Environment.EnvironmentName);
 
-            using var host = builder.Build();
+            using IHost host = builder.Build();
 
             var hostEnvironmentFromServices = host.Services.GetRequiredService<IHostEnvironment>();
             Assert.Equal("AppA", hostEnvironmentFromServices.ApplicationName);
@@ -254,7 +253,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal("AppB", builder.Environment.ApplicationName);
             Assert.Equal("EnvB", builder.Environment.EnvironmentName);
 
-            using var host = builder.Build();
+            using IHost host = builder.Build();
 
             var hostEnvironmentFromServices = host.Services.GetRequiredService<IHostEnvironment>();
             Assert.Equal("AppB", hostEnvironmentFromServices.ApplicationName);
@@ -290,7 +289,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal("AppA", builder.Environment.ApplicationName);
             Assert.Equal("EnvA", builder.Environment.EnvironmentName);
 
-            using var host = builder.Build();
+            using IHost host = builder.Build();
 
             var hostEnvironmentFromServices = host.Services.GetRequiredService<IHostEnvironment>();
             Assert.Equal("AppA", hostEnvironmentFromServices.ApplicationName);
@@ -300,7 +299,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void BuildAndDispose()
         {
-            using var host = CreateEmptyBuilder().Build();
+            using IHost host = CreateEmptyBuilder().Build();
         }
 
         [Fact]
@@ -312,7 +311,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 ContentRootPath = "/",
             });
 
-            using var host = builder.Build();
+            using IHost host = builder.Build();
             Assert.Equal("/", host.Services.GetService<IHostEnvironment>().ContentRootPath);
         }
 
@@ -339,7 +338,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(Environments.Development, builder.Environment.EnvironmentName);
             Assert.Equal(Path.GetFullPath("."), builder.Environment.ContentRootPath);
 
-            using var host = builder.Build(); 
+            using IHost host = builder.Build(); 
             var env = host.Services.GetRequiredService<IHostEnvironment>();
 
             Assert.Equal("MyProjectReference", env.ApplicationName);
@@ -363,7 +362,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void DisableDefaultContentRootIsApplicationBasePath()
         {
-            var builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = CreateEmptyBuilder();
             Assert.Equal(AppContext.BaseDirectory, builder.Environment.ContentRootPath);
         }
 
@@ -377,7 +376,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void DisableDefaultServicesAreAvailable()
         {
-            using var host = CreateEmptyBuilder().Build();
+            using IHost host = CreateEmptyBuilder().Build();
 
 #pragma warning disable CS0618 // Type or member is obsolete
             Assert.NotNull(host.Services.GetRequiredService<IHostingEnvironment>());
@@ -412,12 +411,12 @@ namespace Microsoft.Extensions.Hosting.Tests
                 options.ShutdownTimeout = testShutdown;
             });
 
-            using var host = builder.Build();
+            using IHost host = builder.Build();
             var options = host.Services.GetRequiredService<IOptions<HostOptions>>();
 
             Assert.NotNull(options.Value);
 
-            var hostOptions = options.Value;
+            HostOptions hostOptions = options.Value;
             Assert.Equal(testBehavior, hostOptions.BackgroundServiceExceptionBehavior);
             Assert.Equal(testShutdown, hostOptions.ShutdownTimeout);
         }
@@ -425,7 +424,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void ConfigureDefaultServiceProvider()
         {
-            var builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = CreateEmptyBuilder();
 
             builder.Services.AddTransient<ServiceD>();
             builder.Services.AddScoped<ServiceC>();
@@ -437,7 +436,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             builder.ConfigureContainer(factory);
 
-            var host = builder.Build();
+            IHost host = builder.Build();
 
             Assert.Throws<InvalidOperationException>(() => { host.Services.GetRequiredService<ServiceC>(); });
         }
@@ -445,14 +444,14 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void ConfigureCustomServiceProvider()
         {
-            var builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = CreateEmptyBuilder();
 
             builder.Services.AddTransient<ServiceD>();
             builder.Services.AddScoped<ServiceC>();
 
             builder.ConfigureContainer(new FakeServiceProviderFactory(), container => container.State = "Hi!");
 
-            using var host = builder.Build();
+            using IHost host = builder.Build();
 
             var fakeServices = host.Services.GetRequiredService<FakeServiceCollection>();
             Assert.Equal("Hi!", fakeServices.State);
@@ -462,7 +461,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void Build_DoesNotAllowBuildingMuiltipleTimes()
         {
-            var builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = CreateEmptyBuilder();
             using (builder.Build())
             {
                 var ex = Assert.Throws<InvalidOperationException>(() => builder.Build());
@@ -479,7 +478,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 ContentRootPath = Path.GetFullPath(".")
             });
 
-            using var host = builder.Build();
+            using IHost host = builder.Build();
             var env = host.Services.GetRequiredService<IHostEnvironment>();
 
             Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
@@ -489,11 +488,11 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void HostServicesSameServiceProviderAsInHostBuilder()
         {
-            var builder = CreateEmptyBuilder();
-            var host = builder.Build();
+            HostApplicationBuilder builder = CreateEmptyBuilder();
+            IHost host = builder.Build();
 
-            var type = builder.GetType();
-            var field = type.GetField("_appServices", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            Type type = builder.GetType();
+            FieldInfo field = type.GetField("_appServices", BindingFlags.Instance | BindingFlags.NonPublic)!;
             var appServicesFromHostBuilder = (IServiceProvider)field.GetValue(builder)!;
             Assert.Same(appServicesFromHostBuilder, host.Services);
         }

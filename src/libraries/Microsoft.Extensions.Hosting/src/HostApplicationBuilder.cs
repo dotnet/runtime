@@ -223,7 +223,7 @@ namespace Microsoft.Extensions.Hosting
             return HostBuilder.ResolveHost(_appServices, diagnosticListener);
         }
 
-        private class HostBuilderAdapter : IHostBuilder
+        private sealed class HostBuilderAdapter : IHostBuilder
         {
             private readonly HostApplicationBuilder _hostApplicationBuilder;
 
@@ -255,7 +255,7 @@ namespace Microsoft.Extensions.Hosting
                         configureHostAction(config);
                     }
 
-                    // Disallow changing any host settings this late in the cycle, the reasoning is that we've already loaded the default configuration
+                    // Disallow changing any host settings this late in the cycle. The reasoning is that we've already loaded the default configuration
                     // and done other things based on environment name, application name or content root.
                     if (!string.Equals(previousApplicationName, config[HostDefaults.ApplicationKey], StringComparison.OrdinalIgnoreCase))
                     {
@@ -265,8 +265,8 @@ namespace Microsoft.Extensions.Hosting
                     {
                         throw new NotSupportedException($"The environment changed from \"{previousEnvironment}\" to \"{config[HostDefaults.EnvironmentKey]}\". Changing host configuration is not supported.");
                     }
-                    // It's okay if the ConfigureHostConfiguration callbacks either left the config unchanged or set it back to the real ConntentRootPath.
-                    // Setting it to anything else indicates code was change to change the content root via HostFactoryResolver which is unsupported.
+                    // It's okay if the ConfigureHostConfiguration callbacks either left the config unchanged or set it back to the real ContentRootPath.
+                    // Setting it to anything else indicates code intends to change the content root via HostFactoryResolver which is unsupported.
                     string? currentContentRootConfig = config[HostDefaults.ContentRootKey];
                     if (!string.Equals(previousContentRootConfig, currentContentRootConfig, StringComparison.OrdinalIgnoreCase) &&
                         !string.Equals(previousContentRootPath, HostBuilder.ResolveContentRootPath(currentContentRootConfig, AppContext.BaseDirectory)))
