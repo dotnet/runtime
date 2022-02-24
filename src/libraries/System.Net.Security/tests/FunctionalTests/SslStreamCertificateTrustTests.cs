@@ -15,9 +15,10 @@ namespace System.Net.Security.Tests
 
     public class SslStreamCertificateTrustTest
     {
-        [Fact]
-        // not supported on Windows, not implemented elsewhere
-        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.OSX)]
+        public static bool SupportsSendingCANamesInTls => PlatformDetection.SupportsSendingCANamesInTls;
+
+        [ConditionalFact(nameof(SupportsSendingCANamesInTls))]
+        [SkipOnPlatform(TestPlatforms.Windows, "CertificateCollection-based SslCertificateTrust is not Supported on Windows")]
         public async Task SslStream_SendCertificateTrust_CertificateCollection()
         {
             (X509Certificate2 certificate, X509Certificate2Collection caCerts) = TestHelper.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
@@ -29,9 +30,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(caCerts.Select(c => c.Subject), acceptableIssuers);
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65515", TestPlatforms.Windows)]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
+        [ConditionalFact(nameof(SupportsSendingCANamesInTls))]
         public async Task SslStream_SendCertificateTrust_CertificateStore()
         {
             using X509Store store = new X509Store("Root", StoreLocation.LocalMachine);
