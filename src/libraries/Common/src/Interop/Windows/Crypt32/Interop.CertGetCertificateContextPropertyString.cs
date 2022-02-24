@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [GeneratedDllImport(Libraries.Crypt32, EntryPoint = "CertGetCertificateContextProperty", CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Crypt32, EntryPoint = "CertGetCertificateContextProperty",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial bool CertGetCertificateContextPropertyString(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, byte* pvData, ref uint pcbData);
     }
 }

@@ -11,14 +11,14 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificate", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificate", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool X509StoreAddCertificate(
             SafeX509StoreHandle store,
             SafeX509Handle cert,
             string hashString);
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool X509StoreAddCertificateWithPrivateKey(
             SafeX509StoreHandle store,
@@ -27,7 +27,7 @@ internal static partial class Interop
             PAL_KeyAlgorithm algorithm,
             string hashString);
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreContainsCertificate", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreContainsCertificate", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool X509StoreContainsCertificate(
             SafeX509StoreHandle store,
@@ -51,7 +51,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreOpenDefault")]
         internal static unsafe partial SafeX509StoreHandle X509StoreOpenDefault();
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreRemoveCertificate", CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreRemoveCertificate", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool X509StoreRemoveCertificate(
             SafeX509StoreHandle store,

@@ -59,6 +59,8 @@
 
 /src/mono/dlls @thaystg @lambdageek
 
+/src/native/public/mono @marek-safar @lambdageek
+
 # Obsoletions / Custom Diagnostics
 
 /docs/project/list-of-diagnostics.md                @jeffhandley

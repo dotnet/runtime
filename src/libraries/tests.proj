@@ -1,5 +1,12 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
+  <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
+    <!-- Build for NetCoreAppCurrent by default if no BuildTargetFramework is supplied or if not all configurations are built. -->
+    <TargetFramework>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))-$(TargetOS)</TargetFramework>
+    <!-- Filter ProjectReferences to build the best matching target framework only. -->
+    <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TestInParallel Condition="'$(Coverage)' == 'true'">false</TestInParallel>
     <!-- For tests we want to continue running if a test run failed. -->
