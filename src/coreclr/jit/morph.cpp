@@ -12176,7 +12176,7 @@ DONE_MORPHING_CHILDREN:
         case GT_GE:
         case GT_GT:
 
-            if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
+            if (!optValnumCSE_phase && (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST)))
             {
                 tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
                 oper = tree->OperGet();
@@ -13999,57 +13999,60 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
 //   \--*  CAST      long <- [u]long <- int
 //      \--*  ARR_LEN   int
 //
+//   These patterns quite often show up along with index checks
+//
 // Arguments:
-//   tree - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
+//   cmp - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
 //
 // Return Value:
 //   Returns the same tree where operands might have narrower types
 //
-GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
+// Notes:
+//   TODO-Casts: consider unifying this function with "optNarrowTree"
+//
+GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
 {
-    assert(tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
+    assert(cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
+    assert(!optValnumCSE_phase);
 
-    GenTree* castedOp        = tree->gtGetOp1();
-    GenTree* knownPositiveOp = tree->gtGetOp2();
+    GenTree* op1 = cmp->gtGetOp1();
+    GenTree* op2 = cmp->gtGetOp2();
 
     // Caller is expected to call this function only if we have CAST nodes
-    assert(castedOp->OperIs(GT_CAST) || knownPositiveOp->OperIs(GT_CAST));
+    assert(op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST));
 
-    if (optValnumCSE_phase)
-    {
-        // We're going to modify all of them
-        return tree;
-    }
-
-    if (!castedOp->TypeIs(TYP_LONG))
+    if (!op1->TypeIs(TYP_LONG))
     {
         // We can extend this logic to handle small types as well, but currently it's done mostly to
         // assist range check elimination
-        return tree;
+        return cmp;
     }
 
+    GenTree* castOp;
+    GenTree* knownPositiveOp;
+
     bool knownPositiveIsOp2;
-    if (knownPositiveOp->IsIntegralConst() ||
-        ((knownPositiveOp->OperIs(GT_CAST) && knownPositiveOp->AsCast()->CastOp()->OperIs(GT_ARR_LENGTH))))
+    if (op2->IsIntegralConst() || ((op2->OperIs(GT_CAST) && op2->AsCast()->CastOp()->OperIs(GT_ARR_LENGTH))))
     {
         // op2 is either a LONG constant or (T)ARR_LENGTH
         knownPositiveIsOp2 = true;
+        castOp             = cmp->gtGetOp1();
+        knownPositiveOp    = cmp->gtGetOp2();
     }
     else
     {
         // op1 is either a LONG constant (yes, it's pretty normal for relops)
         // or (T)ARR_LENGTH
-        castedOp           = tree->gtGetOp2();
-        knownPositiveOp    = tree->gtGetOp1();
+        castOp             = cmp->gtGetOp2();
+        knownPositiveOp    = cmp->gtGetOp1();
         knownPositiveIsOp2 = false;
     }
 
-    if (castedOp->OperIs(GT_CAST) && varTypeIsLong(castedOp->CastToType()) && castedOp->AsCast()->CastOp()->TypeIs(TYP_INT) &&
-        castedOp->IsUnsigned() && !castedOp->gtOverflow())
+    if (castOp->OperIs(GT_CAST) && varTypeIsLong(castOp->CastToType()) && castOp->AsCast()->CastOp()->TypeIs(TYP_INT) &&
+        castOp->IsUnsigned() && !castOp->gtOverflow())
     {
         bool knownPositiveFitsIntoU32 = false;
-        if (knownPositiveOp->IsIntegralConst() &&
-            ((UINT64)knownPositiveOp->AsIntConCommon()->IntegralValue() <= UINT_MAX))
+        if (knownPositiveOp->IsIntegralConst() && FitsIn<UINT32>(knownPositiveOp->AsIntConCommon()->IntegralValue()))
         {
             // BTW, we can fold the whole condition if op2 doesn't fit into UINT_MAX.
             knownPositiveFitsIntoU32 = true;
@@ -14063,36 +14066,36 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
 
         if (!knownPositiveFitsIntoU32)
         {
-            return tree;
+            return cmp;
         }
 
         JITDUMP("Removing redundant cast(s) for:\n")
-        DISPTREE(tree)
+        DISPTREE(cmp)
         JITDUMP("\n\nto:\n\n")
 
-        tree->SetUnsigned();
+        cmp->SetUnsigned();
 
-        // Drop cast from castedOp
+        // Drop cast from castOp
         if (knownPositiveIsOp2)
         {
-            tree->gtOp1 = castedOp->AsCast()->CastOp();
+            cmp->gtOp1 = castOp->AsCast()->CastOp();
         }
         else
         {
-            tree->gtOp2 = castedOp->AsCast()->CastOp();
+            cmp->gtOp2 = castOp->AsCast()->CastOp();
         }
-        DEBUG_DESTROY_NODE(castedOp);
+        DEBUG_DESTROY_NODE(castOp);
 
         if (knownPositiveOp->OperIs(GT_CAST))
         {
             // Drop cast from knownPositiveOp too
             if (knownPositiveIsOp2)
             {
-                tree->gtOp2 = knownPositiveOp->AsCast()->CastOp();
+                cmp->gtOp2 = knownPositiveOp->AsCast()->CastOp();
             }
             else
             {
-                tree->gtOp1 = knownPositiveOp->AsCast()->CastOp();
+                cmp->gtOp1 = knownPositiveOp->AsCast()->CastOp();
             }
             DEBUG_DESTROY_NODE(knownPositiveOp);
         }
@@ -14106,10 +14109,10 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
 #endif
             fgUpdateConstTreeValueNumber(knownPositiveOp);
         }
-        DISPTREE(tree)
+        DISPTREE(cmp)
         JITDUMP("\n")
     }
-    return tree;
+    return cmp;
 }
 
 //------------------------------------------------------------------------
