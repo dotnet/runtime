@@ -3279,7 +3279,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     }
 
     // Strip helper call away
-    fieldTokenNode = fieldTokenNode->AsCall()->gtCallArgs->GetNode();
+    fieldTokenNode = fieldTokenNode->AsCall()->GetArg(0);
 
     if (fieldTokenNode->gtOper == GT_IND)
     {
@@ -3636,7 +3636,7 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     }
 
     // Strip helper call away
-    fieldTokenNode = fieldTokenNode->AsCall()->gtCallArgs->GetNode();
+    fieldTokenNode = fieldTokenNode->AsCall()->GetArg(0);
     if (fieldTokenNode->gtOper == GT_IND)
     {
         fieldTokenNode = fieldTokenNode->AsOp()->gtOp1;
@@ -4264,7 +4264,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTreeCall* call = impStackTop().val->AsCall();
                     if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
                     {
-                        CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtCallArgs->GetNode());
+                        CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->GetArg(0));
                         if (hClass != NO_CLASS_HANDLE)
                         {
                             retNode =
@@ -4831,8 +4831,8 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
         CORINFO_METHOD_HANDLE hTypeof = eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE);
         if ((typeTo->AsCall()->gtCallMethHnd == hTypeof) && (typeFrom->AsCall()->gtCallMethHnd == hTypeof))
         {
-            CORINFO_CLASS_HANDLE hClassTo   = gtGetHelperArgClassHandle(typeTo->AsCall()->gtCallArgs->GetNode());
-            CORINFO_CLASS_HANDLE hClassFrom = gtGetHelperArgClassHandle(typeFrom->AsCall()->gtCallArgs->GetNode());
+            CORINFO_CLASS_HANDLE hClassTo   = gtGetHelperArgClassHandle(typeTo->AsCall()->GetArg(0));
+            CORINFO_CLASS_HANDLE hClassFrom = gtGetHelperArgClassHandle(typeFrom->AsCall()->GetArg(0));
 
             if (hClassTo == NO_CLASS_HANDLE || hClassFrom == NO_CLASS_HANDLE)
             {
@@ -17268,7 +17268,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #endif // defined(TARGET_ARM64)
                 {
                     assert(iciCall->HasRetBufArg());
-                    GenTree* dest = gtCloneExpr(iciCall->gtCallArgs->GetNode());
+                    GenTree* dest = gtCloneExpr(iciCall->GetArg(0));
                     // spill temp only exists if there are multiple return points
                     if (fgNeedReturnSpillTemp())
                     {

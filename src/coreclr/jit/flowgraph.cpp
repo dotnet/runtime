@@ -1053,7 +1053,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     CORINFO_METHOD_HANDLE methHnd = call->gtCallMethHnd;
     CORINFO_CLASS_HANDLE  clsHnd  = info.compCompHnd->getMethodClass(methHnd);
 
-    GenTree* targetMethod = call->gtCallArgs->GetNext()->GetNode();
+    GenTree* targetMethod = call->GetArg(1);
     noway_assert(targetMethod->TypeGet() == TYP_I_IMPL);
     genTreeOps            oper            = targetMethod->OperGet();
     CORINFO_METHOD_HANDLE targetMethodHnd = nullptr;
@@ -1066,7 +1066,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
     else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
-        GenTree* handleNode = targetMethod->AsCall()->gtCallArgs->GetNext()->GetNext()->GetNode();
+        GenTree* handleNode = targetMethod->AsCall()->GetArg(2);
 
         if (handleNode->OperGet() == GT_CNS_INT)
         {
@@ -1105,7 +1105,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         GenTreeCall* runtimeLookupCall = qmarkNode->AsOp()->gtOp2->AsOp()->gtOp1->AsCall();
 
         // This could be any of CORINFO_HELP_RUNTIMEHANDLE_(METHOD|CLASS)(_LOG?)
-        GenTree* tokenNode = runtimeLookupCall->gtCallArgs->GetNext()->GetNode();
+        GenTree* tokenNode = runtimeLookupCall->GetArg(1);
         noway_assert(tokenNode->OperGet() == GT_CNS_INT);
         targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->AsIntCon()->gtCompileTimeHandle);
     }
@@ -1138,7 +1138,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 JITDUMP("optimized\n");
 
                 GenTree*             thisPointer       = call->gtCallThisArg->GetNode();
-                GenTree*             targetObjPointers = call->gtCallArgs->GetNode();
+                GenTree*             targetObjPointers = call->GetArg(0);
                 GenTreeCall::Use*    helperArgs        = nullptr;
                 CORINFO_LOOKUP       pLookup;
                 CORINFO_CONST_LOOKUP entryPoint;
@@ -1172,7 +1172,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             JITDUMP("optimized\n");
 
             GenTree*          thisPointer       = call->gtCallThisArg->GetNode();
-            GenTree*          targetObjPointers = call->gtCallArgs->GetNode();
+            GenTree*          targetObjPointers = call->GetArg(0);
             GenTreeCall::Use* helperArgs        = gtNewCallArgs(thisPointer, targetObjPointers);
 
             call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, helperArgs);

@@ -3058,13 +3058,13 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
             if (call->IsUnmanaged() && ((call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL) != 0))
             {
-                if (call->gtCallArgs->GetNode()->OperGet() == GT_NOP)
+                if (call->GetArg(0)->OperIs(GT_NOP))
                 {
                     assert(call->gtCallLateArgs->GetNode()->TypeIs(TYP_I_IMPL, TYP_BYREF));
                 }
                 else
                 {
-                    assert(call->gtCallArgs->GetNode()->TypeIs(TYP_I_IMPL, TYP_BYREF));
+                    assert(call->GetArg(0)->TypeIs(TYP_I_IMPL, TYP_BYREF));
                 }
             }
             break;

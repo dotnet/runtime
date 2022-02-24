@@ -2515,7 +2515,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         args = call->gtCallArgs;
         assert(args != nullptr);
 
-        argx = call->gtCallArgs->GetNode();
+        argx = call->GetArg(0);
 
         // We don't increment numArgs here, since we already counted this argument above.
 
@@ -2680,9 +2680,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
         {
-            noway_assert(call->gtCallArgs->GetNode()->TypeGet() == TYP_I_IMPL ||
-                         call->gtCallArgs->GetNode()->TypeGet() == TYP_BYREF ||
-                         call->gtCallArgs->GetNode()->gtOper ==
+            noway_assert(call->GetArg(0)->TypeGet() == TYP_I_IMPL || call->GetArg(0)->TypeGet() == TYP_BYREF ||
+                         call->GetArg(0)->gtOper ==
                              GT_NOP); // the arg was already morphed to a register (fgMorph called twice)
             maxRegArgs = 1;
         }
@@ -7285,7 +7284,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     if (info.compRetBuffArg != BAD_VAR_NUM)
     {
         noway_assert(call->TypeGet() == TYP_VOID);
-        GenTree* retValBuf = call->gtCallArgs->GetNode();
+        GenTree* retValBuf = call->GetArg(0);
         if (retValBuf->gtOper != GT_LCL_VAR || retValBuf->AsLclVarCommon()->GetLclNum() != info.compRetBuffArg)
         {
             failTailCall("Need to copy return buffer");
@@ -8216,7 +8215,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
     if (origCall->HasRetBufArg())
     {
         JITDUMP("Transferring retbuf\n");
-        GenTree* retBufArg = origCall->gtCallArgs->GetNode();
+        GenTree* retBufArg = origCall->GetArg(0);
 
         assert(info.compRetBuffArg != BAD_VAR_NUM);
         assert(retBufArg->OperIsLocal());
@@ -9168,7 +9167,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         // This is call to CORINFO_HELP_VIRTUAL_FUNC_PTR with ignored result.
         // Transform it into a null check.
 
-        GenTree* thisPtr = call->gtCallArgs->GetNode();
+        GenTree* thisPtr = call->GetArg(0);
 
         GenTree* nullCheck = gtNewNullCheck(thisPtr, compCurBB);
 
@@ -11544,7 +11543,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_IND:
         {
             // Fold IND(LDELEMA_REF(obj, index, type)) to INDEX(obj, index) if type is exact
-            if (op1->IsCall())
+            if (opts.OptimizationEnabled() && fgGlobalMorph && op1->IsCall())
             {
                 GenTreeCall* call = op1->AsCall();
                 if ((call->gtCallType == CT_HELPER) &&

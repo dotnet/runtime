@@ -11789,7 +11789,7 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
         case NI_System_Enum_HasFlag:
         {
             GenTree* thisOp = call->gtCallThisArg->GetNode();
-            GenTree* flagOp = call->gtCallArgs->GetNode();
+            GenTree* flagOp = call->GetArg(0);
             GenTree* result = gtOptimizeEnumHasFlag(thisOp, flagOp);
 
             if (result != nullptr)
@@ -11802,9 +11802,9 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
         case NI_System_Type_op_Equality:
         case NI_System_Type_op_Inequality:
         {
-            noway_assert(call->TypeGet() == TYP_INT);
-            GenTree* op1 = call->gtCallArgs->GetNode();
-            GenTree* op2 = call->gtCallArgs->GetNext()->GetNode();
+            noway_assert(call->TypeIs(TYP_INT));
+            GenTree* op1 = call->GetArg(0);
+            GenTree* op2 = call->GetArg(1);
 
             // If either operand is known to be a RuntimeType, this can be folded
             GenTree* result = gtFoldTypeEqualityCall(ni == NI_System_Type_op_Equality, op1, op2);
@@ -12045,8 +12045,8 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     if ((op1Kind == TPK_Handle) && (op2Kind == TPK_Handle))
     {
         JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
-        GenTree*             op1ClassFromHandle = tree->AsOp()->gtOp1->AsCall()->gtCallArgs->GetNode();
-        GenTree*             op2ClassFromHandle = tree->AsOp()->gtOp2->AsCall()->gtCallArgs->GetNode();
+        GenTree*             op1ClassFromHandle = tree->AsOp()->gtOp1->AsCall()->GetArg(0);
+        GenTree*             op2ClassFromHandle = tree->AsOp()->gtOp2->AsCall()->GetArg(0);
         CORINFO_CLASS_HANDLE cls1Hnd            = NO_CLASS_HANDLE;
         CORINFO_CLASS_HANDLE cls2Hnd            = NO_CLASS_HANDLE;
 
@@ -12168,7 +12168,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     GenTree* const opOther  = (op1Kind == TPK_Handle) ? op2 : op1;
 
     // Tunnel through the handle operand to get at the class handle involved.
-    GenTree* const       opHandleArgument = opHandle->AsCall()->gtCallArgs->GetNode();
+    GenTree* const       opHandleArgument = opHandle->AsCall()->GetArg(0);
     CORINFO_CLASS_HANDLE clsHnd           = gtGetHelperArgClassHandle(opHandleArgument);
 
     // If we couldn't find the class handle, give up.
@@ -12705,7 +12705,7 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
     JITDUMP("\nAttempting to optimize BOX_NULLABLE(&x) %s null [%06u]\n", GenTree::OpName(oper), dspTreeID(tree));
 
     // Get the address of the struct being boxed
-    GenTree* const arg = call->gtCallArgs->GetNext()->GetNode();
+    GenTree* const arg = call->GetArg(1);
 
     if (arg->OperIs(GT_ADDR) && ((arg->gtFlags & GTF_LATE_ARG) == 0))
     {
