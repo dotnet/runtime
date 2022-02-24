@@ -2021,6 +2021,7 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "ppdb methodbody: ");
 		dump_methodbody (image_dpdb);
 		ppdb_file = mono_create_ppdb_file (image_dpdb, FALSE);
+		g_assert (ppdb_file->image == image_dpdb);
 	}
 
 	BaselineInfo *base_info = baseline_info_lookup_or_add (image_base);
