@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
         internal static unsafe partial bool GetFileInformationByHandle(SafeFileHandle hFile, out BY_HANDLE_FILE_INFORMATION lpFileInformation);
     }
 }
