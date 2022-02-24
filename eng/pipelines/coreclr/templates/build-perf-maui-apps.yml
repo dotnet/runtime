@@ -143,7 +143,7 @@ steps:
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
-  - ${{ if eq(parameters.appname, "newmaui" }}:
+  - ${{ if eq(parameters.appname, "newmaui") }}:
     - script: |
         ./dotnet new maui -n MauiTesting
         cd MauiTesting
