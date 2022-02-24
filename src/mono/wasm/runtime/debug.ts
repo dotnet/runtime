@@ -315,11 +315,13 @@ export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): voi
 }
 
 export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
-    const message = Module.UTF8ToString(message_ptr);
+    const origMessage = Module.UTF8ToString(message_ptr);
     const isFatal = !!fatal;
     const domain = Module.UTF8ToString(log_domain_ptr); // is this always Mono?
     const dataPtr = user_data;
     const log_level = Module.UTF8ToString(log_level_ptr);
+
+    const message = `[MONO] ${origMessage}`;
 
     if (INTERNAL["logging"] && typeof INTERNAL.logging["trace"] === "function") {
         INTERNAL.logging.trace(domain, log_level, message, isFatal, dataPtr);
